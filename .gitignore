@@ -1,0 +1,24 @@
+# Node / Vite / React
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vite
+.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# Capacitor / Android
+android/.gradle/
+android/.idea/
+android/local.properties
+android/app/build/
+android/build/
+
+# iOS (falls irgendwann dazu kommt)
+ios/App/App.xcworkspace/
+ios/App/build/

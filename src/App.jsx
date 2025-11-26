@@ -245,7 +245,7 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
 
       const worker = html2pdf().set(opt).from(element);
 
-      // Web-Fallback: klassischer Download
+      // Web-Fallback
       if (!Capacitor.isNativePlatform()) {
         await worker.save();
         alert('PDF als Browser-Download erstellt.');
@@ -253,7 +253,7 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
         return;
       }
 
-      // Native (Android / iOS): Blob erzeugen und über Filesystem speichern
+      // Native (Android / iOS)
       const pdfBlob = await worker.output('blob');
       const base64 = await blobToBase64(pdfBlob);
 
@@ -262,6 +262,7 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
         data: base64,
         directory: Directory.Documents,
         encoding: Encoding.BASE64,
+        recursive: true,          // Ordner automatisch anlegen
       });
 
       alert('PDF gespeichert:\n' + result.uri);
@@ -618,7 +619,7 @@ export default function App() {
       const json = JSON.stringify(payload, null, 2);
       const fileName = `kogler_zeiterfassung_${new Date().toISOString().slice(0,10)}.json`;
 
-      // Web-Fallback: normaler Download
+      // Web-Fallback
       if (!Capacitor.isNativePlatform()) {
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -638,6 +639,7 @@ export default function App() {
         data: json,
         directory: Directory.Documents,
         encoding: Encoding.UTF8,
+        recursive: true,       // Ordner automatisch anlegen
       });
 
       alert('Export gespeichert:\n' + result.uri);
@@ -683,7 +685,7 @@ export default function App() {
     }
   };
 
-  // Report-Spezial-Return
+  // Report-View
   if (view === 'report') {
     return (
       <PrintReport
@@ -701,7 +703,7 @@ export default function App() {
   return (
     <div className="min-h-screen w-screen bg-slate-50 text-slate-800 font-sans pb-24">
       
-      {/* Verstecktes File-Input für Import */}
+      {/* verstecktes File-Input für Import */}
       <input
         type="file"
         ref={fileInputRef}

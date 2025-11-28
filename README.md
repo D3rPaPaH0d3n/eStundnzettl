@@ -1,16 +1,20 @@
-# React + Vite
+# Kogler Zeiterfassung
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[![Latest Release](https://img.shields.io/github/v/release/DEIN_USERNAME/DEIN_REPO_NAME?color=orange&label=Version)](https://github.com/DEIN_USERNAME/DEIN_REPO_NAME/releases)
 
-Currently, two official plugins are available:
+App zur digitalen Stundenerfassung.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+### 🚀 Neu in Version 2.0.1
+**Das Wichtigste auf einen Blick:**
+- **Auto-Backup:** Deine Daten werden jetzt täglich automatisch gesichert.
+- **Einfacher Zugriff:** Alle Dateien landen jetzt im Ordner "Dokumente".
+- **PDF-Fix:** Keine Fehler mehr beim Speichern von Berichten.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+[🔗 Hier geht's zum Download der App (APK)](https://github.com/DEIN_USERNAME/DEIN_REPO_NAME/releases/latest)
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Installation & Nutzung
+... (Hier deine normale Beschreibung)

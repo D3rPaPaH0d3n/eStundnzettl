@@ -3,7 +3,7 @@
 //  TEIL 1/4 – Imports + Konstanten + Helper
 // ---------------------------------------------
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Save,
   Trash2,
@@ -21,23 +21,22 @@ import {
   Plus,
   Settings,
   ArrowLeft,
-  User
-} from 'lucide-react';
+  User,
+} from "lucide-react";
 
-import { App as CapacitorApp } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 
 // ** Native DatePicker Plugin (Month-Year Mode) **
-import { DatePicker } from '@capacitor-community/date-picker';
+import { DatePicker } from "@capacitor-community/date-picker";
 
 // PDF Generator
-import html2pdf from 'html2pdf.js';
+import html2pdf from "html2pdf.js";
 
 // Logo
-import KoglerLogo from './assets/kogler_time_icon.png';
-
+import KoglerLogo from "./assets/kogler_time_icon.png";
 
 // -------------------------------------------------------
 // KONFIGURATION & DATEN
@@ -69,29 +68,27 @@ const WORK_CODES = [
   { id: 23, label: "23 - TÜV-Mängel" },
   { id: 24, label: "24 - Demontage" },
   { id: 25, label: "25 - Gerüstbau" },
+  { id: 190, label: "19 - An/Abreise" },
 
   // Neuer Code
-  { id: 70, label: "70 - Büro" }
+  { id: 70, label: "70 - Büro" },
 ];
 
+// Hilfs-Konstante für die Anzeige
+const HOLIDAY_LABEL = "Gesetzlicher Feiertag";
 
 // -------------------------------------------------------
-// FEIERTAGE + DATUMSFUNKTIONEN
+// FEIERTAGE (ÖSTERREICH) + DATUMSFUNKTIONEN
 // -------------------------------------------------------
 
-const getHolidays = (year) => {
-  const fixed = [
-    `${year}-01-01`,
-    `${year}-01-06`,
-    `${year}-05-01`,
-    `${year}-08-15`,
-    `${year}-10-26`,
-    `${year}-11-01`,
-    `${year}-12-08`,
-    `${year}-12-25`,
-    `${year}-12-26`,
-  ];
+const getHolidayData = (year) => {
+  const addDays = (date, days) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split("T")[0];
+  };
 
+  // Oster-Berechnung (Gauss)
   const a = year % 19;
   const b = Math.floor(year / 100);
   const c = year % 100;
@@ -109,21 +106,25 @@ const getHolidays = (year) => {
 
   const easterDate = new Date(year, month - 1, day);
 
-  const addDays = (date, days) => {
-    const d = new Date(date);
-    d.setDate(d.getDate() + days);
-    return d.toISOString().split('T')[0];
+  // Alle Feiertage in Österreich mit Namen
+  const holidays = {
+    [`${year}-01-01`]: "Neujahr",
+    [`${year}-01-06`]: "Heilige Drei Könige",
+    [addDays(easterDate, 1)]: "Ostermontag",
+    [`${year}-05-01`]: "Staatsfeiertag",
+    [addDays(easterDate, 39)]: "Christi Himmelfahrt",
+    [addDays(easterDate, 50)]: "Pfingstmontag",
+    [addDays(easterDate, 60)]: "Fronleichnam",
+    [`${year}-08-15`]: "Mariä Himmelfahrt",
+    [`${year}-10-26`]: "Nationalfeiertag",
+    [`${year}-11-01`]: "Allerheiligen",
+    [`${year}-12-08`]: "Mariä Empfängnis",
+    [`${year}-12-25`]: "Christtag",
+    [`${year}-12-26`]: "Stefanitag",
   };
 
-  return [
-    ...fixed,
-    addDays(easterDate, 1),
-    addDays(easterDate, 39),
-    addDays(easterDate, 50),
-    addDays(easterDate, 60)
-  ];
+  return holidays;
 };
-
 
 // -------------------------------------------------------
 // HELPER-FUNKTIONEN
@@ -133,19 +134,19 @@ const formatTime = (minutes) => {
   const abs = Math.max(0, Math.round(minutes));
   const h = Math.floor(abs / 60);
   const m = abs % 60;
-  return `${h}h ${m.toString().padStart(2, '0')}m`;
+  return `${h}h ${m.toString().padStart(2, "0")}m`;
 };
 
 const formatSignedTime = (minutes) => {
-  const sign = minutes > 0 ? '+' : minutes < 0 ? '-' : '';
+  const sign = minutes > 0 ? "+" : minutes < 0 ? "-" : "";
   const abs = Math.abs(Math.round(minutes));
   const h = Math.floor(abs / 60);
   const m = abs % 60;
-  return `${sign}${h}h ${m.toString().padStart(2, '0')}m`;
+  return `${sign}${h}h ${m.toString().padStart(2, "0")}m`;
 };
 
 const parseTime = (timeStr) => {
-  const [h, m] = timeStr.split(':').map(Number);
+  const [h, m] = timeStr.split(":").map(Number);
   return h * 60 + m;
 };
 
@@ -153,7 +154,9 @@ const generateTimeOptions = () => {
   const options = [];
   for (let h = 0; h < 24; h++) {
     for (let m = 0; m < 60; m += 15) {
-      options.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+      options.push(
+        `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+      );
     }
   }
   return options;
@@ -162,7 +165,7 @@ const generateTimeOptions = () => {
 const TIME_OPTIONS = generateTimeOptions();
 
 const getDayOfWeek = (dateStr) => {
-  const [y, m, d] = dateStr.split('-').map(Number);
+  const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y, m - 1, d).getDay();
 };
 
@@ -177,9 +180,8 @@ const getWeekNumber = (d) => {
   d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
 };
-
 
 // -------------------------------------------------------
 // Blob → Base64 für Filesystem
@@ -189,45 +191,57 @@ const blobToBase64 = (blob) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      const base64 = reader.result.split(',')[1];
+      const base64 = reader.result.split(",")[1];
       resolve(base64);
     };
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
 
-
 // -------------------------------------------------------
 // UI BASISKOMPONENTE
 // -------------------------------------------------------
 
 const Card = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden ${className}`}>
+  <div
+    className={`bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden ${className}`}
+  >
     {children}
   </div>
 );
+
 // ---------------------------------------------
-//  TEIL 2/4 – PrintReport Component
+//  TEIL 2/4 – PrintReport Component (FINAL V4)
 // ---------------------------------------------
 
 const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
-  const [filterMode, setFilterMode] = useState('month');
+  const [filterMode, setFilterMode] = useState("month");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // gefilterte Einträge (ganzer Monat oder nach KW)
+  // Helper: Saldo formatieren (+HHh MMm)
+  const formatSaldo = (minutes) => {
+    const sign = minutes > 0 ? "+" : minutes < 0 ? "-" : "";
+    const abs = Math.abs(Math.round(minutes));
+    const h = Math.floor(abs / 60);
+    const m = abs % 60;
+    return `${sign}${h}h ${m.toString().padStart(2, "0")}m`;
+  };
+
+  // Gefilterte Einträge
   const filteredEntries = useMemo(() => {
     let list =
-      filterMode === 'month'
+      filterMode === "month"
         ? [...entries]
-        : entries.filter((e) => getWeekNumber(new Date(e.date)) === Number(filterMode));
+        : entries.filter(
+            (e) => getWeekNumber(new Date(e.date)) === Number(filterMode)
+          );
 
     // Sortiert nach Datum + Startzeit
     list.sort((a, b) => {
       const da = new Date(a.date);
       const db = new Date(b.date);
       if (da.getTime() !== db.getTime()) return da - db;
-
-      return (a.start || '').localeCompare(b.start || '');
+      return (a.start || "").localeCompare(b.start || "");
     });
 
     return list;
@@ -238,42 +252,161 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
     return Array.from(w).sort((a, b) => a - b);
   }, [entries]);
 
+  // ---------------------------------------------
+  //  BERECHNUNGEN: TAGES- & GESAMTSALDO
+  // ---------------------------------------------
   const reportStats = useMemo(() => {
-    let work = 0;
+    let work = 0; // Bezahlt (Arbeit + Anreise)
     let vacation = 0;
     let sick = 0;
+    let holiday = 0;
+    let drive = 0; // Unbezahlt (Code 19)
 
+    // Zeitraum ermitteln für exakte Soll-Berechnung
+    let periodStart, periodEnd;
+
+    if (filteredEntries.length > 0) {
+      if (filterMode === "month") {
+        periodStart = new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth(),
+          1
+        );
+        periodEnd = new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth() + 1,
+          0
+        );
+      } else {
+        // KW Modus: Start/Ende der KW berechnen
+        const d = new Date(filteredEntries[0].date);
+        const day = d.getDay() || 7;
+        periodStart = new Date(d);
+        periodStart.setDate(d.getDate() - day + 1);
+        periodEnd = new Date(periodStart);
+        periodEnd.setDate(periodStart.getDate() + 6);
+      }
+    } else {
+      // Fallback falls keine Einträge
+      if (filterMode === "month") {
+        periodStart = new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth(),
+          1
+        );
+        periodEnd = new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth() + 1,
+          0
+        );
+      } else {
+        periodStart = new Date();
+        periodEnd = new Date();
+      }
+    }
+
+    // 1. IST-Zeiten summieren
     filteredEntries.forEach((e) => {
-      if (e.type === 'work') work += e.netDuration;
-      if (e.type === 'vacation') vacation += e.netDuration;
-      if (e.type === 'sick') sick += e.netDuration;
+      if (e.type === "work") {
+        if (e.code === 19) {
+          drive += e.netDuration;
+        } else {
+          work += e.netDuration;
+        }
+      }
+      if (e.type === "vacation") vacation += e.netDuration;
+      if (e.type === "sick") sick += e.netDuration;
+      if (e.type === "public_holiday") holiday += e.netDuration;
     });
+
+    const totalIst = work + vacation + sick + holiday;
+
+    // 2. SOLL-Zeit für den Zeitraum berechnen (Exakt wie in App)
+    let totalTarget = 0;
+    // Wir klonen das Startdatum, um die Loop nicht zu verfälschen
+    let loopDate = new Date(periodStart);
+    while (loopDate <= periodEnd) {
+      const dow = loopDate.getDay();
+      // Mo-Fr zählt zum Soll
+      if (dow >= 1 && dow <= 5) {
+        totalTarget += dow === 5 ? 270 : 510;
+      }
+      loopDate.setDate(loopDate.getDate() + 1);
+    }
 
     return {
       work,
       vacation,
       sick,
-      total: work + vacation + sick,
+      holiday,
+      drive,
+      totalIst,
+      totalTarget,
+      totalSaldo: totalIst - totalTarget,
     };
+  }, [filteredEntries, monthDate, filterMode]);
+
+  // ---------------------------------------------
+  //  HELPER FÜR TAGESGRUPPIERUNG (ZEBRA & SALDO)
+  // ---------------------------------------------
+  const dayMetaMap = useMemo(() => {
+    const map = {};
+    let currentDateStr = "";
+    let dayIndex = 0;
+    const sums = {};
+
+    // Summen bilden
+    filteredEntries.forEach((e) => {
+      if (!sums[e.date]) {
+        sums[e.date] = { totalMinutes: 0 };
+      }
+      // Code 19 (Unbezahlt) zählt nicht zum Tagessaldo
+      if (!(e.type === "work" && e.code === 19)) {
+        sums[e.date].totalMinutes += e.netDuration;
+      }
+    });
+
+    // Metadaten zuweisen
+    filteredEntries.forEach((e, idx) => {
+      if (e.date !== currentDateStr) {
+        dayIndex++;
+        currentDateStr = e.date;
+      }
+      const d = new Date(e.date);
+      const dow = d.getDay();
+      let target = 0;
+      if (dow >= 1 && dow <= 4) target = 510;
+      if (dow === 5) target = 270;
+
+      const nextEntry = filteredEntries[idx + 1];
+      const isLastOfDay = !nextEntry || nextEntry.date !== e.date;
+      const balance = sums[e.date].totalMinutes - target;
+
+      map[e.id] = {
+        dayIndex,
+        isEvenDay: dayIndex % 2 === 0,
+        showBalance: isLastOfDay && target > 0, // Nur Arbeitstage haben Saldo
+        balance: balance,
+      };
+    });
+    return map;
   }, [filteredEntries]);
 
   // ---------------------------------------------
-  //  PDF DOWNLOAD (JETZT in Directory.Data)
+  //  PDF GENERIERUNG
   // ---------------------------------------------
   const handleDownloadPdf = async () => {
     try {
       setIsGenerating(true);
-
-      const element = document.getElementById('report-to-print');
+      const element = document.getElementById("report-to-print");
       if (!element) {
-        alert('PDF-Element nicht gefunden.');
+        alert("PDF-Element nicht gefunden.");
         setIsGenerating(false);
         return;
       }
 
-      // Zeitraum nur für Dateiname
       let start, end;
-      if (filterMode === 'month') {
+      if (filterMode === "month") {
         start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
         end = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
       } else {
@@ -289,37 +422,35 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
           end = new Date();
         }
       }
-
-      const f2 = (d) => String(d.getDate()).padStart(2, '0');
-      const fDate = (d) => `${f2(d)}_${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const f2 = (d) => String(d.getDate()).padStart(2, "0");
+      const fDate = (d) =>
+        `${f2(d)}_${String(d.getMonth() + 1).padStart(2, "0")}`;
       const periodStr = `${fDate(start)}_bis_${f2(end)}`;
-
-      const safeName = (employeeName || 'Mitarbeiter').trim().replace(/\s+/g, '_');
+      const safeName = (employeeName || "Mitarbeiter")
+        .trim()
+        .replace(/\s+/g, "_");
       const filename = `${safeName}_Stundenzettel_${periodStr}.pdf`;
 
       const opt = {
         margin: 0,
         filename,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: { type: "jpeg", quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       };
 
       const worker = html2pdf().set(opt).from(element);
 
-      // Web-Fallback
       if (!Capacitor.isNativePlatform()) {
         await worker.save();
-        alert('PDF als Browser-Download erstellt.');
+        alert("PDF als Browser-Download erstellt.");
         setIsGenerating(false);
         return;
       }
 
-      // Native:
-      const pdfBlob = await worker.output('blob');
+      const pdfBlob = await worker.output("blob");
       const base64 = await blobToBase64(pdfBlob);
-
-      const writeResult = await Filesystem.writeFile({
+      await Filesystem.writeFile({
         path: filename,
         data: base64,
         directory: Directory.Data,
@@ -334,45 +465,44 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
         });
         shareUrl = uriResult.uri || uriResult.path;
       } catch (err) {
-        shareUrl = writeResult.uri || writeResult.path;
+        shareUrl = null;
       }
 
       if (shareUrl) {
-        try {
-          await Share.share({
-            title: 'Stundenzettel teilen',
-            text: `Stundenzettel ${periodStr}`,
-            url: shareUrl,
-            dialogTitle: 'PDF teilen',
-          });
-        } catch (err) {
-          alert(`PDF gespeichert, aber Teilen fehlgeschlagen.\n${filename}`);
-        }
+        await Share.share({
+          title: "Stundenzettel teilen",
+          text: `Stundenzettel ${periodStr}`,
+          url: shareUrl,
+        });
       } else {
-        alert(`PDF gespeichert, aber keine URL verfügbar.\n${filename}`);
+        alert("PDF gespeichert.");
       }
     } catch (err) {
       console.error(err);
-      alert('Fehler beim Erstellen der PDF.');
+      alert("Fehler beim Erstellen der PDF.");
     } finally {
       setIsGenerating(false);
     }
   };
 
   // ---------------------------------------------
-  //  REPORT UI
+  //  UI RENDER
   // ---------------------------------------------
   return (
     <div className="fixed inset-0 bg-slate-800 z-50 overflow-y-auto">
       {/* TOPBAR */}
       <div className="sticky top-0 bg-slate-900 text-white p-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-xl z-50">
         <div className="flex items-center gap-4 w-full">
-          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-full">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-700 rounded-full"
+          >
             <X />
           </button>
-          <h2 className="font-bold flex-1 text-center mr-10 text-xl">Berichtsvorschau</h2>
+          <h2 className="font-bold flex-1 text-center mr-10 text-xl">
+            Berichtsvorschau
+          </h2>
         </div>
-
         <div className="flex gap-2 items-center flex-wrap justify-center w-full">
           <select
             value={filterMode}
@@ -386,14 +516,17 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
               </option>
             ))}
           </select>
-
           <button
             onClick={handleDownloadPdf}
             disabled={isGenerating}
             className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 text-base"
           >
-            {isGenerating ? <Loader className="animate-spin" size={18} /> : <Download size={18} />}
-            {isGenerating ? 'Erstelle...' : 'PDF'}
+            {isGenerating ? (
+              <Loader className="animate-spin" size={18} />
+            ) : (
+              <Download size={18} />
+            )}
+            {isGenerating ? "Erstelle..." : "PDF"}
           </button>
         </div>
       </div>
@@ -410,86 +543,135 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
               <h1 className="text-2xl font-bold uppercase tracking-wide text-slate-900">
                 Stundenzettel
               </h1>
-              <p className="text-sm font-bold text-slate-500 mt-1">Kogler Aufzugsbau</p>
+              <p className="text-sm font-bold text-slate-500 mt-1">
+                Kogler Aufzugsbau
+              </p>
             </div>
-
             <div className="text-right">
               <p className="font-medium">Mitarbeiter: {employeeName}</p>
               <p className="text-slate-500 text-sm">
                 Zeitraum:{" "}
-                {monthDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
-                {filterMode !== 'month' && ` (KW ${filterMode})`}
+                {monthDate.toLocaleDateString("de-DE", {
+                  month: "long",
+                  year: "numeric",
+                })}
+                {filterMode !== "month" && ` (KW ${filterMode})`}
               </p>
             </div>
           </div>
 
           {/* TABLE */}
-          <table className="w-full text-sm text-left mb-8">
+          <table className="w-full text-sm text-left mb-8 border-collapse">
             <thead>
-              <tr className="border-b border-slate-300 text-slate-500 uppercase text-xs">
-                <th className="py-2 w-24">Datum</th>
-                <th className="py-2 w-32">Zeit</th>
+              <tr className="border-b-2 border-slate-800 text-slate-500 uppercase text-xs">
+                <th className="py-2 w-20">Datum</th>
+                <th className="py-2 w-28">Zeit</th>
                 <th className="py-2">Projekt</th>
-                <th className="py-2 w-24">Code</th>
+                <th className="py-2 w-20">Code</th>
                 <th className="py-2 w-16 text-right">Std.</th>
+                <th className="py-2 w-16 text-right">Saldo</th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="">
               {filteredEntries.map((e) => {
                 const d = new Date(e.date);
-                const wd = d.toLocaleDateString('de-DE', { weekday: 'short' }).slice(0, 2);
-                const ds = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                const wd = d
+                  .toLocaleDateString("de-DE", { weekday: "short" })
+                  .slice(0, 2);
+                const ds = d.toLocaleDateString("de-DE", {
+                  day: "2-digit",
+                  month: "2-digit",
+                });
+                const meta = dayMetaMap[e.id] || {};
+
+                let rowStyle = {};
+                let rowClass = "break-inside-avoid border-b border-slate-100";
+                if (e.type === "public_holiday") {
+                  rowClass += " bg-blue-100/50";
+                } else if (meta.isEvenDay) {
+                  rowStyle = { backgroundColor: "#f8faff" };
+                }
+
+                let projectText = "";
+                let codeText = "";
+                let durationDisplay = formatTime(e.netDuration);
+                let durationClass =
+                  "py-2 text-right font-bold align-top text-slate-900";
+                let timeCellContent = null;
+
+                if (e.type === "work") {
+                  projectText = e.project;
+                  codeText =
+                    WORK_CODES.find((c) => c.id === e.code)?.label || "";
+                  if (e.code === 19) {
+                    durationDisplay = "-";
+                    durationClass =
+                      "py-2 text-right font-medium align-top text-slate-400";
+                  }
+                  const pauseText =
+                    e.pause > 0 ? `Pause: ${e.pause}m` : "Keine Pause";
+                  const pauseClass =
+                    e.pause > 0 ? "text-slate-500" : "text-slate-400 italic";
+
+                  timeCellContent = (
+                    <div className="flex flex-col justify-start">
+                      <span className="font-bold text-slate-800 leading-tight">
+                        {e.start} – {e.end}
+                      </span>
+                      <span
+                        className={`text-[10px] uppercase tracking-wide mt-0.5 ${pauseClass}`}
+                      >
+                        {pauseText}
+                      </span>
+                    </div>
+                  );
+                } else if (e.type === "public_holiday") {
+                  timeCellContent = (
+                    <span className="font-bold text-slate-800">Feiertag</span>
+                  );
+                  projectText = e.project || "Gesetzlicher Feiertag";
+                  durationClass =
+                    "py-2 text-right font-bold align-top text-blue-800";
+                } else {
+                  timeCellContent = <span className="text-slate-400">-</span>;
+                  projectText = e.type === "vacation" ? "Urlaub" : "Krank";
+                }
 
                 return (
-                  <tr key={e.id} className="hover:bg-slate-50 break-inside-avoid">
-                    {/* Datum + Wochentag */}
-                    <td className="py-2 font-medium align-top">
+                  <tr key={e.id} className={rowClass} style={rowStyle}>
+                    <td className="py-2 pl-2 font-medium align-top">
                       <span className="font-bold">{wd}</span>{" "}
                       <span className="text-slate-600">{ds}</span>
                     </td>
-
-                    {/* Zeiten */}
+                    <td className="py-2 align-top">{timeCellContent}</td>
                     <td className="py-2 align-top">
-                      {e.type === 'work' ? (
-                        <>
-                          <span className="font-bold text-slate-800 text-base leading-tight">
-                            {e.start} – {e.end}
-                          </span>
-                          {e.pause > 0 && (
-                            <span className="block text-xs text-slate-500 mt-0.5">
-                              Pause {e.pause}m
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        '-'
-                      )}
+                      <span
+                        className={`font-medium ${
+                          e.type === "public_holiday"
+                            ? "text-blue-800"
+                            : "text-slate-700"
+                        }`}
+                      >
+                        {projectText}
+                      </span>
                     </td>
-
-                    {/* Projekt */}
-                    <td className="py-2 align-top">
-                      {e.type === 'work' ? (
-                        <div>
-                          <span className="font-medium text-slate-700">{e.project}</span>
-                        </div>
-                      ) : (
-                        <span className="italic text-slate-500">
-                          {e.type === 'vacation' ? 'Urlaub' : 'Krank'}
+                    <td className="py-2 align-top text-xs text-slate-500">
+                      {codeText}
+                    </td>
+                    <td className={durationClass}>{durationDisplay}</td>
+                    <td className="py-2 pr-2 text-right align-top font-bold text-xs">
+                      {meta.showBalance ? (
+                        <span
+                          className={
+                            meta.balance >= 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          {formatSaldo(meta.balance)}
                         </span>
-                      )}
-                    </td>
-
-                    {/* Code */}
-                    <td className="py-2 align-top font-bold text-xs">
-                      {e.type === 'work'
-                        ? WORK_CODES.find((c) => c.id === e.code)?.label
-                        : ''}
-                    </td>
-
-                    {/* Std. */}
-                    <td className="py-2 text-right font-bold align-top">
-                      {formatTime(e.netDuration)}
+                      ) : null}
                     </td>
                   </tr>
                 );
@@ -505,21 +687,61 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
               </h3>
 
               <div className="flex justify-between text-sm mb-1">
-                <span>Arbeitszeit:</span>
-                <span className="font-bold">{formatTime(reportStats.work)}</span>
+                <span>Arbeitszeit (inkl. Anreise):</span>
+                <span className="font-bold">
+                  {formatTime(reportStats.work)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm mb-1 text-blue-700">
+                <span>Feiertage:</span>
+                <span className="font-bold">
+                  {formatTime(reportStats.holiday)}
+                </span>
               </div>
               <div className="flex justify-between text-sm mb-1 text-blue-700">
                 <span>Urlaub:</span>
-                <span className="font-bold">{formatTime(reportStats.vacation)}</span>
+                <span className="font-bold">
+                  {formatTime(reportStats.vacation)}
+                </span>
               </div>
               <div className="flex justify-between text-sm mb-1 text-red-700">
                 <span>Krankenstand:</span>
-                <span className="font-bold">{formatTime(reportStats.sick)}</span>
+                <span className="font-bold">
+                  {formatTime(reportStats.sick)}
+                </span>
               </div>
 
+              {reportStats.drive > 0 && (
+                <div className="flex justify-between text-sm mb-1 text-slate-400 italic mt-2">
+                  <span>Fahrtzeit (unbezahlt):</span>
+                  <span>{formatTime(reportStats.drive)}</span>
+                </div>
+              )}
+
+              {/* GESAMT IST */}
               <div className="flex justify-between text-base mt-2 pt-2 border-t border-slate-300 font-bold">
-                <span>Gesamt:</span>
-                <span>{formatTime(reportStats.total)}</span>
+                <span>Gesamt (IST):</span>
+                <span>{formatTime(reportStats.totalIst)}</span>
+              </div>
+
+              {/* SOLL */}
+              <div className="flex justify-between text-sm mt-1 text-slate-500 font-medium">
+                <span>Sollzeit (SOLL):</span>
+                <span>{formatTime(reportStats.totalTarget)}</span>
+              </div>
+
+              {/* SALDO */}
+              <div className="flex justify-between text-base mt-2 pt-2 border-t border-slate-300 font-bold">
+                <span>Saldo:</span>
+                <span
+                  className={
+                    reportStats.totalSaldo >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }
+                >
+                  {formatSaldo(reportStats.totalSaldo)}
+                </span>
               </div>
             </div>
           </div>
@@ -528,6 +750,7 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
     </div>
   );
 };
+
 // ---------------------------------------------
 //  TEIL 3/4 – MAIN APP COMPONENT
 // ---------------------------------------------
@@ -537,23 +760,23 @@ export default function App() {
   //  LOCAL STORAGE STATE
   // -------------------------------------------------
   const [entries, setEntries] = useState(() => {
-    const saved = localStorage.getItem('kogler_entries');
+    const saved = localStorage.getItem("kogler_entries");
     return saved ? JSON.parse(saved) : [];
   });
 
   const [userData, setUserData] = useState(() => {
-    const saved = localStorage.getItem('kogler_user');
+    const saved = localStorage.getItem("kogler_user");
     return saved ? JSON.parse(saved) : { name: "Markus Mustermann" };
   });
 
   // Theme – Dark/System disabled, Hell aktiv
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('kogler_theme');
-    return saved || 'light';
+    const saved = localStorage.getItem("kogler_theme");
+    return saved || "light";
   });
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState('dashboard');
+  const [view, setView] = useState("dashboard");
   const [editingEntry, setEditingEntry] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -561,9 +784,9 @@ export default function App() {
   //  BACK BUTTON HANDLING (Android)
   // -------------------------------------------------
   useEffect(() => {
-    const handler = CapacitorApp.addListener('backButton', () => {
-      if (view !== 'dashboard') {
-        setView('dashboard');
+    const handler = CapacitorApp.addListener("backButton", () => {
+      if (view !== "dashboard") {
+        setView("dashboard");
         setEditingEntry(null);
       } else {
         CapacitorApp.exitApp();
@@ -572,24 +795,24 @@ export default function App() {
     return () => handler.remove();
   }, [view]);
 
-
   // -------------------------------------------------
   //  THEME (nur Hell erlaubt)
   // -------------------------------------------------
   useEffect(() => {
-    localStorage.setItem('kogler_theme', theme);
+    localStorage.setItem("kogler_theme", theme);
     const root = document.documentElement;
-    root.classList.remove('dark');
+    root.classList.remove("dark");
   }, [theme]);
 
   const isDark = false; // DarkMode deaktiviert
 
-
   // -------------------------------------------------
   //  FORM STATES
   // -------------------------------------------------
-  const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
-  const [entryType, setEntryType] = useState('work');
+  const [formDate, setFormDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [entryType, setEntryType] = useState("work");
   const [startTime, setStartTime] = useState("06:00");
   const [endTime, setEndTime] = useState("16:30");
   const [project, setProject] = useState("");
@@ -597,35 +820,82 @@ export default function App() {
   const [pauseDuration, setPauseDuration] = useState(30);
 
   useEffect(() => {
-    localStorage.setItem('kogler_entries', JSON.stringify(entries));
+    localStorage.setItem("kogler_entries", JSON.stringify(entries));
   }, [entries]);
 
   useEffect(() => {
-    localStorage.setItem('kogler_user', JSON.stringify(userData));
+    localStorage.setItem("kogler_user", JSON.stringify(userData));
   }, [userData]);
 
   // -------------------------------------------------
-  //  MONATSANSICHT
+  //  MONATSANSICHT & FEIERTAGS-INJEKTION
   // -------------------------------------------------
   const viewYear = currentDate.getFullYear();
   const viewMonth = currentDate.getMonth();
 
-  const entriesInMonth = useMemo(() => {
-    return entries
-      .filter((e) => {
-        const d = new Date(e.date);
-        return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
-      })
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [entries, viewYear, viewMonth]);
+  // 1. Feiertags-Daten holen (Map: Datum -> Name)
+  const holidayMap = useMemo(() => getHolidayData(viewYear), [viewYear]);
+
+  // Array von Datums-Strings für einfache Checks (z.B. includes)
+  const holidays = useMemo(() => Object.keys(holidayMap), [holidayMap]);
+
+  // 2. Alle Einträge des Monats + Automatische Feiertage
+  const entriesWithHolidays = useMemo(() => {
+    // A) Echte Einträge filtern
+    const realEntries = entries.filter((e) => {
+      const d = new Date(e.date);
+      return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
+    });
+
+    // B) Feiertage als "virtuelle Einträge" generieren
+    const holidayEntries = [];
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(
+        2,
+        "0"
+      )}-${String(d).padStart(2, "0")}`;
+
+      // Ist es ein Feiertag?
+      if (holidays.includes(dateStr)) {
+        const dow = getDayOfWeek(dateStr);
+        // Nur Mo-Fr (Wochenende ignorieren wir)
+        if (dow >= 1 && dow <= 5) {
+          // Hier holen wir uns den echten Namen aus der Map!
+          const holidayName = holidayMap[dateStr] || "Gesetzlicher Feiertag";
+
+          holidayEntries.push({
+            id: `auto-holiday-${dateStr}`,
+            type: "public_holiday",
+            date: dateStr,
+            start: null,
+            end: null,
+            pause: 0,
+            project: holidayName, // <--- Der Name wird als Projekt eingetragen
+            code: null,
+            netDuration: dow === 5 ? 270 : 510,
+          });
+        }
+      }
+    }
+
+    // C) Zusammenfügen & Sortieren
+    return [...realEntries, ...holidayEntries].sort((a, b) => {
+      const da = new Date(a.date);
+      const db = new Date(b.date);
+      if (da.getTime() !== db.getTime()) return db - da;
+      return 0;
+    });
+  }, [entries, viewYear, viewMonth, holidays, holidayMap]);
 
   // -------------------------------------------------
-  //  KW Gruppierung
+  //  KW Gruppierung (Basierend auf der neuen Liste!)
   // -------------------------------------------------
   const groupedByWeek = useMemo(() => {
     const map = new Map();
 
-    entriesInMonth.forEach((e) => {
+    entriesWithHolidays.forEach((e) => {
       const w = getWeekNumber(new Date(e.date));
       if (!map.has(w)) map.set(w, []);
       map.get(w).push(e);
@@ -636,11 +906,9 @@ export default function App() {
       list.sort((a, b) => new Date(b.date) - new Date(a.date));
     });
 
-    // absteigend nach KW
     arr.sort((a, b) => b[0] - a[0]);
     return arr;
-  }, [entriesInMonth]);
-
+  }, [entriesWithHolidays]);
 
   // -------------------------------------------------
   //  KW standardmäßig eingeklappt
@@ -652,7 +920,6 @@ export default function App() {
     setExpandedWeeks(collapsed);
   }, [viewMonth, viewYear]);
 
-
   // -------------------------------------------------
   //  Monat wechseln Buttons
   // -------------------------------------------------
@@ -662,18 +929,17 @@ export default function App() {
     setCurrentDate(d);
   };
 
-
   // -------------------------------------------------
   //  **Native Month-Year Picker**
   // -------------------------------------------------
   const openMonthPicker = async () => {
     try {
       const result = await DatePicker.present({
-        mode: 'date',
-        locale: 'de-AT',
-        theme: 'light',
-        format: 'yyyy-MM',
-        presentation: 'date',
+        mode: "date",
+        locale: "de-AT",
+        theme: "light",
+        format: "yyyy-MM",
+        presentation: "date",
         // Month-Year-Modus: wir ignorieren "day"
       });
 
@@ -687,45 +953,60 @@ export default function App() {
     }
   };
 
-
   // -------------------------------------------------
-  //  ZIELZEITEN BERECHNEN
+  //  ZIELZEITEN BERECHNEN (INKL. FEIERTAGSGUTSCHRIFT)
   // -------------------------------------------------
-  const holidays = useMemo(() => getHolidays(viewYear), [viewYear]);
 
   const stats = useMemo(() => {
-    let actualMinutes = 0;   // echte Arbeitszeit (ohne Fahrzeit)
-    let driveMinutes = 0;    // nur Fahrzeit (Code 19)
+    let actualMinutes = 0;
+    let driveMinutes = 0;
+    let holidayMinutes = 0;
 
-    entriesInMonth.forEach((e) => {
-      if (e.type === 'work' && e.code === 19) {
-        driveMinutes += e.netDuration;
+    // Wir iterieren über die NEUE Liste (die auch die Feiertage enthält)
+    entriesWithHolidays.forEach((e) => {
+      if (e.type === "work") {
+        if (e.code === 19) {
+          // Reine Fahrzeit (Code 19) -> zählt nicht zum Soll/Ist
+          driveMinutes += e.netDuration;
+        } else {
+          // Normale Arbeit (inkl. An/Abreise Code 190)
+          actualMinutes += e.netDuration;
+        }
+      } else if (e.type === "public_holiday") {
+        // Feiertag aus der Liste zählen
+        holidayMinutes += e.netDuration;
       } else {
+        // Urlaub / Krank -> zählt als Arbeitszeit
         actualMinutes += e.netDuration;
       }
     });
 
+    // Soll berechnen (für den ganzen Monat)
+    // Da Feiertage jetzt als "Eintrag" existieren (IST-Zeit),
+    // bleibt das SOLL für jeden Wochentag ganz normal bestehen (38,5h Woche).
     const days = new Date(viewYear, viewMonth + 1, 0).getDate();
     let targetMinutes = 0;
 
     for (let d = 1; d <= days; d++) {
-      const ds = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const dow = getDayOfWeek(ds);
-      if (!holidays.includes(ds) && dow !== 0 && dow !== 6) {
+      const checkDate = new Date(viewYear, viewMonth, d);
+      const dow = checkDate.getDay();
+      // Mo(1) bis Fr(5) zählen zum Soll
+      if (dow >= 1 && dow <= 5) {
         targetMinutes += dow === 5 ? 270 : 510;
       }
     }
 
-    return { actualMinutes, targetMinutes, driveMinutes };
-  }, [entriesInMonth, viewYear, viewMonth, holidays]);
+    return { actualMinutes, targetMinutes, driveMinutes, holidayMinutes };
+  }, [entriesWithHolidays, viewYear, viewMonth]);
 
+  // Saldo berechnen: (Echte Arbeit + Feiertagsstunden) - Soll
+  const totalCredited = stats.actualMinutes + stats.holidayMinutes;
+  const overtime = totalCredited - stats.targetMinutes;
 
-  const overtime = stats.actualMinutes - stats.targetMinutes;
   const progressPercent = Math.min(
     100,
-    (stats.actualMinutes / (stats.targetMinutes || 1)) * 100
+    (totalCredited / (stats.targetMinutes || 1)) * 100
   );
-
 
   // -------------------------------------------------
   //  EINTRAG ERSTELLEN + SPEICHERN
@@ -733,34 +1014,34 @@ export default function App() {
   const changeDate = (days) => {
     const d = new Date(formDate);
     d.setDate(d.getDate() + days);
-    setFormDate(d.toISOString().split('T')[0]);
+    setFormDate(d.toISOString().split("T")[0]);
   };
 
   const startNewEntry = () => {
     setEditingEntry(null);
-    setEntryType('work');
-    setFormDate(new Date().toISOString().split('T')[0]);
+    setEntryType("work");
+    setFormDate(new Date().toISOString().split("T")[0]);
     setStartTime("06:00");
     setEndTime("16:30");
     setPauseDuration(30);
     setProject("");
     setCode(WORK_CODES[0].id);
-    setView('add');
+    setView("add");
   };
 
   const startEdit = (entry) => {
     setEditingEntry(entry);
 
-    const isDrive = entry.type === 'work' && entry.code === 19;
-    const effectiveType = isDrive ? 'drive' : entry.type;
+    const isDrive = entry.type === "work" && entry.code === 19;
+    const effectiveType = isDrive ? "drive" : entry.type;
 
     setEntryType(effectiveType);
     setFormDate(entry.date);
 
-    if (entry.type === 'work') {
+    if (entry.type === "work") {
       setStartTime(entry.start || "06:00");
       setEndTime(entry.end || "16:30");
-      setPauseDuration(isDrive ? 0 : (entry.pause ?? 0));
+      setPauseDuration(isDrive ? 0 : entry.pause ?? 0);
       setCode(entry.code ?? WORK_CODES[0].id);
       setProject(entry.project || "");
     } else {
@@ -768,19 +1049,18 @@ export default function App() {
       setProject("");
     }
 
-    setView('add');
+    setView("add");
   };
-
 
   const saveEntry = (e) => {
     e.preventDefault();
 
-    const isDrive = entryType === 'drive';
+    const isDrive = entryType === "drive";
 
     let net = 0;
     let label = "";
 
-    if (entryType === 'work' || isDrive) {
+    if (entryType === "work" || isDrive) {
       const startMin = parseTime(startTime);
       const endMin = parseTime(endTime);
 
@@ -800,7 +1080,7 @@ export default function App() {
     } else {
       // Urlaub / Krank
       net = getTargetMinutesForDate(formDate);
-      label = entryType === 'vacation' ? "Urlaub" : "Krank";
+      label = entryType === "vacation" ? "Urlaub" : "Krank";
     }
 
     if (net < 0) net = 0;
@@ -808,8 +1088,7 @@ export default function App() {
     // Fahrtzeit wird als "work" gespeichert, aber mit Code 19 & Pause 0
     const storedType = isDrive ? "work" : entryType;
     const usedCode = isDrive ? 19 : code;
-    const usedPause =
-      storedType === "work" ? (isDrive ? 0 : pauseDuration) : 0;
+    const usedPause = storedType === "work" ? (isDrive ? 0 : pauseDuration) : 0;
 
     const newEntry = {
       id: editingEntry ? editingEntry.id : Date.now(),
@@ -859,16 +1138,16 @@ export default function App() {
 
       // Web fallback
       if (!Capacitor.isNativePlatform()) {
-        const blob = new Blob([json], { type: 'application/json' });
+        const blob = new Blob([json], { type: "application/json" });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
         a.download = fileName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        alert('Export als Browser-Download erstellt.');
+        alert("Export als Browser-Download erstellt.");
         return;
       }
 
@@ -890,12 +1169,12 @@ export default function App() {
       } catch (err) {}
 
       await Share.share({
-        title: 'Zeiterfassung exportieren',
-        text: 'Exportierte Zeiterfassungsdaten',
+        title: "Zeiterfassung exportieren",
+        text: "Exportierte Zeiterfassungsdaten",
         url: shareUrl,
       });
     } catch (err) {
-      alert('Fehler beim Export.');
+      alert("Fehler beim Export.");
     }
   };
 
@@ -910,34 +1189,32 @@ export default function App() {
         if (Array.isArray(data.entries)) setEntries(data.entries);
         if (data.user) setUserData(data.user);
 
-        alert('Daten erfolgreich importiert.');
+        alert("Daten erfolgreich importiert.");
       } catch (err) {
-        alert('Import fehlgeschlagen.');
+        alert("Import fehlgeschlagen.");
       } finally {
-        event.target.value = '';
+        event.target.value = "";
       }
     };
 
-    reader.readAsText(file, 'utf-8');
+    reader.readAsText(file, "utf-8");
   };
 
   const triggerImport = () => fileInputRef.current?.click();
 
-
   // -------------------------------------------------
   //  BERICHTS-VIEW
   // -------------------------------------------------
-  if (view === 'report') {
+  if (view === "report") {
     return (
       <PrintReport
-        entries={entriesInMonth}
+        entries={entriesWithHolidays}
         monthDate={currentDate}
         employeeName={userData.name}
-        onClose={() => setView('dashboard')}
+        onClose={() => setView("dashboard")}
       />
     );
   }
-
 
   // -------------------------------------------------
   //  DASHBOARD
@@ -958,14 +1235,14 @@ export default function App() {
       {/* HEADER */}
       <header
         className="bg-slate-900 text-white p-4 pb-4 shadow-lg sticky top-0 z-10 w-full"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
       >
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
-            {view !== 'dashboard' ? (
+            {view !== "dashboard" ? (
               <button
                 onClick={() => {
-                  setView('dashboard');
+                  setView("dashboard");
                   setEditingEntry(null);
                 }}
                 className="p-1 hover:bg-slate-700 rounded-full"
@@ -974,30 +1251,34 @@ export default function App() {
               </button>
             ) : (
               <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center bg-slate-900">
-                <img src={KoglerLogo} alt="Kogler Zeit" className="w-full h-full object-contain" />
+                <img
+                  src={KoglerLogo}
+                  alt="Kogler Zeit"
+                  className="w-full h-full object-contain"
+                />
               </div>
             )}
 
             <div>
               <h1 className="font-bold text-lg leading-tight">Stundenzettel</h1>
-              {view === 'dashboard' && (
+              {view === "dashboard" && (
                 <p className="text-xs text-slate-400">Kogler Aufzugsbau</p>
               )}
             </div>
           </div>
 
           {/* Settings & Report */}
-          {view === 'dashboard' && (
+          {view === "dashboard" && (
             <div className="flex gap-2">
               <button
-                onClick={() => setView('settings')}
+                onClick={() => setView("settings")}
                 className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
               >
                 <Settings size={18} className="text-slate-300" />
               </button>
 
               <button
-                onClick={() => setView('report')}
+                onClick={() => setView("report")}
                 className="bg-orange-500 hover:bg-orange-600 p-2 rounded-lg transition-colors flex items-center justify-center shadow-md"
               >
                 <FileBarChart size={18} className="text-white" />
@@ -1010,27 +1291,38 @@ export default function App() {
       {/* ----------------------------- */}
       {/* DASHBOARD CONTENT */}
       {/* ----------------------------- */}
-      {view === 'dashboard' && (
+      {view === "dashboard" && (
         <main className="w-full p-3 space-y-4">
-
           {/* MONTH SELECTOR */}
           <div
             className="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-2 shadow-sm active:scale-[0.98] transition-transform cursor-pointer"
             onClick={openMonthPicker}
           >
             <button className="p-2 hover:bg-slate-100 rounded-lg">
-              <ChevronLeft size={20} onClick={(e) => { e.stopPropagation(); changeMonth(-1); }} />
+              <ChevronLeft
+                size={20}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  changeMonth(-1);
+                }}
+              />
             </button>
 
             <span className="font-bold text-slate-700 text-base">
-              {currentDate.toLocaleDateString('de-DE', {
-                month: 'long',
-                year: 'numeric',
+              {currentDate.toLocaleDateString("de-DE", {
+                month: "long",
+                year: "numeric",
               })}
             </span>
 
             <button className="p-2 hover:bg-slate-100 rounded-lg">
-              <ChevronRight size={20} onClick={(e) => { e.stopPropagation(); changeMonth(1); }} />
+              <ChevronRight
+                size={20}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  changeMonth(1);
+                }}
+              />
             </button>
           </div>
 
@@ -1059,7 +1351,11 @@ export default function App() {
                 </div>
 
                 {/* SALDO */}
-                <div className={`text-right ${overtime >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                <div
+                  className={`text-right ${
+                    overtime >= 0 ? "text-green-600" : "text-orange-600"
+                  }`}
+                >
                   <p className="text-[10px] font-bold uppercase">Saldo</p>
                   <p className="font-bold text-lg">
                     {formatSignedTime(overtime)}
@@ -1071,7 +1367,7 @@ export default function App() {
               <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                 <div
                   className={`h-2 rounded-full transition-all duration-500 ${
-                    overtime >= 0 ? 'bg-green-500' : 'bg-orange-500'
+                    overtime >= 0 ? "bg-green-500" : "bg-orange-500"
                   }`}
                   style={{ width: `${progressPercent}%` }}
                 ></div>
@@ -1086,10 +1382,8 @@ export default function App() {
                   </span>
                 </div>
               )}
-
             </div>
           </Card>
-
 
           {/* KW LIST */}
           <div className="space-y-3 pb-20">
@@ -1104,48 +1398,54 @@ export default function App() {
               </div>
             ) : (
               groupedByWeek.map(([week, weekEntries]) => {
-                let workMinutes = 0;      // echte Arbeit (ohne Fahrzeit)
-                let driveMinutesKW = 0;   // Fahrzeit dieser Woche
+                // 1. ARBEITSZEIT BERECHNEN (Jetzt viel einfacher!)
+                let workMinutes = 0; // Alles was zählt (Arbeit + Urlaub + Krank + Feiertag)
+                let driveMinutesKW = 0;
 
                 weekEntries.forEach((e) => {
-                  if (e.type === 'work' && e.code === 19) {
+                  // Fahrzeit Code 19 ignorieren wir für die Summe
+                  if (e.type === "work" && e.code === 19) {
                     driveMinutesKW += e.netDuration;
                   } else {
+                    // Alles andere (inkl. public_holiday) zählt zum IST
                     workMinutes += e.netDuration;
                   }
                 });
 
-                // Eine Referenz auf ein Datum dieser Woche
+                // Dynamisches Soll berechnen (wie vorhin besprochen)
                 const anyDate = new Date(weekEntries[0].date);
-                const weekday = anyDate.getDay() || 7;
-
+                const currentDay = anyDate.getDay() || 7;
                 const monday = new Date(anyDate);
-                monday.setDate(anyDate.getDate() - (weekday - 1));
-
+                monday.setDate(anyDate.getDate() - (currentDay - 1));
                 const sunday = new Date(monday);
                 sunday.setDate(monday.getDate() + 6);
 
-// Fixes Wochensoll: 38,5h
-const targetKW = 38.5 * 60; // 2310 Minuten
+                // Soll berechnen (Nur Tage im Monat zählen)
+                let dynamicTargetMinutes = 0;
+                for (let i = 0; i < 5; i++) {
+                  const checkDate = new Date(monday);
+                  checkDate.setDate(monday.getDate() + i);
+                  if (
+                    checkDate.getMonth() === viewMonth &&
+                    checkDate.getFullYear() === viewYear
+                  ) {
+                    // Feiertage erhöhen AUCH das Soll (werden durch den Eintrag ausgeglichen)
+                    dynamicTargetMinutes += i === 4 ? 270 : 510;
+                  }
+                }
 
-const diff = workMinutes - targetKW;
-
+                const diff = workMinutes - dynamicTargetMinutes;
                 const expanded = expandedWeeks[week];
 
-            const sortedWeekEntries = [...weekEntries].sort((a, b) => {
-              const da = new Date(a.date);
-              const db = new Date(b.date);
-
-              // 1. Nach Datum: neuere Tage zuerst (wie bisher)
-              if (da.getTime() !== db.getTime()) {
-                return db - da;
-              }
-
-              // 2. Innerhalb eines Tages nach Startzeit: früh → spät
-              const sa = a.start || '23:59';
-              const sb = b.start || '23:59';
-              return sa.localeCompare(sb);
-            });
+                // Tage gruppieren
+                const daysMap = new Map();
+                weekEntries.forEach((e) => {
+                  if (!daysMap.has(e.date)) daysMap.set(e.date, []);
+                  daysMap.get(e.date).push(e);
+                });
+                const sortedDays = Array.from(daysMap.entries()).sort(
+                  (a, b) => new Date(b[0]) - new Date(a[0])
+                );
 
                 return (
                   <div key={week} className="mb-3">
@@ -1153,7 +1453,10 @@ const diff = workMinutes - targetKW;
                     <button
                       className="w-full flex items-center justify-between bg-slate-100 hover:bg-slate-200 rounded-xl px-3 py-2 transition-colors"
                       onClick={() =>
-                        setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] }))
+                        setExpandedWeeks((prev) => ({
+                          ...prev,
+                          [week]: !prev[week],
+                        }))
                       }
                     >
                       <div className="flex flex-col text-left">
@@ -1161,134 +1464,200 @@ const diff = workMinutes - targetKW;
                           Kalenderwoche
                         </span>
                         <span className="font-bold text-slate-800">
-                          KW {week}{' '}
+                          KW {week}{" "}
                           <span className="text-xs text-slate-500 font-normal">
-                            ({monday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} –{' '}
-                            {sunday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })})
+                            (
+                            {monday.toLocaleDateString("de-DE", {
+                              day: "2-digit",
+                              month: "2-digit",
+                            })}{" "}
+                            –{" "}
+                            {sunday.toLocaleDateString("de-DE", {
+                              day: "2-digit",
+                              month: "2-digit",
+                            })}
+                            )
                           </span>
                         </span>
 
-                        {/* KW-Logik: Arbeitszeit + Diff, Fahrzeit extra */}
                         <div className="mt-1 text-sm flex flex-col gap-0.5">
-
                           <div className="flex gap-4 items-center">
-                            {/* Arbeitszeit (ohne Fahrzeit) */}
                             <span
                               className={`font-bold ${
-                                workMinutes >= 38.5 * 60 ? 'text-green-600' : 'text-red-600'
+                                workMinutes >= dynamicTargetMinutes
+                                  ? "text-green-600"
+                                  : "text-slate-700"
                               }`}
                             >
                               {formatTime(workMinutes)}
                             </span>
-
-                            {/* Fehlstunden / Überstunden */}
                             <span
                               className={`font-bold ${
-                                diff >= 0 ? 'text-green-600' : 'text-red-600'
+                                diff >= 0 ? "text-green-600" : "text-red-600"
                               }`}
                             >
-                              {diff >= 0 ? '+' : '-'}
+                              {diff >= 0 ? "+" : "-"}
                               {formatTime(Math.abs(diff))}
                             </span>
                           </div>
-
-                          {/* Fahrzeit separat – nur wenn vorhanden */}
                           {driveMinutesKW > 0 && (
                             <div className="text-xs text-slate-500">
                               Fahrzeit: {formatTime(driveMinutesKW)}
                             </div>
                           )}
-
                         </div>
-
-
                       </div>
-
                       <ChevronRight
                         size={18}
                         className={`text-slate-500 transition-transform ${
-                          expanded ? 'rotate-90' : ''
+                          expanded ? "rotate-90" : ""
                         }`}
                       />
                     </button>
 
-                    {/* WEEK ENTRIES */}
+                    {/* WEEK CONTENT */}
                     {expanded && (
-                      <div className="mt-2 space-y-2">
-                        {weekEntries.map((entry) => {
-                          const d = new Date(entry.date);
-                          const wd = d.toLocaleDateString('de-DE', { weekday: 'short' }).slice(0, 2);
-                          const ds = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                      <div className="mt-2 space-y-3">
+                        {sortedDays.map(([dateStr, dayEntries]) => {
+                          // Tagessumme (Code 19 ignorieren)
+                          const daySum = dayEntries.reduce((acc, curr) => {
+                            if (curr.type === "work" && curr.code === 19)
+                              return acc;
+                            return acc + curr.netDuration;
+                          }, 0);
 
-                          const codeLabel =
-                            entry.type === 'work'
-                              ? WORK_CODES.find((c) => c.id === entry.code)?.label
-                              : '';
+                          const d = new Date(dateStr);
+                          const wd = d
+                            .toLocaleDateString("de-DE", { weekday: "short" })
+                            .slice(0, 2);
+                          const ds = d.toLocaleDateString("de-DE", {
+                            day: "2-digit",
+                            month: "2-digit",
+                          });
+
+                          // Sortieren
+                          const sortedEntries = [...dayEntries].sort((a, b) =>
+                            (a.start || "").localeCompare(b.start || "")
+                          );
 
                           return (
                             <div
-                              key={entry.id}
-                              onClick={() => startEdit(entry)}
-                              className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between gap-3 active:scale-[0.99] transition-transform cursor-pointer"
+                              key={dateStr}
+                              className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
                             >
-                              <div className="flex items-start gap-3 flex-1 min-w-0">
-                                {/* DATE BLOCK */}
-                                <div
-                                  className="text-white font-bold rounded-lg w-10 h-10 flex flex-col items-center justify-center flex-shrink-0 text-[10px] leading-none bg-slate-800"
-                                >
-                                  <span className="text-xs">{wd}</span>
-                                  <span className="opacity-75">{ds}</span>
+                              <div className="flex">
+                                {/* LINKS: Datum */}
+                                <div className="bg-slate-800 w-12 flex flex-col items-center justify-center text-white flex-shrink-0">
+                                  <span className="text-xs font-bold opacity-80">
+                                    {wd}
+                                  </span>
+                                  <span className="text-sm font-bold">
+                                    {ds}
+                                  </span>
                                 </div>
 
+                                {/* MITTE: Liste */}
                                 <div className="flex-1 min-w-0">
-                                  {/* ZEITEN */}
-                                  {entry.type === 'work' && (
-                                    <div className="font-bold text-slate-900 text-sm">
-                                      {entry.start} – {entry.end}{' '}
-                                      {entry.pause > 0 ? (
-                                        <span className="text-orange-500 text-xs">
-                                          (Pause {entry.pause}m)
-                                        </span>
-                                      ) : (
-                                        <span className="text-slate-400 text-xs">
-                                          (keine Pause)
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
+                                  {sortedEntries.map((entry, idx) => {
+                                    // Label Logik
+                                    let codeLabel = "";
+                                    let timeLabel = "";
 
-                                  {/* PROJEKT */}
-                                  {entry.project && (
-                                    <p className="text-xs text-slate-500 truncate">
-                                      {entry.project}
-                                    </p>
-                                  )}
+                                    if (entry.type === "work") {
+                                      timeLabel = `${entry.start} - ${entry.end}`;
+                                      codeLabel = WORK_CODES.find(
+                                        (c) => c.id === entry.code
+                                      )?.label;
+                                    } else if (
+                                      entry.type === "public_holiday"
+                                    ) {
+                                      timeLabel = "Feiertag";
+                                      codeLabel = "Bezahlt frei";
+                                    } else {
+                                      timeLabel = "Ganztags";
+                                      codeLabel =
+                                        entry.type === "vacation"
+                                          ? "Urlaub"
+                                          : "Krank";
+                                    }
 
-                                  {/* CODE */}
-                                  {codeLabel && (
-                                    <p className="text-[11px] text-slate-600 font-medium truncate">
-                                      {codeLabel}
-                                    </p>
-                                  )}
+                                    // Hintergrundfarbe für Feiertag
+                                    const rowBg =
+                                      entry.type === "public_holiday"
+                                        ? "bg-blue-50/50"
+                                        : "hover:bg-slate-50 active:bg-slate-100";
+
+                                    return (
+                                      <div
+                                        key={entry.id}
+                                        // Nur klickbar wenn KEIN Feiertag (Auto-generated)
+                                        onClick={() =>
+                                          entry.type !== "public_holiday" &&
+                                          startEdit(entry)
+                                        }
+                                        className={`p-3 flex justify-between items-start gap-3 transition-colors cursor-pointer ${rowBg} ${
+                                          idx < sortedEntries.length - 1
+                                            ? "border-b border-slate-100"
+                                            : ""
+                                        }`}
+                                      >
+                                        <div className="min-w-0 flex-1 flex flex-col gap-1">
+                                          {/* Zeile 1: Uhrzeit / Typ */}
+                                          <div
+                                            className={`font-bold text-sm leading-none pt-0.5 ${
+                                              entry.type === "public_holiday"
+                                                ? "text-blue-600"
+                                                : "text-slate-900"
+                                            }`}
+                                          >
+                                            {timeLabel}
+                                          </div>
+
+                                          {/* Zeile 2: Projekt / Name */}
+                                          <div className="text-sm text-slate-700 font-medium leading-tight break-words">
+                                            {entry.project}
+                                          </div>
+
+                                          {/* Zeile 3: Code */}
+                                          {codeLabel && (
+                                            <div className="text-xs text-slate-500 leading-tight">
+                                              {codeLabel}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        <div className="flex items-center gap-2 pl-2 border-l border-slate-100 ml-1 pt-0.5">
+                                          <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">
+                                            {formatTime(entry.netDuration)}
+                                          </span>
+
+                                          {/* DELETE BUTTON: Nur wenn KEIN Feiertag */}
+                                          {entry.type !== "public_holiday" && (
+                                            <button
+                                              onClick={(ev) => {
+                                                ev.stopPropagation();
+                                                deleteEntry(entry.id);
+                                              }}
+                                              className="text-slate-300 hover:text-red-500 p-1 rounded-full hover:bg-red-50 transition-colors"
+                                            >
+                                              <Trash2 size={16} />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              </div>
 
-                              {/* STUNDEN */}
-                              <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                <div className="font-bold text-slate-700 text-sm">
-                                  {formatTime(entry.netDuration)}
+                                {/* RECHTS: Tagessumme */}
+                                <div className="bg-slate-50 w-20 border-l border-slate-200 flex flex-col items-center justify-center flex-shrink-0 px-1">
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">
+                                    Gesamt
+                                  </span>
+                                  <span className="font-bold text-slate-800 whitespace-nowrap text-sm">
+                                    {formatTime(daySum)}
+                                  </span>
                                 </div>
-
-                                {/* DELETE BUTTON */}
-                                <button
-                                  onClick={(ev) => {
-                                    ev.stopPropagation();
-                                    deleteEntry(entry.id);
-                                  }}
-                                  className="text-slate-300 hover:text-red-500 p-1"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
                               </div>
                             </div>
                           );
@@ -1314,69 +1683,128 @@ const diff = workMinutes - targetKW;
       {/* ----------------------------- */}
       {/* ADD VIEW (Eintrag erstellen) */}
       {/* ----------------------------- */}
-      {view === 'add' && (
+      {view === "add" && (
         <main className="w-full p-3">
           <Card>
             <form onSubmit={saveEntry} className="p-4 space-y-5">
-
               {/* ENTRY TYPE SELECT */}
-              <div className="bg-slate-100 p-1 rounded-xl grid grid-cols-4 gap-1">
-                {/* Arbeit */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEntryType('work');
-                    setCode(WORK_CODES[0].id);
-                  }}
-                  className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                    entryType === 'work' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
-                  }`}
-                >
-                  Arbeit
-                </button>
+              <div className="flex flex-col gap-2">
+                {/* HAUPT-AUSWAHL */}
+                <div className="bg-slate-100 p-1 rounded-xl grid grid-cols-4 gap-1">
+                  {/* Arbeit */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEntryType("work");
+                      setCode(WORK_CODES[0].id);
+                    }}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                      entryType === "work" && code !== 190 // Nicht markieren wenn An/Abreise aktiv
+                        ? "bg-white shadow text-slate-900"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    Arbeit
+                  </button>
 
-                {/* Urlaub */}
-                <button
-                  type="button"
-                  onClick={() => setEntryType('vacation')}
-                  className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                    entryType === 'vacation' ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-slate-500'
-                  }`}
-                >
-                  Urlaub
-                </button>
+                  {/* Urlaub */}
+                  <button
+                    type="button"
+                    onClick={() => setEntryType("vacation")}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                      entryType === "vacation"
+                        ? "bg-blue-100 text-blue-700 shadow-sm"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    Urlaub
+                  </button>
 
-                {/* Krank */}
-                <button
-                  type="button"
-                  onClick={() => setEntryType('sick')}
-                  className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                    entryType === 'sick' ? 'bg-red-100 text-red-700 shadow-sm' : 'text-slate-500'
-                  }`}
-                >
-                  Krank
-                </button>
+                  {/* Krank */}
+                  <button
+                    type="button"
+                    onClick={() => setEntryType("sick")}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                      entryType === "sick"
+                        ? "bg-red-100 text-red-700 shadow-sm"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    Krank
+                  </button>
 
-                {/* Fahrtzeit (Code 19) */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEntryType('drive');
-                    setCode(19);
-                    setPauseDuration(0);
-                  }}
-                  className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                    entryType === 'drive' ? 'bg-orange-100 text-orange-700 shadow-sm' : 'text-slate-500'
-                  }`}
-                >
-                  Fahrtzeit
-                </button>
+                  {/* Fahrtzeit (Button aktiviert Sub-Auswahl) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Standardmäßig erstmal "drive" (unbezahlt) vorselektieren oder nur den Modus wechseln
+                      setEntryType("drive");
+                      setCode(19);
+                      setPauseDuration(0);
+                    }}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                      entryType === "drive" || code === 190
+                        ? "bg-orange-100 text-orange-700 shadow-sm"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    Fahrt
+                  </button>
+                </div>
+
+                {/* SUB-AUSWAHL FÜR FAHRTZEIT (Nur sichtbar wenn Fahrt oder An/Abreise gewählt) */}
+                {(entryType === "drive" || code === 190) && (
+                  <div className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                    {/* OPTION 1: AN/ABREISE (BEZAHLT) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEntryType("work"); // WICHTIG: Typ ist "work", damit es zählt
+                        setCode(190); // ID 190 = An/Abreise
+                        setPauseDuration(0); // Keine Pause bei Fahrt
+                        setProject("");
+                      }}
+                      className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${
+                        code === 190
+                          ? "bg-green-100 border-green-200 text-green-800 ring-2 ring-green-500 ring-offset-1"
+                          : "bg-white border-slate-200 text-slate-600"
+                      }`}
+                    >
+                      <span>An/Abreise</span>
+                      <span className="text-[10px] uppercase bg-green-200 px-1 rounded text-green-800">
+                        Bezahlt
+                      </span>
+                    </button>
+
+                    {/* OPTION 2: REINE FAHRT (UNBEZAHLT) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEntryType("drive"); // Typ "drive" wird ignoriert in Summen
+                        setCode(19); // ID 19 = Unbezahlt
+                        setPauseDuration(0);
+                        setProject("");
+                      }}
+                      className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${
+                        entryType === "drive" && code === 19
+                          ? "bg-orange-100 border-orange-200 text-orange-800 ring-2 ring-orange-500 ring-offset-1"
+                          : "bg-white border-slate-200 text-slate-600"
+                      }`}
+                    >
+                      <span>Fahrtzeit</span>
+                      <span className="text-[10px] uppercase bg-slate-200 px-1 rounded text-slate-600">
+                        Unbezahlt
+                      </span>
+                    </button>
+                  </div>
+                )}
               </div>
-
 
               {/* DATE */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">Datum</label>
+                <label className="text-xs font-bold text-slate-500 uppercase">
+                  Datum
+                </label>
 
                 <div className="flex items-center gap-2">
                   <button
@@ -1406,25 +1834,29 @@ const diff = workMinutes - targetKW;
               </div>
 
               {/* WORK TYPE FIELDS */}
-              {/* ARBEIT & FAHRTZEIT */}
-              {(entryType === 'work' || entryType === 'drive') && (
+              {/* ARBEIT & FAHRTZEIT (Bezahlt Code 190 oder Unbezahlt Code 19) */}
+              {(entryType === "work" || entryType === "drive") && (
                 <>
                   {/* START / END */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-500 uppercase">Start</label>
+                      <label className="text-xs font-bold text-slate-500 uppercase">
+                        Start
+                      </label>
                       <input
                         type="time"
                         required
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
-                        step={900} // 15-Minuten-Schritte
+                        step={900}
                         className="w-full p-3 bg-white border border-slate-300 rounded-lg outline-none font-medium"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-500 uppercase">Ende</label>
+                      <label className="text-xs font-bold text-slate-500 uppercase">
+                        Ende
+                      </label>
                       <input
                         type="time"
                         required
@@ -1436,10 +1868,12 @@ const diff = workMinutes - targetKW;
                     </div>
                   </div>
 
-                  {/* PAUSE – nur bei normaler Arbeit */}
-                  {entryType === 'work' && (
+                  {/* PAUSE – nur bei normaler Arbeit (NICHT bei An/Abreise Code 190) */}
+                  {entryType === "work" && code !== 190 && (
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-500 uppercase">Pause</label>
+                      <label className="text-xs font-bold text-slate-500 uppercase">
+                        Pause
+                      </label>
 
                       <div className="flex gap-2">
                         <button
@@ -1447,8 +1881,8 @@ const diff = workMinutes - targetKW;
                           onClick={() => setPauseDuration(0)}
                           className={`flex-1 p-3 rounded-lg border text-sm font-bold ${
                             pauseDuration === 0
-                              ? 'border-orange-500 bg-orange-50 text-orange-700'
-                              : 'border-slate-200 bg-white text-slate-500'
+                              ? "border-orange-500 bg-orange-50 text-orange-700"
+                              : "border-slate-200 bg-white text-slate-500"
                           }`}
                         >
                           Keine
@@ -1459,8 +1893,8 @@ const diff = workMinutes - targetKW;
                           onClick={() => setPauseDuration(30)}
                           className={`flex-1 p-3 rounded-lg border text-sm font-bold ${
                             pauseDuration === 30
-                              ? 'border-orange-500 bg-orange-50 text-orange-700'
-                              : 'border-slate-200 bg-white text-slate-500'
+                              ? "border-orange-500 bg-orange-50 text-orange-700"
+                              : "border-slate-200 bg-white text-slate-500"
                           }`}
                         >
                           30 Min
@@ -1469,8 +1903,8 @@ const diff = workMinutes - targetKW;
                     </div>
                   )}
 
-                  {/* CODE / TÄTIGKEIT */}
-                  {entryType === 'work' && (
+                  {/* CODE / TÄTIGKEIT - Dropdown nur bei normaler Arbeit */}
+                  {entryType === "work" && code !== 190 && (
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-500 uppercase">
                         Tätigkeit
@@ -1480,7 +1914,9 @@ const diff = workMinutes - targetKW;
                         onChange={(e) => setCode(Number(e.target.value))}
                         className="w-full p-3 bg-white border border-slate-300 rounded-lg outline-none font-medium"
                       >
-                        {WORK_CODES.map((c) => (
+                        {WORK_CODES.filter(
+                          (c) => c.id !== 190 && c.id !== 19
+                        ).map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.label}
                           </option>
@@ -1489,22 +1925,32 @@ const diff = workMinutes - targetKW;
                     </div>
                   )}
 
-                  {/* TÄTIGKEIT bei FAHRTZEIT: fix 19 - Fahrzeit */}
-                  {entryType === 'drive' && (
+                  {/* TÄTIGKEIT FIXIERT: Wenn Fahrtzeit (Drive) ODER An/Abreise (Code 190) */}
+                  {(entryType === "drive" || code === 190) && (
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-500 uppercase">
                         Tätigkeit
                       </label>
-                      <div className="w-full p-3 bg-slate-100 border border-slate-300 rounded-lg text-slate-700 text-sm font-medium">
-                        19 - Fahrzeit
+                      <div
+                        className={`w-full p-3 border rounded-lg text-sm font-medium ${
+                          code === 190
+                            ? "bg-green-50 border-green-200 text-green-800" // Grün für Bezahlt
+                            : "bg-orange-50 border-orange-200 text-orange-800" // Orange für Unbezahlt
+                        }`}
+                      >
+                        {code === 190
+                          ? "19 - An/Abreise (Bezahlt)"
+                          : "19 - Fahrzeit (Unbezahlt)"}
                       </div>
                     </div>
                   )}
 
-                  {/* PROJECT / NOTIZ */}
+                  {/* PROJECT / NOTIZ - Label passt sich an */}
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-500 uppercase">
-                      {entryType === 'drive' ? 'Strecke / Notiz' : 'Projekt'}
+                      {entryType === "drive" || code === 190
+                        ? "Strecke / Notiz"
+                        : "Projekt"}
                     </label>
                     <input
                       type="text"
@@ -1517,32 +1963,12 @@ const diff = workMinutes - targetKW;
                 </>
               )}
 
-              {/* URLAUB / KRANK */}
-              {(entryType === 'vacation' || entryType === 'sick') && (
-                <div
-                  className={`p-4 rounded-xl border flex gap-3 ${
-                    entryType === 'vacation'
-                      ? 'bg-blue-50 border-blue-100 text-blue-800'
-                      : 'bg-red-50 border-red-100 text-red-800'
-                  }`}
-                >
-                  {entryType === 'vacation' ? <Sun /> : <Thermometer />}
-                  <div className="text-sm">
-                    <p className="font-bold">Sollzeit wird gutgeschrieben</p>
-                    <p>
-                      Für diesen Tag werden automatisch{' '}
-                      {getDayOfWeek(formDate) === 5 ? '4,5h' : '8,5h'} angerechnet.
-                    </p>
-                  </div>
-                </div>
-              )}
-
               {/* BUTTONS */}
               <div className="pt-2 flex gap-3">
                 <button
                   type="button"
                   onClick={() => {
-                    setView('dashboard');
+                    setView("dashboard");
                     setEditingEntry(null);
                   }}
                   className="flex-1 py-3 font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl"
@@ -1565,9 +1991,8 @@ const diff = workMinutes - targetKW;
       {/* ----------------------------- */}
       {/* SETTINGS */}
       {/* ----------------------------- */}
-      {view === 'settings' && (
+      {view === "settings" && (
         <main className="w-full p-4 space-y-6">
-
           {/* USER DATA */}
           <Card className="p-5 space-y-4">
             <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
@@ -1581,11 +2006,15 @@ const diff = workMinutes - targetKW;
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase">Dein Name</label>
+              <label className="text-xs font-bold text-slate-500 uppercase">
+                Dein Name
+              </label>
               <input
                 type="text"
                 value={userData.name}
-                onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                onChange={(e) =>
+                  setUserData({ ...userData, name: e.target.value })
+                }
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-800 outline-none focus:border-orange-500"
               />
             </div>
@@ -1604,11 +2033,11 @@ const diff = workMinutes - targetKW;
             <div className="grid grid-cols-3 gap-2">
               {/* HELL (only active) */}
               <button
-                onClick={() => setTheme('light')}
+                onClick={() => setTheme("light")}
                 className={`py-2 px-2 rounded-xl text-sm font-bold border ${
-                  theme === 'light'
-                    ? 'border-orange-500 bg-orange-50 text-orange-700'
-                    : 'border-slate-200 bg-slate-50 text-slate-600'
+                  theme === "light"
+                    ? "border-orange-500 bg-orange-50 text-orange-700"
+                    : "border-slate-200 bg-slate-50 text-slate-600"
                 }`}
               >
                 Hell
@@ -1633,7 +2062,9 @@ const diff = workMinutes - targetKW;
 
           {/* EXPORT / IMPORT */}
           <Card className="p-5 space-y-3">
-            <h3 className="font-bold text-slate-700">Daten sichern & wiederherstellen</h3>
+            <h3 className="font-bold text-slate-700">
+              Daten sichern & wiederherstellen
+            </h3>
             <p className="text-sm text-slate-500">
               Exportiert alle Einträge in eine Datei.
             </p>

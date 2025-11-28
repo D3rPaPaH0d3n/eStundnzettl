@@ -69,3 +69,30 @@ Da dies eine interne Firmen-App ist, muss sie einmalig manuell installiert werde
 ## 💡 Gut zu wissen
 * **Dateien:** Alle erstellten PDFs und Backups werden zusätzlich auch in deinem Handy unter **"Eigene Dateien" -> "Dokumente"** gespeichert.
 * **Feiertage:** Die App trägt Feiertage automatisch ein. Du musst an Feiertagen nichts manuell erfassen.
+
+---
+
+## 🍎 Anleitung für iPhone-Nutzer
+
+Da Apple die direkte Installation von Firmen-Apps blockiert, nutzt ihr die Web-Version. Das funktioniert genauso gut, erfordert aber **eine wichtige Vorsichtsmaßnahme**!
+
+### 1. Einrichtung (Einmalig)
+1.  Öffne diesen Link in **Safari**: [https://kogler-zeit.vercel.app/](https://kogler-zeit.vercel.app/)
+2.  Tippe unten in der Mitte auf das **Teilen-Symbol** (Viereck mit Pfeil nach oben).
+3.  Scrolle etwas runter und wähle **"Zum Home-Bildschirm"**.
+4.  Tippe oben rechts auf **"Hinzufügen"**.
+
+Jetzt hast du das App-Icon auf deinem Home-Bildschirm. Bitte nutze die App **nur** über dieses Icon, damit die Ansicht passt.
+
+### ⚠️ ACHTUNG: Daten-Sicherung (WICHTIG!)
+Da das iPhone die Daten im Browser-Speicher ablegt, sind **alle Einträge weg**, wenn du den Verlauf oder die Websitedaten von Safari löschst! Auch ein automatisches Backup ist beim iPhone technisch leider nicht möglich.
+
+**Deshalb unsere dringende Empfehlung:**
+👉 **Sichere deine Daten 1x pro Woche manuell!**
+
+**So geht's:**
+1.  Gehe in der App auf **Einstellungen** (Zahnrad).
+2.  Drücke auf **"Daten exportieren"**.
+3.  Speichere die Datei in deinen Dateien ("In Dateien sichern").
+
+Falls deine Daten durch ein Safari-Update oder Löschen mal weg sind, kannst du sie über den Button **"Daten importieren"** mit deiner Sicherungsdatei in Sekunden wiederherstellen.

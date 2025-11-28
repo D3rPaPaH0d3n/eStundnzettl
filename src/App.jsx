@@ -2106,7 +2106,7 @@ export default function App() {
           </Card>
 
           <p className="text-center text-xs text-slate-300">
-            App Version 1.9.0
+            App Version 2.0.0
           </p>
         </main>
       )}

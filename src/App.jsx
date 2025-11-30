@@ -4,7 +4,7 @@ import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
-import { DatePicker } from "@capacitor-community/date-picker";
+// WICHTIG: DatePicker Import hier entfernt, wir brauchen ihn nur noch in den Components!
 import toast, { Toaster } from "react-hot-toast";
 
 import KoglerLogo from "./assets/kogler_time_icon.png";
@@ -14,20 +14,17 @@ import Dashboard from "./components/Dashboard";
 import EntryForm from "./components/EntryForm";
 import Settings from "./components/Settings";
 import PrintReport from "./components/PrintReport";
+import ConfirmModal from "./components/ConfirmModal";
 
 export default function App() {
+  // ... (STATE BLEIBT GLEICH) ...
   const [entries, setEntries] = useState(() => JSON.parse(localStorage.getItem("kogler_entries") || "[]"));
   const [userData, setUserData] = useState(() => JSON.parse(localStorage.getItem("kogler_user") || '{"name":"Markus Mustermann"}'));
-  
-  // THEME STATE
-  const [theme, setTheme] = useState(() => localStorage.getItem("kogler_theme") || "light");
-  
+  const [theme, setTheme] = useState(() => localStorage.getItem("kogler_theme") || "system");
   const [autoBackup, setAutoBackup] = useState(() => localStorage.getItem("kogler_auto_backup") === "true");
-
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState("dashboard");
   const [editingEntry, setEditingEntry] = useState(null);
-  
   const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
   const [entryType, setEntryType] = useState("work");
   const [startTime, setStartTime] = useState("06:00");
@@ -35,21 +32,40 @@ export default function App() {
   const [project, setProject] = useState("");
   const [code, setCode] = useState(WORK_CODES[0].id);
   const [pauseDuration, setPauseDuration] = useState(30);
-
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const fileInputRef = useRef(null);
 
+  // ... (HELPER BLEIBEN GLEICH: getHeaderTitle) ...
+  const getHeaderTitle = () => {
+    switch (view) {
+      case "settings": return "Einstellungen";
+      case "add": return editingEntry ? "Eintrag bearbeiten" : "Neuer Eintrag";
+      case "report": return "Bericht";
+      default: return "Stundenzettel";
+    }
+  };
+
+  // ... (EFFECTS BLEIBEN GLEICH) ...
   useEffect(() => localStorage.setItem("kogler_entries", JSON.stringify(entries)), [entries]);
   useEffect(() => localStorage.setItem("kogler_user", JSON.stringify(userData)), [userData]);
   useEffect(() => localStorage.setItem("kogler_auto_backup", autoBackup), [autoBackup]);
   
-  // ** DARK MODE LOGIC **
   useEffect(() => {
     localStorage.setItem("kogler_theme", theme);
     const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
+    const systemQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const applyTheme = () => {
+      if (theme === "dark") root.classList.add("dark");
+      else if (theme === "light") root.classList.remove("dark");
+      else if (theme === "system") {
+        if (systemQuery.matches) root.classList.add("dark");
+        else root.classList.remove("dark");
+      }
+    };
+    applyTheme();
+    if (theme === "system") {
+      systemQuery.addEventListener("change", applyTheme);
+      return () => systemQuery.removeEventListener("change", applyTheme);
     }
   }, [theme]);
 
@@ -66,7 +82,6 @@ export default function App() {
       if (!autoBackup || !Capacitor.isNativePlatform() || entries.length === 0) return;
       const today = new Date().toISOString().split("T")[0];
       if (localStorage.getItem("kogler_last_backup_date") === today) return;
-
       try {
         const payload = { user: userData, entries, exportedAt: new Date().toISOString(), note: "Auto" };
         const fileName = `kogler_autobackup_${today}.json`;
@@ -78,19 +93,17 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [entries, userData, autoBackup]);
 
-  // CALCULATION LOGIC
+  // ... (CALCULATION LOGIC BLEIBT GLEICH) ...
   const viewYear = currentDate.getFullYear();
   const viewMonth = currentDate.getMonth();
 
   const entriesWithHolidays = useMemo(() => {
     const holidayMap = getHolidayData(viewYear);
     const holidays = Object.keys(holidayMap);
-    
     const realEntries = entries.filter((e) => {
       const d = new Date(e.date);
       return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
     });
-
     const holidayEntries = [];
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
     for (let d = 1; d <= daysInMonth; d++) {
@@ -98,13 +111,7 @@ export default function App() {
       if (holidays.includes(dateStr)) {
         const dow = getDayOfWeek(dateStr);
         if (dow >= 1 && dow <= 5) {
-          holidayEntries.push({
-            id: `auto-holiday-${dateStr}`,
-            type: "public_holiday",
-            date: dateStr,
-            project: holidayMap[dateStr] || "Gesetzlicher Feiertag",
-            netDuration: dow === 5 ? 270 : 510,
-          });
+          holidayEntries.push({ id: `auto-holiday-${dateStr}`, type: "public_holiday", date: dateStr, project: holidayMap[dateStr] || "Gesetzlicher Feiertag", netDuration: dow === 5 ? 270 : 510 });
         }
       }
     }
@@ -124,15 +131,12 @@ export default function App() {
   }, [entriesWithHolidays]);
 
   const stats = useMemo(() => {
-    let actualMinutes = 0;
-    let driveMinutes = 0;
-    let holidayMinutes = 0;
+    let actualMinutes = 0; let driveMinutes = 0; let holidayMinutes = 0;
     entriesWithHolidays.forEach((e) => {
         if (e.type === "work" && e.code === 19) driveMinutes += e.netDuration;
         else if (e.type === "public_holiday") holidayMinutes += e.netDuration;
         else actualMinutes += e.netDuration;
     });
-
     const days = new Date(viewYear, viewMonth + 1, 0).getDate();
     let targetMinutes = 0;
     for (let d = 1; d <= days; d++) {
@@ -146,10 +150,12 @@ export default function App() {
   const overtime = totalCredited - stats.targetMinutes;
   const progressPercent = Math.min(100, (totalCredited / (stats.targetMinutes || 1)) * 100);
 
-  // ACTIONS
+  // ... (ACTIONS BLEIBEN GLEICH) ...
   const startNewEntry = () => {
     setEditingEntry(null); setEntryType("work"); setFormDate(new Date().toISOString().split("T")[0]);
-    setStartTime("06:00"); setEndTime("16:30"); setPauseDuration(30); setProject(""); setCode(WORK_CODES[0].id);
+    setStartTime("06:00"); setEndTime("16:30"); setPauseDuration(30); setProject(""); 
+    const lastCode = localStorage.getItem("kogler_last_code");
+    setCode(lastCode ? Number(lastCode) : WORK_CODES[0].id);
     setView("add");
   };
 
@@ -179,37 +185,37 @@ export default function App() {
         net = getTargetMinutesForDate(formDate); label = entryType === "vacation" ? "Urlaub" : "Krank";
     }
     if (net < 0) net = 0;
-
     const storedType = isDrive ? "work" : entryType;
     const usedCode = isDrive ? 19 : code;
     const usedPause = storedType === "work" ? (isDrive ? 0 : pauseDuration) : 0;
-
     const newEntry = {
         id: editingEntry ? editingEntry.id : Date.now(),
         type: storedType, date: formDate, start: storedType === "work" ? startTime : null, end: storedType === "work" ? endTime : null,
         pause: usedPause, project: storedType === "work" ? project : label, code: storedType === "work" ? usedCode : null, netDuration: net,
     };
-
     setEntries(editingEntry ? entries.map((e) => (e.id === editingEntry.id ? newEntry : e)) : [newEntry, ...entries]);
+    if (storedType === "work" && usedCode && usedCode !== 19 && usedCode !== 190) localStorage.setItem("kogler_last_code", usedCode);
     toast.success(editingEntry ? "✏️ Eintrag aktualisiert" : "💾 Eintrag gespeichert");
     setEditingEntry(null); setProject(""); setEntryType("work"); setView("dashboard");
   };
 
-  const deleteEntry = (id) => { 
-    if (confirm("Eintrag wirklich löschen?")) {
-      setEntries(entries.filter((e) => e.id !== id)); 
+  // Delete Handlers
+  const requestDeleteEntry = (id) => { setDeleteTarget({ type: 'single', id }); };
+  const requestDeleteAll = () => { setDeleteTarget({ type: 'all' }); };
+  const executeDelete = () => {
+    if (deleteTarget?.type === 'single') {
+      setEntries(entries.filter((e) => e.id !== deleteTarget.id));
       toast.success("🗑️ Eintrag gelöscht");
+    } else if (deleteTarget?.type === 'all') {
+      setEntries([]);
+      toast.success("🧹 Alle Daten bereinigt");
     }
+    setDeleteTarget(null);
   };
   
   const changeMonth = (delta) => { const d = new Date(currentDate); d.setMonth(d.getMonth() + delta); setCurrentDate(d); };
   
-  const openMonthPicker = async () => {
-    try {
-        const res = await DatePicker.present({ mode: "date", locale: "de-AT", theme: "light", format: "yyyy-MM", presentation: "date" });
-        if (res?.value) { const d = new Date(res.value); d.setDate(1); setCurrentDate(d); }
-    } catch (e) { console.error(e); }
-  };
+  // NATIVE MONTH PICKER ENTFERNT -> Wir nutzen React DatePicker im Dashboard
 
   const exportData = async () => {
     const fileName = `kogler_export_${new Date().toISOString().slice(0, 10)}.json`;
@@ -239,64 +245,85 @@ export default function App() {
   if (view === "report") return <PrintReport entries={entriesWithHolidays} monthDate={currentDate} employeeName={userData.name} onClose={() => setView("dashboard")} />;
 
   return (
-    // ** DARK MODE BG: dark:bg-slate-950 dark:text-slate-100 **
-    <div className="min-h-screen w-screen font-sans pb-24 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
+    <div className="min-h-screen w-screen font-sans bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
       <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#1e293b', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />
+      
+      {/* CONFIRM MODAL */}
+      <ConfirmModal 
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={executeDelete}
+        title={deleteTarget?.type === 'all' ? "Alles löschen?" : "Eintrag löschen?"}
+        message={deleteTarget?.type === 'all' 
+          ? "Möchtest du wirklich alle Einträge unwiderruflich löschen?" 
+          : "Möchtest du diesen Eintrag wirklich entfernen?"
+        }
+      />
+
       <input type="file" className="hidden" ref={fileInputRef} accept="application/json" onChange={handleImport} />
       
       {/* HEADER */}
-      <header className="bg-slate-900 text-white p-4 pb-4 shadow-lg sticky top-0 z-10 w-full" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
+      <header className="fixed top-0 left-0 right-0 bg-slate-900 text-white p-4 pb-6 shadow-xl z-50 w-full transition-all" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
         <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {view !== "dashboard" ? (
-              <button onClick={() => { setView("dashboard"); setEditingEntry(null); }} className="p-1 hover:bg-slate-700 rounded-full"><ArrowLeft /></button>
+              <button onClick={() => { setView("dashboard"); setEditingEntry(null); }} className="p-2 hover:bg-slate-700 rounded-full transition-colors"><ArrowLeft size={24} /></button>
             ) : (
-              <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center bg-slate-900"><img src={KoglerLogo} alt="Logo" className="w-full h-full object-contain" /></div>
+              <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-slate-800 shadow-inner"><img src={KoglerLogo} alt="Logo" className="w-full h-full object-contain" /></div>
             )}
-            <div><h1 className="font-bold text-lg leading-tight">Stundenzettel</h1>{view === "dashboard" && <p className="text-xs text-slate-400">Kogler Aufzugsbau</p>}</div>
+            <div>
+              <h1 className="font-bold text-xl leading-tight tracking-tight">{getHeaderTitle()}</h1>
+              {view === "dashboard" && <p className="text-xs text-slate-400 font-medium mt-0.5">Kogler Aufzugsbau</p>}
+            </div>
           </div>
           {view === "dashboard" && (
             <div className="flex gap-2">
-              <button onClick={() => setView("settings")} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg"><SettingsIcon size={18} className="text-slate-300" /></button>
-              <button onClick={() => setView("report")} className="bg-orange-500 hover:bg-orange-600 p-2 rounded-lg"><FileBarChart size={18} className="text-white" /></button>
+              <button onClick={() => setView("settings")} className="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors active:scale-95"><SettingsIcon size={20} className="text-slate-300" /></button>
+              <button onClick={() => setView("report")} className="bg-orange-500 hover:bg-orange-600 p-2.5 rounded-xl transition-colors shadow-lg shadow-orange-900/20 active:scale-95"><FileBarChart size={20} className="text-white" /></button>
             </div>
           )}
         </div>
       </header>
 
-      {/* VIEWS */}
-      {view === "dashboard" && (
-        <Dashboard 
-            currentDate={currentDate} openMonthPicker={openMonthPicker} changeMonth={changeMonth}
-            stats={stats} overtime={overtime} progressPercent={progressPercent}
-            groupedByWeek={groupedByWeek} viewMonth={viewMonth} viewYear={viewYear}
-            onStartNewEntry={startNewEntry} onEditEntry={startEdit} onDeleteEntry={deleteEntry}
-        />
-      )}
+      {/* CONTENT WRAPPER */}
+      <div className="pt-38 pb-24 px-1 w-full max-w-3xl mx-auto">
+        
+        {view === "dashboard" && (
+          <Dashboard 
+              currentDate={currentDate} 
+              onSetCurrentDate={setCurrentDate} // <-- NEUE PROP
+              changeMonth={changeMonth}
+              stats={stats} overtime={overtime} progressPercent={progressPercent}
+              groupedByWeek={groupedByWeek} viewMonth={viewMonth} viewYear={viewYear}
+              onStartNewEntry={startNewEntry} onEditEntry={startEdit} 
+              onDeleteEntry={requestDeleteEntry}
+          />
+        )}
 
-      {view === "add" && (
-        <EntryForm 
-            onCancel={() => { setView("dashboard"); setEditingEntry(null); }}
-            onSubmit={saveEntry}
-            entryType={entryType} setEntryType={setEntryType}
-            code={code} setCode={setCode}
-            pauseDuration={pauseDuration} setPauseDuration={setPauseDuration}
-            formDate={formDate} setFormDate={setFormDate}
-            startTime={startTime} setStartTime={setStartTime}
-            endTime={endTime} setEndTime={setEndTime}
-            project={project} setProject={setProject}
-        />
-      )}
+        {view === "add" && (
+          <EntryForm 
+              onCancel={() => { setView("dashboard"); setEditingEntry(null); }}
+              onSubmit={saveEntry}
+              entryType={entryType} setEntryType={setEntryType}
+              code={code} setCode={setCode}
+              pauseDuration={pauseDuration} setPauseDuration={setPauseDuration}
+              formDate={formDate} setFormDate={setFormDate}
+              startTime={startTime} setStartTime={setStartTime}
+              endTime={endTime} setEndTime={setEndTime}
+              project={project} setProject={setProject}
+          />
+        )}
 
-      {view === "settings" && (
-        <Settings 
-            userData={userData} setUserData={setUserData}
-            theme={theme} setTheme={setTheme}
-            autoBackup={autoBackup} setAutoBackup={setAutoBackup}
-            onExport={exportData} onImport={() => fileInputRef.current?.click()}
-            onDeleteAll={() => { if(confirm("Wirklich ALLES löschen?")) { setEntries([]); toast.success("🧹 Alle Daten bereinigt"); } }}
-        />
-      )}
+        {view === "settings" && (
+          <Settings 
+              userData={userData} setUserData={setUserData}
+              theme={theme} setTheme={setTheme}
+              autoBackup={autoBackup} setAutoBackup={setAutoBackup}
+              onExport={exportData} onImport={() => fileInputRef.current?.click()}
+              onDeleteAll={requestDeleteAll}
+          />
+        )}
+      </div>
     </div>
   );
 }

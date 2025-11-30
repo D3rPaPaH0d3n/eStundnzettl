@@ -1,7 +1,7 @@
 {
   "name": "kogler-zeit",
   "private": true,
-  "version": "0.0.0",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -18,9 +18,11 @@
     "@capacitor/core": "^7.4.4",
     "@capacitor/filesystem": "^7.1.5",
     "@capacitor/share": "^7.0.2",
+    "@tailwindcss/vite": "^4.1.17",
     "html2pdf.js": "^0.12.1",
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
+    "react-datepicker": "^8.10.0",
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.6.0"
   },

@@ -51,6 +51,8 @@ const Settings = ({
           Wähle dein bevorzugtes Erscheinungsbild.
         </p>
         <div className="grid grid-cols-3 gap-2">
+          
+          {/* HELL */}
           <button
             onClick={() => setTheme("light")}
             className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors ${
@@ -62,7 +64,7 @@ const Settings = ({
             Hell
           </button>
           
-          {/* DUNKEL Button aktiviert! */}
+          {/* DUNKEL */}
           <button
             onClick={() => setTheme("dark")}
             className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors ${
@@ -74,9 +76,14 @@ const Settings = ({
             Dunkel
           </button>
           
+          {/* SYSTEM (Jetzt aktiviert!) */}
           <button
-            disabled
-            className="py-2 px-2 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-400 opacity-50"
+            onClick={() => setTheme("system")}
+            className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors ${
+              theme === "system"
+                ? "border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
+                : "border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+            }`}
           >
             System
           </button>
@@ -149,7 +156,7 @@ const Settings = ({
       </Card>
       
       <p className="text-center text-xs text-slate-300 dark:text-slate-600">
-        App Version 2.0.1
+        App Version 3.0.0 @ Markus Kainer
       </p>
     </main>
   );

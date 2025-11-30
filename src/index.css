@@ -1,68 +1,210 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+/* 1. DARK MODE AKTIVIEREN */
+@variant dark (&:where(.dark, .dark *));
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* ============================================================
+   REACT DATEPICKER (FINAL GREEN EDITION)
+   ============================================================ */
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/* 1. BASIS & CONTAINER */
+.react-datepicker {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  border: 0 !important;
+  border-radius: 1.5rem !important;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  background-color: #ffffff !important;
+  color: #1e293b !important; /* Slate-800 */
+  font-size: 1.1rem !important;
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+.dark .react-datepicker {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* 2. HEADER */
+.react-datepicker__header {
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding-top: 1.5rem !important;
+  padding-bottom: 1rem !important;
+  position: relative !important;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.dark .react-datepicker__header {
+  background-color: #0f172a !important;
+  border-bottom: 1px solid #334155 !important;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* Monat Name */
+.react-datepicker__current-month {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  font-size: 1.25rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 !important;
+  line-height: 1.5 !important;
 }
+.dark .react-datepicker__current-month {
+  color: #f8fafc !important;
+}
+
+/* Jahreszahl (MonthPicker) */
+.react-datepicker-year-header {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  font-size: 1.6rem !important;
+  margin-top: 0.2rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.2 !important;
+  background-color: transparent !important;
+  position: relative !important;
+}
+.dark .react-datepicker-year-header {
+  color: #f8fafc !important;
+}
+
+/* 3. NAVIGATION (PFEILE) */
+.react-datepicker__navigation {
+  top: 1.3rem !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+}
+
+/* Spezialposition für Jahres-Header */
+.react-datepicker__header--custom-month-year .react-datepicker__navigation {
+  top: 1.1rem !important;
+}
+
+/* Ganz außen */
+.react-datepicker__navigation--previous { left: 0.5rem !important; }
+.react-datepicker__navigation--next { right: 0.5rem !important; }
+
+/* Pfeil-Icon */
+.react-datepicker__navigation-icon::before {
+  border-color: #64748b !important;
+  border-width: 3px 3px 0 0 !important;
+  height: 10px !important; 
+  width: 10px !important;
+  top: 11px !important;
+}
+.dark .react-datepicker__navigation-icon::before {
+  border-color: #cbd5e1 !important;
+}
+
+/* Wochentage Header */
+.react-datepicker__day-name {
+  color: #64748b !important;
+  font-weight: 800 !important;
+  width: 3rem !important;
+  text-transform: uppercase;
+  font-size: 0.85rem !important;
+  margin: 0 !important;
+  margin-top: 1rem !important;
+}
+.dark .react-datepicker__day-name {
+  color: #94a3b8 !important;
+}
+
+/* 4. TAGE GRID */
+.react-datepicker__day {
+  width: 3rem !important;
+  height: 3rem !important;
+  line-height: 3rem !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  font-weight: 600;
+  font-size: 1.1rem !important;
+  color: #1e293b !important;
+}
+
+.dark .react-datepicker__day {
+  color: #f1f5f9 !important; 
+}
+
+/* Zebra */
+.react-datepicker__week .react-datepicker__day:nth-child(odd) {
+  background-color: rgba(0, 0, 0, 0.04); 
+}
+.dark .react-datepicker__week .react-datepicker__day:nth-child(odd) {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Hover */
+.react-datepicker__day:hover {
+  background-color: #e2e8f0 !important;
+  border-radius: 0.5rem !important;
+  position: relative; z-index: 1;
+}
+.dark .react-datepicker__day:hover {
+  background-color: #334155 !important;
+}
+
+/* 5. WOCHENENDE FARBEN (Orange/Rot) - Nur wenn NICHT ausgewählt! */
+.react-datepicker__week .react-datepicker__day:not(.react-datepicker__day--selected):not(.react-datepicker__day--keyboard-selected):nth-child(6) {
+  color: #ea580c !important; 
+}
+.dark .react-datepicker__week .react-datepicker__day:not(.react-datepicker__day--selected):not(.react-datepicker__day--keyboard-selected):nth-child(6) {
+  color: #fb923c !important; 
+}
+
+.react-datepicker__week .react-datepicker__day:not(.react-datepicker__day--selected):not(.react-datepicker__day--keyboard-selected):nth-child(7) {
+  color: #dc2626 !important; 
+}
+.dark .react-datepicker__week .react-datepicker__day:not(.react-datepicker__day--selected):not(.react-datepicker__day--keyboard-selected):nth-child(7) {
+  color: #f87171 !important; 
+}
+
+/* 6. AUSGEWÄHLTER TAG (GRÜN + IMMER WEISS) */
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #16a34a !important; /* Green-600 */
+  color: #ffffff !important; /* IMMER WEISS */
+  font-weight: bold !important;
+  border-radius: 0.5rem !important;
+  transform: scale(0.85); 
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.5); /* Grüner Schatten */
+}
+
+/* 7. VORMONAT */
+.react-datepicker__day--outside-month {
+  color: #cbd5e1 !important;
+  opacity: 0.25;
+}
+.dark .react-datepicker__day--outside-month {
+  color: #475569 !important;
+  opacity: 0.25;
+}
+
+/* 8. MONATSAUSWAHL (Dashboard) - AUCH GRÜN */
+.react-datepicker__month-wrapper {
+  display: flex !important;
+  justify-content: space-between !important;
+  margin: 0.5rem 0 !important;
+}
+.react-datepicker__month-text {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  padding: 0.75rem !important;
+  width: 4.5rem !important;
+  border-radius: 0.75rem !important;
+  margin: 0.2rem !important;
+  color: #1e293b !important;
+}
+.dark .react-datepicker__month-text {
+  color: #f1f5f9 !important;
+}
+.react-datepicker__month-text:hover { background-color: #e2e8f0 !important; }
+.dark .react-datepicker__month-text:hover { background-color: #334155 !important; }
+
+.react-datepicker__month-text--selected,
+.react-datepicker__month-text--keyboard-selected {
+  background-color: #16a34a !important; /* Grün */
+  color: white !important;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.4);
+}
+.react-datepicker__month-text--today { color: #16a34a !important; font-weight: 800 !important; }
+.react-datepicker__month-text--selected.react-datepicker__month-text--today { color: white !important; }

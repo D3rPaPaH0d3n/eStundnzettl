@@ -1,10 +1,27 @@
-import React, { useState } from "react";
+import React, { forwardRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Trash2, Plus } from "lucide-react";
 import { Card, formatTime, formatSignedTime, WORK_CODES } from "../utils";
 
+// REACT DATEPICKER IMPORTIEREN
+import DatePicker, { registerLocale } from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import de from "date-fns/locale/de";
+registerLocale("de", de);
+
+// Der "Text", der angeklickt wird (sieht aus wie nur Text)
+const CustomMonthInput = forwardRef(({ value, onClick }, ref) => (
+  <button 
+    className="font-bold text-slate-700 dark:text-slate-100 text-base hover:text-orange-500 transition-colors"
+    onClick={onClick} 
+    ref={ref}
+  >
+    {value}
+  </button>
+));
+
 const Dashboard = ({
   currentDate,
-  openMonthPicker,
+  onSetCurrentDate, // Neue Prop zum Setzen
   changeMonth,
   stats,
   overtime,
@@ -24,14 +41,30 @@ const Dashboard = ({
 
   return (
     <main className="w-full p-3 space-y-4">
-      {/* MONTH SELECTOR - Dark Mode: bg-slate-800, text-white */}
-      <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 shadow-sm active:scale-[0.98] transition-transform cursor-pointer" onClick={openMonthPicker}>
-        <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300"><ChevronLeft size={20} onClick={(e) => { e.stopPropagation(); changeMonth(-1); }} /></button>
-        <span className="font-bold text-slate-700 dark:text-slate-100 text-base">{currentDate.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</span>
-        <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300"><ChevronRight size={20} onClick={(e) => { e.stopPropagation(); changeMonth(1); }} /></button>
+      {/* MONTH SELECTOR - Jetzt mit DatePicker in der Mitte */}
+      <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 shadow-sm">
+        <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300"><ChevronLeft size={20} onClick={() => changeMonth(-1)} /></button>
+        
+        {/* HIER IST DER NEUE DATEPICKER */}
+        <DatePicker
+          selected={currentDate}
+          onChange={(date) => {
+            // Datum auf den 1. setzen, um Probleme zu vermeiden
+            const d = new Date(date);
+            d.setDate(1); 
+            onSetCurrentDate(d);
+          }}
+          dateFormat="MMMM yyyy" // Nur Monat und Jahr
+          showMonthYearPicker // Der Magische Schalter!
+          locale="de"
+          withPortal
+          customInput={<CustomMonthInput />}
+        />
+
+        <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300"><ChevronRight size={20} onClick={() => changeMonth(1)} /></button>
       </div>
 
-      {/* PROGRESS CARD - Dark Mode: Gradient angepasst */}
+      {/* PROGRESS CARD */}
       <Card className="bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200 dark:border-slate-700">
         <div className="p-4 space-y-3">
           <div className="flex justify-between items-center">
@@ -65,7 +98,7 @@ const Dashboard = ({
           </div>
         ) : (
           groupedByWeek.map(([week, weekEntries]) => {
-            // Stats & Date Logic ...
+            // Logik...
             let workMinutes = 0; let driveMinutesKW = 0;
             weekEntries.forEach((e) => { if (e.type === "work" && e.code === 19) driveMinutesKW += e.netDuration; else workMinutes += e.netDuration; });
             const anyDate = new Date(weekEntries[0].date); const currentDay = anyDate.getDay() || 7; const monday = new Date(anyDate); monday.setDate(anyDate.getDate() - (currentDay - 1)); const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
@@ -114,7 +147,6 @@ const Dashboard = ({
                                                 else if(isHoliday) codeLabel = "Bezahlt frei";
                                                 else codeLabel = entry.type === "vacation" ? "Urlaub" : "Krank";
                                                 
-                                                // Dark Mode Farben für Rows
                                                 let rowClass = `p-3 flex justify-between items-start gap-3 transition-colors cursor-pointer ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`;
                                                 if(isHoliday) rowClass += " bg-blue-50/50 dark:bg-blue-900/20";
                                                 else rowClass += " hover:bg-slate-50 dark:hover:bg-slate-700";

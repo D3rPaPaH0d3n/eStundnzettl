@@ -1,6 +1,8 @@
 import React, { forwardRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Calendar, Trash2, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Trash2 } from "lucide-react";
 import { Card, formatTime, formatSignedTime, WORK_CODES } from "../utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { Haptics, ImpactStyle } from "@capacitor/haptics"; // NEU
 
 // REACT DATEPICKER IMPORTIEREN
 import DatePicker, { registerLocale } from "react-datepicker";
@@ -8,7 +10,6 @@ import "react-datepicker/dist/react-datepicker.css";
 import de from "date-fns/locale/de";
 registerLocale("de", de);
 
-// Der "Text", der angeklickt wird (sieht aus wie nur Text)
 const CustomMonthInput = forwardRef(({ value, onClick }, ref) => (
   <button 
     className="font-bold text-slate-700 dark:text-slate-100 text-base hover:text-orange-500 transition-colors"
@@ -21,7 +22,7 @@ const CustomMonthInput = forwardRef(({ value, onClick }, ref) => (
 
 const Dashboard = ({
   currentDate,
-  onSetCurrentDate, // Neue Prop zum Setzen
+  onSetCurrentDate,
   changeMonth,
   stats,
   overtime,
@@ -29,33 +30,37 @@ const Dashboard = ({
   groupedByWeek,
   viewMonth,
   viewYear,
-  onStartNewEntry,
   onEditEntry,
   onDeleteEntry,
 }) => {
   const [expandedWeeks, setExpandedWeeks] = useState({});
 
   const toggleWeek = (week) => {
+    Haptics.impact({ style: ImpactStyle.Light }); // Klick Feedback
     setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] }));
   };
 
   return (
-    <main className="w-full p-3 space-y-4">
-      {/* MONTH SELECTOR - Jetzt mit DatePicker in der Mitte */}
+    <motion.main 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="w-full p-3 space-y-4"
+    >
+      {/* MONTH SELECTOR */}
       <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 shadow-sm">
         <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300"><ChevronLeft size={20} onClick={() => changeMonth(-1)} /></button>
         
-        {/* HIER IST DER NEUE DATEPICKER */}
         <DatePicker
           selected={currentDate}
           onChange={(date) => {
-            // Datum auf den 1. setzen, um Probleme zu vermeiden
             const d = new Date(date);
             d.setDate(1); 
             onSetCurrentDate(d);
           }}
-          dateFormat="MMMM yyyy" // Nur Monat und Jahr
-          showMonthYearPicker // Der Magische Schalter!
+          dateFormat="MMMM yyyy"
+          showMonthYearPicker
           locale="de"
           withPortal
           customInput={<CustomMonthInput />}
@@ -82,7 +87,12 @@ const Dashboard = ({
             </div>
           </div>
           <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-            <div className={`h-2 rounded-full transition-all duration-500 ${overtime >= 0 ? "bg-green-500" : "bg-orange-500"}`} style={{ width: `${progressPercent}%` }}></div>
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercent}%` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className={`h-2 rounded-full ${overtime >= 0 ? "bg-green-500" : "bg-orange-500"}`} 
+            />
           </div>
           {stats.driveMinutes > 0 && <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 pt-1"><span>Fahrzeit (Code 19):</span><span className="font-semibold">{formatTime(stats.driveMinutes)}</span></div>}
         </div>
@@ -98,7 +108,6 @@ const Dashboard = ({
           </div>
         ) : (
           groupedByWeek.map(([week, weekEntries]) => {
-            // Logik...
             let workMinutes = 0; let driveMinutesKW = 0;
             weekEntries.forEach((e) => { if (e.type === "work" && e.code === 19) driveMinutesKW += e.netDuration; else workMinutes += e.netDuration; });
             const anyDate = new Date(weekEntries[0].date); const currentDay = anyDate.getDay() || 7; const monday = new Date(anyDate); monday.setDate(anyDate.getDate() - (currentDay - 1)); const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
@@ -124,68 +133,122 @@ const Dashboard = ({
                     <ChevronRight size={18} className={`text-slate-500 dark:text-slate-400 transition-transform ${expanded ? "rotate-90" : ""}`} />
                 </button>
                 
-                {expanded && (
-                    <div className="mt-2 space-y-3">
-                        {sortedDays.map(([dateStr, dayEntries]) => {
-                            const daySum = dayEntries.reduce((acc, curr) => (curr.type === "work" && curr.code === 19) ? acc : acc + curr.netDuration, 0);
-                            const d = new Date(dateStr);
-                            const sortedEntries = [...dayEntries].sort((a, b) => (a.start || "").localeCompare(b.start || ""));
-                            
-                            return (
-                                <div key={dateStr} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                                    <div className="flex">
-                                        <div className="bg-slate-800 dark:bg-slate-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0">
-                                            <span className="text-xs font-bold opacity-80">{d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2)}</span>
-                                            <span className="text-sm font-bold">{d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}</span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            {sortedEntries.map((entry, idx) => {
-                                                const isHoliday = entry.type === "public_holiday";
-                                                let timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags");
-                                                let codeLabel = "";
-                                                if(entry.type === "work") codeLabel = WORK_CODES.find(c => c.id === entry.code)?.label;
-                                                else if(isHoliday) codeLabel = "Bezahlt frei";
-                                                else codeLabel = entry.type === "vacation" ? "Urlaub" : "Krank";
+                <AnimatePresence>
+                    {expanded && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                            className="overflow-hidden"
+                        >
+                            <div className="mt-2 space-y-3">
+                                {sortedDays.map(([dateStr, dayEntries]) => {
+                                    const daySum = dayEntries.reduce((acc, curr) => (curr.type === "work" && curr.code === 19) ? acc : acc + curr.netDuration, 0);
+                                    const d = new Date(dateStr);
+                                    const sortedEntries = [...dayEntries].sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+                                    
+                                    return (
+                                        <motion.div 
+                                            key={dateStr}
+                                            initial={{ y: 10, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"
+                                        >
+                                            <div className="flex">
+                                                <div className="bg-slate-800 dark:bg-slate-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0 z-20 relative">
+                                                    <span className="text-xs font-bold opacity-80">{d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2)}</span>
+                                                    <span className="text-sm font-bold">{d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}</span>
+                                                </div>
                                                 
-                                                let rowClass = `p-3 flex justify-between items-start gap-3 transition-colors cursor-pointer ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`;
-                                                if(isHoliday) rowClass += " bg-blue-50/50 dark:bg-blue-900/20";
-                                                else rowClass += " hover:bg-slate-50 dark:hover:bg-slate-700";
+                                                <div className="flex-1 min-w-0">
+                                                    <AnimatePresence initial={false}>
+                                                        {sortedEntries.map((entry, idx) => {
+                                                            const isHoliday = entry.type === "public_holiday";
+                                                            let timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags");
+                                                            let codeLabel = "";
+                                                            if(entry.type === "work") codeLabel = WORK_CODES.find(c => c.id === entry.code)?.label;
+                                                            else if(isHoliday) codeLabel = "Bezahlt frei";
+                                                            else codeLabel = entry.type === "vacation" ? "Urlaub" : "Krank";
+                                                            
+                                                            let rowClass = `p-3 flex justify-between items-start gap-3 transition-colors cursor-pointer bg-white dark:bg-slate-800 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`;
+                                                            if(isHoliday) rowClass = `p-3 flex justify-between items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`;
 
-                                                return (
-                                                    <div key={entry.id} onClick={() => !isHoliday && onEditEntry(entry)} className={rowClass}>
-                                                        <div className="min-w-0 flex-1 flex flex-col gap-1">
-                                                            <div className={`font-bold text-sm leading-none ${isHoliday ? "text-blue-600 dark:text-blue-400" : "text-slate-900 dark:text-slate-100"}`}>{timeLabel}</div>
-                                                            <div className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-tight">{entry.project}</div>
-                                                            {codeLabel && <div className="text-xs text-slate-500 dark:text-slate-400 leading-tight">{codeLabel}</div>}
-                                                        </div>
-                                                        <div className="flex items-center gap-2 pl-2 border-l border-slate-100 dark:border-slate-700 ml-1">
-                                                            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span>
-                                                            {!isHoliday && <button onClick={(ev) => { ev.stopPropagation(); onDeleteEntry(entry.id); }} className="text-slate-300 hover:text-red-500 dark:hover:text-red-400 p-1"><Trash2 size={16} /></button>}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                        <div className="bg-slate-50 dark:bg-slate-700/50 w-20 border-l border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center flex-shrink-0 px-1">
-                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide mb-0.5">Gesamt</span>
-                                            <span className="font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap text-sm">{formatTime(daySum)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
+                                                            if (isHoliday) {
+                                                                // Feiertage sind nicht swipeable
+                                                                return (
+                                                                    <div key={entry.id} className={rowClass}>
+                                                                        <div className="min-w-0 flex-1 flex flex-col gap-1">
+                                                                            <div className="font-bold text-sm leading-none text-blue-600 dark:text-blue-400">{timeLabel}</div>
+                                                                            <div className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-tight">{entry.project}</div>
+                                                                            <div className="text-xs text-slate-500 dark:text-slate-400 leading-tight">{codeLabel}</div>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 pl-2 border-l border-slate-100 dark:border-slate-700 ml-1">
+                                                                            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            // SWIPEABLE ROW
+                                                            return (
+                                                                <div key={entry.id} className="relative overflow-hidden bg-red-500">
+                                                                    {/* Background TRASH ICON */}
+                                                                    <div className="absolute inset-0 flex items-center justify-end pr-4 text-white">
+                                                                        <Trash2 size={20} />
+                                                                    </div>
+
+                                                                    {/* Foreground CONTENT */}
+                                                                    <motion.div 
+                                                                        drag="x"
+                                                                        dragConstraints={{ left: 0, right: 0 }} // Schnappt zurück
+                                                                        dragElastic={{ left: 0.5, right: 0.05 }} // Nach rechts schwerer
+                                                                        onDragEnd={(_, info) => {
+                                                                            // Wenn weit genug gezogen (> 80px), löschen auslösen
+                                                                            if (info.offset.x < -80) {
+                                                                                Haptics.impact({ style: ImpactStyle.Heavy });
+                                                                                onDeleteEntry(entry.id);
+                                                                            }
+                                                                        }}
+                                                                        onClick={() => onEditEntry(entry)} 
+                                                                        className={`relative z-10 bg-white dark:bg-slate-800 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`}
+                                                                        layout
+                                                                    >
+                                                                        <div className="p-3 flex justify-between items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                                                            <div className="min-w-0 flex-1 flex flex-col gap-1">
+                                                                                <div className="font-bold text-sm leading-none text-slate-900 dark:text-slate-100">{timeLabel}</div>
+                                                                                <div className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-tight">{entry.project}</div>
+                                                                                {codeLabel && <div className="text-xs text-slate-500 dark:text-slate-400 leading-tight">{codeLabel}</div>}
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2 pl-2 border-l border-slate-100 dark:border-slate-700 ml-1">
+                                                                                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </motion.div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </AnimatePresence>
+                                                </div>
+                                                
+                                                <div className="bg-slate-50 dark:bg-slate-700/50 w-20 border-l border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center flex-shrink-0 px-1 z-20 relative">
+                                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide mb-0.5">Gesamt</span>
+                                                    <span className="font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap text-sm">{formatTime(daySum)}</span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
               </div>
             );
           })
         )}
       </div>
-
-      <button onClick={onStartNewEntry} className="fixed bottom-6 right-6 bg-slate-900 dark:bg-orange-500 hover:bg-slate-800 dark:hover:bg-orange-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-all z-20">
-        <Plus size={28} />
-      </button>
-    </main>
+    </motion.main>
   );
 };
 

@@ -1,30 +1,51 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { ArrowLeft, Settings as SettingsIcon, FileBarChart } from "lucide-react";
+import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
+import { ArrowLeft, Settings as SettingsIcon, FileBarChart, Plus } from "lucide-react";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
-// WICHTIG: DatePicker Import hier entfernt, wir brauchen ihn nur noch in den Components!
 import toast, { Toaster } from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 import KoglerLogo from "./assets/kogler_time_icon.png";
 import { getHolidayData, getDayOfWeek, getWeekNumber, parseTime, getTargetMinutesForDate, WORK_CODES } from "./utils";
 
+// COMPONENTS
 import Dashboard from "./components/Dashboard";
 import EntryForm from "./components/EntryForm";
 import Settings from "./components/Settings";
-import PrintReport from "./components/PrintReport";
 import ConfirmModal from "./components/ConfirmModal";
 
+// CUSTOM HOOKS
+import { useEntries } from "./hooks/useEntries";
+import { useSettings } from "./hooks/useSettings";
+import { useAutoBackup } from "./hooks/useAutoBackup";
+
+// LAZY LOADING
+const PrintReport = React.lazy(() => import("./components/PrintReport"));
+
+// ANIMATION CONFIG
+const pageVariants = { initial: { opacity: 0, x: 20 }, in: { opacity: 1, x: 0 }, out: { opacity: 0, x: -20 } };
+const pageTransition = { type: "tween", ease: "anticipate", duration: 0.3 };
+const reportVariants = { initial: { y: "100%", opacity: 0 }, in: { y: 0, opacity: 1 }, out: { y: "100%", opacity: 0 } };
+
 export default function App() {
-  // ... (STATE BLEIBT GLEICH) ...
-  const [entries, setEntries] = useState(() => JSON.parse(localStorage.getItem("kogler_entries") || "[]"));
-  const [userData, setUserData] = useState(() => JSON.parse(localStorage.getItem("kogler_user") || '{"name":"Markus Mustermann"}'));
-  const [theme, setTheme] = useState(() => localStorage.getItem("kogler_theme") || "system");
-  const [autoBackup, setAutoBackup] = useState(() => localStorage.getItem("kogler_auto_backup") === "true");
+  // --- 1. DATEN & LOGIK ÜBER HOOKS ---
+  const { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries } = useEntries();
+  const { userData, setUserData, theme, setTheme, autoBackup, setAutoBackup } = useSettings();
+  
+  // Auto-Backup läuft jetzt isoliert im Hintergrund
+  useAutoBackup(entries, userData, autoBackup);
+
+  // --- 2. UI STATE (Routing & Formulare) ---
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState("dashboard");
   const [editingEntry, setEditingEntry] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // Formular State
   const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
   const [entryType, setEntryType] = useState("work");
   const [startTime, setStartTime] = useState("06:00");
@@ -32,10 +53,8 @@ export default function App() {
   const [project, setProject] = useState("");
   const [code, setCode] = useState(WORK_CODES[0].id);
   const [pauseDuration, setPauseDuration] = useState(30);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const fileInputRef = useRef(null);
 
-  // ... (HELPER BLEIBEN GLEICH: getHeaderTitle) ...
+  // --- 3. HELPER & CALCULATIONS ---
   const getHeaderTitle = () => {
     switch (view) {
       case "settings": return "Einstellungen";
@@ -45,30 +64,7 @@ export default function App() {
     }
   };
 
-  // ... (EFFECTS BLEIBEN GLEICH) ...
-  useEffect(() => localStorage.setItem("kogler_entries", JSON.stringify(entries)), [entries]);
-  useEffect(() => localStorage.setItem("kogler_user", JSON.stringify(userData)), [userData]);
-  useEffect(() => localStorage.setItem("kogler_auto_backup", autoBackup), [autoBackup]);
-  
-  useEffect(() => {
-    localStorage.setItem("kogler_theme", theme);
-    const root = document.documentElement;
-    const systemQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const applyTheme = () => {
-      if (theme === "dark") root.classList.add("dark");
-      else if (theme === "light") root.classList.remove("dark");
-      else if (theme === "system") {
-        if (systemQuery.matches) root.classList.add("dark");
-        else root.classList.remove("dark");
-      }
-    };
-    applyTheme();
-    if (theme === "system") {
-      systemQuery.addEventListener("change", applyTheme);
-      return () => systemQuery.removeEventListener("change", applyTheme);
-    }
-  }, [theme]);
-
+  // Hardware Back-Button (Das bleibt UI Logik, daher hier)
   useEffect(() => {
     const handler = CapacitorApp.addListener("backButton", () => {
       if (view !== "dashboard") { setView("dashboard"); setEditingEntry(null); } 
@@ -77,23 +73,7 @@ export default function App() {
     return () => handler.remove();
   }, [view]);
 
-  useEffect(() => {
-    const performAutoBackup = async () => {
-      if (!autoBackup || !Capacitor.isNativePlatform() || entries.length === 0) return;
-      const today = new Date().toISOString().split("T")[0];
-      if (localStorage.getItem("kogler_last_backup_date") === today) return;
-      try {
-        const payload = { user: userData, entries, exportedAt: new Date().toISOString(), note: "Auto" };
-        const fileName = `kogler_autobackup_${today}.json`;
-        await Filesystem.writeFile({ path: fileName, data: JSON.stringify(payload), directory: Directory.Documents, encoding: Encoding.UTF8 });
-        localStorage.setItem("kogler_last_backup_date", today);
-      } catch (err) { console.error("Backup failed", err); }
-    };
-    const timer = setTimeout(performAutoBackup, 2000);
-    return () => clearTimeout(timer);
-  }, [entries, userData, autoBackup]);
-
-  // ... (CALCULATION LOGIC BLEIBT GLEICH) ...
+  // --- STATISTIK BERECHNUNGEN (Bleiben hier, da sie UI-spezifisch sind) ---
   const viewYear = currentDate.getFullYear();
   const viewMonth = currentDate.getMonth();
 
@@ -150,7 +130,17 @@ export default function App() {
   const overtime = totalCredited - stats.targetMinutes;
   const progressPercent = Math.min(100, (totalCredited / (stats.targetMinutes || 1)) * 100);
 
-  // ... (ACTIONS BLEIBEN GLEICH) ...
+  // Memoized Data für Formular (Autocomplete/Copy)
+  const lastWorkEntry = useMemo(() => {
+    return [...entries].sort((a, b) => new Date(b.date) - new Date(a.date)).find((e) => e.type === "work");
+  }, [entries]);
+
+  const uniqueProjects = useMemo(() => {
+    const projects = entries.filter((e) => e.type === "work" && e.project?.trim()).map((e) => e.project.trim());
+    return [...new Set(projects)].sort();
+  }, [entries]);
+
+  // --- ACTIONS ---
   const startNewEntry = () => {
     setEditingEntry(null); setEntryType("work"); setFormDate(new Date().toISOString().split("T")[0]);
     setStartTime("06:00"); setEndTime("16:30"); setPauseDuration(30); setProject(""); 
@@ -171,10 +161,11 @@ export default function App() {
     setView("add");
   };
 
-  const saveEntry = (e) => {
+  const handleSaveEntry = (e) => {
     e.preventDefault();
     const isDrive = entryType === "drive";
     let net = 0; let label = "";
+    
     if (entryType === "work" || isDrive) {
         const s = parseTime(startTime); const en = parseTime(endTime);
         if (en <= s) { toast.error("⚠️ Endzeit muss nach Startzeit liegen!"); return; }
@@ -185,29 +176,33 @@ export default function App() {
         net = getTargetMinutesForDate(formDate); label = entryType === "vacation" ? "Urlaub" : "Krank";
     }
     if (net < 0) net = 0;
+    
     const storedType = isDrive ? "work" : entryType;
     const usedCode = isDrive ? 19 : code;
     const usedPause = storedType === "work" ? (isDrive ? 0 : pauseDuration) : 0;
+    
     const newEntry = {
         id: editingEntry ? editingEntry.id : Date.now(),
         type: storedType, date: formDate, start: storedType === "work" ? startTime : null, end: storedType === "work" ? endTime : null,
         pause: usedPause, project: storedType === "work" ? project : label, code: storedType === "work" ? usedCode : null, netDuration: net,
     };
-    setEntries(editingEntry ? entries.map((e) => (e.id === editingEntry.id ? newEntry : e)) : [newEntry, ...entries]);
+
+    // HOOK AUFRUF
+    if (editingEntry) updateEntry(newEntry);
+    else addEntry(newEntry);
+
     if (storedType === "work" && usedCode && usedCode !== 19 && usedCode !== 190) localStorage.setItem("kogler_last_code", usedCode);
     toast.success(editingEntry ? "✏️ Eintrag aktualisiert" : "💾 Eintrag gespeichert");
     setEditingEntry(null); setProject(""); setEntryType("work"); setView("dashboard");
   };
 
-  // Delete Handlers
-  const requestDeleteEntry = (id) => { setDeleteTarget({ type: 'single', id }); };
-  const requestDeleteAll = () => { setDeleteTarget({ type: 'all' }); };
+  // Delete wrapper
   const executeDelete = () => {
     if (deleteTarget?.type === 'single') {
-      setEntries(entries.filter((e) => e.id !== deleteTarget.id));
+      deleteEntry(deleteTarget.id);
       toast.success("🗑️ Eintrag gelöscht");
     } else if (deleteTarget?.type === 'all') {
-      setEntries([]);
+      deleteAllEntries();
       toast.success("🧹 Alle Daten bereinigt");
     }
     setDeleteTarget(null);
@@ -215,8 +210,6 @@ export default function App() {
   
   const changeMonth = (delta) => { const d = new Date(currentDate); d.setMonth(d.getMonth() + delta); setCurrentDate(d); };
   
-  // NATIVE MONTH PICKER ENTFERNT -> Wir nutzen React DatePicker im Dashboard
-
   const exportData = async () => {
     const fileName = `kogler_export_${new Date().toISOString().slice(0, 10)}.json`;
     const json = JSON.stringify({ user: userData, entries, exportedAt: new Date().toISOString() }, null, 2);
@@ -236,28 +229,25 @@ export default function App() {
     const file = event.target.files?.[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-        try { const d = JSON.parse(e.target.result); if(d.entries) setEntries(d.entries); if(d.user) setUserData(d.user); toast.success("📥 Daten erfolgreich importiert!"); }
-        catch { toast.error("❌ Fehler: Datei ungültig."); } finally { event.target.value = ""; }
+        try { 
+          const d = JSON.parse(e.target.result); 
+          if(d.entries) importEntries(d.entries);
+          if(d.user) setUserData(d.user);
+          toast.success("📥 Daten erfolgreich importiert!"); 
+        } catch { toast.error("❌ Fehler: Datei ungültig."); } finally { event.target.value = ""; }
     };
     reader.readAsText(file);
   };
 
-  if (view === "report") return <PrintReport entries={entriesWithHolidays} monthDate={currentDate} employeeName={userData.name} onClose={() => setView("dashboard")} />;
-
+  // --- RENDER ---
   return (
-    <div className="min-h-screen w-screen font-sans bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
+    <div className="min-h-screen w-screen font-sans bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-x-hidden relative">
       <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#1e293b', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />
       
-      {/* CONFIRM MODAL */}
       <ConfirmModal 
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={executeDelete}
+        isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={executeDelete}
         title={deleteTarget?.type === 'all' ? "Alles löschen?" : "Eintrag löschen?"}
-        message={deleteTarget?.type === 'all' 
-          ? "Möchtest du wirklich alle Einträge unwiderruflich löschen?" 
-          : "Möchtest du diesen Eintrag wirklich entfernen?"
-        }
+        message={deleteTarget?.type === 'all' ? "Möchtest du wirklich alle Einträge unwiderruflich löschen?" : "Möchtest du diesen Eintrag wirklich entfernen?"}
       />
 
       <input type="file" className="hidden" ref={fileInputRef} accept="application/json" onChange={handleImport} />
@@ -266,7 +256,7 @@ export default function App() {
       <header className="fixed top-0 left-0 right-0 bg-slate-900 text-white p-4 pb-6 shadow-xl z-50 w-full transition-all" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
-            {view !== "dashboard" ? (
+            {view !== "dashboard" && view !== "report" ? (
               <button onClick={() => { setView("dashboard"); setEditingEntry(null); }} className="p-2 hover:bg-slate-700 rounded-full transition-colors"><ArrowLeft size={24} /></button>
             ) : (
               <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-slate-800 shadow-inner"><img src={KoglerLogo} alt="Logo" className="w-full h-full object-contain" /></div>
@@ -279,51 +269,86 @@ export default function App() {
           {view === "dashboard" && (
             <div className="flex gap-2">
               <button onClick={() => setView("settings")} className="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors active:scale-95"><SettingsIcon size={20} className="text-slate-300" /></button>
-              <button onClick={() => setView("report")} className="bg-orange-500 hover:bg-orange-600 p-2.5 rounded-xl transition-colors shadow-lg shadow-orange-900/20 active:scale-95"><FileBarChart size={20} className="text-white" /></button>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setView("report")} className="bg-orange-500 hover:bg-orange-600 p-2.5 rounded-xl transition-colors shadow-lg shadow-orange-900/20"><FileBarChart size={20} className="text-white" /></motion.button>
             </div>
           )}
         </div>
       </header>
 
-      {/* CONTENT WRAPPER */}
+      {/* CONTENT */}
       <div className="pt-38 pb-24 px-1 w-full max-w-3xl mx-auto">
-        
-        {view === "dashboard" && (
-          <Dashboard 
-              currentDate={currentDate} 
-              onSetCurrentDate={setCurrentDate} // <-- NEUE PROP
-              changeMonth={changeMonth}
-              stats={stats} overtime={overtime} progressPercent={progressPercent}
-              groupedByWeek={groupedByWeek} viewMonth={viewMonth} viewYear={viewYear}
-              onStartNewEntry={startNewEntry} onEditEntry={startEdit} 
-              onDeleteEntry={requestDeleteEntry}
-          />
-        )}
+        <AnimatePresence mode="wait">
+          {view === "dashboard" && (
+            <motion.div key="dashboard" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
+              <Dashboard 
+                  currentDate={currentDate} onSetCurrentDate={setCurrentDate} changeMonth={changeMonth}
+                  stats={stats} overtime={overtime} progressPercent={progressPercent}
+                  groupedByWeek={groupedByWeek} viewMonth={viewMonth} viewYear={viewYear}
+                  onStartNewEntry={startNewEntry} onEditEntry={startEdit} 
+                  onDeleteEntry={(id) => setDeleteTarget({ type: 'single', id })}
+              />
+            </motion.div>
+          )}
 
-        {view === "add" && (
-          <EntryForm 
-              onCancel={() => { setView("dashboard"); setEditingEntry(null); }}
-              onSubmit={saveEntry}
-              entryType={entryType} setEntryType={setEntryType}
-              code={code} setCode={setCode}
-              pauseDuration={pauseDuration} setPauseDuration={setPauseDuration}
-              formDate={formDate} setFormDate={setFormDate}
-              startTime={startTime} setStartTime={setStartTime}
-              endTime={endTime} setEndTime={setEndTime}
-              project={project} setProject={setProject}
-          />
-        )}
+          {view === "add" && (
+            <motion.div key="add" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
+              <EntryForm 
+                  onCancel={() => { setView("dashboard"); setEditingEntry(null); }}
+                  onSubmit={handleSaveEntry} 
+                  entryType={entryType} setEntryType={setEntryType}
+                  code={code} setCode={setCode}
+                  pauseDuration={pauseDuration} setPauseDuration={setPauseDuration}
+                  formDate={formDate} setFormDate={setFormDate}
+                  startTime={startTime} setStartTime={setStartTime}
+                  endTime={endTime} setEndTime={setEndTime}
+                  project={project} setProject={setProject}
+                  lastWorkEntry={lastWorkEntry} existingProjects={uniqueProjects}
+              />
+            </motion.div>
+          )}
 
-        {view === "settings" && (
-          <Settings 
-              userData={userData} setUserData={setUserData}
-              theme={theme} setTheme={setTheme}
-              autoBackup={autoBackup} setAutoBackup={setAutoBackup}
-              onExport={exportData} onImport={() => fileInputRef.current?.click()}
-              onDeleteAll={requestDeleteAll}
-          />
-        )}
+          {view === "settings" && (
+            <motion.div key="settings" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
+              <Settings 
+                  userData={userData} setUserData={setUserData}
+                  theme={theme} setTheme={setTheme}
+                  autoBackup={autoBackup} setAutoBackup={setAutoBackup}
+                  onExport={exportData} onImport={() => fileInputRef.current?.click()}
+                  onDeleteAll={() => setDeleteTarget({ type: 'all' })}
+              />
+            </motion.div>
+          )}
+
+          {view === "report" && (
+            <motion.div key="report" initial="initial" animate="in" exit="out" variants={reportVariants} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed inset-0 z-[200] w-full h-full">
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full w-full bg-slate-900/50 backdrop-blur-sm">
+                  <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xl flex items-center gap-3">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+                    <span className="font-bold text-slate-700 dark:text-white">Lade PDF-Modul...</span>
+                  </div>
+                </div>
+              }>
+                <PrintReport entries={entriesWithHolidays} monthDate={currentDate} employeeName={userData.name} userPhoto={userData.photo} onClose={() => setView("dashboard")} />
+              </Suspense>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* FAB */}
+      <AnimatePresence>
+        {view === "dashboard" && (
+          <motion.button 
+            initial={{ scale: 0, rotate: 90 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 90 }}
+            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.9 }}
+            onClick={async () => { await Haptics.impact({ style: ImpactStyle.Medium }); startNewEntry(); }} 
+            className="fixed bottom-10 right-8 bg-slate-900 dark:bg-orange-500 hover:bg-slate-800 dark:hover:bg-orange-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-colors z-[60]"
+          >
+            <Plus size={28} />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

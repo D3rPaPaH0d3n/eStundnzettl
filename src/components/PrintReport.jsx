@@ -5,32 +5,31 @@ import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
 import toast from "react-hot-toast";
+import { motion } from "framer-motion";
 import { WORK_CODES, getWeekNumber, formatTime, blobToBase64 } from "../utils";
 
-// --- SICHERE FARBEN FÜR PDF (HEX statt Tailwind OKLCH) ---
 const PRINT_STYLES = {
   textBlack: '#000000',
-  textDark: '#1e293b', // Slate-800
-  textMedium: '#475569', // Slate-600
-  textLight: '#94a3b8', // Slate-400
+  textDark: '#1e293b',
+  textMedium: '#475569',
+  textLight: '#94a3b8',
   bgWhite: '#ffffff',
-  bgGray: '#f8fafc', // Slate-50
-  bgZebra: '#f1f5f9', // Slate-100
-  bgBlueLight: '#eff6ff', // Blue-50
-  textBlue: '#1e40af', // Blue-800
-  textRed: '#b91c1c', // Red-700
-  textGreen: '#15803d', // Green-700
-  borderDark: '#1e293b', // Slate-800
-  borderLight: '#e2e8f0', // Slate-200
+  bgGray: '#f8fafc',
+  bgZebra: '#f1f5f9',
+  bgBlueLight: '#eff6ff',
+  textBlue: '#1e40af',
+  textRed: '#b91c1c',
+  textGreen: '#15803d',
+  borderDark: '#1e293b',
+  borderLight: '#e2e8f0',
 };
 
-const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
+const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose }) => {
   const [filterMode, setFilterMode] = useState(() => getWeekNumber(new Date())); 
   const [isGenerating, setIsGenerating] = useState(false);
   const [scale, setScale] = useState(1);
   const reportRef = useRef(null);
 
-  // Auto-Zoom Logik
   useEffect(() => {
     const handleResize = () => {
       const baseWidth = 850; 
@@ -47,7 +46,6 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Helper KW Label
   const getWeekLabel = (week) => {
     const year = monthDate.getFullYear();
     const simple = new Date(year, 0, 1 + (week - 1) * 7);
@@ -151,14 +149,14 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
       const filename = `Stundenzettel_${timestamp}.pdf`;
 
       const opt = {
-        margin: 0,
+        margin: 0, // Strikt 0 Margin
         filename,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: { 
           scale: 2, 
           useCORS: true, 
           windowWidth: 850, 
-          backgroundColor: "#ffffff" // WICHTIG: Weißer Hintergrund explizit
+          backgroundColor: "#ffffff"
         }, 
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       };
@@ -175,12 +173,24 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
       const base64 = await blobToBase64(pdfBlob);
 
       await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Documents, encoding: Encoding.BASE64, recursive: true });
+      
       let shareUrl;
-      try { const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Documents }); shareUrl = uriResult.uri || uriResult.path; } catch (uriError) { console.error("URI Fehler:", uriError); }
+      try { 
+        const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Documents }); 
+        shareUrl = uriResult.uri || uriResult.path; 
+      } catch (uriError) { 
+        console.error("URI Fehler:", uriError); 
+      }
 
       if (shareUrl) {
-        await Share.share({ title: "Stundenzettel teilen", text: `Stundenzettel`, url: shareUrl });
-        toast.success("📤 PDF bereitgestellt zum Teilen.");
+        // HIER DER FIX: Teilen in eigenem Try/Catch, damit "Abbrechen" nicht als Fehler gilt
+        try {
+          await Share.share({ title: "Stundenzettel teilen", text: `Stundenzettel`, url: shareUrl });
+          toast.success("📤 Datei bereitgestellt.");
+        } catch (shareErr) {
+          console.log("Teilen abgebrochen oder fehlgeschlagen", shareErr);
+          // Kein Fehler-Toast hier, da die Datei ja erstellt wurde!
+        }
       } else {
         toast.success("💾 PDF in Dokumente gespeichert.");
       }
@@ -193,24 +203,31 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-800 z-50 overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-800 z-[200] overflow-y-auto">
       {/* TOPBAR */}
       <div 
         className="sticky top-0 bg-slate-900 text-white p-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-xl z-50"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
       >
         <div className="flex items-center gap-4 w-full">
-          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-full"><X /></button>
+          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-full transition-colors"><X /></button>
           <h2 className="font-bold flex-1 text-center mr-10 text-xl">Berichtsvorschau</h2>
         </div>
         <div className="flex gap-2 items-center flex-wrap justify-center w-full">
-          <select value={filterMode} onChange={(e) => setFilterMode(e.target.value)} className="bg-slate-800 border border-slate-600 rounded p-2 text-sm flex-1">
+          <select value={filterMode} onChange={(e) => setFilterMode(e.target.value)} className="bg-slate-800 border border-slate-600 rounded p-2 text-sm flex-1 outline-none">
             <option value="month">Gesamter Monat</option>
             {availableWeeks.map((w) => <option key={w} value={w}>KW {w} ({getWeekLabel(w)})</option>)}
           </select>
-          <button onClick={handleDownloadPdf} disabled={isGenerating} className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 text-base">
+          
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleDownloadPdf} 
+            disabled={isGenerating} 
+            className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 text-base shadow-lg shadow-orange-900/20"
+          >
             {isGenerating ? <Loader className="animate-spin" size={18} /> : <Download size={18} />} PDF
-          </button>
+          </motion.button>
         </div>
       </div>
 
@@ -218,26 +235,44 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
       <div className="flex flex-col items-center p-4 min-h-screen">
         <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center', marginBottom: `-${(1 - scale) * 100}%` }}>
           
-          {/* DER BERICHT - JETZT MIT HARDCODED HEX FARBEN */}
-          <div
+          {/* PAPIER */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
             id="report-to-print"
             ref={reportRef}
-            // KEINE Tailwind Klassen hier für Farben/Backgrounds!
-            className="w-[210mm] min-w-[210mm] min-h-[297mm] mx-auto p-8 shadow-2xl"
+            // HIER DER FIX FÜR LEERE SEITE: min-h-[296mm] statt 297mm
+            className="w-[210mm] min-w-[210mm] min-h-[296mm] mx-auto p-8 shadow-2xl"
             style={{ backgroundColor: PRINT_STYLES.bgWhite, color: PRINT_STYLES.textBlack, fontFamily: 'Arial, sans-serif' }}
           >
-            {/* HEADER */}
+            {/* HEADER - TEXT LINKS, BILD RECHTS */}
             <div style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, paddingBottom: '1.5rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
                 <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', textTransform: 'uppercase', color: PRINT_STYLES.textDark, margin: 0 }}>Stundenzettel</h1>
                 <p style={{ fontSize: '0.875rem', fontWeight: 'bold', color: PRINT_STYLES.textMedium, marginTop: '0.25rem', margin: 0 }}>Kogler Aufzugsbau</p>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontWeight: '500', margin: 0 }}>Mitarbeiter: {employeeName}</p>
-                <p style={{ fontSize: '0.875rem', color: PRINT_STYLES.textMedium, margin: 0 }}>
-                  Zeitraum: {monthDate.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
-                  {filterMode !== "month" && ` (KW ${filterMode})`}
-                </p>
+              
+              {/* RECHTE SEITE: CONTAINER FÜR TEXT UND BILD */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                
+                {/* TEXTBLOCK */}
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontWeight: '500', margin: 0 }}>Mitarbeiter: {employeeName}</p>
+                  <p style={{ fontSize: '0.875rem', color: PRINT_STYLES.textMedium, margin: 0 }}>
+                    Zeitraum: {monthDate.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
+                    {filterMode !== "month" && ` (KW ${filterMode})`}
+                  </p>
+                </div>
+
+                {/* BILD - VERGRÖSSERT AUF 65px */}
+                {userPhoto && (
+                  <img 
+                    src={userPhoto} 
+                    alt="Mitarbeiter" 
+                    style={{ width: '65px', height: '65px', borderRadius: '50%', objectFit: 'cover', border: `1px solid ${PRINT_STYLES.borderLight}`, display: 'block' }} 
+                  />
+                )}
               </div>
             </div>
 
@@ -245,12 +280,12 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
             <table style={{ width: '100%', fontSize: '0.875rem', textAlign: 'left', marginBottom: '2rem', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, color: PRINT_STYLES.textMedium, textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                  <th style={{ padding: '0.5rem 0', width: '4rem' }}>Datum</th>
+                  <th style={{ padding: '0.5rem 0', width: '5.5rem' }}>Datum</th>
                   <th style={{ padding: '0.5rem 0', width: '6rem' }}>Zeit</th>
                   <th style={{ padding: '0.5rem 0' }}>Projekt</th>
                   <th style={{ padding: '0.5rem 0', width: '6rem' }}>Code</th>
-                  <th style={{ padding: '0.5rem 0', width: '3.5rem', textAlign: 'right' }}>Std.</th>
-                  <th style={{ padding: '0.5rem 0', width: '3.5rem', textAlign: 'right' }}>Saldo</th>
+                  <th style={{ padding: '0.5rem 1rem 0.5rem 0', width: '4.5rem', textAlign: 'right' }}>Std.</th>
+                  <th style={{ padding: '0.5rem 1rem 0.5rem 0', width: '4.5rem', textAlign: 'right' }}>Saldo</th>
                 </tr>
               </thead>
               <tbody>
@@ -269,7 +304,6 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
                   let durationDisplay = formatTime(e.netDuration);
                   let timeColor = PRINT_STYLES.textDark;
                   
-                  // content logic...
                   let timeCellContent = null;
                   if (e.type === "work") {
                     if (e.code === 19) { durationDisplay = "-"; timeColor = PRINT_STYLES.textLight; }
@@ -295,15 +329,16 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
                   return (
                     <tr key={e.id} style={{ backgroundColor: rowBg, borderBottom: `1px solid ${PRINT_STYLES.bgZebra}`, pageBreakInside: 'avoid' }}>
                       <td style={{ padding: '0.5rem 0.5rem', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontWeight: 'bold' }}>{wd}</span> <span style={{ color: PRINT_STYLES.textMedium }}>{ds}</span>
+                        <span style={{ display: 'inline-block', width: '2.5rem', fontWeight: 'bold' }}>{wd}</span>
+                        <span style={{ color: PRINT_STYLES.textMedium }}>{ds}</span>
                       </td>
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'top' }}>{timeCellContent}</td>
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'top' }}>
                         <span style={{ fontWeight: '500', color: e.type === "public_holiday" ? PRINT_STYLES.textBlue : PRINT_STYLES.textMedium }}>{projectText}</span>
                       </td>
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'top', fontSize: '0.75rem', color: PRINT_STYLES.textMedium }}>{codeText}</td>
-                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top', textAlign: 'right', fontWeight: 'bold', color: timeColor }}>{durationDisplay}</td>
-                      <td style={{ padding: '0.5rem 0.5rem 0.5rem 0', verticalAlign: 'top', textAlign: 'right', fontWeight: 'bold', fontSize: '0.75rem' }}>
+                      <td style={{ padding: '0.5rem 1rem 0.5rem 0', verticalAlign: 'top', textAlign: 'right', fontWeight: 'bold', color: timeColor }}>{durationDisplay}</td>
+                      <td style={{ padding: '0.5rem 1rem 0.5rem 0', verticalAlign: 'top', textAlign: 'right', fontWeight: 'bold', fontSize: '0.75rem' }}>
                         {meta.showBalance && (
                           <span style={{ color: meta.balance >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}>
                             {formatSaldo(meta.balance)}
@@ -353,7 +388,7 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose }) => {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

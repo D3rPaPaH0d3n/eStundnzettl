@@ -145,7 +145,7 @@ export const getHolidayData = (year) => {
 // -------------------------------------------------------
 // VERSION & UPDATE CHECKER
 // -------------------------------------------------------
-export const APP_VERSION = "4.1.0"; // Deine aktuelle App-Version
+export const APP_VERSION = "4.1.1"; // Deine aktuelle App-Version
 
 // Vergleicht Versionen (z.B. "4.0.1" > "4.0.0")
 const compareVersions = (v1, v2) => {

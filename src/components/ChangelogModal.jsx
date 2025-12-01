@@ -4,13 +4,39 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const CHANGELOG_DATA = [
   {
+    version: "4.1.1",
+    date: "02.12.2025",
+    title: "PDF Perfektion & Notizen 📝",
+    isMajor: false,
+    sections: [
+      {
+        icon: FileText,
+        title: "PDF Bericht",
+        items: [
+          "Layout optimiert: Perfektes A4-Format ohne leere Seiten",
+          "Notiz-Funktion: Füge persönliche Anmerkungen zum Bericht hinzu",
+          "Design: Größere Schrift & verbesserte Lesbarkeit",
+          "Intelligente Datumsanzeige: Tag wird bei Mehrfach-Einträgen gruppiert"
+        ]
+      },
+      {
+        icon: Bug,
+        title: "Fixes",
+        items: [
+          "Export-Fehler 'EACCESS' auf Android behoben",
+          "Druck-Statusmeldung korrigiert"
+        ]
+      }
+    ]
+  },
+  {
     version: "4.1.0",
     date: "01.12.2025",
     title: "The Precision Update 🎯",
     isMajor: true,
     sections: [
       {
-        icon: Shield, // Import oben sicherstellen!
+        icon: Shield,
         title: "Logik & Sicherheit",
         items: [
           "Doppel-Buchungsschutz: Verhindert überlappende Zeiteinträge",

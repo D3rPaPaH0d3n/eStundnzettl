@@ -1,10 +1,10 @@
 import React, { forwardRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Trash2 } from "lucide-react";
-import { Card, formatTime, formatSignedTime, WORK_CODES } from "../utils";
+// FIX 1: getWeekNumber hier importieren
+import { Card, formatTime, formatSignedTime, WORK_CODES, getWeekNumber } from "../utils"; 
 import { motion, AnimatePresence } from "framer-motion";
-import { Haptics, ImpactStyle } from "@capacitor/haptics"; // NEU
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
-// REACT DATEPICKER IMPORTIEREN
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import de from "date-fns/locale/de";
@@ -33,10 +33,15 @@ const Dashboard = ({
   onEditEntry,
   onDeleteEntry,
 }) => {
-  const [expandedWeeks, setExpandedWeeks] = useState({});
+  
+  // FIX 2: Initiale State setzt die aktuelle KW auf 'true'
+  const [expandedWeeks, setExpandedWeeks] = useState(() => {
+    const currentWeek = getWeekNumber(new Date());
+    return { [currentWeek]: true };
+  });
 
   const toggleWeek = (week) => {
-    Haptics.impact({ style: ImpactStyle.Light }); // Klick Feedback
+    Haptics.impact({ style: ImpactStyle.Light });
     setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] }));
   };
 
@@ -175,7 +180,6 @@ const Dashboard = ({
                                                             if(isHoliday) rowClass = `p-3 flex justify-between items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`;
 
                                                             if (isHoliday) {
-                                                                // Feiertage sind nicht swipeable
                                                                 return (
                                                                     <div key={entry.id} className={rowClass}>
                                                                         <div className="min-w-0 flex-1 flex flex-col gap-1">
@@ -190,21 +194,17 @@ const Dashboard = ({
                                                                 );
                                                             }
 
-                                                            // SWIPEABLE ROW
                                                             return (
                                                                 <div key={entry.id} className="relative overflow-hidden bg-red-500">
-                                                                    {/* Background TRASH ICON */}
                                                                     <div className="absolute inset-0 flex items-center justify-end pr-4 text-white">
                                                                         <Trash2 size={20} />
                                                                     </div>
 
-                                                                    {/* Foreground CONTENT */}
                                                                     <motion.div 
                                                                         drag="x"
-                                                                        dragConstraints={{ left: 0, right: 0 }} // Schnappt zurück
-                                                                        dragElastic={{ left: 0.5, right: 0.05 }} // Nach rechts schwerer
+                                                                        dragConstraints={{ left: 0, right: 0 }}
+                                                                        dragElastic={{ left: 0.5, right: 0.05 }}
                                                                         onDragEnd={(_, info) => {
-                                                                            // Wenn weit genug gezogen (> 80px), löschen auslösen
                                                                             if (info.offset.x < -80) {
                                                                                 Haptics.impact({ style: ImpactStyle.Heavy });
                                                                                 onDeleteEntry(entry.id);

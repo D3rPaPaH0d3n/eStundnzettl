@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { X, Loader, Download, ZoomIn, ZoomOut, ChevronDown, FileText, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { X, Loader, Download, ChevronDown, FileText, ChevronLeft, ChevronRight, Check, MessageSquarePlus } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
@@ -12,7 +12,6 @@ const PRINT_STYLES = {
   textBlack: '#000000',
   textDark: '#1e293b',
   textMedium: '#475569',
-  textLight: '#94a3b8',
   bgWhite: '#ffffff',
   bgGray: '#f8fafc',
   bgZebra: '#f1f5f9',
@@ -35,32 +34,25 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [scale, setScale] = useState(0.5); 
-  const [isPickerOpen, setIsPickerOpen] = useState(false); // State für Custom Dropdown
+  const [scale, setScale] = useState(1);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [customNote, setCustomNote] = useState("");
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const reportRef = useRef(null);
 
-  // Auto-Scale beim Start
   useEffect(() => {
     const calculateFitScale = () => {
+      if (isGenerating) return;
       const A4_WIDTH_PX = 794; 
-      const A4_HEIGHT_PX = 1123; 
-      const padding = 40; 
-      const headerHeight = 160; 
-      const availableWidth = window.innerWidth - padding;
-      const availableHeight = window.innerHeight - headerHeight;
-      const scaleX = availableWidth / A4_WIDTH_PX;
-      const scaleY = availableHeight / A4_HEIGHT_PX;
-      const optimalScale = Math.min(scaleX, scaleY, 1); 
+      const availableWidth = window.innerWidth - 24; 
+      let optimalScale = availableWidth / A4_WIDTH_PX;
+      optimalScale = Math.min(Math.max(optimalScale, 0.3), 1.0);
       setScale(optimalScale);
     };
     calculateFitScale();
     window.addEventListener("resize", calculateFitScale);
     return () => window.removeEventListener("resize", calculateFitScale);
-  }, []);
-
-  const changeZoom = (delta) => {
-    setScale(prev => Math.min(Math.max(prev + delta, 0.3), 1.5));
-  };
+  }, [isGenerating]);
 
   const handleMonthChange = (delta) => {
     const newDate = new Date(monthDate);
@@ -106,7 +98,6 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     return Array.from(w).sort((a, b) => a - b);
   }, [entries]);
 
-  // Für das Dropdown Label
   const currentLabel = useMemo(() => {
     if (filterMode === "month") return "Gesamter Monat";
     return `KW ${filterMode} (${getWeekLabel(filterMode)})`;
@@ -170,52 +161,75 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
 
   const handleDownloadPdf = async () => {
     try {
+      const originalScale = scale;
       setIsGenerating(true);
-      const element = document.getElementById("report-to-print");
-      if (!element) { toast.error("❌ Fehler: PDF-Element nicht gefunden."); return; }
+      setScale(1); 
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      const timestamp = new Date().getTime().toString().slice(-6);
-      const filename = `Stundenzettel_${timestamp}.pdf`;
+      const element = document.getElementById("report-to-print");
+      if (!element) throw new Error("PDF Element fehlt");
+
+      let timePeriod = "";
+      const employeeNameClean = employeeName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      if (filterMode === "month") {
+        timePeriod = monthDate.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+      } else {
+        const weekLabel = getWeekLabel(filterMode); 
+        timePeriod = `KW_${filterMode}_(${weekLabel.replace(/[\s-.]/g, '')})`; 
+      }
+      const timestamp = new Date().getTime().toString().slice(-6); 
+      const filename = `${employeeNameClean}_Stundenzettel_${timePeriod.replace(/\s+/g, '_')}_${timestamp}.pdf`; 
 
       const opt = {
-        margin: 0,
+        margin: 5, 
         filename,
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, windowWidth: 850, backgroundColor: "#ffffff" }, 
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true, 
+          windowWidth: 794, 
+          scrollY: 0,
+          backgroundColor: "#ffffff"
+        }, 
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: 'css' } 
       };
 
       const worker = html2pdf().set(opt).from(element);
 
       if (!Capacitor.isNativePlatform()) {
         await worker.save();
-        toast.success("📄 PDF erfolgreich heruntergeladen!");
+        setScale(originalScale);
+        setIsGenerating(false);
+        toast.success("🖨️ Druck erfolgreich!");
         return;
       }
 
       const pdfBlob = await worker.output("blob");
       const base64 = await blobToBase64(pdfBlob);
 
-      await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Documents, encoding: Encoding.BASE64, recursive: true });
-      
-      let shareUrl;
-      try { 
-        const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Documents }); 
-        shareUrl = uriResult.uri || uriResult.path; 
-      } catch (uriError) { console.error("URI Fehler:", uriError); }
+      setScale(originalScale);
+      setIsGenerating(false);
 
-      if (shareUrl) {
-        try {
-          await Share.share({ title: "Stundenzettel teilen", text: `Stundenzettel`, url: shareUrl });
-          toast.success("📤 Datei bereitgestellt.");
-        } catch (shareErr) { console.log("Teilen abgebrochen"); }
-      } else {
-        toast.success("💾 PDF in Dokumente gespeichert.");
-      }
+      await Filesystem.writeFile({ 
+        path: filename, 
+        data: base64, 
+        directory: Directory.Cache, 
+        encoding: Encoding.BASE64, 
+        recursive: true 
+      });
+      
+      const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache }); 
+      await Share.share({ title: "Stundenzettel", url: uriResult.uri });
+      toast.success("🖨️ Druck erfolgreich vorbereitet");
+      
     } catch (err) {
+      if (err.message && (err.message.includes("canceled") || err.message.includes("cancelled"))) {
+        return; 
+      }
       console.error(err);
-      toast.error("❌ Fehler beim Erstellen der PDF.");
-    } finally {
+      toast.error("❌ Fehler: " + err.message);
       setIsGenerating(false);
     }
   };
@@ -246,7 +260,13 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
 
         <div className="flex gap-2 items-center">
             
-            {/* FIX: CUSTOM DROPDOWN (Statt <select>) */}
+            <button 
+                onClick={() => setIsNoteModalOpen(true)}
+                className={`p-2 rounded-lg border flex items-center justify-center transition-colors ${customNote ? "bg-blue-500/20 text-blue-400 border-blue-500/50" : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"}`}
+            >
+                <MessageSquarePlus size={20} />
+            </button>
+
             <div className="relative flex-1 min-w-0">
                 <button 
                     onClick={() => setIsPickerOpen(!isPickerOpen)}
@@ -259,10 +279,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                 <AnimatePresence>
                     {isPickerOpen && (
                         <>
-                            {/* Backdrop zum Schließen beim Klicken außerhalb */}
                             <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)} />
-                            
-                            {/* Dropdown Liste */}
                             <motion.div
                                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -305,62 +322,67 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
         </div>
       </div>
 
-      {/* 2. PREVIEW CONTAINER */}
-      <div className="flex-1 overflow-auto bg-slate-800/50 relative p-4 touch-pan-x touch-pan-y flex flex-col items-center">
+      <div className="flex-1 bg-slate-800/50 relative overflow-hidden flex flex-col items-center justify-start py-8 overflow-y-auto touch-pan-y">
         <div 
-            className="transition-transform duration-200 ease-out origin-top"
+            className="origin-top transition-transform duration-200 shadow-2xl bg-white"
             style={{ 
-                transform: `scale(${scale})`, 
+                transform: `scale(${scale})`,
                 width: '210mm',
-                height: '296mm'
+                minHeight: '297mm', 
+                marginBottom: '5rem' 
             }}
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
+          <div
             id="report-to-print"
             ref={reportRef}
-            className="w-full h-full bg-white shadow-2xl p-8"
-            style={{ color: PRINT_STYLES.textBlack, fontFamily: 'Arial, sans-serif' }}
+            style={{ 
+                width: '100%', 
+                backgroundColor: 'white',
+                padding: '5mm', 
+                color: PRINT_STYLES.textBlack, 
+                fontFamily: 'Arial, sans-serif' 
+            }}
           >
-            {/* PDF CONTENT START */}
-            <div style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, paddingBottom: '1.5rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <div style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, paddingBottom: '0.75rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', textTransform: 'uppercase', color: PRINT_STYLES.textDark, margin: 0 }}>Stundenzettel</h1>
-                <p style={{ fontSize: '0.875rem', fontWeight: 'bold', color: PRINT_STYLES.textMedium, marginTop: '0.25rem', margin: 0 }}>Kogler Aufzugsbau</p>
+                <h1 style={{ fontSize: '1.6rem', fontWeight: 'bold', textTransform: 'uppercase', color: PRINT_STYLES.textDark, margin: 0 }}>Stundenzettel</h1>
+                <p style={{ fontSize: '0.9rem', fontWeight: 'bold', color: PRINT_STYLES.textMedium, marginTop: '0.25rem', margin: 0 }}>Kogler Aufzugsbau</p>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontWeight: '500', margin: 0 }}>Mitarbeiter: {employeeName}</p>
-                  <p style={{ fontSize: '0.875rem', color: PRINT_STYLES.textMedium, margin: 0 }}>
-                    Zeitraum: {monthDate.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
+                  <p style={{ fontWeight: '500', fontSize: '0.9rem', margin: 0 }}>{employeeName}</p>
+                  <p style={{ fontSize: '0.8rem', color: PRINT_STYLES.textMedium, margin: 0 }}>
+                    {monthDate.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
                     {filterMode !== "month" && ` (KW ${filterMode})`}
                   </p>
                 </div>
                 {userPhoto && (
-                  <img src={userPhoto} alt="Mitarbeiter" style={{ width: '65px', height: '65px', borderRadius: '50%', objectFit: 'cover', border: `1px solid ${PRINT_STYLES.borderLight}`, display: 'block' }} />
+                  <img src={userPhoto} alt="Mitarbeiter" style={{ width: '55px', height: '55px', borderRadius: '50%', objectFit: 'cover', border: `1px solid ${PRINT_STYLES.borderLight}`, display: 'block' }} />
                 )}
               </div>
             </div>
 
-            <table style={{ width: '100%', fontSize: '0.875rem', textAlign: 'left', marginBottom: '2rem', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', fontSize: '0.85rem', textAlign: 'left', marginBottom: '1rem', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, color: PRINT_STYLES.textMedium, textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                  <th style={{ padding: '0.5rem 0', width: '5.5rem' }}>Datum</th>
-                  <th style={{ padding: '0.5rem 0', width: '6rem' }}>Zeit</th>
-                  <th style={{ padding: '0.5rem 0' }}>Projekt</th>
-                  <th style={{ padding: '0.5rem 0', width: '6rem' }}>Code</th>
-                  <th style={{ padding: '0.5rem 1rem 0.5rem 0', width: '4.5rem', textAlign: 'right' }}>Std.</th>
-                  <th style={{ padding: '0.5rem 1rem 0.5rem 0', width: '4.5rem', textAlign: 'right' }}>Saldo</th>
+                  <th style={{ padding: '0.4rem 0', width: '5rem' }}>Datum</th>
+                  <th style={{ padding: '0.4rem 0', width: '6rem' }}>Zeit</th>
+                  <th style={{ padding: '0.4rem 0' }}>Projekt</th>
+                  <th style={{ padding: '0.4rem 0', width: '5.5rem' }}>Code</th>
+                  <th style={{ padding: '0.4rem 0', width: '3.5rem', textAlign: 'right' }}>Std.</th>
+                  <th style={{ padding: '0.4rem 0', width: '3.5rem', textAlign: 'right' }}>Saldo</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredEntries.map((e) => {
+                {filteredEntries.map((e, idx) => { // HIER NUTZEN WIR JETZT DEN INDEX
                   const d = new Date(e.date);
                   const wd = d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2);
                   const ds = d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
                   const meta = dayMetaMap[e.id] || {};
+
+                  // CHECK: IST ES DER GLEICHE TAG WIE VORHER?
+                  const prevEntry = filteredEntries[idx - 1];
+                  const isSameDay = prevEntry && prevEntry.date === e.date;
 
                   let rowBg = 'transparent';
                   if (e.type === "public_holiday") rowBg = PRINT_STYLES.bgBlueLight;
@@ -374,10 +396,10 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                   let timeCellContent = null;
                   if (e.type === "work") {
                     if (e.code === 19) { durationDisplay = "-"; timeColor = PRINT_STYLES.textLight; }
-                    const pauseText = e.pause > 0 ? `Pause: ${e.pause}m` : "Keine Pause";
+                    const pauseText = e.pause > 0 ? `Pause: ${e.pause}m` : "KEINE PAUSE";
                     const pauseColor = e.pause > 0 ? PRINT_STYLES.textMedium : PRINT_STYLES.textLight;
                     timeCellContent = (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <span style={{ fontWeight: 'bold', color: PRINT_STYLES.textDark, lineHeight: 1.2, whiteSpace: 'nowrap' }}>{e.start} – {e.end}</span>
                         <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', marginTop: '2px', color: pauseColor }}>{pauseText}</span>
                       </div>
@@ -393,18 +415,24 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                   }
 
                   return (
-                    <tr key={e.id} style={{ backgroundColor: rowBg, borderBottom: `1px solid ${PRINT_STYLES.bgZebra}`, pageBreakInside: 'avoid' }}>
-                      <td style={{ padding: '0.5rem 0.5rem', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
-                        <span style={{ display: 'inline-block', width: '2.5rem', fontWeight: 'bold' }}>{wd}</span>
-                        <span style={{ color: PRINT_STYLES.textMedium }}>{ds}</span>
+                    <tr key={e.id} style={{ height: '3.5rem', pageBreakInside: 'avoid', breakInside: 'avoid', backgroundColor: rowBg, borderBottom: `1px solid ${PRINT_STYLES.bgZebra}` }}>
+                      {/* FIX: DATUM NUR ANZEIGEN WENN NEUER TAG */}
+                      <td style={{ padding: '0 0', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        {!isSameDay && (
+                            <>
+                                <span style={{ display: 'inline-block', width: '2rem', fontWeight: 'bold' }}>{wd}</span>
+                                <span style={{ color: PRINT_STYLES.textMedium }}>{ds}</span>
+                            </>
+                        )}
                       </td>
-                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top' }}>{timeCellContent}</td>
-                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top' }}>
+                      <td style={{ padding: '0 0', verticalAlign: 'middle' }}>{timeCellContent}</td>
+                      <td style={{ padding: '0 0', verticalAlign: 'middle' }}>
                         <span style={{ fontWeight: '500', color: e.type === "public_holiday" ? PRINT_STYLES.textBlue : PRINT_STYLES.textMedium }}>{projectText}</span>
                       </td>
-                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top', fontSize: '0.75rem', color: PRINT_STYLES.textMedium }}>{codeText}</td>
-                      <td style={{ padding: '0.5rem 1rem 0.5rem 0', verticalAlign: 'top', textAlign: 'right', fontWeight: 'bold', color: timeColor }}>{durationDisplay}</td>
-                      <td style={{ padding: '0.5rem 1rem 0.5rem 0', verticalAlign: 'top', textAlign: 'right', fontWeight: 'bold', fontSize: '0.75rem' }}>
+                      <td style={{ padding: '0 0', verticalAlign: 'middle', fontSize: '0.75rem', color: PRINT_STYLES.textMedium }}>{codeText}</td>
+                      <td style={{ padding: '0 0', verticalAlign: 'middle', textAlign: 'right', fontWeight: 'bold', color: timeColor }}>{durationDisplay}</td>
+                      <td style={{ padding: '0 0', verticalAlign: 'middle', textAlign: 'right', fontWeight: 'bold', fontSize: '0.75rem' }}>
+                        {/* SALDO NUR BEIM LETZTEN EINTRAG DES TAGES ANZEIGEN (Das macht meta.showBalance bereits) */}
                         {meta.showBalance && (
                           <span style={{ color: meta.balance >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}>
                             {formatSaldo(meta.balance)}
@@ -417,30 +445,30 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
               </tbody>
             </table>
 
-            <div style={{ marginTop: '2rem', pageBreakInside: 'avoid' }}>
+            <div style={{ marginTop: '1rem', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               <div style={{ backgroundColor: PRINT_STYLES.bgGray, padding: '1rem', borderRadius: '0.5rem', border: `1px solid ${PRINT_STYLES.borderLight}` }}>
-                <h3 style={{ fontWeight: 'bold', fontSize: '0.875rem', textTransform: 'uppercase', marginBottom: '0.75rem', borderBottom: `1px solid ${PRINT_STYLES.borderLight}`, paddingBottom: '0.25rem' }}>Zusammenfassung</h3>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
+                <h3 style={{ fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '0.5rem', borderBottom: `1px solid ${PRINT_STYLES.borderLight}`, paddingBottom: '0.2rem' }}>Zusammenfassung</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem' }}>
                   <span>Arbeitszeit (inkl. Anreise):</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.work)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.25rem', color: PRINT_STYLES.textBlue }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem', color: PRINT_STYLES.textBlue }}>
                   <span>Feiertage:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.holiday)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.25rem', color: PRINT_STYLES.textBlue }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem', color: PRINT_STYLES.textBlue }}>
                   <span>Urlaub:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.vacation)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.25rem', color: PRINT_STYLES.textRed }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem', color: PRINT_STYLES.textRed }}>
                   <span>Krankenstand:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.sick)}</span>
                 </div>
                 {reportStats.drive > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.25rem', color: PRINT_STYLES.textLight, fontStyle: 'italic', marginTop: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem', color: PRINT_STYLES.textLight, fontStyle: 'italic', marginTop: '0.3rem' }}>
                     <span>Fahrtzeit (unbezahlt):</span><span>{formatTime(reportStats.drive)}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: `1px solid ${PRINT_STYLES.borderLight}`, fontWeight: 'bold' }}>
                   <span>Gesamt (IST):</span><span>{formatTime(reportStats.totalIst)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginTop: '0.25rem', color: PRINT_STYLES.textMedium, fontWeight: '500' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginTop: '0.2rem', color: PRINT_STYLES.textMedium, fontWeight: '500' }}>
                   <span>Sollzeit (SOLL):</span><span>{formatTime(reportStats.totalTarget)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: `1px solid ${PRINT_STYLES.borderLight}`, fontWeight: 'bold' }}>
@@ -451,10 +479,46 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                 </div>
               </div>
             </div>
-            {/* PDF CONTENT END */}
-          </motion.div>
+
+            {customNote && (
+                <div style={{ marginTop: '1.5rem', pageBreakInside: 'avoid', breakInside: 'avoid', borderTop: `2px dashed ${PRINT_STYLES.borderLight}`, paddingTop: '1rem' }}>
+                    <h3 style={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', color: PRINT_STYLES.textMedium, marginBottom: '0.5rem' }}>Anmerkungen / Notiz:</h3>
+                    <p style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap', lineHeight: '1.4', color: PRINT_STYLES.textDark }}>{customNote}</p>
+                </div>
+            )}
+
+          </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {isNoteModalOpen && (
+            <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
+                <motion.div 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                    onClick={() => setIsNoteModalOpen(false)}
+                />
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                    className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-5"
+                >
+                    <h3 className="font-bold text-lg mb-3 text-slate-800 dark:text-white">Notiz für PDF</h3>
+                    <textarea 
+                        className="w-full h-32 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg resize-none outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100"
+                        placeholder="Z.B. Zusätzliche Infos, Bankverbindung, etc..."
+                        value={customNote}
+                        onChange={(e) => setCustomNote(e.target.value)}
+                    />
+                    <div className="flex justify-end gap-2 mt-4">
+                        <button onClick={() => setCustomNote("")} className="text-red-500 text-sm font-medium px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">Löschen</button>
+                        <button onClick={() => setIsNoteModalOpen(false)} className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold px-4 py-2 rounded-lg">Fertig</button>
+                    </div>
+                </motion.div>
+            </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

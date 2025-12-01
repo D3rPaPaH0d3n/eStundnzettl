@@ -310,19 +310,80 @@ export default function App() {
   
   const changeMonth = (delta) => { const d = new Date(currentDate); d.setMonth(d.getMonth() + delta); setCurrentDate(d); };
   
+  // --- EXPORT FIX (NATIVE & WEB) ---
   const exportData = async () => {
-    const fileName = `kogler_export_${new Date().toISOString().slice(0, 10)}.json`;
-    const json = JSON.stringify({ user: userData, entries, exportedAt: new Date().toISOString() }, null, 2);
-    if (!Capacitor.isNativePlatform()) {
-        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
-        a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); 
-        toast.success("📤 Export erfolgreich heruntergeladen!"); return;
-    }
+    const toastId = toast.loading("Exportiere Daten...");
+    
     try {
-        const res = await Filesystem.writeFile({ path: fileName, data: json, directory: Directory.Documents, encoding: Encoding.UTF8 });
-        await Share.share({ title: "Export", url: res.uri });
-        toast.success("📤 Export bereitgestellt!");
-    } catch (e) { toast.error("❌ Fehler beim Exportieren."); }
+      const fileName = `kogler_export_${new Date().toISOString().slice(0, 10)}.json`;
+      const json = JSON.stringify({ user: userData, entries, exportedAt: new Date().toISOString() }, null, 2);
+
+      // A) NATIVE APP (ANDROID / IOS)
+      if (Capacitor.isNativePlatform()) {
+          // 1. Datei in den CACHE schreiben (statt Documents -> verhindert EACCES Fehler!)
+          await Filesystem.writeFile({
+              path: fileName, 
+              data: json, 
+              directory: Directory.Cache, // FIX: Cache Ordner hat immer Rechte
+              encoding: Encoding.UTF8,
+              recursive: true
+          });
+          
+          // 2. URI vom Cache abrufen
+          const uriResult = await Filesystem.getUri({ 
+            path: fileName, 
+            directory: Directory.Cache 
+          });
+          
+          // 3. Teilen (Nutzer entscheidet Speicherort)
+          await Share.share({ 
+            title: "Vertel Backup", 
+            text: `Backup vom ${new Date().toLocaleDateString("de-DE")}`,
+            url: uriResult.uri,
+            dialogTitle: "Backup sichern" // Android Titel
+          });
+          
+          toast.success("📤 Export bereitgestellt!", { id: toastId });
+      } 
+      // B) WEB / BROWSER / IPHONE WEB
+      else {
+          const file = new File([json], fileName, { type: "application/json" });
+          
+          // iPhone Web Share Support
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              try {
+                  await navigator.share({
+                      files: [file],
+                      title: 'Vertel Backup',
+                      text: 'Backup meiner Stunden'
+                  });
+                  toast.success("📤 Export erfolgreich!", { id: toastId });
+                  return; 
+              } catch (shareError) {
+                  if (shareError.name === 'AbortError') {
+                      toast.dismiss(toastId);
+                      return;
+                  }
+              }
+          }
+
+          // Fallback: Klassischer Download
+          const blob = new Blob([json], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          
+          toast.success("💾 Download gestartet!", { id: toastId });
+      }
+    } catch (e) {
+      console.error("Export Fehler:", e);
+      toast.error(`❌ Export Fehler: ${e.message}`, { id: toastId, duration: 5000 });
+    }
   };
 
   const handleImport = (event) => {

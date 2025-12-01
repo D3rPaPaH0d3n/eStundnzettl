@@ -268,13 +268,13 @@ const Settings = ({
         </button>
       </Card>
       
-      {/* 6. FOOTER */}
+{/* 6. FOOTER - JETZT MIT GEMINI CREDITS :) */}
       <div className="text-center space-y-1 pb-4">
         <p className="text-xs font-bold text-slate-400 dark:text-slate-500">
           Version {APP_VERSION} • "Damit keine Stunde im Schacht verschwindet"
         </p>
-        <p className="text-[10px] text-slate-300 dark:text-slate-600 font-medium">
-          Developed with ❤️ by Markus Kainer
+        <p className="text-[10px] text-slate-300 dark:text-slate-600 font-medium flex items-center justify-center gap-1">
+          Developed with ❤️ by Markus Kainer <span className="opacity-50">&</span> Gemini
         </p>
       </div>
     </main>

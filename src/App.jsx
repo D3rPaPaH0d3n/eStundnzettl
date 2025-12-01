@@ -9,13 +9,22 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 import KoglerLogo from "./assets/kogler_time_icon.png";
-import { getHolidayData, getDayOfWeek, getWeekNumber, parseTime, getTargetMinutesForDate, WORK_CODES } from "./utils";
+import { 
+  getHolidayData, 
+  getDayOfWeek, 
+  getWeekNumber, 
+  parseTime, 
+  getTargetMinutesForDate, 
+  WORK_CODES,
+  checkForUpdate 
+} from "./utils";
 
 // COMPONENTS
 import Dashboard from "./components/Dashboard";
 import EntryForm from "./components/EntryForm";
 import Settings from "./components/Settings";
 import ConfirmModal from "./components/ConfirmModal";
+import UpdateModal from "./components/UpdateModal";
 
 // CUSTOM HOOKS
 import { useEntries } from "./hooks/useEntries";
@@ -43,6 +52,7 @@ export default function App() {
   const [view, setView] = useState("dashboard");
   const [editingEntry, setEditingEntry] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [updateData, setUpdateData] = useState(null);
   const fileInputRef = useRef(null);
 
   // Formular State
@@ -54,6 +64,49 @@ export default function App() {
   const [code, setCode] = useState(WORK_CODES[0].id);
   const [pauseDuration, setPauseDuration] = useState(30);
 
+  // --- UPDATE CHECK BEIM START ---
+  useEffect(() => {
+    const runUpdateCheck = async () => {
+      if (navigator.onLine) {
+        const data = await checkForUpdate();
+        if (data) setUpdateData(data);
+      }
+    };
+    const timer = setTimeout(runUpdateCheck, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // --- NEU: MANUELLER UPDATE CHECK ---
+  const handleManualUpdateCheck = async () => {
+    if (!navigator.onLine) {
+      toast.error("Keine Internetverbindung 🌐");
+      return;
+    }
+
+    const toastId = toast.loading("Suche nach Updates...");
+    
+    try {
+      // Künstliche Verzögerung für UX (damit man sieht, dass was passiert)
+      await new Promise(r => setTimeout(r, 800));
+      
+      const data = await checkForUpdate();
+      
+      toast.dismiss(toastId);
+      
+      if (data) {
+        Haptics.impact({ style: ImpactStyle.Medium });
+        setUpdateData(data);
+        // Kein Success-Toast nötig, das Modal öffnet sich ja
+      } else {
+        Haptics.impact({ style: ImpactStyle.Light });
+        toast.success("Alles auf dem neuesten Stand! ✨");
+      }
+    } catch (e) {
+      toast.dismiss(toastId);
+      toast.error("Prüfung fehlgeschlagen.");
+    }
+  };
+
   // --- 3. HELPER & CALCULATIONS ---
   const getHeaderTitle = () => {
     switch (view) {
@@ -64,7 +117,7 @@ export default function App() {
     }
   };
 
-  // Hardware Back-Button (Das bleibt UI Logik, daher hier)
+  // Hardware Back-Button
   useEffect(() => {
     const handler = CapacitorApp.addListener("backButton", () => {
       if (view !== "dashboard") { setView("dashboard"); setEditingEntry(null); } 
@@ -73,7 +126,7 @@ export default function App() {
     return () => handler.remove();
   }, [view]);
 
-  // --- STATISTIK BERECHNUNGEN (Bleiben hier, da sie UI-spezifisch sind) ---
+  // --- STATISTIK BERECHNUNGEN ---
   const viewYear = currentDate.getFullYear();
   const viewMonth = currentDate.getMonth();
 
@@ -130,7 +183,7 @@ export default function App() {
   const overtime = totalCredited - stats.targetMinutes;
   const progressPercent = Math.min(100, (totalCredited / (stats.targetMinutes || 1)) * 100);
 
-  // Memoized Data für Formular (Autocomplete/Copy)
+  // Memoized Data für Formular
   const lastWorkEntry = useMemo(() => {
     return [...entries].sort((a, b) => new Date(b.date) - new Date(a.date)).find((e) => e.type === "work");
   }, [entries]);
@@ -187,7 +240,6 @@ export default function App() {
         pause: usedPause, project: storedType === "work" ? project : label, code: storedType === "work" ? usedCode : null, netDuration: net,
     };
 
-    // HOOK AUFRUF
     if (editingEntry) updateEntry(newEntry);
     else addEntry(newEntry);
 
@@ -196,7 +248,6 @@ export default function App() {
     setEditingEntry(null); setProject(""); setEntryType("work"); setView("dashboard");
   };
 
-  // Delete wrapper
   const executeDelete = () => {
     if (deleteTarget?.type === 'single') {
       deleteEntry(deleteTarget.id);
@@ -249,6 +300,13 @@ export default function App() {
         title={deleteTarget?.type === 'all' ? "Alles löschen?" : "Eintrag löschen?"}
         message={deleteTarget?.type === 'all' ? "Möchtest du wirklich alle Einträge unwiderruflich löschen?" : "Möchtest du diesen Eintrag wirklich entfernen?"}
       />
+
+      {updateData && (
+        <UpdateModal 
+          updateData={updateData} 
+          onClose={() => setUpdateData(null)} 
+        />
+      )}
 
       <input type="file" className="hidden" ref={fileInputRef} accept="application/json" onChange={handleImport} />
       
@@ -315,6 +373,8 @@ export default function App() {
                   autoBackup={autoBackup} setAutoBackup={setAutoBackup}
                   onExport={exportData} onImport={() => fileInputRef.current?.click()}
                   onDeleteAll={() => setDeleteTarget({ type: 'all' })}
+                  // NEU: HIER WIRD DIE FUNKTION ÜBERGEBEN
+                  onCheckUpdate={handleManualUpdateCheck}
               />
             </motion.div>
           )}
@@ -340,10 +400,17 @@ export default function App() {
       <AnimatePresence>
         {view === "dashboard" && (
           <motion.button 
-            initial={{ scale: 0, rotate: 90 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 90 }}
-            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.9 }}
-            onClick={async () => { await Haptics.impact({ style: ImpactStyle.Medium }); startNewEntry(); }} 
-            className="fixed bottom-10 right-8 bg-slate-900 dark:bg-orange-500 hover:bg-slate-800 dark:hover:bg-orange-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-colors z-[60]"
+            initial={{ scale: 0, rotate: 90 }} 
+            animate={{ scale: 1, rotate: 0 }} 
+            exit={{ scale: 0, rotate: 90 }}
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.9 }}
+            onClick={() => { 
+                startNewEntry(); 
+                Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
+            }} 
+            style={{ bottom: "calc(2.5rem + env(safe-area-inset-bottom))" }}
+            className="fixed right-8 bg-slate-900 dark:bg-orange-500 hover:bg-slate-800 dark:hover:bg-orange-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-colors z-[60] cursor-pointer"
           >
             <Plus size={28} />
           </motion.button>

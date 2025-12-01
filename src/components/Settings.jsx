@@ -1,10 +1,10 @@
 import React, { useRef, useState } from "react";
-import { User, Sun, AlertTriangle, Camera, Trash2, Upload, Loader, Info, History, BookOpen } from "lucide-react";
+import { User, Sun, AlertTriangle, Camera, Trash2, Upload, Loader, Info, History, BookOpen, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { Card } from "../utils";
+import { Card, APP_VERSION } from "../utils"; 
 import ChangelogModal from "./ChangelogModal";
-import HelpModal from "./HelpModal"; // NEU: Import
+import HelpModal from "./HelpModal";
 
 const Settings = ({
   userData,
@@ -16,11 +16,12 @@ const Settings = ({
   onExport,
   onImport,
   onDeleteAll,
+  onCheckUpdate // <--- NEUE PROP
 }) => {
   const fileInputRef = useRef(null);
   const [isProcessingImg, setIsProcessingImg] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
-  const [showHelp, setShowHelp] = useState(false); // NEU: State für HelpModal
+  const [showHelp, setShowHelp] = useState(false);
 
   // --- BILD KOMPRIMIERUNG ---
   const processImage = (file) => {
@@ -97,7 +98,6 @@ const Settings = ({
     toast.success("🗑️ Profilbild entfernt");
   };
 
-  // Helper für Haptics bei Theme-Wechsel
   const handleThemeChange = (newTheme) => {
     Haptics.impact({ style: ImpactStyle.Light });
     setTheme(newTheme);
@@ -106,7 +106,6 @@ const Settings = ({
   return (
     <main className="w-full p-4 space-y-6 pb-20">
       
-      {/* MODALS */}
       <ChangelogModal isOpen={showChangelog} onClose={() => setShowChangelog(false)} />
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
@@ -114,7 +113,6 @@ const Settings = ({
       <Card className="p-5 space-y-4">
         <div className="flex items-center gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
           
-          {/* FOTO UPLOAD */}
           <div className="relative group shrink-0">
             <div 
               onClick={() => !isProcessingImg && fileInputRef.current?.click()}
@@ -209,7 +207,7 @@ const Settings = ({
         </div>
       </Card>
 
-      {/* 4. APP INFO (JETZT MIT 2 BUTTONS) */}
+      {/* 4. APP INFO */}
       <Card className="p-5">
         <div className="flex items-center gap-2 mb-4">
           <Info size={20} className="text-blue-500" />
@@ -217,6 +215,17 @@ const Settings = ({
         </div>
         
         <div className="space-y-2">
+          {/* NEUER BUTTON: AUF UPDATES PRÜFEN */}
+          <button 
+            onClick={() => {
+              Haptics.impact({ style: ImpactStyle.Light });
+              onCheckUpdate();
+            }}
+            className="w-full py-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+          >
+            <RefreshCw size={18} /> Auf Updates prüfen
+          </button>
+
           <button 
             onClick={() => {
               Haptics.impact({ style: ImpactStyle.Light });
@@ -262,7 +271,7 @@ const Settings = ({
       {/* 6. FOOTER */}
       <div className="text-center space-y-1 pb-4">
         <p className="text-xs font-bold text-slate-400 dark:text-slate-500">
-          Version 4.0.0 • "Damit keine Stunde im Schacht verschwindet"
+          Version {APP_VERSION} • "Damit keine Stunde im Schacht verschwindet"
         </p>
         <p className="text-[10px] text-slate-300 dark:text-slate-600 font-medium">
           Developed with ❤️ by Markus Kainer

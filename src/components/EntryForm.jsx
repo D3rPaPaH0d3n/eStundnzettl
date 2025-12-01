@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List
 import { Card, WORK_CODES } from "../utils";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { Haptics, ImpactStyle } from "@capacitor/haptics"; // NEU: Import für Vibration
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 import DatePicker, { registerLocale, CalendarContainer } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -72,11 +72,13 @@ const EntryForm = ({
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // --- NEU: WRAPPER FÜR SUBMIT MIT VIBRATION ---
-  const handleFormSubmit = async (e) => {
+  // --- FIX FÜR SUBMIT (Logik vor Haptik) ---
+  const handleFormSubmit = (e) => {
     e.preventDefault();
-    await Haptics.impact({ style: ImpactStyle.Medium }); // Vibration beim Speichern
+    // 1. Erst speichern
     onSubmit(e);
+    // 2. Dann vibrieren (Fehler ignorieren)
+    Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
   };
 
   // --- FUNKTION: LETZTEN EINTRAG KOPIEREN ---
@@ -166,8 +168,10 @@ const EntryForm = ({
                  type="button"
                  whileTap={{ scale: 0.9 }}
                  onClick={() => {
-                   Haptics.impact({ style: ImpactStyle.Light }); // Vibration beim Kopieren
+                   // Logik zuerst
                    handleCopyLastEntry();
+                   // Haptik als Bonus
+                   Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
                  }}
                  className="flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-md border border-orange-100 dark:border-orange-800/50"
                >

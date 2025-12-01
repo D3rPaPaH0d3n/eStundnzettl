@@ -141,3 +141,58 @@ export const getHolidayData = (year) => {
 
   return holidays;
 };
+
+// -------------------------------------------------------
+// VERSION & UPDATE CHECKER
+// -------------------------------------------------------
+export const APP_VERSION = "4.0.0"; // Deine aktuelle App-Version
+
+// Vergleicht Versionen (z.B. "4.0.1" > "4.0.0")
+const compareVersions = (v1, v2) => {
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const val1 = parts1[i] || 0;
+    const val2 = parts2[i] || 0;
+    if (val1 > val2) return 1;
+    if (val1 < val2) return -1;
+  }
+  return 0;
+};
+
+export const checkForUpdate = async () => {
+  try {
+    // DEINE DATEN:
+    const GITHUB_USER = "D3rPaPaH0d3n"; 
+    const REPO_NAME = "kogler-zeit";
+    
+    // API Call
+    const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/releases/latest`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.warn("Update-Check: Repo nicht gefunden. Ist es privat?");
+      }
+      return null;
+    }
+    
+    const data = await response.json();
+    const latestVersion = data.tag_name.replace("v", ""); // Entfernt 'v' falls vorhanden
+    
+    if (compareVersions(latestVersion, APP_VERSION) > 0) {
+      return {
+        version: latestVersion,
+        notes: data.body,
+        // Nimmt die erste APK oder Fallback auf die Release-Seite
+        downloadUrl: data.assets.find(a => a.name.endsWith(".apk"))?.browser_download_url || data.html_url,
+        date: new Date(data.published_at).toLocaleDateString("de-DE")
+      };
+    }
+    
+    return null; 
+  } catch (error) {
+    console.error("Update Fehler:", error);
+    return null;
+  }
+};

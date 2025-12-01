@@ -1,17 +1,15 @@
 import React, { useEffect, useRef } from "react";
 import { Check, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useDragControls } from "framer-motion"; // NEU: useDragControls
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
   const hoursRef = useRef(null);
   const minutesRef = useRef(null);
+  const dragControls = useDragControls(); // NEU: Steuerung für den Drag
   
-  // Die Höhe eines einzelnen Items in Pixeln (wichtig für die Berechnung)
-  // Entspricht der h-[64px] Klasse im CSS unten
   const ITEM_HEIGHT = 64; 
 
-  // Initiales Scrollen zur richtigen Zeit beim Öffnen
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => {
@@ -25,40 +23,32 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
         }
       }, 100);
     }
-  }, [isOpen]); // Feuert nur beim Öffnen des Drawers
+  }, [isOpen]);
 
-  // Aktuelle Werte parsen (Fallback auf 06:00)
   const [selectedHour, selectedMinute] = value ? value.split(":").map(Number) : [6, 0];
-
-  // Daten-Arrays
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const minutes = [0, 15, 30, 45];
 
-  // Helper zum Senden der Zeit nach oben
   const updateTime = (h, m) => {
     const hh = String(h).padStart(2, "0");
     const mm = String(m).padStart(2, "0");
     onChange(`${hh}:${mm}`);
   };
 
-  // --- DIE NEUE SMARTE SCROLL LOGIK ---
   const handleScroll = (e, type) => {
     const scrollTop = e.target.scrollTop;
-    // Berechnet welcher Index gerade in der Mitte ist
     const index = Math.round(scrollTop / ITEM_HEIGHT);
     
     if (type === 'hour') {
       const newHour = hours[index];
-      // Nur aktualisieren und vibrieren, wenn sich die Stunde wirklich geändert hat
       if (newHour !== undefined && newHour !== selectedHour) {
-        Haptics.impact({ style: ImpactStyle.Light }); // VIBRATION
+        Haptics.impact({ style: ImpactStyle.Light });
         updateTime(newHour, selectedMinute);
       }
     } else {
       const newMinute = minutes[index];
-      // Nur aktualisieren und vibrieren, wenn sich die Minute wirklich geändert hat
       if (newMinute !== undefined && newMinute !== selectedMinute) {
-        Haptics.impact({ style: ImpactStyle.Light }); // VIBRATION
+        Haptics.impact({ style: ImpactStyle.Light });
         updateTime(selectedHour, newMinute);
       }
     }
@@ -68,7 +58,6 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* BACKDROP */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -77,7 +66,6 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
             onClick={onClose}
           />
 
-          {/* DRAWER CONTAINER */}
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
@@ -86,13 +74,21 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
             drag="y"
             dragConstraints={{ top: 0 }}
             dragElastic={0.2}
+            // FIX 1: Drag Listener deaktivieren (damit Scrollen geht)
+            dragListener={false} 
+            // FIX 2: Controls verbinden
+            dragControls={dragControls}
             onDragEnd={(_, info) => {
               if (info.offset.y > 100) onClose();
             }}
-            className="fixed bottom-0 left-0 right-0 z-[101] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
+            className="fixed bottom-0 left-0 right-0 z-[101] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl overflow-hidden flex flex-col pb-safe md:max-w-md md:mx-auto md:rounded-3xl md:bottom-4 md:border md:border-slate-200 dark:md:border-slate-700"
           >
-            {/* DRAG HANDLE (Grauer Strich oben) */}
-            <div className="w-full flex justify-center pt-3 pb-1" onClick={onClose}>
+            {/* DRAG HANDLE AREA - Nur HIER darf gezogen werden */}
+            <div 
+              className="w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing touch-none"
+              // FIX 3: Hier startet der Drag manuell
+              onPointerDown={(e) => dragControls.start(e)}
+            >
               <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full" />
             </div>
 
@@ -106,7 +102,7 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
               </span>
               <button 
                 onClick={() => {
-                  Haptics.impact({ style: ImpactStyle.Medium }); // Feedback beim Bestätigen
+                  Haptics.impact({ style: ImpactStyle.Medium });
                   onClose();
                 }} 
                 className="p-3 text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 rounded-full font-bold transition-transform active:scale-95"
@@ -115,13 +111,12 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
               </button>
             </div>
 
-            {/* PICKER AREA */}
+            {/* PICKER AREA - Jetzt sicher scrollbar */}
             <div className="flex h-[320px] relative bg-white dark:bg-slate-900 select-none">
               
-              {/* Highlight Balken (Mitte) */}
               <div className="absolute top-1/2 left-4 right-4 h-[64px] -mt-[32px] bg-slate-100 dark:bg-slate-800 pointer-events-none z-0 border border-slate-200 dark:border-slate-700 rounded-xl" />
 
-              {/* STUNDEN SPALTE */}
+              {/* STUNDEN */}
               <div 
                 ref={hoursRef}
                 onScroll={(e) => handleScroll(e, 'hour')}
@@ -143,10 +138,9 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
                 ))}
               </div>
 
-              {/* TRENNZEICHEN */}
               <div className="flex items-center justify-center z-10 text-slate-300 dark:text-slate-600 font-bold text-2xl pb-2">:</div>
 
-              {/* MINUTEN SPALTE */}
+              {/* MINUTEN */}
               <div 
                 ref={minutesRef}
                 onScroll={(e) => handleScroll(e, 'minute')}

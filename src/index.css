@@ -208,3 +208,17 @@
 }
 .react-datepicker__month-text--today { color: #16a34a !important; font-weight: 800 !important; }
 .react-datepicker__month-text--selected.react-datepicker__month-text--today { color: white !important; }
+
+/* ============================================================
+   SAFE AREA UTILITIES
+   ============================================================ */
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom);
+}

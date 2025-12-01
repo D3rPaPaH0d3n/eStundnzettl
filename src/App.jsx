@@ -44,10 +44,10 @@ export default function App() {
   const { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries } = useEntries();
   const { userData, setUserData, theme, setTheme, autoBackup, setAutoBackup } = useSettings();
   
-  // Auto-Backup läuft jetzt isoliert im Hintergrund
+  // Auto-Backup läuft isoliert im Hintergrund
   useAutoBackup(entries, userData, autoBackup);
 
-  // --- 2. UI STATE (Routing & Formulare) ---
+  // --- 2. UI STATE ---
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState("dashboard");
   const [editingEntry, setEditingEntry] = useState(null);
@@ -76,7 +76,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // --- NEU: MANUELLER UPDATE CHECK ---
+  // --- MANUELLER UPDATE CHECK ---
   const handleManualUpdateCheck = async () => {
     if (!navigator.onLine) {
       toast.error("Keine Internetverbindung 🌐");
@@ -86,17 +86,13 @@ export default function App() {
     const toastId = toast.loading("Suche nach Updates...");
     
     try {
-      // Künstliche Verzögerung für UX (damit man sieht, dass was passiert)
-      await new Promise(r => setTimeout(r, 800));
-      
+      await new Promise(r => setTimeout(r, 800)); // UX Verzögerung
       const data = await checkForUpdate();
-      
       toast.dismiss(toastId);
       
       if (data) {
         Haptics.impact({ style: ImpactStyle.Medium });
         setUpdateData(data);
-        // Kein Success-Toast nötig, das Modal öffnet sich ja
       } else {
         Haptics.impact({ style: ImpactStyle.Light });
         toast.success("Alles auf dem neuesten Stand! ✨");
@@ -126,25 +122,44 @@ export default function App() {
     return () => handler.remove();
   }, [view]);
 
-  // --- STATISTIK BERECHNUNGEN ---
+  // --- STATISTIK ---
   const viewYear = currentDate.getFullYear();
   const viewMonth = currentDate.getMonth();
 
   const entriesWithHolidays = useMemo(() => {
     const holidayMap = getHolidayData(viewYear);
     const holidays = Object.keys(holidayMap);
+    
+    // 1. Echte Einträge filtern
     const realEntries = entries.filter((e) => {
       const d = new Date(e.date);
       return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
     });
+
+    // 2. "Heute" berechnen
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
     const holidayEntries = [];
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      
       if (holidays.includes(dateStr)) {
-        const dow = getDayOfWeek(dateStr);
-        if (dow >= 1 && dow <= 5) {
-          holidayEntries.push({ id: `auto-holiday-${dateStr}`, type: "public_holiday", date: dateStr, project: holidayMap[dateStr] || "Gesetzlicher Feiertag", netDuration: dow === 5 ? 270 : 510 });
+        // Feiertag nur hinzufügen, wenn Datum <= Heute
+        if (dateStr <= todayStr) {
+          const dow = getDayOfWeek(dateStr);
+          // Nur Wochentage (Mo-Fr) zählen
+          if (dow >= 1 && dow <= 5) {
+            holidayEntries.push({ 
+              id: `auto-holiday-${dateStr}`, 
+              type: "public_holiday", 
+              date: dateStr, 
+              project: holidayMap[dateStr] || "Gesetzlicher Feiertag", 
+              netDuration: dow === 5 ? 270 : 510 
+            });
+          }
         }
       }
     }
@@ -221,7 +236,41 @@ export default function App() {
     
     if (entryType === "work" || isDrive) {
         const s = parseTime(startTime); const en = parseTime(endTime);
-        if (en <= s) { toast.error("⚠️ Endzeit muss nach Startzeit liegen!"); return; }
+        
+        // 1. Validierung: Ende muss nach Start sein
+        if (en <= s) { 
+          toast.error("⚠️ Endzeit muss nach Startzeit liegen!"); 
+          return; 
+        }
+
+        // 2. NEU: Validierung: Überschneidung prüfen
+        // Wir filtern alle existierenden Einträge des gleichen Tages
+        const hasOverlap = entries.some(existing => {
+          // Nur gleiches Datum prüfen
+          if (existing.date !== formDate) return false;
+          // Wenn wir bearbeiten, den eigenen Eintrag ignorieren (sonst überschneidet er sich mit sich selbst)
+          if (editingEntry && existing.id === editingEntry.id) return false;
+          
+          // Nur Einträge prüfen, die auch Zeiten haben (also keine Ganztags-Einträge wie Urlaub ohne Zeit)
+          if (!existing.start || !existing.end) return false;
+
+          const exStart = parseTime(existing.start);
+          const exEnd = parseTime(existing.end);
+
+          // Logik für Überschneidung:
+          // (Neuer Start < Alter Ende) UND (Alter Start < Neues Ende)
+          return (s < exEnd && exStart < en);
+        });
+
+        if (hasOverlap) {
+          Haptics.impact({ style: ImpactStyle.Heavy });
+          toast.error("⚠️ Zeitüberschneidung! Zeit ist bereits belegt.", {
+            duration: 4000,
+            icon: '⛔'
+          });
+          return;
+        }
+
         const usedPause = isDrive ? 0 : pauseDuration; const usedCode = isDrive ? 19 : code;
         net = en - s - usedPause;
         label = WORK_CODES.find((c) => c.id === usedCode)?.label || (isDrive ? "Fahrzeit" : "Arbeit");
@@ -373,7 +422,6 @@ export default function App() {
                   autoBackup={autoBackup} setAutoBackup={setAutoBackup}
                   onExport={exportData} onImport={() => fileInputRef.current?.click()}
                   onDeleteAll={() => setDeleteTarget({ type: 'all' })}
-                  // NEU: HIER WIRD DIE FUNKTION ÜBERGEBEN
                   onCheckUpdate={handleManualUpdateCheck}
               />
             </motion.div>
@@ -389,14 +437,21 @@ export default function App() {
                   </div>
                 </div>
               }>
-                <PrintReport entries={entriesWithHolidays} monthDate={currentDate} employeeName={userData.name} userPhoto={userData.photo} onClose={() => setView("dashboard")} />
+                <PrintReport 
+                  entries={entriesWithHolidays} 
+                  monthDate={currentDate} 
+                  employeeName={userData.name} 
+                  userPhoto={userData.photo} 
+                  onClose={() => setView("dashboard")} 
+                  onMonthChange={setCurrentDate} 
+                />
               </Suspense>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* FAB */}
+      {/* FAB - FIX FÜR IPHONE & WEB */}
       <AnimatePresence>
         {view === "dashboard" && (
           <motion.button 
@@ -405,12 +460,13 @@ export default function App() {
             exit={{ scale: 0, rotate: 90 }}
             whileHover={{ scale: 1.05 }} 
             whileTap={{ scale: 0.9 }}
-            onClick={() => { 
+            onClick={(e) => { 
+                e.stopPropagation();
                 startNewEntry(); 
                 Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
             }} 
-            style={{ bottom: "calc(2.5rem + env(safe-area-inset-bottom))" }}
-            className="fixed right-8 bg-slate-900 dark:bg-orange-500 hover:bg-slate-800 dark:hover:bg-orange-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-colors z-[60] cursor-pointer"
+            style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
+            className="fixed right-6 bg-slate-900 dark:bg-orange-500 hover:bg-slate-800 dark:hover:bg-orange-600 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors z-[9999] cursor-pointer touch-manipulation"
           >
             <Plus size={28} />
           </motion.button>

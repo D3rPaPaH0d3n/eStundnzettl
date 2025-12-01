@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from "react";
 import { X, Check } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useDragControls } from "framer-motion"; // NEU: useDragControls
 
 const SelectionDrawer = ({ isOpen, onClose, title, options, value, onChange }) => {
   const listRef = useRef(null);
+  const dragControls = useDragControls(); // NEU
 
   useEffect(() => {
     if (isOpen) {
@@ -34,10 +35,17 @@ const SelectionDrawer = ({ isOpen, onClose, title, options, value, onChange }) =
             drag="y"
             dragConstraints={{ top: 0 }}
             dragElastic={0.2}
+            // FIX 1: Drag nur über Handle
+            dragListener={false}
+            dragControls={dragControls}
             onDragEnd={(_, info) => { if (info.offset.y > 100) onClose(); }}
-            className="fixed bottom-0 left-0 right-0 z-[101] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            className="fixed bottom-0 left-0 right-0 z-[101] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] pb-safe md:max-w-md md:mx-auto md:rounded-3xl md:bottom-4 md:border md:border-slate-200 dark:md:border-slate-700"
           >
-            <div className="w-full flex justify-center pt-3 pb-1" onClick={onClose}>
+            {/* FIX 2: Handle Area */}
+            <div 
+              className="w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing touch-none" 
+              onPointerDown={(e) => dragControls.start(e)}
+            >
               <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full" />
             </div>
 

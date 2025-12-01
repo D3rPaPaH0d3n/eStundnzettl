@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Rocket, BookOpen, Car, Send, Smartphone, ShieldCheck, FileText, ChevronDown } from "lucide-react";
+import { X, Rocket, BookOpen, Car, ShieldCheck, Smartphone, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const HelpModal = ({ isOpen, onClose }) => {
@@ -14,23 +14,24 @@ const HelpModal = ({ isOpen, onClose }) => {
             onClick={onClose}
           />
 
-          {/* Modal Container - Mobil: Bottom Sheet Style, Desktop: Center Modal */}
+          {/* Modal Container */}
           <motion.div
-            initial={{ y: "100%", opacity: 0.5, scale: 0.95 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: "100%", opacity: 0, scale: 0.95 }}
+            initial={{ y: "100%", opacity: 0.5 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className={`
-              fixed z-[160] overflow-hidden flex flex-col bg-white dark:bg-slate-900 shadow-2xl
+              fixed z-[160] flex flex-col bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
               
-              /* MOBILE STYLES (Bottom Sheet) */
-              inset-x-0 bottom-0 top-12 rounded-t-3xl border-t border-slate-200 dark:border-slate-800
+              /* MOBILE: Bottom Sheet + Safe Area Logic */
+              inset-x-0 bottom-0 rounded-t-3xl border-t border-slate-200 dark:border-slate-800
+              max-h-[85vh] h-[85vh]
               
-              /* DESKTOP STYLES (Centered Modal) */
-              md:inset-auto md:w-[600px] md:h-[85vh] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl md:top-auto md:bottom-auto
+              /* DESKTOP: Center Modal */
+              md:inset-auto md:w-[600px] md:h-[85vh] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl
             `}
           >
-            {/* Mobile Drag Handle (Optik) */}
+            {/* Mobile Drag Handle */}
             <div className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-slate-900 shrink-0" onClick={onClose}>
               <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full" />
             </div>
@@ -49,8 +50,12 @@ const HelpModal = ({ isOpen, onClose }) => {
               </button>
             </div>
 
-            {/* Scrollable Content */}
-            <div className="overflow-y-auto p-5 scrollbar-hide space-y-8 bg-white dark:bg-slate-900 pb-safe-bottom">
+            {/* Scrollable Content mit SAFE AREA PADDING unten */}
+            <div 
+              className="overflow-y-auto p-5 scrollbar-hide space-y-8 bg-white dark:bg-slate-900"
+              // DAS HIER IST WICHTIG:
+              style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}
+            >
               
               {/* INTRO */}
               <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-2xl border border-orange-100 dark:border-orange-900/30">
@@ -62,13 +67,12 @@ const HelpModal = ({ isOpen, onClose }) => {
                 </p>
               </div>
 
-              {/* SCHRITT 1: EINRICHTUNG */}
+              {/* SCHRITT 1 */}
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-lg">1</div>
                     <h3 className="font-bold text-lg text-slate-800 dark:text-white">Einrichtung</h3>
                 </div>
-                
                 <div className="ml-4 border-l-2 border-slate-100 dark:border-slate-800 pl-6 py-1 space-y-4">
                     <div className="text-sm text-slate-600 dark:text-slate-400">
                         <strong className="text-slate-800 dark:text-slate-200 block mb-1">Profil vervollständigen</strong>
@@ -77,7 +81,7 @@ const HelpModal = ({ isOpen, onClose }) => {
                 </div>
               </section>
 
-              {/* SCHRITT 2: EINTRAGEN */}
+              {/* SCHRITT 2 */}
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-lg">2</div>
@@ -109,7 +113,7 @@ const HelpModal = ({ isOpen, onClose }) => {
                 </div>
               </section>
 
-              {/* SCHRITT 3: BERICHT */}
+              {/* SCHRITT 3 */}
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-lg">3</div>
@@ -126,7 +130,7 @@ const HelpModal = ({ isOpen, onClose }) => {
                 </div>
               </section>
 
-              {/* FOOTER HINWEISE */}
+              {/* FOOTER */}
               <div className="grid grid-cols-2 gap-3 pt-4">
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl">
                   <ShieldCheck className="text-blue-600 dark:text-blue-400 mb-2" size={24} />
@@ -139,11 +143,8 @@ const HelpModal = ({ isOpen, onClose }) => {
                   <p className="text-[11px] text-purple-600/80 dark:text-purple-400/80 mt-1 leading-tight">Wische Einträge in der Liste nach links, um sie schnell zu löschen.</p>
                 </div>
               </div>
-
-              {/* Safe Area Spacer for Bottom */}
-              <div className="h-10 md:h-0"></div>
-
-              <div className="text-center text-slate-300 dark:text-slate-700 text-[10px] uppercase tracking-widest font-bold pb-4">
+              
+              <div className="text-center text-slate-300 dark:text-slate-700 text-[10px] uppercase tracking-widest font-bold pb-2">
                 Kogler Aufzugsbau App v4.0
               </div>
 

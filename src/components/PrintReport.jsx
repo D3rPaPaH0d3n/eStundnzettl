@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { X, Loader, Download } from "lucide-react";
+import { X, Loader, Download, ZoomIn, ZoomOut, ChevronDown, FileText, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
 import toast from "react-hot-toast";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { WORK_CODES, getWeekNumber, formatTime, blobToBase64 } from "../utils";
 
 const PRINT_STYLES = {
@@ -24,27 +24,50 @@ const PRINT_STYLES = {
   borderLight: '#e2e8f0',
 };
 
-const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose }) => {
-  const [filterMode, setFilterMode] = useState(() => getWeekNumber(new Date())); 
+const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onMonthChange }) => {
+  
+  const [filterMode, setFilterMode] = useState(() => {
+    const today = new Date();
+    if (monthDate.getMonth() === today.getMonth() && monthDate.getFullYear() === today.getFullYear()) {
+      return getWeekNumber(today);
+    }
+    return "month";
+  });
+
   const [isGenerating, setIsGenerating] = useState(false);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0.5); 
+  const [isPickerOpen, setIsPickerOpen] = useState(false); // State für Custom Dropdown
   const reportRef = useRef(null);
 
+  // Auto-Scale beim Start
   useEffect(() => {
-    const handleResize = () => {
-      const baseWidth = 850; 
-      const screenWidth = window.innerWidth;
-      if (screenWidth < baseWidth) {
-        const newScale = (screenWidth - 32) / baseWidth; 
-        setScale(newScale);
-      } else {
-        setScale(1);
-      }
+    const calculateFitScale = () => {
+      const A4_WIDTH_PX = 794; 
+      const A4_HEIGHT_PX = 1123; 
+      const padding = 40; 
+      const headerHeight = 160; 
+      const availableWidth = window.innerWidth - padding;
+      const availableHeight = window.innerHeight - headerHeight;
+      const scaleX = availableWidth / A4_WIDTH_PX;
+      const scaleY = availableHeight / A4_HEIGHT_PX;
+      const optimalScale = Math.min(scaleX, scaleY, 1); 
+      setScale(optimalScale);
     };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    calculateFitScale();
+    window.addEventListener("resize", calculateFitScale);
+    return () => window.removeEventListener("resize", calculateFitScale);
   }, []);
+
+  const changeZoom = (delta) => {
+    setScale(prev => Math.min(Math.max(prev + delta, 0.3), 1.5));
+  };
+
+  const handleMonthChange = (delta) => {
+    const newDate = new Date(monthDate);
+    newDate.setMonth(newDate.getMonth() + delta);
+    setFilterMode("month"); 
+    onMonthChange(newDate);
+  };
 
   const getWeekLabel = (week) => {
     const year = monthDate.getFullYear();
@@ -82,6 +105,12 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose }) =
     const w = new Set(entries.map((e) => getWeekNumber(new Date(e.date))));
     return Array.from(w).sort((a, b) => a - b);
   }, [entries]);
+
+  // Für das Dropdown Label
+  const currentLabel = useMemo(() => {
+    if (filterMode === "month") return "Gesamter Monat";
+    return `KW ${filterMode} (${getWeekLabel(filterMode)})`;
+  }, [filterMode, availableWeeks, monthDate]);
 
   const reportStats = useMemo(() => {
     let work = 0; let vacation = 0; let sick = 0; let holiday = 0; let drive = 0;
@@ -149,15 +178,10 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose }) =
       const filename = `Stundenzettel_${timestamp}.pdf`;
 
       const opt = {
-        margin: 0, // Strikt 0 Margin
+        margin: 0,
         filename,
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
-          windowWidth: 850, 
-          backgroundColor: "#ffffff"
-        }, 
+        html2canvas: { scale: 2, useCORS: true, windowWidth: 850, backgroundColor: "#ffffff" }, 
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       };
 
@@ -178,19 +202,13 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose }) =
       try { 
         const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Documents }); 
         shareUrl = uriResult.uri || uriResult.path; 
-      } catch (uriError) { 
-        console.error("URI Fehler:", uriError); 
-      }
+      } catch (uriError) { console.error("URI Fehler:", uriError); }
 
       if (shareUrl) {
-        // HIER DER FIX: Teilen in eigenem Try/Catch, damit "Abbrechen" nicht als Fehler gilt
         try {
           await Share.share({ title: "Stundenzettel teilen", text: `Stundenzettel`, url: shareUrl });
           toast.success("📤 Datei bereitgestellt.");
-        } catch (shareErr) {
-          console.log("Teilen abgebrochen oder fehlgeschlagen", shareErr);
-          // Kein Fehler-Toast hier, da die Datei ja erstellt wurde!
-        }
+        } catch (shareErr) { console.log("Teilen abgebrochen"); }
       } else {
         toast.success("💾 PDF in Dokumente gespeichert.");
       }
@@ -203,60 +221,116 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose }) =
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-800 z-[200] overflow-y-auto">
-      {/* TOPBAR */}
+    <div className="fixed inset-0 bg-slate-950 z-[200] flex flex-col h-full">
+      {/* 1. TOPBAR */}
       <div 
-        className="sticky top-0 bg-slate-900 text-white p-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-xl z-50"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
+        className="bg-slate-900 text-white p-3 shadow-xl z-50 shrink-0"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
       >
-        <div className="flex items-center gap-4 w-full">
-          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-full transition-colors"><X /></button>
-          <h2 className="font-bold flex-1 text-center mr-10 text-xl">Berichtsvorschau</h2>
+        <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-lg flex items-center gap-2 text-slate-100 min-w-0">
+                <FileText size={20} className="text-orange-500 shrink-0" /> 
+                <span className="truncate">Vorschau</span>
+            </h2>
+            <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+              <button onClick={() => handleMonthChange(-1)} className="p-1.5 hover:bg-slate-700 rounded-md text-slate-300"><ChevronLeft size={18} /></button>
+              <span className="px-2 text-sm font-bold w-24 text-center tabular-nums">
+                {monthDate.toLocaleDateString("de-DE", { month: "short", year: "2-digit" })}
+              </span>
+              <button onClick={() => handleMonthChange(1)} className="p-1.5 hover:bg-slate-700 rounded-md text-slate-300"><ChevronRight size={18} /></button>
+            </div>
+            <button onClick={onClose} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors shrink-0">
+                <X size={20} />
+            </button>
         </div>
-        <div className="flex gap-2 items-center flex-wrap justify-center w-full">
-          <select value={filterMode} onChange={(e) => setFilterMode(e.target.value)} className="bg-slate-800 border border-slate-600 rounded p-2 text-sm flex-1 outline-none">
-            <option value="month">Gesamter Monat</option>
-            {availableWeeks.map((w) => <option key={w} value={w}>KW {w} ({getWeekLabel(w)})</option>)}
-          </select>
-          
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleDownloadPdf} 
-            disabled={isGenerating} 
-            className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 text-base shadow-lg shadow-orange-900/20"
-          >
-            {isGenerating ? <Loader className="animate-spin" size={18} /> : <Download size={18} />} PDF
-          </motion.button>
+
+        <div className="flex gap-2 items-center">
+            
+            {/* FIX: CUSTOM DROPDOWN (Statt <select>) */}
+            <div className="relative flex-1 min-w-0">
+                <button 
+                    onClick={() => setIsPickerOpen(!isPickerOpen)}
+                    className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-2 pl-3 pr-8 text-sm font-medium flex items-center justify-between transition-colors hover:border-orange-500/50 active:bg-slate-700"
+                >
+                    <span className="truncate">{currentLabel}</span>
+                    <ChevronDown size={16} className={`text-slate-400 transition-transform ${isPickerOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                <AnimatePresence>
+                    {isPickerOpen && (
+                        <>
+                            {/* Backdrop zum Schließen beim Klicken außerhalb */}
+                            <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)} />
+                            
+                            {/* Dropdown Liste */}
+                            <motion.div
+                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute top-full left-0 mt-1 w-full max-h-64 overflow-y-auto bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 py-1"
+                            >
+                                <div 
+                                    onClick={() => { setFilterMode("month"); setIsPickerOpen(false); }}
+                                    className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-slate-700/50 ${filterMode === "month" ? "text-orange-500 bg-slate-700/50" : "text-slate-300 hover:bg-slate-700 hover:text-white"}`}
+                                >
+                                    <span>Gesamter Monat</span>
+                                    {filterMode === "month" && <Check size={16} />}
+                                </div>
+                                {availableWeeks.map((w) => (
+                                    <div 
+                                        key={w}
+                                        onClick={() => { setFilterMode(w); setIsPickerOpen(false); }}
+                                        className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-slate-700/50 last:border-0 ${Number(filterMode) === w ? "text-orange-500 bg-slate-700/50" : "text-slate-300 hover:bg-slate-700 hover:text-white"}`}
+                                    >
+                                        <span>KW {w} ({getWeekLabel(w)})</span>
+                                        {Number(filterMode) === w && <Check size={16} />}
+                                    </div>
+                                ))}
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
+            </div>
+            
+            <motion.button 
+                whileTap={{ scale: 0.95 }}
+                onClick={handleDownloadPdf} 
+                disabled={isGenerating} 
+                className="bg-orange-500 hover:bg-orange-600 text-white p-2 px-4 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-orange-900/20 shrink-0"
+            >
+                {isGenerating ? <Loader className="animate-spin" size={18} /> : <Download size={18} />} 
+                <span className="hidden sm:inline">PDF</span>
+            </motion.button>
         </div>
       </div>
 
-      {/* PREVIEW CONTAINER */}
-      <div className="flex flex-col items-center p-4 min-h-screen">
-        <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center', marginBottom: `-${(1 - scale) * 100}%` }}>
-          
-          {/* PAPIER */}
+      {/* 2. PREVIEW CONTAINER */}
+      <div className="flex-1 overflow-auto bg-slate-800/50 relative p-4 touch-pan-x touch-pan-y flex flex-col items-center">
+        <div 
+            className="transition-transform duration-200 ease-out origin-top"
+            style={{ 
+                transform: `scale(${scale})`, 
+                width: '210mm',
+                height: '296mm'
+            }}
+        >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
             id="report-to-print"
             ref={reportRef}
-            // HIER DER FIX FÜR LEERE SEITE: min-h-[296mm] statt 297mm
-            className="w-[210mm] min-w-[210mm] min-h-[296mm] mx-auto p-8 shadow-2xl"
-            style={{ backgroundColor: PRINT_STYLES.bgWhite, color: PRINT_STYLES.textBlack, fontFamily: 'Arial, sans-serif' }}
+            className="w-full h-full bg-white shadow-2xl p-8"
+            style={{ color: PRINT_STYLES.textBlack, fontFamily: 'Arial, sans-serif' }}
           >
-            {/* HEADER - TEXT LINKS, BILD RECHTS */}
+            {/* PDF CONTENT START */}
             <div style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, paddingBottom: '1.5rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
                 <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', textTransform: 'uppercase', color: PRINT_STYLES.textDark, margin: 0 }}>Stundenzettel</h1>
                 <p style={{ fontSize: '0.875rem', fontWeight: 'bold', color: PRINT_STYLES.textMedium, marginTop: '0.25rem', margin: 0 }}>Kogler Aufzugsbau</p>
               </div>
-              
-              {/* RECHTE SEITE: CONTAINER FÜR TEXT UND BILD */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                
-                {/* TEXTBLOCK */}
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontWeight: '500', margin: 0 }}>Mitarbeiter: {employeeName}</p>
                   <p style={{ fontSize: '0.875rem', color: PRINT_STYLES.textMedium, margin: 0 }}>
@@ -264,19 +338,12 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose }) =
                     {filterMode !== "month" && ` (KW ${filterMode})`}
                   </p>
                 </div>
-
-                {/* BILD - VERGRÖSSERT AUF 65px */}
                 {userPhoto && (
-                  <img 
-                    src={userPhoto} 
-                    alt="Mitarbeiter" 
-                    style={{ width: '65px', height: '65px', borderRadius: '50%', objectFit: 'cover', border: `1px solid ${PRINT_STYLES.borderLight}`, display: 'block' }} 
-                  />
+                  <img src={userPhoto} alt="Mitarbeiter" style={{ width: '65px', height: '65px', borderRadius: '50%', objectFit: 'cover', border: `1px solid ${PRINT_STYLES.borderLight}`, display: 'block' }} />
                 )}
               </div>
             </div>
 
-            {/* TABLE */}
             <table style={{ width: '100%', fontSize: '0.875rem', textAlign: 'left', marginBottom: '2rem', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, color: PRINT_STYLES.textMedium, textTransform: 'uppercase', fontSize: '0.75rem' }}>
@@ -309,7 +376,6 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose }) =
                     if (e.code === 19) { durationDisplay = "-"; timeColor = PRINT_STYLES.textLight; }
                     const pauseText = e.pause > 0 ? `Pause: ${e.pause}m` : "Keine Pause";
                     const pauseColor = e.pause > 0 ? PRINT_STYLES.textMedium : PRINT_STYLES.textLight;
-                    
                     timeCellContent = (
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontWeight: 'bold', color: PRINT_STYLES.textDark, lineHeight: 1.2, whiteSpace: 'nowrap' }}>{e.start} – {e.end}</span>
@@ -351,11 +417,9 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose }) =
               </tbody>
             </table>
 
-            {/* SUMMARY */}
             <div style={{ marginTop: '2rem', pageBreakInside: 'avoid' }}>
               <div style={{ backgroundColor: PRINT_STYLES.bgGray, padding: '1rem', borderRadius: '0.5rem', border: `1px solid ${PRINT_STYLES.borderLight}` }}>
                 <h3 style={{ fontWeight: 'bold', fontSize: '0.875rem', textTransform: 'uppercase', marginBottom: '0.75rem', borderBottom: `1px solid ${PRINT_STYLES.borderLight}`, paddingBottom: '0.25rem' }}>Zusammenfassung</h3>
-                
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
                   <span>Arbeitszeit (inkl. Anreise):</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.work)}</span>
                 </div>
@@ -373,7 +437,6 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose }) =
                     <span>Fahrtzeit (unbezahlt):</span><span>{formatTime(reportStats.drive)}</span>
                   </div>
                 )}
-                
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: `1px solid ${PRINT_STYLES.borderLight}`, fontWeight: 'bold' }}>
                   <span>Gesamt (IST):</span><span>{formatTime(reportStats.totalIst)}</span>
                 </div>
@@ -388,6 +451,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose }) =
                 </div>
               </div>
             </div>
+            {/* PDF CONTENT END */}
           </motion.div>
         </div>
       </div>

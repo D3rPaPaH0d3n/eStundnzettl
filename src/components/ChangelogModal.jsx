@@ -4,6 +4,22 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
   {
+    version: "4.4.1",
+    date: "04.12.2025",
+    title: "Hotfix & Polish 🧹",
+    isMajor: false,
+    sections: [
+      {
+        icon: Bug,
+        title: "Korrekturen",
+        items: [
+          "Korrektur der internen Versionsnummerierung für reibungslose Updates",
+          "Kleine Optimierungen am Onboarding-Prozess"
+        ]
+      }
+    ]
+  },
+  {
     version: "4.4.0",
     date: "04.12.2025",
     title: "The Flex-Time Update ⚙️",

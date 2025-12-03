@@ -1,46 +1,64 @@
-import React from "react";
-import { X, Rocket, BookOpen, Car, ShieldCheck, Smartphone, FileText } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect } from "react";
+import { X, Rocket, BookOpen, Car, ShieldCheck, Smartphone, FileText, Wand2, Fingerprint, Hourglass } from "lucide-react";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const HelpModal = ({ isOpen, onClose }) => {
+  const dragControls = useDragControls();
+
+  // FIX: Verhindert Scrollen der App im Hintergrund
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* FIX: Vollbild-Overlay erzwingen */}
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150]"
+            className="fixed left-0 top-0 w-screen h-screen bg-black/60 backdrop-blur-sm z-[150]"
             onClick={onClose}
           />
 
-          {/* Modal Container */}
           <motion.div
             initial={{ y: "100%", opacity: 0.5 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            drag="y"
+            dragConstraints={{ top: 0 }}
+            dragElastic={0.2}
+            dragListener={false} 
+            dragControls={dragControls}
+            onDragEnd={(_, info) => {
+              if (info.offset.y > 100) onClose();
+            }}
             className={`
               fixed z-[160] flex flex-col bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
-              
-              /* MOBILE: Bottom Sheet + Safe Area Logic */
               inset-x-0 bottom-0 rounded-t-3xl border-t border-slate-200 dark:border-slate-800
               max-h-[85vh] h-[85vh]
-              
-              /* DESKTOP: Center Modal */
               md:inset-auto md:w-[600px] md:h-[85vh] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl
             `}
           >
-            {/* Mobile Drag Handle */}
-            <div className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-slate-900 shrink-0" onClick={onClose}>
+            {/* DRAG HANDLE - WICHTIG: touch-none verhindert Scroll-Konflikte */}
+            <div 
+              className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-slate-900 shrink-0 cursor-grab active:cursor-grabbing touch-none"
+              onPointerDown={(e) => dragControls.start(e)}
+            >
               <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full" />
             </div>
 
-            {/* Header */}
+            {/* HEADER */}
             <div className="flex justify-between items-start p-5 pb-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 z-10">
               <div>
-                <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Hilfe & Guide</h2>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">So nutzt du die App richtig</p>
+                <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Anleitung & Hilfe</h2>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Schnellstart für Kollegen</p>
               </div>
               <button 
                 onClick={onClose} 
@@ -50,102 +68,130 @@ const HelpModal = ({ isOpen, onClose }) => {
               </button>
             </div>
 
-            {/* Scrollable Content mit SAFE AREA PADDING unten */}
+            {/* CONTENT */}
             <div 
               className="overflow-y-auto p-5 scrollbar-hide space-y-8 bg-white dark:bg-slate-900"
-              // DAS HIER IST WICHTIG:
               style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}
             >
               
-              {/* INTRO */}
+              {/* INTRO BOX */}
               <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-2xl border border-orange-100 dark:border-orange-900/30">
                 <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400 font-bold uppercase text-xs tracking-wider mb-2">
                   <Rocket size={16} /> <span>Wofür ist diese App?</span>
                 </div>
                 <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
-                  Schluss mit Papierchaos! Diese App digitalisiert deine Stundenzettel bei <strong>Kogler Aufzugsbau</strong>. Sie berechnet Gleitzeit & Feiertage automatisch.
+                  Schluss mit Zettelwirtschaft! Erfasse deine Stunden, Fahrten und Urlaub direkt am Handy. Am Monatsende erstellst du einfach ein PDF.
                 </p>
               </div>
 
-              {/* SCHRITT 1 */}
+              {/* SCHRITT 1: Tägliches Stempeln */}
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-lg">1</div>
-                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">Einrichtung</h3>
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">Stunden eintragen</h3>
                 </div>
+
                 <div className="ml-4 border-l-2 border-slate-100 dark:border-slate-800 pl-6 py-1 space-y-4">
-                    <div className="text-sm text-slate-600 dark:text-slate-400">
-                        <strong className="text-slate-800 dark:text-slate-200 block mb-1">Profil vervollständigen</strong>
-                        Gehe zu den Einstellungen und trage deinen <strong>Namen</strong> ein. Optional kannst du ein Foto hochladen, das auf dem PDF-Bericht erscheint.
-                    </div>
-                </div>
-              </section>
-
-              {/* SCHRITT 2 */}
-              <section className="space-y-3">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-lg">2</div>
-                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">Stunden erfassen</h3>
-                </div>
-
-                <div className="ml-4 border-l-2 border-slate-100 dark:border-slate-800 pl-6 py-1 space-y-3">
-                  <p className="text-sm text-slate-500 mb-2">Drücke auf das große <span className="font-bold text-slate-900 dark:text-white">Plus (+)</span> unten rechts.</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Drücke unten rechts auf das große <span className="font-bold text-slate-900 dark:text-white">Plus (+)</span>.
+                  </p>
                   
+                  {/* FEATURE: SMART TIME */}
                   <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
                     <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-white text-sm mb-1">
-                        <BookOpen size={16} className="text-blue-500" /> Normale Arbeit
+                        <Wand2 size={16} className="text-purple-500" /> Die App denkt mit
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Wähle Start/Ende und deine Tätigkeit. <br/>
-                        <span className="text-orange-600 dark:text-orange-400 font-semibold">Tipp:</span> Der "Wie zuletzt"-Button kopiert alle Daten vom letzten Eintrag!
+                        Wenn du heute schon etwas eingetragen hast (z.B. Anreise), startet der nächste Eintrag automatisch zur passenden Uhrzeit. Du musst nicht kurbeln!
                     </p>
                   </div>
 
+                  {/* FEATURE: WIE ZULETZT */}
                   <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
                     <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-white text-sm mb-1">
-                        <Car size={16} className="text-green-500" /> Fahrtzeiten
+                        <BookOpen size={16} className="text-blue-500" /> "Wie zuletzt"-Knopf
                     </div>
-                    <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
-                        <li className="flex gap-2"><span className="w-2 h-2 rounded-full bg-green-500 mt-1"></span> <span><strong>Anreise (Grün):</strong> Bezahlte Zeit (Code 190)</span></li>
-                        <li className="flex gap-2"><span className="w-2 h-2 rounded-full bg-orange-500 mt-1"></span> <span><strong>Fahrt (Orange):</strong> Unbezahlt (Code 19)</span></li>
-                    </ul>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                       Machst du das Gleiche wie beim letzten Mal? Drücke oben auf <span className="font-bold text-orange-600 dark:text-orange-400">"Wie zuletzt"</span> und die App füllt Start, Ende, Pause und Projekt automatisch aus.
+                    </p>
                   </div>
                 </div>
               </section>
 
-              {/* SCHRITT 3 */}
+              {/* SCHRITT 2: Fahrten */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-lg">2</div>
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">Fahrtzeiten</h3>
+                </div>
+                
+                <div className="ml-4 border-l-2 border-slate-100 dark:border-slate-800 pl-6 py-1 space-y-2">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                        Wähle oben im Menü "Fahrt". Du hast zwei Möglichkeiten:
+                    </p>
+                    <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-2">
+                        <li className="flex gap-2 items-center bg-green-50 dark:bg-green-900/20 p-2 rounded-lg border border-green-100 dark:border-green-900/30">
+                            <span className="w-3 h-3 rounded-full bg-green-500 shrink-0"></span> 
+                            <span><strong>An/Abreise (Grün):</strong> Das ist bezahlte Arbeitszeit (Code 190).</span>
+                        </li>
+                        <li className="flex gap-2 items-center bg-orange-50 dark:bg-orange-900/20 p-2 rounded-lg border border-orange-100 dark:border-orange-900/30">
+                            <span className="w-3 h-3 rounded-full bg-orange-500 shrink-0"></span> 
+                            <span><strong>Fahrtzeit (Orange):</strong> Das ist unbezahlte Zeit (Code 19).</span>
+                        </li>
+                    </ul>
+                </div>
+              </section>
+
+              {/* SCHRITT 3: Spezialfälle */}
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-lg">3</div>
-                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">Abschluss</h3>
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">Urlaub, Krank & ZA</h3>
+                </div>
+                
+                <div className="ml-4 border-l-2 border-slate-100 dark:border-slate-800 pl-6 py-1 space-y-2">
+                    <div className="flex items-start gap-3">
+                        <Hourglass className="text-purple-500 mt-1 shrink-0" size={20} />
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                            Wähle einfach <strong>Urlaub</strong>, <strong>Krank</strong> oder <strong>ZA</strong> (Zeitausgleich) aus. Die App trägt automatisch die richtigen Soll-Stunden für den Tag ein.
+                        </p>
+                    </div>
+                </div>
+              </section>
+
+              {/* SCHRITT 4: PDF */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-lg">4</div>
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">Monatsabschluss</h3>
                 </div>
                 
                 <div className="ml-4 border-l-2 border-slate-100 dark:border-slate-800 pl-6 py-1 space-y-2">
                     <div className="text-sm text-slate-600 dark:text-slate-400">
-                        Klicke im Dashboard oben rechts auf das <FileText className="inline w-4 h-4 mx-1 align-sub" /> Symbol.
+                        Klicke auf dem Startbildschirm oben rechts auf das <FileText className="inline w-4 h-4 mx-1 align-sub text-orange-500" /> Symbol.
                     </div>
                     <div className="text-sm text-slate-600 dark:text-slate-400">
-                        Wähle den Zeitraum (Woche oder Monat) und erstelle das <strong>PDF</strong>. Du kannst es direkt per Mail versenden.
+                        Dort siehst du eine Vorschau. Prüfe alles und klicke dann auf <strong>PDF</strong>, um den Bericht zu senden oder zu speichern.
                     </div>
                 </div>
               </section>
 
-              {/* FOOTER */}
+              {/* FOOTER TIPPS */}
               <div className="grid grid-cols-2 gap-3 pt-4">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl">
-                  <ShieldCheck className="text-blue-600 dark:text-blue-400 mb-2" size={24} />
-                  <h4 className="font-bold text-sm text-blue-800 dark:text-blue-300">Lokal & Sicher</h4>
-                  <p className="text-[11px] text-blue-600/80 dark:text-blue-400/80 mt-1 leading-tight">Deine Daten bleiben auf deinem Gerät. Backups landen in deinen Dateien.</p>
+                <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
+                  <Fingerprint className="text-slate-600 dark:text-slate-400 mb-2" size={24} />
+                  <h4 className="font-bold text-sm text-slate-800 dark:text-slate-300">Löschen</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">Einfach einen Eintrag in der Liste nach <strong>links wischen</strong>, um ihn zu löschen.</p>
                 </div>
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-2xl">
-                  <Smartphone className="text-purple-600 dark:text-purple-400 mb-2" size={24} />
-                  <h4 className="font-bold text-sm text-purple-800 dark:text-purple-300">Gesten</h4>
-                  <p className="text-[11px] text-purple-600/80 dark:text-purple-400/80 mt-1 leading-tight">Wische Einträge in der Liste nach links, um sie schnell zu löschen.</p>
+                <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
+                  <ShieldCheck className="text-slate-600 dark:text-slate-400 mb-2" size={24} />
+                  <h4 className="font-bold text-sm text-slate-800 dark:text-slate-300">Backup</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">Keine Sorge: Die App speichert 1x täglich automatisch eine Sicherung auf dein Handy.</p>
                 </div>
               </div>
               
               <div className="text-center text-slate-300 dark:text-slate-700 text-[10px] uppercase tracking-widest font-bold pb-2">
-                Kogler Aufzugsbau App v4.0
+                "Damit keine Stunde im Schacht verschwindet"
               </div>
 
             </div>

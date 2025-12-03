@@ -6,12 +6,13 @@ import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { WORK_CODES, getWeekNumber, formatTime, blobToBase64 } from "../utils";
+import { WORK_CODES, getWeekNumber, formatTime, formatSignedTime, blobToBase64 } from "../utils";
 
 const PRINT_STYLES = {
   textBlack: '#000000',
   textDark: '#1e293b',
   textMedium: '#475569',
+  textLight: '#94a3b8',
   bgWhite: '#ffffff',
   bgGray: '#f8fafc',
   bgZebra: '#f1f5f9',
@@ -75,14 +76,6 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     return `${fmt(monday)} - ${fmt(sunday)}`;
   };
 
-  const formatSaldo = (minutes) => {
-    const sign = minutes > 0 ? "+" : minutes < 0 ? "-" : "";
-    const abs = Math.abs(Math.round(minutes));
-    const h = Math.floor(abs / 60);
-    const m = abs % 60;
-    return `${sign}${h}h ${m.toString().padStart(2, "0")}m`;
-  };
-
   const filteredEntries = useMemo(() => {
     let list = filterMode === "month" ? [...entries] : entries.filter((e) => getWeekNumber(new Date(e.date)) === Number(filterMode));
     list.sort((a, b) => {
@@ -104,7 +97,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
   }, [filterMode, availableWeeks, monthDate]);
 
   const reportStats = useMemo(() => {
-    let work = 0; let vacation = 0; let sick = 0; let holiday = 0; let drive = 0;
+    let work = 0; let vacation = 0; let sick = 0; let holiday = 0; let drive = 0; let timeComp = 0;
     let periodStart, periodEnd;
 
     if (filteredEntries.length > 0) {
@@ -128,9 +121,10 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
       if (e.type === "vacation") vacation += e.netDuration;
       if (e.type === "sick") sick += e.netDuration;
       if (e.type === "public_holiday") holiday += e.netDuration;
+      if (e.type === "time_comp") timeComp += e.netDuration;
     });
 
-    const totalIst = work + vacation + sick + holiday;
+    const totalIst = work + vacation + sick + holiday + timeComp;
     let totalTarget = 0;
     let loopDate = new Date(periodStart);
     while (loopDate <= periodEnd) {
@@ -138,7 +132,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
       if (dow >= 1 && dow <= 5) totalTarget += dow === 5 ? 270 : 510;
       loopDate.setDate(loopDate.getDate() + 1);
     }
-    return { work, vacation, sick, holiday, drive, totalIst, totalTarget, totalSaldo: totalIst - totalTarget };
+    return { work, vacation, sick, holiday, drive, timeComp, totalIst, totalTarget, totalSaldo: totalIst - totalTarget };
   }, [filteredEntries, monthDate, filterMode]);
 
   const dayMetaMap = useMemo(() => {
@@ -374,13 +368,12 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                 </tr>
               </thead>
               <tbody>
-                {filteredEntries.map((e, idx) => { // HIER NUTZEN WIR JETZT DEN INDEX
+                {filteredEntries.map((e, idx) => { 
                   const d = new Date(e.date);
                   const wd = d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2);
                   const ds = d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
                   const meta = dayMetaMap[e.id] || {};
 
-                  // CHECK: IST ES DER GLEICHE TAG WIE VORHER?
                   const prevEntry = filteredEntries[idx - 1];
                   const isSameDay = prevEntry && prevEntry.date === e.date;
 
@@ -409,6 +402,10 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                     projectText = e.project || "Gesetzlicher Feiertag";
                     durationDisplay = formatTime(e.netDuration);
                     timeColor = PRINT_STYLES.textBlue;
+                  } else if (e.type === "time_comp") {
+                    timeCellContent = <span style={{ color: PRINT_STYLES.textLight }}>-</span>;
+                    projectText = "Zeitausgleich";
+                    timeColor = '#7e22ce'; // Lila
                   } else {
                     timeCellContent = <span style={{ color: PRINT_STYLES.textLight }}>-</span>;
                     projectText = e.type === "vacation" ? "Urlaub" : "Krank";
@@ -416,7 +413,6 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
 
                   return (
                     <tr key={e.id} style={{ height: '3.5rem', pageBreakInside: 'avoid', breakInside: 'avoid', backgroundColor: rowBg, borderBottom: `1px solid ${PRINT_STYLES.bgZebra}` }}>
-                      {/* FIX: DATUM NUR ANZEIGEN WENN NEUER TAG */}
                       <td style={{ padding: '0 0', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                         {!isSameDay && (
                             <>
@@ -427,15 +423,14 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                       </td>
                       <td style={{ padding: '0 0', verticalAlign: 'middle' }}>{timeCellContent}</td>
                       <td style={{ padding: '0 0', verticalAlign: 'middle' }}>
-                        <span style={{ fontWeight: '500', color: e.type === "public_holiday" ? PRINT_STYLES.textBlue : PRINT_STYLES.textMedium }}>{projectText}</span>
+                        <span style={{ fontWeight: '500', color: e.type === "public_holiday" ? PRINT_STYLES.textBlue : e.type === "time_comp" ? '#7e22ce' : PRINT_STYLES.textMedium }}>{projectText}</span>
                       </td>
                       <td style={{ padding: '0 0', verticalAlign: 'middle', fontSize: '0.75rem', color: PRINT_STYLES.textMedium }}>{codeText}</td>
                       <td style={{ padding: '0 0', verticalAlign: 'middle', textAlign: 'right', fontWeight: 'bold', color: timeColor }}>{durationDisplay}</td>
                       <td style={{ padding: '0 0', verticalAlign: 'middle', textAlign: 'right', fontWeight: 'bold', fontSize: '0.75rem' }}>
-                        {/* SALDO NUR BEIM LETZTEN EINTRAG DES TAGES ANZEIGEN (Das macht meta.showBalance bereits) */}
                         {meta.showBalance && (
                           <span style={{ color: meta.balance >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}>
-                            {formatSaldo(meta.balance)}
+                            {formatSignedTime(meta.balance)}
                           </span>
                         )}
                       </td>
@@ -445,38 +440,63 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
               </tbody>
             </table>
 
-            <div style={{ marginTop: '1rem', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-              <div style={{ backgroundColor: PRINT_STYLES.bgGray, padding: '1rem', borderRadius: '0.5rem', border: `1px solid ${PRINT_STYLES.borderLight}` }}>
-                <h3 style={{ fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '0.5rem', borderBottom: `1px solid ${PRINT_STYLES.borderLight}`, paddingBottom: '0.2rem' }}>Zusammenfassung</h3>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem' }}>
-                  <span>Arbeitszeit (inkl. Anreise):</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.work)}</span>
+            <div style={{ marginTop: '0.5rem', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+              <div style={{ backgroundColor: PRINT_STYLES.bgGray, padding: '0.75rem', borderRadius: '0.5rem', border: `1px solid ${PRINT_STYLES.borderLight}` }}>
+                {/* KOMPAKTER HEADER */}
+                <h3 style={{ fontWeight: 'bold', fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: '0.3rem', borderBottom: `1px solid ${PRINT_STYLES.borderLight}`, paddingBottom: '0.1rem', color: PRINT_STYLES.textMedium }}>Zusammenfassung</h3>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 2rem' }}>
+                    
+                    {/* LINKE SPALTE */}
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem' }}>
+                        <span>Arbeit (inkl. Anreise):</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.work)}</span>
+                        </div>
+                        
+                        {reportStats.holiday > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textBlue }}>
+                            <span>Feiertage:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.holiday)}</span>
+                            </div>
+                        )}
+                        {reportStats.vacation > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textBlue }}>
+                            <span>Urlaub:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.vacation)}</span>
+                            </div>
+                        )}
+                         {reportStats.timeComp > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: '#7e22ce' }}>
+                            <span>Zeitausgleich:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.timeComp)}</span>
+                            </div>
+                        )}
+                        {reportStats.sick > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textRed }}>
+                            <span>Krankenstand:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.sick)}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* RECHTE SPALTE */}
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', borderBottom: `1px dashed ${PRINT_STYLES.borderLight}`, paddingBottom: '2px' }}>
+                            <span>Gesamt (IST):</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.totalIst)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textMedium }}>
+                            <span>Sollzeit (SOLL):</span><span>{formatTime(reportStats.totalTarget)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginTop: '0.3rem', fontWeight: 'bold' }}>
+                            <span>Saldo:</span>
+                            <span style={{ color: reportStats.totalSaldo >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}>
+                                {formatSignedTime(reportStats.totalSaldo)}
+                            </span>
+                        </div>
+                    </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem', color: PRINT_STYLES.textBlue }}>
-                  <span>Feiertage:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.holiday)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem', color: PRINT_STYLES.textBlue }}>
-                  <span>Urlaub:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.vacation)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem', color: PRINT_STYLES.textRed }}>
-                  <span>Krankenstand:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.sick)}</span>
-                </div>
+
                 {reportStats.drive > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem', color: PRINT_STYLES.textLight, fontStyle: 'italic', marginTop: '0.3rem' }}>
+                  <div style={{ borderTop: `1px solid ${PRINT_STYLES.borderLight}`, marginTop: '0.3rem', paddingTop: '0.2rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: PRINT_STYLES.textLight, fontStyle: 'italic' }}>
                     <span>Fahrtzeit (unbezahlt):</span><span>{formatTime(reportStats.drive)}</span>
                   </div>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: `1px solid ${PRINT_STYLES.borderLight}`, fontWeight: 'bold' }}>
-                  <span>Gesamt (IST):</span><span>{formatTime(reportStats.totalIst)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginTop: '0.2rem', color: PRINT_STYLES.textMedium, fontWeight: '500' }}>
-                  <span>Sollzeit (SOLL):</span><span>{formatTime(reportStats.totalTarget)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: `1px solid ${PRINT_STYLES.borderLight}`, fontWeight: 'bold' }}>
-                  <span>Saldo:</span>
-                  <span style={{ color: reportStats.totalSaldo >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}>
-                    {formatSaldo(reportStats.totalSaldo)}
-                  </span>
-                </div>
               </div>
             </div>
 

@@ -1,6 +1,5 @@
 import React, { forwardRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Trash2 } from "lucide-react";
-// FIX 1: getWeekNumber hier importieren
 import { Card, formatTime, formatSignedTime, WORK_CODES, getWeekNumber } from "../utils"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -32,9 +31,9 @@ const Dashboard = ({
   viewYear,
   onEditEntry,
   onDeleteEntry,
+  onStartNewEntry
 }) => {
   
-  // FIX 2: Initiale State setzt die aktuelle KW auf 'true'
   const [expandedWeeks, setExpandedWeeks] = useState(() => {
     const currentWeek = getWeekNumber(new Date());
     return { [currentWeek]: true };
@@ -113,8 +112,14 @@ const Dashboard = ({
           </div>
         ) : (
           groupedByWeek.map(([week, weekEntries]) => {
-            let workMinutes = 0; let driveMinutesKW = 0;
-            weekEntries.forEach((e) => { if (e.type === "work" && e.code === 19) driveMinutesKW += e.netDuration; else workMinutes += e.netDuration; });
+            let workMinutes = 0;
+            weekEntries.forEach((e) => { 
+                // Summe berechnen (Code 19 zählt nicht zur Arbeitszeit-Summe in der Header-Ansicht der KW, ist Geschmackssache)
+                if (!(e.type === "work" && e.code === 19)) {
+                    workMinutes += e.netDuration; 
+                }
+            });
+
             const anyDate = new Date(weekEntries[0].date); const currentDay = anyDate.getDay() || 7; const monday = new Date(anyDate); monday.setDate(anyDate.getDate() - (currentDay - 1)); const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
             let dynamicTarget = 0; for (let i = 0; i < 5; i++) { const check = new Date(monday); check.setDate(monday.getDate() + i); if (check.getMonth() === viewMonth && check.getFullYear() === viewYear) dynamicTarget += i === 4 ? 270 : 510; }
             const diff = workMinutes - dynamicTarget; const expanded = expandedWeeks[week];
@@ -170,14 +175,25 @@ const Dashboard = ({
                                                     <AnimatePresence initial={false}>
                                                         {sortedEntries.map((entry, idx) => {
                                                             const isHoliday = entry.type === "public_holiday";
+                                                            const isTimeComp = entry.type === "time_comp";
+                                                            
                                                             let timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags");
+                                                            
                                                             let codeLabel = "";
                                                             if(entry.type === "work") codeLabel = WORK_CODES.find(c => c.id === entry.code)?.label;
                                                             else if(isHoliday) codeLabel = "Bezahlt frei";
+                                                            else if(isTimeComp) codeLabel = "Zeitausgleich"; 
                                                             else codeLabel = entry.type === "vacation" ? "Urlaub" : "Krank";
+
+                                                            let pauseLabel = "";
+                                                            // FIX: Pause wird jetzt immer angezeigt (außer bei Code 19 Fahrzeit)
+                                                            if (entry.type === "work" && entry.code !== 19) {
+                                                                pauseLabel = entry.pause > 0 ? ` - Pause: ${entry.pause} Min` : " - Keine Pause";
+                                                            }
                                                             
                                                             let rowClass = `p-3 flex justify-between items-start gap-3 transition-colors cursor-pointer bg-white dark:bg-slate-800 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`;
                                                             if(isHoliday) rowClass = `p-3 flex justify-between items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`;
+                                                            if(isTimeComp) rowClass = `p-3 flex justify-between items-start gap-3 bg-purple-50/50 dark:bg-purple-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`;
 
                                                             if (isHoliday) {
                                                                 return (
@@ -214,11 +230,19 @@ const Dashboard = ({
                                                                         className={`relative z-10 bg-white dark:bg-slate-800 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`}
                                                                         layout
                                                                     >
-                                                                        <div className="p-3 flex justify-between items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                                                        <div className={`p-3 flex justify-between items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${isTimeComp ? "bg-purple-50/30 dark:bg-purple-900/10" : ""}`}>
                                                                             <div className="min-w-0 flex-1 flex flex-col gap-1">
-                                                                                <div className="font-bold text-sm leading-none text-slate-900 dark:text-slate-100">{timeLabel}</div>
+                                                                                <div className={`font-bold text-sm leading-none ${isTimeComp ? "text-purple-700 dark:text-purple-400" : "text-slate-900 dark:text-slate-100"}`}>
+                                                                                    {timeLabel}
+                                                                                    {/* PAUSE DIREKT HIER */}
+                                                                                    {pauseLabel && <span className="font-normal opacity-70">{pauseLabel}</span>}
+                                                                                </div>
+                                                                                
                                                                                 <div className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-tight">{entry.project}</div>
-                                                                                {codeLabel && <div className="text-xs text-slate-500 dark:text-slate-400 leading-tight">{codeLabel}</div>}
+                                                                                
+                                                                                <div className="flex items-center flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400 leading-tight">
+                                                                                    {codeLabel && <span>{codeLabel}</span>}
+                                                                                </div>
                                                                             </div>
                                                                             <div className="flex items-center gap-2 pl-2 border-l border-slate-100 dark:border-slate-700 ml-1">
                                                                                 <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span>

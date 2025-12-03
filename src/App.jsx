@@ -183,7 +183,7 @@ export default function App() {
     entriesWithHolidays.forEach((e) => {
         if (e.type === "work" && e.code === 19) driveMinutes += e.netDuration;
         else if (e.type === "public_holiday") holidayMinutes += e.netDuration;
-        else actualMinutes += e.netDuration;
+        else actualMinutes += e.netDuration; // Hier landen Work, Vacation, Sick und Time_Comp
     });
     const days = new Date(viewYear, viewMonth + 1, 0).getDate();
     let targetMinutes = 0;
@@ -243,22 +243,14 @@ export default function App() {
           return; 
         }
 
-        // 2. NEU: Validierung: Überschneidung prüfen
-        // Wir filtern alle existierenden Einträge des gleichen Tages
+        // 2. Validierung: Überschneidung prüfen
         const hasOverlap = entries.some(existing => {
-          // Nur gleiches Datum prüfen
           if (existing.date !== formDate) return false;
-          // Wenn wir bearbeiten, den eigenen Eintrag ignorieren (sonst überschneidet er sich mit sich selbst)
           if (editingEntry && existing.id === editingEntry.id) return false;
-          
-          // Nur Einträge prüfen, die auch Zeiten haben (also keine Ganztags-Einträge wie Urlaub ohne Zeit)
           if (!existing.start || !existing.end) return false;
 
           const exStart = parseTime(existing.start);
           const exEnd = parseTime(existing.end);
-
-          // Logik für Überschneidung:
-          // (Neuer Start < Alter Ende) UND (Alter Start < Neues Ende)
           return (s < exEnd && exStart < en);
         });
 
@@ -275,7 +267,9 @@ export default function App() {
         net = en - s - usedPause;
         label = WORK_CODES.find((c) => c.id === usedCode)?.label || (isDrive ? "Fahrzeit" : "Arbeit");
     } else {
-        net = getTargetMinutesForDate(formDate); label = entryType === "vacation" ? "Urlaub" : "Krank";
+        // AUTOMATISCHE BERECHNUNG FÜR URLAUB, KRANK, ZA
+        net = getTargetMinutesForDate(formDate); 
+        label = entryType === "vacation" ? "Urlaub" : entryType === "sick" ? "Krank" : "Zeitausgleich";
     }
     if (net < 0) net = 0;
     
@@ -310,74 +304,44 @@ export default function App() {
   
   const changeMonth = (delta) => { const d = new Date(currentDate); d.setMonth(d.getMonth() + delta); setCurrentDate(d); };
   
-  // --- EXPORT FIX (NATIVE & WEB) ---
+  // --- EXPORT ---
   const exportData = async () => {
     const toastId = toast.loading("Exportiere Daten...");
-    
     try {
       const fileName = `kogler_export_${new Date().toISOString().slice(0, 10)}.json`;
       const json = JSON.stringify({ user: userData, entries, exportedAt: new Date().toISOString() }, null, 2);
 
-      // A) NATIVE APP (ANDROID / IOS)
       if (Capacitor.isNativePlatform()) {
-          // 1. Datei in den CACHE schreiben (statt Documents -> verhindert EACCES Fehler!)
           await Filesystem.writeFile({
               path: fileName, 
               data: json, 
-              directory: Directory.Cache, // FIX: Cache Ordner hat immer Rechte
+              directory: Directory.Cache,
               encoding: Encoding.UTF8,
               recursive: true
           });
-          
-          // 2. URI vom Cache abrufen
-          const uriResult = await Filesystem.getUri({ 
-            path: fileName, 
-            directory: Directory.Cache 
-          });
-          
-          // 3. Teilen (Nutzer entscheidet Speicherort)
+          const uriResult = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
           await Share.share({ 
             title: "Vertel Backup", 
             text: `Backup vom ${new Date().toLocaleDateString("de-DE")}`,
             url: uriResult.uri,
-            dialogTitle: "Backup sichern" // Android Titel
+            dialogTitle: "Backup sichern"
           });
-          
           toast.success("📤 Export bereitgestellt!", { id: toastId });
-      } 
-      // B) WEB / BROWSER / IPHONE WEB
-      else {
+      } else {
           const file = new File([json], fileName, { type: "application/json" });
-          
-          // iPhone Web Share Support
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
               try {
-                  await navigator.share({
-                      files: [file],
-                      title: 'Vertel Backup',
-                      text: 'Backup meiner Stunden'
-                  });
+                  await navigator.share({ files: [file], title: 'Vertel Backup', text: 'Backup meiner Stunden' });
                   toast.success("📤 Export erfolgreich!", { id: toastId });
                   return; 
               } catch (shareError) {
-                  if (shareError.name === 'AbortError') {
-                      toast.dismiss(toastId);
-                      return;
-                  }
+                  if (shareError.name === 'AbortError') { toast.dismiss(toastId); return; }
               }
           }
-
-          // Fallback: Klassischer Download
           const blob = new Blob([json], { type: "application/json" });
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          
+          a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
           toast.success("💾 Download gestartet!", { id: toastId });
       }
     } catch (e) {
@@ -471,6 +435,8 @@ export default function App() {
                   endTime={endTime} setEndTime={setEndTime}
                   project={project} setProject={setProject}
                   lastWorkEntry={lastWorkEntry} existingProjects={uniqueProjects}
+                  allEntries={entries} 
+                  isEditing={!!editingEntry} // Prop übergeben
               />
             </motion.div>
           )}
@@ -512,7 +478,7 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      {/* FAB - FIX FÜR IPHONE & WEB */}
+      {/* FAB */}
       <AnimatePresence>
         {view === "dashboard" && (
           <motion.button 

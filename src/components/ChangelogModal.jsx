@@ -1,8 +1,33 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { X, Sparkles, Zap, FileText, Shield, Bug, Globe } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
+  {
+    version: "4.2.0",
+    date: "03.12.2025",
+    title: "Smart Time & Zeitausgleich 🧠",
+    isMajor: true,
+    sections: [
+      {
+        icon: Sparkles,
+        title: "Neue Features",
+        items: [
+          "Smart Time: Bei neuen Einträgen startet die Zeit automatisch dort, wo der letzte aufgehört hat",
+          "Zeitausgleich: Neuer lila Button für ZA (wird korrekt berechnet)",
+          "Dashboard: Pause wird jetzt direkt hinter der Zeit angezeigt (z.B. 07:00 - 16:30 - Pause: 30 Min)"
+        ]
+      },
+      {
+        icon: FileText,
+        title: "PDF & Design",
+        items: [
+          "PDF-Bericht: Kompaktere Zusammenfassung, ungenutzte Kategorien werden ausgeblendet",
+          "DatePicker: Feiertage sind jetzt nur noch durch rote Zahlen markiert (dezenter)",
+        ]
+      }
+    ]
+  },
   {
     version: "4.1.1",
     date: "02.12.2025",
@@ -182,41 +207,53 @@ const CHANGELOG_DATA = [
 ];
 
 const ChangelogModal = ({ isOpen, onClose }) => {
+  const dragControls = useDragControls();
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150]"
+            className="fixed left-0 top-0 w-screen h-screen bg-black/60 backdrop-blur-sm z-[150]"
             onClick={onClose}
           />
 
-          {/* Modal Container */}
           <motion.div
             initial={{ y: "100%", opacity: 0.5 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            drag="y"
+            dragConstraints={{ top: 0 }}
+            dragElastic={0.2}
+            dragListener={false}
+            dragControls={dragControls}
+            onDragEnd={(_, info) => { if (info.offset.y > 100) onClose(); }}
             className={`
               fixed z-[160] flex flex-col bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
-              
-              /* MOBILE: Bottom Sheet (Unten angedockt) */
               inset-x-0 bottom-0 rounded-t-3xl border-t border-slate-200 dark:border-slate-800
-              /* Höhe: Nimmt max 85% des Screens ein (passt sich an jedes Handy an) */
               max-h-[85vh] h-[85vh]
-              
-              /* DESKTOP: Zentriert */
               md:inset-auto md:w-[600px] md:h-[80vh] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl
             `}
           >
-            {/* Mobile Drag Handle (Optik) */}
-            <div className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-slate-900 shrink-0" onClick={onClose}>
+            {/* DRAG HANDLE FIX */}
+            <div 
+                className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-slate-900 shrink-0 cursor-grab active:cursor-grabbing touch-none" 
+                onPointerDown={(e) => dragControls.start(e)}
+            >
               <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full" />
             </div>
 
-            {/* Header (Bleibt stehen beim Scrollen) */}
             <div className="flex justify-between items-center p-5 pt-2 md:pt-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 z-10">
               <div>
                 <h2 className="text-xl font-bold text-slate-800 dark:text-white">Änderungsprotokoll</h2>
@@ -227,10 +264,8 @@ const ChangelogModal = ({ isOpen, onClose }) => {
               </button>
             </div>
 
-            {/* Scrollable Content */}
             <div 
               className="flex-1 overflow-y-auto p-0 scrollbar-hide"
-              // WICHTIG: Das Padding unten nutzt die Safe-Area des iPhones!
               style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}
             >
               {CHANGELOG_DATA.map((release, idx) => (

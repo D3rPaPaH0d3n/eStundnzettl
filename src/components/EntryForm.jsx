@@ -1,6 +1,6 @@
-import React, { forwardRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History } from "lucide-react";
-import { Card, WORK_CODES } from "../utils";
+import React, { forwardRef, useState, useEffect, useMemo } from "react";
+import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass } from "lucide-react";
+import { Card, WORK_CODES, getHolidayData } from "../utils"; 
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -26,7 +26,6 @@ const CustomInput = forwardRef(({ value, onClick, icon: Icon }, ref) => (
   </button>
 ));
 
-// Container für die Zoom-Animation des Kalenders
 const CalendarContainerAnimation = ({ className, children }) => {
   return (
     <div className={className} style={{ background: "transparent", border: "none", padding: 0 }}>
@@ -62,57 +61,71 @@ const EntryForm = ({
   project,
   setProject,
   lastWorkEntry,
-  existingProjects = []
+  existingProjects = [],
+  allEntries = [],
+  isEditing = false // WICHTIG: Flag empfangen
 }) => {
   
   const [activeTimeField, setActiveTimeField] = useState(null);
   const [isWorkCodeOpen, setIsWorkCodeOpen] = useState(false);
-  
-  // --- AUTOCOMPLETE STATE ---
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // --- FIX FÜR SUBMIT (Logik vor Haptik) ---
+  // --- SMART TIME LOGIC ---
+  useEffect(() => {
+    // 1. Abbruch, wenn wir bearbeiten
+    if (isEditing) return;
+    
+    // 2. Abbruch, wenn nicht Arbeit/Fahrt
+    if (entryType !== 'work' && entryType !== 'drive') return;
+    
+    // Bestehende Einträge für diesen Tag finden
+    const dayEntries = allEntries.filter(e => e.date === formDate && e.type === 'work' && e.end);
+    
+    if (dayEntries.length > 0) {
+      // Sortieren nach Endzeit, um den spätesten zu finden
+      const sorted = [...dayEntries].sort((a, b) => (a.end || "").localeCompare(b.end || ""));
+      const lastEnd = sorted[sorted.length - 1].end;
+      
+      if (lastEnd) {
+        setStartTime(lastEnd);
+        // KEIN TOAST MEHR (wie gewünscht)
+      }
+    }
+  }, [formDate, allEntries, entryType, isEditing]); 
+
+  // --- FEIERTAGE FÜR DATEPICKER ---
+  const holidayData = useMemo(() => {
+      const year = new Date(formDate).getFullYear();
+      return getHolidayData(year);
+  }, [formDate]);
+
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    // 1. Erst speichern
     onSubmit(e);
-    // 2. Dann vibrieren (Fehler ignorieren)
     Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
   };
 
-  // --- FUNKTION: LETZTEN EINTRAG KOPIEREN ---
   const handleCopyLastEntry = () => {
     if (!lastWorkEntry) {
       toast.error("Kein vorheriger Eintrag gefunden.");
       return;
     }
-    
-    // Werte übernehmen
     setStartTime(lastWorkEntry.start || "06:00");
     setEndTime(lastWorkEntry.end || "16:30");
     setPauseDuration(lastWorkEntry.pause || 0);
     setProject(lastWorkEntry.project || "");
     if (lastWorkEntry.code) setCode(lastWorkEntry.code);
-
-    // Feedback Animation/Toast
-    toast.success("Daten vom letzten Eintrag übernommen!", {
-      icon: "🪄",
-      style: { borderRadius: '10px', background: '#333', color: '#fff' }
-    });
+    toast.success("Daten übernommen!", { icon: "🪄" });
   };
 
-  // --- FUNKTION: AUTOCOMPLETE LOGIK ---
   const handleProjectChange = (e) => {
     const val = e.target.value;
     setProject(val);
-
     if (val.length > 0) {
-      // Filtern: Case-insensitive Suche
       const filtered = existingProjects.filter(p => 
         p.toLowerCase().includes(val.toLowerCase()) && p !== val
-      ).slice(0, 4); // Max 4 Vorschläge anzeigen
-      
+      ).slice(0, 4);
       setSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
     } else {
@@ -125,7 +138,6 @@ const EntryForm = ({
     setShowSuggestions(false);
   };
 
-  // Datum ändern helper
   const changeDate = (days) => {
     const d = new Date(formDate);
     d.setDate(d.getDate() + days);
@@ -155,22 +167,18 @@ const EntryForm = ({
       />
 
       <Card>
-        {/* HIER VERWENDEN WIR JETZT handleFormSubmit STATT onSubmit DIREKT */}
         <form onSubmit={handleFormSubmit} className="p-4 space-y-5">
           
-          {/* HEADER MIT KOPIER-BUTTON */}
           <div className="flex justify-between items-center mb-1">
              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Eintragstyp</div>
              
-             {/* DER MAGISCHE KNOPF (Nur bei Arbeit sichtbar und wenn Daten da sind) */}
-             {entryType === 'work' && lastWorkEntry && (
+             {/* DER MAGISCHE KNOPF (Nur bei Arbeit sichtbar und wenn NICHT Anreise Code 190) */}
+             {entryType === 'work' && code !== 190 && lastWorkEntry && (
                <motion.button
                  type="button"
                  whileTap={{ scale: 0.9 }}
                  onClick={() => {
-                   // Logik zuerst
                    handleCopyLastEntry();
-                   // Haptik als Bonus
                    Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
                  }}
                  className="flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-md border border-orange-100 dark:border-orange-800/50"
@@ -182,13 +190,16 @@ const EntryForm = ({
           </div>
 
           {/* ENTRY TYPE SELECT */}
-          <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-xl grid grid-cols-4 gap-1">
-            <button type="button" onClick={() => { setEntryType("work"); setCode(WORK_CODES[0].id); }} className={`py-2 rounded-lg text-xs font-bold transition-all ${entryType === "work" && code !== 190 ? "bg-white dark:bg-slate-600 shadow text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}>Arbeit</button>
-            <button type="button" onClick={() => { setEntryType("drive"); setCode(19); setPauseDuration(0); }} className={`py-2 rounded-lg text-xs font-bold transition-all ${entryType === "drive" || code === 190 ? "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Fahrt</button>
-            <button type="button" onClick={() => setEntryType("sick")} className={`py-2 rounded-lg text-xs font-bold transition-all ${entryType === "sick" ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Krank</button>
-            <button type="button" onClick={() => setEntryType("vacation")} className={`py-2 rounded-lg text-xs font-bold transition-all ${entryType === "vacation" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Urlaub</button>
+          <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-xl grid grid-cols-5 gap-1">
+            <button type="button" onClick={() => { setEntryType("work"); setCode(WORK_CODES[0].id); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "work" && code !== 190 ? "bg-white dark:bg-slate-600 shadow text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}>Arbeit</button>
+            <button type="button" onClick={() => { setEntryType("drive"); setCode(19); setPauseDuration(0); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "drive" || code === 190 ? "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Fahrt</button>
+            <button type="button" onClick={() => setEntryType("sick")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "sick" ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Krank</button>
+            <button type="button" onClick={() => setEntryType("vacation")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "vacation" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Urlaub</button>
+            {/* NEU: ZEITAUSGLEICH */}
+            <button type="button" onClick={() => setEntryType("time_comp")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "time_comp" ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>ZA</button>
           </div>
 
+          {/* FAHRT SUB-SELECTION (WICHTIG: WIEDER DRIN!) */}
           {(entryType === "drive" || code === 190) && (
             <div className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
               <button type="button" onClick={() => { setEntryType("work"); setCode(190); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${code === 190 ? "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 ring-2 ring-green-500 ring-offset-1" : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300"}`}>
@@ -200,10 +211,11 @@ const EntryForm = ({
             </div>
           )}
             
-          {(entryType === "vacation" || entryType === "sick") && (
-            <div className={`border rounded-lg p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 ${entryType === "sick" ? "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800 text-red-800 dark:text-red-300" : "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-300"}`}>
-              <Info className={`flex-shrink-0 mt-0.5 ${entryType === "sick" ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400"}`} size={18} />
-              <div className="text-sm"><span className="font-bold block mb-1">Automatische Berechnung</span>Für {entryType === "vacation" ? "Urlaubstage" : "Krankenstand"} wird automatisch die tägliche Sollzeit gutgeschrieben.</div>
+          {/* Info-Boxen für Auto-Typen */}
+          {(entryType === "vacation" || entryType === "sick" || entryType === "time_comp") && (
+            <div className={`border rounded-lg p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 ${entryType === "sick" ? "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800 text-red-800 dark:text-red-300" : entryType === "vacation" ? "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-300" : "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800 text-purple-800 dark:text-purple-300"}`}>
+              {entryType === "time_comp" ? <Hourglass size={18} className="mt-0.5" /> : <Info size={18} className="mt-0.5" />}
+              <div className="text-sm"><span className="font-bold block mb-1">Automatische Berechnung</span>Für {entryType === "vacation" ? "Urlaubstage" : entryType === "sick" ? "Krankenstand" : "Zeitausgleich"} wird automatisch die tägliche Sollzeit gutgeschrieben.</div>
             </div>
           )}
 
@@ -221,6 +233,11 @@ const EntryForm = ({
                   withPortal
                   calendarContainer={CalendarContainerAnimation}
                   customInput={<CustomInput icon={CalIcon} />}
+                  // NEU: Nur rote Schrift für Feiertage, kein Hintergrund
+                  dayClassName={(date) => {
+                    const dateStr = date.toISOString().split("T")[0];
+                    return holidayData[dateStr] ? "!text-red-600 !font-bold" : undefined;
+                  }}
                 />
               </div>
               <button type="button" onClick={() => changeDate(1)} className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300"><ChevronRight size={20} /></button>
@@ -272,7 +289,7 @@ const EntryForm = ({
                 </div>
               )}
 
-              {/* PROJEKT MIT AUTOCOMPLETE (RELATIVE POSITION) */}
+              {/* PROJEKT MIT AUTOCOMPLETE */}
               <div className="space-y-1 relative">
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{entryType === "drive" || code === 190 ? "Strecke / Notiz" : "Projekt"}</label>
                 <input 

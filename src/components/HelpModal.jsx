@@ -1,11 +1,10 @@
 import React, { useEffect } from "react";
-import { X, Rocket, BookOpen, Car, ShieldCheck, Smartphone, FileText, Wand2, Fingerprint, Hourglass } from "lucide-react";
+import { X, Rocket, BookOpen, Car, ShieldCheck, Play, Square, Wand2, Fingerprint, Hourglass, FileText } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const HelpModal = ({ isOpen, onClose }) => {
   const dragControls = useDragControls();
 
-  // FIX: Verhindert Scrollen der App im Hintergrund
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -19,7 +18,6 @@ const HelpModal = ({ isOpen, onClose }) => {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* FIX: Vollbild-Overlay erzwingen */}
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed left-0 top-0 w-screen h-screen bg-black/60 backdrop-blur-sm z-[150]"
@@ -46,7 +44,7 @@ const HelpModal = ({ isOpen, onClose }) => {
               md:inset-auto md:w-[600px] md:h-[85vh] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl
             `}
           >
-            {/* DRAG HANDLE - WICHTIG: touch-none verhindert Scroll-Konflikte */}
+            {/* DRAG HANDLE */}
             <div 
               className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-slate-900 shrink-0 cursor-grab active:cursor-grabbing touch-none"
               onPointerDown={(e) => dragControls.start(e)}
@@ -74,7 +72,6 @@ const HelpModal = ({ isOpen, onClose }) => {
               style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}
             >
               
-              {/* INTRO BOX */}
               <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-2xl border border-orange-100 dark:border-orange-900/30">
                 <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400 font-bold uppercase text-xs tracking-wider mb-2">
                   <Rocket size={16} /> <span>Wofür ist diese App?</span>
@@ -84,35 +81,35 @@ const HelpModal = ({ isOpen, onClose }) => {
                 </p>
               </div>
 
-              {/* SCHRITT 1: Tägliches Stempeln */}
+              {/* SCHRITT 1: Stempeln */}
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-lg">1</div>
-                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">Stunden eintragen</h3>
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">Stunden erfassen</h3>
                 </div>
 
                 <div className="ml-4 border-l-2 border-slate-100 dark:border-slate-800 pl-6 py-1 space-y-4">
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Drücke unten rechts auf das große <span className="font-bold text-slate-900 dark:text-white">Plus (+)</span>.
+                    Du hast zwei Möglichkeiten:
                   </p>
                   
-                  {/* FEATURE: SMART TIME */}
+                  {/* OPTION A: LIVE */}
                   <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
                     <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-white text-sm mb-1">
-                        <Wand2 size={16} className="text-purple-500" /> Die App denkt mit
+                        <Play size={16} className="text-green-500" /> Live Stempeluhr (Neu!)
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Wenn du heute schon etwas eingetragen hast (z.B. Anreise), startet der nächste Eintrag automatisch zur passenden Uhrzeit. Du musst nicht kurbeln!
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2">
+                        Drücke links unten auf <span className="font-bold">EIN</span>, wenn du anfängst. Wenn du fertig bist, drücke auf <span className="font-bold">AUS</span>. Die App füllt den Eintrag automatisch aus und rundet die Zeit.
                     </p>
                   </div>
 
-                  {/* FEATURE: WIE ZULETZT */}
+                  {/* OPTION B: MANUELL */}
                   <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
                     <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-white text-sm mb-1">
-                        <BookOpen size={16} className="text-blue-500" /> "Wie zuletzt"-Knopf
+                        <Wand2 size={16} className="text-orange-500" /> Manuell & "Wie zuletzt"
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                       Machst du das Gleiche wie beim letzten Mal? Drücke oben auf <span className="font-bold text-orange-600 dark:text-orange-400">"Wie zuletzt"</span> und die App füllt Start, Ende, Pause und Projekt automatisch aus.
+                       Drücke rechts unten auf das <span className="font-bold">+</span>. Oben kannst du "Wie zuletzt" wählen, um Start, Ende und Pause vom Vortag zu kopieren.
                     </p>
                   </div>
                 </div>
@@ -127,22 +124,22 @@ const HelpModal = ({ isOpen, onClose }) => {
                 
                 <div className="ml-4 border-l-2 border-slate-100 dark:border-slate-800 pl-6 py-1 space-y-2">
                     <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
-                        Wähle oben im Menü "Fahrt". Du hast zwei Möglichkeiten:
+                        Wähle oben im Menü "Fahrt".
                     </p>
                     <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-2">
                         <li className="flex gap-2 items-center bg-green-50 dark:bg-green-900/20 p-2 rounded-lg border border-green-100 dark:border-green-900/30">
                             <span className="w-3 h-3 rounded-full bg-green-500 shrink-0"></span> 
-                            <span><strong>An/Abreise (Grün):</strong> Das ist bezahlte Arbeitszeit (Code 190).</span>
+                            <span><strong>An/Abreise (Grün):</strong> Bezahlte Arbeitszeit (Code 190).</span>
                         </li>
                         <li className="flex gap-2 items-center bg-orange-50 dark:bg-orange-900/20 p-2 rounded-lg border border-orange-100 dark:border-orange-900/30">
                             <span className="w-3 h-3 rounded-full bg-orange-500 shrink-0"></span> 
-                            <span><strong>Fahrtzeit (Orange):</strong> Das ist unbezahlte Zeit (Code 19).</span>
+                            <span><strong>Fahrtzeit (Orange):</strong> Unbezahlte Zeit (Code 19).</span>
                         </li>
                     </ul>
                 </div>
               </section>
 
-              {/* SCHRITT 3: Spezialfälle */}
+              {/* SCHRITT 3: Spezialfälle (WIEDER DA!) */}
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-lg">3</div>
@@ -159,7 +156,7 @@ const HelpModal = ({ isOpen, onClose }) => {
                 </div>
               </section>
 
-              {/* SCHRITT 4: PDF */}
+              {/* SCHRITT 4: PDF (WIEDER DA!) */}
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-lg">4</div>
@@ -181,12 +178,12 @@ const HelpModal = ({ isOpen, onClose }) => {
                 <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
                   <Fingerprint className="text-slate-600 dark:text-slate-400 mb-2" size={24} />
                   <h4 className="font-bold text-sm text-slate-800 dark:text-slate-300">Löschen</h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">Einfach einen Eintrag in der Liste nach <strong>links wischen</strong>, um ihn zu löschen.</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">Einfach einen Eintrag in der Liste nach <strong>links wischen</strong>.</p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
                   <ShieldCheck className="text-slate-600 dark:text-slate-400 mb-2" size={24} />
                   <h4 className="font-bold text-sm text-slate-800 dark:text-slate-300">Backup</h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">Keine Sorge: Die App speichert 1x täglich automatisch eine Sicherung auf dein Handy.</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">Die App speichert 1x täglich automatisch eine Sicherung lokal.</p>
                 </div>
               </div>
               

@@ -1,6 +1,6 @@
 import React, { forwardRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Trash2 } from "lucide-react";
-import { Card, formatTime, formatSignedTime, WORK_CODES, getWeekNumber } from "../utils"; 
+import { Card, formatTime, formatSignedTime, WORK_CODES, getWeekNumber, getTargetMinutesForDate } from "../utils"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
@@ -31,7 +31,8 @@ const Dashboard = ({
   viewMonth,
   viewYear,
   onEditEntry,
-  onDeleteEntry
+  onDeleteEntry,
+  userData // WICHTIG: Wird für die dynamische Wochen-Berechnung gebraucht
 }) => {
   
   const [expandedWeeks, setExpandedWeeks] = useState(() => {
@@ -52,7 +53,7 @@ const Dashboard = ({
       transition={{ duration: 0.3 }}
       className="w-full p-3 space-y-4"
     >
-      {/* MONTH SELECTOR */}
+      {/* 1. MONTH SELECTOR */}
       <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 shadow-sm">
         <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300"><ChevronLeft size={20} onClick={() => changeMonth(-1)} /></button>
         
@@ -73,7 +74,7 @@ const Dashboard = ({
         <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300"><ChevronRight size={20} onClick={() => changeMonth(1)} /></button>
       </div>
 
-      {/* PROGRESS CARD */}
+      {/* 2. PROGRESS CARD */}
       <Card className="bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200 dark:border-slate-700">
         <div className="p-4 space-y-3">
           <div className="flex justify-between items-center">
@@ -102,7 +103,7 @@ const Dashboard = ({
         </div>
       </Card>
 
-      {/* LIST */}
+      {/* 3. LISTE DER EINTRÄGE */}
       <div className="space-y-3 pb-20">
         <h3 className="font-bold text-slate-500 dark:text-slate-400 text-sm px-1">Letzte Einträge (nach Kalenderwoche)</h3>
         {groupedByWeek.length === 0 ? (
@@ -112,21 +113,49 @@ const Dashboard = ({
           </div>
         ) : (
           groupedByWeek.map(([week, weekEntries]) => {
+            // IST-Zeit der Woche berechnen
             let workMinutes = 0;
             weekEntries.forEach((e) => { 
+                // Code 19 (Fahrt) zählt nicht zur Arbeitszeit
                 if (!(e.type === "work" && e.code === 19)) {
                     workMinutes += e.netDuration; 
                 }
             });
 
-            const anyDate = new Date(weekEntries[0].date); const currentDay = anyDate.getDay() || 7; const monday = new Date(anyDate); monday.setDate(anyDate.getDate() - (currentDay - 1)); const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
-            let dynamicTarget = 0; for (let i = 0; i < 5; i++) { const check = new Date(monday); check.setDate(monday.getDate() + i); if (check.getMonth() === viewMonth && check.getFullYear() === viewYear) dynamicTarget += i === 4 ? 270 : 510; }
-            const diff = workMinutes - dynamicTarget; const expanded = expandedWeeks[week];
-            const daysMap = new Map(); weekEntries.forEach((e) => { if (!daysMap.has(e.date)) daysMap.set(e.date, []); daysMap.get(e.date).push(e); });
+            // SOLL-Zeit der Woche berechnen (DYNAMISCH!)
+            const anyDate = new Date(weekEntries[0].date); 
+            const currentDay = anyDate.getDay() || 7; 
+            const monday = new Date(anyDate); 
+            monday.setDate(anyDate.getDate() - (currentDay - 1)); 
+            const sunday = new Date(monday); 
+            sunday.setDate(monday.getDate() + 6);
+            
+            let dynamicTarget = 0; 
+            for (let i = 0; i < 5; i++) { // Mo-Fr prüfen
+                const check = new Date(monday); 
+                check.setDate(monday.getDate() + i); 
+                // Nur Tage im aktuellen Monat/Jahr zählen für die Anzeige
+                if (check.getMonth() === viewMonth && check.getFullYear() === viewYear) {
+                    const dateStr = check.toISOString().split("T")[0];
+                    // Hier greift die App auf die User-Einstellungen zu!
+                    dynamicTarget += getTargetMinutesForDate(dateStr, userData?.workDays);
+                }
+            }
+
+            const diff = workMinutes - dynamicTarget; 
+            const expanded = expandedWeeks[week];
+            
+            // Einträge sortieren
+            const daysMap = new Map(); 
+            weekEntries.forEach((e) => { 
+                if (!daysMap.has(e.date)) daysMap.set(e.date, []); 
+                daysMap.get(e.date).push(e); 
+            });
             const sortedDays = Array.from(daysMap.entries()).sort((a, b) => new Date(b[0]) - new Date(a[0]));
 
             return (
               <div key={week} className="mb-3">
+                {/* Header der Woche (Klickbar für Expand/Collapse) */}
                 <button className="w-full flex items-center justify-between bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl px-3 py-2 transition-colors" onClick={() => toggleWeek(week)}>
                     <div className="flex flex-col text-left">
                         <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Kalenderwoche</span>
@@ -142,6 +171,7 @@ const Dashboard = ({
                     <ChevronRight size={18} className={`text-slate-500 dark:text-slate-400 transition-transform ${expanded ? "rotate-90" : ""}`} />
                 </button>
                 
+                {/* Details (Tage und Einträge) */}
                 <AnimatePresence>
                     {expanded && (
                         <motion.div
@@ -165,16 +195,19 @@ const Dashboard = ({
                                             className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"
                                         >
                                             <div className="flex">
+                                                {/* Datumsspalte Links */}
                                                 <div className="bg-slate-800 dark:bg-slate-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0 z-20 relative">
                                                     <span className="text-xs font-bold opacity-80">{d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2)}</span>
                                                     <span className="text-sm font-bold">{d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}</span>
                                                 </div>
                                                 
+                                                {/* Einträge des Tages */}
                                                 <div className="flex-1 min-w-0">
                                                     <AnimatePresence initial={false}>
                                                         {sortedEntries.map((entry, idx) => {
                                                             const isHoliday = entry.type === "public_holiday";
                                                             const isTimeComp = entry.type === "time_comp";
+                                                            
                                                             let timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags");
                                                             
                                                             let codeLabel = "";

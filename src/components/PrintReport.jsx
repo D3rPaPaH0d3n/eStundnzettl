@@ -6,7 +6,7 @@ import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { WORK_CODES, getWeekNumber, formatTime, formatSignedTime, blobToBase64 } from "../utils";
+import { WORK_CODES, getWeekNumber, formatTime, formatSignedTime, blobToBase64, getTargetMinutesForDate } from "../utils";
 
 const PRINT_STYLES = {
   textBlack: '#000000',
@@ -24,7 +24,7 @@ const PRINT_STYLES = {
   borderLight: '#e2e8f0',
 };
 
-const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onMonthChange }) => {
+const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onMonthChange, userData }) => {
   
   const [filterMode, setFilterMode] = useState(() => {
     const today = new Date();
@@ -96,6 +96,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     return `KW ${filterMode} (${getWeekLabel(filterMode)})`;
   }, [filterMode, availableWeeks, monthDate]);
 
+  // --- STATS BERECHNUNG (ANGEPASST AN V4.4.0) ---
   const reportStats = useMemo(() => {
     let work = 0; let vacation = 0; let sick = 0; let holiday = 0; let drive = 0; let timeComp = 0;
     let periodStart, periodEnd;
@@ -126,15 +127,20 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
 
     const totalIst = work + vacation + sick + holiday + timeComp;
     let totalTarget = 0;
+    
+    // Loop durch alle Tage der Periode, um Soll-Zeit zu berechnen
     let loopDate = new Date(periodStart);
     while (loopDate <= periodEnd) {
-      const dow = loopDate.getDay();
-      if (dow >= 1 && dow <= 5) totalTarget += dow === 5 ? 270 : 510;
+      // --- UPDATE: Nutzt jetzt userData.workDays für die Berechnung ---
+      const dateStr = loopDate.toISOString().split("T")[0];
+      totalTarget += getTargetMinutesForDate(dateStr, userData?.workDays);
       loopDate.setDate(loopDate.getDate() + 1);
     }
+    
     return { work, vacation, sick, holiday, drive, timeComp, totalIst, totalTarget, totalSaldo: totalIst - totalTarget };
-  }, [filteredEntries, monthDate, filterMode]);
+  }, [filteredEntries, monthDate, filterMode, userData]);
 
+  // --- META MAP (ANGEPASST AN V4.4.0) ---
   const dayMetaMap = useMemo(() => {
     const map = {}; let currentDateStr = ""; let dayIndex = 0; const sums = {};
     filteredEntries.forEach((e) => {
@@ -143,15 +149,19 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     });
     filteredEntries.forEach((e, idx) => {
       if (e.date !== currentDateStr) { dayIndex++; currentDateStr = e.date; }
-      const d = new Date(e.date); const dow = d.getDay();
-      let target = 0; if (dow >= 1 && dow <= 4) target = 510; if (dow === 5) target = 270;
+      
+      // --- UPDATE: Tages-Soll aus User-Einstellungen ---
+      const target = getTargetMinutesForDate(e.date, userData?.workDays);
+      
       const nextEntry = filteredEntries[idx + 1];
       const isLastOfDay = !nextEntry || nextEntry.date !== e.date;
       const balance = sums[e.date].totalMinutes - target;
+      
+      // showBalance: Zeige Saldo nur am letzten Eintrag des Tages UND wenn an diesem Tag gearbeitet werden sollte (target > 0)
       map[e.id] = { dayIndex, isEvenDay: dayIndex % 2 === 0, showBalance: isLastOfDay && target > 0, balance: balance };
     });
     return map;
-  }, [filteredEntries]);
+  }, [filteredEntries, userData]);
 
   const handleDownloadPdf = async () => {
     try {

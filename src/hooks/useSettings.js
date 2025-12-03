@@ -2,8 +2,15 @@ import { useState, useEffect } from "react";
 
 export function useSettings() {
   // User Data
+  // WICHTIG: Default erweitert für v4.4.0 (Position & WorkDays)
+  // Name ist leer, damit der Onboarding-Check in App.jsx greift!
   const [userData, setUserData] = useState(() => 
-    JSON.parse(localStorage.getItem("kogler_user") || '{"name":"Markus Mustermann"}')
+    JSON.parse(localStorage.getItem("kogler_user")) || {
+      name: "", 
+      position: "",
+      photo: null,
+      workDays: [0, 510, 510, 510, 510, 270, 0] // Standard Kogler Woche
+    }
   );
 
   // Theme

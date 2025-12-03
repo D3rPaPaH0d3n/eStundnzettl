@@ -6,7 +6,7 @@ import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import toast, { Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 
 import KoglerLogo from "./assets/kogler_time_icon.png";
 import { 
@@ -25,7 +25,8 @@ import EntryForm from "./components/EntryForm";
 import Settings from "./components/Settings";
 import ConfirmModal from "./components/ConfirmModal";
 import UpdateModal from "./components/UpdateModal";
-import LiveTimerOverlay from "./components/LiveTimerOverlay"; // WICHTIG: Import hier!
+import LiveTimerOverlay from "./components/LiveTimerOverlay";
+import OnboardingWizard from "./components/OnboardingWizard";
 
 // CUSTOM HOOKS
 import { useEntries } from "./hooks/useEntries";
@@ -42,14 +43,16 @@ const pageTransition = { type: "tween", ease: "anticipate", duration: 0.3 };
 const reportVariants = { initial: { y: "100%", opacity: 0 }, in: { y: 0, opacity: 1 }, out: { y: "100%", opacity: 0 } };
 
 export default function App() {
+  // --- 1. DATEN & LOGIK ÜBER HOOKS ---
   const { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries } = useEntries();
   const { userData, setUserData, theme, setTheme, autoBackup, setAutoBackup } = useSettings();
   
-  // LIVE TIMER HOOK
-  const { timerState, startTimer, pauseTimer, resumeTimer, stopTimer, cancelTimer } = useLiveTimer();
+  // LIVE TIMER HOOK (inkl. Auto-Checkout Logik)
+  const { timerState, autoCheckoutData, clearAutoCheckout, startTimer, pauseTimer, resumeTimer, stopTimer, cancelTimer } = useLiveTimer();
   
   useAutoBackup(entries, userData, autoBackup);
 
+  // --- 2. UI STATE ---
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState("dashboard");
   const [editingEntry, setEditingEntry] = useState(null);
@@ -58,6 +61,9 @@ export default function App() {
   
   // Flag um zu verhindern, dass Smart-Time die Live-Zeit überschreibt
   const [isLiveEntry, setIsLiveEntry] = useState(false);
+  
+  // Flag für Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -72,11 +78,88 @@ export default function App() {
 
   // Sollzeit für HEUTE berechnen (für das Overlay)
   const [todayTarget, setTodayTarget] = useState(510);
+  
   useEffect(() => {
     const todayStr = new Date().toISOString().split("T")[0];
-    setTodayTarget(getTargetMinutesForDate(todayStr));
-  }, []);
+    const target = getTargetMinutesForDate(todayStr, userData?.workDays);
+    setTodayTarget(target);
+  }, [userData]); 
 
+  // --- ONBOARDING CHECK (INKL. MIGRATION) ---
+  useEffect(() => {
+    // Check 1: Ganz neuer User (kein Name)
+    const isNewUser = userData && !userData.name;
+    
+    // Check 2: Bestands-User nach Update (Name da, aber noch keine workDays definiert)
+    const isLegacyUser = userData && userData.name && !userData.workDays;
+
+    if (isNewUser || isLegacyUser) {
+      setShowOnboarding(true);
+    }
+  }, [userData]);
+
+  const handleOnboardingFinish = (data) => {
+    // 1. User Daten speichern (inkl. Arbeitszeiten Profil)
+    const newUser = {
+      ...userData, // Alte Daten behalten (z.B. ID falls vorhanden)
+      name: data.name,
+      position: data.position,
+      photo: data.photo,
+      workDays: data.customDays // Speichert [0, 510, 510, ...]
+    };
+    setUserData(newUser);
+
+    // 2. Backup Setting setzen
+    if (data.autoBackup !== autoBackup) {
+        setAutoBackup(data.autoBackup);
+    }
+
+    // 3. Wizard schließen
+    setShowOnboarding(false);
+    toast.success("Einrichtung abgeschlossen!");
+    Haptics.notification({ type: NotificationType.Success });
+  };
+
+  // --- AUTO-CHECKOUT LISTENER ---
+  useEffect(() => {
+    if (autoCheckoutData) {
+      Haptics.impact({ style: ImpactStyle.Heavy });
+      
+      const yyyy = autoCheckoutData.start.getFullYear();
+      const mm = String(autoCheckoutData.start.getMonth() + 1).padStart(2, '0');
+      const dd = String(autoCheckoutData.start.getDate()).padStart(2, '0');
+      setFormDate(`${yyyy}-${mm}-${dd}`);
+
+      setEntryType("work");
+      
+      const toLocalHHMM = (dateObj) => {
+        const h = String(dateObj.getHours()).padStart(2,'0');
+        const m = String(dateObj.getMinutes()).padStart(2,'0');
+        return `${h}:${m}`;
+      };
+
+      setStartTime(toLocalHHMM(autoCheckoutData.start));
+      setEndTime(toLocalHHMM(autoCheckoutData.end)); // 23:59
+      setPauseDuration(autoCheckoutData.pause);
+      
+      setProject(""); 
+      const lastCode = localStorage.getItem("kogler_last_code");
+      setCode(lastCode ? Number(lastCode) : WORK_CODES[0].id);
+
+      setEditingEntry(null);
+      setIsLiveEntry(true); 
+      setView("add");
+      
+      toast("⚠️ Automatisch ausgestempelt! Bitte prüfen.", { 
+        duration: 6000, 
+        icon: "🌙" 
+      });
+
+      clearAutoCheckout();
+    }
+  }, [autoCheckoutData]);
+
+  // --- UPDATE CHECK ---
   useEffect(() => {
     const runUpdateCheck = async () => {
       if (navigator.onLine) {
@@ -111,6 +194,7 @@ export default function App() {
     }
   };
 
+  // --- NAVIGATION ---
   const getHeaderTitle = () => {
     switch (view) {
       case "settings": return "Einstellungen";
@@ -128,7 +212,7 @@ export default function App() {
     return () => handler.remove();
   }, [view]);
 
-  // STATS & DATA
+  // --- STATISTIK & DATA PREP ---
   const viewYear = currentDate.getFullYear();
   const viewMonth = currentDate.getMonth();
 
@@ -147,21 +231,22 @@ export default function App() {
       const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       if (holidays.includes(dateStr)) {
         if (dateStr <= todayStr) {
-          const dow = getDayOfWeek(dateStr);
-          if (dow >= 1 && dow <= 5) {
+          // Dynamische Sollzeit für Feiertags-Berechnung nutzen
+          const targetMin = getTargetMinutesForDate(dateStr, userData?.workDays);
+          if (targetMin > 0) {
             holidayEntries.push({ 
               id: `auto-holiday-${dateStr}`, 
               type: "public_holiday", 
               date: dateStr, 
               project: holidayMap[dateStr] || "Gesetzlicher Feiertag", 
-              netDuration: dow === 5 ? 270 : 510 
+              netDuration: targetMin 
             });
           }
         }
       }
     }
     return [...realEntries, ...holidayEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [entries, viewYear, viewMonth]);
+  }, [entries, viewYear, viewMonth, userData]);
 
   const groupedByWeek = useMemo(() => {
     const map = new Map();
@@ -185,11 +270,11 @@ export default function App() {
     const days = new Date(viewYear, viewMonth + 1, 0).getDate();
     let targetMinutes = 0;
     for (let d = 1; d <= days; d++) {
-        const dow = new Date(viewYear, viewMonth, d).getDay();
-        if (dow >= 1 && dow <= 5) targetMinutes += dow === 5 ? 270 : 510;
+        const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        targetMinutes += getTargetMinutesForDate(dateStr, userData?.workDays);
     }
     return { actualMinutes, targetMinutes, driveMinutes, holidayMinutes };
-  }, [entriesWithHolidays, viewYear, viewMonth]);
+  }, [entriesWithHolidays, viewYear, viewMonth, userData]);
 
   const totalCredited = stats.actualMinutes + stats.holidayMinutes;
   const overtime = totalCredited - stats.targetMinutes;
@@ -242,9 +327,9 @@ export default function App() {
     setCode(lastCode ? Number(lastCode) : WORK_CODES[0].id);
 
     setEditingEntry(null);
-    setIsLiveEntry(true); // Verhindert überschreiben durch Smart-Time
+    setIsLiveEntry(true); 
     setView("add");
-    toast("🏁 Zeit wurde gerundet (15 Min)", { icon: "✨" });
+    toast("🏁 Zeit wurde übernommen", { icon: "✨" });
   };
 
   const startNewEntry = () => {
@@ -276,17 +361,12 @@ export default function App() {
     
     if (entryType === "work" || isDrive) {
         const s = parseTime(startTime); const en = parseTime(endTime);
-        
-        if (en <= s) { 
-          toast.error("⚠️ Endzeit muss nach Startzeit liegen!"); 
-          return; 
-        }
+        if (en <= s) { toast.error("⚠️ Endzeit muss nach Startzeit liegen!"); return; }
 
         const hasOverlap = entries.some(existing => {
           if (existing.date !== formDate) return false;
           if (editingEntry && existing.id === editingEntry.id) return false;
           if (!existing.start || !existing.end) return false;
-
           const exStart = parseTime(existing.start);
           const exEnd = parseTime(existing.end);
           return (s < exEnd && exStart < en);
@@ -294,10 +374,7 @@ export default function App() {
 
         if (hasOverlap) {
           Haptics.impact({ style: ImpactStyle.Heavy });
-          toast.error("⚠️ Zeitüberschneidung! Zeit ist bereits belegt.", {
-            duration: 4000,
-            icon: '⛔'
-          });
+          toast.error("⚠️ Zeitüberschneidung! Zeit ist bereits belegt.", { duration: 4000, icon: '⛔' });
           return;
         }
 
@@ -305,7 +382,7 @@ export default function App() {
         net = en - s - usedPause;
         label = WORK_CODES.find((c) => c.id === usedCode)?.label || (isDrive ? "Fahrzeit" : "Arbeit");
     } else {
-        net = getTargetMinutesForDate(formDate); 
+        net = getTargetMinutesForDate(formDate, userData?.workDays); 
         label = entryType === "vacation" ? "Urlaub" : entryType === "sick" ? "Krank" : "Zeitausgleich";
     }
     if (net < 0) net = 0;
@@ -333,8 +410,20 @@ export default function App() {
       deleteEntry(deleteTarget.id);
       toast.success("🗑️ Eintrag gelöscht");
     } else if (deleteTarget?.type === 'all') {
+      // 1. Einträge löschen
       deleteAllEntries();
-      toast.success("🧹 Alle Daten bereinigt");
+      
+      // 2. User Reset (Name leer lassen für Wizard)
+      const emptyUser = {
+        name: "", 
+        position: "",
+        photo: null,
+        workDays: [0, 510, 510, 510, 510, 270, 0] // Reset
+      };
+      setUserData(emptyUser);
+      localStorage.removeItem("kogler_last_code");
+      
+      toast.success("🧹 App vollständig zurückgesetzt");
     }
     setDeleteTarget(null);
   };
@@ -356,23 +445,12 @@ export default function App() {
               recursive: true
           });
           const uriResult = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
-          await Share.share({ 
-            title: "Vertel Backup", 
-            text: `Backup vom ${new Date().toLocaleDateString("de-DE")}`,
-            url: uriResult.uri,
-            dialogTitle: "Backup sichern"
-          });
+          await Share.share({ title: "Vertel Backup", text: `Backup vom ${new Date().toLocaleDateString("de-DE")}`, url: uriResult.uri, dialogTitle: "Backup sichern" });
           toast.success("📤 Export bereitgestellt!", { id: toastId });
       } else {
           const file = new File([json], fileName, { type: "application/json" });
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              try {
-                  await navigator.share({ files: [file], title: 'Vertel Backup', text: 'Backup meiner Stunden' });
-                  toast.success("📤 Export erfolgreich!", { id: toastId });
-                  return; 
-              } catch (shareError) {
-                  if (shareError.name === 'AbortError') { toast.dismiss(toastId); return; }
-              }
+              try { await navigator.share({ files: [file], title: 'Vertel Backup', text: 'Backup meiner Stunden' }); toast.success("📤 Export erfolgreich!", { id: toastId }); return; } catch (shareError) { if (shareError.name === 'AbortError') { toast.dismiss(toastId); return; } }
           }
           const blob = new Blob([json], { type: "application/json" });
           const url = URL.createObjectURL(blob);
@@ -404,10 +482,18 @@ export default function App() {
     <div className="min-h-screen w-screen font-sans bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-x-hidden relative">
       <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#1e293b', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />
       
+      {/* ONBOARDING OVERLAY */}
+      {showOnboarding && (
+        <OnboardingWizard 
+            onFinish={handleOnboardingFinish} 
+            initialData={userData} // Vorhandene Daten übergeben (Migration)
+        />
+      )}
+
       <ConfirmModal 
         isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={executeDelete}
         title={deleteTarget?.type === 'all' ? "Alles löschen?" : "Eintrag löschen?"}
-        message={deleteTarget?.type === 'all' ? "Möchtest du wirklich alle Einträge unwiderruflich löschen?" : "Möchtest du diesen Eintrag wirklich entfernen?"}
+        message={deleteTarget?.type === 'all' ? "Möchtest du wirklich alle Einträge unwiderruflich löschen? Auch dein Profil wird zurückgesetzt." : "Möchtest du diesen Eintrag wirklich entfernen?"}
       />
 
       {updateData && (
@@ -451,6 +537,7 @@ export default function App() {
                   groupedByWeek={groupedByWeek} viewMonth={viewMonth} viewYear={viewYear}
                   onStartNewEntry={startNewEntry} onEditEntry={startEdit} 
                   onDeleteEntry={(id) => setDeleteTarget({ type: 'single', id })}
+                  userData={userData}
               />
             </motion.div>
           )}
@@ -470,7 +557,8 @@ export default function App() {
                   lastWorkEntry={lastWorkEntry} existingProjects={uniqueProjects}
                   allEntries={entries} 
                   isEditing={!!editingEntry}
-                  isLiveEntry={isLiveEntry} // HIER: Flag übergeben
+                  isLiveEntry={isLiveEntry}
+                  userData={userData}
               />
             </motion.div>
           )}
@@ -504,7 +592,8 @@ export default function App() {
                   employeeName={userData.name} 
                   userPhoto={userData.photo} 
                   onClose={() => setView("dashboard")} 
-                  onMonthChange={setCurrentDate} 
+                  onMonthChange={setCurrentDate}
+                  userData={userData} 
                 />
               </Suspense>
             </motion.div>
@@ -512,38 +601,41 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      {/* FAB (Rechts) */}
-      <AnimatePresence>
-        {view === "dashboard" && (
-          <motion.button 
-            initial={{ scale: 0, rotate: 90 }} 
-            animate={{ scale: 1, rotate: 0 }} 
-            exit={{ scale: 0, rotate: 90 }}
-            whileHover={{ scale: 1.05 }} 
-            whileTap={{ scale: 0.9 }}
-            onClick={(e) => { 
-                e.stopPropagation();
-                startNewEntry(); 
-                Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
-            }} 
-            style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
-            className="fixed right-6 bg-slate-900 dark:bg-orange-500 hover:bg-slate-800 dark:hover:bg-orange-600 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors z-[9999] cursor-pointer touch-manipulation"
-          >
-            <Plus size={28} />
-          </motion.button>
-        )}
-      </AnimatePresence>
-      
-      {/* Live Timer (Links) - WICHTIG: Außerhalb von AnimatePresence/Dashboard Container rendern! */}
-      {view === "dashboard" && (
-         <LiveTimerOverlay 
-            timerState={timerState}
-            onStart={handleStartLive}
-            onStop={handleStopLive}
-            onPause={() => { Haptics.impact({style: ImpactStyle.Light}); pauseTimer(); }}
-            onResume={() => { Haptics.impact({style: ImpactStyle.Light}); resumeTimer(); }}
-            targetMinutes={todayTarget}
-         />
+      {/* --- BUTTONS NUR ZEIGEN, WENN KEIN ONBOARDING LÄUFT --- */}
+      {!showOnboarding && (
+        <>
+          <AnimatePresence>
+            {view === "dashboard" && (
+              <motion.button 
+                initial={{ scale: 0, rotate: 90 }} 
+                animate={{ scale: 1, rotate: 0 }} 
+                exit={{ scale: 0, rotate: 90 }}
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => { 
+                    e.stopPropagation();
+                    startNewEntry(); 
+                    Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
+                }} 
+                style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
+                className="fixed right-6 bg-slate-900 dark:bg-orange-500 hover:bg-slate-800 dark:hover:bg-orange-600 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors z-[9999] cursor-pointer touch-manipulation"
+              >
+                <Plus size={28} />
+              </motion.button>
+            )}
+          </AnimatePresence>
+          
+          {view === "dashboard" && (
+             <LiveTimerOverlay 
+                timerState={timerState}
+                onStart={handleStartLive}
+                onStop={handleStopLive}
+                onPause={() => { Haptics.impact({style: ImpactStyle.Light}); pauseTimer(); }}
+                onResume={() => { Haptics.impact({style: ImpactStyle.Light}); resumeTimer(); }}
+                targetMinutes={todayTarget}
+             />
+          )}
+        </>
       )}
 
     </div>

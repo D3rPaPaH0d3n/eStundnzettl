@@ -13,7 +13,6 @@ import SelectionDrawer from "./SelectionDrawer";
 
 registerLocale("de", de);
 
-// Custom Input für DatePicker
 const CustomInput = forwardRef(({ value, onClick, icon: Icon }, ref) => (
   <button
     type="button"
@@ -63,7 +62,8 @@ const EntryForm = ({
   lastWorkEntry,
   existingProjects = [],
   allEntries = [],
-  isEditing = false // WICHTIG: Flag empfangen
+  isEditing = false,
+  isLiveEntry = false // NEU
 }) => {
   
   const [activeTimeField, setActiveTimeField] = useState(null);
@@ -73,8 +73,8 @@ const EntryForm = ({
 
   // --- SMART TIME LOGIC ---
   useEffect(() => {
-    // 1. Abbruch, wenn wir bearbeiten
-    if (isEditing) return;
+    // 1. Abbruch, wenn wir bearbeiten ODER vom Live Timer kommen
+    if (isEditing || isLiveEntry) return; 
     
     // 2. Abbruch, wenn nicht Arbeit/Fahrt
     if (entryType !== 'work' && entryType !== 'drive') return;
@@ -83,18 +83,15 @@ const EntryForm = ({
     const dayEntries = allEntries.filter(e => e.date === formDate && e.type === 'work' && e.end);
     
     if (dayEntries.length > 0) {
-      // Sortieren nach Endzeit, um den spätesten zu finden
       const sorted = [...dayEntries].sort((a, b) => (a.end || "").localeCompare(b.end || ""));
       const lastEnd = sorted[sorted.length - 1].end;
       
       if (lastEnd) {
         setStartTime(lastEnd);
-        // KEIN TOAST MEHR (wie gewünscht)
       }
     }
-  }, [formDate, allEntries, entryType, isEditing]); 
+  }, [formDate, allEntries, entryType, isEditing, isLiveEntry]); 
 
-  // --- FEIERTAGE FÜR DATEPICKER ---
   const holidayData = useMemo(() => {
       const year = new Date(formDate).getFullYear();
       return getHolidayData(year);
@@ -172,7 +169,6 @@ const EntryForm = ({
           <div className="flex justify-between items-center mb-1">
              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Eintragstyp</div>
              
-             {/* DER MAGISCHE KNOPF (Nur bei Arbeit sichtbar und wenn NICHT Anreise Code 190) */}
              {entryType === 'work' && code !== 190 && lastWorkEntry && (
                <motion.button
                  type="button"
@@ -189,17 +185,14 @@ const EntryForm = ({
              )}
           </div>
 
-          {/* ENTRY TYPE SELECT */}
           <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-xl grid grid-cols-5 gap-1">
             <button type="button" onClick={() => { setEntryType("work"); setCode(WORK_CODES[0].id); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "work" && code !== 190 ? "bg-white dark:bg-slate-600 shadow text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}>Arbeit</button>
             <button type="button" onClick={() => { setEntryType("drive"); setCode(19); setPauseDuration(0); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "drive" || code === 190 ? "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Fahrt</button>
             <button type="button" onClick={() => setEntryType("sick")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "sick" ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Krank</button>
             <button type="button" onClick={() => setEntryType("vacation")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "vacation" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Urlaub</button>
-            {/* NEU: ZEITAUSGLEICH */}
             <button type="button" onClick={() => setEntryType("time_comp")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "time_comp" ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>ZA</button>
           </div>
 
-          {/* FAHRT SUB-SELECTION (WICHTIG: WIEDER DRIN!) */}
           {(entryType === "drive" || code === 190) && (
             <div className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
               <button type="button" onClick={() => { setEntryType("work"); setCode(190); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${code === 190 ? "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 ring-2 ring-green-500 ring-offset-1" : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300"}`}>
@@ -211,7 +204,6 @@ const EntryForm = ({
             </div>
           )}
             
-          {/* Info-Boxen für Auto-Typen */}
           {(entryType === "vacation" || entryType === "sick" || entryType === "time_comp") && (
             <div className={`border rounded-lg p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 ${entryType === "sick" ? "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800 text-red-800 dark:text-red-300" : entryType === "vacation" ? "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-300" : "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800 text-purple-800 dark:text-purple-300"}`}>
               {entryType === "time_comp" ? <Hourglass size={18} className="mt-0.5" /> : <Info size={18} className="mt-0.5" />}
@@ -219,7 +211,6 @@ const EntryForm = ({
             </div>
           )}
 
-          {/* DATE PICKER */}
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Datum</label>
             <div className="flex items-center gap-2">
@@ -233,7 +224,6 @@ const EntryForm = ({
                   withPortal
                   calendarContainer={CalendarContainerAnimation}
                   customInput={<CustomInput icon={CalIcon} />}
-                  // NEU: Nur rote Schrift für Feiertage, kein Hintergrund
                   dayClassName={(date) => {
                     const dateStr = date.toISOString().split("T")[0];
                     return holidayData[dateStr] ? "!text-red-600 !font-bold" : undefined;
@@ -244,7 +234,6 @@ const EntryForm = ({
             </div>
           </div>
 
-          {/* TIME FIELDS */}
           {(entryType === "work" || entryType === "drive") && (
             <>
               <div className="grid grid-cols-2 gap-3">
@@ -274,7 +263,6 @@ const EntryForm = ({
                 </div>
               )}
 
-              {/* TÄTIGKEIT SELECTION */}
               {entryType === "work" && code !== 190 && (
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Tätigkeit</label>
@@ -289,7 +277,6 @@ const EntryForm = ({
                 </div>
               )}
 
-              {/* PROJEKT MIT AUTOCOMPLETE */}
               <div className="space-y-1 relative">
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{entryType === "drive" || code === 190 ? "Strecke / Notiz" : "Projekt"}</label>
                 <input 

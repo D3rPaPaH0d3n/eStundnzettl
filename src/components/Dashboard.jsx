@@ -7,6 +7,7 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import de from "date-fns/locale/de";
+
 registerLocale("de", de);
 
 const CustomMonthInput = forwardRef(({ value, onClick }, ref) => (
@@ -30,8 +31,7 @@ const Dashboard = ({
   viewMonth,
   viewYear,
   onEditEntry,
-  onDeleteEntry,
-  onStartNewEntry
+  onDeleteEntry
 }) => {
   
   const [expandedWeeks, setExpandedWeeks] = useState(() => {
@@ -114,7 +114,6 @@ const Dashboard = ({
           groupedByWeek.map(([week, weekEntries]) => {
             let workMinutes = 0;
             weekEntries.forEach((e) => { 
-                // Summe berechnen (Code 19 zählt nicht zur Arbeitszeit-Summe in der Header-Ansicht der KW, ist Geschmackssache)
                 if (!(e.type === "work" && e.code === 19)) {
                     workMinutes += e.netDuration; 
                 }
@@ -176,7 +175,6 @@ const Dashboard = ({
                                                         {sortedEntries.map((entry, idx) => {
                                                             const isHoliday = entry.type === "public_holiday";
                                                             const isTimeComp = entry.type === "time_comp";
-                                                            
                                                             let timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags");
                                                             
                                                             let codeLabel = "";
@@ -186,7 +184,6 @@ const Dashboard = ({
                                                             else codeLabel = entry.type === "vacation" ? "Urlaub" : "Krank";
 
                                                             let pauseLabel = "";
-                                                            // FIX: Pause wird jetzt immer angezeigt (außer bei Code 19 Fahrzeit)
                                                             if (entry.type === "work" && entry.code !== 19) {
                                                                 pauseLabel = entry.pause > 0 ? ` - Pause: ${entry.pause} Min` : " - Keine Pause";
                                                             }
@@ -234,7 +231,6 @@ const Dashboard = ({
                                                                             <div className="min-w-0 flex-1 flex flex-col gap-1">
                                                                                 <div className={`font-bold text-sm leading-none ${isTimeComp ? "text-purple-700 dark:text-purple-400" : "text-slate-900 dark:text-slate-100"}`}>
                                                                                     {timeLabel}
-                                                                                    {/* PAUSE DIREKT HIER */}
                                                                                     {pauseLabel && <span className="font-normal opacity-70">{pauseLabel}</span>}
                                                                                 </div>
                                                                                 

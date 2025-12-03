@@ -1,29 +1,55 @@
 import React, { useEffect } from "react";
-import { X, Sparkles, Zap, FileText, Shield, Bug, Globe } from "lucide-react";
+import { X, Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
   {
+    version: "4.3.0",
+    date: "04.12.2025",
+    title: "The Live Update ⏱️",
+    isMajor: true,
+    sections: [
+      {
+        icon: Timer,
+        title: "Live Stempeluhr",
+        items: [
+          "Endlich da: Drücke einfach auf 'Einstempeln' und die App erfasst deine Zeit live",
+          "Neuer 'EIN/AUS' Button: Schwebend unten links, immer erreichbar",
+          "Live-Status: Siehe sofort, wie viel Zeit noch fehlt oder ob du schon Überstunden machst"
+        ]
+      },
+      {
+        icon: Zap,
+        title: "Workflow & Logik",
+        items: [
+          "Auto-Rundung: Beim Ausstempeln wird automatisch kaufmännisch auf 15 Minuten gerundet",
+          "Smart-Entry: Gestoppte Zeiten landen direkt fix und fertig im Formular",
+          "Zeitzonen-Fix: Korrekte Uhrzeit-Erfassung unabhängig von der Serverzeit"
+        ]
+      }
+    ]
+  },
+  {
     version: "4.2.0",
     date: "03.12.2025",
     title: "Smart Time & Zeitausgleich 🧠",
-    isMajor: true,
+    isMajor: false,
     sections: [
       {
         icon: Sparkles,
         title: "Neue Features",
         items: [
-          "Smart Time: Bei neuen Einträgen startet die Zeit automatisch dort, wo der letzte aufgehört hat",
-          "Zeitausgleich: Neuer lila Button für ZA (wird korrekt berechnet)",
-          "Dashboard: Pause wird jetzt direkt hinter der Zeit angezeigt (z.B. 07:00 - 16:30 - Pause: 30 Min)"
+          "Smart Time: Startzeit orientiert sich automatisch am letzten Eintrag",
+          "Zeitausgleich (ZA): Eigener Button für korrekte Stundenberechnung",
+          "Dashboard: Pause wird jetzt direkt in der Liste angezeigt"
         ]
       },
       {
         icon: FileText,
         title: "PDF & Design",
         items: [
-          "PDF-Bericht: Kompaktere Zusammenfassung, ungenutzte Kategorien werden ausgeblendet",
-          "DatePicker: Feiertage sind jetzt nur noch durch rote Zahlen markiert (dezenter)",
+          "PDF-Bericht: Kompaktes Layout, leere Kategorien werden ausgeblendet",
+          "Dezenter DatePicker: Feiertage jetzt nur noch durch rote Schrift markiert"
         ]
       }
     ]
@@ -38,18 +64,9 @@ const CHANGELOG_DATA = [
         icon: FileText,
         title: "PDF Bericht",
         items: [
-          "Layout optimiert: Perfektes A4-Format ohne leere Seiten",
-          "Notiz-Funktion: Füge persönliche Anmerkungen zum Bericht hinzu",
-          "Design: Größere Schrift & verbesserte Lesbarkeit",
-          "Intelligente Datumsanzeige: Tag wird bei Mehrfach-Einträgen gruppiert"
-        ]
-      },
-      {
-        icon: Bug,
-        title: "Fixes",
-        items: [
-          "Export-Fehler 'EACCESS' auf Android behoben",
-          "Druck-Statusmeldung korrigiert"
+          "Perfektes A4-Format ohne leere Seiten",
+          "Notiz-Funktion für den Monatsbericht",
+          "Intelligente Datums-Gruppierung im PDF"
         ]
       }
     ]
@@ -62,29 +79,18 @@ const CHANGELOG_DATA = [
     sections: [
       {
         icon: Shield,
-        title: "Logik & Sicherheit",
+        title: "Sicherheit",
         items: [
-          "Doppel-Buchungsschutz: Verhindert überlappende Zeiteinträge",
-          "Zukunfts-Logik: Feiertage & Stunden werden erst gutgeschrieben, wenn der Tag erreicht ist",
-          "OTA-Check: Manueller Update-Prüfer in den Einstellungen"
-        ]
-      },
-      {
-        icon: FileText,
-        title: "Berichtsvorschau 2.0",
-        items: [
-          "Monats-Navigation: Wechsle Monate direkt in der Vorschau",
-          "Smart-Zoom: PDF passt sich automatisch perfekt an dein Display an",
-          "Neuer Dropdown: Schicke Auswahl für Wochen & Monate"
+          "Schutz vor doppelten Einträgen (Zeitüberschneidung)",
+          "OTA-Check: Updates direkt in der App suchen"
         ]
       },
       {
         icon: Bug,
-        title: "Fixes & UI",
+        title: "Fixes",
         items: [
-          "iPhone Fix: 'Neuer Eintrag'-Button ist jetzt immer klickbar",
-          "Safe-Area: Menüs werden unten nicht mehr abgeschnitten",
-          "Drawer-Scroll Fix: Zeitwahl schließt sich nicht mehr versehentlich beim Scrollen"
+          "iPhone Fix: Buttons jetzt zuverlässig klickbar",
+          "Safe-Area Anpassung für moderne Displays"
         ]
       }
     ]
@@ -99,107 +105,9 @@ const CHANGELOG_DATA = [
         icon: Sparkles,
         title: "Look & Feel",
         items: [
-          "High-End Animationen (Seitenübergänge, Listen)",
-          "Haptisches Feedback (Vibrationen bei Interaktionen)",
-          "Swipe-to-Delete: Einträge einfach nach links wischen",
-          "TimePicker: Zeitwahl aktualisiert sich direkt beim Scrollen"
-        ]
-      },
-      {
-        icon: Zap,
-        title: "Workflow & Speed",
-        items: [
-          "Magic Copy: Neuer 'Wie zuletzt'-Button im Formular",
-          "Autocomplete: Projekt-Vorschläge beim Tippen",
-          "Massive Performance-Optimierung (Lazy Loading)",
-          "App-Startzeit drastisch verkürzt"
-        ]
-      },
-      {
-        icon: FileText,
-        title: "PDF Bericht 2.0",
-        items: [
-          "Profilfoto im Header (automatisch rechtsbündig)",
-          "Layout-Fix: Keine leeren Seiten mehr",
-          "Vorschau öffnet sich als schickes Overlay"
-        ]
-      }
-    ]
-  },
-  {
-    version: "3.0.0",
-    date: "25.11.2025",
-    title: "The Dark Mode Update 🌙",
-    isMajor: true,
-    sections: [
-      {
-        icon: Sparkles,
-        title: "Neue Features & UI",
-        items: [
-          "Dark Mode: Unterstützung für Hell, Dunkel und System",
-          "Custom Drawers: Moderne Slide-Up Menüs statt nativer Auswahl",
-          "Smart DatePicker: Neuer Kalender mit Zebra-Look & großen Flächen",
-          "Verbesserte UX: Toasts statt nerviger Alerts",
-          "Smart Defaults: Merkt sich die letzte Tätigkeit"
-        ]
-      },
-      {
-        icon: Zap,
-        title: "Technik",
-        items: [
-          "Komplettes Refactoring in modulare Komponenten",
-          "Upgrade auf Tailwind CSS v4 Engine",
-          "Android Splash Screen: Weißes Aufblitzen entfernt"
-        ]
-      }
-    ]
-  },
-  {
-    version: "2.0.1",
-    date: "20.11.2025",
-    title: "Auto-Backup & Dateizugriff 🛡️",
-    isMajor: false,
-    sections: [
-      {
-        icon: Shield,
-        title: "Datensicherheit",
-        items: [
-          "Automatisches Backup: Optional 1x täglich",
-          "Offener Speicherort: Dateien landen direkt in 'Dokumente'"
-        ]
-      },
-      {
-        icon: Bug,
-        title: "Fixes",
-        items: [
-          "Robuster PDF-Export (Zeitstempel in Dateinamen)",
-          "Verbesserter Zugriff auf das Dateisystem"
-        ]
-      }
-    ]
-  },
-  {
-    version: "2.0.0",
-    date: "18.11.2025",
-    title: "PDF V4, Feiertage & Fahrtzeit 🚀",
-    isMajor: true,
-    sections: [
-      {
-        icon: FileText,
-        title: "PDF Bericht V4",
-        items: [
-          "Neues Design: Zebra-Look & optimiertes Layout",
-          "Tages-Saldo: Neue Spalte für Plus/Minus pro Tag",
-          "Erweiterte Zusammenfassung mit Soll/Ist Vergleich"
-        ]
-      },
-      {
-        icon: Globe,
-        title: "Logik",
-        items: [
-          "Intelligente Feiertage (automatische Erkennung Österreich)",
-          "Differenzierte Fahrtzeiten: Anreise (bezahlt) vs. Fahrt (unbezahlt)",
-          "Unbezahlte Zeiten werden separat ausgewiesen"
+          "High-End Animationen & Haptisches Feedback",
+          "Swipe-to-Delete: Einträge einfach wegwischen",
+          "Neues Design mit 'Wie zuletzt'-Automatik"
         ]
       }
     ]
@@ -246,7 +154,7 @@ const ChangelogModal = ({ isOpen, onClose }) => {
               md:inset-auto md:w-[600px] md:h-[80vh] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl
             `}
           >
-            {/* DRAG HANDLE FIX */}
+            {/* DRAG HANDLE */}
             <div 
                 className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-slate-900 shrink-0 cursor-grab active:cursor-grabbing touch-none" 
                 onPointerDown={(e) => dragControls.start(e)}

@@ -1,8 +1,33 @@
 import React, { useEffect } from "react";
-import { X, Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Sliders } from "lucide-react";
+import { X, Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Sliders, Download } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
+  {
+    version: "4.4.3",
+    date: "09.12.2025",
+    title: "Update-Fix & PDF Politur 🛠️",
+    isMajor: false,
+    sections: [
+      {
+        icon: Download,
+        title: "System Updates",
+        items: [
+          "Download-Fix: Updates werden jetzt sicher über den System-Browser geladen (löst Probleme beim Speichern der APK)",
+        ]
+      },
+      {
+        icon: FileText,
+        title: "PDF Bericht",
+        items: [
+          "Soll-Stunden: Berechnung korrigiert (zählt im laufenden Monat nur bis 'Heute')",
+          "Layout-Fix: Keine abgeschnittenen Texte mehr bei langen Einträgen",
+          "Optik: 'Saldo' und 'Std' sind jetzt perfekt auf einer Linie ausgerichtet",
+          "Design: Trennlinien optimiert (keine Striche mehr zwischen Einträgen am selben Tag)"
+        ]
+      }
+    ]
+  },
   {
     version: "4.4.1",
     date: "04.12.2025",

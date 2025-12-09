@@ -2,13 +2,24 @@ import React from "react";
 import { Download, X, Gift, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser"; // NEU: Importieren
 
 const UpdateModal = ({ updateData, onClose }) => {
   if (!updateData) return null;
 
-  const handleDownload = () => {
-    // Öffnet den System-Browser für den Download
-    window.open(updateData.downloadUrl, "_system");
+  const handleDownload = async () => {
+    try {
+      // NEU: Öffnet den System-Browser zuverlässig über das Plugin
+      // Das garantiert, dass der Download im richtigen Ordner landet und die APK ausführbar ist.
+      await Browser.open({ url: updateData.downloadUrl });
+      
+      // Optional: Modal schließen, da der User die App verlässt
+      // onClose(); 
+    } catch (error) {
+      console.error("Fehler beim Öffnen des Browsers:", error);
+      // Fallback, falls Plugin streikt (sollte nicht passieren)
+      window.open(updateData.downloadUrl, "_system");
+    }
   };
 
   return (

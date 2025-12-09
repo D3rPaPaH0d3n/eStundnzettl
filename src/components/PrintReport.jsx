@@ -96,24 +96,33 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     return `KW ${filterMode} (${getWeekLabel(filterMode)})`;
   }, [filterMode, availableWeeks, monthDate]);
 
-  // --- STATS BERECHNUNG (ANGEPASST AN V4.4.0) ---
+  // --- STATS BERECHNUNG ---
   const reportStats = useMemo(() => {
     let work = 0; let vacation = 0; let sick = 0; let holiday = 0; let drive = 0; let timeComp = 0;
     let periodStart, periodEnd;
 
-    if (filteredEntries.length > 0) {
-      if (filterMode === "month") {
-        periodStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-        periodEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-      } else {
+    if (filterMode === "month") {
+      periodStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+      periodEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+    } else {
+      if (filteredEntries.length > 0) {
         const d = new Date(filteredEntries[0].date);
         const day = d.getDay() || 7;
         periodStart = new Date(d);
         periodStart.setDate(d.getDate() - day + 1);
         periodEnd = new Date(periodStart);
         periodEnd.setDate(periodStart.getDate() + 6);
+      } else {
+        periodStart = new Date(); 
+        periodEnd = new Date();
       }
-    } else { periodStart = new Date(); periodEnd = new Date(); }
+    }
+
+    periodEnd.setHours(23, 59, 59, 999);
+    periodStart.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     filteredEntries.forEach((e) => {
       if (e.type === "work") {
@@ -128,19 +137,22 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     const totalIst = work + vacation + sick + holiday + timeComp;
     let totalTarget = 0;
     
-    // Loop durch alle Tage der Periode, um Soll-Zeit zu berechnen
     let loopDate = new Date(periodStart);
     while (loopDate <= periodEnd) {
-      // --- UPDATE: Nutzt jetzt userData.workDays für die Berechnung ---
-      const dateStr = loopDate.toISOString().split("T")[0];
-      totalTarget += getTargetMinutesForDate(dateStr, userData?.workDays);
+      const isFuture = loopDate > today;
+      const isCurrentMonth = monthDate.getMonth() === today.getMonth() && monthDate.getFullYear() === today.getFullYear();
+      
+      if (!isCurrentMonth || !isFuture) {
+          const dateStr = loopDate.toISOString().split("T")[0];
+          totalTarget += getTargetMinutesForDate(dateStr, userData?.workDays);
+      }
       loopDate.setDate(loopDate.getDate() + 1);
     }
     
     return { work, vacation, sick, holiday, drive, timeComp, totalIst, totalTarget, totalSaldo: totalIst - totalTarget };
   }, [filteredEntries, monthDate, filterMode, userData]);
 
-  // --- META MAP (ANGEPASST AN V4.4.0) ---
+  // --- META MAP ---
   const dayMetaMap = useMemo(() => {
     const map = {}; let currentDateStr = ""; let dayIndex = 0; const sums = {};
     filteredEntries.forEach((e) => {
@@ -150,14 +162,11 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     filteredEntries.forEach((e, idx) => {
       if (e.date !== currentDateStr) { dayIndex++; currentDateStr = e.date; }
       
-      // --- UPDATE: Tages-Soll aus User-Einstellungen ---
       const target = getTargetMinutesForDate(e.date, userData?.workDays);
-      
       const nextEntry = filteredEntries[idx + 1];
       const isLastOfDay = !nextEntry || nextEntry.date !== e.date;
       const balance = sums[e.date].totalMinutes - target;
       
-      // showBalance: Zeige Saldo nur am letzten Eintrag des Tages UND wenn an diesem Tag gearbeitet werden sollte (target > 0)
       map[e.id] = { dayIndex, isEvenDay: dayIndex % 2 === 0, showBalance: isLastOfDay && target > 0, balance: balance };
     });
     return map;
@@ -229,9 +238,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
       toast.success("🖨️ Druck erfolgreich vorbereitet");
       
     } catch (err) {
-      if (err.message && (err.message.includes("canceled") || err.message.includes("cancelled"))) {
-        return; 
-      }
+      if (err.message && (err.message.includes("canceled") || err.message.includes("cancelled"))) { return; }
       console.error(err);
       toast.error("❌ Fehler: " + err.message);
       setIsGenerating(false);
@@ -366,7 +373,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
               </div>
             </div>
 
-            <table style={{ width: '100%', fontSize: '0.85rem', textAlign: 'left', marginBottom: '1rem', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', fontSize: '0.85rem', textAlign: 'left', marginBottom: '1rem', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, color: PRINT_STYLES.textMedium, textTransform: 'uppercase', fontSize: '0.75rem' }}>
                   <th style={{ padding: '0.4rem 0', width: '5rem' }}>Datum</th>
@@ -385,7 +392,9 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                   const meta = dayMetaMap[e.id] || {};
 
                   const prevEntry = filteredEntries[idx - 1];
+                  const nextEntry = filteredEntries[idx + 1];
                   const isSameDay = prevEntry && prevEntry.date === e.date;
+                  const isLastOfDay = !nextEntry || nextEntry.date !== e.date; 
 
                   let rowBg = 'transparent';
                   if (e.type === "public_holiday") rowBg = PRINT_STYLES.bgBlueLight;
@@ -421,9 +430,11 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                     projectText = e.type === "vacation" ? "Urlaub" : "Krank";
                   }
 
+                  const borderStyle = isLastOfDay ? `1px solid ${PRINT_STYLES.borderLight}` : 'none';
+
                   return (
-                    <tr key={e.id} style={{ height: '3.5rem', pageBreakInside: 'avoid', breakInside: 'avoid', backgroundColor: rowBg, borderBottom: `1px solid ${PRINT_STYLES.bgZebra}` }}>
-                      <td style={{ padding: '0 0', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                    <tr key={e.id} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', backgroundColor: rowBg, borderBottom: borderStyle }}>
+                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
                         {!isSameDay && (
                             <>
                                 <span style={{ display: 'inline-block', width: '2rem', fontWeight: 'bold' }}>{wd}</span>
@@ -431,13 +442,14 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                             </>
                         )}
                       </td>
-                      <td style={{ padding: '0 0', verticalAlign: 'middle' }}>{timeCellContent}</td>
-                      <td style={{ padding: '0 0', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top' }}>{timeCellContent}</td>
+                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top', whiteSpace: 'normal', wordWrap: 'break-word', paddingRight: '0.5rem' }}>
                         <span style={{ fontWeight: '500', color: e.type === "public_holiday" ? PRINT_STYLES.textBlue : e.type === "time_comp" ? '#7e22ce' : PRINT_STYLES.textMedium }}>{projectText}</span>
                       </td>
-                      <td style={{ padding: '0 0', verticalAlign: 'middle', fontSize: '0.75rem', color: PRINT_STYLES.textMedium }}>{codeText}</td>
-                      <td style={{ padding: '0 0', verticalAlign: 'middle', textAlign: 'right', fontWeight: 'bold', color: timeColor }}>{durationDisplay}</td>
-                      <td style={{ padding: '0 0', verticalAlign: 'middle', textAlign: 'right', fontWeight: 'bold', fontSize: '0.75rem' }}>
+                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top', fontSize: '0.75rem', color: PRINT_STYLES.textMedium, whiteSpace: 'normal', wordWrap: 'break-word' }}>{codeText}</td>
+                      {/* FIX: verticalAlign: 'bottom' damit sie immer unten rechts stehen */}
+                      <td style={{ padding: '0.5rem 0', verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold', color: timeColor }}>{durationDisplay}</td>
+                      <td style={{ padding: '0.5rem 0', verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold', fontSize: '0.75rem' }}>
                         {meta.showBalance && (
                           <span style={{ color: meta.balance >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}>
                             {formatSignedTime(meta.balance)}

@@ -33,9 +33,6 @@ export const WORK_CODES = [
   { id: 70, label: "70 - Büro" },
 ];
 
-// -------------------------------------------------------
-// UI BASISKOMPONENTE (Mit Dark Mode)
-// -------------------------------------------------------
 export const Card = ({ children, className = "" }) => (
   <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden ${className}`}>
     {children}
@@ -71,8 +68,11 @@ export const getDayOfWeek = (dateStr) => {
   return new Date(y, m - 1, d).getDay();
 };
 
-export const getTargetMinutesForDate = (dateStr) => {
-  const day = getDayOfWeek(dateStr);
+export const getTargetMinutesForDate = (dateStr, customWorkDays) => {
+  const day = getDayOfWeek(dateStr); 
+  if (customWorkDays && Array.isArray(customWorkDays) && customWorkDays.length === 7) {
+    return customWorkDays[day];
+  }
   if (day >= 1 && day <= 4) return 510;
   if (day === 5) return 270;
   return 0;
@@ -95,6 +95,99 @@ export const blobToBase64 = (blob) =>
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+
+/**
+ * Kernlogik für Mehrarbeit vs. Überstunden (Österreich)
+ * Bis 40h = Mehrarbeit (MA). Darüber = Überstunden (ÜS).
+ */
+export const calculateOvertimeSplit = (balanceMinutes, targetMinutes) => {
+  if (balanceMinutes <= 0) return { mehrarbeit: 0, ueberstunden: 0 };
+
+  const WEEKLY_LIMIT_MINUTES = 40 * 60; 
+  const mehrarbeitBuffer = Math.max(0, WEEKLY_LIMIT_MINUTES - targetMinutes);
+
+  const mehrarbeit = Math.min(balanceMinutes, mehrarbeitBuffer);
+  const ueberstunden = Math.max(0, balanceMinutes - mehrarbeit);
+
+  return { mehrarbeit, ueberstunden };
+};
+
+/**
+ * ZENTRALE STATISTIK-BERECHNUNG
+ * Berechnet Summen, Sollzeit und MA/ÜS-Split für einen beliebigen Zeitraum.
+ */
+export const calculatePeriodStats = (entries, userData, periodStart, periodEnd) => {
+  let stats = {
+    work: 0, drive: 0, holiday: 0, vacation: 0, sick: 0, timeComp: 0,
+    totalIst: 0, totalTarget: 0, totalSaldo: 0,
+    overtimeSplit: { mehrarbeit: 0, ueberstunden: 0 }
+  };
+
+  // 1. Einträge filtern und summieren
+  const relevantEntries = entries.filter(e => {
+    const d = new Date(e.date);
+    // Wir setzen die Zeitkomponente zurück für sauberen Datumsvergleich
+    const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const startOnly = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
+    const endOnly = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
+    return dOnly >= startOnly && dOnly <= endOnly;
+  });
+
+  relevantEntries.forEach(e => {
+    if (e.type === "work") {
+      if (e.code === 19) stats.drive += e.netDuration;
+      else stats.work += e.netDuration;
+    }
+    if (e.type === "vacation") stats.vacation += e.netDuration;
+    if (e.type === "sick") stats.sick += e.netDuration;
+    if (e.type === "public_holiday") stats.holiday += e.netDuration;
+    if (e.type === "time_comp") stats.timeComp += e.netDuration;
+  });
+
+  stats.totalIst = stats.work + stats.vacation + stats.sick + stats.holiday + stats.timeComp;
+
+  // 2. Sollzeit berechnen (Tag für Tag)
+  let loopDate = new Date(periodStart);
+  loopDate.setHours(0,0,0,0);
+  const loopEnd = new Date(periodEnd);
+  loopEnd.setHours(23,59,59,999);
+
+  const weeklyMap = {}; // Zum Sammeln für die 40h Regel
+
+  while (loopDate <= loopEnd) {
+    const dateStr = loopDate.toISOString().split("T")[0];
+    const target = getTargetMinutesForDate(dateStr, userData?.workDays);
+    stats.totalTarget += target;
+
+    const weekNum = getWeekNumber(new Date(loopDate));
+    if (!weeklyMap[weekNum]) weeklyMap[weekNum] = { target: 0, actual: 0 };
+    weeklyMap[weekNum].target += target;
+
+    loopDate.setDate(loopDate.getDate() + 1);
+  }
+
+  stats.totalSaldo = stats.totalIst - stats.totalTarget;
+
+  // 3. MA/ÜS Split berechnen (Wochenweise Summierung)
+  relevantEntries.forEach(e => {
+    // Ausfallsprinzip: Alles außer Fahrzeit zählt zur Basis
+    if (!(e.type === "work" && e.code === 19)) {
+      const w = getWeekNumber(new Date(e.date));
+      if (weeklyMap[w]) {
+        weeklyMap[w].actual += e.netDuration;
+      }
+    }
+  });
+
+  Object.values(weeklyMap).forEach(week => {
+    const diff = week.actual - week.target;
+    const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(diff, week.target);
+    stats.overtimeSplit.mehrarbeit += mehrarbeit;
+    stats.overtimeSplit.ueberstunden += ueberstunden;
+  });
+
+  return stats;
+};
 
 // -------------------------------------------------------
 // FEIERTAGE
@@ -143,15 +236,13 @@ export const getHolidayData = (year) => {
 };
 
 // -------------------------------------------------------
-// VERSION & UPDATE CHECKER
+// UPDATE CHECKER
 // -------------------------------------------------------
-export const APP_VERSION = "4.4.3"; // Version erhöht
+export const APP_VERSION = "4.4.4"; 
 
-// Vergleicht Versionen (z.B. "4.0.1" > "4.0.0")
 const compareVersions = (v1, v2) => {
   const parts1 = v1.split('.').map(Number);
   const parts2 = v2.split('.').map(Number);
-  
   for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
     const val1 = parts1[i] || 0;
     const val2 = parts2[i] || 0;
@@ -163,36 +254,20 @@ const compareVersions = (v1, v2) => {
 
 export const checkForUpdate = async () => {
   try {
-    // DEINE DATEN:
     const GITHUB_USER = "D3rPaPaH0d3n"; 
     const REPO_NAME = "kogler-zeit";
-    
-    // API Call
     const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/releases/latest`);
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        console.warn("Update-Check: Repo nicht gefunden. Ist es privat?");
-      }
-      return null;
-    }
-    
+    if (!response.ok) return null;
     const data = await response.json();
-    const latestVersion = data.tag_name.replace("v", ""); // Entfernt 'v' falls vorhanden
-    
+    const latestVersion = data.tag_name.replace("v", ""); 
     if (compareVersions(latestVersion, APP_VERSION) > 0) {
       return {
         version: latestVersion,
         notes: data.body,
-        // Nimmt die erste APK oder Fallback auf die Release-Seite
         downloadUrl: data.assets.find(a => a.name.endsWith(".apk"))?.browser_download_url || data.html_url,
         date: new Date(data.published_at).toLocaleDateString("de-DE")
       };
     }
-    
     return null; 
-  } catch (error) {
-    console.error("Update Fehler:", error);
-    return null;
-  }
+  } catch (error) { return null; }
 };

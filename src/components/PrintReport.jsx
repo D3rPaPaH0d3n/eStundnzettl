@@ -6,7 +6,15 @@ import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { WORK_CODES, getWeekNumber, formatTime, formatSignedTime, blobToBase64, getTargetMinutesForDate } from "../utils";
+import { 
+  WORK_CODES, 
+  getWeekNumber, 
+  formatTime, 
+  formatSignedTime, 
+  blobToBase64, 
+  getTargetMinutesForDate
+} from "../utils";
+import { usePeriodStats } from "../hooks/usePeriodStats"; // <--- Hook importieren
 
 const PRINT_STYLES = {
   textBlack: '#000000',
@@ -76,6 +84,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     return `${fmt(monday)} - ${fmt(sunday)}`;
   };
 
+  // Liste der angezeigten Einträge filtern
   const filteredEntries = useMemo(() => {
     let list = filterMode === "month" ? [...entries] : entries.filter((e) => getWeekNumber(new Date(e.date)) === Number(filterMode));
     list.sort((a, b) => {
@@ -96,61 +105,33 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     return `KW ${filterMode} (${getWeekLabel(filterMode)})`;
   }, [filterMode, availableWeeks, monthDate]);
 
-  // --- STATS BERECHNUNG ---
-  const reportStats = useMemo(() => {
-    let work = 0; let vacation = 0; let sick = 0; let holiday = 0; let drive = 0; let timeComp = 0;
-    let periodStart, periodEnd;
-
+  // --- STATISTIK BERECHNUNG ÜBER DEN HOOK ---
+  // Wir definieren den Zeitraum für den Hook dynamisch basierend auf dem Filter
+  const { periodStart, periodEnd } = useMemo(() => {
     if (filterMode === "month") {
-      periodStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-      periodEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+      const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+      const end = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+      return { periodStart: start, periodEnd: end };
     } else {
+      // Wochen-Filter
       if (filteredEntries.length > 0) {
         const d = new Date(filteredEntries[0].date);
         const day = d.getDay() || 7;
-        periodStart = new Date(d);
-        periodStart.setDate(d.getDate() - day + 1);
-        periodEnd = new Date(periodStart);
-        periodEnd.setDate(periodStart.getDate() + 6);
+        const start = new Date(d);
+        start.setDate(d.getDate() - day + 1);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        return { periodStart: start, periodEnd: end };
       } else {
-        periodStart = new Date(); 
-        periodEnd = new Date();
+        // Fallback falls Woche leer ist
+        return { periodStart: new Date(), periodEnd: new Date() };
       }
     }
+  }, [filterMode, monthDate, filteredEntries]);
 
-    periodEnd.setHours(23, 59, 59, 999);
-    periodStart.setHours(0, 0, 0, 0);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    filteredEntries.forEach((e) => {
-      if (e.type === "work") {
-        if (e.code === 19) drive += e.netDuration; else work += e.netDuration;
-      }
-      if (e.type === "vacation") vacation += e.netDuration;
-      if (e.type === "sick") sick += e.netDuration;
-      if (e.type === "public_holiday") holiday += e.netDuration;
-      if (e.type === "time_comp") timeComp += e.netDuration;
-    });
-
-    const totalIst = work + vacation + sick + holiday + timeComp;
-    let totalTarget = 0;
-    
-    let loopDate = new Date(periodStart);
-    while (loopDate <= periodEnd) {
-      const isFuture = loopDate > today;
-      const isCurrentMonth = monthDate.getMonth() === today.getMonth() && monthDate.getFullYear() === today.getFullYear();
-      
-      if (!isCurrentMonth || !isFuture) {
-          const dateStr = loopDate.toISOString().split("T")[0];
-          totalTarget += getTargetMinutesForDate(dateStr, userData?.workDays);
-      }
-      loopDate.setDate(loopDate.getDate() + 1);
-    }
-    
-    return { work, vacation, sick, holiday, drive, timeComp, totalIst, totalTarget, totalSaldo: totalIst - totalTarget };
-  }, [filteredEntries, monthDate, filterMode, userData]);
+  // Der Hook macht die ganze Arbeit!
+  const stats = usePeriodStats(entries, userData, periodStart, periodEnd);
+  // ------------------------------------------
 
   // --- META MAP ---
   const dayMetaMap = useMemo(() => {
@@ -161,12 +142,10 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     });
     filteredEntries.forEach((e, idx) => {
       if (e.date !== currentDateStr) { dayIndex++; currentDateStr = e.date; }
-      
       const target = getTargetMinutesForDate(e.date, userData?.workDays);
       const nextEntry = filteredEntries[idx + 1];
       const isLastOfDay = !nextEntry || nextEntry.date !== e.date;
       const balance = sums[e.date].totalMinutes - target;
-      
       map[e.id] = { dayIndex, isEvenDay: dayIndex % 2 === 0, showBalance: isLastOfDay && target > 0, balance: balance };
     });
     return map;
@@ -198,13 +177,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
         margin: 5, 
         filename,
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
-          windowWidth: 794, 
-          scrollY: 0,
-          backgroundColor: "#ffffff"
-        }, 
+        html2canvas: { scale: 2, useCORS: true, windowWidth: 794, scrollY: 0, backgroundColor: "#ffffff" }, 
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak: { mode: 'css' } 
       };
@@ -225,14 +198,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
       setScale(originalScale);
       setIsGenerating(false);
 
-      await Filesystem.writeFile({ 
-        path: filename, 
-        data: base64, 
-        directory: Directory.Cache, 
-        encoding: Encoding.BASE64, 
-        recursive: true 
-      });
-      
+      await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache, encoding: Encoding.BASE64, recursive: true });
       const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache }); 
       await Share.share({ title: "Stundenzettel", url: uriResult.uri });
       toast.success("🖨️ Druck erfolgreich vorbereitet");
@@ -248,71 +214,37 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
   return (
     <div className="fixed inset-0 bg-slate-950 z-[200] flex flex-col h-full">
       {/* 1. TOPBAR */}
-      <div 
-        className="bg-slate-900 text-white p-3 shadow-xl z-50 shrink-0"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
-      >
+      <div className="bg-slate-900 text-white p-3 shadow-xl z-50 shrink-0" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}>
         <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-lg flex items-center gap-2 text-slate-100 min-w-0">
-                <FileText size={20} className="text-orange-500 shrink-0" /> 
-                <span className="truncate">Vorschau</span>
+                <FileText size={20} className="text-orange-500 shrink-0" /> <span className="truncate">Vorschau</span>
             </h2>
             <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
               <button onClick={() => handleMonthChange(-1)} className="p-1.5 hover:bg-slate-700 rounded-md text-slate-300"><ChevronLeft size={18} /></button>
-              <span className="px-2 text-sm font-bold w-24 text-center tabular-nums">
-                {monthDate.toLocaleDateString("de-DE", { month: "short", year: "2-digit" })}
-              </span>
+              <span className="px-2 text-sm font-bold w-24 text-center tabular-nums">{monthDate.toLocaleDateString("de-DE", { month: "short", year: "2-digit" })}</span>
               <button onClick={() => handleMonthChange(1)} className="p-1.5 hover:bg-slate-700 rounded-md text-slate-300"><ChevronRight size={18} /></button>
             </div>
-            <button onClick={onClose} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors shrink-0">
-                <X size={20} />
-            </button>
+            <button onClick={onClose} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors shrink-0"><X size={20} /></button>
         </div>
 
         <div className="flex gap-2 items-center">
-            
-            <button 
-                onClick={() => setIsNoteModalOpen(true)}
-                className={`p-2 rounded-lg border flex items-center justify-center transition-colors ${customNote ? "bg-blue-500/20 text-blue-400 border-blue-500/50" : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"}`}
-            >
-                <MessageSquarePlus size={20} />
-            </button>
-
+            <button onClick={() => setIsNoteModalOpen(true)} className={`p-2 rounded-lg border flex items-center justify-center transition-colors ${customNote ? "bg-blue-500/20 text-blue-400 border-blue-500/50" : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"}`}><MessageSquarePlus size={20} /></button>
             <div className="relative flex-1 min-w-0">
-                <button 
-                    onClick={() => setIsPickerOpen(!isPickerOpen)}
-                    className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-2 pl-3 pr-8 text-sm font-medium flex items-center justify-between transition-colors hover:border-orange-500/50 active:bg-slate-700"
-                >
+                <button onClick={() => setIsPickerOpen(!isPickerOpen)} className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-2 pl-3 pr-8 text-sm font-medium flex items-center justify-between transition-colors hover:border-orange-500/50 active:bg-slate-700">
                     <span className="truncate">{currentLabel}</span>
                     <ChevronDown size={16} className={`text-slate-400 transition-transform ${isPickerOpen ? "rotate-180" : ""}`} />
                 </button>
-
                 <AnimatePresence>
                     {isPickerOpen && (
                         <>
                             <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)} />
-                            <motion.div
-                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                transition={{ duration: 0.15 }}
-                                className="absolute top-full left-0 mt-1 w-full max-h-64 overflow-y-auto bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 py-1"
-                            >
-                                <div 
-                                    onClick={() => { setFilterMode("month"); setIsPickerOpen(false); }}
-                                    className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-slate-700/50 ${filterMode === "month" ? "text-orange-500 bg-slate-700/50" : "text-slate-300 hover:bg-slate-700 hover:text-white"}`}
-                                >
-                                    <span>Gesamter Monat</span>
-                                    {filterMode === "month" && <Check size={16} />}
+                            <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} transition={{ duration: 0.15 }} className="absolute top-full left-0 mt-1 w-full max-h-64 overflow-y-auto bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 py-1">
+                                <div onClick={() => { setFilterMode("month"); setIsPickerOpen(false); }} className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-slate-700/50 ${filterMode === "month" ? "text-orange-500 bg-slate-700/50" : "text-slate-300 hover:bg-slate-700 hover:text-white"}`}>
+                                    <span>Gesamter Monat</span>{filterMode === "month" && <Check size={16} />}
                                 </div>
                                 {availableWeeks.map((w) => (
-                                    <div 
-                                        key={w}
-                                        onClick={() => { setFilterMode(w); setIsPickerOpen(false); }}
-                                        className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-slate-700/50 last:border-0 ${Number(filterMode) === w ? "text-orange-500 bg-slate-700/50" : "text-slate-300 hover:bg-slate-700 hover:text-white"}`}
-                                    >
-                                        <span>KW {w} ({getWeekLabel(w)})</span>
-                                        {Number(filterMode) === w && <Check size={16} />}
+                                    <div key={w} onClick={() => { setFilterMode(w); setIsPickerOpen(false); }} className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-slate-700/50 last:border-0 ${Number(filterMode) === w ? "text-orange-500 bg-slate-700/50" : "text-slate-300 hover:bg-slate-700 hover:text-white"}`}>
+                                        <span>KW {w} ({getWeekLabel(w)})</span>{Number(filterMode) === w && <Check size={16} />}
                                     </div>
                                 ))}
                             </motion.div>
@@ -320,40 +252,15 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                     )}
                 </AnimatePresence>
             </div>
-            
-            <motion.button 
-                whileTap={{ scale: 0.95 }}
-                onClick={handleDownloadPdf} 
-                disabled={isGenerating} 
-                className="bg-orange-500 hover:bg-orange-600 text-white p-2 px-4 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-orange-900/20 shrink-0"
-            >
-                {isGenerating ? <Loader className="animate-spin" size={18} /> : <Download size={18} />} 
-                <span className="hidden sm:inline">PDF</span>
+            <motion.button whileTap={{ scale: 0.95 }} onClick={handleDownloadPdf} disabled={isGenerating} className="bg-orange-500 hover:bg-orange-600 text-white p-2 px-4 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-orange-900/20 shrink-0">
+                {isGenerating ? <Loader className="animate-spin" size={18} /> : <Download size={18} />} <span className="hidden sm:inline">PDF</span>
             </motion.button>
         </div>
       </div>
 
       <div className="flex-1 bg-slate-800/50 relative overflow-hidden flex flex-col items-center justify-start py-8 overflow-y-auto touch-pan-y">
-        <div 
-            className="origin-top transition-transform duration-200 shadow-2xl bg-white"
-            style={{ 
-                transform: `scale(${scale})`,
-                width: '210mm',
-                minHeight: '297mm', 
-                marginBottom: '5rem' 
-            }}
-        >
-          <div
-            id="report-to-print"
-            ref={reportRef}
-            style={{ 
-                width: '100%', 
-                backgroundColor: 'white',
-                padding: '5mm', 
-                color: PRINT_STYLES.textBlack, 
-                fontFamily: 'Arial, sans-serif' 
-            }}
-          >
+        <div className="origin-top transition-transform duration-200 shadow-2xl bg-white" style={{ transform: `scale(${scale})`, width: '210mm', minHeight: '297mm', marginBottom: '5rem' }}>
+          <div id="report-to-print" ref={reportRef} style={{ width: '100%', backgroundColor: 'white', padding: '5mm', color: PRINT_STYLES.textBlack, fontFamily: 'Arial, sans-serif' }}>
             <div style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, paddingBottom: '0.75rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
                 <h1 style={{ fontSize: '1.6rem', fontWeight: 'bold', textTransform: 'uppercase', color: PRINT_STYLES.textDark, margin: 0 }}>Stundenzettel</h1>
@@ -367,9 +274,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                     {filterMode !== "month" && ` (KW ${filterMode})`}
                   </p>
                 </div>
-                {userPhoto && (
-                  <img src={userPhoto} alt="Mitarbeiter" style={{ width: '55px', height: '55px', borderRadius: '50%', objectFit: 'cover', border: `1px solid ${PRINT_STYLES.borderLight}`, display: 'block' }} />
-                )}
+                {userPhoto && ( <img src={userPhoto} alt="Mitarbeiter" style={{ width: '55px', height: '55px', borderRadius: '50%', objectFit: 'cover', border: `1px solid ${PRINT_STYLES.borderLight}`, display: 'block' }} /> )}
               </div>
             </div>
 
@@ -390,7 +295,6 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                   const wd = d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2);
                   const ds = d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
                   const meta = dayMetaMap[e.id] || {};
-
                   const prevEntry = filteredEntries[idx - 1];
                   const nextEntry = filteredEntries[idx + 1];
                   const isSameDay = prevEntry && prevEntry.date === e.date;
@@ -410,12 +314,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                     if (e.code === 19) { durationDisplay = "-"; timeColor = PRINT_STYLES.textLight; }
                     const pauseText = e.pause > 0 ? `Pause: ${e.pause}m` : "KEINE PAUSE";
                     const pauseColor = e.pause > 0 ? PRINT_STYLES.textMedium : PRINT_STYLES.textLight;
-                    timeCellContent = (
-                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                        <span style={{ fontWeight: 'bold', color: PRINT_STYLES.textDark, lineHeight: 1.2, whiteSpace: 'nowrap' }}>{e.start} – {e.end}</span>
-                        <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', marginTop: '2px', color: pauseColor }}>{pauseText}</span>
-                      </div>
-                    );
+                    timeCellContent = ( <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}> <span style={{ fontWeight: 'bold', color: PRINT_STYLES.textDark, lineHeight: 1.2, whiteSpace: 'nowrap' }}>{e.start} – {e.end}</span> <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', marginTop: '2px', color: pauseColor }}>{pauseText}</span> </div> );
                   } else if (e.type === "public_holiday") {
                     timeCellContent = <span style={{ fontWeight: 'bold', color: PRINT_STYLES.textDark }}>Feiertag</span>;
                     projectText = e.project || "Gesetzlicher Feiertag";
@@ -424,7 +323,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                   } else if (e.type === "time_comp") {
                     timeCellContent = <span style={{ color: PRINT_STYLES.textLight }}>-</span>;
                     projectText = "Zeitausgleich";
-                    timeColor = '#7e22ce'; // Lila
+                    timeColor = '#7e22ce'; 
                   } else {
                     timeCellContent = <span style={{ color: PRINT_STYLES.textLight }}>-</span>;
                     projectText = e.type === "vacation" ? "Urlaub" : "Krank";
@@ -435,26 +334,16 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                   return (
                     <tr key={e.id} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', backgroundColor: rowBg, borderBottom: borderStyle }}>
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
-                        {!isSameDay && (
-                            <>
-                                <span style={{ display: 'inline-block', width: '2rem', fontWeight: 'bold' }}>{wd}</span>
-                                <span style={{ color: PRINT_STYLES.textMedium }}>{ds}</span>
-                            </>
-                        )}
+                        {!isSameDay && ( <> <span style={{ display: 'inline-block', width: '2rem', fontWeight: 'bold' }}>{wd}</span> <span style={{ color: PRINT_STYLES.textMedium }}>{ds}</span> </> )}
                       </td>
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'top' }}>{timeCellContent}</td>
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'top', whiteSpace: 'normal', wordWrap: 'break-word', paddingRight: '0.5rem' }}>
                         <span style={{ fontWeight: '500', color: e.type === "public_holiday" ? PRINT_STYLES.textBlue : e.type === "time_comp" ? '#7e22ce' : PRINT_STYLES.textMedium }}>{projectText}</span>
                       </td>
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'top', fontSize: '0.75rem', color: PRINT_STYLES.textMedium, whiteSpace: 'normal', wordWrap: 'break-word' }}>{codeText}</td>
-                      {/* FIX: verticalAlign: 'bottom' damit sie immer unten rechts stehen */}
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold', color: timeColor }}>{durationDisplay}</td>
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold', fontSize: '0.75rem' }}>
-                        {meta.showBalance && (
-                          <span style={{ color: meta.balance >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}>
-                            {formatSignedTime(meta.balance)}
-                          </span>
-                        )}
+                        {meta.showBalance && ( <span style={{ color: meta.balance >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}> {formatSignedTime(meta.balance)} </span> )}
                       </td>
                     </tr>
                   );
@@ -464,103 +353,55 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
 
             <div style={{ marginTop: '0.5rem', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               <div style={{ backgroundColor: PRINT_STYLES.bgGray, padding: '0.75rem', borderRadius: '0.5rem', border: `1px solid ${PRINT_STYLES.borderLight}` }}>
-                {/* KOMPAKTER HEADER */}
                 <h3 style={{ fontWeight: 'bold', fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: '0.3rem', borderBottom: `1px solid ${PRINT_STYLES.borderLight}`, paddingBottom: '0.1rem', color: PRINT_STYLES.textMedium }}>Zusammenfassung</h3>
-                
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 2rem' }}>
-                    
-                    {/* LINKE SPALTE */}
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem' }}>
-                        <span>Arbeit (inkl. Anreise):</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.work)}</span>
+                        <span>Arbeit (inkl. Anreise):</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.work)}</span>
                         </div>
-                        
-                        {reportStats.holiday > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textBlue }}>
-                            <span>Feiertage:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.holiday)}</span>
-                            </div>
-                        )}
-                        {reportStats.vacation > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textBlue }}>
-                            <span>Urlaub:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.vacation)}</span>
-                            </div>
-                        )}
-                         {reportStats.timeComp > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: '#7e22ce' }}>
-                            <span>Zeitausgleich:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.timeComp)}</span>
-                            </div>
-                        )}
-                        {reportStats.sick > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textRed }}>
-                            <span>Krankenstand:</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.sick)}</span>
-                            </div>
-                        )}
+                        {stats.holiday > 0 && ( <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textBlue }}> <span>Feiertage:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.holiday)}</span> </div> )}
+                        {stats.vacation > 0 && ( <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textBlue }}> <span>Urlaub:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.vacation)}</span> </div> )}
+                        {stats.timeComp > 0 && ( <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: '#7e22ce' }}> <span>Zeitausgleich:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.timeComp)}</span> </div> )}
+                        {stats.sick > 0 && ( <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textRed }}> <span>Krankenstand:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.sick)}</span> </div> )}
                     </div>
-
-                    {/* RECHTE SPALTE */}
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', borderBottom: `1px dashed ${PRINT_STYLES.borderLight}`, paddingBottom: '2px' }}>
-                            <span>Gesamt (IST):</span><span style={{ fontWeight: 'bold' }}>{formatTime(reportStats.totalIst)}</span>
+                            <span>Gesamt (IST):</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.totalIst)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textMedium }}>
-                            <span>Sollzeit (SOLL):</span><span>{formatTime(reportStats.totalTarget)}</span>
+                            <span>Sollzeit (SOLL):</span><span>{formatTime(stats.totalTarget)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginTop: '0.3rem', fontWeight: 'bold' }}>
                             <span>Saldo:</span>
-                            <span style={{ color: reportStats.totalSaldo >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}>
-                                {formatSignedTime(reportStats.totalSaldo)}
+                            <span style={{ color: stats.totalSaldo >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}>
+                                {formatSignedTime(stats.totalSaldo)}
                             </span>
                         </div>
+                        
+                        {(stats.overtimeSplit.mehrarbeit > 0 || stats.overtimeSplit.ueberstunden > 0) && (
+                            <div style={{ marginTop: '0.4rem', paddingTop: '0.2rem', borderTop: `1px dashed ${PRINT_STYLES.borderLight}` }}>
+                                {stats.overtimeSplit.mehrarbeit > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: PRINT_STYLES.textBlue }}>
+                                        <span>Mehrarbeit:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.overtimeSplit.mehrarbeit)}</span>
+                                    </div>
+                                )}
+                                {stats.overtimeSplit.ueberstunden > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#7e22ce' }}>
+                                        <span>Überstunden:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.overtimeSplit.ueberstunden)}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
-
-                {reportStats.drive > 0 && (
-                  <div style={{ borderTop: `1px solid ${PRINT_STYLES.borderLight}`, marginTop: '0.3rem', paddingTop: '0.2rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: PRINT_STYLES.textLight, fontStyle: 'italic' }}>
-                    <span>Fahrtzeit (unbezahlt):</span><span>{formatTime(reportStats.drive)}</span>
-                  </div>
-                )}
+                {stats.drive > 0 && ( <div style={{ borderTop: `1px solid ${PRINT_STYLES.borderLight}`, marginTop: '0.3rem', paddingTop: '0.2rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: PRINT_STYLES.textLight, fontStyle: 'italic' }}> <span>Fahrtzeit (unbezahlt):</span><span>{formatTime(stats.drive)}</span> </div> )}
               </div>
             </div>
-
-            {customNote && (
-                <div style={{ marginTop: '1.5rem', pageBreakInside: 'avoid', breakInside: 'avoid', borderTop: `2px dashed ${PRINT_STYLES.borderLight}`, paddingTop: '1rem' }}>
-                    <h3 style={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', color: PRINT_STYLES.textMedium, marginBottom: '0.5rem' }}>Anmerkungen / Notiz:</h3>
-                    <p style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap', lineHeight: '1.4', color: PRINT_STYLES.textDark }}>{customNote}</p>
-                </div>
-            )}
-
+            {customNote && ( <div style={{ marginTop: '1.5rem', pageBreakInside: 'avoid', breakInside: 'avoid', borderTop: `2px dashed ${PRINT_STYLES.borderLight}`, paddingTop: '1rem' }}> <h3 style={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', color: PRINT_STYLES.textMedium, marginBottom: '0.5rem' }}>Anmerkungen / Notiz:</h3> <p style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap', lineHeight: '1.4', color: PRINT_STYLES.textDark }}>{customNote}</p> </div> )}
           </div>
         </div>
       </div>
-
-      <AnimatePresence>
-        {isNoteModalOpen && (
-            <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
-                <motion.div 
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                    onClick={() => setIsNoteModalOpen(false)}
-                />
-                <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                    className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-5"
-                >
-                    <h3 className="font-bold text-lg mb-3 text-slate-800 dark:text-white">Notiz für PDF</h3>
-                    <textarea 
-                        className="w-full h-32 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg resize-none outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100"
-                        placeholder="Z.B. Zusätzliche Infos, Bankverbindung, etc..."
-                        value={customNote}
-                        onChange={(e) => setCustomNote(e.target.value)}
-                    />
-                    <div className="flex justify-end gap-2 mt-4">
-                        <button onClick={() => setCustomNote("")} className="text-red-500 text-sm font-medium px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">Löschen</button>
-                        <button onClick={() => setIsNoteModalOpen(false)} className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold px-4 py-2 rounded-lg">Fertig</button>
-                    </div>
-                </motion.div>
-            </div>
-        )}
-      </AnimatePresence>
-
+      <AnimatePresence> {isNoteModalOpen && ( <div className="fixed inset-0 z-[250] flex items-center justify-center p-4"> <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsNoteModalOpen(false)} /> <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-5"> <h3 className="font-bold text-lg mb-3 text-slate-800 dark:text-white">Notiz für PDF</h3> <textarea className="w-full h-32 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg resize-none outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100" placeholder="Z.B. Zusätzliche Infos, Bankverbindung, etc..." value={customNote} onChange={(e) => setCustomNote(e.target.value)} /> <div className="flex justify-end gap-2 mt-4"> <button onClick={() => setCustomNote("")} className="text-red-500 text-sm font-medium px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">Löschen</button> <button onClick={() => setIsNoteModalOpen(false)} className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold px-4 py-2 rounded-lg">Fertig</button> </div> </motion.div> </div> )} </AnimatePresence>
     </div>
   );
 };

@@ -238,11 +238,18 @@ export const getHolidayData = (year) => {
 // -------------------------------------------------------
 // UPDATE CHECKER
 // -------------------------------------------------------
+// Du kannst das 'v' hier behalten, wie du es möchtest:
 export const APP_VERSION = "v5.0.5"; 
 
 const compareVersions = (v1, v2) => {
-  const parts1 = v1.split('.').map(Number);
-  const parts2 = v2.split('.').map(Number);
+  // Wir entfernen ALLES, was keine Zahl oder ein Punkt ist.
+  // Aus "v5.0.5" wird "5.0.5", aus "5.0.5-beta" wird "5.0.5"
+  const cleanV1 = v1.replace(/[^0-9.]/g, ''); 
+  const cleanV2 = v2.replace(/[^0-9.]/g, '');
+
+  const parts1 = cleanV1.split('.').map(Number);
+  const parts2 = cleanV2.split('.').map(Number);
+  
   for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
     const val1 = parts1[i] || 0;
     const val2 = parts2[i] || 0;
@@ -257,12 +264,18 @@ export const checkForUpdate = async () => {
     const GITHUB_USER = "D3rPaPaH0d3n"; 
     const REPO_NAME = "kogler-zeit";
     const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/releases/latest`);
+    
     if (!response.ok) return null;
+    
     const data = await response.json();
-    const latestVersion = data.tag_name.replace("v", ""); 
+    
+    // GitHub Tag ist z.B. "v5.0.6". 
+    // Wir übergeben es direkt an compareVersions, da unsere neue Funktion das 'v' selbst entfernt.
+    const latestVersion = data.tag_name; 
+
     if (compareVersions(latestVersion, APP_VERSION) > 0) {
       return {
-        version: latestVersion,
+        version: latestVersion, // Zeigt z.B. "v5.0.6" im PopUp an
         notes: data.body,
         downloadUrl: data.assets.find(a => a.name.endsWith(".apk"))?.browser_download_url || data.html_url,
         date: new Date(data.published_at).toLocaleDateString("de-DE")

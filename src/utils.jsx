@@ -239,7 +239,7 @@ export const getHolidayData = (year) => {
 // UPDATE CHECKER
 // -------------------------------------------------------
 // Du kannst das 'v' hier behalten, wie du es möchtest:
-export const APP_VERSION = "v5.0.7"; 
+export const APP_VERSION = "v5.0.8"; 
 
 const compareVersions = (v1, v2) => {
   // Wir entfernen ALLES, was keine Zahl oder ein Punkt ist.

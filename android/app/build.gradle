@@ -8,8 +8,8 @@ android {
         applicationId "com.kogler.zeiterfassung"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 22          // Hochgezählt für Updates
-        versionName "5.0.1"    // Deine aktuelle Version
+        versionCode 23          // Hochgezählt für Updates
+        versionName "5.0.2"    // Deine aktuelle Version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

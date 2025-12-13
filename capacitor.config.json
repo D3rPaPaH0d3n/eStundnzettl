@@ -3,6 +3,11 @@
   "appName": "Kogler Zeit",
   "webDir": "dist",
   "plugins": {
+    "GoogleAuth": {
+      "scopes": ["https://www.googleapis.com/auth/drive.file"],
+      "serverClientId": "618528142382-pes4415amf381rk4bjovlamgh4emhrov.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    },
     "SplashScreen": {
       "launchShowDuration": 500,
       "launchAutoHide": true,

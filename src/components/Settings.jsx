@@ -1,10 +1,11 @@
-import React, { useRef, useState } from "react";
-import { User, Sun, AlertTriangle, Camera, Trash2, Upload, Loader, Info, History, BookOpen, RefreshCw, Briefcase, Calendar, Lock } from "lucide-react";
+import React, { useRef, useState, useEffect } from "react";
+import { User, Sun, AlertTriangle, Camera, Trash2, Upload, Loader, Info, History, BookOpen, RefreshCw, Briefcase, Calendar, Lock, Cloud, CloudOff } from "lucide-react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card, APP_VERSION } from "../utils"; 
 import ChangelogModal from "./ChangelogModal";
 import HelpModal from "./HelpModal";
+import { initGoogleAuth, signInGoogle, signOutGoogle } from "../utils/googleDrive";
 
 const Settings = ({
   userData,
@@ -22,8 +23,57 @@ const Settings = ({
   const [isProcessingImg, setIsProcessingImg] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  
+  // Cloud State
+  const [isCloudConnected, setIsCloudConnected] = useState(false);
 
-  // --- BILD VERARBEITUNG ---
+  useEffect(() => {
+    // 1. Google Auth Initialisieren
+    initGoogleAuth();
+    
+    // 2. Status prüfen (aus LocalStorage lesen)
+    const connected = localStorage.getItem("kogler_cloud_sync") === "true";
+    setIsCloudConnected(connected);
+  }, []);
+
+  const handleGoogleToggle = async () => {
+    Haptics.impact({ style: ImpactStyle.Light });
+    
+    if (isCloudConnected) {
+        // TRENNE VERBINDUNG
+        try {
+            await signOutGoogle();
+            localStorage.removeItem("kogler_cloud_sync");
+            setIsCloudConnected(false);
+            toast.success("Verbindung getrennt");
+        } catch (e) {
+            console.error(e);
+            // Fallback: Auch bei Fehler den Status lokal zurücksetzen
+            localStorage.removeItem("kogler_cloud_sync");
+            setIsCloudConnected(false);
+            toast("Getrennt");
+        }
+    } else {
+        // VERBINDE NEU
+        try {
+            const user = await signInGoogle();
+            if (user && user.authentication.accessToken) {
+                localStorage.setItem("kogler_cloud_sync", "true");
+                setIsCloudConnected(true);
+                
+                // Wenn man sich verbindet, aktivieren wir automatisch das Auto-Backup
+                if (!autoBackup) setAutoBackup(true);
+                
+                toast.success(`Verbunden: ${user.givenName || "Benutzer"}`);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Anmeldung abgebrochen");
+        }
+    }
+  };
+
+  // --- BILD VERARBEITUNG (Original Code) ---
   const processImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -232,6 +282,33 @@ const Settings = ({
       {/* 4. BACKUP & INFO */}
       <Card className="p-5 space-y-3">
         <h3 className="font-bold text-slate-700 dark:text-white">Daten & Backup</h3>
+
+        {/* --- NEU: GOOGLE DRIVE BUTTON --- */}
+        <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-3 rounded-xl mb-2">
+            <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${isCloudConnected ? "bg-blue-100 text-blue-600" : "bg-slate-200 text-slate-400"}`}>
+                    {isCloudConnected ? <Cloud size={20} /> : <CloudOff size={20} />}
+                </div>
+                <div>
+                    <span className="block font-bold text-sm text-slate-800 dark:text-white">Google Drive Sync</span>
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                        {isCloudConnected ? "Aktiviert (Täglich)" : "Nicht verbunden"}
+                    </span>
+                </div>
+            </div>
+            <button
+                onClick={handleGoogleToggle}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${
+                    isCloudConnected 
+                    ? "border-red-200 bg-red-50 text-red-600" 
+                    : "border-slate-300 bg-white text-slate-700"
+                }`}
+            >
+                {isCloudConnected ? "Trennen" : "Verbinden"}
+            </button>
+        </div>
+
+        {/* --- AUTO BACKUP TOGGLE --- */}
         <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-3 rounded-xl mb-2">
           <div>
             <span className="block font-bold text-sm text-slate-800 dark:text-white">Automatisches Backup</span>
@@ -248,6 +325,7 @@ const Settings = ({
             <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${autoBackup ? "translate-x-5" : "translate-x-0"}`} />
           </button>
         </div>
+
         <div className="grid grid-cols-2 gap-2">
           <button onClick={onExport} className="w-full py-3 bg-slate-900 dark:bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 flex items-center justify-center gap-2 transition-colors">
             <Upload size={18} className="rotate-180" /> Export

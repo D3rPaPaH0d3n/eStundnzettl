@@ -1,9 +1,10 @@
-import React, { useState, useRef } from "react";
-import { User, Briefcase, Calendar, Save, ShieldCheck, Camera, ChevronRight, Check, Upload, Play } from "lucide-react"; // Upload, Play Icons dazu
+import React, { useState, useRef, useEffect } from "react";
+import { User, Briefcase, Calendar, Save, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
 
-// PRESETS DEFINITION (bleibt gleich)
+// PRESETS DEFINITION
 const WORK_PRESETS = [
   {
     id: "kogler_standard",
@@ -25,11 +26,12 @@ const WORK_PRESETS = [
   }
 ];
 
-const OnboardingWizard = ({ onFinish, onRestore, initialData }) => { // onRestore prop dazu
-  const [step, setStep] = useState(0); // <--- START BEI 0
+const OnboardingWizard = ({ onFinish, onRestore, initialData }) => {
+  const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
+  const [isCloudLoading, setIsCloudLoading] = useState(false); // Ladezustand für Cloud
   const fileInputRef = useRef(null);
-  const backupInputRef = useRef(null); // Ref für Backup Input
+  const backupInputRef = useRef(null);
 
   // ZWISCHEN-SPEICHER
   const [formData, setFormData] = useState({
@@ -40,6 +42,11 @@ const OnboardingWizard = ({ onFinish, onRestore, initialData }) => { // onRestor
     customDays: [...WORK_PRESETS[0].days],
     autoBackup: true
   });
+
+  // Google Auth Init beim Start
+  useEffect(() => {
+    initGoogleAuth();
+  }, []);
 
   // --- HELPER ---
   const handlePhotoUpload = (e) => {
@@ -52,25 +59,66 @@ const OnboardingWizard = ({ onFinish, onRestore, initialData }) => { // onRestor
     reader.readAsDataURL(file);
   };
 
-  // NEU: Backup einlesen
+  // LOKALES BACKUP
   const handleBackupUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
     const reader = new FileReader();
     reader.onload = (ev) => {
         try {
             const json = JSON.parse(ev.target.result);
-            // Validierung: Hat es entries oder user daten?
-            if (!json.entries && !json.user) {
-                throw new Error("Ungültiges Format");
-            }
-            onRestore(json); // An App.jsx übergeben
+            if (!json.entries && !json.user) throw new Error("Ungültiges Format");
+            onRestore(json);
         } catch (err) {
             toast.error("❌ Datei ungültig oder beschädigt.");
         }
     };
     reader.readAsText(file);
+  };
+
+  // CLOUD BACKUP (NEU)
+  const handleCloudRestore = async () => {
+    setIsCloudLoading(true);
+    try {
+        // 1. Anmelden
+        const user = await signInGoogle();
+        if (!user || !user.authentication.accessToken) {
+            throw new Error("Anmeldung fehlgeschlagen");
+        }
+        
+        toast.loading("Suche Backup...", { id: "cloud_search" });
+
+        // 2. Neueste Datei suchen
+        const latestFile = await findLatestBackup(user.authentication.accessToken);
+        
+        if (!latestFile) {
+            toast.dismiss("cloud_search");
+            toast.error("Kein Backup in Google Drive gefunden.");
+            // User wird automatisch eingeloggt bleiben, was für AutoBackup später gut ist
+            localStorage.setItem("kogler_cloud_sync", "true");
+            return;
+        }
+
+        // 3. Herunterladen
+        toast.loading(`Lade Backup vom ${new Date(latestFile.createdTime).toLocaleDateString()}...`, { id: "cloud_search" });
+        const jsonContent = await downloadFileContent(user.authentication.accessToken, latestFile.id);
+
+        // 4. Wiederherstellen
+        toast.dismiss("cloud_search");
+        toast.success("Backup erfolgreich geladen! 🎉");
+        
+        // Merken, dass User verbunden ist
+        localStorage.setItem("kogler_cloud_sync", "true");
+        
+        onRestore(jsonContent);
+
+    } catch (error) {
+        console.error(error);
+        toast.dismiss("cloud_search");
+        toast.error("Cloud-Wiederherstellung fehlgeschlagen.");
+    } finally {
+        setIsCloudLoading(false);
+    }
   };
 
   const nextStep = () => {
@@ -87,7 +135,6 @@ const OnboardingWizard = ({ onFinish, onRestore, initialData }) => { // onRestor
     setStep(prev => prev - 1);
   };
 
-  // ... (handlePresetSelect, handleCustomDayChange, finishSetup, formatH, totalWeeklyMinutes bleiben gleich)
   const handlePresetSelect = (preset) => {
     setFormData(prev => ({ ...prev, workProfileId: preset.id, customDays: [...preset.days] }));
   };
@@ -102,7 +149,6 @@ const OnboardingWizard = ({ onFinish, onRestore, initialData }) => { // onRestor
   const formatH = (m) => { const h = m / 60; return h.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " h"; };
   const totalWeeklyMinutes = formData.customDays.reduce((acc, curr) => acc + curr, 0);
 
-  // ANIMATION VARIANTS
   const variants = {
     enter: (dir) => ({ x: dir > 0 ? 50 : -50, opacity: 0 }),
     center: { x: 0, opacity: 1 },
@@ -111,17 +157,15 @@ const OnboardingWizard = ({ onFinish, onRestore, initialData }) => { // onRestor
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
-      {/* BACKGROUND DEKO */}
       <div className="absolute top-0 left-0 w-full h-64 bg-slate-900 dark:bg-orange-500 rounded-b-[3rem] shadow-2xl z-0" />
       
-      <div className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[85vh] max-h-[700px]">
+      <div className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[85vh] max-h-[750px]">
         
         {/* HEADER */}
         <div className="p-6 pb-2 text-center">
           <h1 className="text-2xl font-black text-slate-800 dark:text-white">Willkommen! 👋</h1>
           {step > 0 && <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Richten wir deine App kurz ein.</p>}
           
-          {/* PROGRESS DOTS (Nur sichtbar ab Schritt 1) */}
           {step > 0 && (
             <div className="flex justify-center gap-2 mt-4">
                 {[1, 2, 3, 4].map(i => (
@@ -131,58 +175,72 @@ const OnboardingWizard = ({ onFinish, onRestore, initialData }) => { // onRestor
           )}
         </div>
 
-        {/* CONTENT AREA */}
+        {/* CONTENT */}
         <div className="flex-1 relative overflow-hidden p-6">
           <AnimatePresence custom={direction} mode="wait">
             
-            {/* SCHRITT 0: START-AUSWAHL (NEU) */}
+            {/* SCHRITT 0: START-AUSWAHL */}
             {step === 0 && (
-              <motion.div key="step0" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" className="absolute inset-0 p-6 flex flex-col justify-center gap-6">
-                <div className="text-center mb-4">
+              <motion.div key="step0" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" className="absolute inset-0 p-4 flex flex-col justify-center gap-4">
+                <div className="text-center mb-2">
                     <p className="text-slate-600 dark:text-slate-300">
                         Wie möchtest du starten?
                     </p>
                 </div>
 
+                {/* 1. NEU STARTEN */}
                 <button 
                     onClick={() => { setDirection(1); setStep(1); }}
-                    className="group relative w-full p-5 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl shadow-lg shadow-orange-500/20 flex flex-col items-center gap-2 transition-all active:scale-95"
+                    className="group relative w-full p-4 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl shadow-lg shadow-orange-500/20 flex items-center gap-4 transition-all active:scale-95"
                 >
-                    <div className="bg-white/20 p-3 rounded-full mb-1">
+                    <div className="bg-white/20 p-3 rounded-full">
                         <Play size={24} fill="currentColor" />
                     </div>
-                    <span className="font-bold text-lg">Neu einrichten</span>
-                    <span className="text-xs opacity-80 font-medium">Profil & Arbeitszeit erstellen</span>
+                    <div className="text-left">
+                        <span className="block font-bold text-lg">Neu einrichten</span>
+                        <span className="block text-xs opacity-80 font-medium">Profil & Arbeitszeit erstellen</span>
+                    </div>
                 </button>
 
-                <div className="relative">
+                <div className="relative py-2">
                     <div className="absolute inset-0 flex items-center" aria-hidden="true">
                         <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
                     </div>
                     <div className="relative flex justify-center">
-                        <span className="bg-white dark:bg-slate-900 px-2 text-xs text-slate-400 uppercase font-bold">Oder</span>
+                        <span className="bg-white dark:bg-slate-900 px-2 text-xs text-slate-400 uppercase font-bold">Wiederherstellen</span>
                     </div>
                 </div>
 
+                {/* 2. GOOGLE DRIVE (CLOUD) */}
+                <button 
+                    onClick={handleCloudRestore}
+                    disabled={isCloudLoading}
+                    className="w-full p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-100 dark:border-blue-900 hover:border-blue-500 text-blue-700 dark:text-blue-300 rounded-2xl flex items-center gap-4 transition-all active:scale-95 group"
+                >
+                    <div className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                        {isCloudLoading ? <Loader size={24} className="animate-spin" /> : <CloudLightning size={24} />}
+                    </div>
+                    <div className="text-left">
+                        <span className="block font-bold text-lg">Google Drive</span>
+                        <span className="block text-xs opacity-70 font-medium">Automatisch suchen & laden</span>
+                    </div>
+                </button>
+
+                {/* 3. DATEI (LOKAL) */}
                 <button 
                     onClick={() => backupInputRef.current?.click()}
-                    className="w-full p-5 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-orange-500 dark:hover:border-orange-500 text-slate-700 dark:text-slate-200 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 group"
+                    className="w-full p-4 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-slate-400 text-slate-700 dark:text-slate-200 rounded-2xl flex items-center gap-4 transition-all active:scale-95 group"
                 >
-                    <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-full mb-1 group-hover:bg-orange-50 dark:group-hover:bg-orange-900/20 group-hover:text-orange-500 transition-colors">
+                    <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-full group-hover:bg-slate-300 dark:group-hover:bg-slate-600 transition-colors">
                         <Upload size={24} />
                     </div>
-                    <span className="font-bold text-lg">Backup laden</span>
-                    <span className="text-xs text-slate-400 font-medium">Daten wiederherstellen</span>
+                    <div className="text-left">
+                        <span className="block font-bold text-lg">Datei wählen</span>
+                        <span className="block text-xs opacity-70 font-medium">Lokales Backup (.json)</span>
+                    </div>
                 </button>
                 
-                {/* Hidden File Input */}
-                <input 
-                    type="file" 
-                    ref={backupInputRef} 
-                    className="hidden" 
-                    accept="application/json" 
-                    onChange={handleBackupUpload} 
-                />
+                <input type="file" ref={backupInputRef} className="hidden" accept="application/json" onChange={handleBackupUpload} />
               </motion.div>
             )}
 
@@ -242,7 +300,6 @@ const OnboardingWizard = ({ onFinish, onRestore, initialData }) => { // onRestor
                   </button>
                 </div>
 
-                {/* MANUELLE SLIDER */}
                 <div className="mt-2 space-y-3 border-t border-slate-100 dark:border-slate-700 pt-4">
                   <p className="text-xs font-bold text-slate-400 uppercase">Tagesstunden (Dezimal)</p>
                   {["So","Mo","Di","Mi","Do","Fr","Sa"].map((dayName, idx) => {
@@ -319,12 +376,11 @@ const OnboardingWizard = ({ onFinish, onRestore, initialData }) => { // onRestor
           </AnimatePresence>
         </div>
 
-        {/* FOOTER NAV (Nur sichtbar ab Schritt 1 und nicht im letzten Schritt) */}
+        {/* FOOTER NAV */}
         {step > 0 && step < 4 && (
           <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between">
             <button 
               onClick={prevStep} 
-              // Bei Step 1 führt "Zurück" jetzt zu Step 0 (Startauswahl)
               className="px-4 py-2 text-slate-400 font-bold hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
             >
               Zurück

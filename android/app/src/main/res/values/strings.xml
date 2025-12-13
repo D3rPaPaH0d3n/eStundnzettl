@@ -1,7 +1,7 @@
-<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">Kogler Zeit</string>
     <string name="title_activity_main">Kogler Zeit</string>
     <string name="package_name">com.kogler.zeiterfassung</string>
     <string name="custom_url_scheme">com.kogler.zeiterfassung</string>
+    <string name="server_client_id">618528142382-pes4415amf381rk4bjovlamgh4emhrov.apps.googleusercontent.com</string>
 </resources>

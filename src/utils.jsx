@@ -238,7 +238,7 @@ export const getHolidayData = (year) => {
 // -------------------------------------------------------
 // UPDATE CHECKER
 // -------------------------------------------------------
-export const APP_VERSION = "4.4.4"; 
+export const APP_VERSION = "5.0.0"; 
 
 const compareVersions = (v1, v2) => {
   const parts1 = v1.split('.').map(Number);

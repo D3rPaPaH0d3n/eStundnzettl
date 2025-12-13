@@ -1,8 +1,34 @@
 import React, { useEffect } from "react";
-import { X, Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Sliders, Download } from "lucide-react";
+import { X, Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Sliders, Download, Cloud } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
+  {
+    version: "5.0.0",
+    date: "13.12.2025",
+    title: "Das Cloud-Update ☁️",
+    isMajor: true,
+    sections: [
+      {
+        icon: Cloud,
+        title: "Google Drive Sync",
+        items: [
+          "Endlich da: Verbinde dich mit Google Drive für automatische Cloud-Backups",
+          "Easy Restore: Stelle deine Daten auf einem neuen Handy direkt aus der Cloud wieder her",
+          "Sicherheit: Deine Daten gehören dir – gespeichert in deinem privaten Drive"
+        ]
+      },
+      {
+        icon: Rocket,
+        title: "Neuer Start",
+        items: [
+          "Komplett überarbeiteter Einrichtungs-Assistent (Onboarding)",
+          "Wahlmöglichkeit beim Start: 'Neu beginnen' oder 'Backup laden'",
+          "Verbesserte UI in den Einstellungen für Account & Backup"
+        ]
+      }
+    ]
+  },
   {
     version: "4.4.3",
     date: "09.12.2025",

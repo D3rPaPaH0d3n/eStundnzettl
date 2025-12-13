@@ -1,11 +1,16 @@
 import React, { useRef, useState, useEffect } from "react";
-import { User, Sun, AlertTriangle, Camera, Trash2, Upload, Loader, Info, History, BookOpen, RefreshCw, Briefcase, Calendar, Lock, Cloud, CloudOff } from "lucide-react";
+import { 
+  User, Sun, AlertTriangle, Camera, Trash2, Upload, Loader, 
+  History, BookOpen, RefreshCw, Briefcase, Calendar, Lock, 
+  Cloud, CloudOff, FolderUp, CheckCircle2, HardDrive 
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card, APP_VERSION } from "../utils"; 
 import ChangelogModal from "./ChangelogModal";
 import HelpModal from "./HelpModal";
 import { initGoogleAuth, signInGoogle, signOutGoogle } from "../utils/googleDrive";
+import { selectBackupFolder, hasBackupTarget, clearBackupTarget } from "../utils/storageBackup";
 
 const Settings = ({
   userData,
@@ -24,18 +29,20 @@ const Settings = ({
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   
-  // Cloud State
+  // Cloud & Backup State
   const [isCloudConnected, setIsCloudConnected] = useState(false);
+  const [hasBackupFolder, setHasBackupFolder] = useState(false);
 
   useEffect(() => {
-    // 1. Google Auth Initialisieren
+    // 1. Google Auth & Cloud Status
     initGoogleAuth();
-    
-    // 2. Status prüfen (aus LocalStorage lesen)
-    const connected = localStorage.getItem("kogler_cloud_sync") === "true";
-    setIsCloudConnected(connected);
+    setIsCloudConnected(localStorage.getItem("kogler_cloud_sync") === "true");
+
+    // 2. Lokaler Backup Status
+    setHasBackupFolder(hasBackupTarget());
   }, []);
 
+  // --- GOOGLE DRIVE HANDLER ---
   const handleGoogleToggle = async () => {
     Haptics.impact({ style: ImpactStyle.Light });
     
@@ -45,13 +52,11 @@ const Settings = ({
             await signOutGoogle();
             localStorage.removeItem("kogler_cloud_sync");
             setIsCloudConnected(false);
-            toast.success("Verbindung getrennt");
+            toast.success("Cloud getrennt");
         } catch (e) {
             console.error(e);
-            // Fallback: Auch bei Fehler den Status lokal zurücksetzen
             localStorage.removeItem("kogler_cloud_sync");
             setIsCloudConnected(false);
-            toast("Getrennt");
         }
     } else {
         // VERBINDE NEU
@@ -60,11 +65,9 @@ const Settings = ({
             if (user && user.authentication.accessToken) {
                 localStorage.setItem("kogler_cloud_sync", "true");
                 setIsCloudConnected(true);
-                
-                // Wenn man sich verbindet, aktivieren wir automatisch das Auto-Backup
+                // Cloud aktiviert -> AutoBackup an (falls noch nicht)
                 if (!autoBackup) setAutoBackup(true);
-                
-                toast.success(`Verbunden: ${user.givenName || "Benutzer"}`);
+                toast.success(`Verbunden: ${user.givenName || "Drive"}`);
             }
         } catch (error) {
             console.error(error);
@@ -73,7 +76,34 @@ const Settings = ({
     }
   };
 
-  // --- BILD VERARBEITUNG (Original Code) ---
+  // --- LOKALER BACKUP HANDLER ---
+  const handleLocalToggle = async () => {
+    Haptics.impact({ style: ImpactStyle.Light });
+
+    if (hasBackupFolder) {
+        // TRENNE VERBINDUNG
+        clearBackupTarget();
+        setHasBackupFolder(false);
+        // Wenn kein Ziel mehr da ist, macht Auto-Backup keinen Sinn -> aus
+        setAutoBackup(false);
+        toast("Backup-Ordner getrennt");
+    } else {
+        // ORDNER WÄHLEN & VERBINDEN
+        try {
+            const success = await selectBackupFolder();
+            if (success) {
+                setHasBackupFolder(true);
+                // Ordner da -> Auto-Backup einschalten!
+                setAutoBackup(true);
+                toast.success("Backup aktiviert!");
+            }
+        } catch (err) {
+            toast.error("Auswahl abgebrochen");
+        }
+    }
+  };
+
+  // --- BILD VERARBEITUNG ---
   const processImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -82,27 +112,22 @@ const Settings = ({
       reader.onload = (event) => {
         const img = new Image();
         img.src = event.target.result;
-        
         img.onload = () => {
           const MAX_WIDTH = 1024;
           const MAX_HEIGHT = 1024;
           let width = img.width;
           let height = img.height;
-
           if (width > height) {
             if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
           } else {
             if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
           }
-
           const canvas = document.createElement("canvas");
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext("2d");
           ctx.drawImage(img, 0, 0, width, height);
-
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-          resolve(dataUrl);
+          resolve(canvas.toDataURL("image/jpeg", 0.9));
         };
         img.onerror = (err) => reject(err);
       };
@@ -113,16 +138,14 @@ const Settings = ({
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setIsProcessingImg(true);
     try {
       const compressedBase64 = await processImage(file);
       setUserData({ ...userData, photo: compressedBase64 });
-      toast.success("📸 Profilbild gespeichert");
+      toast.success("Profilbild aktualisiert");
       Haptics.impact({ style: ImpactStyle.Light });
     } catch (err) {
-      console.error(err);
-      toast.error("❌ Fehler beim Bearbeiten des Bildes");
+      toast.error("Fehler beim Bild");
     } finally {
       setIsProcessingImg(false);
       if(fileInputRef.current) fileInputRef.current.value = "";
@@ -135,7 +158,7 @@ const Settings = ({
     const newData = { ...userData };
     delete newData.photo;
     setUserData(newData);
-    toast.success("🗑️ Profilbild entfernt");
+    toast.success("Bild entfernt");
   };
 
   const handleThemeChange = (newTheme) => {
@@ -143,11 +166,7 @@ const Settings = ({
     setTheme(newTheme);
   };
 
-  // Helper für die Stundenanzeige (z.B. "8,5 h")
-  const formatH = (m) => {
-    const h = m / 60;
-    return h.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " h";
-  };
+  const formatH = (m) => (m / 60).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " h";
 
   return (
     <main className="w-full p-4 space-y-6 pb-20">
@@ -158,7 +177,6 @@ const Settings = ({
       {/* 1. USER DATA */}
       <Card className="p-5 space-y-4">
         <div className="flex items-center gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
-          
           <div className="relative group shrink-0">
             <div 
               onClick={() => !isProcessingImg && fileInputRef.current?.click()}
@@ -171,16 +189,13 @@ const Settings = ({
               ) : (
                 <User size={32} className="text-slate-400 dark:text-slate-500" />
               )}
-              
               {!isProcessingImg && (
                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Camera size={20} className="text-white" />
                 </div>
               )}
             </div>
-
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-
             {userData.photo && !isProcessingImg && (
               <button 
                 onClick={removePhoto}
@@ -190,7 +205,6 @@ const Settings = ({
               </button>
             )}
           </div>
-
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-lg dark:text-white truncate">Benutzerdaten</h3>
             <p className="text-xs text-slate-400">Tippe auf das Bild, um es zu ändern.</p>
@@ -199,9 +213,7 @@ const Settings = ({
 
         <div className="space-y-3">
           <div>
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
-                Dein Name
-            </label>
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Dein Name</label>
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg p-3 mt-1 focus-within:border-orange-500 transition-colors">
                <User size={18} className="text-slate-400" />
                <input
@@ -213,11 +225,8 @@ const Settings = ({
               />
             </div>
           </div>
-
           <div>
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
-                Position / Job
-            </label>
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Position / Job</label>
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg p-3 mt-1 focus-within:border-orange-500 transition-colors">
                <Briefcase size={18} className="text-slate-400" />
                <input
@@ -232,7 +241,7 @@ const Settings = ({
         </div>
       </Card>
 
-      {/* 2. ARBEITSZEIT MODELL (READ ONLY) */}
+      {/* 2. ARBEITSZEIT MODELL */}
       <Card className="p-5 space-y-4 bg-slate-50/50 dark:bg-slate-800/50">
         <div className="flex justify-between items-start">
             <h3 className="font-bold text-slate-700 dark:text-white flex items-center gap-2">
@@ -243,8 +252,6 @@ const Settings = ({
                 <Lock size={10} /> Fixiert
             </div>
         </div>
-        
-        {/* Wochenansicht */}
         <div className="grid grid-cols-7 gap-1 text-center">
             {["So","Mo","Di","Mi","Do","Fr","Sa"].map((day, idx) => {
                 const mins = userData.workDays ? userData.workDays[idx] : 0;
@@ -259,10 +266,8 @@ const Settings = ({
                 );
             })}
         </div>
-
         <p className="text-[10px] text-slate-400 text-center leading-relaxed">
-            Deine Soll-Stunden sind fest hinterlegt, um Berechnungsfehler in der Vergangenheit zu vermeiden. 
-            Um das Modell zu ändern, musst du die App zurücksetzen (Gefahrenzone).
+            Deine Soll-Stunden sind fest hinterlegt. Um das Modell zu ändern, musst du die App zurücksetzen (Gefahrenzone).
         </p>
       </Card>
 
@@ -273,32 +278,38 @@ const Settings = ({
           <span>Design / Theme</span>
         </h3>
         <div className="grid grid-cols-3 gap-2">
-          <button onClick={() => handleThemeChange("light")} className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors ${theme === "light" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>Hell</button>
-          <button onClick={() => handleThemeChange("dark")} className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors ${theme === "dark" ? "border-orange-500 bg-slate-700 text-orange-400" : "border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>Dunkel</button>
-          <button onClick={() => handleThemeChange("system")} className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors ${theme === "system" ? "border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300" : "border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>System</button>
+          {['light', 'dark', 'system'].map(mode => (
+            <button 
+              key={mode}
+              onClick={() => handleThemeChange(mode)} 
+              className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors capitalize ${theme === mode ? "border-orange-500 bg-orange-50 dark:bg-slate-700 text-orange-600 dark:text-orange-400" : "border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}
+            >
+              {mode === 'system' ? 'System' : (mode === 'light' ? 'Hell' : 'Dunkel')}
+            </button>
+          ))}
         </div>
       </Card>
 
-      {/* 4. BACKUP & INFO */}
-      <Card className="p-5 space-y-3">
+      {/* 4. DATEN & BACKUP (Neu sortiert) */}
+      <Card className="p-5 space-y-4">
         <h3 className="font-bold text-slate-700 dark:text-white">Daten & Backup</h3>
 
-        {/* --- NEU: GOOGLE DRIVE BUTTON --- */}
-        <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-3 rounded-xl mb-2">
+        {/* 4.1 GOOGLE DRIVE */}
+        <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-3 rounded-xl">
             <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-full ${isCloudConnected ? "bg-blue-100 text-blue-600" : "bg-slate-200 text-slate-400"}`}>
                     {isCloudConnected ? <Cloud size={20} /> : <CloudOff size={20} />}
                 </div>
                 <div>
-                    <span className="block font-bold text-sm text-slate-800 dark:text-white">Google Drive Sync</span>
+                    <span className="block font-bold text-sm text-slate-800 dark:text-white">Google Drive</span>
                     <span className="block text-xs text-slate-500 dark:text-slate-400">
-                        {isCloudConnected ? "Aktiviert (Täglich)" : "Nicht verbunden"}
+                        {isCloudConnected ? "Sync Aktiv" : "Nicht verbunden"}
                     </span>
                 </div>
             </div>
             <button
                 onClick={handleGoogleToggle}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${
                     isCloudConnected 
                     ? "border-red-200 bg-red-50 text-red-600" 
                     : "border-slate-300 bg-white text-slate-700"
@@ -308,25 +319,33 @@ const Settings = ({
             </button>
         </div>
 
-        {/* --- AUTO BACKUP TOGGLE --- */}
-        <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-3 rounded-xl mb-2">
-          <div>
-            <span className="block font-bold text-sm text-slate-800 dark:text-white">Automatisches Backup</span>
-            <span className="block text-xs text-slate-500 dark:text-slate-400">Speichert 1x täglich lokal.</span>
-          </div>
-          <button
-            onClick={() => {
-              Haptics.impact({ style: ImpactStyle.Light });
-              if (!autoBackup) localStorage.removeItem("kogler_last_backup_date");
-              setAutoBackup(!autoBackup);
-            }}
-            className={`w-12 h-7 rounded-full transition-colors flex items-center px-1 ${autoBackup ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"}`}
-          >
-            <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${autoBackup ? "translate-x-5" : "translate-x-0"}`} />
-          </button>
+        {/* 4.2 LOKALES BACKUP (Gleicher Stil wie Google Drive) */}
+        <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-3 rounded-xl">
+            <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${hasBackupFolder ? "bg-green-100 text-green-600" : "bg-slate-200 text-slate-400"}`}>
+                    {hasBackupFolder ? <CheckCircle2 size={20} /> : <HardDrive size={20} />}
+                </div>
+                <div>
+                    <span className="block font-bold text-sm text-slate-800 dark:text-white">Lokales Backup</span>
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                        {hasBackupFolder ? "Aktiv (Täglich)" : "Nicht konfiguriert"}
+                    </span>
+                </div>
+            </div>
+            <button
+                onClick={handleLocalToggle}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${
+                    hasBackupFolder
+                    ? "border-red-200 bg-red-50 text-red-600"
+                    : "border-slate-300 bg-white text-slate-700"
+                }`}
+            >
+                {hasBackupFolder ? "Trennen" : "Wählen"}
+            </button>
         </div>
-
-        <div className="grid grid-cols-2 gap-2">
+        
+        {/* 4.3 MANUAL EXPORT/IMPORT */}
+        <div className="grid grid-cols-2 gap-2 pt-2">
           <button onClick={onExport} className="w-full py-3 bg-slate-900 dark:bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 flex items-center justify-center gap-2 transition-colors">
             <Upload size={18} className="rotate-180" /> Export
           </button>
@@ -334,9 +353,13 @@ const Settings = ({
             <Upload size={18} /> Import
           </button>
         </div>
+      </Card>
+
+      {/* 5. APP & INFORMATIONEN (Neue separate Karte) */}
+      <Card className="p-5 space-y-3">
+        <h3 className="font-bold text-slate-700 dark:text-white">App & Informationen</h3>
         
-        <div className="space-y-2 mt-2">
-          <button 
+        <button 
             onClick={() => {
               Haptics.impact({ style: ImpactStyle.Light });
               onCheckUpdate();
@@ -365,10 +388,9 @@ const Settings = ({
           >
             <History size={18} /> Änderungsprotokoll
           </button>
-        </div>
       </Card>
 
-      {/* 5. DANGER ZONE */}
+      {/* 6. DANGER ZONE */}
       <Card className="p-5 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/10">
         <div className="flex items-center gap-2 mb-2">
           <AlertTriangle className="text-red-600 dark:text-red-400" size={20} />
@@ -388,7 +410,7 @@ const Settings = ({
         </button>
       </Card>
       
-      {/* 6. FOOTER */}
+      {/* 7. FOOTER */}
       <div className="text-center space-y-1 pb-4">
         <p className="text-xs font-bold text-slate-400 dark:text-slate-500">
           Version {APP_VERSION} • "Damit keine Stunde im Schacht verschwindet"

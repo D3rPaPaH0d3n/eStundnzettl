@@ -33,16 +33,12 @@ export const writeBackupFile = async (fileName, dataObj) => {
   const folderObj = JSON.parse(targetStr);
   const content = JSON.stringify(dataObj, null, 2);
 
-  // Das Plugin nutzt den gespeicherten Kontext (URI/Bookmark), um die Datei dort zu erstellen
-  // Hinweis: Auf Android muss oft der content-String base64 codiert sein, wenn 'encoding' gesetzt ist,
-  // aber bei reinem Text/JSON handhabt das Plugin das meist smart. 
-  // Falls Fehler auftreten, muss content ggf. btoa(unescape(encodeURIComponent(content))) sein.
-  // Wir probieren es direkt als UTF8 String.
-  
+  // KORREKTUR: Das Plugin benötigt zwingend 'path' statt 'filename'.
   await ScopedStorage.writeFile({
-    ...folderObj,          // Spread: übergibt uri, name, etc. aus dem gespeicherten Objekt
-    filename: fileName,    // Achtung: manche Versionen nutzen 'filename', manche 'path'
+    ...folderObj,       // Übergibt das gespeicherte folder-Objekt (z.B. uri)
+    path: fileName,     // WICHTIG: Hier stand vorher 'filename', das war der Fehler!
     data: content,
+    encoding: 'utf8',   // Sicherstellen, dass Text korrekt gespeichert wird
     mimeType: "application/json"
   });
   
@@ -52,4 +48,29 @@ export const writeBackupFile = async (fileName, dataObj) => {
 // 4. Zugriff entfernen
 export const clearBackupTarget = () => {
   localStorage.removeItem("kogler_backup_target");
+};
+
+// 5. NEU: Einmaliger manueller Export in einen beliebigen Ordner
+export const exportToSelectedFolder = async (fileName, dataObj) => {
+  try {
+    // 1. Ordner auswählen (ohne Speichern)
+    const folder = await ScopedStorage.pickFolder();
+    if (!folder) return false; // Abbruch durch User
+
+    // 2. Datei schreiben
+    const content = JSON.stringify(dataObj, null, 2);
+    
+    await ScopedStorage.writeFile({
+      ...folder,
+      path: fileName,
+      data: content,
+      encoding: 'utf8',
+      mimeType: "application/json"
+    });
+    
+    return true;
+  } catch (err) {
+    console.error("Manueller Export Fehler:", err);
+    throw err;
+  }
 };

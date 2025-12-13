@@ -3,9 +3,11 @@ import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
-import { uploadOrUpdateFile } from "../utils/googleDrive"; // Neue Funktion importieren!
+import { uploadOrUpdateFile } from "../utils/googleDrive";
+// Neu: Importiere die SAF-Logik (Scoped Storage)
+import { writeBackupFile, hasBackupTarget } from "../utils/storageBackup";
 
-const BACKUP_FILENAME = "kogler_backup.json"; // IMMER DER GLEICHE NAME
+const BACKUP_FILENAME = "kogler_backup.json";
 
 export function useAutoBackup(entries, userData, isEnabled) {
   const latestDataRef = useRef({ entries, userData });
@@ -18,48 +20,68 @@ export function useAutoBackup(entries, userData, isEnabled) {
     latestDataRef.current = { entries, userData };
   }, [entries, userData]);
 
-  // Hash erstellen (um unnötige Uploads beim App-Start zu vermeiden)
+  // Hash erstellen
   const createHash = (data) => JSON.stringify(data).length + "-" + (data.entries?.length || 0);
 
   const performBackup = async (source) => {
     const { entries, userData } = latestDataRef.current;
     
-    // Bedingungen prüfen
     if (!isEnabled || !entries || entries.length === 0) return;
     if (isUploading.current) return;
 
     const payload = { 
       user: userData, 
       entries, 
-      lastModified: new Date().toISOString(), // Wichtig für Versionierung
+      lastModified: new Date().toISOString(),
       note: "Kogler Zeit Auto-Sync" 
     };
 
     const currentHash = createHash(payload);
-    // Wenn Daten exakt gleich wie beim letzten erfolgreichen Backup -> Abbruch
     if (currentHash === lastHash.current) return;
 
     isUploading.current = true;
     console.log(`💾 Sync Start (${source})...`);
 
     try {
-        // 1. LOKAL ÜBERSCHREIBEN (Geht schnell)
+        // 1. LOKAL SPEICHERN
         if (Capacitor.isNativePlatform()) {
-            await Filesystem.writeFile({ 
-                path: BACKUP_FILENAME, 
-                data: JSON.stringify(payload), 
-                directory: Directory.Documents, 
-                encoding: Encoding.UTF8 
-            });
-            console.log("✅ Lokal überschrieben.");
+            let savedLocally = false;
+
+            // A) Versuche den vom User gewählten Ordner (SAF / Scoped Storage)
+            // Das ist der bevorzugte Weg auf modernen Android-Versionen, um Dateien sichtbar zu speichern.
+            if (hasBackupTarget()) {
+                try {
+                    await writeBackupFile(BACKUP_FILENAME, payload);
+                    console.log("✅ Lokal gespeichert (SAF/Benutzer-Ordner).");
+                    savedLocally = true;
+                } catch (safError) {
+                    console.warn("⚠️ SAF Backup fehlgeschlagen, versuche Fallback:", safError);
+                }
+            }
+
+            // B) Fallback: Wenn kein Ordner gewählt wurde oder SAF fehlschlug
+            if (!savedLocally) {
+                // Auf iOS ist Documents okay. 
+                // Auf Android 11+ führt Documents zu EACCES -> Wir nehmen External (Android/data/...).
+                const fallbackDirectory = Capacitor.getPlatform() === 'ios' 
+                    ? Directory.Documents 
+                    : Directory.External;
+
+                await Filesystem.writeFile({ 
+                    path: BACKUP_FILENAME, 
+                    data: JSON.stringify(payload), 
+                    directory: fallbackDirectory, 
+                    encoding: Encoding.UTF8 
+                });
+                console.log(`✅ Lokal gespeichert (Fallback: ${fallbackDirectory}).`);
+            }
         }
 
-        // 2. CLOUD ÜBERSCHREIBEN (Smart Update)
+        // 2. CLOUD SPEICHERN
         const isCloudEnabled = localStorage.getItem("kogler_cloud_sync") === "true";
         if (isCloudEnabled) {
              const authResponse = await GoogleAuth.refresh().catch(() => null);
              if (authResponse?.accessToken) {
-                 // Hier rufen wir jetzt die "Smart Update" Funktion auf
                  await uploadOrUpdateFile(authResponse.accessToken, BACKUP_FILENAME, payload);
                  console.log(`☁️ Cloud Sync OK (${source})`);
                  lastHash.current = currentHash;
@@ -73,7 +95,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
   };
 
   useEffect(() => {
-    // A) Listener: Wenn App in Hintergrund geht (Home Button) -> Sofort speichern
+    // A) App-State Listener
     const setupListener = async () => {
         await App.removeAllListeners();
         App.addListener('appStateChange', ({ isActive }) => {
@@ -82,10 +104,8 @@ export function useAutoBackup(entries, userData, isEnabled) {
     };
     setupListener();
 
-    // B) Debounce: Wenn sich 'entries' ändert (durch Speichern Button), warte 2s und lade dann hoch
+    // B) Debounce Timer
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    
-    // Dieser Timer startet NUR neu, wenn sich 'entries' oder 'userData' geändert haben
     debounceTimer.current = setTimeout(() => {
         performBackup("Auto-Save");
     }, 2000);

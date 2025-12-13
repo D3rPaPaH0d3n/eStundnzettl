@@ -1,15 +1,15 @@
 import React, { useState, useRef } from "react";
-import { User, Briefcase, Calendar, Save, ShieldCheck, Camera, ChevronRight, Check } from "lucide-react";
+import { User, Briefcase, Calendar, Save, ShieldCheck, Camera, ChevronRight, Check, Upload, Play } from "lucide-react"; // Upload, Play Icons dazu
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 
-// PRESETS DEFINITION (Minuten pro Tag: So, Mo, Di, Mi, Do, Fr, Sa)
+// PRESETS DEFINITION (bleibt gleich)
 const WORK_PRESETS = [
   {
     id: "kogler_standard",
     label: "Kogler Standard",
     sub: "Mo-Do 8,5h | Fr 4,5h",
-    days: [0, 510, 510, 510, 510, 270, 0] // 0=Sonntag, 1=Montag...
+    days: [0, 510, 510, 510, 510, 270, 0] 
   },
   {
     id: "full_40",
@@ -25,19 +25,19 @@ const WORK_PRESETS = [
   }
 ];
 
-const OnboardingWizard = ({ onFinish, initialData }) => {
-  const [step, setStep] = useState(1);
-  const [direction, setDirection] = useState(1); // Für Animation
+const OnboardingWizard = ({ onFinish, onRestore, initialData }) => { // onRestore prop dazu
+  const [step, setStep] = useState(0); // <--- START BEI 0
+  const [direction, setDirection] = useState(1);
   const fileInputRef = useRef(null);
+  const backupInputRef = useRef(null); // Ref für Backup Input
 
   // ZWISCHEN-SPEICHER
-  // Falls initialData vorhanden ist (Migration), nutzen wir diese Werte als Start
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     position: initialData?.position || "", 
     photo: initialData?.photo || null,
     workProfileId: "kogler_standard",
-    customDays: [...WORK_PRESETS[0].days], // Kopie der Standardwerte
+    customDays: [...WORK_PRESETS[0].days],
     autoBackup: true
   });
 
@@ -50,6 +50,27 @@ const OnboardingWizard = ({ onFinish, initialData }) => {
       setFormData(prev => ({ ...prev, photo: ev.target.result }));
     };
     reader.readAsDataURL(file);
+  };
+
+  // NEU: Backup einlesen
+  const handleBackupUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const json = JSON.parse(ev.target.result);
+            // Validierung: Hat es entries oder user daten?
+            if (!json.entries && !json.user) {
+                throw new Error("Ungültiges Format");
+            }
+            onRestore(json); // An App.jsx übergeben
+        } catch (err) {
+            toast.error("❌ Datei ungültig oder beschädigt.");
+        }
+    };
+    reader.readAsText(file);
   };
 
   const nextStep = () => {
@@ -66,37 +87,19 @@ const OnboardingWizard = ({ onFinish, initialData }) => {
     setStep(prev => prev - 1);
   };
 
+  // ... (handlePresetSelect, handleCustomDayChange, finishSetup, formatH, totalWeeklyMinutes bleiben gleich)
   const handlePresetSelect = (preset) => {
-    setFormData(prev => ({
-      ...prev,
-      workProfileId: preset.id,
-      customDays: [...preset.days]
-    }));
+    setFormData(prev => ({ ...prev, workProfileId: preset.id, customDays: [...preset.days] }));
   };
 
   const handleCustomDayChange = (dayIndex, minutes) => {
     const newDays = [...formData.customDays];
     newDays[dayIndex] = parseInt(minutes) || 0;
-    setFormData(prev => ({
-      ...prev,
-      workProfileId: "custom",
-      customDays: newDays
-    }));
+    setFormData(prev => ({ ...prev, workProfileId: "custom", customDays: newDays }));
   };
 
-  const finishSetup = () => {
-    // Daten final übergeben
-    onFinish(formData);
-  };
-
-  // Helper für Minuten -> Stunden Anzeige (Dezimal)
-  // 510 min -> "8,5 h"
-  const formatH = (m) => {
-    const h = m / 60;
-    return h.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " h";
-  };
-
-  // Gesamtsumme der Woche berechnen
+  const finishSetup = () => { onFinish(formData); };
+  const formatH = (m) => { const h = m / 60; return h.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " h"; };
   const totalWeeklyMinutes = formData.customDays.reduce((acc, curr) => acc + curr, 0);
 
   // ANIMATION VARIANTS
@@ -116,20 +119,73 @@ const OnboardingWizard = ({ onFinish, initialData }) => {
         {/* HEADER */}
         <div className="p-6 pb-2 text-center">
           <h1 className="text-2xl font-black text-slate-800 dark:text-white">Willkommen! 👋</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Richten wir deine App kurz ein.</p>
+          {step > 0 && <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Richten wir deine App kurz ein.</p>}
           
-          {/* PROGRESS DOTS */}
-          <div className="flex justify-center gap-2 mt-4">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${step === i ? "w-8 bg-orange-500" : "w-2 bg-slate-200 dark:bg-slate-700"}`} />
-            ))}
-          </div>
+          {/* PROGRESS DOTS (Nur sichtbar ab Schritt 1) */}
+          {step > 0 && (
+            <div className="flex justify-center gap-2 mt-4">
+                {[1, 2, 3, 4].map(i => (
+                <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${step === i ? "w-8 bg-orange-500" : "w-2 bg-slate-200 dark:bg-slate-700"}`} />
+                ))}
+            </div>
+          )}
         </div>
 
         {/* CONTENT AREA */}
         <div className="flex-1 relative overflow-hidden p-6">
           <AnimatePresence custom={direction} mode="wait">
             
+            {/* SCHRITT 0: START-AUSWAHL (NEU) */}
+            {step === 0 && (
+              <motion.div key="step0" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" className="absolute inset-0 p-6 flex flex-col justify-center gap-6">
+                <div className="text-center mb-4">
+                    <p className="text-slate-600 dark:text-slate-300">
+                        Wie möchtest du starten?
+                    </p>
+                </div>
+
+                <button 
+                    onClick={() => { setDirection(1); setStep(1); }}
+                    className="group relative w-full p-5 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl shadow-lg shadow-orange-500/20 flex flex-col items-center gap-2 transition-all active:scale-95"
+                >
+                    <div className="bg-white/20 p-3 rounded-full mb-1">
+                        <Play size={24} fill="currentColor" />
+                    </div>
+                    <span className="font-bold text-lg">Neu einrichten</span>
+                    <span className="text-xs opacity-80 font-medium">Profil & Arbeitszeit erstellen</span>
+                </button>
+
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
+                    </div>
+                    <div className="relative flex justify-center">
+                        <span className="bg-white dark:bg-slate-900 px-2 text-xs text-slate-400 uppercase font-bold">Oder</span>
+                    </div>
+                </div>
+
+                <button 
+                    onClick={() => backupInputRef.current?.click()}
+                    className="w-full p-5 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-orange-500 dark:hover:border-orange-500 text-slate-700 dark:text-slate-200 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 group"
+                >
+                    <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-full mb-1 group-hover:bg-orange-50 dark:group-hover:bg-orange-900/20 group-hover:text-orange-500 transition-colors">
+                        <Upload size={24} />
+                    </div>
+                    <span className="font-bold text-lg">Backup laden</span>
+                    <span className="text-xs text-slate-400 font-medium">Daten wiederherstellen</span>
+                </button>
+                
+                {/* Hidden File Input */}
+                <input 
+                    type="file" 
+                    ref={backupInputRef} 
+                    className="hidden" 
+                    accept="application/json" 
+                    onChange={handleBackupUpload} 
+                />
+              </motion.div>
+            )}
+
             {/* SCHRITT 1: PROFIL */}
             {step === 1 && (
               <motion.div key="step1" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" className="absolute inset-0 p-6 flex flex-col gap-6 overflow-y-auto">
@@ -206,7 +262,6 @@ const OnboardingWizard = ({ onFinish, initialData }) => {
                   })}
                 </div>
 
-                {/* NEU: GESAMTSUMME ANZEIGE */}
                 <div className="mt-4 flex justify-between items-center bg-slate-100 dark:bg-slate-800 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700">
                     <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Wochenstunden Gesamt:</span>
                     <span className="text-xl font-black text-orange-500 tabular-nums">{formatH(totalWeeklyMinutes)}</span>
@@ -264,13 +319,13 @@ const OnboardingWizard = ({ onFinish, initialData }) => {
           </AnimatePresence>
         </div>
 
-        {/* FOOTER NAV */}
-        {step < 4 && (
+        {/* FOOTER NAV (Nur sichtbar ab Schritt 1 und nicht im letzten Schritt) */}
+        {step > 0 && step < 4 && (
           <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between">
             <button 
               onClick={prevStep} 
-              disabled={step === 1}
-              className="px-4 py-2 text-slate-400 font-bold disabled:opacity-30 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              // Bei Step 1 führt "Zurück" jetzt zu Step 0 (Startauswahl)
+              className="px-4 py-2 text-slate-400 font-bold hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
             >
               Zurück
             </button>

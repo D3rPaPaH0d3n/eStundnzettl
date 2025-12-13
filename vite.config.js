@@ -9,6 +9,9 @@ export default defineConfig({
     tailwindcss(), 
   ],
   build: {
+    // WICHTIG: Das hier verhindert das "Kaputt-Optimieren" der Variablen
+    minify: false, 
+    
     // Erhöht das Limit für die Warnung (optional, beruhigt aber die Konsole)
     chunkSizeWarningLimit: 1000, 
     

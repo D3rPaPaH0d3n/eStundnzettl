@@ -63,7 +63,7 @@ const EntryForm = ({
   existingProjects = [],
   allEntries = [],
   isEditing = false,
-  isLiveEntry = false // NEU
+  isLiveEntry = false
 }) => {
   
   const [activeTimeField, setActiveTimeField] = useState(null);
@@ -71,31 +71,37 @@ const EntryForm = ({
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // NEU: Wir merken uns, welches Jahr der Nutzer gerade im Kalender ANSIEHT
+  const [viewYear, setViewYear] = useState(new Date(formDate).getFullYear());
+
+  // Wenn sich das gespeicherte Datum ändert (z.B. Pfeil-Buttons), aktualisieren wir auch die Ansicht
+  useEffect(() => {
+    setViewYear(new Date(formDate).getFullYear());
+  }, [formDate]);
+
   // --- SMART TIME LOGIC ---
   useEffect(() => {
-    // 1. Abbruch, wenn wir bearbeiten ODER vom Live Timer kommen
     if (isEditing || isLiveEntry) return; 
-    
-    // 2. Abbruch, wenn nicht Arbeit/Fahrt
     if (entryType !== 'work' && entryType !== 'drive') return;
     
-    // Bestehende Einträge für diesen Tag finden
     const dayEntries = allEntries.filter(e => e.date === formDate && e.type === 'work' && e.end);
     
     if (dayEntries.length > 0) {
       const sorted = [...dayEntries].sort((a, b) => (a.end || "").localeCompare(b.end || ""));
       const lastEnd = sorted[sorted.length - 1].end;
-      
-      if (lastEnd) {
-        setStartTime(lastEnd);
-      }
+      if (lastEnd) setStartTime(lastEnd);
     }
   }, [formDate, allEntries, entryType, isEditing, isLiveEntry]); 
 
+  // VERBESSERT: Berechnet Feiertage für das angesehene Jahr +/- 1 Jahr
+  // So sind auch beim Blättern von Dezember auf Jänner alle Tage korrekt rot
   const holidayData = useMemo(() => {
-      const year = new Date(formDate).getFullYear();
-      return getHolidayData(year);
-  }, [formDate]);
+      return {
+        ...getHolidayData(viewYear - 1),
+        ...getHolidayData(viewYear),
+        ...getHolidayData(viewYear + 1)
+      };
+  }, [viewYear]);
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -219,13 +225,21 @@ const EntryForm = ({
                 <DatePicker
                   selected={new Date(formDate)}
                   onChange={(date) => setFormDate(date.toISOString().split("T")[0])}
+                  // NEU: Reagiere auf Blättern im Kalender, um Feiertage nachzuladen
+                  onMonthChange={(date) => setViewYear(date.getFullYear())}
+                  onYearChange={(date) => setViewYear(date.getFullYear())}
                   dateFormat="eee, dd.MM.yyyy" 
                   locale="de"
                   withPortal
                   calendarContainer={CalendarContainerAnimation}
                   customInput={<CustomInput icon={CalIcon} />}
                   dayClassName={(date) => {
-                    const dateStr = date.toISOString().split("T")[0];
+                    // FIX: Lokale Zeit + dynamische Feiertagsliste
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                    const day = String(date.getDate()).padStart(2, "0");
+                    const dateStr = `${year}-${month}-${day}`;
+                    
                     return holidayData[dateStr] ? "!text-red-600 !font-bold" : undefined;
                   }}
                 />

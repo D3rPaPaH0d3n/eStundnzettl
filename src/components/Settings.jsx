@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
 import { 
   User, Sun, AlertTriangle, Camera, Trash2, Upload, Loader, 
-  History, BookOpen, RefreshCw, Briefcase, Calendar, Lock, 
-  Cloud, CloudOff, FolderUp, CheckCircle2, HardDrive 
+  History, BookOpen, RefreshCw, Briefcase, Calendar, 
+  Cloud, CloudOff, CheckCircle2, HardDrive, List, Lock, Unlock 
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -10,9 +10,11 @@ import { Card, APP_VERSION } from "../utils";
 import ChangelogModal from "./ChangelogModal";
 import HelpModal from "./HelpModal";
 import { initGoogleAuth, signInGoogle, signOutGoogle } from "../utils/googleDrive";
-// WICHTIG: Die neuen Funktionen hier importieren
 import { selectBackupFolder, hasBackupTarget, clearBackupTarget, analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
+import PresetModal from "./PresetModal";
+import DecimalDurationPicker from "./DecimalDurationPicker"; 
+import { WORK_MODELS } from "../hooks/constants";
 
 const Settings = ({
   userData,
@@ -22,7 +24,7 @@ const Settings = ({
   autoBackup,
   setAutoBackup,
   onExport,
-  onImport, // Wird hier lokal überschrieben, bleibt aber als Prop erhalten
+  onImport,
   onDeleteAll,
   onCheckUpdate
 }) => {
@@ -35,22 +37,106 @@ const Settings = ({
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [hasBackupFolder, setHasBackupFolder] = useState(false);
 
-  // NEU: State für den Import-Prozess
+  // Import State
   const [pendingImport, setPendingImport] = useState(null); 
   const importInputRef = useRef(null);
 
+  // Modal States
+  const [showPresetModal, setShowPresetModal] = useState(false);
+  
+  // Picker State
+  const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [pickerTargetIndex, setPickerTargetIndex] = useState(null); 
+
+  // Derived State für Arbeitszeitmodell
+  const activeModelId = userData.workModelId || 'custom';
+  const isCustomMode = activeModelId === 'custom';
+  const activeModelLabel = WORK_MODELS.find(m => m.id === activeModelId)?.label || "Benutzerdefiniert";
+
+  // LOCK STATE: Auch bei Custom standardmäßig "true" (geschlossen)
+  const [isLocked, setIsLocked] = useState(true);
+
   useEffect(() => {
-    // 1. Google Auth & Cloud Status
+    // 1. Google Auth & Cloud Status initialisieren
     initGoogleAuth();
     setIsCloudConnected(localStorage.getItem("kogler_cloud_sync") === "true");
 
-    // 2. Lokaler Backup Status
+    // 2. Lokaler Backup Status prüfen
     setHasBackupFolder(hasBackupTarget());
   }, []);
 
-  // --- NEUE IMPORT LOGIK (START) ---
+  // Wenn man das Modell wechselt, immer wieder sperren
+  useEffect(() => {
+    setIsLocked(true);
+  }, [activeModelId]);
+
+  // =========================================================================
+  // 1. ARBEITSZEIT LOGIK
+  // =========================================================================
   
-  // 1. Datei wurde ausgewählt
+  const minToHours = (m) => (m === 0 ? "" : Number(m / 60).toFixed(2).replace('.', ','));
+
+  // Handler: Picker für einen bestimmten Tag öffnen
+  const openDayPicker = (index) => {
+    // 1. Check: Sind wir im Custom Mode?
+    if (!isCustomMode) {
+      toast("Bitte erst 'Benutzerdefiniert' wählen", { icon: "🚫" });
+      Haptics.impact({ style: ImpactStyle.Light });
+      return;
+    }
+    // 2. Check: Ist das Schloss offen?
+    if (isLocked) {
+      toast("Zum Bearbeiten erst Schloss öffnen", { icon: "🔒" });
+      Haptics.impact({ style: ImpactStyle.Medium });
+      return;
+    }
+
+    setPickerTargetIndex(index);
+    setShowDurationPicker(true);
+    Haptics.impact({ style: ImpactStyle.Light });
+  };
+
+  const handleDurationConfirm = (minutes) => {
+    if (pickerTargetIndex === null) return;
+    
+    const newWorkDays = [...userData.workDays];
+    newWorkDays[pickerTargetIndex] = minutes;
+    
+    // Speichern (Modell-ID bleibt 'custom')
+    setUserData({ ...userData, workDays: newWorkDays });
+    toast.success("Zeit aktualisiert");
+  };
+
+  const handlePresetSelect = (model) => {
+    const newUserData = { ...userData, workModelId: model.id };
+    
+    // Wenn es ein echtes Preset ist, überschreiben wir die Tage
+    if (model.id !== 'custom' && model.days) {
+      newUserData.workDays = [...model.days];
+    }
+    
+    setUserData(newUserData);
+    toast.success(model.id === 'custom' ? "Benutzerdefiniert aktiviert" : "Vorlage übernommen");
+    Haptics.impact({ style: ImpactStyle.Medium });
+  };
+
+  const toggleLock = () => {
+      if (!isCustomMode) {
+          toast("Nur bei 'Benutzerdefiniert' möglich");
+          return;
+      }
+      const newState = !isLocked;
+      setIsLocked(newState);
+      Haptics.impact({ style: ImpactStyle.Medium });
+      if (!newState) {
+          toast.success("Bearbeitung freigegeben");
+      }
+  };
+
+
+  // =========================================================================
+  // 2. IMPORT / EXPORT / CLOUD / IMAGE
+  // =========================================================================
   const handleFileImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -64,7 +150,6 @@ const Settings = ({
     e.target.value = null; // Input resetten
   };
 
-  // 2. Analyse und Entscheidung
   const processImport = (data) => {
     const analysis = analyzeBackupData(data);
 
@@ -74,35 +159,26 @@ const Settings = ({
     }
 
     if (analysis.hasSettings) {
-      // Konflikt gefunden -> Modal öffnen
       setPendingImport(analysis);
     } else {
-      // Keine Einstellungen im Backup -> Direkt importieren
       applyBackup(analysis, 'ALL');
       toast.success(`${analysis.entryCount} Einträge importiert!`);
       setTimeout(() => window.location.reload(), 1500);
     }
   };
 
-  // 3. Entscheidung vom Modal ausgeführt
   const handleConfirmImport = (mode) => {
     if (!pendingImport) return;
-    
     applyBackup(pendingImport, mode);
-    
     toast.success("Erfolgreich wiederhergestellt!");
     setPendingImport(null);
     setTimeout(() => window.location.reload(), 1000);
   };
-  // --- NEUE IMPORT LOGIK (ENDE) ---
 
-
-  // --- GOOGLE DRIVE HANDLER ---
   const handleGoogleToggle = async () => {
     Haptics.impact({ style: ImpactStyle.Light });
     
     if (isCloudConnected) {
-        // TRENNE VERBINDUNG
         try {
             await signOutGoogle();
             localStorage.removeItem("kogler_cloud_sync");
@@ -114,13 +190,11 @@ const Settings = ({
             setIsCloudConnected(false);
         }
     } else {
-        // VERBINDE NEU
         try {
             const user = await signInGoogle();
             if (user && user.authentication.accessToken) {
                 localStorage.setItem("kogler_cloud_sync", "true");
                 setIsCloudConnected(true);
-                // Cloud aktiviert -> AutoBackup an (falls noch nicht)
                 if (!autoBackup) setAutoBackup(true);
                 toast.success(`Verbunden: ${user.givenName || "Drive"}`);
             }
@@ -131,24 +205,19 @@ const Settings = ({
     }
   };
 
-  // --- LOKALER BACKUP HANDLER ---
   const handleLocalToggle = async () => {
     Haptics.impact({ style: ImpactStyle.Light });
 
     if (hasBackupFolder) {
-        // TRENNE VERBINDUNG
         clearBackupTarget();
         setHasBackupFolder(false);
-        // Wenn kein Ziel mehr da ist, macht Auto-Backup keinen Sinn -> aus
         setAutoBackup(false);
         toast("Backup-Ordner getrennt");
     } else {
-        // ORDNER WÄHLEN & VERBINDEN
         try {
             const success = await selectBackupFolder();
             if (success) {
                 setHasBackupFolder(true);
-                // Ordner da -> Auto-Backup einschalten!
                 setAutoBackup(true);
                 toast.success("Backup aktiviert!");
             }
@@ -158,12 +227,10 @@ const Settings = ({
     }
   };
 
-  // --- BILD VERARBEITUNG ---
   const processImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      
       reader.onload = (event) => {
         const img = new Image();
         img.src = event.target.result;
@@ -200,6 +267,7 @@ const Settings = ({
       toast.success("Profilbild aktualisiert");
       Haptics.impact({ style: ImpactStyle.Light });
     } catch (err) {
+      console.error(err);
       toast.error("Fehler beim Bild");
     } finally {
       setIsProcessingImg(false);
@@ -221,19 +289,31 @@ const Settings = ({
     setTheme(newTheme);
   };
 
-  const formatH = (m) => (m / 60).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " h";
-
   return (
     <main className="w-full p-4 space-y-6 pb-20">
       
       <ChangelogModal isOpen={showChangelog} onClose={() => setShowChangelog(false)} />
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
-
-      {/* NEU: Das Konflikt Modal */}
       <ImportConflictModal 
-        analysisData={pendingImport}
-        onConfirm={handleConfirmImport}
-        onCancel={() => setPendingImport(null)}
+        analysisData={pendingImport} 
+        onConfirm={handleConfirmImport} 
+        onCancel={() => setPendingImport(null)} 
+      />
+      
+      <PresetModal 
+        isOpen={showPresetModal} 
+        onClose={() => setShowPresetModal(false)} 
+        onSelect={handlePresetSelect} 
+        currentModelId={activeModelId} 
+      />
+      
+      {/* DECIMAL PICKER */}
+      <DecimalDurationPicker
+        isOpen={showDurationPicker}
+        onClose={() => setShowDurationPicker(false)}
+        initialMinutes={pickerTargetIndex !== null ? userData.workDays[pickerTargetIndex] : 0}
+        onConfirm={handleDurationConfirm}
+        title={pickerTargetIndex !== null ? `${["So","Mo","Di","Mi","Do","Fr","Sa"][pickerTargetIndex]} bearbeiten` : ""}
       />
 
       {/* 1. USER DATA */}
@@ -272,7 +352,6 @@ const Settings = ({
             <p className="text-xs text-slate-400">Tippe auf das Bild, um es zu ändern.</p>
           </div>
         </div>
-
         <div className="space-y-3">
           <div>
             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Dein Name</label>
@@ -305,46 +384,103 @@ const Settings = ({
 
       {/* 2. ARBEITSZEIT MODELL */}
       <Card className="p-5 space-y-4 bg-slate-50/50 dark:bg-slate-800/50">
-        <div className="flex justify-between items-start">
-            <h3 className="font-bold text-slate-700 dark:text-white flex items-center gap-2">
-                <Calendar size={18} className="text-slate-400" />
-                <span>Arbeitszeit Modell</span>
-            </h3>
-            <div className="bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                <Lock size={10} /> Fixiert
+        <div className="flex justify-between items-start gap-4">
+            <div>
+                <div className="flex items-center gap-2">
+                    <Calendar size={18} className="text-slate-400" />
+                    <h3 className="font-bold text-slate-700 dark:text-white">Arbeitszeit Modell</h3>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                   Aktuell: <span className="font-bold text-slate-800 dark:text-slate-200">{activeModelLabel}</span>
+                </p>
+            </div>
+            
+            <div className="flex gap-2">
+                {/* Schloss Icon (Nur bei Custom Mode relevant) */}
+                {isCustomMode && (
+                    <button 
+                        onClick={toggleLock}
+                        className={`p-2 rounded-lg border transition-all ${
+                            isLocked 
+                             ? "bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500" 
+                             : "bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-900 text-orange-600"
+                        }`}
+                    >
+                        {isLocked ? <Lock size={14} /> : <Unlock size={14} />}
+                    </button>
+                )}
+                
+                <button 
+                    onClick={() => setShowPresetModal(true)}
+                    className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-3 py-2 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2 hover:border-orange-500 hover:text-orange-500 transition-all shadow-sm shrink-0"
+                >
+                    <List size={14} /> Vorlagen
+                </button>
             </div>
         </div>
-        <div className="grid grid-cols-7 gap-1 text-center">
-            {["So","Mo","Di","Mi","Do","Fr","Sa"].map((day, idx) => {
-                const mins = userData.workDays ? userData.workDays[idx] : 0;
-                const isWorkDay = mins > 0;
+
+        {/* WARNSCHILD - IMMER SICHTBAR */}
+        <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-900/50">
+             <AlertTriangle className="text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" size={18} />
+             <div className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+               <strong>Achtung:</strong> Änderungen wirken sich auf die Überstunden aller bisherigen Einträge aus!
+             </div>
+        </div>
+
+        {/* Manuelle Eingabe */}
+        <div className="grid grid-cols-7 gap-2">
+            {["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"].map((dayName, idx) => {
+                // Bedingung für Interaktivität: Muss Custom sein UND Schloss offen
+                const isInteractive = isCustomMode && !isLocked;
+                
                 return (
-                    <div key={idx} className={`flex flex-col items-center p-1 rounded-lg ${isWorkDay ? "bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600" : "opacity-30"}`}>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">{day}</span>
-                        <span className={`text-xs font-bold ${isWorkDay ? "text-slate-800 dark:text-white" : "text-slate-400"}`}>
-                            {isWorkDay ? formatH(mins) : "-"}
-                        </span>
+                    <div key={idx} className="flex flex-col gap-1">
+                        <label className={`text-[10px] font-bold text-center uppercase ${idx === 0 || idx === 6 ? 'text-red-400' : 'text-slate-500'}`}>
+                            {dayName}
+                        </label>
+                        <div 
+                            onClick={() => openDayPicker(idx)}
+                            className={`w-full text-center p-2 rounded-lg text-xs font-bold border transition-colors relative h-[34px] flex items-center justify-center
+                                ${isInteractive 
+                                  ? "bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white shadow-sm cursor-pointer hover:border-orange-500" 
+                                  : "bg-transparent border-transparent text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-80"
+                                }
+                            `}
+                        >
+                            {userData.workDays[idx] > 0 ? minToHours(userData.workDays[idx]) : "-"}
+                            
+                            {userData.workDays[idx] > 0 && (
+                                 <div className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isInteractive ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
+                            )}
+                        </div>
                     </div>
                 );
             })}
         </div>
-        <p className="text-[10px] text-slate-400 text-center leading-relaxed">
-            Deine Soll-Stunden sind fest hinterlegt. Um das Modell zu ändern, musst du die App zurücksetzen (Gefahrenzone).
-        </p>
+
+        <div className="text-center">
+            <span className="inline-block px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-xs font-bold rounded-full">
+                Wochenstunden: {(userData.workDays.reduce((a,b)=>a+b,0)/60).toLocaleString('de-DE')} h
+            </span>
+        </div>
       </Card>
 
       {/* 3. THEME */}
       <Card className="p-5 space-y-3">
         <h3 className="font-bold text-slate-700 dark:text-white flex items-center gap-2">
-          <Sun size={18} className="text-orange-400" />
-          <span>Design / Theme</span>
+            <Sun size={18} className="text-orange-400" />
+            <span>Design / Theme</span>
         </h3>
         <div className="grid grid-cols-3 gap-2">
           {['light', 'dark', 'system'].map(mode => (
             <button 
-              key={mode}
-              onClick={() => handleThemeChange(mode)} 
-              className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors capitalize ${theme === mode ? "border-orange-500 bg-orange-50 dark:bg-slate-700 text-orange-600 dark:text-orange-400" : "border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}
+                key={mode} 
+                onClick={() => handleThemeChange(mode)} 
+                className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors capitalize 
+                    ${theme === mode 
+                        ? "border-orange-500 bg-orange-50 dark:bg-slate-700 text-orange-600 dark:text-orange-400" 
+                        : "border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                    }`}
             >
               {mode === 'system' ? 'System' : (mode === 'light' ? 'Hell' : 'Dunkel')}
             </button>
@@ -352,11 +488,11 @@ const Settings = ({
         </div>
       </Card>
 
-      {/* 4. DATEN & BACKUP (Neu sortiert) */}
+      {/* 4. DATEN & BACKUP */}
       <Card className="p-5 space-y-4">
         <h3 className="font-bold text-slate-700 dark:text-white">Daten & Backup</h3>
-
-        {/* 4.1 GOOGLE DRIVE */}
+        
+        {/* Google Drive Status */}
         <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-3 rounded-xl">
             <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-full ${isCloudConnected ? "bg-blue-100 text-blue-600" : "bg-slate-200 text-slate-400"}`}>
@@ -369,19 +505,15 @@ const Settings = ({
                     </span>
                 </div>
             </div>
-            <button
-                onClick={handleGoogleToggle}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${
-                    isCloudConnected 
-                    ? "border-red-200 bg-red-50 text-red-600" 
-                    : "border-slate-300 bg-white text-slate-700"
-                }`}
+            <button 
+                onClick={handleGoogleToggle} 
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${isCloudConnected ? "border-red-200 bg-red-50 text-red-600" : "border-slate-300 bg-white text-slate-700"}`}
             >
                 {isCloudConnected ? "Trennen" : "Verbinden"}
             </button>
         </div>
 
-        {/* 4.2 LOKALES BACKUP (Gleicher Stil wie Google Drive) */}
+        {/* Lokales Backup Status */}
         <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-3 rounded-xl">
             <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-full ${hasBackupFolder ? "bg-green-100 text-green-600" : "bg-slate-200 text-slate-400"}`}>
@@ -394,26 +526,23 @@ const Settings = ({
                     </span>
                 </div>
             </div>
-            <button
-                onClick={handleLocalToggle}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${
-                    hasBackupFolder
-                    ? "border-red-200 bg-red-50 text-red-600"
-                    : "border-slate-300 bg-white text-slate-700"
-                }`}
+            <button 
+                onClick={handleLocalToggle} 
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${hasBackupFolder ? "border-red-200 bg-red-50 text-red-600" : "border-slate-300 bg-white text-slate-700"}`}
             >
                 {hasBackupFolder ? "Trennen" : "Wählen"}
             </button>
         </div>
         
-        {/* 4.3 MANUAL EXPORT/IMPORT */}
+        {/* Import / Export Buttons */}
         <div className="grid grid-cols-2 gap-2 pt-2">
-          {/* Export Button bleibt gleich */}
-          <button onClick={onExport} className="w-full py-3 bg-slate-900 dark:bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 flex items-center justify-center gap-2 transition-colors">
+          <button 
+            onClick={onExport} 
+            className="w-full py-3 bg-slate-900 dark:bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 flex items-center justify-center gap-2 transition-colors"
+          >
             <Upload size={18} className="rotate-180" /> Export
           </button>
           
-          {/* Import Button aktiviert jetzt unseren unsichtbaren Input */}
           <button 
             onClick={() => importInputRef.current?.click()} 
             className="w-full py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center gap-2 transition-colors"
@@ -421,7 +550,6 @@ const Settings = ({
             <Upload size={18} /> Import
           </button>
           
-          {/* Unsichtbarer Input für File-Auswahl */}
           <input 
             type="file" 
             ref={importInputRef} 
@@ -432,7 +560,7 @@ const Settings = ({
         </div>
       </Card>
 
-      {/* 5. APP & INFORMATIONEN (Neue separate Karte) */}
+      {/* 5. APP & INFORMATIONEN */}
       <Card className="p-5 space-y-3">
         <h3 className="font-bold text-slate-700 dark:text-white">App & Informationen</h3>
         
@@ -470,31 +598,22 @@ const Settings = ({
       {/* 6. DANGER ZONE */}
       <Card className="p-5 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/10">
         <div className="flex items-center gap-2 mb-2">
-          <AlertTriangle className="text-red-600 dark:text-red-400" size={20} />
-          <h3 className="font-bold text-red-700 dark:text-red-400">Gefahrenzone</h3>
+            <AlertTriangle className="text-red-600 dark:text-red-400" size={20} />
+            <h3 className="font-bold text-red-700 dark:text-red-400">Gefahrenzone</h3>
         </div>
-        <p className="text-sm text-red-600/80 dark:text-red-400/80 mb-4 font-medium">
-          Hier kannst du alle gespeicherten Einträge unwiderruflich löschen. Das setzt auch den Onboarding-Wizard zurück.
-        </p>
-        <button
-          onClick={() => {
-            Haptics.impact({ style: ImpactStyle.Medium });
-            onDeleteAll();
-          }}
-          className="w-full py-3 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shadow-sm"
+        <p className="text-sm text-red-600/80 dark:text-red-400/80 mb-4 font-medium">Alle Daten löschen.</p>
+        <button 
+            onClick={() => { Haptics.impact({ style: ImpactStyle.Medium }); onDeleteAll(); }} 
+            className="w-full py-3 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shadow-sm"
         >
-          Alle Daten löschen
+            Alle Daten löschen
         </button>
       </Card>
       
       {/* 7. FOOTER */}
       <div className="text-center space-y-1 pb-4">
-        <p className="text-xs font-bold text-slate-400 dark:text-slate-500">
-          Version {APP_VERSION} • "Damit keine Stunde im Schacht verschwindet"
-        </p>
-        <p className="text-[10px] text-slate-300 dark:text-slate-600 font-medium flex items-center justify-center gap-1">
-          Developed with ❤️ by Markus Kainer <span className="opacity-50">&</span> Gemini
-        </p>
+        <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Version {APP_VERSION}</p>
+        <p className="text-[10px] text-slate-300 dark:text-slate-600 font-medium">Developed with ❤️ by Markus Kainer & Gemini</p>
       </div>
     </main>
   );

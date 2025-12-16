@@ -1,50 +1,77 @@
 // ============================================================
 // CONSTANTS.JS - Zentrale Konstanten für Kogler Zeiterfassung
 // ============================================================
-// Diese Datei sammelt alle "magischen Zahlen" und festen Werte
-// an einem Ort. Das macht den Code lesbarer und Änderungen einfacher.
-// ============================================================
 
-// -------------------------------------------------------
-// APP VERSION (Einzige Quelle der Wahrheit!)
-// -------------------------------------------------------
-export const APP_VERSION = "4.4.3";
+export const APP_VERSION = "4.4.4";
 
 // -------------------------------------------------------
 // ARBEITSZEIT (in Minuten)
 // -------------------------------------------------------
 export const MINUTES = {
-  // Standard Arbeitstage
-  FULL_DAY: 510,           // 8,5 Stunden (Mo-Do bei Kogler)
-  FRIDAY: 270,             // 4,5 Stunden (Fr bei Kogler)
-  
-  // Pausen
-  DEFAULT_PAUSE: 30,       // Standard-Pausendauer
-  
-  // Rundung
-  ROUNDING_INTERVAL: 15,   // Live-Timer rundet auf 15 Minuten
-  
-  // Für Berechnungen
-  HOUR: 60,                // Minuten pro Stunde
+  FULL_DAY: 510,           
+  FRIDAY: 270,             
+  DEFAULT_PAUSE: 30,       
+  ROUNDING_INTERVAL: 15,   
+  HOUR: 60,                
 };
 
 // -------------------------------------------------------
-// ARBEITSZEIT-VORLAGEN (workDays Array)
-// Index: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa
+// ARBEITSZEIT-MODELLE (Presets für Modal)
 // -------------------------------------------------------
+export const WORK_MODELS = [
+  {
+    id: '38.5-classic',
+    label: '38,5h Standard (Kogler)',
+    description: 'Mo-Do 8,5h / Fr 4,5h',
+    days: [0, 510, 510, 510, 510, 270, 0] // So, Mo, Di, Mi, Do, Fr, Sa
+  },
+  {
+    id: '38.5-even',
+    label: '38,5h Gleichmäßig',
+    description: 'Mo-Fr 7,7h (07:42)',
+    days: [0, 462, 462, 462, 462, 462, 0]
+  },
+  {
+    id: '38.5-4days',
+    label: '38,5h - 4 Tage Woche',
+    description: 'Mo-Do 09:38h',
+    days: [0, 578, 578, 578, 578, 0, 0]
+  },
+  {
+    id: '40-classic',
+    label: '40h Klassisch',
+    description: 'Mo-Do 8,5h / Fr 6,0h',
+    days: [0, 510, 510, 510, 510, 360, 0]
+  },
+  {
+    id: '40-even',
+    label: '40h Gleichmäßig',
+    description: 'Mo-Fr 8,0h',
+    days: [0, 480, 480, 480, 480, 480, 0]
+  },
+  {
+    id: '40-4days',
+    label: '40h - 4 Tage Woche',
+    description: 'Mo-Do 10,0h',
+    days: [0, 600, 600, 600, 600, 0, 0]
+  },
+  {
+    id: 'custom',
+    label: 'Benutzerdefiniert',
+    description: 'Manuelle Eingabe der Stunden',
+    days: null // Spezieller Marker
+  }
+];
+
+// Fallback / Legacy
 export const WORK_PROFILES = {
-  // Kogler Standard: 38,5h Woche (Mo-Do 8,5h + Fr 4,5h)
   KOGLER_38_5: [0, 510, 510, 510, 510, 270, 0],
-  
-  // Alternative: 40h Woche (Mo-Fr je 8h)
   STANDARD_40: [0, 480, 480, 480, 480, 480, 0],
-  
-  // Leer (für komplett eigene Konfiguration)
   EMPTY: [0, 0, 0, 0, 0, 0, 0],
 };
 
 // -------------------------------------------------------
-// ARBEITS-CODES (Vollständige Kogler Liste)
+// ARBEITS-CODES
 // -------------------------------------------------------
 export const WORK_CODES = [
   { id: 1, label: "01 - Schienen, Bunse" },
@@ -77,19 +104,16 @@ export const WORK_CODES = [
 ];
 
 // -------------------------------------------------------
-// EINTRAGS-TYPEN
+// RESTLICHE KONSTANTEN
 // -------------------------------------------------------
 export const ENTRY_TYPES = {
   WORK: "work",
   VACATION: "vacation",
   SICK: "sick",
   PUBLIC_HOLIDAY: "public_holiday",
-  TIME_COMP: "time_comp",      // Zeitausgleich
+  TIME_COMP: "time_comp",
 };
 
-// -------------------------------------------------------
-// LOCALSTORAGE KEYS
-// -------------------------------------------------------
 export const STORAGE_KEYS = {
   ENTRIES: "kogler_entries",
   USER: "kogler_user",
@@ -100,46 +124,30 @@ export const STORAGE_KEYS = {
   LAST_BACKUP: "kogler_last_backup_date",
 };
 
-// -------------------------------------------------------
-// GITHUB REPO (für Update-Check)
-// -------------------------------------------------------
 export const GITHUB = {
   USER: "D3rPaPaH0d3n",
   REPO: "kogler-zeit",
 };
 
-// -------------------------------------------------------
-// UI / ANIMATION
-// -------------------------------------------------------
 export const ANIMATION = {
-  // Framer Motion Varianten
   PAGE_TRANSITION_DURATION: 0.3,
   SPRING_DAMPING: 25,
   SPRING_STIFFNESS: 200,
 };
 
-// -------------------------------------------------------
-// TIMER / INTERVALLE
-// -------------------------------------------------------
 export const INTERVALS = {
-  LIVE_TIMER_UPDATE: 30000,    // 30 Sekunden (Display Update)
-  AUTO_SAVE_DEBOUNCE: 500,     // 500ms Debounce für localStorage
-  UPDATE_CHECK_DELAY: 2000,    // 2 Sekunden nach App-Start
-  AUTO_BACKUP_DELAY: 2000,     // 2 Sekunden nach App-Start
+  LIVE_TIMER_UPDATE: 30000,
+  AUTO_SAVE_DEBOUNCE: 500, 
+  UPDATE_CHECK_DELAY: 2000,
+  AUTO_BACKUP_DELAY: 2000, 
 };
 
-// -------------------------------------------------------
-// LIMITS
-// -------------------------------------------------------
 export const LIMITS = {
-  MAX_PHOTO_WIDTH: 1024,       // Profilbild max. Breite in px
-  MAX_PHOTO_HEIGHT: 1024,      // Profilbild max. Höhe in px
-  PHOTO_QUALITY: 0.9,          // JPEG Qualität (0-1)
+  MAX_PHOTO_WIDTH: 1024,
+  MAX_PHOTO_HEIGHT: 1024,
+  PHOTO_QUALITY: 0.9,
 };
 
-// -------------------------------------------------------
-// WOCHENTAGE (für Anzeige und Berechnung)
-// -------------------------------------------------------
 export const WEEKDAYS = {
   SUNDAY: 0,
   MONDAY: 1,

@@ -1,12 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { X, Check, RotateCcw, Calendar } from "lucide-react";
 import { WORK_MODELS } from "../hooks/constants";
+import DecimalDurationPicker from "./DecimalDurationPicker";
 
 const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
-  // Lokaler State für die 7 Tage (in Minuten)
   const [days, setDays] = useState(currentWorkDays || [0, 0, 0, 0, 0, 0, 0]);
   
-  // Wenn Modal öffnet, aktuelle Werte laden
+  // State für den Picker
+  const [showPicker, setShowPicker] = useState(false);
+  const [activeDayIdx, setActiveDayIdx] = useState(null);
+
+  // Diese Liste sorgt für den ausgeschriebenen Namen im Picker-Titel
+  const FULL_DAY_NAMES = [
+    "Sonntag", 
+    "Montag", 
+    "Dienstag", 
+    "Mittwoch", 
+    "Donnerstag", 
+    "Freitag", 
+    "Samstag"
+  ];
+
   useEffect(() => {
     if (isOpen && currentWorkDays) {
       setDays([...currentWorkDays]);
@@ -15,31 +29,41 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
 
   if (!isOpen) return null;
 
-  // Hilfsfunktion: Minuten in Stunden (Komma) für Anzeige input
-  const minToHours = (m) => (m === 0 ? "" : Number(m / 60).toFixed(2)); 
+  const minToHours = (m) => (m === 0 ? "" : Number(m / 60).toFixed(2).replace('.', ',')); 
   
-  // Input Änderung: Stunden -> Minuten
-  const handleInputChange = (index, val) => {
-    const newDays = [...days];
-    // Komma zu Punkt, parse, runden
-    const floatVal = parseFloat(val.replace(",", "."));
-    newDays[index] = isNaN(floatVal) ? 0 : Math.round(floatVal * 60);
-    setDays(newDays);
+  // Handler: Klick auf einen Tag -> Index speichern & Picker öffnen
+  const handleDayClick = (index) => {
+    setActiveDayIdx(index); 
+    setShowPicker(true);
   };
 
-  // Preset anwenden
+  const handlePickerConfirm = (minutes) => {
+    if (activeDayIdx !== null) {
+      const newDays = [...days];
+      newDays[activeDayIdx] = minutes;
+      setDays(newDays);
+    }
+    setShowPicker(false);
+  };
+
   const applyPreset = (presetDays) => {
     setDays([...presetDays]);
   };
 
-  // Summe berechnen für Anzeige
   const weeklySum = days.reduce((a, b) => a + b, 0) / 60;
+
+  // Hilfsfunktion zur sicheren Titel-Generierung
+  const getPickerTitle = () => {
+    if (activeDayIdx === null || activeDayIdx === undefined) return "Stunden";
+    const dayName = FULL_DAY_NAMES[activeDayIdx];
+    return dayName ? `${dayName} SOLL h` : "Stunden";
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
         
-        {/* Header */}
+        {/* Header Modal */}
         <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 rounded-t-2xl">
           <h3 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
             <Calendar className="text-orange-500" size={20} />
@@ -50,10 +74,10 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
           </button>
         </div>
 
-        {/* Scrollable Content */}
+        {/* Content */}
         <div className="overflow-y-auto p-4 space-y-6">
           
-          {/* 1. PRESETS */}
+          {/* Vorlagen */}
           <div>
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Vorlagen</span>
             <div className="grid grid-cols-1 gap-2">
@@ -67,7 +91,6 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
                     <div className="font-bold text-slate-700 dark:text-slate-200">{model.label}</div>
                     <div className="text-xs text-slate-500 dark:text-slate-400">{model.description}</div>
                   </div>
-                  {/* Einfacher Check, ob dieses Modell gerade aktiv ist */}
                   {JSON.stringify(days) === JSON.stringify(model.days) && (
                     <Check size={18} className="text-orange-500" />
                   )}
@@ -76,48 +99,45 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
             </div>
           </div>
 
-          {/* 2. CUSTOM EDITOR */}
+          {/* Benutzerdefiniert */}
           <div>
              <div className="flex justify-between items-end mb-2">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Benutzerdefiniert (Stunden)</span>
                 <span className="text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">
-                    Woche: {weeklySum.toLocaleString('de-DE', { maximumFractionDigits: 1 })} h
+                    Woche: {weeklySum.toLocaleString('de-DE', { maximumFractionDigits: 2 })} h
                 </span>
              </div>
              
+             {/* Grid mit kurzen Namen (So, Mo...), Klick öffnet Picker mit langem Namen */}
              <div className="grid grid-cols-7 gap-2">
                 {["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"].map((dayName, idx) => (
                     <div key={idx} className="flex flex-col gap-1">
                         <label className={`text-[10px] font-bold text-center uppercase ${idx === 0 || idx === 6 ? 'text-red-400' : 'text-slate-500'}`}>
                             {dayName}
                         </label>
-                        <input 
-                            type="number" 
-                            inputMode="decimal"
-                            step="0.5"
-                            value={minToHours(days[idx])}
-                            onChange={(e) => handleInputChange(idx, e.target.value)}
-                            placeholder="-"
-                            className={`w-full text-center p-2 rounded-lg text-sm font-bold outline-none border focus:border-orange-500 transition-colors ${
+                        <div 
+                            onClick={() => handleDayClick(idx)}
+                            className={`w-full h-10 flex items-center justify-center rounded-lg text-sm font-bold border transition-colors cursor-pointer select-none active:scale-95 ${
                                 days[idx] > 0 
-                                ? "bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white" 
-                                : "bg-slate-50 dark:bg-slate-800/50 border-transparent text-slate-400"
+                                ? "bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white hover:border-orange-500" 
+                                : "bg-slate-50 dark:bg-slate-800/50 border-transparent text-slate-400 hover:border-slate-300"
                             }`}
-                        />
+                        >
+                            {minToHours(days[idx]) || "-"}
+                        </div>
                     </div>
                 ))}
              </div>
              <p className="text-[10px] text-slate-400 mt-2 text-center">
-                Tippe Stunden ein (z.B. 8,5). Leere Felder gelten als "Frei".
+                Tippe auf einen Tag, um die Stunden zu ändern.
              </p>
           </div>
-
         </div>
 
         {/* Footer */}
         <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 rounded-b-2xl flex gap-3">
           <button 
-            onClick={() => setDays(currentWorkDays)} // Reset auf Startwert
+            onClick={() => setDays(currentWorkDays)} 
             className="px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
             <RotateCcw size={20} />
@@ -131,6 +151,15 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
           </button>
         </div>
       </div>
+
+      {/* PICKER: Titel wird aus getPickerTitle() geholt -> "Mittwoch SOLL h" */}
+      <DecimalDurationPicker 
+        isOpen={showPicker}
+        onClose={() => setShowPicker(false)}
+        initialMinutes={activeDayIdx !== null ? days[activeDayIdx] : 0}
+        onConfirm={handlePickerConfirm}
+        title={getPickerTitle()}
+      />
     </div>
   );
 };

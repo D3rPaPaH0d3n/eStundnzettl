@@ -2,7 +2,8 @@ import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 
 // --- AUTH ---
 export const initGoogleAuth = () => {
-  GoogleAuth.initialize();
+  // WICHTIG: return hinzugefügt, damit Promises (wie .catch) funktionieren
+  return GoogleAuth.initialize();
 };
 
 export const signInGoogle = async () => {

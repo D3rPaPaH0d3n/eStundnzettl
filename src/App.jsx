@@ -105,45 +105,32 @@ export default function App() {
     }
   }, [userData]);
 
-  const handleOnboardingFinish = (data) => {
-    // 1. User Daten speichern (inkl. Arbeitszeiten Profil)
-    const newUser = {
-      ...userData, // Alte Daten behalten (z.B. ID falls vorhanden)
-      name: data.name,
-      position: data.position,
-      photo: data.photo,
-      workDays: data.customDays // Speichert [0, 510, 510, ...]
-    };
-    setUserData(newUser);
+  const handleOnboardingFinish = () => {
+    // Daten neu laden, da der Wizard sie bereits im LocalStorage gespeichert hat
+    const storedUserStr = localStorage.getItem("kogler_user");
+    if (storedUserStr) {
+      try {
+        const storedUser = JSON.parse(storedUserStr);
+        setUserData(storedUser);
+        if (storedUser.settings?.autoBackup !== undefined) {
+            setAutoBackup(storedUser.settings.autoBackup);
+        }
+      } catch (e) { console.error("Error loading user data", e); }
+    }
 
-    // 2. Backup Setting setzen
-    if (data.autoBackup !== autoBackup) {
-        setAutoBackup(data.autoBackup);
+    // Falls ein Restore durchgeführt wurde, müssen auch die Einträge neu geladen werden
+    const storedEntriesStr = localStorage.getItem("kogler_entries");
+    if (storedEntriesStr) {
+        try {
+            const storedEntries = JSON.parse(storedEntriesStr);
+            importEntries(storedEntries);
+        } catch (e) { console.error("Error loading entries", e); }
     }
 
     // 3. Wizard schließen
     setShowOnboarding(false);
     toast.success("Einrichtung abgeschlossen!");
     Haptics.notification({ type: NotificationType.Success });
-  };
-
-  // --- NEU: WIZARD RESTORE HANDLER ---
-  const handleWizardRestore = (data) => {
-    try {
-        if (data.entries && Array.isArray(data.entries)) {
-            importEntries(data.entries);
-        }
-        if (data.user) {
-            setUserData(data.user);
-        }
-        
-        setShowOnboarding(false);
-        toast.success("🚀 Daten erfolgreich wiederhergestellt!");
-        Haptics.notification({ type: NotificationType.Success });
-    } catch (error) {
-        console.error("Restore Error:", error);
-        toast.error("❌ Fehler beim Wiederherstellen der Datei.");
-    }
   };
 
   // --- AUTO-CHECKOUT LISTENER ---
@@ -553,9 +540,7 @@ export default function App() {
       
       {showOnboarding && (
         <OnboardingWizard 
-            onFinish={handleOnboardingFinish} 
-            onRestore={handleWizardRestore}
-            initialData={userData} 
+            onComplete={handleOnboardingFinish} 
         />
       )}
 
@@ -577,31 +562,33 @@ export default function App() {
 
       <input type="file" className="hidden" ref={fileInputRef} accept="application/json" onChange={handleImport} />
       
-      <header className="fixed top-0 left-0 right-0 bg-slate-900 text-white p-4 pb-6 shadow-xl z-50 w-full transition-all" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-3">
-            {view !== "dashboard" && view !== "report" ? (
-              <button onClick={() => { setView("dashboard"); setEditingEntry(null); }} className="p-2 hover:bg-slate-700 rounded-full transition-colors"><ArrowLeft size={24} /></button>
-            ) : (
-              <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-slate-800 shadow-inner"><img src={KoglerLogo} alt="Logo" className="w-full h-full object-contain" /></div>
+      {!showOnboarding && (
+        <header className="fixed top-0 left-0 right-0 bg-slate-900 text-white p-4 pb-6 shadow-xl z-50 w-full transition-all" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              {view !== "dashboard" && view !== "report" ? (
+                <button onClick={() => { setView("dashboard"); setEditingEntry(null); }} className="p-2 hover:bg-slate-700 rounded-full transition-colors"><ArrowLeft size={24} /></button>
+              ) : (
+                <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-slate-800 shadow-inner"><img src={KoglerLogo} alt="Logo" className="w-full h-full object-contain" /></div>
+              )}
+              <div>
+                <h1 className="font-bold text-xl leading-tight tracking-tight">{getHeaderTitle()}</h1>
+                {view === "dashboard" && <p className="text-xs text-slate-400 font-medium mt-0.5">Kogler Aufzugsbau</p>}
+              </div>
+            </div>
+            {view === "dashboard" && (
+              <div className="flex gap-2">
+                <button onClick={() => setView("settings")} className="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors active:scale-95"><SettingsIcon size={20} className="text-slate-300" /></button>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setView("report")} className="bg-orange-500 hover:bg-orange-600 p-2.5 rounded-xl transition-colors shadow-lg shadow-orange-900/20"><FileBarChart size={20} className="text-white" /></motion.button>
+              </div>
             )}
-            <div>
-              <h1 className="font-bold text-xl leading-tight tracking-tight">{getHeaderTitle()}</h1>
-              {view === "dashboard" && <p className="text-xs text-slate-400 font-medium mt-0.5">Kogler Aufzugsbau</p>}
-            </div>
           </div>
-          {view === "dashboard" && (
-            <div className="flex gap-2">
-              <button onClick={() => setView("settings")} className="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors active:scale-95"><SettingsIcon size={20} className="text-slate-300" /></button>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setView("report")} className="bg-orange-500 hover:bg-orange-600 p-2.5 rounded-xl transition-colors shadow-lg shadow-orange-900/20"><FileBarChart size={20} className="text-white" /></motion.button>
-            </div>
-          )}
-        </div>
-      </header>
+        </header>
+      )}
 
-      <div className="pt-38 pb-24 px-1 w-full max-w-3xl mx-auto">
+      <div className={`pt-38 pb-24 px-1 w-full max-w-3xl mx-auto ${showOnboarding ? 'pt-0' : ''}`}>
         <AnimatePresence mode="wait">
-          {view === "dashboard" && (
+          {view === "dashboard" && !showOnboarding && (
             <motion.div key="dashboard" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
               <Dashboard 
                   currentDate={currentDate} onSetCurrentDate={setCurrentDate} changeMonth={changeMonth}
@@ -614,7 +601,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {view === "add" && (
+          {view === "add" && !showOnboarding && (
             <motion.div key="add" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
               <EntryForm 
                   onCancel={() => { setView("dashboard"); setEditingEntry(null); }}
@@ -635,7 +622,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {view === "settings" && (
+          {view === "settings" && !showOnboarding && (
             <motion.div key="settings" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
               <Settings 
                   userData={userData} setUserData={setUserData}
@@ -648,7 +635,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {view === "report" && (
+          {view === "report" && !showOnboarding && (
             <motion.div key="report" initial="initial" animate="in" exit="out" variants={reportVariants} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed inset-0 z-[200] w-full h-full">
               <Suspense fallback={
                 <div className="flex items-center justify-center h-full w-full bg-slate-900/50 backdrop-blur-sm">

@@ -21,7 +21,7 @@ export const MINUTES = {
 export const WORK_MODELS = [
   {
     id: '38.5-classic',
-    label: '38,5h Standard (Kogler)',
+    label: '38,5h Standard', // "(Kogler)" entfernt
     description: 'Mo-Do 8,5h / Fr 4,5h',
     days: [0, 510, 510, 510, 510, 270, 0] // So, Mo, Di, Mi, Do, Fr, Sa
   },
@@ -34,8 +34,9 @@ export const WORK_MODELS = [
   {
     id: '38.5-4days',
     label: '38,5h - 4 Tage Woche',
-    description: 'Mo-Do 09:38h',
-    days: [0, 578, 578, 578, 578, 0, 0]
+    description: 'Mo-Mi 10,0h / Do 8,5h', // Beschreibung aktualisiert
+    // Mo, Di, Mi = 600min (10h), Do = 510min (8,5h)
+    days: [0, 600, 600, 600, 510, 0, 0] 
   },
   {
     id: '40-classic',

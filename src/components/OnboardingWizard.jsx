@@ -1,500 +1,616 @@
-import React, { useState, useRef, useEffect } from "react";
-import { User, Briefcase, Calendar, Save, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning, FolderInput, X } from "lucide-react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { User, Briefcase, Calendar, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, RefreshCw, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
-// WICHTIG: selectBackupFolder hinzugefügt für Schritt 3
 import { analyzeBackupData, applyBackup, readJsonFile, selectBackupFolder } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
+import { WORK_MODELS } from "../hooks/constants";
 
-// PRESETS DEFINITION (Unverändert)
-const WORK_PRESETS = [
-  {
-    id: "kogler_standard",
-    label: "Kogler Standard",
-    sub: "Mo-Do 8,5h | Fr 4,5h",
-    days: [0, 510, 510, 510, 510, 270, 0] 
-  },
-  {
-    id: "full_40",
-    label: "Klassisch 40h",
-    sub: "Mo-Fr 8,0h",
-    days: [0, 480, 480, 480, 480, 480, 0]
-  },
-  {
-    id: "full_38_5",
-    label: "Klassisch 38,5h",
-    sub: "Mo-Fr 7,7h",
-    days: [0, 462, 462, 462, 462, 462, 0]
-  }
-];
+const OnboardingWizard = ({ onComplete }) => {
+  const [step, setStep] = useState(0); 
+  const [loading, setLoading] = useState(false);
+  const [isRestoreFlow, setIsRestoreFlow] = useState(false); 
 
-const OnboardingWizard = ({ onFinish, onRestore, initialData }) => {
-  const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState(1);
-  const [isCloudLoading, setIsCloudLoading] = useState(false); 
-  const fileInputRef = useRef(null);
-  const backupInputRef = useRef(null);
-
-  // State für das Import-Konflikt-Modal
-  const [pendingImport, setPendingImport] = useState(null);
-
-  // ZWISCHEN-SPEICHER (Standardmäßig autoBackup auf FALSE, damit User aktiv wählen muss)
   const [formData, setFormData] = useState({
-    name: initialData?.name || "",
-    position: initialData?.position || "", 
-    photo: initialData?.photo || null,
-    workProfileId: "kogler_standard",
-    customDays: [...WORK_PRESETS[0].days],
-    autoBackup: false // Änderung: Standardmäßig aus, User muss Ordner wählen
+    name: "",
+    role: "", 
+    photo: null,
+    workDays: WORK_MODELS[0].days, 
+    autoBackup: false,
+    localBackupEnabled: false 
   });
+  
+  const [restoreData, setRestoreData] = useState(null);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  
+  const fileInputRef = useRef(null);
+  const photoInputRef = useRef(null);
 
-  // Google Auth Init beim Start
   useEffect(() => {
-    initGoogleAuth();
+    initGoogleAuth().catch(() => console.log("Google Auth Init failed silently/already initialized"));
   }, []);
 
-  // --- HELPER ---
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setFormData(prev => ({ ...prev, photo: ev.target.result }));
-    };
-    reader.readAsDataURL(file);
+  // --- NAVIGATION ---
+  const handleStartNew = () => {
+    setIsRestoreFlow(false);
+    setStep(1); 
   };
 
-  // --- NEUE SCHRITT 3 LOGIK: ORDNER WÄHLEN ---
-  const handleSelectBackupFolder = async () => {
-    try {
-      const success = await selectBackupFolder();
-      if (success) {
-        setFormData(prev => ({ ...prev, autoBackup: true }));
-        toast.success("Ordner verknüpft! Backup aktiv.");
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error("Auswahl abgebrochen");
-    }
+  const handleStartRestore = () => {
+    setIsRestoreFlow(true);
+    setStep(3); 
   };
-
-  // --- IMPORT LOGIK (BEIBEHALTEN) ---
-
-  // 1. Zentrale Verarbeitungs-Funktion
-  const processImportData = (data) => {
-    const analysis = analyzeBackupData(data);
-    
-    if (!analysis.valid) {
-      toast.error("❌ Ungültiges Backup-Format");
-      return;
-    }
-
-    if (analysis.hasSettings) {
-      // Konflikt: Backup enthält Settings -> Modal zeigen und User fragen
-      setPendingImport(analysis);
-    } else {
-      // Kein Konflikt: Direkt wiederherstellen (Nur Einträge, da keine Settings da)
-      applyBackup(analysis, 'ENTRIES_ONLY');
-      toast.success("Einträge geladen! Bitte erstelle nun dein Profil.");
-      setStep(1); 
-    }
-  };
-
-  // 2. Entscheidung vom Modal (Alles oder nur Einträge)
-  const confirmWizardImport = (mode) => {
-    applyBackup(pendingImport, mode);
-    
-    if (mode === 'ALL') {
-       // User + Einträge sind da -> Sofort ins Dashboard (kein Reload, via onRestore prop)
-       const restoreData = {
-          user: pendingImport.settings,
-          entries: pendingImport.entries
-       };
-       setPendingImport(null);
-       toast.success("Willkommen zurück!");
-       onRestore(restoreData); 
-    } else {
-       // Nur Einträge importiert -> User fehlt noch -> Weiter zu Schritt 1
-       setPendingImport(null);
-       toast.success("Einträge importiert. Bitte vervollständige dein Profil.");
-       setStep(1); 
-    }
-  };
-
-  // 3. LOKALES BACKUP
-  const handleBackupUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    try {
-        const json = await readJsonFile(file);
-        processImportData(json);
-    } catch (err) {
-        console.error(err);
-        toast.error("❌ Datei ungültig oder beschädigt.");
-    }
-    // Input resetten
-    e.target.value = null; 
-  };
-
-  // 4. CLOUD BACKUP
-  const handleCloudRestore = async () => {
-    setIsCloudLoading(true);
-    try {
-        const user = await signInGoogle();
-        if (!user || !user.authentication.accessToken) {
-            throw new Error("Anmeldung fehlgeschlagen");
-        }
-        
-        toast.loading("Suche Backup...", { id: "cloud_search" });
-
-        const latestFile = await findLatestBackup(user.authentication.accessToken);
-        
-        if (!latestFile) {
-            toast.dismiss("cloud_search");
-            toast.error("Kein Backup in Google Drive gefunden.");
-            localStorage.setItem("kogler_cloud_sync", "true");
-            return;
-        }
-
-        toast.loading(`Lade Backup vom ${new Date(latestFile.createdTime).toLocaleDateString()}...`, { id: "cloud_search" });
-        const jsonContent = await downloadFileContent(user.authentication.accessToken, latestFile.id);
-
-        toast.dismiss("cloud_search");
-        localStorage.setItem("kogler_cloud_sync", "true");
-        
-        processImportData(jsonContent);
-
-    } catch (error) {
-        console.error(error);
-        toast.dismiss("cloud_search");
-        toast.error("Cloud-Wiederherstellung fehlgeschlagen.");
-    } finally {
-        setIsCloudLoading(false);
-    }
-  };
-  // --- IMPORT LOGIK ENDE ---
-
 
   const nextStep = () => {
     if (step === 1 && !formData.name.trim()) {
       toast.error("Bitte gib deinen Namen ein.");
       return;
     }
-    setDirection(1);
     setStep(prev => prev + 1);
   };
 
   const prevStep = () => {
-    setDirection(-1);
-    setStep(prev => prev - 1);
+    if (step === 3 && isRestoreFlow) {
+      setStep(0);
+    } else {
+      setStep(prev => prev - 1);
+    }
   };
 
-  const handlePresetSelect = (preset) => {
-    setFormData(prev => ({ ...prev, workProfileId: preset.id, customDays: [...preset.days] }));
+  // --- HANDLER ---
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, photo: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleCustomDayChange = (dayIndex, minutes) => {
-    const newDays = [...formData.customDays];
-    newDays[dayIndex] = parseInt(minutes) || 0;
-    setFormData(prev => ({ ...prev, workProfileId: "custom", customDays: newDays }));
+  const handleModelSelect = (model) => {
+    const days = model.days || [0, 0, 0, 0, 0, 0, 0];
+    setFormData({ ...formData, workDays: days });
   };
 
-  const finishSetup = () => { onFinish(formData); };
-  const formatH = (m) => { const h = m / 60; return h.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " h"; };
-  const totalWeeklyMinutes = formData.customDays.reduce((acc, curr) => acc + curr, 0);
-
-  const variants = {
-    enter: (dir) => ({ x: dir > 0 ? 50 : -50, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir) => ({ x: dir > 0 ? -50 : 50, opacity: 0 })
+  const handleCustomDayChange = (dayIndex, value) => {
+    const newDays = [...formData.workDays];
+    newDays[dayIndex] = parseInt(value) || 0;
+    setFormData({ ...formData, workDays: newDays });
   };
+
+  const minToHours = (m) => (m / 60).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 2 }) + ' h';
+  const totalWeeklyMinutes = formData.workDays.reduce((a, b) => a + b, 0);
+
+  // --- BACKUP SETUP HANDLER ---
+  const handleAutoBackupToggle = async () => {
+    const newValue = !formData.autoBackup;
+    setFormData(p => ({...p, autoBackup: newValue}));
+    if (newValue) {
+      try {
+        await signInGoogle();
+        toast.success("Verknüpfung erfolgreich!");
+      } catch (error) {
+        console.error(error);
+        toast("Bitte melde dich später an, um Backups zu speichern.", { icon: "ℹ️" });
+      }
+    }
+  };
+
+  const handleLocalBackupToggle = async () => {
+    if (!formData.localBackupEnabled) {
+      try {
+        const success = await selectBackupFolder();
+        if (success) {
+          setFormData(p => ({...p, localBackupEnabled: true}));
+          toast.success("Ordner verknüpft!");
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Auswahl abgebrochen");
+      }
+    } else {
+      setFormData(p => ({...p, localBackupEnabled: false}));
+    }
+  };
+
+  // --- FINISH ---
+  const finishSetup = () => {
+    localStorage.setItem("kogler_user", JSON.stringify({
+      name: formData.name,
+      role: formData.role,
+      photo: formData.photo,
+      workDays: formData.workDays,
+      settings: {
+        autoBackup: formData.autoBackup,
+        theme: 'system' 
+      }
+    }));
+
+    if (restoreData) {
+       applyBackup(restoreData);
+       toast.success("Daten wiederhergestellt!");
+    } else {
+       toast.success("Willkommen!");
+    }
+    
+    onComplete();
+  };
+
+  // --- RESTORE LOGIC ---
+  const handleGoogleDriveRestore = async () => {
+    try {
+      setLoading(true);
+      const user = await signInGoogle();
+      if (!user) throw new Error("Anmeldung fehlgeschlagen");
+
+      // FIX: Token holen
+      const token = user.authentication?.accessToken;
+      if (!token) throw new Error("Kein Zugriffstoken erhalten");
+
+      // FIX: Token an findLatestBackup übergeben
+      const file = await findLatestBackup(token);
+      if (!file) throw new Error("Kein Backup gefunden.");
+
+      // FIX: Token an downloadFileContent übergeben
+      const content = await downloadFileContent(token, file.id);
+      if (!content) throw new Error("Backup leer.");
+
+      const { isValid, data } = analyzeBackupData(content);
+      if (isValid) {
+        setRestoreData(data);
+        toast.success("Backup geladen!");
+        setStep(4);
+      } else {
+        toast.error("Format ungültig.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Fehler beim Laden");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLocalFileRestore = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      setLoading(true);
+      const json = await readJsonFile(file);
+      const { isValid, data } = analyzeBackupData(json);
+      if (isValid) {
+        setRestoreData(data);
+        toast.success("Backup geladen!");
+        setStep(4);
+      } else {
+        toast.error("Datei ungültig.");
+      }
+    } catch (err) {
+      toast.error("Lesefehler.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFolderRestore = async () => {
+      try {
+        setLoading(true);
+        const backupContent = await selectBackupFolder();
+        if (backupContent) {
+            const { isValid, data } = analyzeBackupData(backupContent);
+            if (isValid) {
+                setRestoreData(data);
+                toast.success("Backup geladen!");
+                setStep(4);
+            } else {
+                toast.error("Ungültiges Backup.");
+            }
+        }
+      } catch (error) {
+          toast.error("Fehler beim Zugriff.");
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  const isSelected = (modelDays) => {
+     const current = JSON.stringify(formData.workDays);
+     const target = modelDays ? JSON.stringify(modelDays) : JSON.stringify([0,0,0,0,0,0,0]);
+     return current === target;
+  };
+
+  const isCustomModelActive = useMemo(() => {
+      const isStandard = WORK_MODELS.some(m => m.id !== 'custom' && JSON.stringify(m.days) === JSON.stringify(formData.workDays));
+      return !isStandard; 
+  }, [formData.workDays]);
+
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-50 dark:bg-slate-900 z-50 flex flex-col items-center justify-center p-4">
       
-      {/* Das Modal für Import-Konflikte */}
-      <ImportConflictModal 
-        analysisData={pendingImport}
-        onConfirm={confirmWizardImport}
-        onCancel={() => setPendingImport(null)}
-      />
-
-      <div className="absolute top-0 left-0 w-full h-64 bg-slate-900 dark:bg-orange-500 rounded-b-[3rem] shadow-2xl z-0" />
-      
-      <div className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[85vh] max-h-[750px]">
+      <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
-        {/* HEADER */}
-        <div className="p-6 pb-2 text-center">
-          <h1 className="text-2xl font-black text-slate-800 dark:text-white">Willkommen! 👋</h1>
-          {step > 0 && <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Richten wir deine App kurz ein.</p>}
-          
-          {step > 0 && (
-            <div className="flex justify-center gap-2 mt-4">
-                {[1, 2, 3, 4].map(i => (
-                <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${step === i ? "w-8 bg-orange-500" : "w-2 bg-slate-200 dark:bg-slate-700"}`} />
-                ))}
-            </div>
-          )}
-        </div>
+        {step > 0 && (
+          <div className="h-1.5 bg-slate-100 dark:bg-slate-700 w-full">
+            <motion.div 
+              className="h-full bg-orange-500"
+              initial={{ width: 0 }}
+              animate={{ width: `${(step / 4) * 100}%` }}
+            />
+          </div>
+        )}
 
-        {/* CONTENT */}
-        <div className="flex-1 relative overflow-hidden p-6">
-          <AnimatePresence custom={direction} mode="wait">
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+          <AnimatePresence mode="wait">
             
-            {/* SCHRITT 0: START-AUSWAHL (NEU DESIGNT) */}
+            {/* SCHRITT 0 */}
             {step === 0 && (
-              <motion.div key="step0" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" className="absolute inset-0 p-4 flex flex-col justify-center gap-6">
-                
-                {/* 1. Haupt-Aktion: Neu Starten */}
-                <div className="space-y-3">
-                    <p className="text-center text-slate-600 dark:text-slate-300 font-medium">Ich bin neu hier</p>
-                    <button 
-                        onClick={() => { setDirection(1); setStep(1); }}
-                        className="group w-full p-6 bg-orange-500 hover:bg-orange-600 text-white rounded-3xl shadow-xl shadow-orange-500/20 flex flex-col items-center gap-3 transition-all active:scale-95"
-                    >
-                        <div className="bg-white/20 p-4 rounded-full">
-                            <Play size={32} fill="currentColor" />
-                        </div>
-                        <span className="font-black text-xl">App einrichten</span>
-                    </button>
-                </div>
-
-                <div className="relative py-2">
-                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                        <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
-                    </div>
-                    <div className="relative flex justify-center">
-                        <span className="bg-white dark:bg-slate-900 px-3 text-xs text-slate-400 uppercase font-bold tracking-wider">oder Backup laden</span>
-                    </div>
-                </div>
-
-                {/* 2. Sekundär: Wiederherstellen (Kompakter) */}
-                <div className="grid grid-cols-2 gap-3">
-                    <button 
-                        onClick={handleCloudRestore}
-                        disabled={isCloudLoading}
-                        className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900 hover:border-blue-300 text-blue-700 dark:text-blue-300 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95"
-                    >
-                        {isCloudLoading ? <Loader size={24} className="animate-spin" /> : <CloudLightning size={24} />}
-                        <span className="font-bold text-sm">Google Drive</span>
-                    </button>
-
-                    <button 
-                        onClick={() => backupInputRef.current?.click()}
-                        className="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-400 text-slate-700 dark:text-slate-200 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95"
-                    >
-                        <Upload size={24} />
-                        <span className="font-bold text-sm">Datei laden</span>
-                    </button>
-                </div>
-                
-                <input type="file" ref={backupInputRef} className="hidden" accept="application/json" onChange={handleBackupUpload} />
-              </motion.div>
-            )}
-
-            {/* SCHRITT 1: PROFIL (Unverändert) */}
-            {step === 1 && (
-              <motion.div key="step1" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" className="absolute inset-0 p-6 flex flex-col gap-6 overflow-y-auto">
+              <motion.div 
+                key="step0"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8 flex flex-col items-center justify-center h-full py-6"
+              >
                 <div className="text-center space-y-4">
-                  <div onClick={() => fileInputRef.current?.click()} className="w-24 h-24 mx-auto bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center cursor-pointer relative overflow-hidden border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-orange-500 transition-colors">
-                    {formData.photo ? <img src={formData.photo} className="w-full h-full object-cover" alt="Profil" /> : <Camera size={32} className="text-slate-400" />}
+                  <div className="w-20 h-20 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-orange-500/20">
+                    <img src="/icon.png" alt="Logo" className="w-12 h-12 brightness-0 invert" onError={(e) => e.target.style.display='none'} /> 
+                    <ShieldCheck size={40} className="text-white absolute" style={{opacity: 0.2}}/>
                   </div>
-                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-                  <p className="text-xs text-slate-400">Profilbild tippen (optional)</p>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-bold uppercase text-slate-400">Dein Name *</label>
-                    <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-xl px-3 border border-slate-200 dark:border-slate-700 focus-within:border-orange-500 transition-colors">
-                      <User size={20} className="text-slate-400" />
-                      <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 bg-transparent outline-none font-bold dark:text-white" placeholder="Max Mustermann" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold uppercase text-slate-400">Position / Job</label>
-                    <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-xl px-3 border border-slate-200 dark:border-slate-700 focus-within:border-orange-500 transition-colors">
-                      <Briefcase size={20} className="text-slate-400" />
-                      <input type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full p-3 bg-transparent outline-none font-bold dark:text-white" placeholder="Monteur" />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* SCHRITT 2: ARBEITSZEIT (Unverändert) */}
-            {step === 2 && (
-              <motion.div key="step2" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" className="absolute inset-0 p-6 flex flex-col gap-4 overflow-y-auto">
-                <h3 className="font-bold text-lg dark:text-white flex items-center gap-2"><Calendar size={20} className="text-orange-500"/> Arbeitsmodell</h3>
-                
-                <div className="space-y-2">
-                  {WORK_PRESETS.map(preset => (
-                    <button
-                      key={preset.id}
-                      onClick={() => handlePresetSelect(preset)}
-                      className={`w-full p-3 rounded-xl border-2 text-left transition-all ${formData.workProfileId === preset.id ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20" : "border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800"}`}
-                    >
-                      <div className="font-bold text-slate-800 dark:text-white">{preset.label}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{preset.sub}</div>
-                    </button>
-                  ))}
-                  
-                  <button
-                    onClick={() => setFormData(prev => ({ ...prev, workProfileId: "custom" }))}
-                    className={`w-full p-3 rounded-xl border-2 text-left transition-all ${formData.workProfileId === "custom" ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20" : "border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800"}`}
-                  >
-                    <div className="font-bold text-slate-800 dark:text-white">Manuell / Benutzerdefiniert</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">Jeden Tag einzeln einstellen</div>
-                  </button>
-                </div>
-
-                <div className="mt-2 space-y-3 border-t border-slate-100 dark:border-slate-700 pt-4">
-                  <p className="text-xs font-bold text-slate-400 uppercase">Tagesstunden (Dezimal)</p>
-                  {["So","Mo","Di","Mi","Do","Fr","Sa"].map((dayName, idx) => {
-                    if (idx === 0 || idx === 6) return null; 
-                    return (
-                      <div key={idx} className="flex items-center justify-between">
-                        <span className="w-8 text-sm font-bold text-slate-500 dark:text-slate-400">{dayName}</span>
-                        <input 
-                          type="range" min="0" max="720" step="15" 
-                          value={formData.customDays[idx]}
-                          onChange={(e) => handleCustomDayChange(idx, e.target.value)}
-                          className="flex-1 mx-3 accent-orange-500 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <span className="w-16 text-right text-xs font-mono font-bold dark:text-white">{formatH(formData.customDays[idx])}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-4 flex justify-between items-center bg-slate-100 dark:bg-slate-800 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700">
-                    <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Wochenstunden Gesamt:</span>
-                    <span className="text-xl font-black text-orange-500 tabular-nums">{formatH(totalWeeklyMinutes)}</span>
-                </div>
-
-              </motion.div>
-            )}
-
-            {/* SCHRITT 3: BACKUP (NEU DESIGNT: ORDNER WÄHLEN) */}
-            {step === 3 && (
-              <motion.div key="step3" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" className="absolute inset-0 p-6 flex flex-col justify-center text-center gap-6">
-                <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto text-green-600 dark:text-green-400 mb-4">
-                  <ShieldCheck size={40} />
-                </div>
-                
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Automatisches Backup</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed px-2">
-                    Damit deine Daten sicher sind, wähle bitte einen Ordner auf deinem Handy, in dem wir <strong>täglich automatisch</strong> speichern dürfen.
+                  <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                    Kogler Zeit
+                  </h1>
+                  <p className="text-slate-500 dark:text-slate-400 max-w-[260px] mx-auto">
+                    Die moderne Zeiterfassung für Profis. Wie möchtest du starten?
                   </p>
                 </div>
 
-                {/* Wenn noch kein Ordner gewählt wurde: Zeige Wahl-Button */}
-                {!formData.autoBackup ? (
-                    <button 
-                        onClick={handleSelectBackupFolder}
-                        className="w-full p-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95"
-                    >
-                        <FolderInput size={20} />
-                        <span className="font-bold">Speicherort wählen</span>
-                    </button>
-                ) : (
-                    /* Wenn Ordner gewählt wurde: Zeige Erfolgs-Status */
-                    <div className="w-full p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-2xl flex items-center justify-center gap-3 animate-in fade-in zoom-in duration-300">
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white">
-                            <Check size={18} strokeWidth={3} />
-                        </div>
-                        <div className="text-left">
-                            <span className="block font-bold text-green-800 dark:text-green-400">Aktiviert</span>
-                            <span className="text-xs text-green-600 dark:text-green-300">Backup eingerichtet</span>
-                        </div>
-                        <button 
-                           onClick={() => setFormData(prev => ({ ...prev, autoBackup: false }))}
-                           className="ml-auto p-2 text-slate-400 hover:text-red-500"
-                        >
-                            <X size={16} />
-                        </button>
-                    </div>
-                )}
-                
-                {/* Überspringen Link */}
-                {!formData.autoBackup && (
-                    <button 
-                        onClick={() => setStep(4)} 
-                        className="text-xs font-bold text-slate-400 uppercase tracking-wider hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                    >
-                        Jetzt überspringen
-                    </button>
-                )}
+                <div className="w-full space-y-3">
+                  <button 
+                    onClick={handleStartNew}
+                    className="w-full p-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                  >
+                    <Play size={20} fill="currentColor" />
+                    Neu starten
+                  </button>
 
+                  <button 
+                    onClick={handleStartRestore}
+                    className="w-full p-5 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl font-bold text-lg hover:border-orange-200 dark:hover:border-slate-600 hover:bg-orange-50/50 dark:hover:bg-slate-700/50 transition-all flex items-center justify-center gap-3"
+                  >
+                    <RefreshCw size={20} />
+                    Backup laden
+                  </button>
+                </div>
               </motion.div>
             )}
 
-            {/* SCHRITT 4: FERTIG (Unverändert) */}
-            {step === 4 && (
-              <motion.div key="step4" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" className="absolute inset-0 p-6 flex flex-col justify-center text-center">
-                <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4">Alles bereit! 🚀</h2>
-                <p className="text-slate-600 dark:text-slate-300 mb-8">
-                  Viel Erfolg beim Erfassen deiner Zeiten. <br/>
-                  <span className="text-sm text-slate-400">Vergiss nicht: Links unten ist die Live-Stempeluhr!</span>
-                </p>
-                
-                <button 
-                  onClick={finishSetup}
-                  className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl shadow-xl shadow-orange-500/30 flex items-center justify-center gap-2 transform active:scale-95 transition-all"
-                >
-                  <Save size={20} /> Los geht's
-                </button>
+            {/* SCHRITT 1: PROFIL */}
+            {step === 1 && (
+              <motion.div 
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div className="text-center space-y-2">
+                  <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-orange-600">
+                    <User size={32} />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Dein Profil</h2>
+                  <p className="text-slate-500 dark:text-slate-400">Wer nutzt die App?</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center gap-3">
+                    <div 
+                      onClick={() => photoInputRef.current?.click()}
+                      className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center cursor-pointer overflow-hidden relative group"
+                    >
+                      {formData.photo ? (
+                        <img src={formData.photo} alt="Profil" className="w-full h-full object-cover" />
+                      ) : (
+                        <Camera className="text-slate-400 group-hover:text-slate-600 transition-colors" />
+                      )}
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Upload size={20} className="text-white" />
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-400">Profilbild (optional)</span>
+                    <input type="file" ref={photoInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Dein Name</label>
+                      <input 
+                        type="text" 
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 focus:border-orange-500 outline-none transition-all font-bold text-slate-900 dark:text-white"
+                        placeholder="Max Mustermann"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Tätigkeit / Anstellung</label>
+                      <input 
+                        type="text" 
+                        value={formData.role}
+                        onChange={(e) => setFormData({...formData, role: e.target.value})}
+                        className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 focus:border-orange-500 outline-none transition-all font-medium text-slate-800 dark:text-slate-200"
+                        placeholder="z.B. Monteur, Techniker, Büro..."
+                      />
+                    </div>
+                  </div>
+                </div>
               </motion.div>
+            )}
+
+            {/* SCHRITT 2: ARBEITSZEIT */}
+            {step === 2 && (
+              <motion.div 
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                 <div className="text-center space-y-2">
+                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600">
+                    <Briefcase size={32} />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Arbeitszeit</h2>
+                  <p className="text-slate-500 dark:text-slate-400">Wähle dein Modell.</p>
+                </div>
+
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                  {WORK_MODELS.map((model) => (
+                    <button
+                      key={model.id}
+                      onClick={() => handleModelSelect(model)}
+                      className={`w-full p-4 rounded-xl border-2 text-left transition-all relative ${
+                        isSelected(model.days)
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                          : "border-slate-200 dark:border-slate-700 hover:border-blue-300"
+                      }`}
+                    >
+                      <div className="font-bold text-slate-800 dark:text-white">{model.label}</div>
+                      <div className="text-sm text-slate-500 dark:text-slate-400">{model.description}</div>
+                      {isSelected(model.days) && (
+                        <div className="absolute top-4 right-4 text-blue-500">
+                          <Check size={20} />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                  
+                  {/* SLIDER SECTION */}
+                  {isCustomModelActive && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-4 animate-in fade-in slide-in-from-top-2">
+                          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                              <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Tagesstunden anpassen</h3>
+                              <div className="space-y-3">
+                                  {["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"].map((dayName, idx) => (
+                                      <div key={idx} className="flex items-center gap-3">
+                                          <span className={`text-xs font-bold w-6 ${idx === 0 || idx === 6 ? 'text-red-400' : 'text-slate-500'}`}>{dayName}</span>
+                                          <input 
+                                            type="range" 
+                                            min="0" max="720" step="15"
+                                            value={formData.workDays[idx]}
+                                            onChange={(e) => handleCustomDayChange(idx, e.target.value)}
+                                            className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                                          />
+                                          <span className="text-xs font-mono font-bold w-12 text-right">{minToHours(formData.workDays[idx])}</span>
+                                      </div>
+                                  ))}
+                              </div>
+                              <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                                  <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Wochenstunden:</span>
+                                  <span className="text-lg font-bold text-orange-500">{minToHours(totalWeeklyMinutes)}</span>
+                              </div>
+                          </div>
+                      </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* SCHRITT 3: BACKUP / DATEN */}
+            {step === 3 && (
+               <motion.div 
+               key="step3"
+               initial={{ opacity: 0, x: 20 }}
+               animate={{ opacity: 1, x: 0 }}
+               exit={{ opacity: 0, x: -20 }}
+               className="space-y-6"
+             >
+                <div className="text-center space-y-2">
+                 <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-purple-600">
+                   <ShieldCheck size={32} />
+                 </div>
+                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {isRestoreFlow ? "Daten laden" : "Backup & Sicherheit"}
+                 </h2>
+                 <p className="text-slate-500 dark:text-slate-400">
+                    {isRestoreFlow ? "Wo liegt dein Backup?" : "Sichere deine Daten."}
+                 </p>
+               </div>
+
+               <div className="space-y-4">
+                 
+                 {/* FALL A: EINRICHTUNG */}
+                 {!isRestoreFlow && (
+                   <>
+                     {/* 1. CLOUD BACKUP */}
+                     <div 
+                        onClick={handleAutoBackupToggle}
+                        className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
+                          formData.autoBackup 
+                              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm" 
+                              : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800"
+                        }`}
+                      >
+                          <div className="flex items-center gap-3">
+                             <div className={`p-2 rounded-lg ${formData.autoBackup ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'}`}>
+                                  <CloudLightning size={20}/>
+                             </div>
+                             <div className="text-left">
+                                <div className="font-bold text-slate-800 dark:text-white">Google Drive Backup</div>
+                                <div className="text-xs text-slate-500">Tägliche Sicherung in der Cloud</div>
+                             </div>
+                          </div>
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            formData.autoBackup ? "border-blue-500 bg-blue-500 text-white" : "border-slate-300 dark:border-slate-500"
+                          }`}>
+                            {formData.autoBackup && <Check size={14} strokeWidth={3} />}
+                          </div>
+                      </div>
+
+                      {/* 2. LOKALES BACKUP */}
+                      <div 
+                        onClick={handleLocalBackupToggle}
+                        className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
+                          formData.localBackupEnabled 
+                              ? "border-green-500 bg-green-50 dark:bg-green-900/20 shadow-sm" 
+                              : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800"
+                        }`}
+                      >
+                          <div className="flex items-center gap-3">
+                             <div className={`p-2 rounded-lg ${formData.localBackupEnabled ? 'bg-green-100 dark:bg-green-900/50 text-green-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'}`}>
+                                  <FolderInput size={20}/>
+                             </div>
+                             <div className="text-left">
+                                <div className="font-bold text-slate-800 dark:text-white">Lokales Auto-Backup</div>
+                                <div className="text-xs text-slate-500">Täglich in Ordner am Handy</div>
+                             </div>
+                          </div>
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            formData.localBackupEnabled ? "border-green-500 bg-green-500 text-white" : "border-slate-300 dark:border-slate-500"
+                          }`}>
+                            {formData.localBackupEnabled && <Check size={14} strokeWidth={3} />}
+                          </div>
+                      </div>
+                   </>
+                 )}
+
+                 {/* FALL B: WIEDERHERSTELLUNG */}
+                 {isRestoreFlow && (
+                    <div className="grid grid-cols-1 gap-2">
+                        <button
+                          onClick={handleGoogleDriveRestore}
+                          disabled={loading}
+                          className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group"
+                        >
+                            <div className="p-2 bg-white dark:bg-slate-700 rounded-lg shadow-sm group-hover:scale-110 transition-transform">
+                              {loading ? <Loader size={18} className="animate-spin text-slate-400"/> : <Cloud size={18} className="text-blue-500" />}
+                            </div>
+                            <div className="text-left flex-1">
+                              <div className="font-bold text-sm text-slate-800 dark:text-white">Aus Google Drive</div>
+                            </div>
+                        </button>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                            onClick={handleFolderRestore}
+                            disabled={loading}
+                            className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                            >
+                                <FolderInput size={20} className="text-yellow-500" />
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Lokaler Ordner</span>
+                            </button>
+
+                            <div className="relative">
+                                <input type="file" ref={fileInputRef} onChange={handleLocalFileRestore} className="hidden" accept=".json" />
+                                <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={loading}
+                                className="w-full h-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                                >
+                                    <Upload size={20} className="text-purple-500" />
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Datei (.json)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                 )}
+
+               </div>
+             </motion.div>
+            )}
+
+            {/* SCHRITT 4: FERTIG */}
+            {step === 4 && (
+               <motion.div 
+               key="step4"
+               initial={{ opacity: 0, scale: 0.9 }}
+               animate={{ opacity: 1, scale: 1 }}
+               className="space-y-6 text-center py-4"
+             >
+                <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600 shadow-lg shadow-green-500/20 animate-in zoom-in duration-300">
+                  <Check size={40} strokeWidth={3} />
+                </div>
+                
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Alles bereit!</h2>
+                  <p className="text-slate-500 dark:text-slate-400">
+                    {restoreData 
+                      ? "Daten erfolgreich wiederhergestellt." 
+                      : "Dein Profil wurde erfolgreich erstellt."}
+                  </p>
+                </div>
+
+                <div className="pt-4">
+                  <button 
+                    onClick={finishSetup}
+                    className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-lg rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                  >
+                    App starten <Play size={20} fill="currentColor" />
+                  </button>
+                </div>
+             </motion.div>
             )}
 
           </AnimatePresence>
         </div>
 
-        {/* FOOTER NAV (Nur sichtbar in Schritt 1, 2) */}
-        {/* WICHTIG: In Schritt 3 zeigen wir eigene Buttons (Wählen oder Weiter) -> Footer ausblenden oder anpassen */}
-        {/* Logik: Schritt 3 hat jetzt eigene "Flows". Wenn Backup gewählt -> Weiter Button. Wenn nicht -> Oben Select Button */}
-        {/* Wir passen die Bedingung an: Footer nur 1 und 2. Schritt 3 hat eigene Logik, Schritt 4 ist Ende. */}
-        {(step === 1 || step === 2) && (
-          <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between">
+        {/* Footer Navigation */}
+        {step > 0 && step < 4 && (
+          <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm">
+            
             <button 
-              onClick={prevStep} 
-              className="px-4 py-2 text-slate-400 font-bold hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              onClick={prevStep}
+              className="px-4 py-2 font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors flex items-center gap-1"
             >
-              Zurück
+              <ArrowLeft size={18} /> Zurück
             </button>
-            <button 
-              onClick={nextStep}
-              className="px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl flex items-center gap-2 hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors"
-            >
-              Weiter <ChevronRight size={18} />
-            </button>
+
+            {!isRestoreFlow && (
+              <button 
+                onClick={nextStep}
+                className="px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl flex items-center gap-2 hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-lg shadow-slate-900/10"
+              >
+                Weiter <ChevronRight size={18} />
+              </button>
+            )}
           </div>
-        )}
-        
-        {/* Footer für Schritt 3 (Backup) - Nur "Weiter" wenn fertig */}
-        {step === 3 && (
-             <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between">
-                 <button 
-                   onClick={prevStep} 
-                   className="px-4 py-2 text-slate-400 font-bold hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                 >
-                   Zurück
-                 </button>
-                 {formData.autoBackup && (
-                    <button 
-                      onClick={() => setStep(4)}
-                      className="px-6 py-2 bg-green-500 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-green-500/20 animate-in fade-in slide-in-from-right-4"
-                    >
-                      Weiter <ChevronRight size={18} />
-                    </button>
-                 )}
-            </div>
         )}
 
       </div>
+      
+      <ImportConflictModal 
+        isOpen={showConflictModal}
+        onClose={() => setShowConflictModal(false)}
+        onConfirm={() => {
+            setShowConflictModal(false);
+            setStep(4);
+        }}
+      />
+
     </div>
   );
 };

@@ -95,20 +95,31 @@ export const readJsonFile = (file) => {
 
 // 1. ANALYSE - Schaut in die Daten, OHNE zu speichern
 export const analyzeBackupData = (data) => {
-  if (!data) return { valid: false };
+  // Fail-Safe für beide Formate
+  if (!data) return { valid: false, isValid: false };
 
   // Erkennung: Altes Format (Array) vs. Neues Format (Objekt mit .entries und .user)
   const isArray = Array.isArray(data);
   const entries = isArray ? data : (data.entries || []);
   const settings = (!isArray && data.user) ? data.user : null;
 
-  return {
+  // Das eigentliche Analyse-Ergebnis
+  const analysisResult = {
     valid: true,
     entryCount: entries.length,
     hasSettings: !!settings, // Wichtig: True, wenn Einstellungen gefunden wurden
     entries,
     settings,
     timestamp: data.backupDate || new Date().toISOString() // Falls vorhanden
+  };
+
+  // FIX: Rückgabe im Hybrid-Format
+  // Der Wizard braucht "isValid" und "data".
+  // Andere Teile der App brauchen vielleicht direkt "valid" und "entries".
+  return {
+    isValid: true,        // Für den Wizard
+    data: analysisResult, // Für den Wizard (wird als restoreData gesetzt)
+    ...analysisResult     // Für direkte Verwendung (Legacy Support)
   };
 };
 

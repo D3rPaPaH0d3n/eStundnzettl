@@ -11,11 +11,11 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   const ITEM_HEIGHT = 64; 
 
   const getInitialValues = (mins) => {
-    if (!mins) return { h: 8, d: 0.5 };
+    if (mins === undefined || mins === null) return { h: 8, d: 0 };
+    
     const h = Math.floor(mins / 60);
     const m = mins % 60;
     
-    // Runden auf die nächsten 15min
     let d = 0;
     if (m >= 45) d = 0.75;
     else if (m >= 30) d = 0.5;
@@ -24,17 +24,15 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
     return { h, d };
   };
 
-  const [selectedHour, setSelectedHour] = useState(0);
+  const [selectedHour, setSelectedHour] = useState(8);
   const [selectedDecimal, setSelectedDecimal] = useState(0);
 
-  // Sync beim Öffnen
   useEffect(() => {
     if (isOpen) {
       const { h, d } = getInitialValues(initialMinutes);
       setSelectedHour(h);
       setSelectedDecimal(d);
 
-      // Timeout für DOM-Mounting
       setTimeout(() => {
         scrollToValue(hoursRef, h);
         scrollToValue(decimalsRef, d);
@@ -56,7 +54,6 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
     const scrollTop = e.target.scrollTop;
     const index = Math.round(scrollTop / ITEM_HEIGHT);
     
-    // Einfache Haptik beim Scrollen
     if (type === 'hour') {
       const val = hours[index];
       if (val !== undefined && val !== selectedHour) {
@@ -73,16 +70,17 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   };
 
   const handleConfirm = () => {
-    const minutesFromDecimal = selectedDecimal * 60;
-    const totalMinutes = (selectedHour * 60) + minutesFromDecimal;
+    const totalMinutes = (selectedHour * 60) + (selectedDecimal * 60);
     onConfirm(totalMinutes);
     onClose();
   };
 
   const formatDecimal = (d) => {
-    if (d === 0) return ",00";
-    if (d === 0.5) return ",50";
-    return String(d).replace("0.", ","); 
+    if (d === 0) return ", 00";
+    if (d === 0.25) return ", 25";
+    if (d === 0.5) return ", 50";
+    if (d === 0.75) return ", 75";
+    return String(d).replace("0.", ", "); 
   };
 
   return (
@@ -112,10 +110,10 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
             }}
             className="fixed bottom-0 left-0 right-0 z-[9999] rounded-t-3xl overflow-visible flex flex-col md:max-w-md md:mx-auto"
           >
-            {/* HINTERGRUND-LAYER (Extra Div gegen Durchscheinen) */}
+            {/* Background Layer */}
             <div className="absolute inset-0 bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl z-0" style={{ bottom: "-100px" }} />
 
-            {/* DRAG HANDLE */}
+            {/* Drag Handle */}
             <div 
               className="relative z-10 w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing touch-none"
               onPointerDown={(e) => dragControls.start(e)}
@@ -123,14 +121,20 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
               <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full" />
             </div>
 
-            {/* HEADER */}
-            <div className="relative z-10 flex justify-between items-center px-5 pb-4 border-b border-slate-100 dark:border-slate-800">
-              <button onClick={onClose} className="p-3 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+            {/* Header */}
+            <div className="relative z-20 flex justify-between items-center px-5 pb-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-t-3xl">
+              <button 
+                onClick={onClose} 
+                className="p-3 text-red-500 bg-red-100 dark:bg-red-900/20 dark:text-red-400 rounded-full transition-transform active:scale-95"
+              >
                 <X size={24} />
               </button>
-              <span className="font-bold text-slate-800 dark:text-white uppercase tracking-wide text-base">
+
+              {/* Titel: WICHTIG - uppercase entfernt, damit "Mittwoch SOLL h" so angezeigt wird */}
+              <span className="font-bold text-slate-800 dark:text-white tracking-wide text-base">
                 {title || "Stunden"}
               </span>
+
               <button 
                 onClick={() => {
                   Haptics.impact({ style: ImpactStyle.Medium });
@@ -142,63 +146,78 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
               </button>
             </div>
 
-            {/* PICKER AREA (GRID LAYOUT gegen Überschneiden) */}
-            <div className="relative z-10 h-[280px] w-full select-none pb-safe">
+            {/* Picker Content Area */}
+            <div className="relative z-10 h-[280px] w-full select-none pb-safe overflow-hidden">
               
-              {/* Highlight Bar (Mittig fixiert) */}
-              <div className="absolute top-1/2 left-4 right-4 h-[64px] -mt-[32px] bg-slate-100 dark:bg-slate-800 pointer-events-none z-0 border border-slate-200 dark:border-slate-700 rounded-xl" />
+              {/* Highlight Bar */}
+              <div className="absolute top-1/2 left-4 right-4 h-[64px] -mt-[36px] bg-slate-100 dark:bg-slate-800 pointer-events-none z-0 border border-slate-200 dark:border-slate-700 rounded-xl" />
 
-              {/* Grid Container */}
-              <div className="grid grid-cols-2 h-full w-full max-w-[280px] mx-auto relative z-10">
-                  
-                  {/* LINKS: STUNDEN */}
-                  <div 
-                    ref={hoursRef}
-                    onScroll={(e) => handleScroll(e, 'hour')}
-                    className="overflow-y-auto snap-y snap-mandatory py-[108px] scrollbar-hide text-right pr-6"
-                  >
-                    {hours.map((h) => (
+              {/* Fading Maske */}
+              <div 
+                className="relative z-10 h-full w-full flex justify-center items-center"
+                style={{
+                  maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)'
+                }}
+              >
+                  {/* Container zentriert */}
+                  <div className="flex items-center justify-center">
+                      
+                      {/* SPALTE 1: STUNDEN */}
                       <div 
-                        key={h}
-                        data-value={h}
-                        onClick={() => {
-                            setSelectedHour(h);
-                            scrollToValue(hoursRef, h);
-                        }}
-                        className={`h-[64px] flex items-center justify-end snap-center cursor-pointer transition-all duration-100 ${
-                          h === selectedHour 
-                            ? "font-bold text-4xl text-slate-800 dark:text-white scale-110" 
-                            : "text-slate-300 dark:text-slate-600 text-2xl"
-                        }`}
+                        ref={hoursRef}
+                        onScroll={(e) => handleScroll(e, 'hour')}
+                        className="h-[280px] w-[80px] overflow-y-auto snap-y snap-mandatory scrollbar-hide py-[108px]"
                       >
-                        {h}
+                        {hours.map((h) => (
+                          <div 
+                            key={h}
+                            data-value={h}
+                            onClick={() => {
+                                setSelectedHour(h);
+                                scrollToValue(hoursRef, h);
+                            }}
+                            className={`h-[64px] flex items-center justify-end pr-2 snap-center cursor-pointer transition-all duration-150 pt-1 ${
+                              h === selectedHour 
+                                ? "font-bold text-4xl text-slate-800 dark:text-white scale-110" 
+                                : "text-slate-300 dark:text-slate-600 text-2xl scale-90"
+                            }`}
+                          >
+                            {h}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
 
-                  {/* RECHTS: DEZIMALSTELLEN */}
-                  <div 
-                    ref={decimalsRef}
-                    onScroll={(e) => handleScroll(e, 'decimal')}
-                    className="overflow-y-auto snap-y snap-mandatory py-[108px] scrollbar-hide text-left pl-2"
-                  >
-                    {decimals.map((d) => (
+                      {/* SPALTE 2: DEZIMAL */}
                       <div 
-                        key={d}
-                        data-value={d}
-                        onClick={() => {
-                            setSelectedDecimal(d);
-                            scrollToValue(decimalsRef, d);
-                        }}
-                        className={`h-[64px] flex items-center justify-start snap-center cursor-pointer transition-all duration-100 ${
-                          d === selectedDecimal 
-                            ? "font-bold text-4xl text-orange-500 scale-110" 
-                            : "text-slate-300 dark:text-slate-600 text-2xl"
-                        }`}
+                        ref={decimalsRef}
+                        onScroll={(e) => handleScroll(e, 'decimal')}
+                        className="h-[280px] w-[90px] overflow-y-auto snap-y snap-mandatory scrollbar-hide py-[108px]"
                       >
-                        {formatDecimal(d)} <span className="text-sm ml-1 text-slate-400 font-normal mt-3">h</span>
+                        {decimals.map((d) => (
+                          <div 
+                            key={d}
+                            data-value={d}
+                            onClick={() => {
+                                setSelectedDecimal(d);
+                                scrollToValue(decimalsRef, d);
+                            }}
+                            className={`h-[64px] flex items-center justify-start pl-0 snap-center cursor-pointer transition-all duration-150 pt-1 ${
+                              d === selectedDecimal 
+                                ? "font-bold text-4xl text-orange-500 scale-110" 
+                                : "text-slate-300 dark:text-slate-600 text-2xl scale-90"
+                            }`}
+                          >
+                            {formatDecimal(d)}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+
+                      {/* SPALTE 3: 'h' */}
+                      <div className="h-[64px] flex items-center justify-start pl-1 pt-3">
+                        <span className="text-xl text-slate-400 font-semibold">h</span>
+                      </div>
+
                   </div>
               </div>
             </div>

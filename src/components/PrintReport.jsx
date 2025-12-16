@@ -14,7 +14,8 @@ import {
   blobToBase64, 
   getTargetMinutesForDate
 } from "../utils";
-import { usePeriodStats } from "../hooks/usePeriodStats"; // <--- Hook importieren
+import { usePeriodStats } from "../hooks/usePeriodStats"; 
+import ExportModal from "./ExportModal";
 
 const PRINT_STYLES = {
   textBlack: '#000000',
@@ -47,6 +48,8 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [customNote, setCustomNote] = useState("");
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false); 
+
   const reportRef = useRef(null);
 
   useEffect(() => {
@@ -84,7 +87,6 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     return `${fmt(monday)} - ${fmt(sunday)}`;
   };
 
-  // Liste der angezeigten Einträge filtern
   const filteredEntries = useMemo(() => {
     let list = filterMode === "month" ? [...entries] : entries.filter((e) => getWeekNumber(new Date(e.date)) === Number(filterMode));
     list.sort((a, b) => {
@@ -105,15 +107,13 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     return `KW ${filterMode} (${getWeekLabel(filterMode)})`;
   }, [filterMode, availableWeeks, monthDate]);
 
-  // --- STATISTIK BERECHNUNG ÜBER DEN HOOK ---
-  // Wir definieren den Zeitraum für den Hook dynamisch basierend auf dem Filter
+  // --- STATISTIK ---
   const { periodStart, periodEnd } = useMemo(() => {
     if (filterMode === "month") {
       const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
       const end = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
       return { periodStart: start, periodEnd: end };
     } else {
-      // Wochen-Filter
       if (filteredEntries.length > 0) {
         const d = new Date(filteredEntries[0].date);
         const day = d.getDay() || 7;
@@ -123,17 +123,14 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
         end.setDate(start.getDate() + 6);
         return { periodStart: start, periodEnd: end };
       } else {
-        // Fallback falls Woche leer ist
         return { periodStart: new Date(), periodEnd: new Date() };
       }
     }
   }, [filterMode, monthDate, filteredEntries]);
 
-  // Der Hook macht die ganze Arbeit!
   const stats = usePeriodStats(entries, userData, periodStart, periodEnd);
-  // ------------------------------------------
+  // -----------------
 
-  // --- META MAP ---
   const dayMetaMap = useMemo(() => {
     const map = {}; let currentDateStr = ""; let dayIndex = 0; const sums = {};
     filteredEntries.forEach((e) => {
@@ -151,8 +148,9 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     return map;
   }, [filteredEntries, userData]);
 
-  const handleDownloadPdf = async () => {
+  const handlePdfAction = async (actionType) => {
     try {
+      setShowExportModal(false);
       const originalScale = scale;
       setIsGenerating(true);
       setScale(1); 
@@ -186,34 +184,49 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
 
       if (!Capacitor.isNativePlatform()) {
         await worker.save();
-        setScale(originalScale);
-        setIsGenerating(false);
-        toast.success("🖨️ Druck erfolgreich!");
-        return;
-      }
+        toast.success("🖨️ Download gestartet!");
+      } 
+      else {
+        const pdfBlob = await worker.output("blob");
+        const base64 = await blobToBase64(pdfBlob);
 
-      const pdfBlob = await worker.output("blob");
-      const base64 = await blobToBase64(pdfBlob);
+        if (actionType === 'share') {
+          await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache, encoding: Encoding.BASE64, recursive: true });
+          const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache }); 
+          await Share.share({ title: "Stundenzettel", url: uriResult.uri });
+          toast.success("Bereit zum Teilen");
+        } else {
+          await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Documents, encoding: Encoding.BASE64, recursive: true });
+          toast.success("Gespeichert in 'Dokumente'", { icon: "📂" });
+        }
+      }
 
       setScale(originalScale);
       setIsGenerating(false);
-
-      await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache, encoding: Encoding.BASE64, recursive: true });
-      const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache }); 
-      await Share.share({ title: "Stundenzettel", url: uriResult.uri });
-      toast.success("🖨️ Druck erfolgreich vorbereitet");
       
     } catch (err) {
-      if (err.message && (err.message.includes("canceled") || err.message.includes("cancelled"))) { return; }
+      if (err.message && (err.message.includes("canceled") || err.message.includes("cancelled"))) { 
+        setIsGenerating(false); setScale(1); return; 
+      }
       console.error(err);
-      toast.error("❌ Fehler: " + err.message);
+      toast.error("Fehler: " + err.message);
       setIsGenerating(false);
+      setScale(1); 
     }
   };
 
   return (
     <div className="fixed inset-0 bg-slate-950 z-[200] flex flex-col h-full">
-      {/* 1. TOPBAR */}
+      
+      {/* WICHTIG: Hier übergeben wir isPdf={true} */}
+      <ExportModal 
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onSelectFolder={() => handlePdfAction('folder')}
+        onSelectShare={() => handlePdfAction('share')}
+        isPdf={true} 
+      />
+
       <div className="bg-slate-900 text-white p-3 shadow-xl z-50 shrink-0" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}>
         <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-lg flex items-center gap-2 text-slate-100 min-w-0">
@@ -252,8 +265,15 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                     )}
                 </AnimatePresence>
             </div>
-            <motion.button whileTap={{ scale: 0.95 }} onClick={handleDownloadPdf} disabled={isGenerating} className="bg-orange-500 hover:bg-orange-600 text-white p-2 px-4 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-orange-900/20 shrink-0">
-                {isGenerating ? <Loader className="animate-spin" size={18} /> : <Download size={18} />} <span className="hidden sm:inline">PDF</span>
+            
+            <motion.button 
+                whileTap={{ scale: 0.95 }} 
+                onClick={() => setShowExportModal(true)} 
+                disabled={isGenerating} 
+                className="bg-orange-500 hover:bg-orange-600 text-white p-2 px-4 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-orange-900/20 shrink-0"
+            >
+                {isGenerating ? <Loader className="animate-spin" size={18} /> : <Download size={18} />} 
+                <span className="hidden sm:inline">PDF</span>
             </motion.button>
         </div>
       </div>

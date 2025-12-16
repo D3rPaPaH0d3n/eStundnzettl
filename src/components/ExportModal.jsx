@@ -1,9 +1,9 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, FolderUp, Share2, HardDrive } from "lucide-react";
+import { X, FolderUp, Share2, HardDrive, FileText } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
-const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare }) => {
+const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = false }) => {
   
   const handleChoice = (choice) => {
     Haptics.impact({ style: ImpactStyle.Light });
@@ -37,14 +37,18 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare }) => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
-                    <HardDrive size={22} className="text-orange-600 dark:text-orange-400" />
+                    {isPdf ? (
+                      <FileText size={22} className="text-orange-600 dark:text-orange-400" />
+                    ) : (
+                      <HardDrive size={22} className="text-orange-600 dark:text-orange-400" />
+                    )}
                   </div>
                   <div>
                     <h2 className="font-bold text-lg text-slate-800 dark:text-white">
-                      Daten exportieren
+                      {isPdf ? "PDF speichern" : "Daten exportieren"}
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Wähle eine Export-Methode
+                      Wähle eine Methode
                     </p>
                   </div>
                 </div>
@@ -59,7 +63,7 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare }) => {
 
             {/* Options */}
             <div className="p-4 space-y-3">
-              {/* Option 1: Ordner wählen */}
+              {/* Option 1: Ordner / Documents */}
               <button
                 onClick={() => handleChoice('folder')}
                 className="w-full flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 transition-all active:scale-[0.98]"
@@ -69,10 +73,13 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare }) => {
                 </div>
                 <div className="text-left flex-1">
                   <span className="block font-bold text-slate-800 dark:text-white">
-                    In Ordner speichern
+                    {isPdf ? "In Dokumente speichern" : "In Ordner speichern"}
                   </span>
                   <span className="block text-xs text-slate-500 dark:text-slate-400">
-                    Wähle einen Speicherort (z.B. Google Drive, Downloads)
+                    {isPdf 
+                      ? "Speichert die PDF im Ordner 'Documents'" 
+                      : "Wähle einen Speicherort (z.B. Downloads)"
+                    }
                   </span>
                 </div>
               </button>
@@ -90,7 +97,7 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare }) => {
                     Teilen / Senden
                   </span>
                   <span className="block text-xs text-slate-500 dark:text-slate-400">
-                    Per WhatsApp, E-Mail oder andere Apps teilen
+                    Per WhatsApp, E-Mail oder andere Apps
                   </span>
                 </div>
               </button>

@@ -10,7 +10,9 @@ import { Card, APP_VERSION } from "../utils";
 import ChangelogModal from "./ChangelogModal";
 import HelpModal from "./HelpModal";
 import { initGoogleAuth, signInGoogle, signOutGoogle } from "../utils/googleDrive";
-import { selectBackupFolder, hasBackupTarget, clearBackupTarget } from "../utils/storageBackup";
+// WICHTIG: Die neuen Funktionen hier importieren
+import { selectBackupFolder, hasBackupTarget, clearBackupTarget, analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
+import ImportConflictModal from "./ImportConflictModal";
 
 const Settings = ({
   userData,
@@ -20,7 +22,7 @@ const Settings = ({
   autoBackup,
   setAutoBackup,
   onExport,
-  onImport,
+  onImport, // Wird hier lokal überschrieben, bleibt aber als Prop erhalten
   onDeleteAll,
   onCheckUpdate
 }) => {
@@ -33,6 +35,10 @@ const Settings = ({
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [hasBackupFolder, setHasBackupFolder] = useState(false);
 
+  // NEU: State für den Import-Prozess
+  const [pendingImport, setPendingImport] = useState(null); 
+  const importInputRef = useRef(null);
+
   useEffect(() => {
     // 1. Google Auth & Cloud Status
     initGoogleAuth();
@@ -41,6 +47,55 @@ const Settings = ({
     // 2. Lokaler Backup Status
     setHasBackupFolder(hasBackupTarget());
   }, []);
+
+  // --- NEUE IMPORT LOGIK (START) ---
+  
+  // 1. Datei wurde ausgewählt
+  const handleFileImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const json = await readJsonFile(file);
+      processImport(json);
+    } catch (err) {
+      toast.error("Fehler beim Lesen der Datei");
+    }
+    e.target.value = null; // Input resetten
+  };
+
+  // 2. Analyse und Entscheidung
+  const processImport = (data) => {
+    const analysis = analyzeBackupData(data);
+
+    if (!analysis.valid) {
+      toast.error("Ungültiges Backup-Format");
+      return;
+    }
+
+    if (analysis.hasSettings) {
+      // Konflikt gefunden -> Modal öffnen
+      setPendingImport(analysis);
+    } else {
+      // Keine Einstellungen im Backup -> Direkt importieren
+      applyBackup(analysis, 'ALL');
+      toast.success(`${analysis.entryCount} Einträge importiert!`);
+      setTimeout(() => window.location.reload(), 1500);
+    }
+  };
+
+  // 3. Entscheidung vom Modal ausgeführt
+  const handleConfirmImport = (mode) => {
+    if (!pendingImport) return;
+    
+    applyBackup(pendingImport, mode);
+    
+    toast.success("Erfolgreich wiederhergestellt!");
+    setPendingImport(null);
+    setTimeout(() => window.location.reload(), 1000);
+  };
+  // --- NEUE IMPORT LOGIK (ENDE) ---
+
 
   // --- GOOGLE DRIVE HANDLER ---
   const handleGoogleToggle = async () => {
@@ -173,6 +228,13 @@ const Settings = ({
       
       <ChangelogModal isOpen={showChangelog} onClose={() => setShowChangelog(false)} />
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+
+      {/* NEU: Das Konflikt Modal */}
+      <ImportConflictModal 
+        analysisData={pendingImport}
+        onConfirm={handleConfirmImport}
+        onCancel={() => setPendingImport(null)}
+      />
 
       {/* 1. USER DATA */}
       <Card className="p-5 space-y-4">
@@ -346,12 +408,27 @@ const Settings = ({
         
         {/* 4.3 MANUAL EXPORT/IMPORT */}
         <div className="grid grid-cols-2 gap-2 pt-2">
+          {/* Export Button bleibt gleich */}
           <button onClick={onExport} className="w-full py-3 bg-slate-900 dark:bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 flex items-center justify-center gap-2 transition-colors">
             <Upload size={18} className="rotate-180" /> Export
           </button>
-          <button onClick={onImport} className="w-full py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center gap-2 transition-colors">
+          
+          {/* Import Button aktiviert jetzt unseren unsichtbaren Input */}
+          <button 
+            onClick={() => importInputRef.current?.click()} 
+            className="w-full py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center gap-2 transition-colors"
+          >
             <Upload size={18} /> Import
           </button>
+          
+          {/* Unsichtbarer Input für File-Auswahl */}
+          <input 
+            type="file" 
+            ref={importInputRef} 
+            className="hidden" 
+            accept="application/json" 
+            onChange={handleFileImport} 
+          />
         </div>
       </Card>
 

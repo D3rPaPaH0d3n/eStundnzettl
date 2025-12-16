@@ -4,6 +4,41 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
   {
+    version: "5.1.0",
+    date: "16.12.2025",
+    title: "Onboarding & Picker Polish ✨",
+    isMajor: false,
+    sections: [
+      {
+        icon: Rocket,
+        title: "Neues Onboarding",
+        items: [
+          "Start-Screen: Wahl zwischen 'Neu' und 'Backup laden'",
+          "Profil: Feld für Tätigkeit/Anstellung ist zurück",
+          "Backup-Einrichtung: Jetzt auch lokaler Ordner wählbar"
+        ]
+      },
+      {
+        icon: Sliders,
+        title: "UI & Modelle",
+        items: [
+          "Picker: Optimiertes Design, fixes 'h', 8h Standard-Start",
+          "Arbeitszeit: '38,5h 4-Tage' Modell aktualisiert (Mo-Mi 10h)",
+          "Benutzerdefiniert: Neuer Slider für Tagesstunden im Wizard"
+        ]
+      },
+      {
+        icon: Bug,
+        title: "Wichtige Fixes",
+        items: [
+          "Crash beim Start (Google Drive Init) behoben",
+          "Restore-Probleme (Format & Token) gefixt",
+          "Header wird im Wizard nun korrekt ausgeblendet"
+        ]
+      }
+    ]
+  },
+  {
     version: "5.0.0",
     date: "13.12.2025",
     title: "Das Cloud-Update ☁️",
@@ -383,6 +418,7 @@ const ChangelogModal = ({ isOpen, onClose }) => {
             </div>
 
             <div 
+              id="changelog-content"
               className="flex-1 overflow-y-auto p-0 scrollbar-hide"
               style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}
             >

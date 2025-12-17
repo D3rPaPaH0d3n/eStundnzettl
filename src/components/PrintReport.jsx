@@ -7,13 +7,15 @@ import { Capacitor } from "@capacitor/core";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  WORK_CODES, 
+  // WORK_CODES entfernt -> jetzt aus constants
   getWeekNumber, 
   formatTime, 
   formatSignedTime, 
   blobToBase64, 
   getTargetMinutesForDate
 } from "../utils";
+// NEU: Import aus constants
+import { WORK_CODES } from "../hooks/constants";
 import { usePeriodStats } from "../hooks/usePeriodStats"; 
 import ExportModal from "./ExportModal";
 

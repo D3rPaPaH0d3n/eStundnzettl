@@ -2,7 +2,7 @@
 // CONSTANTS.JS - Zentrale Konstanten für Kogler Zeiterfassung
 // ============================================================
 
-export const APP_VERSION = "5.1.0y";
+export const APP_VERSION = "v5.1.0";
 
 // -------------------------------------------------------
 // ARBEITSZEIT (in Minuten)
@@ -21,7 +21,7 @@ export const MINUTES = {
 export const WORK_MODELS = [
   {
     id: '38.5-classic',
-    label: '38,5h Standard', // "(Kogler)" entfernt
+    label: '38,5h Standard', 
     description: 'Mo-Do 8,5h / Fr 4,5h',
     days: [0, 510, 510, 510, 510, 270, 0] // So, Mo, Di, Mi, Do, Fr, Sa
   },
@@ -33,46 +33,26 @@ export const WORK_MODELS = [
   },
   {
     id: '38.5-4days',
-    label: '38,5h - 4 Tage Woche',
-    description: 'Mo-Mi 10,0h / Do 8,5h', // Beschreibung aktualisiert
-    // Mo, Di, Mi = 600min (10h), Do = 510min (8,5h)
-    days: [0, 600, 600, 600, 510, 0, 0] 
+    label: '4-Tage Woche',
+    description: 'Mo-Do 9,6h (09:38)',
+    days: [0, 578, 578, 578, 577, 0, 0]
   },
   {
     id: '40-classic',
-    label: '40h Klassisch',
-    description: 'Mo-Do 8,5h / Fr 6,0h',
-    days: [0, 510, 510, 510, 510, 360, 0]
-  },
-  {
-    id: '40-even',
-    label: '40h Gleichmäßig',
-    description: 'Mo-Fr 8,0h',
+    label: '40h Woche',
+    description: 'Mo-Fr 8h',
     days: [0, 480, 480, 480, 480, 480, 0]
-  },
-  {
-    id: '40-4days',
-    label: '40h - 4 Tage Woche',
-    description: 'Mo-Do 10,0h',
-    days: [0, 600, 600, 600, 600, 0, 0]
   },
   {
     id: 'custom',
     label: 'Benutzerdefiniert',
-    description: 'Manuelle Eingabe der Stunden',
-    days: null // Spezieller Marker
+    description: 'Manuelle Eingabe',
+    days: [0, 0, 0, 0, 0, 0, 0]
   }
 ];
 
-// Fallback / Legacy
-export const WORK_PROFILES = {
-  KOGLER_38_5: [0, 510, 510, 510, 510, 270, 0],
-  STANDARD_40: [0, 480, 480, 480, 480, 480, 0],
-  EMPTY: [0, 0, 0, 0, 0, 0, 0],
-};
-
 // -------------------------------------------------------
-// ARBEITS-CODES
+// TÄTIGKEITS-CODES
 // -------------------------------------------------------
 export const WORK_CODES = [
   { id: 1, label: "01 - Schienen, Bunse" },
@@ -123,6 +103,8 @@ export const STORAGE_KEYS = {
   LAST_CODE: "kogler_last_code",
   LIVE_TIMER: "kogler_live_timer",
   LAST_BACKUP: "kogler_last_backup_date",
+  BACKUP_TARGET: "kogler_backup_target",
+  CLOUD_SYNC: "kogler_cloud_sync", // NEU!
 };
 
 export const GITHUB = {
@@ -131,32 +113,13 @@ export const GITHUB = {
 };
 
 export const ANIMATION = {
-  PAGE_TRANSITION_DURATION: 0.3,
-  SPRING_DAMPING: 25,
-  SPRING_STIFFNESS: 200,
-};
-
-export const INTERVALS = {
-  LIVE_TIMER_UPDATE: 30000,
-  AUTO_SAVE_DEBOUNCE: 500, 
-  UPDATE_CHECK_DELAY: 2000,
-  AUTO_BACKUP_DELAY: 2000, 
+  DURATION: 0.3,
 };
 
 export const LIMITS = {
-  MAX_PHOTO_WIDTH: 1024,
-  MAX_PHOTO_HEIGHT: 1024,
-  PHOTO_QUALITY: 0.9,
+  MAX_IMG_SIZE: 1024,
 };
 
-export const WEEKDAYS = {
-  SUNDAY: 0,
-  MONDAY: 1,
-  TUESDAY: 2,
-  WEDNESDAY: 3,
-  THURSDAY: 4,
-  FRIDAY: 5,
-  SATURDAY: 6,
+export const INTERVALS = {
+  LIVE_TIMER_UPDATE: 30000, 
 };
-
-export const WEEKDAY_LABELS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];

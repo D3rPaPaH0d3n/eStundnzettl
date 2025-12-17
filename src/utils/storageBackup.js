@@ -10,7 +10,7 @@ export const selectBackupFolder = async () => {
   try {
     const result = await ScopedStorage.pickFolder();
     if (result) {
-      localStorage.setItem("kogler_backup_target", JSON.stringify(result));
+      localStorage.setItem(STORAGE_KEYS.BACKUP_TARGET, JSON.stringify(result));
       return true;
     }
     return false;
@@ -22,12 +22,12 @@ export const selectBackupFolder = async () => {
 
 // 2. Zugriff prüfen (gibt true zurück, wenn wir einen Zielordner haben)
 export const hasBackupTarget = () => {
-  return !!localStorage.getItem("kogler_backup_target");
+  return !!localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET);
 };
 
 // 3. Backup schreiben
 export const writeBackupFile = async (fileName, dataObj) => {
-  const targetStr = localStorage.getItem("kogler_backup_target");
+  const targetStr = localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET);
   if (!targetStr) throw new Error("Kein Backup-Ziel gewählt");
 
   const folderObj = JSON.parse(targetStr);
@@ -46,7 +46,7 @@ export const writeBackupFile = async (fileName, dataObj) => {
 
 // 4. Zugriff entfernen
 export const clearBackupTarget = () => {
-  localStorage.removeItem("kogler_backup_target");
+  localStorage.removeItem(STORAGE_KEYS.BACKUP_TARGET);
 };
 
 // 5. Einmaliger manueller Export in einen beliebigen Ordner

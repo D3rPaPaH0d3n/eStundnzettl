@@ -1,35 +1,37 @@
 import { useState, useEffect } from "react";
+import { STORAGE_KEYS, WORK_MODELS } from "./constants";
 
 export function useSettings() {
   // User Data
   // WICHTIG: Default erweitert für v4.4.0 (Position & WorkDays)
   // Name ist leer, damit der Onboarding-Check in App.jsx greift!
   const [userData, setUserData] = useState(() => 
-    JSON.parse(localStorage.getItem("kogler_user")) || {
+    JSON.parse(localStorage.getItem(STORAGE_KEYS.USER)) || {
       name: "", 
       position: "",
       photo: null,
-      workDays: [0, 510, 510, 510, 510, 270, 0] // Standard Kogler Woche
+      // Wir nehmen das erste Modell (38.5-classic) als Standard-Referenz
+      workDays: [...WORK_MODELS[0].days] 
     }
   );
 
   // Theme
   const [theme, setTheme] = useState(() => 
-    localStorage.getItem("kogler_theme") || "system"
+    localStorage.getItem(STORAGE_KEYS.THEME) || "system"
   );
 
   // Auto Backup Toggle
   const [autoBackup, setAutoBackup] = useState(() => 
-    localStorage.getItem("kogler_auto_backup") === "true"
+    localStorage.getItem(STORAGE_KEYS.AUTO_BACKUP) === "true"
   );
 
   // Persistenz
-  useEffect(() => localStorage.setItem("kogler_user", JSON.stringify(userData)), [userData]);
-  useEffect(() => localStorage.setItem("kogler_auto_backup", autoBackup), [autoBackup]);
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData)), [userData]);
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.AUTO_BACKUP, autoBackup), [autoBackup]);
   
   // Theme Logik
   useEffect(() => {
-    localStorage.setItem("kogler_theme", theme);
+    localStorage.setItem(STORAGE_KEYS.THEME, theme);
     const root = document.documentElement;
     const systemQuery = window.matchMedia("(prefers-color-scheme: dark)");
     

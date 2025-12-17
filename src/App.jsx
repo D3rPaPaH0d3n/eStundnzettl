@@ -4,7 +4,6 @@ import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
-// ENTFERNT: import { Dialog } from '@capacitor/dialog'; - showActions nicht auf Android implementiert
 import toast, { Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
@@ -15,9 +14,11 @@ import {
   getWeekNumber, 
   parseTime, 
   getTargetMinutesForDate, 
-  WORK_CODES,
   checkForUpdate 
 } from "./utils";
+
+// NEU: Imports aus constants
+import { WORK_CODES, WORK_MODELS, STORAGE_KEYS } from "./hooks/constants";
 
 // COMPONENTS
 import Dashboard from "./components/Dashboard";
@@ -27,7 +28,7 @@ import ConfirmModal from "./components/ConfirmModal";
 import UpdateModal from "./components/UpdateModal";
 import LiveTimerOverlay from "./components/LiveTimerOverlay";
 import OnboardingWizard from "./components/OnboardingWizard";
-import ExportModal from "./components/ExportModal"; // NEU
+import ExportModal from "./components/ExportModal";
 
 // CUSTOM HOOKS
 import { useEntries } from "./hooks/useEntries";
@@ -35,7 +36,7 @@ import { useSettings } from "./hooks/useSettings";
 import { useAutoBackup } from "./hooks/useAutoBackup";
 import { useLiveTimer } from "./hooks/useLiveTimer";
 import { usePeriodStats } from "./hooks/usePeriodStats";
-import { exportToSelectedFolder } from "./utils/storageBackup"; // NEU
+import { exportToSelectedFolder } from "./utils/storageBackup";
 
 // LAZY LOADING
 const PrintReport = React.lazy(() => import("./components/PrintReport"));
@@ -107,7 +108,8 @@ export default function App() {
 
   const handleOnboardingFinish = () => {
     // Daten neu laden, da der Wizard sie bereits im LocalStorage gespeichert hat
-    const storedUserStr = localStorage.getItem("kogler_user");
+    // UPDATE: Nutzt jetzt STORAGE_KEYS
+    const storedUserStr = localStorage.getItem(STORAGE_KEYS.USER);
     if (storedUserStr) {
       try {
         const storedUser = JSON.parse(storedUserStr);
@@ -119,7 +121,8 @@ export default function App() {
     }
 
     // Falls ein Restore durchgeführt wurde, müssen auch die Einträge neu geladen werden
-    const storedEntriesStr = localStorage.getItem("kogler_entries");
+    // UPDATE: Nutzt jetzt STORAGE_KEYS
+    const storedEntriesStr = localStorage.getItem(STORAGE_KEYS.ENTRIES);
     if (storedEntriesStr) {
         try {
             const storedEntries = JSON.parse(storedEntriesStr);
@@ -156,7 +159,8 @@ export default function App() {
       setPauseDuration(autoCheckoutData.pause);
       
       setProject(""); 
-      const lastCode = localStorage.getItem("kogler_last_code");
+      // UPDATE: Nutzt jetzt STORAGE_KEYS
+      const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
       setCode(lastCode ? Number(lastCode) : WORK_CODES[0].id);
 
       setEditingEntry(null);
@@ -319,7 +323,8 @@ export default function App() {
     setEndTime(toLocalHHMM(result.end));
     setPauseDuration(result.pause);
     setProject(""); 
-    const lastCode = localStorage.getItem("kogler_last_code");
+    // UPDATE: Nutzt jetzt STORAGE_KEYS
+    const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
     setCode(lastCode ? Number(lastCode) : WORK_CODES[0].id);
 
     setEditingEntry(null);
@@ -331,7 +336,8 @@ export default function App() {
   const startNewEntry = () => {
     setEditingEntry(null); setEntryType("work"); setFormDate(new Date().toISOString().split("T")[0]);
     setStartTime("06:00"); setEndTime("16:30"); setPauseDuration(30); setProject(""); 
-    const lastCode = localStorage.getItem("kogler_last_code");
+    // UPDATE: Nutzt jetzt STORAGE_KEYS
+    const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
     setCode(lastCode ? Number(lastCode) : WORK_CODES[0].id);
     setIsLiveEntry(false); 
     setView("add");
@@ -396,7 +402,8 @@ export default function App() {
     if (editingEntry) updateEntry(newEntry);
     else addEntry(newEntry);
 
-    if (storedType === "work" && usedCode && usedCode !== 19 && usedCode !== 190) localStorage.setItem("kogler_last_code", usedCode);
+    // UPDATE: Nutzt jetzt STORAGE_KEYS
+    if (storedType === "work" && usedCode && usedCode !== 19 && usedCode !== 190) localStorage.setItem(STORAGE_KEYS.LAST_CODE, usedCode);
     toast.success(editingEntry ? "✏️ Eintrag aktualisiert" : "💾 Eintrag gespeichert");
     setEditingEntry(null); setProject(""); setEntryType("work"); setView("dashboard");
   };
@@ -407,9 +414,11 @@ export default function App() {
       toast.success("🗑️ Eintrag gelöscht");
     } else if (deleteTarget?.type === 'all') {
       deleteAllEntries();
-      const emptyUser = { name: "", position: "", photo: null, workDays: [0, 510, 510, 510, 510, 270, 0] };
+      // UPDATE: Nutzt jetzt WORK_MODELS[0].days als Standard, genau wie in useSettings
+      const emptyUser = { name: "", position: "", photo: null, workDays: [...WORK_MODELS[0].days] };
       setUserData(emptyUser);
-      localStorage.removeItem("kogler_last_code");
+      // UPDATE: Nutzt jetzt STORAGE_KEYS
+      localStorage.removeItem(STORAGE_KEYS.LAST_CODE);
       toast.success("🧹 App vollständig zurückgesetzt");
     }
     setDeleteTarget(null);
@@ -417,7 +426,7 @@ export default function App() {
   
   const changeMonth = (delta) => { const d = new Date(currentDate); d.setMonth(d.getMonth() + delta); setCurrentDate(d); };
   
-  // --- EXPORT LOGIC (ÜBERARBEITET - OHNE Dialog.showActions) ---
+  // --- EXPORT LOGIC ---
   const exportData = async () => {
     const exportPayload = { 
       user: userData, 
@@ -426,11 +435,9 @@ export default function App() {
     };
 
     if (Capacitor.isNativePlatform()) {
-      // Auf dem Handy: Modal anzeigen statt Dialog.showActions
       exportPayloadRef.current = exportPayload;
       setShowExportModal(true);
     } else {
-      // WEB DOWNLOAD
       const toastId = toast.loading("Exportiere Daten...");
       try {
         const fileName = `kogler_export_${new Date().toISOString().slice(0, 10)}.json`;
@@ -460,7 +467,6 @@ export default function App() {
     }
   };
 
-  // NEU: Handler für Export-Modal Auswahl "Ordner"
   const handleExportToFolder = async () => {
     setShowExportModal(false);
     const toastId = toast.loading("Exportiere in Ordner...");
@@ -480,7 +486,6 @@ export default function App() {
     }
   };
 
-  // NEU: Handler für Export-Modal Auswahl "Teilen"
   const handleExportShare = async () => {
     setShowExportModal(false);
     const toastId = toast.loading("Bereite Export vor...");

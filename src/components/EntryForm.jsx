@@ -1,6 +1,8 @@
 import React, { forwardRef, useState, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass } from "lucide-react";
-import { Card, WORK_CODES, getHolidayData } from "../utils"; 
+// NEU: WORK_CODES Import angepasst
+import { Card, getHolidayData } from "../utils"; 
+import { WORK_CODES } from "../hooks/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";

@@ -6,7 +6,10 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { Card, APP_VERSION } from "../utils"; 
+// KORREKTUR: APP_VERSION hier entfernt
+import { Card } from "../utils"; 
+// KORREKTUR: APP_VERSION hier hinzugefügt (kommt aus constants.js)
+import { WORK_MODELS, STORAGE_KEYS, APP_VERSION } from "../hooks/constants"; 
 import ChangelogModal from "./ChangelogModal";
 import HelpModal from "./HelpModal";
 import { initGoogleAuth, signInGoogle, signOutGoogle } from "../utils/googleDrive";
@@ -14,7 +17,6 @@ import { selectBackupFolder, hasBackupTarget, clearBackupTarget, analyzeBackupDa
 import ImportConflictModal from "./ImportConflictModal";
 import PresetModal from "./PresetModal";
 import DecimalDurationPicker from "./DecimalDurationPicker"; 
-import { WORK_MODELS } from "../hooks/constants";
 
 const Settings = ({
   userData,
@@ -59,7 +61,8 @@ const Settings = ({
   useEffect(() => {
     // 1. Google Auth & Cloud Status initialisieren
     initGoogleAuth();
-    setIsCloudConnected(localStorage.getItem("kogler_cloud_sync") === "true");
+    // UPDATE: Nutzt jetzt STORAGE_KEYS.CLOUD_SYNC
+    setIsCloudConnected(localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC) === "true");
 
     // 2. Lokaler Backup Status prüfen
     setHasBackupFolder(hasBackupTarget());
@@ -181,19 +184,21 @@ const Settings = ({
     if (isCloudConnected) {
         try {
             await signOutGoogle();
-            localStorage.removeItem("kogler_cloud_sync");
+            // UPDATE: Nutzt jetzt STORAGE_KEYS.CLOUD_SYNC
+            localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC);
             setIsCloudConnected(false);
             toast.success("Cloud getrennt");
         } catch (e) {
             console.error(e);
-            localStorage.removeItem("kogler_cloud_sync");
+            localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC);
             setIsCloudConnected(false);
         }
     } else {
         try {
             const user = await signInGoogle();
             if (user && user.authentication.accessToken) {
-                localStorage.setItem("kogler_cloud_sync", "true");
+                // UPDATE: Nutzt jetzt STORAGE_KEYS.CLOUD_SYNC
+                localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC, "true");
                 setIsCloudConnected(true);
                 if (!autoBackup) setAutoBackup(true);
                 toast.success(`Verbunden: ${user.givenName || "Drive"}`);

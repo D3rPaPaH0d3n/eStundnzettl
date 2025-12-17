@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
+import { STORAGE_KEYS } from "./constants";
 
 export function useEntries() {
   // Initial laden
   const [entries, setEntries] = useState(() => 
-    JSON.parse(localStorage.getItem("kogler_entries") || "[]")
+    JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || "[]")
   );
 
   // Automatisch speichern bei Änderungen
   useEffect(() => {
-    localStorage.setItem("kogler_entries", JSON.stringify(entries));
+    localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(entries));
   }, [entries]);
 
   // CRUD Operationen

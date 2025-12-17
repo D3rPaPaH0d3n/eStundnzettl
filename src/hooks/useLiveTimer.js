@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-
-const STORAGE_KEY = "kogler_live_timer";
+import { STORAGE_KEYS } from "./constants";
 
 // Hilfsfunktion: Runden auf 15 Minuten
 const roundToNearest15Minutes = (dateStrOrObj) => {
@@ -24,7 +23,7 @@ const roundToNearest15Minutes = (dateStrOrObj) => {
 
 export const useLiveTimer = () => {
   const [timerState, setTimerState] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEYS.LIVE_TIMER);
     return saved ? JSON.parse(saved) : { 
       isRunning: false, 
       isPaused: false,
@@ -38,7 +37,7 @@ export const useLiveTimer = () => {
   const [autoCheckoutData, setAutoCheckoutData] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(timerState));
+    localStorage.setItem(STORAGE_KEYS.LIVE_TIMER, JSON.stringify(timerState));
   }, [timerState]);
 
   // --- NEU: AUTO-CHECKOUT CHECK BEIM LADEN ---

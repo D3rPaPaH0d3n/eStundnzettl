@@ -4,11 +4,12 @@ import {
   Card, 
   formatTime, 
   formatSignedTime, 
-  WORK_CODES, 
   getWeekNumber, 
   getTargetMinutesForDate,
   calculateOvertimeSplit
 } from "../utils"; 
+// NEU: WORK_CODES Import angepasst (Single Source of Truth)
+import { WORK_CODES } from "../hooks/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
@@ -40,7 +41,10 @@ const Dashboard = ({
     return { [currentWeek]: true };
   });
 
-  const toggleWeek = (week) => { Haptics.impact({ style: ImpactStyle.Light }); setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] })); };
+  const toggleWeek = (week) => { 
+    Haptics.impact({ style: ImpactStyle.Light }); 
+    setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] })); 
+  };
 
   const monthlyOvertimeSplit = stats.overtimeSplit || { mehrarbeit: 0, ueberstunden: 0 };
 
@@ -144,9 +148,14 @@ const Dashboard = ({
           </div>
         ) : (
           groupedByWeek.map(([week, weekEntries]) => {
+            // Wochen-Summen berechnen
             let workMinutes = 0;
-            weekEntries.forEach((e) => { if (!(e.type === "work" && e.code === 19)) workMinutes += e.netDuration; });
+            weekEntries.forEach((e) => { 
+              // Fahrzeit (Code 19) zählt NICHT zur Arbeitszeit-Summe für Überstunden-Berechnung
+              if (!(e.type === "work" && e.code === 19)) workMinutes += e.netDuration; 
+            });
 
+            // Dynamisches Wochen-Ziel berechnen (basierend auf den Tagen in dieser Woche)
             const anyDate = new Date(weekEntries[0].date); 
             const currentDay = anyDate.getDay() || 7; 
             const monday = new Date(anyDate); monday.setDate(anyDate.getDate() - (currentDay - 1)); 
@@ -155,10 +164,10 @@ const Dashboard = ({
             let dynamicTarget = 0; 
             for (let i = 0; i < 5; i++) { 
                 const check = new Date(monday); check.setDate(monday.getDate() + i); 
-                if (check.getMonth() === viewMonth && check.getFullYear() === viewYear) {
-                    const dateStr = check.toISOString().split("T")[0];
-                    dynamicTarget += getTargetMinutesForDate(dateStr, userData?.workDays);
-                }
+                // Nur Tage zählen, die auch im aktuellen Ansichts-Monat liegen (optional, hier zählen wir die ganze Woche)
+                // Aber Achtung: getTargetMinutesForDate braucht ein valides Datum
+                const dateStr = check.toISOString().split("T")[0];
+                dynamicTarget += getTargetMinutesForDate(dateStr, userData?.workDays);
             }
 
             const diff = workMinutes - dynamicTarget; 
@@ -167,7 +176,12 @@ const Dashboard = ({
 
             let balanceColorClass = diff < 0 ? "text-red-600 dark:text-red-400 font-bold" : (ueberstunden > 0 ? "text-green-600 dark:text-green-400 font-bold" : "text-blue-600 dark:text-blue-400 font-bold");
 
-            const daysMap = new Map(); weekEntries.forEach((e) => { if (!daysMap.has(e.date)) daysMap.set(e.date, []); daysMap.get(e.date).push(e); });
+            // Einträge nach Datum sortieren
+            const daysMap = new Map(); 
+            weekEntries.forEach((e) => { 
+                if (!daysMap.has(e.date)) daysMap.set(e.date, []); 
+                daysMap.get(e.date).push(e); 
+            });
             const sortedDays = Array.from(daysMap.entries()).sort((a, b) => new Date(b[0]) - new Date(a[0]));
 
             return (
@@ -204,7 +218,93 @@ const Dashboard = ({
                     </div>
                     <ChevronRight size={18} className={`text-slate-500 dark:text-slate-400 transition-transform ${expanded ? "rotate-90" : ""}`} />
                 </button>
-                <AnimatePresence> {expanded && ( <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="overflow-hidden"> <div className="mt-2 space-y-3"> {sortedDays.map(([dateStr, dayEntries]) => { const daySum = dayEntries.reduce((acc, curr) => (curr.type === "work" && curr.code === 19) ? acc : acc + curr.netDuration, 0); const d = new Date(dateStr); const sortedEntries = [...dayEntries].sort((a, b) => (a.start || "").localeCompare(b.start || "")); return ( <motion.div key={dateStr} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"> <div className="flex"> <div className="bg-slate-800 dark:bg-slate-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0 z-20 relative"> <span className="text-xs font-bold opacity-80">{d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2)}</span> <span className="text-sm font-bold">{d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}</span> </div> <div className="flex-1 min-w-0"> <AnimatePresence initial={false}> {sortedEntries.map((entry, idx) => { const isHoliday = entry.type === "public_holiday"; const isTimeComp = entry.type === "time_comp"; let timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags"); let codeLabel = ""; if(entry.type === "work") codeLabel = WORK_CODES.find(c => c.id === entry.code)?.label; else if(isHoliday) codeLabel = "Bezahlt frei"; else if(isTimeComp) codeLabel = "Zeitausgleich"; else codeLabel = entry.type === "vacation" ? "Urlaub" : "Krank"; let pauseLabel = ""; if (entry.type === "work" && entry.code !== 19) { pauseLabel = entry.pause > 0 ? ` - Pause: ${entry.pause} Min` : " - Keine Pause"; } let rowClass = `p-3 flex justify-between items-start gap-3 transition-colors cursor-pointer bg-white dark:bg-slate-800 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`; if(isHoliday) rowClass = `p-3 flex justify-between items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`; if(isTimeComp) rowClass = `p-3 flex justify-between items-start gap-3 bg-purple-50/50 dark:bg-purple-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`; if (isHoliday) { return ( <div key={entry.id} className={rowClass}> <div className="min-w-0 flex-1 flex flex-col gap-1"> <div className="font-bold text-sm leading-none text-blue-600 dark:text-blue-400">{timeLabel}</div> <div className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-tight">{entry.project}</div> <div className="text-xs text-slate-500 dark:text-slate-400 leading-tight">{codeLabel}</div> </div> <div className="flex items-center gap-2 pl-2 border-l border-slate-100 dark:border-slate-700 ml-1"> <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span> </div> </div> ); } return ( <div key={entry.id} className="relative overflow-hidden bg-red-500"> <div className="absolute inset-0 flex items-center justify-end pr-4 text-white"> <Trash2 size={20} /> </div> <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.5, right: 0.05 }} onDragEnd={(_, info) => { if (info.offset.x < -80) { Haptics.impact({ style: ImpactStyle.Heavy }); onDeleteEntry(entry.id); } }} onClick={() => onEditEntry(entry)} className={`relative z-10 bg-white dark:bg-slate-800 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`} layout > <div className={`p-3 flex justify-between items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${isTimeComp ? "bg-purple-50/30 dark:bg-purple-900/10" : ""}`}> <div className="min-w-0 flex-1 flex flex-col gap-1"> <div className={`font-bold text-sm leading-none ${isTimeComp ? "text-purple-700 dark:text-purple-400" : "text-slate-900 dark:text-slate-100"}`}> {timeLabel} {pauseLabel && <span className="font-normal opacity-70">{pauseLabel}</span>} </div> <div className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-tight">{entry.project}</div> <div className="flex items-center flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400 leading-tight"> {codeLabel && <span>{codeLabel}</span>} </div> </div> <div className="flex items-center gap-2 pl-2 border-l border-slate-100 dark:border-slate-700 ml-1"> <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span> </div> </div> </motion.div> </div> ); })} </AnimatePresence> </div> <div className="bg-slate-50 dark:bg-slate-700/50 w-20 border-l border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center flex-shrink-0 px-1 z-20 relative"> <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide mb-0.5">Gesamt</span> <span className="font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap text-sm">{formatTime(daySum)}</span> </div> </div> </motion.div> ); })} </div> </motion.div> )} </AnimatePresence> </div> ); }) )} </div>
+                
+                <AnimatePresence> 
+                  {expanded && ( 
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="overflow-hidden"> 
+                      <div className="mt-2 space-y-3"> 
+                        {sortedDays.map(([dateStr, dayEntries]) => { 
+                            const daySum = dayEntries.reduce((acc, curr) => (curr.type === "work" && curr.code === 19) ? acc : acc + curr.netDuration, 0); 
+                            const d = new Date(dateStr); 
+                            const sortedEntries = [...dayEntries].sort((a, b) => (a.start || "").localeCompare(b.start || "")); 
+                            
+                            return ( 
+                              <motion.div key={dateStr} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"> 
+                                <div className="flex"> 
+                                  <div className="bg-slate-800 dark:bg-slate-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0 z-20 relative"> 
+                                    <span className="text-xs font-bold opacity-80">{d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2)}</span> 
+                                    <span className="text-sm font-bold">{d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}</span> 
+                                  </div> 
+                                  <div className="flex-1 min-w-0"> 
+                                    <AnimatePresence initial={false}> 
+                                      {sortedEntries.map((entry, idx) => { 
+                                          const isHoliday = entry.type === "public_holiday"; 
+                                          const isTimeComp = entry.type === "time_comp"; 
+                                          let timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags"); 
+                                          
+                                          let codeLabel = ""; 
+                                          if(entry.type === "work") codeLabel = WORK_CODES.find(c => c.id === entry.code)?.label; 
+                                          else if(isHoliday) codeLabel = "Bezahlt frei"; 
+                                          else if(isTimeComp) codeLabel = "Zeitausgleich"; 
+                                          else codeLabel = entry.type === "vacation" ? "Urlaub" : "Krank"; 
+                                          
+                                          let pauseLabel = ""; 
+                                          if (entry.type === "work" && entry.code !== 19) { pauseLabel = entry.pause > 0 ? ` - Pause: ${entry.pause} Min` : " - Keine Pause"; } 
+                                          
+                                          let rowClass = `p-3 flex justify-between items-start gap-3 transition-colors cursor-pointer bg-white dark:bg-slate-800 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`; 
+                                          if(isHoliday) rowClass = `p-3 flex justify-between items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`; 
+                                          if(isTimeComp) rowClass = `p-3 flex justify-between items-start gap-3 bg-purple-50/50 dark:bg-purple-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`; 
+                                          
+                                          if (isHoliday) { 
+                                            return ( 
+                                              <div key={entry.id} className={rowClass}> 
+                                                <div className="min-w-0 flex-1 flex flex-col gap-1"> 
+                                                  <div className="font-bold text-sm leading-none text-blue-600 dark:text-blue-400">{timeLabel}</div> 
+                                                  <div className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-tight">{entry.project}</div> 
+                                                  <div className="text-xs text-slate-500 dark:text-slate-400 leading-tight">{codeLabel}</div> 
+                                                </div> 
+                                                <div className="flex items-center gap-2 pl-2 border-l border-slate-100 dark:border-slate-700 ml-1"> 
+                                                  <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span> 
+                                                </div> 
+                                              </div> 
+                                            ); 
+                                          } 
+
+                                          return ( 
+                                            <div key={entry.id} className="relative overflow-hidden bg-red-500"> 
+                                              <div className="absolute inset-0 flex items-center justify-end pr-4 text-white"> <Trash2 size={20} /> </div> 
+                                              <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.5, right: 0.05 }} onDragEnd={(_, info) => { if (info.offset.x < -80) { Haptics.impact({ style: ImpactStyle.Heavy }); onDeleteEntry(entry.id); } }} onClick={() => onEditEntry(entry)} className={`relative z-10 bg-white dark:bg-slate-800 ${idx < sortedEntries.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`} layout > 
+                                                <div className={`p-3 flex justify-between items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${isTimeComp ? "bg-purple-50/30 dark:bg-purple-900/10" : ""}`}> 
+                                                  <div className="min-w-0 flex-1 flex flex-col gap-1"> 
+                                                    <div className={`font-bold text-sm leading-none ${isTimeComp ? "text-purple-700 dark:text-purple-400" : "text-slate-900 dark:text-slate-100"}`}> {timeLabel} {pauseLabel && <span className="font-normal opacity-70">{pauseLabel}</span>} </div> 
+                                                    <div className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-tight">{entry.project}</div> 
+                                                    <div className="flex items-center flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400 leading-tight"> {codeLabel && <span>{codeLabel}</span>} </div> 
+                                                  </div> 
+                                                  <div className="flex items-center gap-2 pl-2 border-l border-slate-100 dark:border-slate-700 ml-1"> <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span> </div> 
+                                                </div> 
+                                              </motion.div> 
+                                            </div> 
+                                          ); 
+                                      })} 
+                                    </AnimatePresence> 
+                                  </div> 
+                                  <div className="bg-slate-50 dark:bg-slate-700/50 w-20 border-l border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center flex-shrink-0 px-1 z-20 relative"> 
+                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide mb-0.5">Gesamt</span> 
+                                    <span className="font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap text-sm">{formatTime(daySum)}</span> 
+                                  </div> 
+                                </div> 
+                              </motion.div> 
+                            ); 
+                        })} 
+                      </div> 
+                    </motion.div> 
+                  )} 
+                </AnimatePresence> 
+              </div> 
+            ); 
+          }) 
+        )} 
+      </div>
     </motion.main>
   );
 };

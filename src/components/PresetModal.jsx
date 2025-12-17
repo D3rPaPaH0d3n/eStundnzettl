@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { X, Check } from "lucide-react";
+import { X, Check, Calendar, Save, AlertTriangle } from "lucide-react";
 import { WORK_MODELS } from "../hooks/constants";
 
 const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }) => {
   const [selectedId, setSelectedId] = useState(currentModelId || 'custom');
 
-  // Scroll-Lock für den Hintergrund
+  // Scroll-Lock und modal-open Klasse für den Hintergrund
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-open');
     } else {
       document.body.style.overflow = '';
+      document.body.classList.remove('modal-open');
     }
     return () => {
       document.body.style.overflow = '';
+      document.body.classList.remove('modal-open');
     };
   }, [isOpen]);
 
@@ -41,7 +44,10 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }) => {
         
         {/* Header */}
         <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800 rounded-t-2xl">
-            <h3 className="font-bold text-lg text-slate-800 dark:text-white">Vorlage wählen</h3>
+            <h3 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
+                <Calendar size={20} className="text-slate-600 dark:text-slate-400" />
+                Vorlage wählen
+            </h3>
             <button 
                 onClick={onClose}
                 className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500 dark:text-slate-400"
@@ -75,17 +81,23 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }) => {
                             </div>
                         </div>
                         
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors
-                            ${isSelected 
-                                ? "border-orange-500 bg-orange-500 text-white" 
-                                : "border-slate-300 dark:border-slate-600 text-transparent"
-                            }
-                        `}>
-                            <Check size={14} strokeWidth={3} />
-                        </div>
+                        {/* Einfacher Checkmark ohne Kreis */}
+                        {isSelected && (
+                            <Check size={22} strokeWidth={3} className="text-orange-500" />
+                        )}
                     </div>
                 );
             })}
+        </div>
+
+        {/* Warnhinweis */}
+        <div className="px-4 pb-2">
+            <div className="flex items-start gap-2 p-3 bg-orange-500/10 dark:bg-orange-900/30 rounded-xl">
+                <AlertTriangle size={18} className="text-orange-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                    Achtung: Das Ändern der Vorlage berechnet die Überstunden aller vergangenen Einträge neu!
+                </p>
+            </div>
         </div>
 
         {/* Footer */}
@@ -98,8 +110,9 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }) => {
             </button>
             <button 
                 onClick={handleSave}
-                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-200 transition-all shadow-lg shadow-slate-900/20 active:scale-95"
+                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-200 transition-all shadow-lg shadow-slate-900/20 active:scale-95 flex items-center justify-center gap-2"
             >
+                <Save size={18} />
                 Übernehmen
             </button>
         </div>

@@ -320,7 +320,7 @@ const Settings = ({
         title="Arbeitszeitmodell ändern?"
         message="Achtung: Eine Änderung des Modells führt zu einer Neuberechnung der Überstunden aller bisherigen Einträge! Möchtest du fortfahren?"
         confirmText="Verstanden" 
-        confirmColor="slate"     
+        confirmColor="red"     
       />
       
       {/* DECIMAL PICKER */}

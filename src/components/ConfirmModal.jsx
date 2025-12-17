@@ -11,6 +11,16 @@ const ConfirmModal = ({
   confirmText = "Löschen", // Standard
   confirmColor = "red"     // Standard: red, blue, slate
 }) => {
+  // Body-Klasse für Modal-Open Status (versteckt Navbar)
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => document.body.classList.remove('modal-open');
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const getColorClass = (color) => {

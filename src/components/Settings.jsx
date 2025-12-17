@@ -1,14 +1,12 @@
 import React, { useRef, useState, useEffect } from "react";
 import { 
-  User, Sun, AlertTriangle, Camera, Trash2, Upload, Loader, 
+  User, Sun, Camera, Trash2, Upload, Loader, 
   History, BookOpen, RefreshCw, Briefcase, Calendar, 
-  Cloud, CloudOff, CheckCircle2, HardDrive, List, Lock, Unlock 
+  Cloud, CloudOff, CheckCircle2, HardDrive, List, Lock, Unlock, AlertTriangle 
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-// KORREKTUR: APP_VERSION hier entfernt
 import { Card } from "../utils"; 
-// KORREKTUR: APP_VERSION hier hinzugefügt (kommt aus constants.js)
 import { WORK_MODELS, STORAGE_KEYS, APP_VERSION } from "../hooks/constants"; 
 import ChangelogModal from "./ChangelogModal";
 import HelpModal from "./HelpModal";
@@ -17,6 +15,7 @@ import { selectBackupFolder, hasBackupTarget, clearBackupTarget, analyzeBackupDa
 import ImportConflictModal from "./ImportConflictModal";
 import PresetModal from "./PresetModal";
 import DecimalDurationPicker from "./DecimalDurationPicker"; 
+import ConfirmModal from "./ConfirmModal"; 
 
 const Settings = ({
   userData,
@@ -45,6 +44,7 @@ const Settings = ({
 
   // Modal States
   const [showPresetModal, setShowPresetModal] = useState(false);
+  const [showPresetWarning, setShowPresetWarning] = useState(false);
   
   // Picker State
   const [showDurationPicker, setShowDurationPicker] = useState(false);
@@ -61,7 +61,6 @@ const Settings = ({
   useEffect(() => {
     // 1. Google Auth & Cloud Status initialisieren
     initGoogleAuth();
-    // UPDATE: Nutzt jetzt STORAGE_KEYS.CLOUD_SYNC
     setIsCloudConnected(localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC) === "true");
 
     // 2. Lokaler Backup Status prüfen
@@ -184,7 +183,6 @@ const Settings = ({
     if (isCloudConnected) {
         try {
             await signOutGoogle();
-            // UPDATE: Nutzt jetzt STORAGE_KEYS.CLOUD_SYNC
             localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC);
             setIsCloudConnected(false);
             toast.success("Cloud getrennt");
@@ -197,7 +195,6 @@ const Settings = ({
         try {
             const user = await signInGoogle();
             if (user && user.authentication.accessToken) {
-                // UPDATE: Nutzt jetzt STORAGE_KEYS.CLOUD_SYNC
                 localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC, "true");
                 setIsCloudConnected(true);
                 if (!autoBackup) setAutoBackup(true);
@@ -311,6 +308,20 @@ const Settings = ({
         onSelect={handlePresetSelect} 
         currentModelId={activeModelId} 
       />
+
+      {/* NEU: Warn-Modal mit "Verstanden" und grauer/blauer Farbe */}
+      <ConfirmModal 
+        isOpen={showPresetWarning}
+        onClose={() => setShowPresetWarning(false)}
+        onConfirm={() => {
+            setShowPresetWarning(false);
+            setTimeout(() => setShowPresetModal(true), 100);
+        }}
+        title="Arbeitszeitmodell ändern?"
+        message="Achtung: Eine Änderung des Modells führt zu einer Neuberechnung der Überstunden aller bisherigen Einträge! Möchtest du fortfahren?"
+        confirmText="Verstanden" 
+        confirmColor="slate"     
+      />
       
       {/* DECIMAL PICKER */}
       <DecimalDurationPicker
@@ -416,20 +427,12 @@ const Settings = ({
                 )}
                 
                 <button 
-                    onClick={() => setShowPresetModal(true)}
+                    onClick={() => setShowPresetWarning(true)} // NEU: Erst Warnung, dann Modal
                     className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-3 py-2 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2 hover:border-orange-500 hover:text-orange-500 transition-all shadow-sm shrink-0"
                 >
                     <List size={14} /> Vorlagen
                 </button>
             </div>
-        </div>
-
-        {/* WARNSCHILD - IMMER SICHTBAR */}
-        <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-900/50">
-             <AlertTriangle className="text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" size={18} />
-             <div className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
-               <strong>Achtung:</strong> Änderungen wirken sich auf die Überstunden aller bisherigen Einträge aus!
-             </div>
         </div>
 
         {/* Manuelle Eingabe */}

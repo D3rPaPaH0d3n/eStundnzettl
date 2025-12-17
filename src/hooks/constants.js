@@ -33,9 +33,15 @@ export const WORK_MODELS = [
   },
   {
     id: '38.5-4days',
-    label: '4-Tage Woche',
+    label: '4-Tage Woche (Gleich)',
     description: 'Mo-Do 9,6h (09:38)',
     days: [0, 578, 578, 578, 577, 0, 0]
+  },
+  {
+    id: '38.5-4days-split',
+    label: '4-Tage Woche (10/8,5)',
+    description: 'Mo-Mi 10h / Do 8,5h',
+    days: [0, 600, 600, 600, 510, 0, 0]
   },
   {
     id: '40-classic',
@@ -104,7 +110,7 @@ export const STORAGE_KEYS = {
   LIVE_TIMER: "kogler_live_timer",
   LAST_BACKUP: "kogler_last_backup_date",
   BACKUP_TARGET: "kogler_backup_target",
-  CLOUD_SYNC: "kogler_cloud_sync", // NEU!
+  CLOUD_SYNC: "kogler_cloud_sync",
 };
 
 export const GITHUB = {

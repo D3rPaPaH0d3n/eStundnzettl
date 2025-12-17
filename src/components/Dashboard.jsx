@@ -6,7 +6,9 @@ import {
   formatSignedTime, 
   getWeekNumber, 
   getTargetMinutesForDate,
-  calculateOvertimeSplit
+  calculateOvertimeSplit,
+  // FIX: toLocalDateString importiert
+  toLocalDateString
 } from "../utils"; 
 // NEU: WORK_CODES Import angepasst (Single Source of Truth)
 import { WORK_CODES } from "../hooks/constants";
@@ -164,9 +166,8 @@ const Dashboard = ({
             let dynamicTarget = 0; 
             for (let i = 0; i < 5; i++) { 
                 const check = new Date(monday); check.setDate(monday.getDate() + i); 
-                // Nur Tage zählen, die auch im aktuellen Ansichts-Monat liegen (optional, hier zählen wir die ganze Woche)
-                // Aber Achtung: getTargetMinutesForDate braucht ein valides Datum
-                const dateStr = check.toISOString().split("T")[0];
+                // FIX: toLocalDateString statt toISOString
+                const dateStr = toLocalDateString(check);
                 dynamicTarget += getTargetMinutesForDate(dateStr, userData?.workDays);
             }
 

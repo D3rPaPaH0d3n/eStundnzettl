@@ -14,7 +14,8 @@ import {
   getWeekNumber, 
   parseTime, 
   getTargetMinutesForDate, 
-  checkForUpdate 
+  checkForUpdate,
+  toLocalDateString // NEU: Wichtig für Zeitzonen-Fix!
 } from "./utils";
 
 // NEU: Imports aus constants
@@ -76,7 +77,8 @@ export default function App() {
   const fileInputRef = useRef(null);
 
   // Formular State
-  const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
+  // FIX: toLocalDateString statt toISOString
+  const [formDate, setFormDate] = useState(toLocalDateString(new Date()));
   const [entryType, setEntryType] = useState("work");
   const [startTime, setStartTime] = useState("06:00");
   const [endTime, setEndTime] = useState("16:30");
@@ -88,7 +90,8 @@ export default function App() {
   const [todayTarget, setTodayTarget] = useState(510);
   
   useEffect(() => {
-    const todayStr = new Date().toISOString().split("T")[0];
+    // FIX: toLocalDateString statt toISOString
+    const todayStr = toLocalDateString(new Date());
     const target = getTargetMinutesForDate(todayStr, userData?.workDays);
     setTodayTarget(target);
   }, [userData]); 
@@ -241,7 +244,9 @@ export default function App() {
       return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
     });
     const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    // FIX: toLocalDateString statt toISOString
+    const todayStr = toLocalDateString(today);
+
     const holidayEntries = [];
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
     for (let d = 1; d <= daysInMonth; d++) {
@@ -334,7 +339,9 @@ export default function App() {
   };
 
   const startNewEntry = () => {
-    setEditingEntry(null); setEntryType("work"); setFormDate(new Date().toISOString().split("T")[0]);
+    setEditingEntry(null); setEntryType("work"); 
+    // FIX: toLocalDateString statt toISOString
+    setFormDate(toLocalDateString(new Date()));
     setStartTime("06:00"); setEndTime("16:30"); setPauseDuration(30); setProject(""); 
     // UPDATE: Nutzt jetzt STORAGE_KEYS
     const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
@@ -440,7 +447,9 @@ export default function App() {
     } else {
       const toastId = toast.loading("Exportiere Daten...");
       try {
-        const fileName = `kogler_export_${new Date().toISOString().slice(0, 10)}.json`;
+        // FIX: toLocalDateString für Dateinamen
+        const dateStr = toLocalDateString(new Date());
+        const fileName = `kogler_export_${dateStr}.json`;
         const json = JSON.stringify(exportPayload, null, 2);
         
         const file = new File([json], fileName, { type: "application/json" });
@@ -472,7 +481,9 @@ export default function App() {
     const toastId = toast.loading("Exportiere in Ordner...");
     
     try {
-      const fileName = `kogler_export_${new Date().toISOString().slice(0, 10)}.json`;
+      // FIX: toLocalDateString für Dateinamen
+      const dateStr = toLocalDateString(new Date());
+      const fileName = `kogler_export_${dateStr}.json`;
       const success = await exportToSelectedFolder(fileName, exportPayloadRef.current);
       
       if (success) {
@@ -491,7 +502,9 @@ export default function App() {
     const toastId = toast.loading("Bereite Export vor...");
     
     try {
-      const fileName = `kogler_export_${new Date().toISOString().slice(0, 10)}.json`;
+      // FIX: toLocalDateString für Dateinamen
+      const dateStr = toLocalDateString(new Date());
+      const fileName = `kogler_export_${dateStr}.json`;
       const json = JSON.stringify(exportPayloadRef.current, null, 2);
       
       await Filesystem.writeFile({ 

@@ -1,7 +1,7 @@
 import React, { forwardRef, useState, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass } from "lucide-react";
-// NEU: WORK_CODES Import angepasst
-import { Card, getHolidayData } from "../utils"; 
+// FIX: toLocalDateString importiert
+import { Card, getHolidayData, toLocalDateString } from "../utils"; 
 import { WORK_CODES } from "../hooks/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -65,7 +65,8 @@ const EntryForm = ({
   existingProjects = [],
   allEntries = [],
   isEditing = false,
-  isLiveEntry = false
+  isLiveEntry = false,
+  userData 
 }) => {
   
   const [activeTimeField, setActiveTimeField] = useState(null);
@@ -73,15 +74,12 @@ const EntryForm = ({
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // NEU: Wir merken uns, welches Jahr der Nutzer gerade im Kalender ANSIEHT
   const [viewYear, setViewYear] = useState(new Date(formDate).getFullYear());
 
-  // Wenn sich das gespeicherte Datum ändert (z.B. Pfeil-Buttons), aktualisieren wir auch die Ansicht
   useEffect(() => {
     setViewYear(new Date(formDate).getFullYear());
   }, [formDate]);
 
-  // --- SMART TIME LOGIC ---
   useEffect(() => {
     if (isEditing || isLiveEntry) return; 
     if (entryType !== 'work' && entryType !== 'drive') return;
@@ -95,8 +93,6 @@ const EntryForm = ({
     }
   }, [formDate, allEntries, entryType, isEditing, isLiveEntry]); 
 
-  // VERBESSERT: Berechnet Feiertage für das angesehene Jahr +/- 1 Jahr
-  // So sind auch beim Blättern von Dezember auf Jänner alle Tage korrekt rot
   const holidayData = useMemo(() => {
       return {
         ...getHolidayData(viewYear - 1),
@@ -146,7 +142,8 @@ const EntryForm = ({
   const changeDate = (days) => {
     const d = new Date(formDate);
     d.setDate(d.getDate() + days);
-    setFormDate(d.toISOString().split("T")[0]);
+    // FIX: toLocalDateString statt toISOString
+    setFormDate(toLocalDateString(d));
   };
 
   const currentCodeLabel = WORK_CODES.find(c => c.id === code)?.label || "Bitte wählen";
@@ -226,8 +223,8 @@ const EntryForm = ({
               <div className="flex-1">
                 <DatePicker
                   selected={new Date(formDate)}
-                  onChange={(date) => setFormDate(date.toISOString().split("T")[0])}
-                  // NEU: Reagiere auf Blättern im Kalender, um Feiertage nachzuladen
+                  // FIX: toLocalDateString statt toISOString
+                  onChange={(date) => setFormDate(toLocalDateString(date))}
                   onMonthChange={(date) => setViewYear(date.getFullYear())}
                   onYearChange={(date) => setViewYear(date.getFullYear())}
                   dateFormat="eee, dd.MM.yyyy" 
@@ -236,12 +233,8 @@ const EntryForm = ({
                   calendarContainer={CalendarContainerAnimation}
                   customInput={<CustomInput icon={CalIcon} />}
                   dayClassName={(date) => {
-                    // FIX: Lokale Zeit + dynamische Feiertagsliste
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, "0");
-                    const day = String(date.getDate()).padStart(2, "0");
-                    const dateStr = `${year}-${month}-${day}`;
-                    
+                    // FIX: toLocalDateString statt manuellem Basteln
+                    const dateStr = toLocalDateString(date);
                     return holidayData[dateStr] ? "!text-red-600 !font-bold" : undefined;
                   }}
                 />

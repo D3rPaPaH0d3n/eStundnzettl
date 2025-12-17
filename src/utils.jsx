@@ -1,12 +1,22 @@
 import React from "react";
-import { APP_VERSION } from "./hooks/constants"; // NEU: Import aus Single Source of Truth
+import { APP_VERSION } from "./hooks/constants";
 
 // -------------------------------------------------------
-// HELPER-FUNKTIONEN (WORK_CODES entfernt -> jetzt in constants.js)
+// HELPER-FUNKTIONEN
 // -------------------------------------------------------
+
+// NEU: Sichere Datumsumwandlung (verhindert den Zeitzonen-Bug!)
+export const toLocalDateString = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
 
 export const Card = ({ children, className = "" }) => (
-  <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden ${className}`}>
+  <div
+    className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden ${className}`}
+  >
     {children}
   </div>
 );
@@ -37,8 +47,12 @@ export const getDayOfWeek = (dateStr) => {
 };
 
 export const getTargetMinutesForDate = (dateStr, customWorkDays) => {
-  const day = getDayOfWeek(dateStr); 
-  if (customWorkDays && Array.isArray(customWorkDays) && customWorkDays.length === 7) {
+  const day = getDayOfWeek(dateStr);
+  if (
+    customWorkDays &&
+    Array.isArray(customWorkDays) &&
+    customWorkDays.length === 7
+  ) {
     return customWorkDays[day];
   }
   if (day >= 1 && day <= 4) return 510;
@@ -71,7 +85,7 @@ export const blobToBase64 = (blob) =>
 export const calculateOvertimeSplit = (balanceMinutes, targetMinutes) => {
   if (balanceMinutes <= 0) return { mehrarbeit: 0, ueberstunden: 0 };
 
-  const WEEKLY_LIMIT_MINUTES = 40 * 60; 
+  const WEEKLY_LIMIT_MINUTES = 40 * 60;
   const mehrarbeitBuffer = Math.max(0, WEEKLY_LIMIT_MINUTES - targetMinutes);
 
   const mehrarbeit = Math.min(balanceMinutes, mehrarbeitBuffer);
@@ -84,24 +98,44 @@ export const calculateOvertimeSplit = (balanceMinutes, targetMinutes) => {
  * ZENTRALE STATISTIK-BERECHNUNG
  * Berechnet Summen, Sollzeit und MA/ÜS-Split für einen beliebigen Zeitraum.
  */
-export const calculatePeriodStats = (entries, userData, periodStart, periodEnd) => {
+export const calculatePeriodStats = (
+  entries,
+  userData,
+  periodStart,
+  periodEnd
+) => {
   let stats = {
-    work: 0, drive: 0, holiday: 0, vacation: 0, sick: 0, timeComp: 0,
-    totalIst: 0, totalTarget: 0, totalSaldo: 0,
-    overtimeSplit: { mehrarbeit: 0, ueberstunden: 0 }
+    work: 0,
+    drive: 0,
+    holiday: 0,
+    vacation: 0,
+    sick: 0,
+    timeComp: 0,
+    totalIst: 0,
+    totalTarget: 0,
+    totalSaldo: 0,
+    overtimeSplit: { mehrarbeit: 0, ueberstunden: 0 },
   };
 
   // 1. Einträge filtern und summieren
-  const relevantEntries = entries.filter(e => {
+  const relevantEntries = entries.filter((e) => {
     const d = new Date(e.date);
     // Wir setzen die Zeitkomponente zurück für sauberen Datumsvergleich
     const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const startOnly = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
-    const endOnly = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
+    const startOnly = new Date(
+      periodStart.getFullYear(),
+      periodStart.getMonth(),
+      periodStart.getDate()
+    );
+    const endOnly = new Date(
+      periodEnd.getFullYear(),
+      periodEnd.getMonth(),
+      periodEnd.getDate()
+    );
     return dOnly >= startOnly && dOnly <= endOnly;
   });
 
-  relevantEntries.forEach(e => {
+  relevantEntries.forEach((e) => {
     if (e.type === "work") {
       if (e.code === 19) stats.drive += e.netDuration;
       else stats.work += e.netDuration;
@@ -112,18 +146,20 @@ export const calculatePeriodStats = (entries, userData, periodStart, periodEnd) 
     if (e.type === "time_comp") stats.timeComp += e.netDuration;
   });
 
-  stats.totalIst = stats.work + stats.vacation + stats.sick + stats.holiday + stats.timeComp;
+  stats.totalIst =
+    stats.work + stats.vacation + stats.sick + stats.holiday + stats.timeComp;
 
   // 2. Sollzeit berechnen (Tag für Tag)
   let loopDate = new Date(periodStart);
-  loopDate.setHours(0,0,0,0);
+  loopDate.setHours(0, 0, 0, 0);
   const loopEnd = new Date(periodEnd);
-  loopEnd.setHours(23,59,59,999);
+  loopEnd.setHours(23, 59, 59, 999);
 
   const weeklyMap = {}; // Zum Sammeln für die 40h Regel
 
   while (loopDate <= loopEnd) {
-    const dateStr = loopDate.toISOString().split("T")[0];
+    // FIX: Hier nutzen wir jetzt die lokale Umwandlung statt toISOString!
+    const dateStr = toLocalDateString(loopDate);
     const target = getTargetMinutesForDate(dateStr, userData?.workDays);
     stats.totalTarget += target;
 
@@ -137,7 +173,7 @@ export const calculatePeriodStats = (entries, userData, periodStart, periodEnd) 
   stats.totalSaldo = stats.totalIst - stats.totalTarget;
 
   // 3. MA/ÜS Split berechnen (Wochenweise Summierung)
-  relevantEntries.forEach(e => {
+  relevantEntries.forEach((e) => {
     // Ausfallsprinzip: Alles außer Fahrzeit zählt zur Basis
     if (!(e.type === "work" && e.code === 19)) {
       const w = getWeekNumber(new Date(e.date));
@@ -147,9 +183,12 @@ export const calculatePeriodStats = (entries, userData, periodStart, periodEnd) 
     }
   });
 
-  Object.values(weeklyMap).forEach(week => {
+  Object.values(weeklyMap).forEach((week) => {
     const diff = week.actual - week.target;
-    const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(diff, week.target);
+    const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
+      diff,
+      week.target
+    );
     stats.overtimeSplit.mehrarbeit += mehrarbeit;
     stats.overtimeSplit.ueberstunden += ueberstunden;
   });
@@ -164,7 +203,8 @@ export const getHolidayData = (year) => {
   const addDays = (date, days) => {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
-    return d.toISOString().split("T")[0];
+    // FIX: Auch hier lokale Umwandlung nutzen, sonst verschieben sich Ostern & Co.
+    return toLocalDateString(d);
   };
 
   const a = year % 19;
@@ -206,17 +246,14 @@ export const getHolidayData = (year) => {
 // -------------------------------------------------------
 // UPDATE CHECKER
 // -------------------------------------------------------
-// APP_VERSION wurde entfernt und wird nun oben importiert!
 
 const compareVersions = (v1, v2) => {
-  // Wir entfernen ALLES, was keine Zahl oder ein Punkt ist.
-  // Aus "v5.0.5" wird "5.0.5", aus "5.0.5-beta" wird "5.0.5"
-  const cleanV1 = v1.replace(/[^0-9.]/g, ''); 
-  const cleanV2 = v2.replace(/[^0-9.]/g, '');
+  const cleanV1 = v1.replace(/[^0-9.]/g, "");
+  const cleanV2 = v2.replace(/[^0-9.]/g, "");
 
-  const parts1 = cleanV1.split('.').map(Number);
-  const parts2 = cleanV2.split('.').map(Number);
-  
+  const parts1 = cleanV1.split(".").map(Number);
+  const parts2 = cleanV2.split(".").map(Number);
+
   for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
     const val1 = parts1[i] || 0;
     const val2 = parts2[i] || 0;
@@ -228,26 +265,29 @@ const compareVersions = (v1, v2) => {
 
 export const checkForUpdate = async () => {
   try {
-    const GITHUB_USER = "D3rPaPaH0d3n"; 
+    const GITHUB_USER = "D3rPaPaH0d3n";
     const REPO_NAME = "kogler-zeit";
-    const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/releases/latest`);
-    
+    const response = await fetch(
+      `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/releases/latest`
+    );
+
     if (!response.ok) return null;
-    
+
     const data = await response.json();
-    
-    // GitHub Tag ist z.B. "v5.0.6". 
-    // Wir übergeben es direkt an compareVersions, da unsere neue Funktion das 'v' selbst entfernt.
-    const latestVersion = data.tag_name; 
+    const latestVersion = data.tag_name;
 
     if (compareVersions(latestVersion, APP_VERSION) > 0) {
       return {
-        version: latestVersion, // Zeigt z.B. "v5.0.6" im PopUp an
+        version: latestVersion,
         notes: data.body,
-        downloadUrl: data.assets.find(a => a.name.endsWith(".apk"))?.browser_download_url || data.html_url,
-        date: new Date(data.published_at).toLocaleDateString("de-DE")
+        downloadUrl:
+          data.assets.find((a) => a.name.endsWith(".apk"))
+            ?.browser_download_url || data.html_url,
+        date: new Date(data.published_at).toLocaleDateString("de-DE"),
       };
     }
-    return null; 
-  } catch (error) { return null; }
+    return null;
+  } catch (error) {
+    return null;
+  }
 };

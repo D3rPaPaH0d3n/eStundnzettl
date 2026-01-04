@@ -12,7 +12,8 @@ import {
   formatTime, 
   formatSignedTime, 
   blobToBase64, 
-  getTargetMinutesForDate
+  getTargetMinutesForDate,
+  getWeekRangeInMonth // <--- NEU IMPORTIERT (aus vorherigem Fix)
 } from "../utils";
 // NEU: Import aus constants
 import { WORK_CODES } from "../hooks/constants";
@@ -101,7 +102,8 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
 
   const availableWeeks = useMemo(() => {
     const w = new Set(entries.map((e) => getWeekNumber(new Date(e.date))));
-    return Array.from(w).sort((a, b) => a - b);
+    // FIX: Sortierung umgedreht (b - a), damit die neueste Woche oben steht
+    return Array.from(w).sort((a, b) => b - a);
   }, [entries]);
 
   const currentLabel = useMemo(() => {
@@ -117,13 +119,10 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
       return { periodStart: start, periodEnd: end };
     } else {
       if (filteredEntries.length > 0) {
-        const d = new Date(filteredEntries[0].date);
-        const day = d.getDay() || 7;
-        const start = new Date(d);
-        start.setDate(d.getDate() - day + 1);
-        const end = new Date(start);
-        end.setDate(start.getDate() + 6);
-        return { periodStart: start, periodEnd: end };
+        // FIX: Hier nutzen wir jetzt die zentrale Funktion, um die Woche korrekt auf den Monat zuzuschneiden!
+        const refDate = new Date(filteredEntries[0].date);
+        const range = getWeekRangeInMonth(refDate, monthDate);
+        return { periodStart: range.start, periodEnd: range.end };
       } else {
         return { periodStart: new Date(), periodEnd: new Date() };
       }

@@ -46,18 +46,34 @@ export const getDayOfWeek = (dateStr) => {
   return new Date(y, m - 1, d).getDay();
 };
 
+// FIX: Spezialregelung für 24.12. und 31.12. (halber Tag Sollzeit)
 export const getTargetMinutesForDate = (dateStr, customWorkDays) => {
+  // Check auf 24.12. oder 31.12.
+  const isHalfDay = dateStr.endsWith("-12-24") || dateStr.endsWith("-12-31");
+  
+  let dailyTarget = 0;
   const day = getDayOfWeek(dateStr);
+
+  // 1. Grund-Soll ermitteln
   if (
     customWorkDays &&
     Array.isArray(customWorkDays) &&
     customWorkDays.length === 7
   ) {
-    return customWorkDays[day];
+    dailyTarget = customWorkDays[day];
+  } else {
+    // Standard-Fallback
+    if (day >= 1 && day <= 4) dailyTarget = 510; // Mo-Do: 8.5h
+    else if (day === 5) dailyTarget = 270;       // Fr: 4.5h
+    else dailyTarget = 0;                        // Sa/So: 0h
   }
-  if (day >= 1 && day <= 4) return 510;
-  if (day === 5) return 270;
-  return 0;
+
+  // 2. Wenn es der 24. oder 31.12. ist -> Soll halbieren
+  if (isHalfDay && dailyTarget > 0) {
+    return Math.round(dailyTarget / 2);
+  }
+
+  return dailyTarget;
 };
 
 export const getWeekNumber = (d) => {
@@ -194,6 +210,59 @@ export const calculatePeriodStats = (
   });
 
   return stats;
+};
+
+// -------------------------------------------------------
+// NEU: WOCHEN-HELPER (Zentralisiert)
+// -------------------------------------------------------
+
+/**
+ * Berechnet den Start- und End-Tag einer Woche (Mo-So)
+ * und kappt das Ganze, falls es über die Monatsgrenze des 'viewDate' hinausgeht.
+ */
+export const getWeekRangeInMonth = (dateInWeek, viewDate) => {
+  const d = new Date(dateInWeek);
+  const day = d.getDay() || 7; // Mo=1 ... So=7
+  
+  // Montag der Woche ermitteln
+  const startOfWeek = new Date(d);
+  startOfWeek.setDate(d.getDate() - day + 1);
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  // Sonntag der Woche ermitteln
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  // Wenn wir gar kein viewDate haben (z.B. Alles anzeigen), volle Woche zurückgeben
+  if (!viewDate) return { start: startOfWeek, end: endOfWeek };
+
+  // Monatsgrenzen des viewDate
+  const viewMonthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+  const viewMonthEnd = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+  viewMonthEnd.setHours(23, 59, 59, 999);
+
+  // Wir nehmen das "spätere" Datum als Start (entweder Montag oder 1. des Monats)
+  const effectiveStart = startOfWeek < viewMonthStart ? viewMonthStart : startOfWeek;
+  
+  // Wir nehmen das "frühere" Datum als Ende (entweder Sonntag oder Monatsende)
+  const effectiveEnd = endOfWeek > viewMonthEnd ? viewMonthEnd : endOfWeek;
+
+  return { start: effectiveStart, end: effectiveEnd };
+};
+
+/**
+ * Berechnet die Statistik für eine Woche, aber respektiert den Monats-Kontext.
+ * Das ist der "Wrapper", der die ganze Arbeit für Dashboard & Co macht.
+ */
+export const calculateWeekStats = (weekEntries, userData, viewDate) => {
+  // 1. Wir holen uns den korrekten Zeitraum (z.B. 1.1. bis 5.1.)
+  // Wir nehmen das Datum vom ersten Eintrag, um die Woche zu identifizieren
+  const dateRef = weekEntries.length > 0 ? new Date(weekEntries[0].date) : new Date();
+  const { start, end } = getWeekRangeInMonth(dateRef, viewDate);
+
+  // 2. Wir nutzen deine existierende mächtige Statistik-Funktion für diesen Zeitraum
+  return calculatePeriodStats(weekEntries, userData, start, end);
 };
 
 // -------------------------------------------------------

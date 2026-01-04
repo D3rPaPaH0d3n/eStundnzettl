@@ -435,19 +435,27 @@ const Settings = ({
             </div>
         </div>
 
-        {/* Manuelle Eingabe */}
+        {/* Manuelle Eingabe - JETZT MIT MONTAG STARTEND */}
         <div className="grid grid-cols-7 gap-2">
-            {["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"].map((dayName, idx) => {
+            {[
+              { label: "Mo", dayIndex: 1 },
+              { label: "Di", dayIndex: 2 },
+              { label: "Mi", dayIndex: 3 },
+              { label: "Do", dayIndex: 4 },
+              { label: "Fr", dayIndex: 5 },
+              { label: "Sa", dayIndex: 6 },
+              { label: "So", dayIndex: 0 }
+            ].map(({ label, dayIndex }) => {
                 // Bedingung für Interaktivität: Muss Custom sein UND Schloss offen
                 const isInteractive = isCustomMode && !isLocked;
                 
                 return (
-                    <div key={idx} className="flex flex-col gap-1">
-                        <label className={`text-[10px] font-bold text-center uppercase ${idx === 0 || idx === 6 ? 'text-red-400' : 'text-slate-500'}`}>
-                            {dayName}
+                    <div key={dayIndex} className="flex flex-col gap-1">
+                        <label className={`text-[10px] font-bold text-center uppercase ${dayIndex === 0 || dayIndex === 6 ? 'text-red-400' : 'text-slate-500'}`}>
+                            {label}
                         </label>
                         <div 
-                            onClick={() => openDayPicker(idx)}
+                            onClick={() => openDayPicker(dayIndex)}
                             className={`w-full text-center p-2 rounded-lg text-xs font-bold border transition-colors relative h-[34px] flex items-center justify-center
                                 ${isInteractive 
                                   ? "bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white shadow-sm cursor-pointer hover:border-orange-500" 
@@ -455,9 +463,9 @@ const Settings = ({
                                 }
                             `}
                         >
-                            {userData.workDays[idx] > 0 ? minToHours(userData.workDays[idx]) : "-"}
+                            {userData.workDays[dayIndex] > 0 ? minToHours(userData.workDays[dayIndex]) : "-"}
                             
-                            {userData.workDays[idx] > 0 && (
+                            {userData.workDays[dayIndex] > 0 && (
                                  <div className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isInteractive ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
                             )}
                         </div>
@@ -609,12 +617,18 @@ const Settings = ({
             <AlertTriangle className="text-red-600 dark:text-red-400" size={20} />
             <h3 className="font-bold text-red-700 dark:text-red-400">Gefahrenzone</h3>
         </div>
-        <p className="text-sm text-red-600/80 dark:text-red-400/80 mb-4 font-medium">Alle Daten löschen.</p>
+        
+        {/* NEU: Der Erklärungstext */}
+        <p className="text-sm text-red-600/80 dark:text-red-400/80 mb-4 font-medium leading-relaxed">
+          Hier kannst du die App komplett zurücksetzen und alle lokalen Daten unwiderruflich löschen. 
+          Das ermöglicht dir einen frischen Start – ideal, wenn du z.B. den Einrichtungs-Assistenten erneut durchlaufen möchtest, um dein Stundenmodell oder deine Arbeitszeiten zu ändern.
+        </p>
+
         <button 
             onClick={() => { Haptics.impact({ style: ImpactStyle.Medium }); onDeleteAll(); }} 
-            className="w-full py-3 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shadow-sm"
+            className="w-full py-3 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center justify-center gap-2"
         >
-            Alle Daten löschen
+            <Trash2 size={18} /> Alles löschen & App zurücksetzen
         </button>
       </Card>
       

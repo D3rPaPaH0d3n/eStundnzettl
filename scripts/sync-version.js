@@ -14,7 +14,7 @@ const newVersion = packageJson.version;
 console.log(`🔄 Synchronisiere Version auf: ${newVersion}...`);
 
 // --- A) UPDATE src/utils.jsx (MIT "v" PREFIX) ---
-const utilsPath = path.join(__dirname, '../src/utils.jsx');
+const utilsPath = path.join(__dirname, '../src/hooks/constants.js');
 if (fs.existsSync(utilsPath)) {
     let utilsContent = fs.readFileSync(utilsPath, 'utf8');
     

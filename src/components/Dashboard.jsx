@@ -5,12 +5,9 @@ import {
   formatTime, 
   formatSignedTime, 
   getWeekNumber, 
-  getTargetMinutesForDate,
-  calculateOvertimeSplit,
-  // FIX: toLocalDateString importiert
-  toLocalDateString
+  // calculateWeekStats NEU importiert, die alten Helfer entfernt da nicht mehr hier benötigt
+  calculateWeekStats 
 } from "../utils"; 
-// NEU: WORK_CODES Import angepasst (Single Source of Truth)
 import { WORK_CODES } from "../hooks/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -49,6 +46,14 @@ const Dashboard = ({
   };
 
   const monthlyOvertimeSplit = stats.overtimeSplit || { mehrarbeit: 0, ueberstunden: 0 };
+
+  // FIX 1: Sortierung der Wochen nach Datum (Startdatum der Einträge), nicht nach KW-Nummer.
+  const sortedWeeks = [...groupedByWeek].sort((a, b) => {
+    // a und b sind Arrays: [weekNum, entriesArray]
+    const dateA = new Date(a[1][0].date);
+    const dateB = new Date(b[1][0].date);
+    return dateB - dateA; // Absteigend (neueste oben)
+  });
 
   return (
     <motion.main initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="w-full p-3 space-y-4">
@@ -144,37 +149,30 @@ const Dashboard = ({
       {/* 3. LISTE DER EINTRÄGE */}
       <div className="space-y-3 pb-20">
         <h3 className="font-bold text-slate-500 dark:text-slate-400 text-sm px-1">Letzte Einträge (nach Kalenderwoche)</h3>
-        {groupedByWeek.length === 0 ? (
+        {sortedWeeks.length === 0 ? (
           <div className="text-center py-12 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
             <Calendar size={32} className="mx-auto mb-2 opacity-20" /> <p>Keine Einträge vorhanden.</p>
           </div>
         ) : (
-          groupedByWeek.map(([week, weekEntries]) => {
-            // Wochen-Summen berechnen
-            let workMinutes = 0;
-            weekEntries.forEach((e) => { 
-              // Fahrzeit (Code 19) zählt NICHT zur Arbeitszeit-Summe für Überstunden-Berechnung
-              if (!(e.type === "work" && e.code === 19)) workMinutes += e.netDuration; 
-            });
-
+          sortedWeeks.map(([week, weekEntries]) => {
+            
+            // FIX 2: Berechnung komplett zentralisiert!
+            // calculateWeekStats kümmert sich um den Monats-Schnitt und liefert Soll/Ist/Saldo.
+            const weekStats = calculateWeekStats(weekEntries, userData, currentDate);
+            
+            // Werte für die Anzeige extrahieren
+            // totalIst enthält alle Arbeitszeiten + Urlaub/Krank/Feiertag (aber ohne Code 19 Fahrtzeit)
+            const workMinutes = weekStats.totalIst; 
+            const diff = weekStats.totalSaldo;
+            const { mehrarbeit, ueberstunden } = weekStats.overtimeSplit;
+            
             // Dynamisches Wochen-Ziel berechnen (basierend auf den Tagen in dieser Woche)
             const anyDate = new Date(weekEntries[0].date); 
             const currentDay = anyDate.getDay() || 7; 
             const monday = new Date(anyDate); monday.setDate(anyDate.getDate() - (currentDay - 1)); 
             const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
             
-            let dynamicTarget = 0; 
-            for (let i = 0; i < 5; i++) { 
-                const check = new Date(monday); check.setDate(monday.getDate() + i); 
-                // FIX: toLocalDateString statt toISOString
-                const dateStr = toLocalDateString(check);
-                dynamicTarget += getTargetMinutesForDate(dateStr, userData?.workDays);
-            }
-
-            const diff = workMinutes - dynamicTarget; 
             const expanded = expandedWeeks[week];
-            const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(diff, dynamicTarget);
-
             let balanceColorClass = diff < 0 ? "text-red-600 dark:text-red-400 font-bold" : (ueberstunden > 0 ? "text-green-600 dark:text-green-400 font-bold" : "text-blue-600 dark:text-blue-400 font-bold");
 
             // Einträge nach Datum sortieren
@@ -194,7 +192,7 @@ const Dashboard = ({
                         
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <div className="text-sm flex gap-3">
-                                <span className={workMinutes >= dynamicTarget ? "text-green-600 dark:text-green-400 font-bold" : "text-slate-700 dark:text-slate-300 font-bold"}>{formatTime(workMinutes)}</span>
+                                <span className={weekStats.work >= weekStats.totalTarget ? "text-green-600 dark:text-green-400 font-bold" : "text-slate-700 dark:text-slate-300 font-bold"}>{formatTime(workMinutes)}</span>
                                 <span className={balanceColorClass}> {diff >= 0 ? "+" : "-"}{formatTime(Math.abs(diff))} </span>
                             </div>
 

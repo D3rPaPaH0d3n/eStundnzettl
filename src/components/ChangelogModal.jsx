@@ -4,6 +4,31 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
   {
+    version: "5.1.4",
+    date: "04.01.2026",
+    title: "Vorbereitung Play Store & Stabilität 🚀",
+    isMajor: false,
+    sections: [
+      {
+        icon: Shield,
+        title: "Play Store Release",
+        items: [
+          "Konfiguration für geschlossenen Testtrack vorbereitet",
+          "Optimierung des Build-Prozesses für Android App Bundles (.aab)",
+          "Anpassung der Versions-Strings für Google Play Konformität"
+        ]
+      },
+      {
+        icon: Sparkles,
+        title: "Verbesserungen",
+        items: [
+          "Interne Performance-Optimierungen beim Laden der Dashboard-Stats",
+          "Stabilitätsfix für AnimatePresence bei schnellen Ansichtswechseln"
+        ]
+      }
+    ]
+  },
+  {
     version: "5.1.0",
     date: "16.12.2025",
     title: "Onboarding & Picker Polish ✨",

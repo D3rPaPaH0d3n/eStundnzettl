@@ -4,7 +4,7 @@
 @variant dark (&:where(.dark, .dark *));
 
 /* ============================================================
-   REACT DATEPICKER (FINAL GREEN EDITION)
+   REACT DATEPICKER (ANTHRACITE & EMERALD EDITION)
    ============================================================ */
 
 /* 1. BASIS & CONTAINER */
@@ -15,32 +15,32 @@
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
   background-color: #ffffff !important;
-  color: #1e293b !important; /* Slate-800 */
+  color: #27272a !important; /* Zinc-800 */
   font-size: 1.1rem !important;
 }
 
 .dark .react-datepicker {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
+  background-color: #27272a !important; /* Zinc-800 */
+  color: #f4f4f5 !important; /* Zinc-100 */
 }
 
 /* 2. HEADER */
 .react-datepicker__header {
-  background-color: #f8fafc !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  background-color: #fafafa !important; /* Zinc-50 */
+  border-bottom: 1px solid #e4e4e7 !important; /* Zinc-200 */
   padding-top: 1.5rem !important;
   padding-bottom: 1rem !important;
   position: relative !important;
 }
 
 .dark .react-datepicker__header {
-  background-color: #0f172a !important;
-  border-bottom: 1px solid #334155 !important;
+  background-color: #18181b !important; /* Zinc-900 */
+  border-bottom: 1px solid #3f3f46 !important; /* Zinc-700 */
 }
 
 /* Monat Name */
 .react-datepicker__current-month {
-  color: #0f172a !important;
+  color: #18181b !important; /* Zinc-900 */
   font-weight: 900 !important;
   font-size: 1.25rem !important;
   text-transform: uppercase;
@@ -49,12 +49,12 @@
   line-height: 1.5 !important;
 }
 .dark .react-datepicker__current-month {
-  color: #f8fafc !important;
+  color: #f4f4f5 !important;
 }
 
 /* Jahreszahl (MonthPicker) */
 .react-datepicker-year-header {
-  color: #0f172a !important;
+  color: #18181b !important;
   font-weight: 900 !important;
   font-size: 1.6rem !important;
   margin-top: 0.2rem !important;
@@ -64,7 +64,7 @@
   position: relative !important;
 }
 .dark .react-datepicker-year-header {
-  color: #f8fafc !important;
+  color: #f4f4f5 !important;
 }
 
 /* 3. NAVIGATION (PFEILE) */
@@ -85,19 +85,19 @@
 
 /* Pfeil-Icon */
 .react-datepicker__navigation-icon::before {
-  border-color: #64748b !important;
+  border-color: #71717a !important; /* Zinc-500 */
   border-width: 3px 3px 0 0 !important;
   height: 10px !important; 
   width: 10px !important;
   top: 11px !important;
 }
 .dark .react-datepicker__navigation-icon::before {
-  border-color: #cbd5e1 !important;
+  border-color: #a1a1aa !important; /* Zinc-400 */
 }
 
 /* Wochentage Header */
 .react-datepicker__day-name {
-  color: #64748b !important;
+  color: #71717a !important; /* Zinc-500 */
   font-weight: 800 !important;
   width: 3rem !important;
   text-transform: uppercase;
@@ -106,7 +106,7 @@
   margin-top: 1rem !important;
 }
 .dark .react-datepicker__day-name {
-  color: #94a3b8 !important;
+  color: #a1a1aa !important;
 }
 
 /* 4. TAGE GRID */
@@ -118,11 +118,11 @@
   border-radius: 0 !important;
   font-weight: 600;
   font-size: 1.1rem !important;
-  color: #1e293b !important;
+  color: #27272a !important; /* Zinc-800 */
 }
 
 .dark .react-datepicker__day {
-  color: #f1f5f9 !important; 
+  color: #f4f4f5 !important; 
 }
 
 /* Zebra */
@@ -135,15 +135,15 @@
 
 /* Hover */
 .react-datepicker__day:hover {
-  background-color: #e2e8f0 !important;
+  background-color: #e4e4e7 !important; /* Zinc-200 */
   border-radius: 0.5rem !important;
   position: relative; z-index: 1;
 }
 .dark .react-datepicker__day:hover {
-  background-color: #334155 !important;
+  background-color: #3f3f46 !important; /* Zinc-700 */
 }
 
-/* 5. WOCHENENDE FARBEN (Orange/Rot) - Nur wenn NICHT ausgewählt! */
+/* 5. WOCHENENDE FARBEN (Orange/Rot) - BLEIBT UNVERÄNDERT (ACTION COLOR) */
 .react-datepicker__week .react-datepicker__day:not(.react-datepicker__day--selected):not(.react-datepicker__day--keyboard-selected):nth-child(6) {
   color: #ea580c !important; 
 }
@@ -158,28 +158,28 @@
   color: #f87171 !important; 
 }
 
-/* 6. AUSGEWÄHLTER TAG (GRÜN + IMMER WEISS) */
+/* 6. AUSGEWÄHLTER TAG (EMERALD + IMMER WEISS) - NEU: Logo Grün */
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
-  background-color: #16a34a !important; /* Green-600 */
+  background-color: #059669 !important; /* Emerald-600 */
   color: #ffffff !important; /* IMMER WEISS */
   font-weight: bold !important;
   border-radius: 0.5rem !important;
   transform: scale(0.85); 
-  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.5); /* Grüner Schatten */
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.5); /* Grüner Schatten */
 }
 
 /* 7. VORMONAT */
 .react-datepicker__day--outside-month {
-  color: #cbd5e1 !important;
+  color: #d4d4d8 !important; /* Zinc-300 */
   opacity: 0.25;
 }
 .dark .react-datepicker__day--outside-month {
-  color: #475569 !important;
+  color: #52525b !important; /* Zinc-600 */
   opacity: 0.25;
 }
 
-/* 8. MONATSAUSWAHL (Dashboard) - AUCH GRÜN */
+/* 8. MONATSAUSWAHL (Dashboard) - AUCH EMERALD */
 .react-datepicker__month-wrapper {
   display: flex !important;
   justify-content: space-between !important;
@@ -192,21 +192,21 @@
   width: 4.5rem !important;
   border-radius: 0.75rem !important;
   margin: 0.2rem !important;
-  color: #1e293b !important;
+  color: #27272a !important; /* Zinc-800 */
 }
 .dark .react-datepicker__month-text {
-  color: #f1f5f9 !important;
+  color: #f4f4f5 !important;
 }
-.react-datepicker__month-text:hover { background-color: #e2e8f0 !important; }
-.dark .react-datepicker__month-text:hover { background-color: #334155 !important; }
+.react-datepicker__month-text:hover { background-color: #e4e4e7 !important; }
+.dark .react-datepicker__month-text:hover { background-color: #3f3f46 !important; }
 
 .react-datepicker__month-text--selected,
 .react-datepicker__month-text--keyboard-selected {
-  background-color: #16a34a !important; /* Grün */
+  background-color: #059669 !important; /* Emerald-600 */
   color: white !important;
-  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.4);
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.4);
 }
-.react-datepicker__month-text--today { color: #16a34a !important; font-weight: 800 !important; }
+.react-datepicker__month-text--today { color: #059669 !important; font-weight: 800 !important; }
 .react-datepicker__month-text--selected.react-datepicker__month-text--today { color: white !important; }
 
 /* ============================================================

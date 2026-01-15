@@ -7,33 +7,32 @@ import { Capacitor } from "@capacitor/core";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  // WORK_CODES entfernt -> jetzt aus constants
   getWeekNumber, 
   formatTime, 
   formatSignedTime, 
   blobToBase64, 
   getTargetMinutesForDate,
-  getWeekRangeInMonth // <--- NEU IMPORTIERT (aus vorherigem Fix)
+  getWeekRangeInMonth 
 } from "../utils";
-// NEU: Import aus constants
 import { WORK_CODES } from "../hooks/constants";
 import { usePeriodStats } from "../hooks/usePeriodStats"; 
 import ExportModal from "./ExportModal";
 
+// COLORS (Zinc & Emerald Theme)
 const PRINT_STYLES = {
   textBlack: '#000000',
-  textDark: '#1e293b',
-  textMedium: '#475569',
-  textLight: '#94a3b8',
+  textDark: '#27272a',    // Zinc-800
+  textMedium: '#52525b',  // Zinc-600
+  textLight: '#a1a1aa',   // Zinc-400
   bgWhite: '#ffffff',
-  bgGray: '#f8fafc',
-  bgZebra: '#f1f5f9',
-  bgBlueLight: '#eff6ff',
+  bgGray: '#fafafa',      // Zinc-50
+  bgZebra: '#f4f4f5',     // Zinc-100
+  bgBlueLight: '#eff6ff', 
   textBlue: '#1e40af',
   textRed: '#b91c1c',
   textGreen: '#15803d',
-  borderDark: '#1e293b',
-  borderLight: '#e2e8f0',
+  borderDark: '#27272a',  // Zinc-800
+  borderLight: '#e4e4e7', // Zinc-200
 };
 
 const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onMonthChange, userData }) => {
@@ -102,7 +101,6 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
 
   const availableWeeks = useMemo(() => {
     const w = new Set(entries.map((e) => getWeekNumber(new Date(e.date))));
-    // FIX: Sortierung umgedreht (b - a), damit die neueste Woche oben steht
     return Array.from(w).sort((a, b) => b - a);
   }, [entries]);
 
@@ -119,7 +117,6 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
       return { periodStart: start, periodEnd: end };
     } else {
       if (filteredEntries.length > 0) {
-        // FIX: Hier nutzen wir jetzt die zentrale Funktion, um die Woche korrekt auf den Monat zuzuschneiden!
         const refDate = new Date(filteredEntries[0].date);
         const range = getWeekRangeInMonth(refDate, monthDate);
         return { periodStart: range.start, periodEnd: range.end };
@@ -217,9 +214,8 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950 z-[200] flex flex-col h-full">
+    <div className="fixed inset-0 bg-zinc-950 z-[200] flex flex-col h-full">
       
-      {/* WICHTIG: Hier übergeben wir isPdf={true} */}
       <ExportModal 
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
@@ -228,36 +224,36 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
         isPdf={true} 
       />
 
-      <div className="bg-slate-900 text-white p-3 shadow-xl z-50 shrink-0" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}>
+      <div className="bg-zinc-900 text-white p-3 shadow-xl z-50 shrink-0" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}>
         <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-lg flex items-center gap-2 text-slate-100 min-w-0">
-                <FileText size={20} className="text-orange-500 shrink-0" /> <span className="truncate">Vorschau</span>
+            <h2 className="font-bold text-lg flex items-center gap-2 text-zinc-100 min-w-0">
+                <FileText size={20} className="text-emerald-500 shrink-0" /> <span className="truncate">Vorschau</span>
             </h2>
-            <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
-              <button onClick={() => handleMonthChange(-1)} className="p-1.5 hover:bg-slate-700 rounded-md text-slate-300"><ChevronLeft size={18} /></button>
+            <div className="flex items-center bg-zinc-800 rounded-lg p-0.5 border border-zinc-700">
+              <button onClick={() => handleMonthChange(-1)} className="p-1.5 hover:bg-zinc-700 rounded-md text-zinc-300"><ChevronLeft size={18} /></button>
               <span className="px-2 text-sm font-bold w-24 text-center tabular-nums">{monthDate.toLocaleDateString("de-DE", { month: "short", year: "2-digit" })}</span>
-              <button onClick={() => handleMonthChange(1)} className="p-1.5 hover:bg-slate-700 rounded-md text-slate-300"><ChevronRight size={18} /></button>
+              <button onClick={() => handleMonthChange(1)} className="p-1.5 hover:bg-zinc-700 rounded-md text-zinc-300"><ChevronRight size={18} /></button>
             </div>
-            <button onClick={onClose} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors shrink-0"><X size={20} /></button>
+            <button onClick={onClose} className="p-2 bg-zinc-800 rounded-full hover:bg-zinc-700 transition-colors shrink-0"><X size={20} /></button>
         </div>
 
         <div className="flex gap-2 items-center">
-            <button onClick={() => setIsNoteModalOpen(true)} className={`p-2 rounded-lg border flex items-center justify-center transition-colors ${customNote ? "bg-blue-500/20 text-blue-400 border-blue-500/50" : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"}`}><MessageSquarePlus size={20} /></button>
+            <button onClick={() => setIsNoteModalOpen(true)} className={`p-2 rounded-lg border flex items-center justify-center transition-colors ${customNote ? "bg-blue-500/20 text-blue-400 border-blue-500/50" : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white"}`}><MessageSquarePlus size={20} /></button>
             <div className="relative flex-1 min-w-0">
-                <button onClick={() => setIsPickerOpen(!isPickerOpen)} className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-2 pl-3 pr-8 text-sm font-medium flex items-center justify-between transition-colors hover:border-orange-500/50 active:bg-slate-700">
+                <button onClick={() => setIsPickerOpen(!isPickerOpen)} className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg py-2 pl-3 pr-8 text-sm font-medium flex items-center justify-between transition-colors hover:border-emerald-500/50 active:bg-zinc-700">
                     <span className="truncate">{currentLabel}</span>
-                    <ChevronDown size={16} className={`text-slate-400 transition-transform ${isPickerOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown size={16} className={`text-zinc-400 transition-transform ${isPickerOpen ? "rotate-180" : ""}`} />
                 </button>
                 <AnimatePresence>
                     {isPickerOpen && (
                         <>
                             <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)} />
-                            <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} transition={{ duration: 0.15 }} className="absolute top-full left-0 mt-1 w-full max-h-64 overflow-y-auto bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 py-1">
-                                <div onClick={() => { setFilterMode("month"); setIsPickerOpen(false); }} className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-slate-700/50 ${filterMode === "month" ? "text-orange-500 bg-slate-700/50" : "text-slate-300 hover:bg-slate-700 hover:text-white"}`}>
+                            <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} transition={{ duration: 0.15 }} className="absolute top-full left-0 mt-1 w-full max-h-64 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl z-50 py-1">
+                                <div onClick={() => { setFilterMode("month"); setIsPickerOpen(false); }} className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-zinc-700/50 ${filterMode === "month" ? "text-emerald-500 bg-zinc-700/50" : "text-zinc-300 hover:bg-zinc-700 hover:text-white"}`}>
                                     <span>Gesamter Monat</span>{filterMode === "month" && <Check size={16} />}
                                 </div>
                                 {availableWeeks.map((w) => (
-                                    <div key={w} onClick={() => { setFilterMode(w); setIsPickerOpen(false); }} className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-slate-700/50 last:border-0 ${Number(filterMode) === w ? "text-orange-500 bg-slate-700/50" : "text-slate-300 hover:bg-slate-700 hover:text-white"}`}>
+                                    <div key={w} onClick={() => { setFilterMode(w); setIsPickerOpen(false); }} className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-zinc-700/50 last:border-0 ${Number(filterMode) === w ? "text-emerald-500 bg-zinc-700/50" : "text-zinc-300 hover:bg-zinc-700 hover:text-white"}`}>
                                         <span>KW {w} ({getWeekLabel(w)})</span>{Number(filterMode) === w && <Check size={16} />}
                                     </div>
                                 ))}
@@ -271,7 +267,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                 whileTap={{ scale: 0.95 }} 
                 onClick={() => setShowExportModal(true)} 
                 disabled={isGenerating} 
-                className="bg-orange-500 hover:bg-orange-600 text-white p-2 px-4 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-orange-900/20 shrink-0"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 px-4 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-emerald-900/20 shrink-0"
             >
                 {isGenerating ? <Loader className="animate-spin" size={18} /> : <Download size={18} />} 
                 <span className="hidden sm:inline">PDF</span>
@@ -279,13 +275,16 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
         </div>
       </div>
 
-      <div className="flex-1 bg-slate-800/50 relative overflow-hidden flex flex-col items-center justify-start py-8 overflow-y-auto touch-pan-y">
+      <div className="flex-1 bg-zinc-800/50 relative overflow-hidden flex flex-col items-center justify-start py-8 overflow-y-auto touch-pan-y">
         <div className="origin-top transition-transform duration-200 shadow-2xl bg-white" style={{ transform: `scale(${scale})`, width: '210mm', minHeight: '297mm', marginBottom: '5rem' }}>
           <div id="report-to-print" ref={reportRef} style={{ width: '100%', backgroundColor: 'white', padding: '5mm', color: PRINT_STYLES.textBlack, fontFamily: 'Arial, sans-serif' }}>
             <div style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, paddingBottom: '0.75rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
                 <h1 style={{ fontSize: '1.6rem', fontWeight: 'bold', textTransform: 'uppercase', color: PRINT_STYLES.textDark, margin: 0 }}>Stundenzettel</h1>
-                <p style={{ fontSize: '0.9rem', fontWeight: 'bold', color: PRINT_STYLES.textMedium, marginTop: '0.25rem', margin: 0 }}>Kogler Aufzugsbau</p>
+                {/* CHANGE: Conditional Rendering für Firmennamen */}
+                {userData.company && (
+                    <p style={{ fontSize: '0.9rem', fontWeight: 'bold', color: PRINT_STYLES.textMedium, marginTop: '0.25rem', margin: 0 }}>{userData.company}</p>
+                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ textAlign: 'right' }}>
@@ -422,7 +421,21 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
           </div>
         </div>
       </div>
-      <AnimatePresence> {isNoteModalOpen && ( <div className="fixed inset-0 z-[250] flex items-center justify-center p-4"> <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsNoteModalOpen(false)} /> <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-5"> <h3 className="font-bold text-lg mb-3 text-slate-800 dark:text-white">Notiz für PDF</h3> <textarea className="w-full h-32 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg resize-none outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100" placeholder="Z.B. Zusätzliche Infos, Bankverbindung, etc..." value={customNote} onChange={(e) => setCustomNote(e.target.value)} /> <div className="flex justify-end gap-2 mt-4"> <button onClick={() => setCustomNote("")} className="text-red-500 text-sm font-medium px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">Löschen</button> <button onClick={() => setIsNoteModalOpen(false)} className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold px-4 py-2 rounded-lg">Fertig</button> </div> </motion.div> </div> )} </AnimatePresence>
+      <AnimatePresence> 
+        {isNoteModalOpen && ( 
+            <div className="fixed inset-0 z-[250] flex items-center justify-center p-4"> 
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsNoteModalOpen(false)} /> 
+                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-xl shadow-2xl p-5"> 
+                    <h3 className="font-bold text-lg mb-3 text-zinc-800 dark:text-white">Notiz für PDF</h3> 
+                    <textarea className="w-full h-32 p-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg resize-none outline-none focus:border-blue-500 text-zinc-800 dark:text-zinc-100" placeholder="Z.B. Zusätzliche Infos, Bankverbindung, etc..." value={customNote} onChange={(e) => setCustomNote(e.target.value)} /> 
+                    <div className="flex justify-end gap-2 mt-4"> 
+                        <button onClick={() => setCustomNote("")} className="text-red-500 text-sm font-medium px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">Löschen</button> 
+                        <button onClick={() => setIsNoteModalOpen(false)} className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold px-4 py-2 rounded-lg">Fertig</button> 
+                    </div> 
+                </motion.div> 
+            </div> 
+        )} 
+      </AnimatePresence>
     </div>
   );
 };

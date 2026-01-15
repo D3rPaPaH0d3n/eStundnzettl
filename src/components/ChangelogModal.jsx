@@ -4,6 +4,40 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
   {
+    version: "6.0.0",
+    date: "15.01.2026",
+    title: "The Neutral & Paper Update 🎨",
+    isMajor: true,
+    sections: [
+      {
+        icon: Sparkles,
+        title: "Neues Design",
+        items: [
+          "Paper-Look: Ein frisches, technisches Grau (Anthrazit) ersetzt das alte Blau-Grau.",
+          "Emerald-Green: Das neue, satte Grün sorgt für bessere Lesbarkeit und modernen Look.",
+          "Konsistenz: Alle Menüs, Popups und Auswahl-Listen wurden an das neue Design angepasst."
+        ]
+      },
+      {
+        icon: Building2,
+        title: "Neutral & Flexibel",
+        items: [
+          "Deine Firma: Du kannst jetzt in den Einstellungen deinen eigenen Firmennamen hinterlegen.",
+          "PDF-Bericht: Der Stundenzettel ist nun neutral und zeigt deinen Firmennamen im Header an.",
+          "White-Label: Keine fixen Firmen-Brandings mehr – die App gehört dir."
+        ]
+      },
+      {
+        icon: Shield,
+        title: "Android & System",
+        items: [
+          "Themed Icons: Das App-Icon passt sich jetzt (ab Android 13) farblich deinem Homescreen an (Monochrome Support).",
+          "Optimierter Dark Mode: Bessere Kontraste für augenschonendes Arbeiten bei Nacht."
+        ]
+      }
+    ]
+  },
+  {
     version: "5.1.4",
     date: "04.01.2026",
     title: "Vorbereitung Play Store & Stabilität 🚀",
@@ -417,27 +451,34 @@ const ChangelogModal = ({ isOpen, onClose }) => {
             dragListener={false}
             dragControls={dragControls}
             onDragEnd={(_, info) => { if (info.offset.y > 100) onClose(); }}
+            // CHANGE: bg-white dark:bg-slate-900 -> bg-white dark:bg-zinc-900
+            // CHANGE: border-slate-200 -> border-zinc-200
             className={`
-              fixed z-[160] flex flex-col bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
-              inset-x-0 bottom-0 rounded-t-3xl border-t border-slate-200 dark:border-slate-800
+              fixed z-[160] flex flex-col bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden
+              inset-x-0 bottom-0 rounded-t-3xl border-t border-zinc-200 dark:border-zinc-800
               max-h-[85vh] h-[85vh]
               md:inset-auto md:w-[600px] md:h-[80vh] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl
             `}
           >
             {/* DRAG HANDLE */}
             <div 
-                className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-slate-900 shrink-0 cursor-grab active:cursor-grabbing touch-none" 
+                // CHANGE: bg-white dark:bg-slate-900 -> bg-white dark:bg-zinc-900
+                // CHANGE: bg-slate-200 -> bg-zinc-200
+                className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-zinc-900 shrink-0 cursor-grab active:cursor-grabbing touch-none" 
                 onPointerDown={(e) => dragControls.start(e)}
             >
-              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full" />
+              <div className="w-12 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full" />
             </div>
 
-            <div className="flex justify-between items-center p-5 pt-2 md:pt-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 z-10">
+            {/* CHANGE: border-slate-100 -> border-zinc-100 */}
+            <div className="flex justify-between items-center p-5 pt-2 md:pt-5 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 z-10">
               <div>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white">Änderungsprotokoll</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Was ist neu in der App?</p>
+                {/* CHANGE: text-slate-800 -> text-zinc-800 */}
+                <h2 className="text-xl font-bold text-zinc-800 dark:text-white">Änderungsprotokoll</h2>
+                {/* CHANGE: text-slate-500 -> text-zinc-500 */}
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Was ist neu in der App?</p>
               </div>
-              <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">
+              <button onClick={onClose} className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -448,28 +489,37 @@ const ChangelogModal = ({ isOpen, onClose }) => {
               style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}
             >
               {CHANGELOG_DATA.map((release, idx) => (
-                <div key={release.version} className={`p-6 ${idx < CHANGELOG_DATA.length - 1 ? 'border-b border-slate-100 dark:border-slate-800' : ''} ${release.isMajor ? 'bg-orange-50/50 dark:bg-orange-900/10' : ''}`}>
+                // CHANGE: border-slate-100 -> border-zinc-100
+                // CHANGE: bg-orange-50 -> bg-emerald-50 (für Major Highlights)
+                <div key={release.version} className={`p-6 ${idx < CHANGELOG_DATA.length - 1 ? 'border-b border-zinc-100 dark:border-zinc-800' : ''} ${release.isMajor ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : ''}`}>
                   
                   <div className="flex justify-between items-baseline mb-3">
-                    <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    {/* CHANGE: text-slate-800 -> text-zinc-800, dark:text-slate-100 -> dark:text-zinc-100 */}
+                    <h3 className="text-lg font-black text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
                       v{release.version}
-                      {release.isMajor && <span className="px-2 py-0.5 bg-orange-500 text-white text-[10px] rounded-full uppercase tracking-wider">Major</span>}
+                      {/* CHANGE: bg-orange-500 -> bg-emerald-500 */}
+                      {release.isMajor && <span className="px-2 py-0.5 bg-emerald-500 text-white text-[10px] rounded-full uppercase tracking-wider">Major</span>}
                     </h3>
-                    <span className="text-xs font-medium text-slate-400">{release.date}</span>
+                    {/* CHANGE: text-slate-400 -> text-zinc-400 */}
+                    <span className="text-xs font-medium text-zinc-400">{release.date}</span>
                   </div>
                   
-                  {release.title && <p className="text-sm font-bold text-slate-600 dark:text-slate-300 mb-4 italic">"{release.title}"</p>}
+                  {/* CHANGE: text-slate-600 -> text-zinc-600 */}
+                  {release.title && <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300 mb-4 italic">"{release.title}"</p>}
 
                   <div className="space-y-4">
                     {release.sections.map((section, sIdx) => (
                       <div key={sIdx}>
-                        <h4 className="text-xs font-bold uppercase text-slate-400 mb-2 flex items-center gap-1.5">
+                        {/* CHANGE: text-slate-400 -> text-zinc-400 */}
+                        <h4 className="text-xs font-bold uppercase text-zinc-400 mb-2 flex items-center gap-1.5">
                           <section.icon size={14} /> {section.title}
                         </h4>
                         <ul className="space-y-2">
                           {section.items.map((item, iIdx) => (
-                            <li key={iIdx} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2 leading-relaxed">
-                              <span className="block w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 mt-1.5 shrink-0" />
+                            // CHANGE: text-slate-600 -> text-zinc-600
+                            <li key={iIdx} className="text-sm text-zinc-600 dark:text-zinc-300 flex items-start gap-2 leading-relaxed">
+                              {/* CHANGE: bg-slate-300 -> bg-zinc-300 */}
+                              <span className="block w-1.5 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-600 mt-1.5 shrink-0" />
                               {item}
                             </li>
                           ))}
@@ -480,7 +530,7 @@ const ChangelogModal = ({ isOpen, onClose }) => {
                 </div>
               ))}
               
-              <div className="p-4 text-center text-slate-300 dark:text-slate-600 text-[10px] uppercase tracking-widest">
+              <div className="p-4 text-center text-zinc-300 dark:text-zinc-600 text-[10px] uppercase tracking-widest">
                 Ende des Protokolls
               </div>
             </div>

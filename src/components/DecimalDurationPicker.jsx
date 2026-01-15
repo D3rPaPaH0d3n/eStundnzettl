@@ -110,19 +110,16 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
             }}
             className="fixed bottom-0 left-0 right-0 z-[9999] rounded-t-3xl overflow-visible flex flex-col md:max-w-md md:mx-auto"
           >
-            {/* Background Layer */}
-            <div className="absolute inset-0 bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl z-0" style={{ bottom: "-100px" }} />
+            <div className="absolute inset-0 bg-white dark:bg-zinc-900 rounded-t-3xl shadow-2xl z-0" style={{ bottom: "-100px" }} />
 
-            {/* Drag Handle */}
             <div 
               className="relative z-10 w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing touch-none"
               onPointerDown={(e) => dragControls.start(e)}
             >
-              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full" />
+              <div className="w-12 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full" />
             </div>
 
-            {/* Header */}
-            <div className="relative z-20 flex justify-between items-center px-5 pb-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-t-3xl">
+            <div className="relative z-20 flex justify-between items-center px-5 pb-4 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-t-3xl">
               <button 
                 onClick={onClose} 
                 className="p-3 text-red-500 bg-red-100 dark:bg-red-900/20 dark:text-red-400 rounded-full transition-transform active:scale-95"
@@ -130,29 +127,26 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                 <X size={24} />
               </button>
 
-              {/* Titel: WICHTIG - uppercase entfernt, damit "Mittwoch SOLL h" so angezeigt wird */}
-              <span className="font-bold text-slate-800 dark:text-white tracking-wide text-base">
+              <span className="font-bold text-zinc-800 dark:text-white tracking-wide text-base">
                 {title || "Stunden"}
               </span>
 
+              {/* CHANGE: text-green-600 -> text-emerald-600 */}
               <button 
                 onClick={() => {
                   Haptics.impact({ style: ImpactStyle.Medium });
                   handleConfirm();
                 }} 
-                className="p-3 text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 rounded-full font-bold transition-transform active:scale-95"
+                className="p-3 text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full font-bold transition-transform active:scale-95"
               >
                 <Check size={24} />
               </button>
             </div>
 
-            {/* Picker Content Area */}
             <div className="relative z-10 h-[280px] w-full select-none pb-safe overflow-hidden">
               
-              {/* Highlight Bar */}
-              <div className="absolute top-1/2 left-4 right-4 h-[64px] -mt-[36px] bg-slate-100 dark:bg-slate-800 pointer-events-none z-0 border border-slate-200 dark:border-slate-700 rounded-xl" />
+              <div className="absolute top-1/2 left-4 right-4 h-[64px] -mt-[36px] bg-zinc-100 dark:bg-zinc-800 pointer-events-none z-0 border border-zinc-200 dark:border-zinc-700 rounded-xl" />
 
-              {/* Fading Maske */}
               <div 
                 className="relative z-10 h-full w-full flex justify-center items-center"
                 style={{
@@ -160,7 +154,6 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                   WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)'
                 }}
               >
-                  {/* Container zentriert */}
                   <div className="flex items-center justify-center">
                       
                       {/* SPALTE 1: STUNDEN */}
@@ -179,8 +172,8 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                             }}
                             className={`h-[64px] flex items-center justify-end pr-2 snap-center cursor-pointer transition-all duration-150 pt-1 ${
                               h === selectedHour 
-                                ? "font-bold text-4xl text-slate-800 dark:text-white scale-110" 
-                                : "text-slate-300 dark:text-slate-600 text-2xl scale-90"
+                                ? "font-bold text-4xl text-zinc-800 dark:text-white scale-110" 
+                                : "text-zinc-300 dark:text-zinc-600 text-2xl scale-90"
                             }`}
                           >
                             {h}
@@ -202,10 +195,11 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                                 setSelectedDecimal(d);
                                 scrollToValue(decimalsRef, d);
                             }}
+                            /* CHANGE: text-orange-500 -> text-emerald-500 */
                             className={`h-[64px] flex items-center justify-start pl-0 snap-center cursor-pointer transition-all duration-150 pt-1 ${
                               d === selectedDecimal 
-                                ? "font-bold text-4xl text-orange-500 scale-110" 
-                                : "text-slate-300 dark:text-slate-600 text-2xl scale-90"
+                                ? "font-bold text-4xl text-emerald-500 scale-110" 
+                                : "text-zinc-300 dark:text-zinc-600 text-2xl scale-90"
                             }`}
                           >
                             {formatDecimal(d)}
@@ -213,9 +207,8 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                         ))}
                       </div>
 
-                      {/* SPALTE 3: 'h' */}
                       <div className="h-[64px] flex items-center justify-start pl-1 pt-3">
-                        <span className="text-xl text-slate-400 font-semibold">h</span>
+                        <span className="text-xl text-zinc-400 font-semibold">h</span>
                       </div>
 
                   </div>

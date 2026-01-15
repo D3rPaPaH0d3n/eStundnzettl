@@ -13,9 +13,11 @@ export const toLocalDateString = (date) => {
   return `${y}-${m}-${d}`;
 };
 
+// CHANGE: bg-white dark:bg-slate-800 -> bg-white dark:bg-zinc-800
+// CHANGE: border-slate-200 -> border-zinc-200
 export const Card = ({ children, className = "" }) => (
   <div
-    className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden ${className}`}
+    className={`bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden ${className}`}
   >
     {children}
   </div>

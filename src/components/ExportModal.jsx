@@ -30,33 +30,42 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            // CHANGE: bg-white dark:bg-slate-800 -> bg-white dark:bg-zinc-800
+            className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
           >
             {/* Header */}
-            <div className="p-5 border-b border-slate-100 dark:border-slate-700">
+            {/* CHANGE: border-slate-100 -> border-zinc-100 */}
+            <div className="p-5 border-b border-zinc-100 dark:border-zinc-700">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
+                  {/* CHANGE: bg-orange-100 -> bg-emerald-100 */}
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
                     {isPdf ? (
-                      <FileText size={22} className="text-orange-600 dark:text-orange-400" />
+                      // CHANGE: text-orange-600 -> text-emerald-600
+                      <FileText size={22} className="text-emerald-600 dark:text-emerald-400" />
                     ) : (
-                      <HardDrive size={22} className="text-orange-600 dark:text-orange-400" />
+                      // CHANGE: text-orange-600 -> text-emerald-600
+                      <HardDrive size={22} className="text-emerald-600 dark:text-emerald-400" />
                     )}
                   </div>
                   <div>
-                    <h2 className="font-bold text-lg text-slate-800 dark:text-white">
+                    {/* CHANGE: text-slate-800 -> text-zinc-800 */}
+                    <h2 className="font-bold text-lg text-zinc-800 dark:text-white">
                       {isPdf ? "PDF speichern" : "Daten exportieren"}
                     </h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {/* CHANGE: text-slate-500 -> text-zinc-500 */}
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
                       Wähle eine Methode
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+                  // CHANGE: hover:bg-slate-100 -> hover:bg-zinc-100
+                  className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full transition-colors"
                 >
-                  <X size={20} className="text-slate-400" />
+                  {/* CHANGE: text-slate-400 -> text-zinc-400 */}
+                  <X size={20} className="text-zinc-400" />
                 </button>
               </div>
             </div>
@@ -66,16 +75,19 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
               {/* Option 1: Ordner / Documents */}
               <button
                 onClick={() => handleChoice('folder')}
-                className="w-full flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 transition-all active:scale-[0.98]"
+                // CHANGE: bg-slate-50 -> bg-zinc-50, hover:bg-zinc-100, border-zinc-200
+                className="w-full flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl border border-zinc-200 dark:border-zinc-600 transition-all active:scale-[0.98]"
               >
                 <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
                   <FolderUp size={24} className="text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="text-left flex-1">
-                  <span className="block font-bold text-slate-800 dark:text-white">
+                  {/* CHANGE: text-slate-800 -> text-zinc-800 */}
+                  <span className="block font-bold text-zinc-800 dark:text-white">
                     {isPdf ? "In Dokumente speichern" : "In Ordner speichern"}
                   </span>
-                  <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  {/* CHANGE: text-slate-500 -> text-zinc-500 */}
+                  <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                     {isPdf 
                       ? "Speichert die PDF im Ordner 'Documents'" 
                       : "Wähle einen Speicherort (z.B. Downloads)"
@@ -87,16 +99,19 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
               {/* Option 2: Teilen */}
               <button
                 onClick={() => handleChoice('share')}
-                className="w-full flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 transition-all active:scale-[0.98]"
+                // CHANGE: bg-slate-50 -> bg-zinc-50, hover:bg-zinc-100, border-zinc-200
+                className="w-full flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl border border-zinc-200 dark:border-zinc-600 transition-all active:scale-[0.98]"
               >
                 <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
                   <Share2 size={24} className="text-green-600 dark:text-green-400" />
                 </div>
                 <div className="text-left flex-1">
-                  <span className="block font-bold text-slate-800 dark:text-white">
+                  {/* CHANGE: text-slate-800 -> text-zinc-800 */}
+                  <span className="block font-bold text-zinc-800 dark:text-white">
                     Teilen / Senden
                   </span>
-                  <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  {/* CHANGE: text-slate-500 -> text-zinc-500 */}
+                  <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                     Per WhatsApp, E-Mail oder andere Apps
                   </span>
                 </div>
@@ -107,7 +122,8 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
             <div className="px-4 pb-4">
               <button
                 onClick={onClose}
-                className="w-full py-3 text-slate-500 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors"
+                // CHANGE: text-slate-500 -> text-zinc-500, hover:bg-slate-50 -> hover:bg-zinc-50
+                className="w-full py-3 text-zinc-500 dark:text-zinc-400 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-700/50 rounded-xl transition-colors"
               >
                 Abbrechen
               </button>

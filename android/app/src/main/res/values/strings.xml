@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">eStundnzettl</string>
     <string name="title_activity_main">eStundnzettl</string>
-    <string name="package_name">ccom.estundnzettl.app</string>
+    <string name="package_name">com.estundnzettl.app</string>
     <string name="custom_url_scheme">com.estundnzettl.app</string>
     <string name="server_client_id">618528142382-pes4415amf381rk4bjovlamgh4emhrov.apps.googleusercontent.com</string>
 </resources>

@@ -4,7 +4,7 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.kogler.zeiterfassung",
+  "applicationId": "com.estundnzettl.app",
   "variantName": "release",
   "elements": [
     {
@@ -13,7 +13,7 @@
       "attributes": [],
       "versionCode": 40,
       "versionName": "5.1.5",
-      "outputFile": "KoglerZeit_v5.1.5_release.apk"
+      "outputFile": "eStundnzettl_v5.1.5_release.apk"
     }
   ],
   "elementType": "File",
@@ -22,14 +22,14 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/KoglerZeit_v5.1.5_release.dm"
+        "baselineProfiles/1/eStundnzettl_v5.1.5_release.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/KoglerZeit_v5.1.5_release.dm"
+        "baselineProfiles/0/eStundnzettl_v5.1.5_release.dm"
       ]
     }
   ],

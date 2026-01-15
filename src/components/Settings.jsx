@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { 
   User, Sun, Camera, Trash2, Upload, Loader, 
   History, BookOpen, RefreshCw, Briefcase, Calendar, 
-  Cloud, CloudOff, CheckCircle2, HardDrive, List, Lock, Unlock, AlertTriangle 
+  Cloud, CloudOff, CheckCircle2, HardDrive, List, Lock, Unlock, AlertTriangle, Building2 
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -34,59 +34,42 @@ const Settings = ({
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   
-  // Cloud & Backup State
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [hasBackupFolder, setHasBackupFolder] = useState(false);
 
-  // Import State
   const [pendingImport, setPendingImport] = useState(null); 
   const importInputRef = useRef(null);
 
-  // Modal States
   const [showPresetModal, setShowPresetModal] = useState(false);
   const [showPresetWarning, setShowPresetWarning] = useState(false);
   
-  // Picker State
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [pickerTargetIndex, setPickerTargetIndex] = useState(null); 
 
-  // Derived State für Arbeitszeitmodell
   const activeModelId = userData.workModelId || 'custom';
   const isCustomMode = activeModelId === 'custom';
   const activeModelLabel = WORK_MODELS.find(m => m.id === activeModelId)?.label || "Benutzerdefiniert";
 
-  // LOCK STATE: Auch bei Custom standardmäßig "true" (geschlossen)
   const [isLocked, setIsLocked] = useState(true);
 
   useEffect(() => {
-    // 1. Google Auth & Cloud Status initialisieren
     initGoogleAuth();
     setIsCloudConnected(localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC) === "true");
-
-    // 2. Lokaler Backup Status prüfen
     setHasBackupFolder(hasBackupTarget());
   }, []);
 
-  // Wenn man das Modell wechselt, immer wieder sperren
   useEffect(() => {
     setIsLocked(true);
   }, [activeModelId]);
 
-  // =========================================================================
-  // 1. ARBEITSZEIT LOGIK
-  // =========================================================================
-  
   const minToHours = (m) => (m === 0 ? "" : Number(m / 60).toFixed(2).replace('.', ','));
 
-  // Handler: Picker für einen bestimmten Tag öffnen
   const openDayPicker = (index) => {
-    // 1. Check: Sind wir im Custom Mode?
     if (!isCustomMode) {
       toast("Bitte erst 'Benutzerdefiniert' wählen", { icon: "🚫" });
       Haptics.impact({ style: ImpactStyle.Light });
       return;
     }
-    // 2. Check: Ist das Schloss offen?
     if (isLocked) {
       toast("Zum Bearbeiten erst Schloss öffnen", { icon: "🔒" });
       Haptics.impact({ style: ImpactStyle.Medium });
@@ -104,19 +87,15 @@ const Settings = ({
     const newWorkDays = [...userData.workDays];
     newWorkDays[pickerTargetIndex] = minutes;
     
-    // Speichern (Modell-ID bleibt 'custom')
     setUserData({ ...userData, workDays: newWorkDays });
     toast.success("Zeit aktualisiert");
   };
 
   const handlePresetSelect = (model) => {
     const newUserData = { ...userData, workModelId: model.id };
-    
-    // Wenn es ein echtes Preset ist, überschreiben wir die Tage
     if (model.id !== 'custom' && model.days) {
       newUserData.workDays = [...model.days];
     }
-    
     setUserData(newUserData);
     toast.success(model.id === 'custom' ? "Benutzerdefiniert aktiviert" : "Vorlage übernommen");
     Haptics.impact({ style: ImpactStyle.Medium });
@@ -135,10 +114,6 @@ const Settings = ({
       }
   };
 
-
-  // =========================================================================
-  // 2. IMPORT / EXPORT / CLOUD / IMAGE
-  // =========================================================================
   const handleFileImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -149,17 +124,15 @@ const Settings = ({
     } catch (err) {
       toast.error("Fehler beim Lesen der Datei");
     }
-    e.target.value = null; // Input resetten
+    e.target.value = null; 
   };
 
   const processImport = (data) => {
     const analysis = analyzeBackupData(data);
-
     if (!analysis.valid) {
       toast.error("Ungültiges Backup-Format");
       return;
     }
-
     if (analysis.hasSettings) {
       setPendingImport(analysis);
     } else {
@@ -309,7 +282,6 @@ const Settings = ({
         currentModelId={activeModelId} 
       />
 
-      {/* NEU: Warn-Modal mit "Verstanden" und grauer/blauer Farbe */}
       <ConfirmModal 
         isOpen={showPresetWarning}
         onClose={() => setShowPresetWarning(false)}
@@ -323,7 +295,6 @@ const Settings = ({
         confirmColor="red"     
       />
       
-      {/* DECIMAL PICKER */}
       <DecimalDurationPicker
         isOpen={showDurationPicker}
         onClose={() => setShowDurationPicker(false)}
@@ -334,18 +305,18 @@ const Settings = ({
 
       {/* 1. USER DATA */}
       <Card className="p-5 space-y-4">
-        <div className="flex items-center gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
+        <div className="flex items-center gap-4 border-b border-zinc-100 dark:border-zinc-700 pb-4">
           <div className="relative group shrink-0">
             <div 
               onClick={() => !isProcessingImg && fileInputRef.current?.click()}
-              className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden cursor-pointer border-2 border-transparent hover:border-orange-500 transition-all shadow-inner relative"
+              className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center overflow-hidden cursor-pointer border-2 border-transparent hover:border-emerald-500 transition-all shadow-inner relative"
             >
               {isProcessingImg ? (
-                <Loader className="animate-spin text-orange-500" size={24} />
+                <Loader className="animate-spin text-emerald-500" size={24} />
               ) : userData.photo ? (
                 <img src={userData.photo} alt="Profil" className="w-full h-full object-cover" />
               ) : (
-                <User size={32} className="text-slate-400 dark:text-slate-500" />
+                <User size={32} className="text-zinc-400 dark:text-zinc-500" />
               )}
               {!isProcessingImg && (
                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -357,7 +328,7 @@ const Settings = ({
             {userData.photo && !isProcessingImg && (
               <button 
                 onClick={removePhoto}
-                className="absolute -bottom-1 -right-1 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 p-1.5 rounded-full shadow-sm hover:scale-110 transition-transform border border-white dark:border-slate-800"
+                className="absolute -bottom-1 -right-1 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 p-1.5 rounded-full shadow-sm hover:scale-110 transition-transform border border-white dark:border-zinc-800"
               >
                 <Trash2 size={12} />
               </button>
@@ -365,32 +336,48 @@ const Settings = ({
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-lg dark:text-white truncate">Benutzerdaten</h3>
-            <p className="text-xs text-slate-400">Tippe auf das Bild, um es zu ändern.</p>
+            <p className="text-xs text-zinc-400">Tippe auf das Bild, um es zu ändern.</p>
           </div>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Dein Name</label>
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg p-3 mt-1 focus-within:border-orange-500 transition-colors">
-               <User size={18} className="text-slate-400" />
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Dein Name</label>
+            <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 rounded-lg p-3 mt-1 focus-within:border-emerald-500 transition-colors">
+               <User size={18} className="text-zinc-400" />
                <input
                 type="text"
                 value={userData.name || ""}
                 onChange={(e) => setUserData({ ...userData, name: e.target.value })}
-                className="w-full bg-transparent font-bold text-slate-800 dark:text-white outline-none"
+                className="w-full bg-transparent font-bold text-zinc-800 dark:text-white outline-none"
                 placeholder="Max Mustermann"
               />
             </div>
           </div>
+          
+          {/* NEU: FIRMA FELD */}
           <div>
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Position / Job</label>
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg p-3 mt-1 focus-within:border-orange-500 transition-colors">
-               <Briefcase size={18} className="text-slate-400" />
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Firma</label>
+            <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 rounded-lg p-3 mt-1 focus-within:border-emerald-500 transition-colors">
+               <Building2 size={18} className="text-zinc-400" />
+               <input
+                type="text"
+                value={userData.company || ""}
+                onChange={(e) => setUserData({ ...userData, company: e.target.value })}
+                className="w-full bg-transparent font-bold text-zinc-800 dark:text-white outline-none"
+                placeholder="Firmenname GmbH"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Position / Job</label>
+            <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 rounded-lg p-3 mt-1 focus-within:border-emerald-500 transition-colors">
+               <Briefcase size={18} className="text-zinc-400" />
                <input
                 type="text"
                 value={userData.position || ""}
                 onChange={(e) => setUserData({ ...userData, position: e.target.value })}
-                className="w-full bg-transparent font-bold text-slate-800 dark:text-white outline-none"
+                className="w-full bg-transparent font-bold text-zinc-800 dark:text-white outline-none"
                 placeholder="Monteur"
               />
             </div>
@@ -399,27 +386,26 @@ const Settings = ({
       </Card>
 
       {/* 2. ARBEITSZEIT MODELL */}
-      <Card className="p-5 space-y-4 bg-slate-50/50 dark:bg-slate-800/50">
+      <Card className="p-5 space-y-4 bg-zinc-50/50 dark:bg-zinc-800/50">
         <div className="flex justify-between items-start gap-4">
             <div>
                 <div className="flex items-center gap-2">
-                    <Calendar size={18} className="text-slate-400" />
-                    <h3 className="font-bold text-slate-700 dark:text-white">Arbeitszeit Modell</h3>
+                    <Calendar size={18} className="text-zinc-400" />
+                    <h3 className="font-bold text-zinc-700 dark:text-white">Arbeitszeit Modell</h3>
                 </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                   Aktuell: <span className="font-bold text-slate-800 dark:text-slate-200">{activeModelLabel}</span>
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
+                   Aktuell: <span className="font-bold text-zinc-800 dark:text-zinc-200">{activeModelLabel}</span>
                 </p>
             </div>
             
             <div className="flex gap-2">
-                {/* Schloss Icon (Nur bei Custom Mode relevant) */}
                 {isCustomMode && (
                     <button 
                         onClick={toggleLock}
                         className={`p-2 rounded-lg border transition-all ${
                             isLocked 
-                             ? "bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500" 
-                             : "bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-900 text-orange-600"
+                             ? "bg-zinc-100 dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-500" 
+                             : "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-900 text-emerald-600"
                         }`}
                     >
                         {isLocked ? <Lock size={14} /> : <Unlock size={14} />}
@@ -427,15 +413,14 @@ const Settings = ({
                 )}
                 
                 <button 
-                    onClick={() => setShowPresetWarning(true)} // NEU: Erst Warnung, dann Modal
-                    className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-3 py-2 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2 hover:border-orange-500 hover:text-orange-500 transition-all shadow-sm shrink-0"
+                    onClick={() => setShowPresetWarning(true)} 
+                    className="bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 px-3 py-2 rounded-lg text-xs font-bold text-zinc-600 dark:text-zinc-300 flex items-center gap-2 hover:border-emerald-500 hover:text-emerald-500 transition-all shadow-sm shrink-0"
                 >
                     <List size={14} /> Vorlagen
                 </button>
             </div>
         </div>
 
-        {/* Manuelle Eingabe - JETZT MIT MONTAG STARTEND */}
         <div className="grid grid-cols-7 gap-2">
             {[
               { label: "Mo", dayIndex: 1 },
@@ -446,27 +431,26 @@ const Settings = ({
               { label: "Sa", dayIndex: 6 },
               { label: "So", dayIndex: 0 }
             ].map(({ label, dayIndex }) => {
-                // Bedingung für Interaktivität: Muss Custom sein UND Schloss offen
                 const isInteractive = isCustomMode && !isLocked;
                 
                 return (
                     <div key={dayIndex} className="flex flex-col gap-1">
-                        <label className={`text-[10px] font-bold text-center uppercase ${dayIndex === 0 || dayIndex === 6 ? 'text-red-400' : 'text-slate-500'}`}>
+                        <label className={`text-[10px] font-bold text-center uppercase ${dayIndex === 0 || dayIndex === 6 ? 'text-red-400' : 'text-zinc-500'}`}>
                             {label}
                         </label>
                         <div 
                             onClick={() => openDayPicker(dayIndex)}
                             className={`w-full text-center p-2 rounded-lg text-xs font-bold border transition-colors relative h-[34px] flex items-center justify-center
                                 ${isInteractive 
-                                  ? "bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white shadow-sm cursor-pointer hover:border-orange-500" 
-                                  : "bg-transparent border-transparent text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-80"
+                                  ? "bg-white dark:bg-zinc-700 border-zinc-300 dark:border-zinc-600 text-zinc-800 dark:text-white shadow-sm cursor-pointer hover:border-emerald-500" 
+                                  : "bg-transparent border-transparent text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-80"
                                 }
                             `}
                         >
                             {userData.workDays[dayIndex] > 0 ? minToHours(userData.workDays[dayIndex]) : "-"}
                             
                             {userData.workDays[dayIndex] > 0 && (
-                                 <div className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isInteractive ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
+                                 <div className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isInteractive ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}></div>
                             )}
                         </div>
                     </div>
@@ -475,7 +459,7 @@ const Settings = ({
         </div>
 
         <div className="text-center">
-            <span className="inline-block px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-xs font-bold rounded-full">
+            <span className="inline-block px-3 py-1 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-full">
                 Wochenstunden: {(userData.workDays.reduce((a,b)=>a+b,0)/60).toLocaleString('de-DE')} h
             </span>
         </div>
@@ -483,8 +467,8 @@ const Settings = ({
 
       {/* 3. THEME */}
       <Card className="p-5 space-y-3">
-        <h3 className="font-bold text-slate-700 dark:text-white flex items-center gap-2">
-            <Sun size={18} className="text-orange-400" />
+        <h3 className="font-bold text-zinc-700 dark:text-white flex items-center gap-2">
+            <Sun size={18} className="text-emerald-400" />
             <span>Design / Theme</span>
         </h3>
         <div className="grid grid-cols-3 gap-2">
@@ -494,8 +478,8 @@ const Settings = ({
                 onClick={() => handleThemeChange(mode)} 
                 className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors capitalize 
                     ${theme === mode 
-                        ? "border-orange-500 bg-orange-50 dark:bg-slate-700 text-orange-600 dark:text-orange-400" 
-                        : "border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                        ? "border-emerald-500 bg-emerald-50 dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400" 
+                        : "border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
                     }`}
             >
               {mode === 'system' ? 'System' : (mode === 'light' ? 'Hell' : 'Dunkel')}
@@ -506,62 +490,59 @@ const Settings = ({
 
       {/* 4. DATEN & BACKUP */}
       <Card className="p-5 space-y-4">
-        <h3 className="font-bold text-slate-700 dark:text-white">Daten & Backup</h3>
+        <h3 className="font-bold text-zinc-700 dark:text-white">Daten & Backup</h3>
         
-        {/* Google Drive Status */}
-        <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-3 rounded-xl">
+        <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl">
             <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${isCloudConnected ? "bg-blue-100 text-blue-600" : "bg-slate-200 text-slate-400"}`}>
+                <div className={`p-2 rounded-full ${isCloudConnected ? "bg-blue-100 text-blue-600" : "bg-zinc-200 text-zinc-400"}`}>
                     {isCloudConnected ? <Cloud size={20} /> : <CloudOff size={20} />}
                 </div>
                 <div>
-                    <span className="block font-bold text-sm text-slate-800 dark:text-white">Google Drive</span>
-                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                    <span className="block font-bold text-sm text-zinc-800 dark:text-white">Google Drive</span>
+                    <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                         {isCloudConnected ? "Sync Aktiv" : "Nicht verbunden"}
                     </span>
                 </div>
             </div>
             <button 
                 onClick={handleGoogleToggle} 
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${isCloudConnected ? "border-red-200 bg-red-50 text-red-600" : "border-slate-300 bg-white text-slate-700"}`}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${isCloudConnected ? "border-red-200 bg-red-50 text-red-600" : "border-zinc-300 bg-white text-zinc-700"}`}
             >
                 {isCloudConnected ? "Trennen" : "Verbinden"}
             </button>
         </div>
 
-        {/* Lokales Backup Status */}
-        <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-3 rounded-xl">
+        <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl">
             <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${hasBackupFolder ? "bg-green-100 text-green-600" : "bg-slate-200 text-slate-400"}`}>
+                <div className={`p-2 rounded-full ${hasBackupFolder ? "bg-green-100 text-green-600" : "bg-zinc-200 text-zinc-400"}`}>
                     {hasBackupFolder ? <CheckCircle2 size={20} /> : <HardDrive size={20} />}
                 </div>
                 <div>
-                    <span className="block font-bold text-sm text-slate-800 dark:text-white">Lokales Backup</span>
-                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                    <span className="block font-bold text-sm text-zinc-800 dark:text-white">Lokales Backup</span>
+                    <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                         {hasBackupFolder ? "Aktiv (Täglich)" : "Nicht konfiguriert"}
                     </span>
                 </div>
             </div>
             <button 
                 onClick={handleLocalToggle} 
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${hasBackupFolder ? "border-red-200 bg-red-50 text-red-600" : "border-slate-300 bg-white text-slate-700"}`}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${hasBackupFolder ? "border-red-200 bg-red-50 text-red-600" : "border-zinc-300 bg-white text-zinc-700"}`}
             >
                 {hasBackupFolder ? "Trennen" : "Wählen"}
             </button>
         </div>
         
-        {/* Import / Export Buttons */}
         <div className="grid grid-cols-2 gap-2 pt-2">
           <button 
             onClick={onExport} 
-            className="w-full py-3 bg-slate-900 dark:bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 flex items-center justify-center gap-2 transition-colors"
+            className="w-full py-3 bg-zinc-900 dark:bg-zinc-700 text-white font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-600 flex items-center justify-center gap-2 transition-colors"
           >
             <Upload size={18} className="rotate-180" /> Export
           </button>
           
           <button 
             onClick={() => importInputRef.current?.click()} 
-            className="w-full py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center gap-2 transition-colors"
+            className="w-full py-3 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors"
           >
             <Upload size={18} /> Import
           </button>
@@ -578,7 +559,7 @@ const Settings = ({
 
       {/* 5. APP & INFORMATIONEN */}
       <Card className="p-5 space-y-3">
-        <h3 className="font-bold text-slate-700 dark:text-white">App & Informationen</h3>
+        <h3 className="font-bold text-zinc-700 dark:text-white">App & Informationen</h3>
         
         <button 
             onClick={() => {
@@ -618,7 +599,6 @@ const Settings = ({
             <h3 className="font-bold text-red-700 dark:text-red-400">Gefahrenzone</h3>
         </div>
         
-        {/* NEU: Der Erklärungstext */}
         <p className="text-sm text-red-600/80 dark:text-red-400/80 mb-4 font-medium leading-relaxed">
           Hier kannst du die App komplett zurücksetzen und alle lokalen Daten unwiderruflich löschen. 
           Das ermöglicht dir einen frischen Start – ideal, wenn du z.B. den Einrichtungs-Assistenten erneut durchlaufen möchtest, um dein Stundenmodell oder deine Arbeitszeiten zu ändern.
@@ -626,7 +606,7 @@ const Settings = ({
 
         <button 
             onClick={() => { Haptics.impact({ style: ImpactStyle.Medium }); onDeleteAll(); }} 
-            className="w-full py-3 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-white dark:bg-zinc-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center justify-center gap-2"
         >
             <Trash2 size={18} /> Alles löschen & App zurücksetzen
         </button>
@@ -634,8 +614,8 @@ const Settings = ({
       
       {/* 7. FOOTER */}
       <div className="text-center space-y-1 pb-4">
-        <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Version {APP_VERSION}</p>
-        <p className="text-[10px] text-slate-300 dark:text-slate-600 font-medium">Developed with ❤️ by Markus Kainer & Gemini</p>
+        <p className="text-xs font-bold text-zinc-400 dark:text-zinc-500">Version {APP_VERSION}</p>
+        <p className="text-[10px] text-zinc-300 dark:text-zinc-600 font-medium">Developed with ❤️ by Markus Kainer & Gemini</p>
       </div>
     </main>
   );

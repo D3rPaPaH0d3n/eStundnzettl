@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from "react";
 import { Check, X } from "lucide-react";
-import { motion, AnimatePresence, useDragControls } from "framer-motion"; // NEU: useDragControls
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
   const hoursRef = useRef(null);
   const minutesRef = useRef(null);
-  const dragControls = useDragControls(); // NEU: Steuerung für den Drag
+  const dragControls = useDragControls();
   
   const ITEM_HEIGHT = 64; 
 
@@ -74,49 +74,43 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
             drag="y"
             dragConstraints={{ top: 0 }}
             dragElastic={0.2}
-            // FIX 1: Drag Listener deaktivieren (damit Scrollen geht)
             dragListener={false} 
-            // FIX 2: Controls verbinden
             dragControls={dragControls}
             onDragEnd={(_, info) => {
               if (info.offset.y > 100) onClose();
             }}
-            className="fixed bottom-0 left-0 right-0 z-[101] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl overflow-hidden flex flex-col pb-safe md:max-w-md md:mx-auto md:rounded-3xl md:bottom-4 md:border md:border-slate-200 dark:md:border-slate-700"
+            className="fixed bottom-0 left-0 right-0 z-[101] bg-white dark:bg-zinc-900 rounded-t-3xl shadow-2xl overflow-hidden flex flex-col pb-safe md:max-w-md md:mx-auto md:rounded-3xl md:bottom-4 md:border md:border-zinc-200 dark:md:border-zinc-700"
           >
-            {/* DRAG HANDLE AREA - Nur HIER darf gezogen werden */}
             <div 
               className="w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing touch-none"
-              // FIX 3: Hier startet der Drag manuell
               onPointerDown={(e) => dragControls.start(e)}
             >
-              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full" />
+              <div className="w-12 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full" />
             </div>
 
-            {/* HEADER */}
-            <div className="flex justify-between items-center px-5 pb-4 border-b border-slate-100 dark:border-slate-800">
-              <button onClick={onClose} className="p-3 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+            <div className="flex justify-between items-center px-5 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+              <button onClick={onClose} className="p-3 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
                 <X size={24} />
               </button>
-              <span className="font-bold text-slate-800 dark:text-white uppercase tracking-wide text-base">
+              <span className="font-bold text-zinc-800 dark:text-white uppercase tracking-wide text-base">
                 {title || "Zeit wählen"}
               </span>
+              {/* CHANGE: text-green -> text-emerald */}
               <button 
                 onClick={() => {
                   Haptics.impact({ style: ImpactStyle.Medium });
                   onClose();
                 }} 
-                className="p-3 text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 rounded-full font-bold transition-transform active:scale-95"
+                className="p-3 text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full font-bold transition-transform active:scale-95"
               >
                 <Check size={24} />
               </button>
             </div>
 
-            {/* PICKER AREA - Jetzt sicher scrollbar */}
-            <div className="flex h-[320px] relative bg-white dark:bg-slate-900 select-none">
+            <div className="flex h-[320px] relative bg-white dark:bg-zinc-900 select-none">
               
-              <div className="absolute top-1/2 left-4 right-4 h-[64px] -mt-[32px] bg-slate-100 dark:bg-slate-800 pointer-events-none z-0 border border-slate-200 dark:border-slate-700 rounded-xl" />
+              <div className="absolute top-1/2 left-4 right-4 h-[64px] -mt-[32px] bg-zinc-100 dark:bg-zinc-800 pointer-events-none z-0 border border-zinc-200 dark:border-zinc-700 rounded-xl" />
 
-              {/* STUNDEN */}
               <div 
                 ref={hoursRef}
                 onScroll={(e) => handleScroll(e, 'hour')}
@@ -127,10 +121,11 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
                     key={h}
                     data-selected={h === selectedHour}
                     onClick={() => updateTime(h, selectedMinute)}
+                    /* CHANGE: text-orange -> text-emerald */
                     className={`h-[64px] flex items-center justify-center snap-center cursor-pointer transition-all duration-100 ${
                       h === selectedHour 
-                        ? "font-bold text-4xl text-orange-600 dark:text-orange-500 scale-110" 
-                        : "text-slate-400 dark:text-slate-600 text-2xl opacity-60"
+                        ? "font-bold text-4xl text-emerald-600 dark:text-emerald-500 scale-110" 
+                        : "text-zinc-400 dark:text-zinc-600 text-2xl opacity-60"
                     }`}
                   >
                     {String(h).padStart(2, "0")}
@@ -138,9 +133,8 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
                 ))}
               </div>
 
-              <div className="flex items-center justify-center z-10 text-slate-300 dark:text-slate-600 font-bold text-2xl pb-2">:</div>
+              <div className="flex items-center justify-center z-10 text-zinc-300 dark:text-zinc-600 font-bold text-2xl pb-2">:</div>
 
-              {/* MINUTEN */}
               <div 
                 ref={minutesRef}
                 onScroll={(e) => handleScroll(e, 'minute')}
@@ -151,10 +145,11 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
                     key={m}
                     data-selected={m === selectedMinute}
                     onClick={() => updateTime(selectedHour, m)}
+                    /* CHANGE: text-orange -> text-emerald */
                     className={`h-[64px] flex items-center justify-center snap-center cursor-pointer transition-all duration-100 ${
                       m === selectedMinute 
-                        ? "font-bold text-4xl text-orange-600 dark:text-orange-500 scale-110" 
-                        : "text-slate-400 dark:text-slate-600 text-2xl opacity-60"
+                        ? "font-bold text-4xl text-emerald-600 dark:text-emerald-500 scale-110" 
+                        : "text-zinc-400 dark:text-zinc-600 text-2xl opacity-60"
                     }`}
                   >
                     {String(m).padStart(2, "0")}

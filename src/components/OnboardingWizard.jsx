@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { User, Briefcase, Calendar, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, RefreshCw, X } from "lucide-react";
+import { User, Briefcase, Calendar, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, RefreshCw, X, Building2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
 import { analyzeBackupData, applyBackup, readJsonFile, selectBackupFolder } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
-import { WORK_MODELS } from "../hooks/constants";
+import { WORK_MODELS, STORAGE_KEYS } from "../hooks/constants";
 
 const OnboardingWizard = ({ onComplete }) => {
   const [step, setStep] = useState(0); 
@@ -14,6 +14,7 @@ const OnboardingWizard = ({ onComplete }) => {
 
   const [formData, setFormData] = useState({
     name: "",
+    company: "", // NEU: Firmenname
     role: "", 
     photo: null,
     workDays: WORK_MODELS[0].days, 
@@ -118,9 +119,13 @@ const OnboardingWizard = ({ onComplete }) => {
 
   // --- FINISH ---
   const finishSetup = () => {
-    localStorage.setItem("kogler_user", JSON.stringify({
+    // CHANGE: "kogler_user" -> STORAGE_KEYS.USER (Konsistenz mit App.jsx)
+    localStorage.setItem(STORAGE_KEYS.USER || "user_data", JSON.stringify({
       name: formData.name,
-      role: formData.role,
+      company: formData.company, // NEU: Speichern
+      role: formData.role, // Bleibt als Fallback oder intern, obwohl App.jsx "position" nutzt. Wir speichern beides sicherheitshalber? 
+      // App.jsx nutzt "position". Ich mappe hier role -> position um sicherzugehen.
+      position: formData.role, 
       photo: formData.photo,
       workDays: formData.workDays,
       settings: {
@@ -146,15 +151,12 @@ const OnboardingWizard = ({ onComplete }) => {
       const user = await signInGoogle();
       if (!user) throw new Error("Anmeldung fehlgeschlagen");
 
-      // FIX: Token holen
       const token = user.authentication?.accessToken;
       if (!token) throw new Error("Kein Zugriffstoken erhalten");
 
-      // FIX: Token an findLatestBackup übergeben
       const file = await findLatestBackup(token);
       if (!file) throw new Error("Kein Backup gefunden.");
 
-      // FIX: Token an downloadFileContent übergeben
       const content = await downloadFileContent(token, file.id);
       if (!content) throw new Error("Backup leer.");
 
@@ -229,14 +231,18 @@ const OnboardingWizard = ({ onComplete }) => {
 
 
   return (
-    <div className="fixed inset-0 bg-slate-50 dark:bg-slate-900 z-50 flex flex-col items-center justify-center p-4">
+    // CHANGE: bg-slate-50 -> bg-zinc-50
+    <div className="fixed inset-0 bg-zinc-50 dark:bg-zinc-950 z-50 flex flex-col items-center justify-center p-4">
       
-      <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      {/* CHANGE: bg-white dark:bg-slate-800 -> bg-white dark:bg-zinc-800 */}
+      <div className="w-full max-w-md bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {step > 0 && (
-          <div className="h-1.5 bg-slate-100 dark:bg-slate-700 w-full">
+          // CHANGE: bg-slate-100 -> bg-zinc-100
+          <div className="h-1.5 bg-zinc-100 dark:bg-zinc-700 w-full">
             <motion.div 
-              className="h-full bg-orange-500"
+              // CHANGE: bg-orange-500 -> bg-emerald-500
+              className="h-full bg-emerald-500"
               initial={{ width: 0 }}
               animate={{ width: `${(step / 4) * 100}%` }}
             />
@@ -256,14 +262,17 @@ const OnboardingWizard = ({ onComplete }) => {
                 className="space-y-8 flex flex-col items-center justify-center h-full py-6"
               >
                 <div className="text-center space-y-4">
-                  <div className="w-20 h-20 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-orange-500/20">
+                  {/* CHANGE: bg-orange-500 -> bg-emerald-600 */}
+                  <div className="w-20 h-20 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/20">
                     <img src="/icon.png" alt="Logo" className="w-12 h-12 brightness-0 invert" onError={(e) => e.target.style.display='none'} /> 
                     <ShieldCheck size={40} className="text-white absolute" style={{opacity: 0.2}}/>
                   </div>
-                  <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                  {/* CHANGE: text-slate-900 -> text-zinc-900 */}
+                  <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
                     Kogler Zeit
                   </h1>
-                  <p className="text-slate-500 dark:text-slate-400 max-w-[260px] mx-auto">
+                  {/* CHANGE: text-slate-500 -> text-zinc-500 */}
+                  <p className="text-zinc-500 dark:text-zinc-400 max-w-[260px] mx-auto">
                     Die moderne Zeiterfassung für Profis. Wie möchtest du starten?
                   </p>
                 </div>
@@ -271,7 +280,8 @@ const OnboardingWizard = ({ onComplete }) => {
                 <div className="w-full space-y-3">
                   <button 
                     onClick={handleStartNew}
-                    className="w-full p-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                    // CHANGE: bg-slate-900 -> bg-zinc-900
+                    className="w-full p-5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-bold text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                   >
                     <Play size={20} fill="currentColor" />
                     Neu starten
@@ -279,7 +289,8 @@ const OnboardingWizard = ({ onComplete }) => {
 
                   <button 
                     onClick={handleStartRestore}
-                    className="w-full p-5 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl font-bold text-lg hover:border-orange-200 dark:hover:border-slate-600 hover:bg-orange-50/50 dark:hover:bg-slate-700/50 transition-all flex items-center justify-center gap-3"
+                    // CHANGE: border-slate-100 -> border-zinc-100, hover:bg-emerald-50/50, hover:border-emerald-200
+                    className="w-full p-5 bg-white dark:bg-zinc-800 border-2 border-zinc-100 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-2xl font-bold text-lg hover:border-emerald-200 dark:hover:border-zinc-600 hover:bg-emerald-50/50 dark:hover:bg-zinc-700/50 transition-all flex items-center justify-center gap-3"
                   >
                     <RefreshCw size={20} />
                     Backup laden
@@ -298,51 +309,71 @@ const OnboardingWizard = ({ onComplete }) => {
                 className="space-y-6"
               >
                 <div className="text-center space-y-2">
-                  <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-orange-600">
+                  {/* CHANGE: bg-orange-100 -> bg-emerald-100, text-orange-600 -> text-emerald-600 */}
+                  <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-600">
                     <User size={32} />
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Dein Profil</h2>
-                  <p className="text-slate-500 dark:text-slate-400">Wer nutzt die App?</p>
+                  {/* CHANGE: text-slate -> text-zinc */}
+                  <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Dein Profil</h2>
+                  <p className="text-zinc-500 dark:text-zinc-400">Wer nutzt die App?</p>
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex flex-col items-center gap-3">
                     <div 
                       onClick={() => photoInputRef.current?.click()}
-                      className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center cursor-pointer overflow-hidden relative group"
+                      // CHANGE: slate -> zinc
+                      className="w-24 h-24 rounded-full bg-zinc-100 dark:bg-zinc-700 border-2 border-dashed border-zinc-300 dark:border-zinc-600 flex items-center justify-center cursor-pointer overflow-hidden relative group"
                     >
                       {formData.photo ? (
                         <img src={formData.photo} alt="Profil" className="w-full h-full object-cover" />
                       ) : (
-                        <Camera className="text-slate-400 group-hover:text-slate-600 transition-colors" />
+                        <Camera className="text-zinc-400 group-hover:text-zinc-600 transition-colors" />
                       )}
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <Upload size={20} className="text-white" />
                       </div>
                     </div>
-                    <span className="text-xs text-slate-400">Profilbild (optional)</span>
+                    <span className="text-xs text-zinc-400">Profilbild (optional)</span>
                     <input type="file" ref={photoInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
                   </div>
 
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Dein Name</label>
+                      {/* CHANGE: text-slate -> text-zinc */}
+                      <label className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">Dein Name</label>
                       <input 
                         type="text" 
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 focus:border-orange-500 outline-none transition-all font-bold text-slate-900 dark:text-white"
+                        // CHANGE: bg-slate -> bg-zinc, focus:border-emerald-500
+                        className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 focus:border-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
                         placeholder="Max Mustermann"
                       />
                     </div>
 
+                    {/* NEU: FIRMA FELD */}
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Tätigkeit / Anstellung</label>
+                      <label className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">Firma</label>
+                      <div className="relative">
+                        <input 
+                            type="text" 
+                            value={formData.company}
+                            onChange={(e) => setFormData({...formData, company: e.target.value})}
+                            className="w-full p-4 pl-12 rounded-xl bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 focus:border-emerald-500 outline-none transition-all font-medium text-zinc-800 dark:text-zinc-200"
+                            placeholder="Firmenname GmbH"
+                        />
+                        <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">Tätigkeit / Anstellung</label>
                       <input 
                         type="text" 
                         value={formData.role}
                         onChange={(e) => setFormData({...formData, role: e.target.value})}
-                        className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 focus:border-orange-500 outline-none transition-all font-medium text-slate-800 dark:text-slate-200"
+                        className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 focus:border-emerald-500 outline-none transition-all font-medium text-zinc-800 dark:text-zinc-200"
                         placeholder="z.B. Monteur, Techniker, Büro..."
                       />
                     </div>
@@ -364,8 +395,8 @@ const OnboardingWizard = ({ onComplete }) => {
                   <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600">
                     <Briefcase size={32} />
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Arbeitszeit</h2>
-                  <p className="text-slate-500 dark:text-slate-400">Wähle dein Modell.</p>
+                  <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Arbeitszeit</h2>
+                  <p className="text-zinc-500 dark:text-zinc-400">Wähle dein Modell.</p>
                 </div>
 
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
@@ -373,14 +404,16 @@ const OnboardingWizard = ({ onComplete }) => {
                     <button
                       key={model.id}
                       onClick={() => handleModelSelect(model)}
+                      // CHANGE: border-blue-500 -> könnte man auf emerald ändern, aber Blau für Modell passt semantisch auch. 
+                      // Ich lasse Blau für Modelle, passe aber die Basisfarben (slate->zinc) an.
                       className={`w-full p-4 rounded-xl border-2 text-left transition-all relative ${
                         isSelected(model.days)
                           ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                          : "border-slate-200 dark:border-slate-700 hover:border-blue-300"
+                          : "border-zinc-200 dark:border-zinc-700 hover:border-blue-300"
                       }`}
                     >
-                      <div className="font-bold text-slate-800 dark:text-white">{model.label}</div>
-                      <div className="text-sm text-slate-500 dark:text-slate-400">{model.description}</div>
+                      <div className="font-bold text-zinc-800 dark:text-white">{model.label}</div>
+                      <div className="text-sm text-zinc-500 dark:text-zinc-400">{model.description}</div>
                       {isSelected(model.days) && (
                         <div className="absolute top-4 right-4 text-blue-500">
                           <Check size={20} />
@@ -391,27 +424,29 @@ const OnboardingWizard = ({ onComplete }) => {
                   
                   {/* SLIDER SECTION */}
                   {isCustomModelActive && (
-                      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-4 animate-in fade-in slide-in-from-top-2">
-                          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                              <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Tagesstunden anpassen</h3>
+                      <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700 space-y-4 animate-in fade-in slide-in-from-top-2">
+                          <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">
+                              <h3 className="text-xs font-bold text-zinc-400 uppercase mb-3">Tagesstunden anpassen</h3>
                               <div className="space-y-3">
                                   {["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"].map((dayName, idx) => (
                                       <div key={idx} className="flex items-center gap-3">
-                                          <span className={`text-xs font-bold w-6 ${idx === 0 || idx === 6 ? 'text-red-400' : 'text-slate-500'}`}>{dayName}</span>
+                                          <span className={`text-xs font-bold w-6 ${idx === 0 || idx === 6 ? 'text-red-400' : 'text-zinc-500'}`}>{dayName}</span>
                                           <input 
                                             type="range" 
                                             min="0" max="720" step="15"
                                             value={formData.workDays[idx]}
                                             onChange={(e) => handleCustomDayChange(idx, e.target.value)}
-                                            className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                                            // CHANGE: accent-emerald-500
+                                            className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                                           />
                                           <span className="text-xs font-mono font-bold w-12 text-right">{minToHours(formData.workDays[idx])}</span>
                                       </div>
                                   ))}
                               </div>
-                              <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                                  <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Wochenstunden:</span>
-                                  <span className="text-lg font-bold text-orange-500">{minToHours(totalWeeklyMinutes)}</span>
+                              <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 flex justify-between items-center">
+                                  <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">Wochenstunden:</span>
+                                  {/* CHANGE: text-emerald-500 */}
+                                  <span className="text-lg font-bold text-emerald-500">{minToHours(totalWeeklyMinutes)}</span>
                               </div>
                           </div>
                       </div>
@@ -433,10 +468,10 @@ const OnboardingWizard = ({ onComplete }) => {
                  <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-purple-600">
                    <ShieldCheck size={32} />
                  </div>
-                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                 <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">
                     {isRestoreFlow ? "Daten laden" : "Backup & Sicherheit"}
                  </h2>
-                 <p className="text-slate-500 dark:text-slate-400">
+                 <p className="text-zinc-500 dark:text-zinc-400">
                     {isRestoreFlow ? "Wo liegt dein Backup?" : "Sichere deine Daten."}
                  </p>
                </div>
@@ -452,20 +487,20 @@ const OnboardingWizard = ({ onComplete }) => {
                         className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
                           formData.autoBackup 
                               ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm" 
-                              : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800"
+                              : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800"
                         }`}
                       >
                           <div className="flex items-center gap-3">
-                             <div className={`p-2 rounded-lg ${formData.autoBackup ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'}`}>
+                             <div className={`p-2 rounded-lg ${formData.autoBackup ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400'}`}>
                                   <CloudLightning size={20}/>
                              </div>
                              <div className="text-left">
-                                <div className="font-bold text-slate-800 dark:text-white">Google Drive Backup</div>
-                                <div className="text-xs text-slate-500">Tägliche Sicherung in der Cloud</div>
+                                <div className="font-bold text-zinc-800 dark:text-white">Google Drive Backup</div>
+                                <div className="text-xs text-zinc-500">Tägliche Sicherung in der Cloud</div>
                              </div>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            formData.autoBackup ? "border-blue-500 bg-blue-500 text-white" : "border-slate-300 dark:border-slate-500"
+                            formData.autoBackup ? "border-blue-500 bg-blue-500 text-white" : "border-zinc-300 dark:border-zinc-500"
                           }`}>
                             {formData.autoBackup && <Check size={14} strokeWidth={3} />}
                           </div>
@@ -477,20 +512,20 @@ const OnboardingWizard = ({ onComplete }) => {
                         className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
                           formData.localBackupEnabled 
                               ? "border-green-500 bg-green-50 dark:bg-green-900/20 shadow-sm" 
-                              : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800"
+                              : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800"
                         }`}
                       >
                           <div className="flex items-center gap-3">
-                             <div className={`p-2 rounded-lg ${formData.localBackupEnabled ? 'bg-green-100 dark:bg-green-900/50 text-green-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'}`}>
+                             <div className={`p-2 rounded-lg ${formData.localBackupEnabled ? 'bg-green-100 dark:bg-green-900/50 text-green-600' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400'}`}>
                                   <FolderInput size={20}/>
                              </div>
                              <div className="text-left">
-                                <div className="font-bold text-slate-800 dark:text-white">Lokales Auto-Backup</div>
-                                <div className="text-xs text-slate-500">Täglich in Ordner am Handy</div>
+                                <div className="font-bold text-zinc-800 dark:text-white">Lokales Auto-Backup</div>
+                                <div className="text-xs text-zinc-500">Täglich in Ordner am Handy</div>
                              </div>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            formData.localBackupEnabled ? "border-green-500 bg-green-500 text-white" : "border-slate-300 dark:border-slate-500"
+                            formData.localBackupEnabled ? "border-green-500 bg-green-500 text-white" : "border-zinc-300 dark:border-zinc-500"
                           }`}>
                             {formData.localBackupEnabled && <Check size={14} strokeWidth={3} />}
                           </div>
@@ -504,13 +539,14 @@ const OnboardingWizard = ({ onComplete }) => {
                         <button
                           onClick={handleGoogleDriveRestore}
                           disabled={loading}
-                          className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group"
+                          // CHANGE: hover:bg-zinc-50
+                          className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors group"
                         >
-                            <div className="p-2 bg-white dark:bg-slate-700 rounded-lg shadow-sm group-hover:scale-110 transition-transform">
-                              {loading ? <Loader size={18} className="animate-spin text-slate-400"/> : <Cloud size={18} className="text-blue-500" />}
+                            <div className="p-2 bg-white dark:bg-zinc-700 rounded-lg shadow-sm group-hover:scale-110 transition-transform">
+                              {loading ? <Loader size={18} className="animate-spin text-zinc-400"/> : <Cloud size={18} className="text-blue-500" />}
                             </div>
                             <div className="text-left flex-1">
-                              <div className="font-bold text-sm text-slate-800 dark:text-white">Aus Google Drive</div>
+                              <div className="font-bold text-sm text-zinc-800 dark:text-white">Aus Google Drive</div>
                             </div>
                         </button>
 
@@ -518,10 +554,10 @@ const OnboardingWizard = ({ onComplete }) => {
                             <button
                             onClick={handleFolderRestore}
                             disabled={loading}
-                            className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                            className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
                             >
                                 <FolderInput size={20} className="text-yellow-500" />
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Lokaler Ordner</span>
+                                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Lokaler Ordner</span>
                             </button>
 
                             <div className="relative">
@@ -529,10 +565,10 @@ const OnboardingWizard = ({ onComplete }) => {
                                 <button
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={loading}
-                                className="w-full h-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                                className="w-full h-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
                                 >
                                     <Upload size={20} className="text-purple-500" />
-                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Datei (.json)</span>
+                                    <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Datei (.json)</span>
                                 </button>
                             </div>
                         </div>
@@ -556,8 +592,8 @@ const OnboardingWizard = ({ onComplete }) => {
                 </div>
                 
                 <div className="space-y-2">
-                  <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Alles bereit!</h2>
-                  <p className="text-slate-500 dark:text-slate-400">
+                  <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">Alles bereit!</h2>
+                  <p className="text-zinc-500 dark:text-zinc-400">
                     {restoreData 
                       ? "Daten erfolgreich wiederhergestellt." 
                       : "Dein Profil wurde erfolgreich erstellt."}
@@ -567,7 +603,8 @@ const OnboardingWizard = ({ onComplete }) => {
                 <div className="pt-4">
                   <button 
                     onClick={finishSetup}
-                    className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-lg rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                    // CHANGE: bg-zinc-900
+                    className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-lg rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                   >
                     App starten <Play size={20} fill="currentColor" />
                   </button>
@@ -580,11 +617,12 @@ const OnboardingWizard = ({ onComplete }) => {
 
         {/* Footer Navigation */}
         {step > 0 && step < 4 && (
-          <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm">
+          // CHANGE: border-zinc-100, bg-zinc-50/50
+          <div className="p-4 border-t border-zinc-100 dark:border-zinc-700 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800/50 backdrop-blur-sm">
             
             <button 
               onClick={prevStep}
-              className="px-4 py-2 font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors flex items-center gap-1"
+              className="px-4 py-2 font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors flex items-center gap-1"
             >
               <ArrowLeft size={18} /> Zurück
             </button>
@@ -592,7 +630,8 @@ const OnboardingWizard = ({ onComplete }) => {
             {!isRestoreFlow && (
               <button 
                 onClick={nextStep}
-                className="px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl flex items-center gap-2 hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-lg shadow-slate-900/10"
+                // CHANGE: bg-zinc-900, shadow-zinc-900/10
+                className="px-6 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl flex items-center gap-2 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-lg shadow-zinc-900/10"
               >
                 Weiter <ChevronRight size={18} />
               </button>

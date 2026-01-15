@@ -559,8 +559,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen w-screen font-sans bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-x-hidden relative">
-      <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#1e293b', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />
+    <div className="min-h-screen w-screen font-sans bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 overflow-x-hidden relative">
+      <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#27272a', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#10b981', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />
       
       {showOnboarding && (
         <OnboardingWizard 
@@ -587,23 +587,23 @@ export default function App() {
       <input type="file" className="hidden" ref={fileInputRef} accept="application/json" onChange={handleImport} />
       
       {!showOnboarding && (
-        <header className="fixed top-0 left-0 right-0 bg-slate-900 text-white p-4 pb-6 shadow-xl z-50 w-full transition-all" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
+        <header className="fixed top-0 left-0 right-0 bg-zinc-900 text-white p-4 pb-6 shadow-xl z-50 w-full transition-all" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
               {view !== "dashboard" && view !== "report" ? (
-                <button onClick={() => { setView("dashboard"); setEditingEntry(null); }} className="p-2 hover:bg-slate-700 rounded-full transition-colors"><ArrowLeft size={24} /></button>
+                <button onClick={() => { setView("dashboard"); setEditingEntry(null); }} className="p-2 hover:bg-zinc-700 rounded-full transition-colors"><ArrowLeft size={24} /></button>
               ) : (
-                <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-slate-800 shadow-inner"><img src={AppLogo} alt="Logo" className="w-full h-full object-contain" /></div>
+                <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-zinc-800 shadow-inner"><img src={AppLogo} alt="Logo" className="w-full h-full object-contain" /></div>
               )}
               <div>
                 <h1 className="font-bold text-xl leading-tight tracking-tight">{getHeaderTitle()}</h1>
-                {view === "dashboard" && <p className="text-xs text-slate-400 font-medium mt-0.5">Mobile Zeiterfassung</p>}
+                {view === "dashboard" && <p className="text-xs text-zinc-400 font-medium mt-0.5">Mobile Zeiterfassung</p>}
               </div>
             </div>
             {view === "dashboard" && (
               <div className="flex gap-2">
-                <button onClick={() => setView("settings")} className="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors active:scale-95"><SettingsIcon size={20} className="text-slate-300" /></button>
-                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setView("report")} className="bg-orange-500 hover:bg-orange-600 p-2.5 rounded-xl transition-colors shadow-lg shadow-orange-900/20"><FileBarChart size={20} className="text-white" /></motion.button>
+                <button onClick={() => setView("settings")} className="p-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors active:scale-95"><SettingsIcon size={20} className="text-zinc-300" /></button>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setView("report")} className="bg-emerald-600 hover:bg-emerald-700 p-2.5 rounded-xl transition-colors shadow-lg shadow-emerald-900/20"><FileBarChart size={20} className="text-white" /></motion.button>
               </div>
             )}
           </div>
@@ -662,10 +662,10 @@ export default function App() {
           {view === "report" && !showOnboarding && (
             <motion.div key="report" initial="initial" animate="in" exit="out" variants={reportVariants} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed inset-0 z-[200] w-full h-full">
               <Suspense fallback={
-                <div className="flex items-center justify-center h-full w-full bg-slate-900/50 backdrop-blur-sm">
-                  <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xl flex items-center gap-3">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
-                    <span className="font-bold text-slate-700 dark:text-white">Lade PDF-Modul...</span>
+                <div className="flex items-center justify-center h-full w-full bg-zinc-900/50 backdrop-blur-sm">
+                  <div className="bg-white dark:bg-zinc-800 p-4 rounded-xl shadow-xl flex items-center gap-3">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500"></div>
+                    <span className="font-bold text-zinc-700 dark:text-white">Lade PDF-Modul...</span>
                   </div>
                 </div>
               }>
@@ -700,7 +700,7 @@ export default function App() {
                     Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
                 }} 
                 style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
-                className="fixed right-6 bg-slate-900 dark:bg-orange-500 hover:bg-slate-800 dark:hover:bg-orange-600 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors z-[9999] cursor-pointer touch-manipulation"
+                className="fixed right-6 bg-zinc-900 dark:bg-emerald-600 hover:bg-zinc-800 dark:hover:bg-emerald-700 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors z-[9999] cursor-pointer touch-manipulation"
               >
                 <Plus size={28} />
               </motion.button>

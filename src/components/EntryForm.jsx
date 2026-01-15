@@ -1,6 +1,5 @@
 import React, { forwardRef, useState, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass } from "lucide-react";
-// FIX: toLocalDateString importiert
 import { Card, getHolidayData, toLocalDateString } from "../utils"; 
 import { WORK_CODES } from "../hooks/constants";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,15 +14,16 @@ import SelectionDrawer from "./SelectionDrawer";
 
 registerLocale("de", de);
 
+// CHANGE: slate -> zinc, focus:border-orange -> focus:border-emerald
 const CustomInput = forwardRef(({ value, onClick, icon: Icon }, ref) => (
   <button
     type="button"
     onClick={onClick}
     ref={ref}
-    className="w-full flex items-center justify-between p-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg font-bold text-slate-800 dark:text-white outline-none focus:border-orange-500 transition-colors"
+    className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none focus:border-emerald-500 transition-colors"
   >
     <span className="flex-1 text-center">{value}</span>
-    {Icon && <Icon size={18} className="text-slate-400 ml-2" />}
+    {Icon && <Icon size={18} className="text-zinc-400 ml-2" />}
   </button>
 ));
 
@@ -142,7 +142,6 @@ const EntryForm = ({
   const changeDate = (days) => {
     const d = new Date(formDate);
     d.setDate(d.getDate() + days);
-    // FIX: toLocalDateString statt toISOString
     setFormDate(toLocalDateString(d));
   };
 
@@ -172,7 +171,7 @@ const EntryForm = ({
         <form onSubmit={handleFormSubmit} className="p-4 space-y-5">
           
           <div className="flex justify-between items-center mb-1">
-             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Eintragstyp</div>
+             <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Eintragstyp</div>
              
              {entryType === 'work' && code !== 190 && lastWorkEntry && (
                <motion.button
@@ -182,7 +181,8 @@ const EntryForm = ({
                    handleCopyLastEntry();
                    Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
                  }}
-                 className="flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-md border border-orange-100 dark:border-orange-800/50"
+                 // CHANGE: Orange -> Emerald für diesen "Action Button"
+                 className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-800/50"
                >
                  <Wand2 size={12} />
                  <span>Wie zuletzt</span>
@@ -190,21 +190,26 @@ const EntryForm = ({
              )}
           </div>
 
-          <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-xl grid grid-cols-5 gap-1">
-            <button type="button" onClick={() => { setEntryType("work"); setCode(WORK_CODES[0].id); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "work" && code !== 190 ? "bg-white dark:bg-slate-600 shadow text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}>Arbeit</button>
-            <button type="button" onClick={() => { setEntryType("drive"); setCode(19); setPauseDuration(0); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "drive" || code === 190 ? "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Fahrt</button>
-            <button type="button" onClick={() => setEntryType("sick")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "sick" ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Krank</button>
-            <button type="button" onClick={() => setEntryType("vacation")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "vacation" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>Urlaub</button>
-            <button type="button" onClick={() => setEntryType("time_comp")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "time_comp" ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400 shadow-sm" : "text-slate-500 dark:text-slate-400"}`}>ZA</button>
+          <div className="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-5 gap-1">
+            {/* WORK */}
+            <button type="button" onClick={() => { setEntryType("work"); setCode(WORK_CODES[0].id); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "work" && code !== 190 ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}>Arbeit</button>
+            {/* FAHRT (Bleibt Orange als Kategorie-Farbe) */}
+            <button type="button" onClick={() => { setEntryType("drive"); setCode(19); setPauseDuration(0); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "drive" || code === 190 ? "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Fahrt</button>
+            {/* KRANK (Rot) */}
+            <button type="button" onClick={() => setEntryType("sick")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "sick" ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Krank</button>
+            {/* URLAUB (Blau) */}
+            <button type="button" onClick={() => setEntryType("vacation")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "vacation" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Urlaub</button>
+            {/* ZA (Lila) */}
+            <button type="button" onClick={() => setEntryType("time_comp")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "time_comp" ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>ZA</button>
           </div>
 
           {(entryType === "drive" || code === 190) && (
             <div className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-              <button type="button" onClick={() => { setEntryType("work"); setCode(190); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${code === 190 ? "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 ring-2 ring-green-500 ring-offset-1" : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300"}`}>
+              <button type="button" onClick={() => { setEntryType("work"); setCode(190); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${code === 190 ? "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 ring-2 ring-green-500 ring-offset-1" : "bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300"}`}>
                 <span>An/Abreise</span><span className="text-[10px] uppercase bg-green-200 dark:bg-green-800 px-1 rounded text-green-800 dark:text-green-200">Bezahlt</span>
               </button>
-              <button type="button" onClick={() => { setEntryType("drive"); setCode(19); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${entryType === "drive" && code === 19 ? "bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-400 ring-2 ring-orange-500 ring-offset-1" : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300"}`}>
-                <span>Fahrtzeit</span><span className="text-[10px] uppercase bg-slate-200 dark:bg-slate-600 px-1 rounded text-slate-600 dark:text-slate-300">Unbezahlt</span>
+              <button type="button" onClick={() => { setEntryType("drive"); setCode(19); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${entryType === "drive" && code === 19 ? "bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-400 ring-2 ring-orange-500 ring-offset-1" : "bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300"}`}>
+                <span>Fahrtzeit</span><span className="text-[10px] uppercase bg-zinc-200 dark:bg-zinc-600 px-1 rounded text-zinc-600 dark:text-zinc-300">Unbezahlt</span>
               </button>
             </div>
           )}
@@ -217,13 +222,12 @@ const EntryForm = ({
           )}
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Datum</label>
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Datum</label>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => changeDate(-1)} className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300"><ChevronLeft size={20} /></button>
+              <button type="button" onClick={() => changeDate(-1)} className="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"><ChevronLeft size={20} /></button>
               <div className="flex-1">
                 <DatePicker
                   selected={new Date(formDate)}
-                  // FIX: toLocalDateString statt toISOString
                   onChange={(date) => setFormDate(toLocalDateString(date))}
                   onMonthChange={(date) => setViewYear(date.getFullYear())}
                   onYearChange={(date) => setViewYear(date.getFullYear())}
@@ -233,13 +237,12 @@ const EntryForm = ({
                   calendarContainer={CalendarContainerAnimation}
                   customInput={<CustomInput icon={CalIcon} />}
                   dayClassName={(date) => {
-                    // FIX: toLocalDateString statt manuellem Basteln
                     const dateStr = toLocalDateString(date);
                     return holidayData[dateStr] ? "!text-red-600 !font-bold" : undefined;
                   }}
                 />
               </div>
-              <button type="button" onClick={() => changeDate(1)} className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300"><ChevronRight size={20} /></button>
+              <button type="button" onClick={() => changeDate(1)} className="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"><ChevronRight size={20} /></button>
             </div>
           </div>
 
@@ -247,54 +250,57 @@ const EntryForm = ({
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Start</label>
-                  <button type="button" onClick={() => setActiveTimeField('start')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg font-bold text-slate-800 dark:text-white outline-none active:border-orange-500 transition-colors">
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Start</label>
+                  {/* CHANGE: active:border-orange -> active:border-emerald */}
+                  <button type="button" onClick={() => setActiveTimeField('start')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
                     <span className="flex-1 text-center text-lg">{startTime}</span>
-                    <Clock size={18} className="text-slate-400 ml-2" />
+                    <Clock size={18} className="text-zinc-400 ml-2" />
                   </button>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Ende</label>
-                  <button type="button" onClick={() => setActiveTimeField('end')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg font-bold text-slate-800 dark:text-white outline-none active:border-orange-500 transition-colors">
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Ende</label>
+                  <button type="button" onClick={() => setActiveTimeField('end')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
                     <span className="flex-1 text-center text-lg">{endTime}</span>
-                    <Clock size={18} className="text-slate-400 ml-2" />
+                    <Clock size={18} className="text-zinc-400 ml-2" />
                   </button>
                 </div>
               </div>
 
               {entryType === "work" && code !== 190 && (
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Pause</label>
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Pause</label>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => setPauseDuration(0)} className={`flex-1 p-3 rounded-lg border text-sm font-bold ${pauseDuration === 0 ? "border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400" : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300"}`}>Keine</button>
-                    <button type="button" onClick={() => setPauseDuration(30)} className={`flex-1 p-3 rounded-lg border text-sm font-bold ${pauseDuration === 30 ? "border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400" : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300"}`}>30 Min</button>
+                    {/* CHANGE: active styles Emerald */}
+                    <button type="button" onClick={() => setPauseDuration(0)} className={`flex-1 p-3 rounded-lg border text-sm font-bold ${pauseDuration === 0 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300"}`}>Keine</button>
+                    <button type="button" onClick={() => setPauseDuration(30)} className={`flex-1 p-3 rounded-lg border text-sm font-bold ${pauseDuration === 30 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300"}`}>30 Min</button>
                   </div>
                 </div>
               )}
 
               {entryType === "work" && code !== 190 && (
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Tätigkeit</label>
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Tätigkeit</label>
                   <button 
                     type="button" 
                     onClick={() => setIsWorkCodeOpen(true)}
-                    className="w-full flex items-center justify-between p-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg font-bold text-slate-800 dark:text-white outline-none active:border-orange-500 transition-colors text-left"
+                    // CHANGE: active:border-orange -> active:border-emerald
+                    className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors text-left"
                   >
                     <span className="truncate pr-2">{currentCodeLabel}</span>
-                    <List size={18} className="text-slate-400 flex-shrink-0" />
+                    <List size={18} className="text-zinc-400 flex-shrink-0" />
                   </button>
                 </div>
               )}
 
               <div className="space-y-1 relative">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{entryType === "drive" || code === 190 ? "Strecke / Notiz" : "Projekt"}</label>
+                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{entryType === "drive" || code === 190 ? "Strecke / Notiz" : "Projekt"}</label>
                 <input 
                   type="text" 
                   value={project} 
                   onChange={handleProjectChange} 
                   onFocus={() => { if(project) handleProjectChange({target: {value: project}}) }}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  className="w-full p-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg outline-none dark:text-white" 
+                  className="w-full p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg outline-none dark:text-white focus:border-emerald-500 transition-colors" 
                   placeholder="..." 
                 />
                 
@@ -304,16 +310,17 @@ const EntryForm = ({
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="relative z-50 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden overflow-y-auto"
+                      className="relative z-50 mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl overflow-hidden overflow-y-auto"
                     >
-                      <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100 dark:border-slate-700 flex items-center gap-1">
+                      <div className="bg-zinc-50 dark:bg-zinc-900/50 px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase border-b border-zinc-100 dark:border-zinc-700 flex items-center gap-1">
                         <History size={10} /> Bekannte Projekte
                       </div>
                       {suggestions.map((s, idx) => (
                         <div 
                           key={idx}
                           onMouseDown={() => selectSuggestion(s)}
-                          className="px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 cursor-pointer border-b border-slate-50 dark:border-slate-700 last:border-0"
+                          // CHANGE: hover:bg-orange -> hover:bg-emerald
+                          className="px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer border-b border-zinc-50 dark:border-zinc-700 last:border-0"
                         >
                           {s}
                         </div>
@@ -326,8 +333,9 @@ const EntryForm = ({
           )}
 
           <div className="pt-2 flex gap-3">
-            <button type="button" onClick={onCancel} className="flex-1 py-3 font-bold text-slate-500 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl">Abbrechen</button>
-            <button type="submit" className="flex-[2] py-3 font-bold text-white bg-slate-900 dark:bg-orange-500 hover:bg-slate-800 dark:hover:bg-orange-600 rounded-xl shadow-lg flex items-center justify-center gap-2"><Save size={18} /> Speichern</button>
+            <button type="button" onClick={onCancel} className="flex-1 py-3 font-bold text-zinc-500 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-xl">Abbrechen</button>
+            {/* CHANGE: bg-slate-900/orange-500 -> bg-zinc-900 / bg-emerald-600 */}
+            <button type="submit" className="flex-[2] py-3 font-bold text-white bg-zinc-900 dark:bg-emerald-600 hover:bg-zinc-800 dark:hover:bg-emerald-700 rounded-xl shadow-lg flex items-center justify-center gap-2"><Save size={18} /> Speichern</button>
           </div>
         </form>
       </Card>

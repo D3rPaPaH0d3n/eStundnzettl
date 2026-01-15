@@ -8,10 +8,9 @@ const ConfirmModal = ({
   onConfirm, 
   title, 
   message, 
-  confirmText = "Löschen", // Standard
-  confirmColor = "red"     // Standard: red, blue, slate
+  confirmText = "Löschen", 
+  confirmColor = "red"     // red, emerald (statt blue), zinc (statt slate)
 }) => {
-  // Body-Klasse für Modal-Open Status (versteckt Navbar)
   React.useEffect(() => {
     if (isOpen) {
       document.body.classList.add('modal-open');
@@ -25,10 +24,12 @@ const ConfirmModal = ({
 
   const getColorClass = (color) => {
     switch(color) {
-      case 'blue': return "bg-blue-600 hover:bg-blue-700 text-white";
-      case 'slate': return "bg-slate-800 hover:bg-slate-900 text-white";
+      // CHANGE: blue -> emerald (falls wir mal positive Bestätigung brauchen)
+      case 'emerald': return "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-900/20";
+      // CHANGE: slate -> zinc
+      case 'zinc': return "bg-zinc-800 hover:bg-zinc-900 text-white";
       case 'red': 
-      default: return "bg-red-600 hover:bg-red-700 text-white";
+      default: return "bg-red-600 hover:bg-red-700 text-white shadow-red-900/20";
     }
   };
 
@@ -46,26 +47,33 @@ const ConfirmModal = ({
         initial={{ scale: 0.9, opacity: 0 }} 
         animate={{ scale: 1, opacity: 1 }} 
         exit={{ scale: 0.9, opacity: 0 }}
-        className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden"
+        // CHANGE: bg-white dark:bg-slate-900 -> bg-white dark:bg-zinc-900
+        className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden"
       >
         <div className="p-6">
-          <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-4 mx-auto">
-            <AlertTriangle className="text-orange-600 dark:text-orange-500" size={24} />
+          {/* CHANGE: bg-orange-100 -> bg-red-100 (passender für Warnung) oder Zinc */}
+          <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4 mx-auto">
+            {/* CHANGE: text-orange-600 -> text-red-600 (Gefahrenzone) */}
+            <AlertTriangle className="text-red-600 dark:text-red-500" size={24} />
           </div>
           
-          <h3 className="text-xl font-bold text-center text-slate-900 dark:text-white mb-2">
+          {/* CHANGE: text-slate-900 -> text-zinc-900 */}
+          <h3 className="text-xl font-bold text-center text-zinc-900 dark:text-white mb-2">
             {title}
           </h3>
           
-          <p className="text-sm text-slate-500 dark:text-slate-400 text-center leading-relaxed">
+          {/* CHANGE: text-slate-500 -> text-zinc-500 */}
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center leading-relaxed">
             {message}
           </p>
         </div>
 
-        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 flex gap-3">
+        {/* CHANGE: bg-slate-50 -> bg-zinc-50, dark:bg-slate-800 -> dark:bg-zinc-800 */}
+        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 flex gap-3">
           <button 
             onClick={onClose}
-            className="flex-1 py-3 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            // CHANGE: border-slate-200 -> border-zinc-200, text-slate-700 -> text-zinc-700, hover:bg-slate-50 -> hover:bg-zinc-100
+            className="flex-1 py-3 px-4 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
           >
             Abbrechen
           </button>

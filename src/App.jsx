@@ -7,8 +7,9 @@ import { Share } from "@capacitor/share";
 import toast, { Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
+import { SplashScreen } from '@capacitor/splash-screen';
 
-import KoglerLogo from "./assets/kogler_time_icon.png";
+import AppLogo from "./assets/logo.png";
 import { 
   getHolidayData, 
   getWeekNumber, 
@@ -86,9 +87,14 @@ export default function App() {
   const [code, setCode] = useState(WORK_CODES[0].id);
   const [pauseDuration, setPauseDuration] = useState(30);
 
-  // Sollzeit für HEUTE berechnen (für das Overlay)
+    // Sollzeit für HEUTE berechnen (für das Overlay)
   const [todayTarget, setTodayTarget] = useState(510);
-  
+
+  useEffect(() => {
+    // Das sagt der App: "Fertig geladen, weg mit dem Bild!"
+    SplashScreen.hide(); 
+  }, []); // Hier wurde der fehlende Abschluss hinzugefügt
+
   useEffect(() => {
     // FIX: toLocalDateString statt toISOString
     const todayStr = toLocalDateString(new Date());
@@ -220,7 +226,7 @@ export default function App() {
       case "settings": return "Einstellungen";
       case "add": return editingEntry ? "Eintrag bearbeiten" : "Neuer Eintrag";
       case "report": return "Bericht";
-      default: return "Stundenzettel";
+      default: return "eStundnzettl";
     }
   };
 
@@ -449,7 +455,7 @@ export default function App() {
       try {
         // FIX: toLocalDateString für Dateinamen
         const dateStr = toLocalDateString(new Date());
-        const fileName = `kogler_export_${dateStr}.json`;
+        const fileName = `estundnzettl_${dateStr}.json`;
         const json = JSON.stringify(exportPayload, null, 2);
         
         const file = new File([json], fileName, { type: "application/json" });
@@ -483,7 +489,7 @@ export default function App() {
     try {
       // FIX: toLocalDateString für Dateinamen
       const dateStr = toLocalDateString(new Date());
-      const fileName = `kogler_export_${dateStr}.json`;
+      const fileName = `estundnzettl_${dateStr}.json`;
       const success = await exportToSelectedFolder(fileName, exportPayloadRef.current);
       
       if (success) {
@@ -504,7 +510,7 @@ export default function App() {
     try {
       // FIX: toLocalDateString für Dateinamen
       const dateStr = toLocalDateString(new Date());
-      const fileName = `kogler_export_${dateStr}.json`;
+      const fileName = `estundnzettl_${dateStr}.json`;
       const json = JSON.stringify(exportPayloadRef.current, null, 2);
       
       await Filesystem.writeFile({ 
@@ -521,7 +527,7 @@ export default function App() {
       });
       
       await Share.share({ 
-        title: "Vertel Backup", 
+        title: "eStundnzettl Backup", 
         text: `Backup vom ${new Date().toLocaleDateString("de-DE")}`, 
         url: uriResult.uri, 
         dialogTitle: "Backup sichern" 
@@ -587,11 +593,11 @@ export default function App() {
               {view !== "dashboard" && view !== "report" ? (
                 <button onClick={() => { setView("dashboard"); setEditingEntry(null); }} className="p-2 hover:bg-slate-700 rounded-full transition-colors"><ArrowLeft size={24} /></button>
               ) : (
-                <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-slate-800 shadow-inner"><img src={KoglerLogo} alt="Logo" className="w-full h-full object-contain" /></div>
+                <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-slate-800 shadow-inner"><img src={AppLogo} alt="Logo" className="w-full h-full object-contain" /></div>
               )}
               <div>
                 <h1 className="font-bold text-xl leading-tight tracking-tight">{getHeaderTitle()}</h1>
-                {view === "dashboard" && <p className="text-xs text-slate-400 font-medium mt-0.5">Kogler Aufzugsbau</p>}
+                {view === "dashboard" && <p className="text-xs text-slate-400 font-medium mt-0.5">Mobile Zeiterfassung</p>}
               </div>
             </div>
             {view === "dashboard" && (

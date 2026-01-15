@@ -1,5 +1,5 @@
 {
-  "name": "kogler-zeit",
+  "name": "eStundnzettl",
   "private": true,
   "version": "5.1.5",
   "type": "module",
@@ -25,6 +25,7 @@
     "@capacitor/filesystem": "^7.1.5",
     "@capacitor/haptics": "^7.0.2",
     "@capacitor/share": "^7.0.2",
+    "@capacitor/splash-screen": "^8.0.0",
     "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
     "@daniele-rolli/capacitor-scoped-storage": "^0.0.2",
     "@tailwindcss/vite": "^4.1.17",

@@ -14,7 +14,7 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import de from "date-fns/locale/de";
+import { de } from "date-fns/locale";
 
 registerLocale("de", de);
 

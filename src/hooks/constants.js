@@ -2,7 +2,7 @@
 // CONSTANTS.JS - Zentrale Konstanten für Kogler Zeiterfassung
 // ============================================================
 
-export const APP_VERSION = "v6.0.1";
+export const APP_VERSION = "v6.0.2";
 
 // -------------------------------------------------------
 // ARBEITSZEIT (in Minuten)

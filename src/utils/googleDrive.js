@@ -1,21 +1,133 @@
-import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
+﻿import { SocialLogin } from '@capgo/capacitor-social-login';
 
-// --- AUTH ---
-export const initGoogleAuth = () => {
-  // WICHTIG: return hinzugefügt, damit Promises (wie .catch) funktionieren
-  return GoogleAuth.initialize();
+// --- CONFIG ---
+const WEB_CLIENT_ID = "618528142382-pes4415amf381rk4bjovlamgh4emhrov.apps.googleusercontent.com";
+const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
+
+// Token Storage
+const TOKEN_STORAGE_KEY = "google_auth_state";
+
+const getStoredAuth = () => {
+  try {
+    const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch (e) {
+    return null;
+  }
 };
 
+const saveAuth = (accessToken, userInfo) => {
+  localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({
+    accessToken,
+    userInfo,
+    savedAt: Date.now()
+  }));
+};
+
+const clearAuth = () => {
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+};
+
+// --- AUTH: Initialize ---
+export const initGoogleAuth = async () => {
+  try {
+    await SocialLogin.initialize({
+      google: {
+        webClientId: WEB_CLIENT_ID,
+        mode: 'online'
+      }
+    });
+    console.log("Google Auth initialized");
+  } catch (err) {
+    console.error("Google Auth init error:", err);
+  }
+};
+
+// --- AUTH: Sign In ---
 export const signInGoogle = async () => {
-  const user = await GoogleAuth.signIn();
-  return user;
+  console.log("Starting Google Sign-In...");
+  
+  try {
+    const result = await SocialLogin.login({
+      provider: 'google',
+      options: {
+        scopes: SCOPES
+      }
+    });
+    
+    console.log("SocialLogin result:", JSON.stringify(result, null, 2));
+    
+    if (result.provider === 'google' && result.result) {
+      const r = result.result;
+      
+      // Token kann direkt oder als Objekt kommen
+      const accessToken = r.accessToken?.token || r.accessToken;
+      
+      if (accessToken) {
+        const userInfo = {
+          email: r.profile?.email || r.email,
+          givenName: r.profile?.givenName || r.givenName,
+          familyName: r.profile?.familyName || r.familyName,
+          imageUrl: r.profile?.imageUrl || r.avatarUrl
+        };
+        
+        saveAuth(accessToken, userInfo);
+        
+        return {
+          authentication: { accessToken },
+          ...userInfo
+        };
+      }
+    }
+    
+    throw new Error("No access token received");
+  } catch (err) {
+    console.error("Google Sign-In error:", err);
+    throw err;
+  }
 };
 
+// --- AUTH: Get valid access token (tries silent refresh) ---
+export const refreshGoogleToken = async () => {
+  try {
+    const result = await SocialLogin.refresh({ provider: 'google' });
+    console.log("Refresh result:", JSON.stringify(result, null, 2));
+    
+    const accessToken = result?.accessToken?.token || result?.accessToken;
+    if (accessToken) {
+      const stored = getStoredAuth();
+      saveAuth(accessToken, stored?.userInfo || {});
+      return { accessToken };
+    }
+  } catch (err) {
+    console.warn("Silent refresh failed:", err);
+  }
+  
+  // Fallback: gespeichertes Token zurückgeben
+  const stored = getStoredAuth();
+  if (stored?.accessToken) {
+    return { accessToken: stored.accessToken };
+  }
+  
+  return null;
+};
+
+// --- AUTH: Check if user is logged in ---
+export const isGoogleLoggedIn = () => {
+  return getStoredAuth() !== null;
+};
+
+// --- AUTH: Sign Out ---
 export const signOutGoogle = async () => {
-  await GoogleAuth.signOut();
+  clearAuth();
+  try {
+    await SocialLogin.logout({ provider: 'google' });
+  } catch (e) {
+    // Ignore logout errors
+  }
 };
 
-// --- HELPER: Multipart Body bauen (für Upload & Update identisch) ---
+// --- HELPER: Multipart Body bauen ---
 const createMultipartBody = (metadata, jsonContent, boundary) => {
   const delimiter = "\r\n--" + boundary + "\r\n";
   const close_delim = "\r\n--" + boundary + "--";
@@ -43,7 +155,7 @@ const findFileIdByName = async (accessToken, fileName) => {
   
   const data = await response.json();
   if (data.files && data.files.length > 0) {
-    return data.files[0].id; // ID der existierenden Datei zurückgeben
+    return data.files[0].id;
   }
   return null;
 };
@@ -57,12 +169,10 @@ export const uploadOrUpdateFile = async (accessToken, fileName, jsonContent) => 
   let method;
 
   if (existingFileId) {
-    // UPDATE (Überschreiben)
     console.log("Drive: Überschreibe Datei", existingFileId);
     url = `https://www.googleapis.com/upload/drive/v3/files/${existingFileId}?uploadType=multipart`;
-    method = "PATCH"; // Wichtig: PATCH zum Aktualisieren
+    method = "PATCH";
   } else {
-    // CREATE (Neu anlegen)
     console.log("Drive: Erstelle neue Datei");
     url = "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
     method = "POST";
@@ -94,7 +204,6 @@ export const uploadOrUpdateFile = async (accessToken, fileName, jsonContent) => 
 
 // --- RESTORE: Neuestes Backup finden & laden ---
 export const findLatestBackup = async (accessToken) => {
-  // Suche exakt nach UNSEREM Dateinamen
   const query = "name = 'kogler_backup.json' and trashed=false";
   const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&orderBy=modifiedTime desc&pageSize=1&fields=files(id, name, createdTime, modifiedTime)`;
 

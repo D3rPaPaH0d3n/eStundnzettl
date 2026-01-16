@@ -27,7 +27,6 @@
     "@capacitor/share": "^7.0.2",
     "@capacitor/splash-screen": "^8.0.0",
     "@capgo/capacitor-social-login": "^8.2.13",
-    "@daniele-rolli/capacitor-scoped-storage": "^0.0.2",
     "@tailwindcss/vite": "^4.1.17",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",

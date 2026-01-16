@@ -194,8 +194,8 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
           await Share.share({ title: "Stundenzettel", url: uriResult.uri });
           toast.success("Bereit zum Teilen");
         } else {
-          await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Documents, encoding: Encoding.BASE64, recursive: true });
-          toast.success("Gespeichert in 'Dokumente'", { icon: "📂" });
+          await Filesystem.writeFile({ path: `eStundnzettl/${filename}`, data: base64, directory: Directory.Documents, recursive: true });
+          toast.success("Gespeichert in 'Dokumente/eStundnzettl'", { icon: "📂" });
         }
       }
 

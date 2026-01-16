@@ -3,7 +3,7 @@ import { User, Briefcase, Calendar, ShieldCheck, Camera, ChevronRight, Check, Up
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
-import { analyzeBackupData, applyBackup, readJsonFile, selectBackupFolder } from "../utils/storageBackup";
+import { analyzeBackupData, applyBackup, readJsonFile, readBackupFromFolder, selectBackupFolder } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
 import { WORK_MODELS, STORAGE_KEYS } from "../hooks/constants";
 
@@ -14,7 +14,7 @@ const OnboardingWizard = ({ onComplete }) => {
 
   const [formData, setFormData] = useState({
     name: "",
-    company: "", // NEU: Firmenname
+    company: "",
     role: "", 
     photo: null,
     workDays: WORK_MODELS[0].days, 
@@ -119,12 +119,10 @@ const OnboardingWizard = ({ onComplete }) => {
 
   // --- FINISH ---
   const finishSetup = () => {
-    // CHANGE: "kogler_user" -> STORAGE_KEYS.USER (Konsistenz mit App.jsx)
     localStorage.setItem(STORAGE_KEYS.USER || "user_data", JSON.stringify({
       name: formData.name,
-      company: formData.company, // NEU: Speichern
-      role: formData.role, // Bleibt als Fallback oder intern, obwohl App.jsx "position" nutzt. Wir speichern beides sicherheitshalber? 
-      // App.jsx nutzt "position". Ich mappe hier role -> position um sicherzugehen.
+      company: formData.company,
+      role: formData.role,
       position: formData.role, 
       photo: formData.photo,
       workDays: formData.workDays,
@@ -176,46 +174,49 @@ const OnboardingWizard = ({ onComplete }) => {
     }
   };
 
+  const handleFolderRestore = async () => {
+    try {
+      setLoading(true);
+      const backupContent = await readBackupFromFolder();
+      if (backupContent) {
+          const { isValid, data } = analyzeBackupData(backupContent);
+          if (isValid) {
+              setRestoreData(data);
+              toast.success("Backup geladen!");
+              setStep(4);
+          } else {
+              toast.error("Ungültiges Backup.");
+          }
+      } else {
+          toast.error("Kein Backup gefunden.");
+      }
+    } catch (error) {
+        toast.error("Fehler beim Zugriff.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
   const handleLocalFileRestore = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     try {
       setLoading(true);
-      const json = await readJsonFile(file);
-      const { isValid, data } = analyzeBackupData(json);
+      const content = await readJsonFile(file);
+      const { isValid, data } = analyzeBackupData(content);
       if (isValid) {
         setRestoreData(data);
         toast.success("Backup geladen!");
         setStep(4);
       } else {
-        toast.error("Datei ungültig.");
+        toast.error("Ungültiges Format.");
       }
-    } catch (err) {
-      toast.error("Lesefehler.");
+    } catch (error) {
+      toast.error("Datei konnte nicht gelesen werden.");
     } finally {
       setLoading(false);
+      e.target.value = null;
     }
-  };
-
-  const handleFolderRestore = async () => {
-      try {
-        setLoading(true);
-        const backupContent = await selectBackupFolder();
-        if (backupContent) {
-            const { isValid, data } = analyzeBackupData(backupContent);
-            if (isValid) {
-                setRestoreData(data);
-                toast.success("Backup geladen!");
-                setStep(4);
-            } else {
-                toast.error("Ungültiges Backup.");
-            }
-        }
-      } catch (error) {
-          toast.error("Fehler beim Zugriff.");
-      } finally {
-          setLoading(false);
-      }
   };
 
   const isSelected = (modelDays) => {
@@ -231,17 +232,13 @@ const OnboardingWizard = ({ onComplete }) => {
 
 
   return (
-    // CHANGE: bg-slate-50 -> bg-zinc-50
     <div className="fixed inset-0 bg-zinc-50 dark:bg-zinc-950 z-50 flex flex-col items-center justify-center p-4">
       
-      {/* CHANGE: bg-white dark:bg-slate-800 -> bg-white dark:bg-zinc-800 */}
       <div className="w-full max-w-md bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {step > 0 && (
-          // CHANGE: bg-slate-100 -> bg-zinc-100
           <div className="h-1.5 bg-zinc-100 dark:bg-zinc-700 w-full">
             <motion.div 
-              // CHANGE: bg-orange-500 -> bg-emerald-500
               className="h-full bg-emerald-500"
               initial={{ width: 0 }}
               animate={{ width: `${(step / 4) * 100}%` }}
@@ -262,16 +259,13 @@ const OnboardingWizard = ({ onComplete }) => {
                 className="space-y-8 flex flex-col items-center justify-center h-full py-6"
               >
                 <div className="text-center space-y-4">
-                  {/* CHANGE: bg-orange-500 -> bg-emerald-600 */}
                   <div className="w-20 h-20 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/20">
                     <img src="/icon.png" alt="Logo" className="w-12 h-12 brightness-0 invert" onError={(e) => e.target.style.display='none'} /> 
                     <ShieldCheck size={40} className="text-white absolute" style={{opacity: 0.2}}/>
                   </div>
-                  {/* CHANGE: text-slate-900 -> text-zinc-900 */}
                   <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
                     Kogler Zeit
                   </h1>
-                  {/* CHANGE: text-slate-500 -> text-zinc-500 */}
                   <p className="text-zinc-500 dark:text-zinc-400 max-w-[260px] mx-auto">
                     Die moderne Zeiterfassung für Profis. Wie möchtest du starten?
                   </p>
@@ -280,7 +274,6 @@ const OnboardingWizard = ({ onComplete }) => {
                 <div className="w-full space-y-3">
                   <button 
                     onClick={handleStartNew}
-                    // CHANGE: bg-slate-900 -> bg-zinc-900
                     className="w-full p-5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-bold text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                   >
                     <Play size={20} fill="currentColor" />
@@ -289,7 +282,6 @@ const OnboardingWizard = ({ onComplete }) => {
 
                   <button 
                     onClick={handleStartRestore}
-                    // CHANGE: border-slate-100 -> border-zinc-100, hover:bg-emerald-50/50, hover:border-emerald-200
                     className="w-full p-5 bg-white dark:bg-zinc-800 border-2 border-zinc-100 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-2xl font-bold text-lg hover:border-emerald-200 dark:hover:border-zinc-600 hover:bg-emerald-50/50 dark:hover:bg-zinc-700/50 transition-all flex items-center justify-center gap-3"
                   >
                     <RefreshCw size={20} />
@@ -309,11 +301,9 @@ const OnboardingWizard = ({ onComplete }) => {
                 className="space-y-6"
               >
                 <div className="text-center space-y-2">
-                  {/* CHANGE: bg-orange-100 -> bg-emerald-100, text-orange-600 -> text-emerald-600 */}
                   <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-600">
                     <User size={32} />
                   </div>
-                  {/* CHANGE: text-slate -> text-zinc */}
                   <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Dein Profil</h2>
                   <p className="text-zinc-500 dark:text-zinc-400">Wer nutzt die App?</p>
                 </div>
@@ -322,7 +312,6 @@ const OnboardingWizard = ({ onComplete }) => {
                   <div className="flex flex-col items-center gap-3">
                     <div 
                       onClick={() => photoInputRef.current?.click()}
-                      // CHANGE: slate -> zinc
                       className="w-24 h-24 rounded-full bg-zinc-100 dark:bg-zinc-700 border-2 border-dashed border-zinc-300 dark:border-zinc-600 flex items-center justify-center cursor-pointer overflow-hidden relative group"
                     >
                       {formData.photo ? (
@@ -340,19 +329,16 @@ const OnboardingWizard = ({ onComplete }) => {
 
                   <div className="space-y-3">
                     <div>
-                      {/* CHANGE: text-slate -> text-zinc */}
                       <label className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">Dein Name</label>
                       <input 
                         type="text" 
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        // CHANGE: bg-slate -> bg-zinc, focus:border-emerald-500
                         className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 focus:border-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
                         placeholder="Max Mustermann"
                       />
                     </div>
 
-                    {/* NEU: FIRMA FELD */}
                     <div>
                       <label className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">Firma</label>
                       <div className="relative">
@@ -404,8 +390,6 @@ const OnboardingWizard = ({ onComplete }) => {
                     <button
                       key={model.id}
                       onClick={() => handleModelSelect(model)}
-                      // CHANGE: border-blue-500 -> könnte man auf emerald ändern, aber Blau für Modell passt semantisch auch. 
-                      // Ich lasse Blau für Modelle, passe aber die Basisfarben (slate->zinc) an.
                       className={`w-full p-4 rounded-xl border-2 text-left transition-all relative ${
                         isSelected(model.days)
                           ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
@@ -422,7 +406,6 @@ const OnboardingWizard = ({ onComplete }) => {
                     </button>
                   ))}
                   
-                  {/* SLIDER SECTION */}
                   {isCustomModelActive && (
                       <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700 space-y-4 animate-in fade-in slide-in-from-top-2">
                           <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">
@@ -436,7 +419,6 @@ const OnboardingWizard = ({ onComplete }) => {
                                             min="0" max="720" step="15"
                                             value={formData.workDays[idx]}
                                             onChange={(e) => handleCustomDayChange(idx, e.target.value)}
-                                            // CHANGE: accent-emerald-500
                                             className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                                           />
                                           <span className="text-xs font-mono font-bold w-12 text-right">{minToHours(formData.workDays[idx])}</span>
@@ -445,7 +427,6 @@ const OnboardingWizard = ({ onComplete }) => {
                               </div>
                               <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 flex justify-between items-center">
                                   <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">Wochenstunden:</span>
-                                  {/* CHANGE: text-emerald-500 */}
                                   <span className="text-lg font-bold text-emerald-500">{minToHours(totalWeeklyMinutes)}</span>
                               </div>
                           </div>
@@ -521,7 +502,7 @@ const OnboardingWizard = ({ onComplete }) => {
                              </div>
                              <div className="text-left">
                                 <div className="font-bold text-zinc-800 dark:text-white">Lokales Auto-Backup</div>
-                                <div className="text-xs text-zinc-500">Täglich in Ordner am Handy</div>
+                                <div className="text-xs text-zinc-500">Täglich in Dokumente/eStundnzettl</div>
                              </div>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
@@ -539,7 +520,6 @@ const OnboardingWizard = ({ onComplete }) => {
                         <button
                           onClick={handleGoogleDriveRestore}
                           disabled={loading}
-                          // CHANGE: hover:bg-zinc-50
                           className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors group"
                         >
                             <div className="p-2 bg-white dark:bg-zinc-700 rounded-lg shadow-sm group-hover:scale-110 transition-transform">
@@ -603,7 +583,6 @@ const OnboardingWizard = ({ onComplete }) => {
                 <div className="pt-4">
                   <button 
                     onClick={finishSetup}
-                    // CHANGE: bg-zinc-900
                     className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-lg rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                   >
                     App starten <Play size={20} fill="currentColor" />
@@ -617,7 +596,6 @@ const OnboardingWizard = ({ onComplete }) => {
 
         {/* Footer Navigation */}
         {step > 0 && step < 4 && (
-          // CHANGE: border-zinc-100, bg-zinc-50/50
           <div className="p-4 border-t border-zinc-100 dark:border-zinc-700 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800/50 backdrop-blur-sm">
             
             <button 
@@ -630,7 +608,6 @@ const OnboardingWizard = ({ onComplete }) => {
             {!isRestoreFlow && (
               <button 
                 onClick={nextStep}
-                // CHANGE: bg-zinc-900, shadow-zinc-900/10
                 className="px-6 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl flex items-center gap-2 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-lg shadow-zinc-900/10"
               >
                 Weiter <ChevronRight size={18} />

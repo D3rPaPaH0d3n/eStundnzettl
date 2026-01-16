@@ -1,44 +1,59 @@
-import { ScopedStorage } from '@daniele-rolli/capacitor-scoped-storage';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS } from "../hooks/constants";
 
 // =========================================================
-// TEIL 1: BACKUP ORDNER & SPEICHERN (Original Funktionen)
+// BACKUP ORDNER: Documents/eStundnzettl/
 // =========================================================
 
-// 1. Ordner auswählen & Rechte dauerhaft sichern
+const BACKUP_FOLDER = 'eStundnzettl';
+
+// Ordner erstellen falls nicht vorhanden
+const ensureBackupFolder = async () => {
+  try {
+    await Filesystem.mkdir({
+      path: BACKUP_FOLDER,
+      directory: Directory.Documents,
+      recursive: true
+    });
+  } catch (e) {
+    // Ordner existiert bereits - ignorieren
+  }
+};
+
+// =========================================================
+// TEIL 1: BACKUP FUNKTIONEN
+// =========================================================
+
+// 1. Backup-Ordner "aktivieren" (erstellt den Ordner)
 export const selectBackupFolder = async () => {
   try {
-    const result = await ScopedStorage.pickFolder();
-    if (result) {
-      localStorage.setItem(STORAGE_KEYS.BACKUP_TARGET, JSON.stringify(result));
-      return true;
-    }
-    return false;
+    await ensureBackupFolder();
+    localStorage.setItem(STORAGE_KEYS.BACKUP_TARGET, 'documents');
+    return true;
   } catch (err) {
-    console.error("Ordnerwahl abgebrochen oder Fehler:", err);
+    console.error("Backup-Ordner konnte nicht erstellt werden:", err);
     throw err;
   }
 };
 
-// 2. Zugriff prüfen (gibt true zurück, wenn wir einen Zielordner haben)
+// 2. Zugriff prüfen
 export const hasBackupTarget = () => {
-  return !!localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET);
+  return localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET) === 'documents';
 };
 
 // 3. Backup schreiben
 export const writeBackupFile = async (fileName, dataObj) => {
-  const targetStr = localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET);
-  if (!targetStr) throw new Error("Kein Backup-Ziel gewählt");
+  if (!hasBackupTarget()) throw new Error("Backup nicht aktiviert");
 
-  const folderObj = JSON.parse(targetStr);
+  await ensureBackupFolder();
   const content = JSON.stringify(dataObj, null, 2);
 
-  await ScopedStorage.writeFile({
-    ...folderObj,       
-    path: fileName,     
+  await Filesystem.writeFile({
+    path: `${BACKUP_FOLDER}/${fileName}`,
     data: content,
-    encoding: 'utf8',   
-    mimeType: "application/json"
+    directory: Directory.Documents,
+    encoding: Encoding.UTF8
   });
   
   return true;
@@ -49,31 +64,63 @@ export const clearBackupTarget = () => {
   localStorage.removeItem(STORAGE_KEYS.BACKUP_TARGET);
 };
 
-// 5. Einmaliger manueller Export in einen beliebigen Ordner
+// 5. Einmaliger Export (JSON)
 export const exportToSelectedFolder = async (fileName, dataObj) => {
   try {
-    const folder = await ScopedStorage.pickFolder();
-    if (!folder) return false; 
-
+    await ensureBackupFolder();
     const content = JSON.stringify(dataObj, null, 2);
     
-    await ScopedStorage.writeFile({
-      ...folder,
-      path: fileName,
+    await Filesystem.writeFile({
+      path: `${BACKUP_FOLDER}/${fileName}`,
       data: content,
-      encoding: 'utf8',
-      mimeType: "application/json"
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8
     });
     
     return true;
   } catch (err) {
-    console.error("Manueller Export Fehler:", err);
+    console.error("Export Fehler:", err);
     throw err;
   }
 };
 
+// 6. PDF Export (Base64)
+export const exportPdfToFolder = async (fileName, base64Data) => {
+  try {
+    await ensureBackupFolder();
+    
+    await Filesystem.writeFile({
+      path: `${BACKUP_FOLDER}/${fileName}`,
+      data: base64Data,
+      directory: Directory.Documents
+      // Kein encoding für Base64/Binary
+    });
+    
+    return true;
+  } catch (err) {
+    console.error("PDF Export Fehler:", err);
+    throw err;
+  }
+};
+
+// 7. Backup aus Ordner lesen (für Import im Wizard)
+export const readBackupFromFolder = async () => {
+  try {
+    const result = await Filesystem.readFile({
+      path: `${BACKUP_FOLDER}/kogler_backup.json`,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8
+    });
+    
+    return JSON.parse(result.data);
+  } catch (err) {
+    console.warn("Kein Backup gefunden:", err);
+    return null;
+  }
+};
+
 // =========================================================
-// TEIL 2: NEUE IMPORT LOGIK & ANALYSE
+// TEIL 2: IMPORT LOGIK & ANALYSE
 // =========================================================
 
 // Hilfsfunktion zum Einlesen einer JSON-Datei (für lokalen Import)
@@ -95,44 +142,35 @@ export const readJsonFile = (file) => {
 
 // 1. ANALYSE - Schaut in die Daten, OHNE zu speichern
 export const analyzeBackupData = (data) => {
-  // Fail-Safe für beide Formate
   if (!data) return { valid: false, isValid: false };
 
-  // Erkennung: Altes Format (Array) vs. Neues Format (Objekt mit .entries und .user)
   const isArray = Array.isArray(data);
   const entries = isArray ? data : (data.entries || []);
   const settings = (!isArray && data.user) ? data.user : null;
 
-  // Das eigentliche Analyse-Ergebnis
   const analysisResult = {
     valid: true,
     entryCount: entries.length,
-    hasSettings: !!settings, // Wichtig: True, wenn Einstellungen gefunden wurden
+    hasSettings: !!settings,
     entries,
     settings,
-    timestamp: data.backupDate || new Date().toISOString() // Falls vorhanden
+    timestamp: data.backupDate || new Date().toISOString()
   };
 
-  // FIX: Rückgabe im Hybrid-Format
-  // Der Wizard braucht "isValid" und "data".
-  // Andere Teile der App brauchen vielleicht direkt "valid" und "entries".
   return {
-    isValid: true,        // Für den Wizard
-    data: analysisResult, // Für den Wizard (wird als restoreData gesetzt)
-    ...analysisResult     // Für direkte Verwendung (Legacy Support)
+    isValid: true,
+    data: analysisResult,
+    ...analysisResult
   };
 };
 
 // 2. ANWENDEN - Speichert die Daten basierend auf der Entscheidung
-// mode: 'ALL' (Alles) oder 'ENTRIES_ONLY' (Nur Einträge)
 export const applyBackup = (analyzedData, mode = 'ALL') => {
   if (!analyzedData || !analyzedData.valid) return false;
 
   try {
-    // 1. Immer die Einträge speichern
     localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(analyzedData.entries));
 
-    // 2. Einstellungen nur speichern, wenn Modus "ALL" ist UND Einstellungen da sind
     if (mode === 'ALL' && analyzedData.hasSettings && analyzedData.settings) {
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(analyzedData.settings));
     }

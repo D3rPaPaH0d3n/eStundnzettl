@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/assets/logo-CmJC3P9L.png" />
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="eStundnzettl">
+    <link rel="apple-touch-icon" href="/icon.png"> 
+    <link rel="manifest" href="/manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <title>eStundnzettl</title>
+
+    <style>
+      /* BODY: Fixer Hintergrund in Anthrazit (Passend zum Logo/Splash) */
+      body {
+        background-color: #1e293b;
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      /* LOADER CONTAINER */
+      .loading-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        background-color: #1e293b; /* Nahtloser Übergang */
+      }
+
+      .loading-logo {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        
+        /* TRICK GEGEN WEISSE RÄNDER: */
+        border-radius: 24px; 
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        transform: translateY(-20%);
+      }
+
+      .spinner {
+        margin-top: 32px;
+        width: 32px;
+        height: 32px;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top-color: #16a34a; /* Steiermark-Grün */
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        transform: translateY(-20%);
+      }
+
+      @keyframes spin { to { transform: translateY(-20%) rotate(360deg); } }
+      @keyframes pulse { 0%, 100% { opacity: 1; transform: translateY(-20%) scale(1); } 50% { opacity: .9; transform: translateY(-20%) scale(0.97); } }
+    </style>
+
+    <script>
+      (function() {
+        const savedTheme = localStorage.getItem('eStundnzettl_theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // Da wir beim Start eh dunkel sind, ist die Klasse 'dark' hier der Standard
+        if (savedTheme === 'dark' || (!savedTheme && systemDark) || (savedTheme === 'system' && systemDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-ylejlbmx.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/pdf-libs-D6cDjtJ1.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-BoN8boPx.js">
+    <link rel="modulepreload" crossorigin href="/assets/animation-3vmyltdZ.js">
+    <link rel="modulepreload" crossorigin href="/assets/icons-BtkGeADx.js">
+    <link rel="stylesheet" crossorigin href="/assets/vendor-BMy3eNrX.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-CONhLJKD.css">
+  </head>
+  <body>
+    <div id="root">
+      <div class="loading-container">
+        <img src="/assets/logo-CmJC3P9L.png" class="loading-logo" alt="Lade..." />
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </body>
+</html>

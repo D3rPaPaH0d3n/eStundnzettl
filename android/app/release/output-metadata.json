@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 40,
-      "versionName": "5.1.5",
-      "outputFile": "eStundnzettl_v5.1.5_release.apk"
+      "versionCode": 41,
+      "versionName": "6.0.0",
+      "outputFile": "eStundnzettl_v6.0.0_release.apk"
     }
   ],
   "elementType": "File",
@@ -22,14 +22,14 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/eStundnzettl_v5.1.5_release.dm"
+        "baselineProfiles/1/eStundnzettl_v6.0.0_release.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/eStundnzettl_v5.1.5_release.dm"
+        "baselineProfiles/0/eStundnzettl_v6.0.0_release.dm"
       ]
     }
   ],

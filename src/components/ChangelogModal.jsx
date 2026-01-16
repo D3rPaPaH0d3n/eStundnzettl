@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
-import { X, Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Sliders, Download, Cloud } from "lucide-react";
+// FIX: Building2 hinzugefügt
+import { X, Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Sliders, Download, Cloud, Building2 } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
@@ -19,7 +20,7 @@ const CHANGELOG_DATA = [
         ]
       },
       {
-        icon: Building2,
+        icon: Building2, // Hier wurde es verwendet, ohne importiert zu sein
         title: "Neutral & Flexibel",
         items: [
           "Deine Firma: Du kannst jetzt in den Einstellungen deinen eigenen Firmennamen hinterlegen.",

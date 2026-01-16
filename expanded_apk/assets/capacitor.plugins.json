@@ -1,0 +1,42 @@
+[
+	{
+		"pkg": "@capacitor-community/date-picker",
+		"classpath": "com.getcapacitor.community.datepicker.DatePickerPlugin"
+	},
+	{
+		"pkg": "@capacitor/app",
+		"classpath": "com.capacitorjs.plugins.app.AppPlugin"
+	},
+	{
+		"pkg": "@capacitor/browser",
+		"classpath": "com.capacitorjs.plugins.browser.BrowserPlugin"
+	},
+	{
+		"pkg": "@capacitor/dialog",
+		"classpath": "com.capacitorjs.plugins.dialog.DialogPlugin"
+	},
+	{
+		"pkg": "@capacitor/filesystem",
+		"classpath": "com.capacitorjs.plugins.filesystem.FilesystemPlugin"
+	},
+	{
+		"pkg": "@capacitor/haptics",
+		"classpath": "com.capacitorjs.plugins.haptics.HapticsPlugin"
+	},
+	{
+		"pkg": "@capacitor/share",
+		"classpath": "com.capacitorjs.plugins.share.SharePlugin"
+	},
+	{
+		"pkg": "@capacitor/splash-screen",
+		"classpath": "com.capacitorjs.plugins.splashscreen.SplashScreenPlugin"
+	},
+	{
+		"pkg": "@codetrix-studio/capacitor-google-auth",
+		"classpath": "com.codetrixstudio.capacitor.GoogleAuth.GoogleAuth"
+	},
+	{
+		"pkg": "@daniele-rolli/capacitor-scoped-storage",
+		"classpath": "com.danielerolli.capacitorscopedstorage.CapacitorScopedStoragePlugin"
+	}
+]

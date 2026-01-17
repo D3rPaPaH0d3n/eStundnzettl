@@ -1,8 +1,8 @@
 // ============================================================
-// CONSTANTS.JS - Zentrale Konstanten für Kogler Zeiterfassung
+// CONSTANTS.JS - Zentrale Konstanten für eStundnzettl Zeiterfassung
 // ============================================================
 
-export const APP_VERSION = "v6.0.2";
+export const APP_VERSION = "v6.1.0";
 
 // -------------------------------------------------------
 // ARBEITSZEIT (in Minuten)
@@ -102,20 +102,20 @@ export const ENTRY_TYPES = {
 };
 
 export const STORAGE_KEYS = {
-  ENTRIES: "kogler_entries",
-  USER: "kogler_user",
-  THEME: "kogler_theme",
-  AUTO_BACKUP: "kogler_auto_backup",
-  LAST_CODE: "kogler_last_code",
-  LIVE_TIMER: "kogler_live_timer",
-  LAST_BACKUP: "kogler_last_backup_date",
-  BACKUP_TARGET: "kogler_backup_target",
-  CLOUD_SYNC: "kogler_cloud_sync",
+  ENTRIES: "estundnzettl_entries",
+  USER: "estundnzettl_user",
+  THEME: "estundnzettl_theme",
+  AUTO_BACKUP: "estundnzettl_auto_backup",
+  LAST_CODE: "estundnzettl_last_code",
+  LIVE_TIMER: "estundnzettl_live_timer",
+  LAST_BACKUP: "estundnzettl_last_backup_date",
+  BACKUP_TARGET: "estundnzettl_backup_target",
+  CLOUD_SYNC: "estundnzettl_cloud_sync",
 };
 
 export const GITHUB = {
   USER: "D3rPaPaH0d3n",
-  REPO: "kogler-zeit",
+  REPO: "eStundnzettl",
 };
 
 export const ANIMATION = {

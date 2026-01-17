@@ -264,7 +264,7 @@ const OnboardingWizard = ({ onComplete }) => {
                     <ShieldCheck size={40} className="text-white absolute" style={{opacity: 0.2}}/>
                   </div>
                   <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
-                    Kogler Zeit
+                    eStundnzettl
                   </h1>
                   <p className="text-zinc-500 dark:text-zinc-400 max-w-[260px] mx-auto">
                     Die moderne Zeiterfassung für Profis. Wie möchtest du starten?

@@ -4,8 +4,9 @@ import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { uploadOrUpdateFile, refreshGoogleToken } from "../utils/googleDrive";
 import { writeBackupFile, hasBackupTarget } from "../utils/storageBackup";
+import { STORAGE_KEYS } from "./constants";
 
-const BACKUP_FILENAME = "kogler_backup.json";
+const BACKUP_FILENAME = "estundnzettl_backup.json";
 
 export function useAutoBackup(entries, userData, isEnabled) {
   const latestDataRef = useRef({ entries, userData });
@@ -31,7 +32,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
       user: userData,
       entries,
       lastModified: new Date().toISOString(),
-      note: "Kogler Zeit Auto-Sync"
+      note: "eStundnzettl Auto-Sync"
     };
 
     const currentHash = createHash(payload);
@@ -73,7 +74,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
         }
 
         // 2. CLOUD SPEICHERN
-        const isCloudEnabled = localStorage.getItem("kogler_cloud_sync") === "true";
+        const isCloudEnabled = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC) === "true";
         if (isCloudEnabled) {
             const authResponse = await refreshGoogleToken();
             if (authResponse?.accessToken) {

@@ -107,7 +107,7 @@ export const exportPdfToFolder = async (fileName, base64Data) => {
 export const readBackupFromFolder = async () => {
   try {
     const result = await Filesystem.readFile({
-      path: `${BACKUP_FOLDER}/kogler_backup.json`,
+      path: `${BACKUP_FOLDER}/estundnzettl_backup.json`,
       directory: Directory.Documents,
       encoding: Encoding.UTF8
     });

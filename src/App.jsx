@@ -40,6 +40,9 @@ import { useLiveTimer } from "./hooks/useLiveTimer";
 import { usePeriodStats } from "./hooks/usePeriodStats";
 import { exportToSelectedFolder } from "./utils/storageBackup";
 
+// MIGRATION
+import { migrateStorageKeys } from "./utils/migration";
+
 // LAZY LOADING
 const PrintReport = React.lazy(() => import("./components/PrintReport"));
 
@@ -47,6 +50,9 @@ const PrintReport = React.lazy(() => import("./components/PrintReport"));
 const pageVariants = { initial: { opacity: 0, x: 20 }, in: { opacity: 1, x: 0 }, out: { opacity: 0, x: -20 } };
 const pageTransition = { type: "tween", ease: "anticipate", duration: 0.3 };
 const reportVariants = { initial: { y: "100%", opacity: 0 }, in: { y: 0, opacity: 1 }, out: { y: "100%", opacity: 0 } };
+
+// Migration beim App-Start ausführen
+migrateStorageKeys();
 
 export default function App() {
   // --- 1. DATEN & LOGIK ÜBER HOOKS ---
@@ -461,7 +467,7 @@ export default function App() {
         const file = new File([json], fileName, { type: "application/json" });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           try { 
-            await navigator.share({ files: [file], title: 'Vertel Backup', text: 'Backup meiner Stunden' }); 
+            await navigator.share({ files: [file], title: 'eStundnzettl Backup', text: 'Backup meiner Stunden' }); 
             toast.success("📤 Export erfolgreich!", { id: toastId }); 
             return; 
           } catch (shareError) { 

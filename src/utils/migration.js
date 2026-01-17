@@ -1,7 +1,12 @@
 // ============================================================
-// MIGRATION.JS - Einmalige Migration von kogler_* zu estundnzettl_*
+// MIGRATION.JS - Einmalige Migrationen für eStundnzettl
 // ============================================================
 
+import { WORK_CODE_PRESETS, STORAGE_KEYS } from '../hooks/constants.js';
+
+// -------------------------------------------------------
+// Migration 1: kogler_* → estundnzettl_* Keys
+// -------------------------------------------------------
 const OLD_KEYS = {
   ENTRIES: "kogler_entries",
   USER: "kogler_user",
@@ -30,8 +35,7 @@ const NEW_KEYS = {
  * Migriert alle localStorage Keys von "kogler_*" zu "estundnzettl_*"
  * Läuft nur einmal und markiert sich dann als erledigt.
  */
-export const migrateStorageKeys = () => {
-  // Prüfen ob Migration bereits durchgeführt wurde
+const migrateKoglerKeys = () => {
   const alreadyMigrated = localStorage.getItem("estundnzettl_migrated");
   if (alreadyMigrated) return;
 
@@ -44,7 +48,6 @@ export const migrateStorageKeys = () => {
     const oldValue = localStorage.getItem(oldKey);
     const newValue = localStorage.getItem(newKey);
     
-    // Nur migrieren wenn alter Wert existiert UND neuer noch leer ist
     if (oldValue && !newValue) {
       localStorage.setItem(newKey, oldValue);
       localStorage.removeItem(oldKey);
@@ -53,10 +56,47 @@ export const migrateStorageKeys = () => {
     }
   });
 
-  // Migration als erledigt markieren
   localStorage.setItem("estundnzettl_migrated", "true");
   
   if (migrationCount > 0) {
     console.log(`🎉 Storage-Migration abgeschlossen! ${migrationCount} Keys migriert.`);
   }
+};
+
+// -------------------------------------------------------
+// Migration 2: Work Codes für bestehende User
+// -------------------------------------------------------
+/**
+ * Gibt bestehenden Usern (die schon Einträge haben) das Kogler-Preset,
+ * damit ihre bisherigen Codes weiterhin funktionieren.
+ * Neue User bekommen keine Codes voreingestellt.
+ */
+const migrateWorkCodes = () => {
+  const alreadyMigrated = localStorage.getItem("estundnzettl_workcodes_migrated");
+  if (alreadyMigrated) return;
+
+  const existingEntries = localStorage.getItem(STORAGE_KEYS.ENTRIES);
+  const existingWorkCodes = localStorage.getItem(STORAGE_KEYS.WORK_CODES);
+
+  // Nur migrieren wenn:
+  // 1. User hat bereits Einträge (ist bestehender User)
+  // 2. User hat noch keine eigenen Work Codes gespeichert
+  if (existingEntries && !existingWorkCodes) {
+    // Bestehender User → Kogler-Preset geben
+    localStorage.setItem(
+      STORAGE_KEYS.WORK_CODES, 
+      JSON.stringify(WORK_CODE_PRESETS.kogler.codes)
+    );
+    console.log("✅ Work Codes Migration: Kogler-Preset für bestehenden User geladen.");
+  }
+
+  localStorage.setItem("estundnzettl_workcodes_migrated", "true");
+};
+
+// -------------------------------------------------------
+// Haupt-Export: Alle Migrationen ausführen
+// -------------------------------------------------------
+export const migrateStorageKeys = () => {
+  migrateKoglerKeys();
+  migrateWorkCodes();
 };

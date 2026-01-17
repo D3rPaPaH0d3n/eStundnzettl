@@ -19,8 +19,9 @@ import {
   toLocalDateString // NEU: Wichtig für Zeitzonen-Fix!
 } from "./utils";
 
-// NEU: Imports aus constants
-import { WORK_CODES, WORK_MODELS, STORAGE_KEYS } from "./hooks/constants";
+// NEU: Imports aus constants - WORK_CODES entfernt, useWorkCodes hinzugefügt
+import { WORK_MODELS, STORAGE_KEYS } from "./hooks/constants";
+import { useWorkCodes } from "./hooks/useWorkCodes";
 
 // COMPONENTS
 import Dashboard from "./components/Dashboard";
@@ -59,6 +60,17 @@ export default function App() {
   const { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries } = useEntries();
   const { userData, setUserData, theme, setTheme, autoBackup, setAutoBackup } = useSettings();
   
+  // Work Codes Hook
+  const { workCodes, hasAnyCodes } = useWorkCodes();
+  
+  // Default Code: erster aus User-Codes oder Fallback 1
+  const getDefaultCode = () => {
+    const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
+    if (lastCode) return Number(lastCode);
+    if (hasAnyCodes) return workCodes[0].id;
+    return 1; // Fallback
+  };
+  
   // LIVE TIMER HOOK (inkl. Auto-Checkout Logik)
   const { timerState, autoCheckoutData, clearAutoCheckout, startTimer, pauseTimer, resumeTimer, stopTimer, cancelTimer } = useLiveTimer();
   
@@ -90,7 +102,7 @@ export default function App() {
   const [startTime, setStartTime] = useState("06:00");
   const [endTime, setEndTime] = useState("16:30");
   const [project, setProject] = useState("");
-  const [code, setCode] = useState(WORK_CODES[0].id);
+  const [code, setCode] = useState(1); // Default-Wert, wird später aktualisiert
   const [pauseDuration, setPauseDuration] = useState(30);
 
     // Sollzeit für HEUTE berechnen (für das Overlay)
@@ -174,9 +186,7 @@ export default function App() {
       setPauseDuration(autoCheckoutData.pause);
       
       setProject(""); 
-      // UPDATE: Nutzt jetzt STORAGE_KEYS
-      const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
-      setCode(lastCode ? Number(lastCode) : WORK_CODES[0].id);
+      setCode(getDefaultCode());
 
       setEditingEntry(null);
       setIsLiveEntry(true); 
@@ -340,9 +350,7 @@ export default function App() {
     setEndTime(toLocalHHMM(result.end));
     setPauseDuration(result.pause);
     setProject(""); 
-    // UPDATE: Nutzt jetzt STORAGE_KEYS
-    const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
-    setCode(lastCode ? Number(lastCode) : WORK_CODES[0].id);
+    setCode(getDefaultCode());
 
     setEditingEntry(null);
     setIsLiveEntry(true); 
@@ -355,9 +363,7 @@ export default function App() {
     // FIX: toLocalDateString statt toISOString
     setFormDate(toLocalDateString(new Date()));
     setStartTime("06:00"); setEndTime("16:30"); setPauseDuration(30); setProject(""); 
-    // UPDATE: Nutzt jetzt STORAGE_KEYS
-    const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
-    setCode(lastCode ? Number(lastCode) : WORK_CODES[0].id);
+    setCode(getDefaultCode());
     setIsLiveEntry(false); 
     setView("add");
   };
@@ -369,7 +375,7 @@ export default function App() {
     setFormDate(entry.date);
     if (entry.type === "work") {
         setStartTime(entry.start || "06:00"); setEndTime(entry.end || "16:30");
-        setPauseDuration(isDrive ? 0 : entry.pause ?? 0); setCode(entry.code ?? WORK_CODES[0].id); setProject(entry.project || "");
+        setPauseDuration(isDrive ? 0 : entry.pause ?? 0); setCode(entry.code ?? getDefaultCode()); setProject(entry.project || "");
     } else { setPauseDuration(0); setProject(""); }
     setIsLiveEntry(false);
     setView("add");
@@ -401,7 +407,8 @@ export default function App() {
 
         const usedPause = isDrive ? 0 : pauseDuration; const usedCode = isDrive ? 19 : code;
         net = en - s - usedPause;
-        label = WORK_CODES.find((c) => c.id === usedCode)?.label || (isDrive ? "Fahrzeit" : "Arbeit");
+        // Label aus workCodes holen
+        label = workCodes.find((c) => c.id === usedCode)?.label || (isDrive ? "Fahrzeit" : "Arbeit");
     } else {
         net = getTargetMinutesForDate(formDate, userData?.workDays); 
         label = entryType === "vacation" ? "Urlaub" : entryType === "sick" ? "Krank" : "Zeitausgleich";

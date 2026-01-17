@@ -2,7 +2,8 @@ import React, { useRef, useState, useEffect } from "react";
 import { 
   User, Sun, Camera, Trash2, Upload, Loader, 
   History, BookOpen, RefreshCw, Briefcase, Calendar, 
-  Cloud, CloudOff, CheckCircle2, HardDrive, List, Lock, Unlock, AlertTriangle, Building2 
+  Cloud, CloudOff, CheckCircle2, HardDrive, List, Lock, Unlock, AlertTriangle, Building2,
+  ListChecks
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -10,6 +11,7 @@ import { Card } from "../utils";
 import { WORK_MODELS, STORAGE_KEYS, APP_VERSION } from "../hooks/constants"; 
 import ChangelogModal from "./ChangelogModal";
 import HelpModal from "./HelpModal";
+import WorkCodeManager from "./WorkCodeManager";
 import { initGoogleAuth, signInGoogle, signOutGoogle } from "../utils/googleDrive";
 import { selectBackupFolder, hasBackupTarget, clearBackupTarget, analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
@@ -33,6 +35,7 @@ const Settings = ({
   const [isProcessingImg, setIsProcessingImg] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showWorkCodeManager, setShowWorkCodeManager] = useState(false);
   
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [hasBackupFolder, setHasBackupFolder] = useState(false);
@@ -269,6 +272,7 @@ const Settings = ({
       
       <ChangelogModal isOpen={showChangelog} onClose={() => setShowChangelog(false)} />
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+      <WorkCodeManager isOpen={showWorkCodeManager} onClose={() => setShowWorkCodeManager(false)} />
       <ImportConflictModal 
         analysisData={pendingImport} 
         onConfirm={handleConfirmImport} 
@@ -465,7 +469,27 @@ const Settings = ({
         </div>
       </Card>
 
-      {/* 3. THEME */}
+      {/* 3. TÄTIGKEITSCODES */}
+      <Card className="p-5 space-y-3">
+        <h3 className="font-bold text-zinc-700 dark:text-white flex items-center gap-2">
+            <ListChecks size={18} className="text-sky-500" />
+            <span>Tätigkeitscodes</span>
+        </h3>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Verwalte deine Tätigkeitscodes oder lade ein Preset für deine Branche.
+        </p>
+        <button 
+          onClick={() => {
+            Haptics.impact({ style: ImpactStyle.Light });
+            setShowWorkCodeManager(true);
+          }}
+          className="w-full py-3 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-sky-100 dark:hover:bg-sky-900/30 transition-colors"
+        >
+          <ListChecks size={18} /> Codes verwalten
+        </button>
+      </Card>
+
+      {/* 4. THEME */}
       <Card className="p-5 space-y-3">
         <h3 className="font-bold text-zinc-700 dark:text-white flex items-center gap-2">
             <Sun size={18} className="text-emerald-400" />
@@ -488,7 +512,7 @@ const Settings = ({
         </div>
       </Card>
 
-      {/* 4. DATEN & BACKUP */}
+      {/* 5. DATEN & BACKUP */}
       <Card className="p-5 space-y-4">
         <h3 className="font-bold text-zinc-700 dark:text-white">Daten & Backup</h3>
         
@@ -557,7 +581,7 @@ const Settings = ({
         </div>
       </Card>
 
-      {/* 5. APP & INFORMATIONEN */}
+      {/* 6. APP & INFORMATIONEN */}
       <Card className="p-5 space-y-3">
         <h3 className="font-bold text-zinc-700 dark:text-white">App & Informationen</h3>
         
@@ -592,7 +616,7 @@ const Settings = ({
           </button>
       </Card>
 
-      {/* 6. DANGER ZONE */}
+      {/* 7. DANGER ZONE */}
       <Card className="p-5 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/10">
         <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="text-red-600 dark:text-red-400" size={20} />
@@ -612,10 +636,10 @@ const Settings = ({
         </button>
       </Card>
       
-      {/* 7. FOOTER */}
+      {/* 8. FOOTER */}
       <div className="text-center space-y-1 pb-4">
         <p className="text-xs font-bold text-zinc-400 dark:text-zinc-500">Version {APP_VERSION}</p>
-        <p className="text-[10px] text-zinc-300 dark:text-zinc-600 font-medium">Developed with ❤️ by Markus Kainer & Gemini</p>
+        <p className="text-[10px] text-zinc-300 dark:text-zinc-600 font-medium">Developed with ❤️ by Markus Kainer 🤝 Claude 🤝 Gemini</p>
       </div>
     </main>
   );

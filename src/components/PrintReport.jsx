@@ -14,7 +14,7 @@ import {
   getTargetMinutesForDate,
   getWeekRangeInMonth 
 } from "../utils";
-import { WORK_CODES } from "../hooks/constants";
+import { useWorkCodes } from "../hooks/useWorkCodes";
 import { usePeriodStats } from "../hooks/usePeriodStats"; 
 import ExportModal from "./ExportModal";
 
@@ -36,6 +36,9 @@ const PRINT_STYLES = {
 };
 
 const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onMonthChange, userData }) => {
+  
+  // Work Codes aus dem Hook laden
+  const { workCodes } = useWorkCodes();
   
   const [filterMode, setFilterMode] = useState(() => {
     const today = new Date();
@@ -325,7 +328,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                   else if (meta.isEvenDay) rowBg = PRINT_STYLES.bgZebra;
 
                   let projectText = e.project;
-                  let codeText = WORK_CODES.find((c) => c.id === e.code)?.label || "";
+                  let codeText = workCodes.find((c) => c.id === e.code)?.label || "";
                   let durationDisplay = formatTime(e.netDuration);
                   let timeColor = PRINT_STYLES.textDark;
                   

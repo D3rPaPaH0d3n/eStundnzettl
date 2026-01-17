@@ -1,7 +1,7 @@
 import React, { forwardRef, useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus } from "lucide-react";
 import { Card, getHolidayData, toLocalDateString } from "../utils"; 
-import { WORK_CODES } from "../hooks/constants";
+import { useWorkCodes } from "../hooks/useWorkCodes";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -69,8 +69,13 @@ const EntryForm = ({
   userData 
 }) => {
   
+  // Work Codes aus dem Hook laden
+  const { workCodes, hasAnyCodes, addCode } = useWorkCodes();
+  
   const [activeTimeField, setActiveTimeField] = useState(null);
   const [isWorkCodeOpen, setIsWorkCodeOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickAddValue, setQuickAddValue] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -145,7 +150,11 @@ const EntryForm = ({
     setFormDate(toLocalDateString(d));
   };
 
-  const currentCodeLabel = WORK_CODES.find(c => c.id === code)?.label || "Bitte wählen";
+  // Code-Label aus den User-Codes holen
+  const currentCodeLabel = workCodes.find(c => c.id === code)?.label || "Bitte wählen";
+  
+  // Erster verfügbarer Code für Default
+  const defaultCode = hasAnyCodes ? workCodes[0].id : 1;
 
   return (
     <main className="w-full p-3 pb-20">
@@ -162,7 +171,7 @@ const EntryForm = ({
         isOpen={isWorkCodeOpen}
         onClose={() => setIsWorkCodeOpen(false)}
         title="Tätigkeit wählen"
-        options={WORK_CODES.filter((c) => c.id !== 190 && c.id !== 19)}
+        options={workCodes.filter((c) => c.id !== 190 && c.id !== 19)}
         value={code}
         onChange={setCode}
       />
@@ -192,7 +201,7 @@ const EntryForm = ({
 
           <div className="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-5 gap-1">
             {/* WORK */}
-            <button type="button" onClick={() => { setEntryType("work"); setCode(WORK_CODES[0].id); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "work" && code !== 190 ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}>Arbeit</button>
+            <button type="button" onClick={() => { setEntryType("work"); setCode(defaultCode); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "work" && code !== 190 ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}>Arbeit</button>
             {/* FAHRT (Bleibt Orange als Kategorie-Farbe) */}
             <button type="button" onClick={() => { setEntryType("drive"); setCode(19); setPauseDuration(0); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "drive" || code === 190 ? "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Fahrt</button>
             {/* KRANK (Rot) */}
@@ -279,11 +288,56 @@ const EntryForm = ({
 
               {entryType === "work" && code !== 190 && (
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Tätigkeit</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Tätigkeit</label>
+                    <button
+                      type="button"
+                      onClick={() => setQuickAddOpen(!quickAddOpen)}
+                      className="text-xs text-zinc-400 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 transition-colors"
+                    >
+                      <Plus size={12} />
+                      <span>Neue</span>
+                    </button>
+                  </div>
+                  
+                  <AnimatePresence>
+                    {quickAddOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="flex gap-2 mb-2">
+                          <input
+                            type="text"
+                            value={quickAddValue}
+                            onChange={(e) => setQuickAddValue(e.target.value)}
+                            placeholder="z.B. 99 - Sonstiges"
+                            className="flex-1 p-2 text-sm bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg outline-none dark:text-white focus:border-emerald-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (quickAddValue.trim()) {
+                                addCode(quickAddValue.trim());
+                                toast.success("Tätigkeit hinzugefügt!");
+                                setQuickAddValue("");
+                                setQuickAddOpen(false);
+                              }
+                            }}
+                            className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-lg"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  
                   <button 
                     type="button" 
                     onClick={() => setIsWorkCodeOpen(true)}
-                    // CHANGE: active:border-orange -> active:border-emerald
                     className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors text-left"
                   >
                     <span className="truncate pr-2">{currentCodeLabel}</span>

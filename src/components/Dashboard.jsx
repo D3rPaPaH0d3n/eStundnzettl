@@ -8,7 +8,7 @@ import {
   // calculateWeekStats NEU importiert, die alten Helfer entfernt da nicht mehr hier benötigt
   calculateWeekStats 
 } from "../utils"; 
-import { WORK_CODES } from "../hooks/constants";
+import { useWorkCodes } from "../hooks/useWorkCodes";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
@@ -34,6 +34,9 @@ const Dashboard = ({
   stats, 
   overtime, progressPercent, groupedByWeek, viewMonth, viewYear, onEditEntry, onDeleteEntry, userData
 }) => {
+  
+  // Work Codes aus dem Hook laden
+  const { workCodes } = useWorkCodes();
   
   const [expandedWeeks, setExpandedWeeks] = useState(() => {
     const currentWeek = getWeekNumber(new Date());
@@ -242,7 +245,7 @@ const Dashboard = ({
                                           let timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags"); 
                                           
                                           let codeLabel = ""; 
-                                          if(entry.type === "work") codeLabel = WORK_CODES.find(c => c.id === entry.code)?.label; 
+                                          if(entry.type === "work") codeLabel = workCodes.find(c => c.id === entry.code)?.label || ""; 
                                           else if(isHoliday) codeLabel = "Bezahlt frei"; 
                                           else if(isTimeComp) codeLabel = "Zeitausgleich"; 
                                           else codeLabel = entry.type === "vacation" ? "Urlaub" : "Krank"; 

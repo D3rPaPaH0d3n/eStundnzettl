@@ -5,6 +5,33 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
   {
+    version: "6.2.0",
+    date: "17.01.2026",
+    title: "Custom Work Codes Update 🛠️",
+    isMajor: false,
+    sections: [
+      {
+        icon: Sliders,
+        title: "Tätigkeitscodes anpassbar",
+        items: [
+          "Neu: Eigene Tätigkeitscodes erstellen, bearbeiten und löschen",
+          "Presets: Wähle zwischen 'Kogler', 'Allgemein' oder starte leer",
+          "Quick-Add: Neue Codes direkt im Eintragsformular hinzufügen",
+          "Code-Verwaltung: Neuer Bereich in den Einstellungen"
+        ]
+      },
+      {
+        icon: Zap,
+        title: "Verbesserungen",
+        items: [
+          "Neue User starten mit 'Allgemein' Preset als Standard",
+          "Bestehende User behalten ihre gewohnten Kogler-Codes",
+          "Footer: Developed with ❤️ by Markus Kainer & Claude"
+        ]
+      }
+    ]
+  },
+  {
     version: "6.0.0",
     date: "15.01.2026",
     title: "The Neutral & Paper Update 🎨",

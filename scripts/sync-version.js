@@ -13,7 +13,7 @@ const newVersion = packageJson.version;
 
 console.log(`🔄 Synchronisiere Version auf: ${newVersion}...`);
 
-// --- A) UPDATE src/utils.jsx (MIT "v" PREFIX) ---
+// --- A) UPDATE src/hooks/constants.js (MIT "v" PREFIX) ---
 const utilsPath = path.join(__dirname, '../src/hooks/constants.js');
 if (fs.existsSync(utilsPath)) {
     let utilsContent = fs.readFileSync(utilsPath, 'utf8');
@@ -24,9 +24,9 @@ if (fs.existsSync(utilsPath)) {
     if (utilsRegex.test(utilsContent)) {
         utilsContent = utilsContent.replace(utilsRegex, `export const APP_VERSION = "v${newVersion}";`);
         fs.writeFileSync(utilsPath, utilsContent);
-        console.log(`✅ src/utils.jsx aktualisiert (jetzt mit 'v').`);
+        console.log(`✅ src/hooks/constants.js aktualisiert (jetzt mit 'v').`);
     } else {
-        console.error("⚠️ WARNUNG: APP_VERSION in src/utils.jsx nicht gefunden.");
+        console.error("⚠️ WARNUNG: APP_VERSION in src/hooks/constants.js nicht gefunden.");
     }
 }
 

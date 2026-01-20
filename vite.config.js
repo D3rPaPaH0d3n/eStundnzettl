@@ -9,8 +9,24 @@ export default defineConfig({
     tailwindcss(), 
   ],
   build: {
-    // WICHTIG: Das hier verhindert das "Kaputt-Optimieren" der Variablen
-    minify: false, 
+    // PRODUCTION: Terser für Minifizierung + Console-Entfernung
+    minify: 'terser',
+    
+    terserOptions: {
+      compress: {
+        drop_console: true,   // Entfernt ALLE console.* Statements
+        drop_debugger: true,  // Entfernt debugger Statements
+        pure_funcs: [
+          'console.log', 
+          'console.info', 
+          'console.debug', 
+          'console.trace'
+        ]
+      },
+      format: {
+        comments: false  // Entfernt auch Kommentare für kleinere Bundle-Größe
+      }
+    },
     
     // Erhöht das Limit für die Warnung (optional, beruhigt aber die Konsole)
     chunkSizeWarningLimit: 1000, 

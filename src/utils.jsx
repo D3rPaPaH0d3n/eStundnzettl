@@ -1,5 +1,5 @@
 import React from "react";
-import { APP_VERSION } from "./hooks/constants";
+import { APP_VERSION, GITHUB } from "./hooks/constants";
 
 // -------------------------------------------------------
 // HELPER-FUNKTIONEN
@@ -336,8 +336,7 @@ const compareVersions = (v1, v2) => {
 
 export const checkForUpdate = async () => {
   try {
-    const GITHUB_USER = "D3rPaPaH0d3n";
-    const REPO_NAME = "kogler-zeit";
+    const { USER: GITHUB_USER, REPO: REPO_NAME } = GITHUB;
     const response = await fetch(
       `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/releases/latest`
     );

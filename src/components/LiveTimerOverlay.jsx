@@ -63,7 +63,7 @@ const LiveTimerOverlay = ({
             className={`fixed left-6 z-[89] px-3 py-1.5 rounded-xl shadow-sm border mb-3 text-xs font-bold backdrop-blur-md pointer-events-none ${
               displayStatus.isOvertime 
                 ? "bg-green-500/90 border-green-400 text-white" 
-                : "bg-slate-800/90 border-slate-600 text-white"
+                : "bg-zinc-800/90 border-zinc-600 text-white"
             }`}
             style={{ bottom: "calc(7rem + env(safe-area-inset-bottom))" }} // Etwas über dem Button
           >
@@ -81,8 +81,8 @@ const LiveTimerOverlay = ({
         className={`
           fixed left-6 w-14 h-14 rounded-full shadow-2xl z-[90] flex flex-col items-center justify-center transition-all border-2
           ${timerState.isRunning 
-            ? "bg-white dark:bg-slate-800 border-red-500 text-red-500" // AUS-Zustand
-            : "bg-slate-900 dark:bg-orange-500 border-transparent text-white" // EIN-Zustand
+            ? "bg-white dark:bg-zinc-800 border-red-500 text-red-500" // AUS-Zustand
+            : "bg-zinc-900 dark:bg-orange-500 border-transparent text-white" // EIN-Zustand
           }
         `}
       >
@@ -114,7 +114,7 @@ const LiveTimerOverlay = ({
                     fixed left-24 w-10 h-10 rounded-full shadow-lg z-[88] flex items-center justify-center border
                     ${timerState.isPaused 
                         ? "bg-green-100 border-green-300 text-green-600" 
-                        : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-400"}
+                        : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-600 text-zinc-400"}
                 `}
             >
                 {timerState.isPaused ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}

@@ -2,7 +2,7 @@
 // CONSTANTS.JS - Zentrale Konstanten für eStundnzettl Zeiterfassung
 // ============================================================
 
-export const APP_VERSION = "v6.2.0";
+export const APP_VERSION = "v6.2.1";
 
 // -------------------------------------------------------
 // ARBEITSZEIT (in Minuten)

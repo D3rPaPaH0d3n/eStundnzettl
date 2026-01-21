@@ -3,151 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Datenschutzerklärung - eStundnzettl</title>
+    <title>eStundnzettl – Deine App für lokale Zeiterfassung</title>
     <style>
-        * {
+        :root {
+            --primary-color: #2e7d32;
+            --text-color: #333;
+            --bg-color: #f4f6f8;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            line-height: 1.7;
-            color: #1a1a1a;
-            background: #fafafa;
-            padding: 2rem 1rem;
+
+        /* Banner Bereich */
+        .header-banner {
+            width: 100%;
+            height: 250px;
+            background: url('banner.png') no-repeat center center;
+            background-size: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+
+        .main-content {
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
         .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 2rem;
+            background-color: var(--card-bg);
+            padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 700px;
+            text-align: center;
+            margin-top: -80px; /* Zieht die Box leicht ins Banner rein für modernen Look */
         }
+
+        .logo {
+            width: 100px;
+            height: auto;
+            margin-bottom: 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: white;
+            padding: 5px;
+        }
+
         h1 {
-            color: #f97316;
-            margin-bottom: 0.5rem;
-            font-size: 1.8rem;
+            margin: 0 0 10px 0;
+            color: var(--primary-color);
+            font-size: 2em;
         }
-        .app-name {
+
+        .tagline {
+            font-size: 1.1em;
             color: #666;
-            margin-bottom: 2rem;
-            font-size: 1rem;
+            margin-bottom: 30px;
+            font-weight: 500;
         }
-        h2 {
-            color: #333;
-            margin-top: 2rem;
-            margin-bottom: 0.75rem;
-            font-size: 1.2rem;
-            border-bottom: 2px solid #f97316;
-            padding-bottom: 0.25rem;
+
+        .features {
+            text-align: left;
+            display: inline-block;
+            margin: 20px 0 30px 0;
         }
-        p, li {
-            margin-bottom: 0.75rem;
-            color: #444;
+
+        .features li {
+            margin-bottom: 12px;
+            list-style-type: '✅';
+            padding-left: 10px;
         }
-        ul {
-            margin-left: 1.5rem;
-            margin-bottom: 1rem;
-        }
-        .highlight {
-            background: #fff7ed;
-            border-left: 4px solid #f97316;
-            padding: 1rem;
-            margin: 1rem 0;
-            border-radius: 0 8px 8px 0;
-        }
-        .contact {
-            background: #f5f5f5;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-        }
-        .date {
-            color: #888;
-            font-size: 0.9rem;
-            margin-top: 2rem;
-            padding-top: 1rem;
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
             border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #888;
         }
-        a {
-            color: #f97316;
+
+        .privacy-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .privacy-link:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Datenschutzerklärung</h1>
-        <p class="app-name">für die Android-App „eStundnzettl"</p>
 
-        <div class="highlight">
-            <strong>Kurzfassung:</strong> Deine Daten bleiben auf deinem Gerät. Wir sammeln keine personenbezogenen Daten, nutzen keine Tracking-Tools und schalten keine Werbung. Die optionale Google Drive-Sicherung erfolgt ausschließlich in deinem eigenen Google-Konto.
+    <header class="header-banner">
+        </header>
+
+    <main class="main-content">
+        <div class="container">
+            <img src="logo.png" alt="eStundnzettl Logo" class="logo">
+            
+            <h1>eStundnzettl</h1>
+            <p class="tagline">Sichere Zeiterfassung. Lokal. Einfach.</p>
+
+            <p>eStundnzettl ermöglicht Dir eine präzise Arbeitszeiterfassung direkt auf Deinem Smartphone. Deine Daten werden nicht auf fremden Servern gespeichert, sondern bleiben in Deiner Hand.</p>
+
+            <div class="features">
+                <ul>
+                    <li><strong> Volle Kontrolle:</strong> Deine Daten bleiben lokal auf Deinem Gerät.</li>
+                    <li><strong> Einfacher Export:</strong> Generiere PDF-Berichte für Deine Unterlagen.</li>
+                    <li><strong> Google Drive Backup:</strong> Sichere Deine Daten optional in Deinem eigenen Cloud-Speicher.</li>
+                </ul>
+            </div>
+
+            <div class="footer">
+                <p>Besuche unsere rechtlichen Informationen:</p>
+                <a href="privacy.html" class="privacy-link">Datenschutzerklärung öffnen</a>
+            </div>
         </div>
+    </main>
 
-        <h2>1. Verantwortlicher</h2>
-        <p>Verantwortlich für diese App im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:</p>
-        <div class="contact">
-            <strong>Markus Kainer</strong><br>
-            E-Mail: <a href="mailto:markus@kainer.co.at">markus@kainer.co.at</a>
-        </div>
-
-        <h2>2. Welche Daten werden verarbeitet?</h2>
-        <p>Die App „eStundnzettl" ist eine lokale Zeiterfassungs-App. Folgende Daten werden <strong>ausschließlich lokal auf deinem Gerät</strong> gespeichert:</p>
-        <ul>
-            <li>Arbeitszeit-Einträge (Datum, Uhrzeit, Dauer, Tätigkeitscode)</li>
-            <li>Persönliche Einstellungen (Arbeitszeitmodell, Name)</li>
-            <li>Urlaubs-, Kranken- und Feiertagseinträge</li>
-        </ul>
-        <p><strong>Diese Daten werden nicht an uns oder Dritte übermittelt.</strong></p>
-
-        <h2>3. Google Drive Backup (optional)</h2>
-        <p>Die App bietet eine optionale Backup-Funktion über Google Drive. Wenn du diese Funktion aktivierst:</p>
-        <ul>
-            <li>Du meldest dich mit deinem eigenen Google-Konto an</li>
-            <li>Die Backup-Datei wird <strong>ausschließlich in deinem persönlichen Google Drive</strong> gespeichert</li>
-            <li>Wir haben keinen Zugriff auf dein Google-Konto oder deine Backup-Daten</li>
-            <li>Du kannst die Verbindung jederzeit in den App-Einstellungen oder unter <a href="https://myaccount.google.com/permissions" target="_blank">Google-Kontoberechtigungen</a> widerrufen</li>
-        </ul>
-        <p>Die Nutzung von Google Drive unterliegt den <a href="https://policies.google.com/privacy" target="_blank">Datenschutzbestimmungen von Google</a>.</p>
-
-        <h2>4. Berechtigungen der App</h2>
-        <p>Die App benötigt folgende Berechtigungen:</p>
-        <ul>
-            <li><strong>Internet:</strong> Nur für die optionale Google Drive-Sicherung und Update-Prüfung</li>
-            <li><strong>Speicher:</strong> Zum lokalen Speichern deiner Daten und für PDF-Exporte</li>
-        </ul>
-
-        <h2>5. Keine Datenerhebung durch uns</h2>
-        <p>Wir erheben, speichern oder verarbeiten <strong>keine</strong> personenbezogenen Daten. Im Einzelnen:</p>
-        <ul>
-            <li><strong>Keine Analyse-Tools:</strong> Kein Google Analytics, Firebase Analytics oder ähnliche Dienste</li>
-            <li><strong>Keine Werbung:</strong> Die App enthält keine Werbeanzeigen</li>
-            <li><strong>Kein Tracking:</strong> Dein Nutzungsverhalten wird nicht erfasst</li>
-            <li><strong>Keine Server:</strong> Wir betreiben keine Server, die deine Daten empfangen</li>
-        </ul>
-
-        <h2>6. Datensicherheit</h2>
-        <p>Deine Daten werden ausschließlich im lokalen Speicher deines Android-Geräts abgelegt. Die Sicherheit dieser Daten hängt von den Sicherheitseinstellungen deines Geräts ab (Bildschirmsperre, Verschlüsselung, etc.).</p>
-
-        <h2>7. Deine Rechte</h2>
-        <p>Da alle Daten lokal auf deinem Gerät gespeichert werden, hast du die volle Kontrolle:</p>
-        <ul>
-            <li><strong>Auskunft & Zugriff:</strong> Alle Daten sind direkt in der App einsehbar</li>
-            <li><strong>Löschung:</strong> Lösche die App oder nutze die Zurücksetzen-Funktion in den Einstellungen</li>
-            <li><strong>Datenübertragbarkeit:</strong> Exportiere deine Daten als JSON-Backup oder PDF-Bericht</li>
-        </ul>
-
-        <h2>8. Änderungen dieser Datenschutzerklärung</h2>
-        <p>Bei wesentlichen Änderungen dieser Datenschutzerklärung wird die aktualisierte Version in der App und auf dieser Seite veröffentlicht.</p>
-
-        <h2>9. Kontakt</h2>
-        <p>Bei Fragen zum Datenschutz kannst du mich jederzeit kontaktieren:</p>
-        <div class="contact">
-            <strong>E-Mail:</strong> <a href="mailto:markus@kainer.co.at">markus@kainer.co.at</a>
-        </div>
-
-        <p class="date">Stand: Januar 2026</p>
-    </div>
 </body>
 </html>

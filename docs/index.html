@@ -3,33 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eStundnzettl – Deine lokale Zeiterfassung</title>
+    <title>eStundnzettl – Deine App für lokale Zeiterfassung</title>
     <style>
-        body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; }
-        h1 { color: #2e7d32; }
-        .footer { margin-top: 50px; border-top: 1px solid #eee; padding-top: 20px; font-size: 0.9em; }
-        a { color: #1976d2; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        :root {
+            --primary-color: #2e7d32;
+            --text-color: #333;
+            --bg-color: #f4f6f8;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Banner Bereich */
+        .header-banner {
+            width: 100%;
+            height: 250px;
+            background: url('banner.png') no-repeat center center;
+            background-size: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-content {
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 700px;
+            text-align: center;
+            margin-top: -80px; /* Zieht die Box leicht ins Banner rein für modernen Look */
+        }
+
+        .logo {
+            width: 100px;
+            height: auto;
+            margin-bottom: 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: white;
+            padding: 5px;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            color: var(--primary-color);
+            font-size: 2em;
+        }
+
+        .tagline {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        .features {
+            text-align: left;
+            display: inline-block;
+            margin: 20px 0 30px 0;
+        }
+
+        .features li {
+            margin-bottom: 12px;
+            list-style-type: '✅';
+            padding-left: 10px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        .privacy-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .privacy-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 
-    <h1>eStundnzettl</h1>
-    <p><strong>Die einfache und sichere Lösung für deine Zeiterfassung auf Android.</strong></p>
+    <header class="header-banner">
+        </header>
 
-    <p>Mit eStundnzettl behältst du den Überblick über deine Arbeitszeiten, Urlaube und Tätigkeiten. Die App arbeitet lokal auf deinem Gerät, damit deine Daten dort bleiben, wo sie hingehören: bei dir.</p>
+    <main class="main-content">
+        <div class="container">
+            <img src="logo.png" alt="eStundnzettl Logo" class="logo">
+            
+            <h1>eStundnzettl</h1>
+            <p class="tagline">Sichere Zeiterfassung. Lokal. Einfach.</p>
 
-    <h3>Funktionen im Überblick:</h3>
-    <ul>
-        <li>Lokale Speicherung aller Einträge.</li>
-        <li>Export als PDF-Bericht oder JSON-Backup.</li>
-        <li>Optionale Sicherung deiner Daten in deinem persönlichen Google Drive.</li>
-    </ul>
+            <p>eStundnzettl ermöglicht Dir eine präzise Arbeitszeiterfassung direkt auf Deinem Smartphone. Deine Daten werden nicht auf fremden Servern gespeichert, sondern bleiben in Deiner Hand.</p>
 
-    <div class="footer">
-        <p>Informationen zum Schutz deiner Daten findest du hier:</p>
-        <a href="privacy.html">Datenschutzerklärung</a>
-    </div>
+            <div class="features">
+                <ul>
+                    <li><strong> Volle Kontrolle:</strong> Deine Daten bleiben lokal auf Deinem Gerät.</li>
+                    <li><strong> Einfacher Export:</strong> Generiere PDF-Berichte für Deine Unterlagen.</li>
+                    <li><strong> Google Drive Backup:</strong> Sichere Deine Daten optional in Deinem eigenen Cloud-Speicher.</li>
+                </ul>
+            </div>
+
+            <div class="footer">
+                <p>Besuche unsere rechtlichen Informationen:</p>
+                <a href="privacy.html" class="privacy-link">Datenschutzerklärung öffnen</a>
+            </div>
+        </div>
+    </main>
 
 </body>
 </html>

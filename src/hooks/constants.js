@@ -5,6 +5,44 @@
 export const APP_VERSION = "v6.2.1";
 
 // -------------------------------------------------------
+// BACKUP & SYNC KONFIGURATION (NEU & WICHTIG)
+// -------------------------------------------------------
+export const BACKUP_CONFIG = {
+  // Single Source of Truth für den Dateinamen
+  FILENAME: "estundnzettl_backup.json", 
+  // Falls wir Migrationen brauchen, wissen wir, wie die alte Datei hieß
+  LEGACY_FILENAME: "kogler_backup.json", 
+  MIME_TYPE: "application/json",
+};
+
+// -------------------------------------------------------
+// STORAGE KEYS (LOCAL STORAGE)
+// -------------------------------------------------------
+export const STORAGE_KEYS = {
+  // Kerndaten
+  ENTRIES: "estundnzettl_entries",
+  USER: "estundnzettl_user",
+  THEME: "estundnzettl_theme",
+  WORK_CODES: "estundnzettl_work_codes",
+  
+  // Backup & Sync Status (Eindeutige Benennung!)
+  CLOUD_SYNC_ENABLED: "estundnzettl_cloud_sync_enabled", // Boolean: Ist Google Drive aktiv?
+  LOCAL_BACKUP_ENABLED: "estundnzettl_local_backup_enabled", // Boolean: Ist lokaler Ordner aktiv?
+  
+  // Pfade & Metadaten
+  BACKUP_TARGET: "estundnzettl_backup_target", // Pfad/ID für lokales Backup
+  LAST_BACKUP: "estundnzettl_last_backup_date",
+  
+  // Temporäre/Status Keys
+  LAST_CODE: "estundnzettl_last_code",
+  LIVE_TIMER: "estundnzettl_live_timer",
+  
+  // @Deprecated - Wir nutzen jetzt CLOUD_SYNC_ENABLED für Präzision
+  // AUTO_BACKUP: "estundnzettl_auto_backup", 
+  // CLOUD_SYNC: "estundnzettl_cloud_sync", 
+};
+
+// -------------------------------------------------------
 // ARBEITSZEIT (in Minuten)
 // -------------------------------------------------------
 export const MINUTES = {
@@ -128,19 +166,6 @@ export const ENTRY_TYPES = {
   SICK: "sick",
   PUBLIC_HOLIDAY: "public_holiday",
   TIME_COMP: "time_comp",
-};
-
-export const STORAGE_KEYS = {
-  ENTRIES: "estundnzettl_entries",
-  USER: "estundnzettl_user",
-  THEME: "estundnzettl_theme",
-  AUTO_BACKUP: "estundnzettl_auto_backup",
-  LAST_CODE: "estundnzettl_last_code",
-  LIVE_TIMER: "estundnzettl_live_timer",
-  LAST_BACKUP: "estundnzettl_last_backup_date",
-  BACKUP_TARGET: "estundnzettl_backup_target",
-  CLOUD_SYNC: "estundnzettl_cloud_sync",
-  WORK_CODES: "estundnzettl_work_codes",
 };
 
 export const GITHUB = {

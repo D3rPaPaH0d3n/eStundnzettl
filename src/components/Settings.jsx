@@ -57,7 +57,8 @@ const Settings = ({
 
   useEffect(() => {
     initGoogleAuth();
-    setIsCloudConnected(localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC) === "true");
+    // FIX: Hier lesen wir jetzt den korrekten Key aus der constants.js
+    setIsCloudConnected(localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true");
     setHasBackupFolder(hasBackupTarget());
   }, []);
 
@@ -159,21 +160,25 @@ const Settings = ({
     if (isCloudConnected) {
         try {
             await signOutGoogle();
-            localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC);
+            // FIX: Auch beim Logout den neuen Key entfernen
+            localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
             setIsCloudConnected(false);
+            setAutoBackup(false); // UI State syncen
             toast.success("Cloud getrennt");
         } catch (e) {
             console.error(e);
-            localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC);
+            localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
             setIsCloudConnected(false);
+            setAutoBackup(false);
         }
     } else {
         try {
             const user = await signInGoogle();
             if (user && user.authentication.accessToken) {
-                localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC, "true");
+                // FIX: Beim Login den neuen Key setzen
+                localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
                 setIsCloudConnected(true);
-                if (!autoBackup) setAutoBackup(true);
+                if (!autoBackup) setAutoBackup(true); // Aktiviert auch den Hook
                 toast.success(`Verbunden: ${user.givenName || "Drive"}`);
             }
         } catch (error) {
@@ -189,14 +194,18 @@ const Settings = ({
     if (hasBackupFolder) {
         clearBackupTarget();
         setHasBackupFolder(false);
-        setAutoBackup(false);
+        // Hinweis: Wir deaktivieren AutoBackup hier nicht komplett, da Cloud noch an sein könnte
+        // Aber wir entfernen den Local-Key
+        localStorage.removeItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
         toast("Backup-Ordner getrennt");
     } else {
         try {
             const success = await selectBackupFolder();
             if (success) {
                 setHasBackupFolder(true);
-                setAutoBackup(true);
+                localStorage.setItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED, "true");
+                // Wir schalten AutoBackup im Hook generell an, falls es aus war
+                if (!autoBackup) setAutoBackup(true);
                 toast.success("Backup aktiviert!");
             }
         } catch (err) {

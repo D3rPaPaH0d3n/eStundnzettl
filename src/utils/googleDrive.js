@@ -1,4 +1,5 @@
 ﻿import { SocialLogin } from '@capgo/capacitor-social-login';
+import { BACKUP_CONFIG } from '../hooks/constants';
 
 // --- CONFIG ---
 const WEB_CLIENT_ID = "618528142382-pes4415amf381rk4bjovlamgh4emhrov.apps.googleusercontent.com";
@@ -39,15 +40,18 @@ export const initGoogleAuth = async () => {
     });
     console.log("Google Auth initialized");
   } catch (err) {
-    console.error("Google Auth init error:", err);
+    // Fehler ignorieren, wenn bereits initialisiert
+    if (!err.message?.includes('already')) {
+       console.error("Google Auth init error:", err);
+    }
   }
 };
 
-// --- AUTH: Sign In ---
+// --- AUTH: Sign In (dient auf Android auch als Silent Refresh) ---
 export const signInGoogle = async () => {
-  console.log("Starting Google Sign-In...");
-  
   try {
+    // Auf Android führt ein erneutes Login oft einen Silent Refresh durch,
+    // wenn der User bereits berechtigt ist.
     const result = await SocialLogin.login({
       provider: 'google',
       options: {
@@ -55,12 +59,8 @@ export const signInGoogle = async () => {
       }
     });
     
-    console.log("SocialLogin result:", JSON.stringify(result, null, 2));
-    
     if (result.provider === 'google' && result.result) {
       const r = result.result;
-      
-      // Token kann direkt oder als Objekt kommen
       const accessToken = r.accessToken?.token || r.accessToken;
       
       if (accessToken) {
@@ -70,16 +70,10 @@ export const signInGoogle = async () => {
           familyName: r.profile?.familyName || r.familyName,
           imageUrl: r.profile?.imageUrl || r.avatarUrl
         };
-        
         saveAuth(accessToken, userInfo);
-        
-        return {
-          authentication: { accessToken },
-          ...userInfo
-        };
+        return { authentication: { accessToken }, ...userInfo };
       }
     }
-    
     throw new Error("No access token received");
   } catch (err) {
     console.error("Google Sign-In error:", err);
@@ -87,44 +81,36 @@ export const signInGoogle = async () => {
   }
 };
 
-// --- AUTH: Get valid access token (tries silent refresh) ---
-export const refreshGoogleToken = async () => {
-  try {
-    const result = await SocialLogin.refresh({ provider: 'google' });
-    console.log("Refresh result:", JSON.stringify(result, null, 2));
-    
-    const accessToken = result?.accessToken?.token || result?.accessToken;
-    if (accessToken) {
-      const stored = getStoredAuth();
-      saveAuth(accessToken, stored?.userInfo || {});
-      return { accessToken };
-    }
-  } catch (err) {
-    console.warn("Silent refresh failed:", err);
-  }
-  
-  // Fallback: gespeichertes Token zurückgeben
+// --- AUTH: Get valid access token ---
+// WICHTIG: Ersetzt die defekte 'refresh'-Methode
+export const getValidToken = async () => {
+  // 1. Versuche gespeichertes Token
   const stored = getStoredAuth();
   if (stored?.accessToken) {
-    return { accessToken: stored.accessToken };
+      return { accessToken: stored.accessToken };
   }
-  
-  return null;
+  // 2. Wenn leer, versuche Silent Login (funktioniert oft, wenn App Session noch lebt)
+  try {
+      return await signInGoogle();
+  } catch(e) {
+      return null;
+  }
 };
 
-// --- AUTH: Check if user is logged in ---
+// Veraltet/Defekt auf Android -> Wir leiten es auf getValidToken um
+export const refreshGoogleToken = async () => {
+    return await getValidToken();
+};
+
 export const isGoogleLoggedIn = () => {
   return getStoredAuth() !== null;
 };
 
-// --- AUTH: Sign Out ---
 export const signOutGoogle = async () => {
   clearAuth();
   try {
     await SocialLogin.logout({ provider: 'google' });
-  } catch (e) {
-    // Ignore logout errors
-  }
+  } catch (e) { }
 };
 
 // --- HELPER: Multipart Body bauen ---
@@ -160,7 +146,7 @@ const findFileIdByName = async (accessToken, fileName) => {
   return null;
 };
 
-// --- CORE: Erstellen oder Updaten (SMART UPLOAD) ---
+// --- CORE: Upload ---
 export const uploadOrUpdateFile = async (accessToken, fileName, jsonContent) => {
   const boundary = "foo_bar_baz";
   const existingFileId = await findFileIdByName(accessToken, fileName);
@@ -169,18 +155,16 @@ export const uploadOrUpdateFile = async (accessToken, fileName, jsonContent) => 
   let method;
 
   if (existingFileId) {
-    console.log("Drive: Überschreibe Datei", existingFileId);
     url = `https://www.googleapis.com/upload/drive/v3/files/${existingFileId}?uploadType=multipart`;
     method = "PATCH";
   } else {
-    console.log("Drive: Erstelle neue Datei");
     url = "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
     method = "POST";
   }
 
   const metadata = {
     name: fileName,
-    mimeType: "application/json",
+    mimeType: BACKUP_CONFIG.MIME_TYPE,
   };
 
   const body = createMultipartBody(metadata, jsonContent, boundary);
@@ -202,19 +186,37 @@ export const uploadOrUpdateFile = async (accessToken, fileName, jsonContent) => 
   return await response.json();
 };
 
-// --- RESTORE: Neuestes Backup finden & laden ---
+// --- RESTORE ---
 export const findLatestBackup = async (accessToken) => {
-  const query = "name = 'kogler_backup.json' and trashed=false";
-  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&orderBy=modifiedTime desc&pageSize=1&fields=files(id, name, createdTime, modifiedTime)`;
+  // V6 Suche
+  let query = `name = '${BACKUP_CONFIG.FILENAME}' and trashed=false`;
+  let url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&orderBy=modifiedTime desc&pageSize=1&fields=files(id, name, createdTime, modifiedTime)`;
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     method: "GET",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
-  if (!response.ok) throw new Error("Fehler beim Suchen");
+  if (!response.ok) throw new Error("Fehler beim Suchen (V6)");
 
-  const data = await response.json();
+  let data = await response.json();
+  
+  // Fallback Legacy
+  if (!data.files || data.files.length === 0) {
+      console.log("Suche Legacy...", BACKUP_CONFIG.LEGACY_FILENAME);
+      query = `name = '${BACKUP_CONFIG.LEGACY_FILENAME}' and trashed=false`;
+      url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&orderBy=modifiedTime desc&pageSize=1&fields=files(id, name, createdTime, modifiedTime)`;
+      
+      response = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      
+      if (response.ok) {
+          data = await response.json();
+      }
+  }
+
   return (data.files && data.files.length > 0) ? data.files[0] : null;
 };
 

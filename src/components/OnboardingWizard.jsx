@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { User, Briefcase, Calendar, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, RefreshCw, X, Building2 } from "lucide-react";
+import { User, Briefcase, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, RefreshCw, Building2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
@@ -88,15 +88,21 @@ const OnboardingWizard = ({ onComplete }) => {
   // --- BACKUP SETUP HANDLER ---
   const handleAutoBackupToggle = async () => {
     const newValue = !formData.autoBackup;
-    setFormData(p => ({...p, autoBackup: newValue}));
+    
     if (newValue) {
       try {
         await signInGoogle();
         toast.success("Verknüpfung erfolgreich!");
+        // Erst setzen wenn Login erfolgreich war
+        setFormData(p => ({...p, autoBackup: true}));
       } catch (error) {
         console.error(error);
-        toast("Bitte melde dich später an, um Backups zu speichern.", { icon: "ℹ️" });
+        toast("Anmeldung abgebrochen oder fehlgeschlagen.", { icon: "⚠️" });
+        // Nicht aktivieren bei Fehler
+        setFormData(p => ({...p, autoBackup: false}));
       }
+    } else {
+        setFormData(p => ({...p, autoBackup: false}));
     }
   };
 
@@ -117,20 +123,39 @@ const OnboardingWizard = ({ onComplete }) => {
     }
   };
 
-  // --- FINISH ---
+  // --- FINISH (BUGFIX: Persistenz korrigiert) ---
   const finishSetup = () => {
-    localStorage.setItem(STORAGE_KEYS.USER || "user_data", JSON.stringify({
+    // 1. User Daten speichern
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({
       name: formData.name,
       company: formData.company,
       role: formData.role,
       position: formData.role, 
       photo: formData.photo,
       workDays: formData.workDays,
+      // Legacy settings im User-Objekt (optional, für Rückwärtskompatibilität)
       settings: {
         autoBackup: formData.autoBackup,
         theme: 'system' 
       }
     }));
+
+    // 2. Backup-Einstellungen EXPLIZIT setzen (Single Source of Truth)
+    // Damit useSettings und useAutoBackup den Status sofort erkennen
+    if (formData.autoBackup) {
+        localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
+    } else {
+        localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
+    }
+
+    if (formData.localBackupEnabled) {
+        localStorage.setItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED, "true");
+    } else {
+        localStorage.removeItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
+    }
+
+    // 3. Theme Default setzen
+    localStorage.setItem(STORAGE_KEYS.THEME, 'system');
 
     if (restoreData) {
        applyBackup(restoreData);
@@ -152,6 +177,7 @@ const OnboardingWizard = ({ onComplete }) => {
       const token = user.authentication?.accessToken;
       if (!token) throw new Error("Kein Zugriffstoken erhalten");
 
+      // Nutzt jetzt automatisch die neue Logik aus googleDrive.js (inkl. Legacy Fallback)
       const file = await findLatestBackup(token);
       if (!file) throw new Error("Kein Backup gefunden.");
 

@@ -2,34 +2,44 @@ import { useState, useEffect } from "react";
 import { STORAGE_KEYS, WORK_MODELS } from "./constants";
 
 export function useSettings() {
-  // User Data
-  // WICHTIG: Default erweitert für v4.4.0 (Position & WorkDays)
-  // Name ist leer, damit der Onboarding-Check in App.jsx greift!
+  // --- USER DATA ---
+  // Lädt Benutzerdaten oder Fallback auf Standardwerte
   const [userData, setUserData] = useState(() => 
     JSON.parse(localStorage.getItem(STORAGE_KEYS.USER)) || {
       name: "", 
-      position: "",
+      position: "", 
       photo: null,
-      // Wir nehmen das erste Modell (38.5-classic) als Standard-Referenz
+      // Default: 38.5h Standard Modell
       workDays: [...WORK_MODELS[0].days] 
     }
   );
 
-  // Theme
+  // --- THEME ---
   const [theme, setTheme] = useState(() => 
     localStorage.getItem(STORAGE_KEYS.THEME) || "system"
   );
 
-  // Auto Backup Toggle
-  const [autoBackup, setAutoBackup] = useState(() => 
-    localStorage.getItem(STORAGE_KEYS.AUTO_BACKUP) === "true"
+  // --- BACKUP SETTINGS (Single Source of Truth Fix) ---
+  
+  // 1. Google Drive (ehemals 'autoBackup')
+  // Liest jetzt vom neuen standardisierten Key
+  const [cloudSyncEnabled, setCloudSyncEnabled] = useState(() => 
+    localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true"
   );
 
-  // Persistenz
-  useEffect(() => localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData)), [userData]);
-  useEffect(() => localStorage.setItem(STORAGE_KEYS.AUTO_BACKUP, autoBackup), [autoBackup]);
+  // 2. Lokales Backup (Neu)
+  const [localBackupEnabled, setLocalBackupEnabled] = useState(() => 
+    localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true"
+  );
+
+  // --- PERSISTENZ EFFECTS ---
+
+  // User Data speichern
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+  }, [userData]);
   
-  // Theme Logik
+  // Theme Logik & Speichern
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.THEME, theme);
     const root = document.documentElement;
@@ -46,18 +56,45 @@ export function useSettings() {
     
     applyTheme();
     
+    // Listener für System-Änderungen (nur wenn 'system' aktiv)
     if (theme === "system") {
       systemQuery.addEventListener("change", applyTheme);
       return () => systemQuery.removeEventListener("change", applyTheme);
     }
   }, [theme]);
 
+  // Cloud Sync Status speichern (Sauberes Setzen/Löschen)
+  useEffect(() => {
+    if (cloudSyncEnabled) {
+      localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
+    }
+  }, [cloudSyncEnabled]);
+
+  // Local Backup Status speichern
+  useEffect(() => {
+    if (localBackupEnabled) {
+      localStorage.setItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED, "true");
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
+    }
+  }, [localBackupEnabled]);
+
   return {
     userData,
     setUserData,
     theme,
     setTheme,
-    autoBackup,
-    setAutoBackup
+    
+    // Mapping für UI-Kompatibilität (Settings.jsx erwartet 'autoBackup')
+    autoBackup: cloudSyncEnabled, 
+    setAutoBackup: setCloudSyncEnabled,
+    
+    // Explizite neue Exports
+    cloudSyncEnabled,
+    setCloudSyncEnabled,
+    localBackupEnabled,
+    setLocalBackupEnabled
   };
 }

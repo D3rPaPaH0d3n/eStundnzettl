@@ -2,56 +2,78 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// 1. __dirname Workaround für ES Modules
+// __dirname Workaround für ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 2. package.json einlesen (Quelle der Wahrheit: z.B. "5.0.1")
+// package.json einlesen (Quelle der Wahrheit)
 const packageJsonPath = path.join(__dirname, '../package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 const newVersion = packageJson.version;
 
-console.log(`🔄 Synchronisiere Version auf: ${newVersion}...`);
+console.log(`\n🔄 Synchronisiere Version auf: ${newVersion}...\n`);
+
+let hasChanges = false;
 
 // --- A) UPDATE src/hooks/constants.js (MIT "v" PREFIX) ---
 const utilsPath = path.join(__dirname, '../src/hooks/constants.js');
 if (fs.existsSync(utilsPath)) {
     let utilsContent = fs.readFileSync(utilsPath, 'utf8');
     
-    // Suche nach: export const APP_VERSION = "...";
-    // Und schreibe jetzt: "v5.0.1" statt nur "5.0.1"
     const utilsRegex = /export const APP_VERSION = ".*";/;
     if (utilsRegex.test(utilsContent)) {
         utilsContent = utilsContent.replace(utilsRegex, `export const APP_VERSION = "v${newVersion}";`);
         fs.writeFileSync(utilsPath, utilsContent);
-        console.log(`✅ src/hooks/constants.js aktualisiert (jetzt mit 'v').`);
+        console.log(`✅ src/hooks/constants.js → v${newVersion}`);
+        hasChanges = true;
     } else {
-        console.error("⚠️ WARNUNG: APP_VERSION in src/hooks/constants.js nicht gefunden.");
+        console.error("⚠️  WARNUNG: APP_VERSION in src/hooks/constants.js nicht gefunden.");
     }
+} else {
+    console.error("⚠️  WARNUNG: src/hooks/constants.js nicht gefunden.");
 }
 
-// --- B) UPDATE android/app/build.gradle (OHNE "v" PREFIX, sauber für Play Store) ---
+// --- B) UPDATE android/app/build.gradle (OHNE "v" PREFIX) ---
 const gradlePath = path.join(__dirname, '../android/app/build.gradle');
 if (fs.existsSync(gradlePath)) {
     let gradleContent = fs.readFileSync(gradlePath, 'utf8');
-
-    // 1. versionName ersetzen (bleibt sauber "5.0.1")
+    
+    // versionName ersetzen
     gradleContent = gradleContent.replace(
         /versionName ".*"/, 
         `versionName "${newVersion}"`
     );
 
-    // 2. versionCode automatisch +1 erhöhen
+    // versionCode +1 erhöhen
+    let oldCode, newCode;
     gradleContent = gradleContent.replace(/versionCode (\d+)/, (match, code) => {
-        const newCode = parseInt(code) + 1;
-        console.log(`✅ Android versionCode erhöht: ${code} -> ${newCode}`);
+        oldCode = parseInt(code);
+        newCode = oldCode + 1;
         return `versionCode ${newCode}`;
     });
 
     fs.writeFileSync(gradlePath, gradleContent);
-    console.log(`✅ android/app/build.gradle aktualisiert.`);
+    console.log(`✅ build.gradle → versionName "${newVersion}", versionCode ${oldCode} → ${newCode}`);
+    hasChanges = true;
 } else {
-    console.error("⚠️ WARNUNG: build.gradle nicht gefunden.");
+    console.error("⚠️  WARNUNG: android/app/build.gradle nicht gefunden.");
 }
 
-console.log("🚀 Version Sync abgeschlossen!");
+// --- C) Dateien für Git stagen (wichtig für npm version Hook!) ---
+if (hasChanges) {
+    const { execSync } = await import('child_process');
+    try {
+        const filesToStage = [];
+        if (fs.existsSync(utilsPath)) filesToStage.push('src/hooks/constants.js');
+        if (fs.existsSync(gradlePath)) filesToStage.push('android/app/build.gradle');
+        
+        if (filesToStage.length > 0) {
+            execSync(`git add ${filesToStage.join(' ')}`, { cwd: path.join(__dirname, '..') });
+            console.log(`\n📦 Dateien gestaged: ${filesToStage.join(', ')}`);
+        }
+    } catch (e) {
+        console.error("⚠️  Git staging fehlgeschlagen:", e.message);
+    }
+}
+
+console.log("\n🚀 Version Sync abgeschlossen!\n");

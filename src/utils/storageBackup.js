@@ -44,10 +44,12 @@ export const hasBackupTarget = () => {
 
 // 3. Backup schreiben
 export const writeBackupFile = async (fileName, dataObj) => {
-  if (!hasBackupTarget()) throw new Error("Backup nicht aktiviert");
-
   await ensureBackupFolder();
-  const content = JSON.stringify(dataObj, null, 2);
+  
+  // Unterstützt sowohl String als auch Object
+  const content = typeof dataObj === 'string' 
+    ? dataObj 
+    : JSON.stringify(dataObj, null, 2);
 
   await Filesystem.writeFile({
     path: `${BACKUP_FOLDER}/${fileName}`,

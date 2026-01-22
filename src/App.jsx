@@ -55,6 +55,13 @@ const reportVariants = { initial: { y: "100%", opacity: 0 }, in: { y: 0, opacity
 // Migration beim App-Start ausführen
 migrateStorageKeys();
 
+// 🔍 DEBUG: Backup Status beim Start
+console.log("━━━━━━━━━ APP START ━━━━━━━━━");
+console.log("Cloud:", localStorage.getItem("estundnzettl_cloud_sync_enabled"));
+console.log("Lokal:", localStorage.getItem("estundnzettl_local_backup_enabled"));
+console.log("Backup Target:", localStorage.getItem("estundnzettl_backup_target"));
+console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
 export default function App() {
   // --- 1. DATEN & LOGIK ÜBER HOOKS ---
   const { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries } = useEntries();

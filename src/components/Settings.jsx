@@ -66,6 +66,18 @@ const Settings = ({
     setIsLocked(true);
   }, [activeModelId]);
 
+  // Scrolling im Hintergrund blockieren wenn WorkCodeManager offen ist
+  useEffect(() => {
+    if (showWorkCodeManager) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showWorkCodeManager]);
+
   const minToHours = (m) => (m === 0 ? "" : Number(m / 60).toFixed(2).replace('.', ','));
 
   const openDayPicker = (index) => {

@@ -5,6 +5,31 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
   {
+  version: "6.2.2",
+  date: "22.01.2026",
+  title: "Backup Stability Fix 🛡️",
+  isMajor: false,
+  sections: [
+    {
+      icon: Shield,
+      title: "Backup-System",
+      items: [
+        "Fix: Auto-Backup funktioniert jetzt zuverlässig auf allen Android-Versionen",
+        "Fix: Keine 'Permission Denied' Fehler mehr nach App-Neuinstallation",
+        "Optimiert: Interner Speicher für Auto-Backup (stabiler & schneller)"
+      ]
+    },
+    {
+      icon: Bug,
+      title: "Bugfixes",
+      items: [
+        "Fix: Hintergrund scrollt nicht mehr wenn Tätigkeitscodes-Modal offen ist",
+        "Export: Eindeutige Dateinamen mit Zeitstempel (verhindert Überschreib-Konflikte)"
+      ]
+    }
+  ]
+},
+  {
     version: "6.2.0",
     date: "17.01.2026",
     title: "Custom Work Codes Update 🛠️",

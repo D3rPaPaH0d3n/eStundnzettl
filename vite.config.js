@@ -2,6 +2,12 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+// ══════════════════════════════════════════════════════════════
+// 🔧 DEBUG TOGGLE - Ändere nur diese Zeile!
+// ══════════════════════════════════════════════════════════════
+const DEBUG_MODE = true;  // true = Logs behalten, false = Logs entfernen (Release)
+// ══════════════════════════════════════════════════════════════
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -14,9 +20,9 @@ export default defineConfig({
     
     terserOptions: {
       compress: {
-        drop_console: true,   // Entfernt ALLE console.* Statements
-        drop_debugger: true,  // Entfernt debugger Statements
-        pure_funcs: [
+        drop_console: !DEBUG_MODE,   // Entfernt ALLE console.* Statements (wenn DEBUG_MODE = false)
+        drop_debugger: true,         // Entfernt debugger Statements
+        pure_funcs: DEBUG_MODE ? [] : [
           'console.log', 
           'console.info', 
           'console.debug', 

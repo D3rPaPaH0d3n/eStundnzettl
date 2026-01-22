@@ -3,17 +3,32 @@ import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS } from "../hooks/constants";
 
 // =========================================================
-// BACKUP ORDNER: Documents/eStundnzettl/
+// BACKUP ORDNER
+// - Auto-Backup: Directory.Data (intern, zuverlässig)
+// - Manueller Export: Directory.Documents (für User sichtbar)
 // =========================================================
 
 const BACKUP_FOLDER = 'eStundnzettl';
 
-// Ordner erstellen falls nicht vorhanden
+// Ordner erstellen falls nicht vorhanden (für Documents - manueller Export)
 const ensureBackupFolder = async () => {
   try {
     await Filesystem.mkdir({
       path: BACKUP_FOLDER,
       directory: Directory.Documents,
+      recursive: true
+    });
+  } catch (e) {
+    // Ordner existiert bereits - ignorieren
+  }
+};
+
+// Ordner erstellen für internen Speicher (Auto-Backup)
+const ensureInternalBackupFolder = async () => {
+  try {
+    await Filesystem.mkdir({
+      path: BACKUP_FOLDER,
+      directory: Directory.Data,
       recursive: true
     });
   } catch (e) {
@@ -28,7 +43,7 @@ const ensureBackupFolder = async () => {
 // 1. Backup-Ordner "aktivieren" (erstellt den Ordner)
 export const selectBackupFolder = async () => {
   try {
-    await ensureBackupFolder();
+    await ensureInternalBackupFolder();
     localStorage.setItem(STORAGE_KEYS.BACKUP_TARGET, 'documents');
     return true;
   } catch (err) {
@@ -42,19 +57,21 @@ export const hasBackupTarget = () => {
   return localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET) === 'documents';
 };
 
-// 3. Backup schreiben
+// 3. Backup schreiben (AUTO-BACKUP - intern, keine Permission-Probleme)
 export const writeBackupFile = async (fileName, dataObj) => {
-  await ensureBackupFolder();
+  await ensureInternalBackupFolder();
   
-  // Unterstützt sowohl String als auch Object
   const content = typeof dataObj === 'string' 
     ? dataObj 
     : JSON.stringify(dataObj, null, 2);
 
+  const filePath = `${BACKUP_FOLDER}/${fileName}`;
+
+  // Directory.Data braucht kein delete vorher - App hat volle Kontrolle
   await Filesystem.writeFile({
-    path: `${BACKUP_FOLDER}/${fileName}`,
+    path: filePath,
     data: content,
-    directory: Directory.Documents,
+    directory: Directory.Data,
     encoding: Encoding.UTF8
   });
   
@@ -66,14 +83,25 @@ export const clearBackupTarget = () => {
   localStorage.removeItem(STORAGE_KEYS.BACKUP_TARGET);
 };
 
-// 5. Einmaliger Export (JSON)
+// 5. Einmaliger Export (JSON) - in Documents für User sichtbar
 export const exportToSelectedFolder = async (fileName, dataObj) => {
   try {
     await ensureBackupFolder();
     const content = JSON.stringify(dataObj, null, 2);
+    const filePath = `${BACKUP_FOLDER}/${fileName}`;
+    
+    // Versuche alte Datei zu löschen (falls vorhanden und wir Rechte haben)
+    try {
+      await Filesystem.deleteFile({
+        path: filePath,
+        directory: Directory.Documents
+      });
+    } catch (e) {
+      // Ignorieren - Datei existiert nicht oder keine Rechte
+    }
     
     await Filesystem.writeFile({
-      path: `${BACKUP_FOLDER}/${fileName}`,
+      path: filePath,
       data: content,
       directory: Directory.Documents,
       encoding: Encoding.UTF8
@@ -90,9 +118,20 @@ export const exportToSelectedFolder = async (fileName, dataObj) => {
 export const exportPdfToFolder = async (fileName, base64Data) => {
   try {
     await ensureBackupFolder();
+    const filePath = `${BACKUP_FOLDER}/${fileName}`;
+    
+    // Versuche alte Datei zu löschen
+    try {
+      await Filesystem.deleteFile({
+        path: filePath,
+        directory: Directory.Documents
+      });
+    } catch (e) {
+      // Ignorieren
+    }
     
     await Filesystem.writeFile({
-      path: `${BACKUP_FOLDER}/${fileName}`,
+      path: filePath,
       data: base64Data,
       directory: Directory.Documents
       // Kein encoding für Base64/Binary
@@ -105,18 +144,18 @@ export const exportPdfToFolder = async (fileName, base64Data) => {
   }
 };
 
-// 7. Backup aus Ordner lesen (für Import im Wizard)
+// 7. Backup aus internem Ordner lesen (für Import im Wizard)
 export const readBackupFromFolder = async () => {
   try {
     const result = await Filesystem.readFile({
       path: `${BACKUP_FOLDER}/estundnzettl_backup.json`,
-      directory: Directory.Documents,
+      directory: Directory.Data,
       encoding: Encoding.UTF8
     });
     
     return JSON.parse(result.data);
   } catch (err) {
-    console.warn("Kein Backup gefunden:", err);
+    console.warn("Kein internes Backup gefunden:", err);
     return null;
   }
 };

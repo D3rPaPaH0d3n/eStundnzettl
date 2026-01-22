@@ -24,30 +24,31 @@ export function useAutoBackup(entries, userData, isEnabled) {
     const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
     const localActive = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
 
-    // 🔍 DEBUG LOGS
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log(`🔄 Backup Trigger: ${source}`);
-    console.log(`   Cloud aktiv: ${cloudActive}`);
-    console.log(`   Lokal aktiv: ${localActive}`);
-    console.log(`   Einträge: ${entries?.length || 0}`);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // 🔍 DEBUG LOGS - Strings statt Objekte für Capacitor Logcat!
+    console.log("[BACKUP] ════════════════════════════════════");
+    console.log("[BACKUP] Trigger: " + source);
+    console.log("[BACKUP] Cloud aktiv: " + cloudActive);
+    console.log("[BACKUP] Lokal aktiv: " + localActive);
+    console.log("[BACKUP] Einträge: " + (entries?.length || 0));
+    console.log("[BACKUP] isEnabled prop: " + isEnabled);
+    console.log("[BACKUP] ════════════════════════════════════");
 
     if (!isEnabled && !cloudActive && !localActive) {
-        console.log("⏭️ Backup übersprungen (nichts aktiviert)");
+        console.log("[BACKUP] SKIP: nichts aktiviert");
         return;
     }
     if (!entries || entries.length === 0) {
-        console.log("⏭️ Backup übersprungen (keine Einträge)");
+        console.log("[BACKUP] SKIP: keine Einträge");
         return;
     }
     if (isUploading.current) {
-        console.log("⏭️ Backup übersprungen (Upload läuft bereits)");
+        console.log("[BACKUP] SKIP: Upload läuft bereits");
         return;
     }
 
     const currentHash = createHash({ entries, userData });
     if (currentHash === lastHash.current && source === "Auto-Save") {
-        console.log("⏭️ Backup übersprungen (keine Änderungen)");
+        console.log("[BACKUP] SKIP: keine Änderungen (Hash: " + currentHash + ")");
         return;
     }
 
@@ -60,6 +61,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
     };
 
     isUploading.current = true;
+    console.log("[BACKUP] START - Hash: " + currentHash);
 
     try {
         // -------------------------------------------------------
@@ -67,11 +69,11 @@ export function useAutoBackup(entries, userData, isEnabled) {
         // -------------------------------------------------------
         if (localActive) {
             try {
-                console.log("📁 Starte lokales Backup...");
+                console.log("[BACKUP] LOCAL: Starte...");
                 await writeBackupFile(BACKUP_CONFIG.FILENAME, payload);
-                console.log("📁 ✅ Lokales Backup OK!");
+                console.log("[BACKUP] LOCAL: OK");
             } catch (locErr) {
-                console.error("📁 ❌ Lokales Backup FEHLER:", locErr?.message || locErr);
+                console.log("[BACKUP] LOCAL: FEHLER - " + (locErr?.message || String(locErr)));
             }
         }
 
@@ -80,34 +82,41 @@ export function useAutoBackup(entries, userData, isEnabled) {
         // -------------------------------------------------------
         if (cloudActive) {
             try {
-                console.log("☁️ Starte Cloud Sync...");
+                console.log("[BACKUP] CLOUD: Starte...");
                 await initGoogleAuth().catch(() => {}); 
                 const authResponse = await getValidToken();
                 
                 if (authResponse?.accessToken) {
+                    console.log("[BACKUP] CLOUD: Token vorhanden, uploade...");
                     await uploadOrUpdateFile(authResponse.accessToken, BACKUP_CONFIG.FILENAME, payload);
-                    console.log("☁️ ✅ Cloud Sync OK!");
+                    console.log("[BACKUP] CLOUD: OK");
                     lastHash.current = currentHash;
                 } else {
-                    console.log("☁️ ⚠️ Kein gültiges Token");
+                    console.log("[BACKUP] CLOUD: WARNUNG - Kein Token erhalten");
                 }
             } catch (cloudErr) {
-                console.error("☁️ ❌ Cloud Sync FEHLER:", cloudErr?.message || cloudErr);
+                console.log("[BACKUP] CLOUD: FEHLER - " + (cloudErr?.message || String(cloudErr)));
             }
         }
 
+        // Hash auch bei nur lokalem Backup updaten
+        if (localActive && !cloudActive) {
+            lastHash.current = currentHash;
+        }
+
     } catch (err) {
-        console.error("❌ Backup GLOBAL Error:", err?.message || err);
+        console.log("[BACKUP] GLOBAL ERROR: " + (err?.message || String(err)));
     } finally {
         isUploading.current = false;
-        console.log("━━━━━━━━━ BACKUP ENDE ━━━━━━━━━");
+        console.log("[BACKUP] ENDE ════════════════════════════");
     }
-};
+  };
 
   useEffect(() => {
     const setupListener = async () => {
         await App.removeAllListeners();
         App.addListener('appStateChange', ({ isActive }) => {
+            console.log("[BACKUP] appStateChange: isActive=" + isActive);
             if (!isActive) performBackup("Background");
         });
     };

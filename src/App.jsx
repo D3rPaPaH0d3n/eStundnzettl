@@ -507,9 +507,11 @@ export default function App() {
     const toastId = toast.loading("Exportiere in Ordner...");
     
     try {
-      // FIX: toLocalDateString für Dateinamen
-      const dateStr = toLocalDateString(new Date());
-      const fileName = `estundnzettl_${dateStr}.json`;
+      // Datum + Uhrzeit für eindeutige Dateinamen
+      const now = new Date();
+      const dateStr = toLocalDateString(now);
+      const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
+      const fileName = `estundnzettl_${dateStr}_${timeStr}.json`;
       const success = await exportToSelectedFolder(fileName, exportPayloadRef.current);
       
       if (success) {
@@ -528,9 +530,11 @@ export default function App() {
     const toastId = toast.loading("Bereite Export vor...");
     
     try {
-      // FIX: toLocalDateString für Dateinamen
-      const dateStr = toLocalDateString(new Date());
-      const fileName = `estundnzettl_${dateStr}.json`;
+      // Datum + Uhrzeit für eindeutige Dateinamen
+      const now = new Date();
+      const dateStr = toLocalDateString(now);
+      const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
+      const fileName = `estundnzettl_${dateStr}_${timeStr}.json`;
       const json = JSON.stringify(exportPayloadRef.current, null, 2);
       
       await Filesystem.writeFile({ 

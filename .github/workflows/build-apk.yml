@@ -61,6 +61,5 @@ jobs:
           FILENAME=$(basename "$APK")
           curl -s -u "${{ secrets.NEXTCLOUD_USER }}:${{ secrets.NEXTCLOUD_PASS }}" \
             -T "$APK" \
-            "${{ secrets.NEXTCLOUD_URL }}${FILENAME}" \
-            --insecure
+            "${{ secrets.NEXTCLOUD_URL }}${FILENAME}"
           echo "✅ APK hochgeladen: ${FILENAME}"

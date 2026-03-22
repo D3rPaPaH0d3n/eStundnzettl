@@ -49,3 +49,13 @@ jobs:
           name: eStundnzettl-debug
           path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
+
+      - name: Upload APK to Nextcloud
+        run: |
+          APK=$(find android/app/build/outputs/apk/debug/ -name "*.apk" | head -1)
+          FILENAME=$(basename "$APK")
+          curl -s -u "${{ secrets.NEXTCLOUD_USER }}:${{ secrets.NEXTCLOUD_PASS }}" \
+            -T "$APK" \
+            "${{ secrets.NEXTCLOUD_URL }}${FILENAME}" \
+            --insecure
+          echo "✅ APK hochgeladen: ${FILENAME}"

@@ -96,6 +96,17 @@ export const WORK_MODELS = [
 ];
 
 // -------------------------------------------------------
+// SPEZIAL TÄTIGKEITS-CODES (Magic Numbers eliminieren!)
+// -------------------------------------------------------
+// WICHTIG: Niemals diese Zahlen hardcoden — immer die Konstanten nutzen!
+export const WORK_CODE = {
+  DRIVE:         19,   // Fahrzeit
+  ARRIVAL:       190,  // An/Abreise (Bonus-Code)
+  OFFICE:         70,   // Büro
+  DEFAULT:        1,    // Fallback Default
+};
+
+// -------------------------------------------------------
 // TÄTIGKEITS-CODE PRESETS (zur Auswahl für User)
 // -------------------------------------------------------
 export const WORK_CODE_PRESETS = {

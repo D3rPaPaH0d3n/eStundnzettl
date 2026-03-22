@@ -1,6 +1,7 @@
 import React, { forwardRef, useState, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus } from "lucide-react";
-import { Card, getHolidayData, toLocalDateString } from "../utils"; 
+import { Card, getHolidayData, toLocalDateString } from "../utils";
+import { WORK_CODE } from "../hooks/constants";
 import { useWorkCodes } from "../hooks/useWorkCodes";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -171,7 +172,7 @@ const EntryForm = ({
         isOpen={isWorkCodeOpen}
         onClose={() => setIsWorkCodeOpen(false)}
         title="Tätigkeit wählen"
-        options={workCodes.filter((c) => c.id !== 190 && c.id !== 19)}
+        options={workCodes.filter((c) => c.id !== WORK_CODE.ARRIVAL && c.id !== WORK_CODE.DRIVE)}
         value={code}
         onChange={setCode}
       />
@@ -182,7 +183,7 @@ const EntryForm = ({
           <div className="flex justify-between items-center mb-1">
              <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Eintragstyp</div>
              
-             {entryType === 'work' && code !== 190 && lastWorkEntry && (
+             {entryType === 'work' && code !== WORK_CODE.ARRIVAL && lastWorkEntry && (
                <motion.button
                  type="button"
                  whileTap={{ scale: 0.9 }}
@@ -201,9 +202,9 @@ const EntryForm = ({
 
           <div className="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-5 gap-1">
             {/* WORK */}
-            <button type="button" onClick={() => { setEntryType("work"); setCode(defaultCode); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "work" && code !== 190 ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}>Arbeit</button>
+            <button type="button" onClick={() => { setEntryType("work"); setCode(defaultCode); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "work" && code !== WORK_CODE.ARRIVAL ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}>Arbeit</button>
             {/* FAHRT (Bleibt Orange als Kategorie-Farbe) */}
-            <button type="button" onClick={() => { setEntryType("drive"); setCode(19); setPauseDuration(0); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "drive" || code === 190 ? "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Fahrt</button>
+            <button type="button" onClick={() => { setEntryType("drive"); setCode(WORK_CODE.DRIVE); setPauseDuration(0); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "drive" || code === WORK_CODE.ARRIVAL ? "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Fahrt</button>
             {/* KRANK (Rot) */}
             <button type="button" onClick={() => setEntryType("sick")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "sick" ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Krank</button>
             {/* URLAUB (Blau) */}
@@ -212,12 +213,12 @@ const EntryForm = ({
             <button type="button" onClick={() => setEntryType("time_comp")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "time_comp" ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>ZA</button>
           </div>
 
-          {(entryType === "drive" || code === 190) && (
+          {(entryType === "drive" || code === WORK_CODE.ARRIVAL) && (
             <div className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-              <button type="button" onClick={() => { setEntryType("work"); setCode(190); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${code === 190 ? "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 ring-2 ring-green-500 ring-offset-1" : "bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300"}`}>
+              <button type="button" onClick={() => { setEntryType("work"); setCode(WORK_CODE.ARRIVAL); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${code === WORK_CODE.ARRIVAL ? "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 ring-2 ring-green-500 ring-offset-1" : "bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300"}`}>
                 <span>An/Abreise</span><span className="text-[10px] uppercase bg-green-200 dark:bg-green-800 px-1 rounded text-green-800 dark:text-green-200">Bezahlt</span>
               </button>
-              <button type="button" onClick={() => { setEntryType("drive"); setCode(19); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${entryType === "drive" && code === 19 ? "bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-400 ring-2 ring-orange-500 ring-offset-1" : "bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300"}`}>
+              <button type="button" onClick={() => { setEntryType("drive"); setCode(WORK_CODE.DRIVE); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${entryType === "drive" && code === WORK_CODE.DRIVE ? "bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-400 ring-2 ring-orange-500 ring-offset-1" : "bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300"}`}>
                 <span>Fahrtzeit</span><span className="text-[10px] uppercase bg-zinc-200 dark:bg-zinc-600 px-1 rounded text-zinc-600 dark:text-zinc-300">Unbezahlt</span>
               </button>
             </div>
@@ -275,7 +276,7 @@ const EntryForm = ({
                 </div>
               </div>
 
-              {entryType === "work" && code !== 190 && (
+              {entryType === "work" && code !== WORK_CODE.ARRIVAL && (
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Pause</label>
                   <div className="flex gap-2">
@@ -286,7 +287,7 @@ const EntryForm = ({
                 </div>
               )}
 
-              {entryType === "work" && code !== 190 && (
+              {entryType === "work" && code !== WORK_CODE.ARRIVAL && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Tätigkeit</label>
@@ -347,7 +348,7 @@ const EntryForm = ({
               )}
 
               <div className="space-y-1 relative">
-                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{entryType === "drive" || code === 190 ? "Strecke / Notiz" : "Projekt"}</label>
+                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{entryType === "drive" || code === WORK_CODE.ARRIVAL ? "Strecke / Notiz" : "Projekt"}</label>
                 <input 
                   type="text" 
                   value={project} 

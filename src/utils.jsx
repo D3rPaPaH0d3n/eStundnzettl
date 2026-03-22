@@ -1,5 +1,5 @@
 import React from "react";
-import { APP_VERSION, GITHUB } from "./hooks/constants";
+import { APP_VERSION, GITHUB, WORK_CODE } from "./hooks/constants";
 
 // -------------------------------------------------------
 // HELPER-FUNKTIONEN
@@ -155,7 +155,7 @@ export const calculatePeriodStats = (
 
   relevantEntries.forEach((e) => {
     if (e.type === "work") {
-      if (e.code === 19) stats.drive += e.netDuration;
+      if (e.code === WORK_CODE.DRIVE) stats.drive += e.netDuration;
       else stats.work += e.netDuration;
     }
     if (e.type === "vacation") stats.vacation += e.netDuration;
@@ -193,7 +193,7 @@ export const calculatePeriodStats = (
   // 3. MA/ÜS Split berechnen (Wochenweise Summierung)
   relevantEntries.forEach((e) => {
     // Ausfallsprinzip: Alles außer Fahrzeit zählt zur Basis
-    if (!(e.type === "work" && e.code === 19)) {
+    if (!(e.type === "work" && e.code === WORK_CODE.DRIVE)) {
       const w = getWeekNumber(new Date(e.date));
       if (weeklyMap[w]) {
         weeklyMap[w].actual += e.netDuration;

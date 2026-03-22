@@ -15,6 +15,7 @@ import {
   getWeekRangeInMonth 
 } from "../utils";
 import { useWorkCodes } from "../hooks/useWorkCodes";
+import { WORK_CODE } from "../hooks/constants";
 import { usePeriodStats } from "../hooks/usePeriodStats"; 
 import ExportModal from "./ExportModal";
 
@@ -136,7 +137,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     const map = {}; let currentDateStr = ""; let dayIndex = 0; const sums = {};
     filteredEntries.forEach((e) => {
       if (!sums[e.date]) sums[e.date] = { totalMinutes: 0 };
-      if (!(e.type === "work" && e.code === 19)) sums[e.date].totalMinutes += e.netDuration;
+      if (!(e.type === "work" && e.code === WORK_CODE.DRIVE)) sums[e.date].totalMinutes += e.netDuration;
     });
     filteredEntries.forEach((e, idx) => {
       if (e.date !== currentDateStr) { dayIndex++; currentDateStr = e.date; }
@@ -334,7 +335,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                   
                   let timeCellContent = null;
                   if (e.type === "work") {
-                    if (e.code === 19) { durationDisplay = "-"; timeColor = PRINT_STYLES.textLight; }
+                    if (e.code === WORK_CODE.DRIVE) { durationDisplay = "-"; timeColor = PRINT_STYLES.textLight; }
                     const pauseText = e.pause > 0 ? `Pause: ${e.pause}m` : "KEINE PAUSE";
                     const pauseColor = e.pause > 0 ? PRINT_STYLES.textMedium : PRINT_STYLES.textLight;
                     timeCellContent = ( <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}> <span style={{ fontWeight: 'bold', color: PRINT_STYLES.textDark, lineHeight: 1.2, whiteSpace: 'nowrap' }}>{e.start} – {e.end}</span> <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', marginTop: '2px', color: pauseColor }}>{pauseText}</span> </div> );

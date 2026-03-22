@@ -20,7 +20,7 @@ import {
 } from "./utils";
 
 // NEU: Imports aus constants - WORK_CODES entfernt, useWorkCodes hinzugefügt
-import { WORK_MODELS, STORAGE_KEYS } from "./hooks/constants";
+import { WORK_MODELS, STORAGE_KEYS, WORK_CODE } from "./hooks/constants";
 import { useWorkCodes } from "./hooks/useWorkCodes";
 
 // COMPONENTS
@@ -377,7 +377,7 @@ export default function App() {
 
   const startEdit = (entry) => {
     setEditingEntry(entry);
-    const isDrive = entry.type === "work" && entry.code === 19;
+    const isDrive = entry.type === "work" && entry.code === WORK_CODE.DRIVE;
     setEntryType(isDrive ? "drive" : entry.type);
     setFormDate(entry.date);
     if (entry.type === "work") {
@@ -436,7 +436,7 @@ export default function App() {
     else addEntry(newEntry);
 
     // UPDATE: Nutzt jetzt STORAGE_KEYS
-    if (storedType === "work" && usedCode && usedCode !== 19 && usedCode !== 190) localStorage.setItem(STORAGE_KEYS.LAST_CODE, usedCode);
+    if (storedType === "work" && usedCode && usedCode !== WORK_CODE.DRIVE && usedCode !== WORK_CODE.ARRIVAL) localStorage.setItem(STORAGE_KEYS.LAST_CODE, usedCode);
     toast.success(editingEntry ? "✏️ Eintrag aktualisiert" : "💾 Eintrag gespeichert");
     setEditingEntry(null); setProject(""); setEntryType("work"); setView("dashboard");
   };

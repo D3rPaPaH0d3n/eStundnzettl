@@ -7,7 +7,8 @@ import {
   getWeekNumber, 
   // calculateWeekStats NEU importiert, die alten Helfer entfernt da nicht mehr hier benötigt
   calculateWeekStats 
-} from "../utils"; 
+} from "../utils";
+import { WORK_CODE } from "../hooks/constants";
 import { useWorkCodes } from "../hooks/useWorkCodes";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -226,7 +227,7 @@ const Dashboard = ({
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="overflow-hidden"> 
                       <div className="mt-2 space-y-3"> 
                         {sortedDays.map(([dateStr, dayEntries]) => { 
-                            const daySum = dayEntries.reduce((acc, curr) => (curr.type === "work" && curr.code === 19) ? acc : acc + curr.netDuration, 0); 
+                            const daySum = dayEntries.reduce((acc, curr) => (curr.type === "work" && curr.code === WORK_CODE.DRIVE) ? acc : acc + curr.netDuration, 0); 
                             const d = new Date(dateStr); 
                             const sortedEntries = [...dayEntries].sort((a, b) => (a.start || "").localeCompare(b.start || "")); 
                             
@@ -251,7 +252,7 @@ const Dashboard = ({
                                           else codeLabel = entry.type === "vacation" ? "Urlaub" : "Krank"; 
                                           
                                           let pauseLabel = ""; 
-                                          if (entry.type === "work" && entry.code !== 19) { pauseLabel = entry.pause > 0 ? ` - Pause: ${entry.pause} Min` : " - Keine Pause"; } 
+                                          if (entry.type === "work" && entry.code !== WORK_CODE.DRIVE) { pauseLabel = entry.pause > 0 ? ` - Pause: ${entry.pause} Min` : " - Keine Pause"; } 
                                           
                                           let rowClass = `p-3 flex justify-between items-start gap-3 transition-colors cursor-pointer bg-white dark:bg-zinc-800 ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`; 
                                           if(isHoliday) rowClass = `p-3 flex justify-between items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`; 

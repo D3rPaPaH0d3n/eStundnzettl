@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import { ArrowLeft, Settings as SettingsIcon, FileBarChart, Plus } from "lucide-react";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
-import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
-import { Share } from "@capacitor/share";
+
 import toast, { Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
@@ -39,7 +38,7 @@ import { useSettings } from "./hooks/useSettings";
 import { useAutoBackup } from "./hooks/useAutoBackup";
 import { useLiveTimer } from "./hooks/useLiveTimer";
 import { usePeriodStats } from "./hooks/usePeriodStats";
-import { exportToSelectedFolder } from "./utils/storageBackup";
+import { useExport } from "./hooks/useExport";
 
 // MIGRATION
 import { migrateStorageKeys } from "./utils/migration";
@@ -83,16 +82,22 @@ export default function App() {
   
   useAutoBackup(entries, userData, autoBackup);
 
+  // --- EXPORT / IMPORT (useExport hook) ---
+  const exportPayloadRef = useRef(null);
+  const { showExportModal, setShowExportModal, exportData, handleExportToFolder, handleExportShare, handleImport } = useExport({
+    entries,
+    userData,
+    importEntries,
+    setUserData,
+    exportPayloadRef,
+  });
+
   // --- 2. UI STATE ---
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState("dashboard");
   const [editingEntry, setEditingEntry] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [updateData, setUpdateData] = useState(null);
-  
-  // NEU: Export Modal State
-  const [showExportModal, setShowExportModal] = useState(false);
-  const exportPayloadRef = useRef(null);
   
   // Flag um zu verhindern, dass Smart-Time die Live-Zeit überschreibt
   const [isLiveEntry, setIsLiveEntry] = useState(false);
@@ -459,129 +464,6 @@ export default function App() {
   
   const changeMonth = (delta) => { const d = new Date(currentDate); d.setMonth(d.getMonth() + delta); setCurrentDate(d); };
   
-  // --- EXPORT LOGIC ---
-  const exportData = async () => {
-    const exportPayload = { 
-      user: userData, 
-      entries, 
-      exportedAt: new Date().toISOString() 
-    };
-
-    if (Capacitor.isNativePlatform()) {
-      exportPayloadRef.current = exportPayload;
-      setShowExportModal(true);
-    } else {
-      const toastId = toast.loading("Exportiere Daten...");
-      try {
-        // FIX: toLocalDateString für Dateinamen
-        const dateStr = toLocalDateString(new Date());
-        const fileName = `estundnzettl_${dateStr}.json`;
-        const json = JSON.stringify(exportPayload, null, 2);
-        
-        const file = new File([json], fileName, { type: "application/json" });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try { 
-            await navigator.share({ files: [file], title: 'eStundnzettl Backup', text: 'Backup meiner Stunden' }); 
-            toast.success("📤 Export erfolgreich!", { id: toastId }); 
-            return; 
-          } catch (shareError) { 
-            if (shareError.name === 'AbortError') { 
-              toast.dismiss(toastId); 
-              return; 
-            } 
-          }
-        }
-        const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-        toast.success("💾 Download gestartet!", { id: toastId });
-      } catch (e) {
-        toast.error(`❌ Export Fehler: ${e.message}`, { id: toastId, duration: 5000 });
-      }
-    }
-  };
-
-  const handleExportToFolder = async () => {
-    setShowExportModal(false);
-    const toastId = toast.loading("Exportiere in Ordner...");
-    
-    try {
-      // Datum + Uhrzeit für eindeutige Dateinamen
-      const now = new Date();
-      const dateStr = toLocalDateString(now);
-      const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
-      const fileName = `estundnzettl_${dateStr}_${timeStr}.json`;
-      const success = await exportToSelectedFolder(fileName, exportPayloadRef.current);
-      
-      if (success) {
-        toast.success("✅ Erfolgreich im Ordner gespeichert!", { id: toastId });
-      } else {
-        toast.dismiss(toastId); // Abbruch durch User
-      }
-    } catch (e) {
-      console.error("Export to folder error:", e);
-      toast.error("Export abgebrochen oder fehlgeschlagen", { id: toastId });
-    }
-  };
-
-  const handleExportShare = async () => {
-    setShowExportModal(false);
-    const toastId = toast.loading("Bereite Export vor...");
-    
-    try {
-      // Datum + Uhrzeit für eindeutige Dateinamen
-      const now = new Date();
-      const dateStr = toLocalDateString(now);
-      const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
-      const fileName = `estundnzettl_${dateStr}_${timeStr}.json`;
-      const json = JSON.stringify(exportPayloadRef.current, null, 2);
-      
-      await Filesystem.writeFile({ 
-        path: fileName, 
-        data: json, 
-        directory: Directory.Cache, 
-        encoding: Encoding.UTF8, 
-        recursive: true 
-      });
-      
-      const uriResult = await Filesystem.getUri({ 
-        path: fileName, 
-        directory: Directory.Cache 
-      });
-      
-      await Share.share({ 
-        title: "eStundnzettl Backup", 
-        text: `Backup vom ${new Date().toLocaleDateString("de-DE")}`, 
-        url: uriResult.uri, 
-        dialogTitle: "Backup sichern" 
-      });
-      
-      toast.success("📤 Export bereitgestellt!", { id: toastId });
-    } catch (e) {
-      console.error("Share error:", e);
-      if (e.message?.includes('canceled') || e.message?.includes('cancelled')) {
-        toast.dismiss(toastId);
-      } else {
-        toast.error(`❌ Export Fehler: ${e.message}`, { id: toastId, duration: 5000 });
-      }
-    }
-  };
-
-  const handleImport = (event) => {
-    const file = event.target.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try { 
-          const d = JSON.parse(e.target.result); 
-          if(d.entries) importEntries(d.entries);
-          if(d.user) setUserData(d.user);
-          toast.success("📥 Daten erfolgreich importiert!"); 
-        } catch { toast.error("❌ Fehler: Datei ungültig."); } finally { event.target.value = ""; }
-    };
-    reader.readAsText(file);
-  };
-
   return (
     <div className="min-h-screen w-screen font-sans bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 overflow-x-hidden relative">
       <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#27272a', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#10b981', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />

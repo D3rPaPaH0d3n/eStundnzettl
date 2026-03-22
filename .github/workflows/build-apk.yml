@@ -23,6 +23,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fix Capacitor proguard reference (Gradle 9 compat)
+        run: |
+          find node_modules/@capacitor -name "build.gradle" \
+            -exec sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" {} \;
+
       - name: Build web assets (Vite)
         run: npm run build
 

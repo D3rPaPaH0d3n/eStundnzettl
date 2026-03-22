@@ -20,6 +20,9 @@ android/app/build/
 android/build/
 android/app/release/
 
+# Expanded/decompiled APK dumps
+expanded_apk/
+
 # iOS (falls irgendwann dazu kommt)
 ios/App/App.xcworkspace/
 ios/App/build/

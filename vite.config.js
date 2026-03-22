@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 // ══════════════════════════════════════════════════════════════
 // 🔧 DEBUG TOGGLE - Ändere nur diese Zeile!
 // ══════════════════════════════════════════════════════════════
-const DEBUG_MODE = true;  // true = Logs behalten, false = Logs entfernen (Release)
+const DEBUG_MODE = false;  // true = Logs behalten, false = Logs entfernen (Release)
 // ══════════════════════════════════════════════════════════════
 
 // https://vitejs.dev/config/

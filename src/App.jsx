@@ -39,6 +39,7 @@ import { useAutoBackup } from "./hooks/useAutoBackup";
 import { useLiveTimer } from "./hooks/useLiveTimer";
 import { usePeriodStats } from "./hooks/usePeriodStats";
 import { useExport } from "./hooks/useExport";
+import { useFormState } from "./hooks/useFormState";
 
 // MIGRATION
 import { migrateStorageKeys } from "./utils/migration";
@@ -68,15 +69,18 @@ export default function App() {
   
   // Work Codes Hook
   const { workCodes, hasAnyCodes } = useWorkCodes();
-  
+
   // Default Code: erster aus User-Codes oder Fallback 1
   const getDefaultCode = () => {
     const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
     if (lastCode) return Number(lastCode);
     if (hasAnyCodes) return workCodes[0].id;
-    return 1; // Fallback
+    return WORK_CODE.DEFAULT;
   };
-  
+
+  // --- FORM STATE (useFormState hook) ---
+  const form = useFormState({ getDefaultCode });
+
   // LIVE TIMER HOOK (inkl. Auto-Checkout Logik)
   const { timerState, autoCheckoutData, clearAutoCheckout, startTimer, pauseTimer, resumeTimer, stopTimer, cancelTimer } = useLiveTimer();
   
@@ -95,27 +99,15 @@ export default function App() {
   // --- 2. UI STATE ---
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState("dashboard");
-  const [editingEntry, setEditingEntry] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [updateData, setUpdateData] = useState(null);
   
   // Flag um zu verhindern, dass Smart-Time die Live-Zeit überschreibt
-  const [isLiveEntry, setIsLiveEntry] = useState(false);
   
   // Flag für Onboarding
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   const fileInputRef = useRef(null);
-
-  // Formular State
-  // FIX: toLocalDateString statt toISOString
-  const [formDate, setFormDate] = useState(toLocalDateString(new Date()));
-  const [entryType, setEntryType] = useState("work");
-  const [startTime, setStartTime] = useState("06:00");
-  const [endTime, setEndTime] = useState("16:30");
-  const [project, setProject] = useState("");
-  const [code, setCode] = useState(1); // Default-Wert, wird später aktualisiert
-  const [pauseDuration, setPauseDuration] = useState(30);
 
     // Sollzeit für HEUTE berechnen (für das Overlay)
   const [todayTarget, setTodayTarget] = useState(510);
@@ -183,9 +175,9 @@ export default function App() {
       const yyyy = autoCheckoutData.start.getFullYear();
       const mm = String(autoCheckoutData.start.getMonth() + 1).padStart(2, '0');
       const dd = String(autoCheckoutData.start.getDate()).padStart(2, '0');
-      setFormDate(`${yyyy}-${mm}-${dd}`);
+      form.setFormDate(`${yyyy}-${mm}-${dd}`);
 
-      setEntryType("work");
+      form.setEntryType("work");
       
       const toLocalHHMM = (dateObj) => {
         const h = String(dateObj.getHours()).padStart(2,'0');
@@ -193,15 +185,15 @@ export default function App() {
         return `${h}:${m}`;
       };
 
-      setStartTime(toLocalHHMM(autoCheckoutData.start));
-      setEndTime(toLocalHHMM(autoCheckoutData.end)); // 23:59
-      setPauseDuration(autoCheckoutData.pause);
+      form.setStartTime(toLocalHHMM(autoCheckoutData.start));
+      form.setEndTime(toLocalHHMM(autoCheckoutData.end)); // 23:59
+      form.setPauseDuration(autoCheckoutData.pause);
       
-      setProject(""); 
-      setCode(getDefaultCode());
+      form.setProject(""); 
+      form.setCode(getDefaultCode());
 
-      setEditingEntry(null);
-      setIsLiveEntry(true); 
+      form.setEditingEntry(null);
+      form.setIsLiveEntry(true); 
       setView("add");
       
       toast("⚠️ Automatisch ausgestempelt! Bitte prüfen.", { 
@@ -252,7 +244,7 @@ export default function App() {
   const getHeaderTitle = () => {
     switch (view) {
       case "settings": return "Einstellungen";
-      case "add": return editingEntry ? "Eintrag bearbeiten" : "Neuer Eintrag";
+      case "add": return form.editingEntry ? "Eintrag bearbeiten" : "Neuer Eintrag";
       case "report": return "Bericht";
       default: return "eStundnzettl";
     }
@@ -260,7 +252,7 @@ export default function App() {
 
   useEffect(() => {
     const handler = CapacitorApp.addListener("backButton", () => {
-      if (view !== "dashboard") { setView("dashboard"); setEditingEntry(null); } 
+      if (view !== "dashboard") { setView("dashboard"); form.setEditingEntry(null); } 
       else CapacitorApp.exitApp();
     });
     return () => handler.remove();
@@ -349,8 +341,8 @@ export default function App() {
     const dd = String(result.start.getDate()).padStart(2, '0');
     const dateStr = `${yyyy}-${mm}-${dd}`;
 
-    setEntryType("work");
-    setFormDate(dateStr);
+    form.setEntryType("work");
+    form.setFormDate(dateStr);
 
     const toLocalHHMM = (dateObj) => {
         const h = String(dateObj.getHours()).padStart(2,'0');
@@ -358,53 +350,53 @@ export default function App() {
         return `${h}:${m}`;
     };
 
-    setStartTime(toLocalHHMM(result.start));
-    setEndTime(toLocalHHMM(result.end));
-    setPauseDuration(result.pause);
-    setProject(""); 
-    setCode(getDefaultCode());
+    form.setStartTime(toLocalHHMM(result.start));
+    form.setEndTime(toLocalHHMM(result.end));
+    form.setPauseDuration(result.pause);
+    form.setProject(""); 
+    form.setCode(getDefaultCode());
 
-    setEditingEntry(null);
-    setIsLiveEntry(true); 
+    form.setEditingEntry(null);
+    form.setIsLiveEntry(true); 
     setView("add");
     toast("🏁 Zeit wurde übernommen", { icon: "✨" });
   };
 
   const startNewEntry = () => {
-    setEditingEntry(null); setEntryType("work"); 
+    form.setEditingEntry(null); form.setEntryType("work"); 
     // FIX: toLocalDateString statt toISOString
-    setFormDate(toLocalDateString(new Date()));
-    setStartTime("06:00"); setEndTime("16:30"); setPauseDuration(30); setProject(""); 
-    setCode(getDefaultCode());
-    setIsLiveEntry(false); 
+    form.setFormDate(toLocalDateString(new Date()));
+    form.setStartTime("06:00"); form.setEndTime("16:30"); form.setPauseDuration(30); form.setProject(""); 
+    form.setCode(getDefaultCode());
+    form.setIsLiveEntry(false); 
     setView("add");
   };
 
   const startEdit = (entry) => {
-    setEditingEntry(entry);
+    form.setEditingEntry(entry);
     const isDrive = entry.type === "work" && entry.code === WORK_CODE.DRIVE;
-    setEntryType(isDrive ? "drive" : entry.type);
-    setFormDate(entry.date);
+    form.setEntryType(isDrive ? "drive" : entry.type);
+    form.setFormDate(entry.date);
     if (entry.type === "work") {
-        setStartTime(entry.start || "06:00"); setEndTime(entry.end || "16:30");
-        setPauseDuration(isDrive ? 0 : entry.pause ?? 0); setCode(entry.code ?? getDefaultCode()); setProject(entry.project || "");
-    } else { setPauseDuration(0); setProject(""); }
-    setIsLiveEntry(false);
+        form.setStartTime(entry.start || "06:00"); form.setEndTime(entry.end || "16:30");
+        form.setPauseDuration(isDrive ? 0 : entry.pause ?? 0); form.setCode(entry.code ?? getDefaultCode()); form.setProject(entry.project || "");
+    } else { form.setPauseDuration(0); form.setProject(""); }
+    form.setIsLiveEntry(false);
     setView("add");
   };
 
   const handleSaveEntry = (e) => {
     e.preventDefault();
-    const isDrive = entryType === "drive";
+    const isDrive = form.entryType === "drive";
     let net = 0; let label = "";
     
-    if (entryType === "work" || isDrive) {
-        const s = parseTime(startTime); const en = parseTime(endTime);
+    if (form.entryType === "work" || isDrive) {
+        const s = parseTime(form.startTime); const en = parseTime(form.endTime);
         if (en <= s) { toast.error("⚠️ Endzeit muss nach Startzeit liegen!"); return; }
 
         const hasOverlap = entries.some(existing => {
-          if (existing.date !== formDate) return false;
-          if (editingEntry && existing.id === editingEntry.id) return false;
+          if (existing.date !== form.formDate) return false;
+          if (form.editingEntry && existing.id === form.editingEntry.id) return false;
           if (!existing.start || !existing.end) return false;
           const exStart = parseTime(existing.start);
           const exEnd = parseTime(existing.end);
@@ -417,33 +409,33 @@ export default function App() {
           return;
         }
 
-        const usedPause = isDrive ? 0 : pauseDuration; const usedCode = isDrive ? 19 : code;
+        const usedPause = isDrive ? 0 : form.pauseDuration; const usedCode = isDrive ? WORK_CODE.DRIVE : form.code;
         net = en - s - usedPause;
         // Label aus workCodes holen
         label = workCodes.find((c) => c.id === usedCode)?.label || (isDrive ? "Fahrzeit" : "Arbeit");
     } else {
-        net = getTargetMinutesForDate(formDate, userData?.workDays); 
-        label = entryType === "vacation" ? "Urlaub" : entryType === "sick" ? "Krank" : "Zeitausgleich";
+        net = getTargetMinutesForDate(form.formDate, userData?.workDays); 
+        label = form.entryType === "vacation" ? "Urlaub" : form.entryType === "sick" ? "Krank" : "Zeitausgleich";
     }
     if (net < 0) net = 0;
     
-    const storedType = isDrive ? "work" : entryType;
-    const usedCode = isDrive ? 19 : code;
-    const usedPause = storedType === "work" ? (isDrive ? 0 : pauseDuration) : 0;
+    const storedType = isDrive ? "work" : form.entryType;
+    const usedCode = isDrive ? WORK_CODE.DRIVE : form.code;
+    const usedPause = storedType === "work" ? (isDrive ? 0 : form.pauseDuration) : 0;
     
     const newEntry = {
-        id: editingEntry ? editingEntry.id : Date.now(),
-        type: storedType, date: formDate, start: storedType === "work" ? startTime : null, end: storedType === "work" ? endTime : null,
-        pause: usedPause, project: storedType === "work" ? project : label, code: storedType === "work" ? usedCode : null, netDuration: net,
+        id: form.editingEntry ? form.editingEntry.id : Date.now(),
+        type: storedType, date: form.formDate, start: storedType === "work" ? form.startTime : null, end: storedType === "work" ? form.endTime : null,
+        pause: usedPause, project: storedType === "work" ? form.project : label, code: storedType === "work" ? usedCode : null, netDuration: net,
     };
 
-    if (editingEntry) updateEntry(newEntry);
+    if (form.editingEntry) updateEntry(newEntry);
     else addEntry(newEntry);
 
     // UPDATE: Nutzt jetzt STORAGE_KEYS
     if (storedType === "work" && usedCode && usedCode !== WORK_CODE.DRIVE && usedCode !== WORK_CODE.ARRIVAL) localStorage.setItem(STORAGE_KEYS.LAST_CODE, usedCode);
-    toast.success(editingEntry ? "✏️ Eintrag aktualisiert" : "💾 Eintrag gespeichert");
-    setEditingEntry(null); setProject(""); setEntryType("work"); setView("dashboard");
+    toast.success(form.editingEntry ? "✏️ Eintrag aktualisiert" : "💾 Eintrag gespeichert");
+    form.setEditingEntry(null); form.setProject(""); form.setEntryType("work"); setView("dashboard");
   };
 
   const executeDelete = () => {
@@ -497,7 +489,7 @@ export default function App() {
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
               {view !== "dashboard" && view !== "report" ? (
-                <button onClick={() => { setView("dashboard"); setEditingEntry(null); }} className="p-2 hover:bg-zinc-700 rounded-full transition-colors"><ArrowLeft size={24} /></button>
+                <button onClick={() => { setView("dashboard"); form.setEditingEntry(null); }} className="p-2 hover:bg-zinc-700 rounded-full transition-colors"><ArrowLeft size={24} /></button>
               ) : (
                 <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-zinc-800 shadow-inner"><img src={AppLogo} alt="Logo" className="w-full h-full object-contain" /></div>
               )}
@@ -534,19 +526,19 @@ export default function App() {
           {view === "add" && !showOnboarding && (
             <motion.div key="add" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
               <EntryForm 
-                  onCancel={() => { setView("dashboard"); setEditingEntry(null); }}
+                  onCancel={() => { setView("dashboard"); form.setEditingEntry(null); }}
                   onSubmit={handleSaveEntry} 
-                  entryType={entryType} setEntryType={setEntryType}
-                  code={code} setCode={setCode}
-                  pauseDuration={pauseDuration} setPauseDuration={setPauseDuration}
-                  formDate={formDate} setFormDate={setFormDate}
-                  startTime={startTime} setStartTime={setStartTime}
-                  endTime={endTime} setEndTime={setEndTime}
-                  project={project} setProject={setProject}
+                  entryType={form.entryType} setEntryType={form.setEntryType}
+                  code={form.code} setCode={form.setCode}
+                  pauseDuration={form.pauseDuration} setPauseDuration={form.setPauseDuration}
+                  formDate={form.formDate} setFormDate={form.setFormDate}
+                  startTime={form.startTime} setStartTime={form.setStartTime}
+                  endTime={form.endTime} setEndTime={form.setEndTime}
+                  project={form.project} setProject={form.setProject}
                   lastWorkEntry={lastWorkEntry} existingProjects={uniqueProjects}
                   allEntries={entries} 
-                  isEditing={!!editingEntry}
-                  isLiveEntry={isLiveEntry}
+                  isEditing={!!form.editingEntry}
+                  isLiveEntry={form.isLiveEntry}
                   userData={userData}
               />
             </motion.div>

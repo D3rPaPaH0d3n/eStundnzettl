@@ -4,6 +4,31 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const CHANGELOG_DATA = [
   {
+  version: "6.2.3",
+  date: "23.03.2026",
+  title: "Code Cleanup & Performance ⚡",
+  isMajor: false,
+  sections: [
+    {
+      icon: Zap,
+      title: "Code-Qualität",
+      items: [
+        "Refactor: App.jsx in useAppActions + useAppData Hooks aufgeteilt",
+        "Chore: Debug-Logs und stale Kommentar-Blöcke entfernt",
+        "Fix: Swipe-to-delete Layout in der Wochenansicht korrigiert",
+        "Fix: Fahrzeit-Button von Orange auf Emerald umgestellt (Design-Konsistenz)"
+      ]
+    },
+    {
+      icon: Sparkles,
+      title: "Neue Features",
+      items: [
+        "Neu: Demo-Daten laden in den Entwickler-Optionen (Einstellungen)"
+      ]
+    }
+  ]
+},
+  {
   version: "6.2.2",
   date: "22.01.2026",
   title: "Backup Stability Fix 🛡️",

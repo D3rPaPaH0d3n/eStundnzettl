@@ -3,7 +3,7 @@ import {
   User, Sun, Camera, Trash2, Upload, Loader, 
   History, BookOpen, RefreshCw, Briefcase, Calendar, 
   Cloud, CloudOff, CheckCircle2, HardDrive, List, Lock, Unlock, AlertTriangle, Building2,
-  ListChecks
+  ListChecks, FlaskConical
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -13,6 +13,7 @@ import ChangelogModal from "./ChangelogModal";
 import HelpModal from "./HelpModal";
 import WorkCodeManager from "./WorkCodeManager";
 import { initGoogleAuth, signInGoogle, signOutGoogle } from "../utils/googleDrive";
+import { DEMO_DATA } from "../utils/demoData";
 import { selectBackupFolder, hasBackupTarget, clearBackupTarget, analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
 import PresetModal from "./PresetModal";
@@ -634,7 +635,38 @@ const Settings = ({
           </button>
       </Card>
 
-      {/* 7. DANGER ZONE */}
+      {/* 7. DEVELOPER OPTIONS */}
+      <Card className="p-5 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10">
+        <div className="flex items-center gap-2 mb-2">
+            <FlaskConical className="text-emerald-600 dark:text-emerald-400" size={20} />
+            <h3 className="font-bold text-emerald-700 dark:text-emerald-400">Entwickler-Optionen</h3>
+        </div>
+
+        <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80 mb-4 font-medium leading-relaxed">
+          Lädt 3 Monate Testdaten mit "Max Mustermann" — alle原有 Daten werden überschrieben.
+        </p>
+
+        <button
+            onClick={() => {
+              Haptics.impact({ style: ImpactStyle.Medium });
+              if (window.confirm("Demo-Daten laden? Alle bisherigen Daten werden ersetzt!")) {
+                const demoUser = { ...DEMO_DATA.user };
+                const demoEntries = DEMO_DATA.generateEntries();
+                localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
+                localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(demoEntries));
+                localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(DEMO_DATA.workCodes));
+                localStorage.removeItem(STORAGE_KEYS.LAST_CODE);
+                toast.success("Demo-Daten geladen! Seite wird neu geladen...");
+                setTimeout(() => window.location.reload(), 1000);
+              }
+            }}
+            className="w-full py-3 bg-white dark:bg-zinc-800 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-bold rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors flex items-center justify-center gap-2"
+        >
+            <FlaskConical size={18} /> Demo-Daten laden
+        </button>
+      </Card>
+
+      {/* 8. DANGER ZONE */}
       <Card className="p-5 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/10">
         <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="text-red-600 dark:text-red-400" size={20} />

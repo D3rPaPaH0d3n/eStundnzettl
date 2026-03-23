@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { WORK_CODE } from "./constants";
-import { toLocalDateString } from "../utils";
+import { toLocalDateString, toLocalHHMM } from "../utils";
 
 const DEFAULTS = {
   entryType: "work",
@@ -27,20 +27,6 @@ export function useFormState({ getDefaultCode }) {
   const [code, setCode] = useState(WORK_CODE.DEFAULT);
   const [editingEntry, setEditingEntry] = useState(null);
   const [isLiveEntry, setIsLiveEntry] = useState(false);
-
-  // --- Internal helpers ---
-  const toLocalHHMM = (dateObj) => {
-    const h = String(dateObj.getHours()).padStart(2, "0");
-    const m = String(dateObj.getMinutes()).padStart(2, "0");
-    return `${h}:${m}`;
-  };
-
-  const toLocalDateStr = (d) => {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  };
 
   // --- Reset to defaults (for new entry) ---
   const resetForm = () => {

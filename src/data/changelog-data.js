@@ -21,7 +21,16 @@ export const CHANGELOG_DATA = [
       icon: Sparkles,
       title: "Neue Features",
       items: [
-        "Neu: Demo-Daten laden in den Entwickler-Optionen (Einstellungen)"
+        "Neu: Demo-Daten laden in den Entwickler-Optionen (Einstellungen)",
+        "Neu: Export/Import sichert jetzt auch Tätigkeitscodes mit"
+      ]
+    },
+    {
+      icon: Shield,
+      title: "Datensicherheit",
+      items: [
+        "Fix: Tätigkeitscodes werden bei Export/Import nicht mehr übersprungen",
+        "Fix: Preset laden schützt jetzt mit Bestätigungsdialog"
       ]
     }
   ]

@@ -9,18 +9,21 @@ import { toLocalDateString } from "../utils";
 /**
  * useExport — encapsulates all export/import logic
  *
- * @param {Array}  entries      — all time entries
- * @param {Object} userData     — user profile data
+ * @param {Array}   entries        — all time entries
+ * @param {Object}  userData       — user profile data
+ * @param {Array}   workCodes      — user's custom work codes
  * @param {Function} importEntries — callback to import entries
- * @param {Function} setUserData  — callback to update user data
+ * @param {Function} setUserData   — callback to update user data
+ * @param {Function} importWorkCodes — callback to import work codes
  * @returns {Object} export state + handlers
  */
-export function useExport({ entries, userData, importEntries, setUserData, exportPayloadRef }) {
+export function useExport({ entries, userData, workCodes, importEntries, setUserData, importWorkCodes, exportPayloadRef }) {
   const [showExportModal, setShowExportModal] = useState(false);
 
   const buildPayload = () => ({
     user: userData,
     entries,
+    workCodes,
     exportedAt: new Date().toISOString(),
   });
 
@@ -147,6 +150,7 @@ export function useExport({ entries, userData, importEntries, setUserData, expor
         const d = JSON.parse(e.target.result);
         if (d.entries) importEntries(d.entries);
         if (d.user) setUserData(d.user);
+        if (d.workCodes && importWorkCodes) importWorkCodes(d.workCodes);
         toast.success("📥 Daten erfolgreich importiert!");
       } catch {
         toast.error("❌ Fehler: Datei ungültig.");

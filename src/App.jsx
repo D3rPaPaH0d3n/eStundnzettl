@@ -61,7 +61,7 @@ export default function App() {
   const { userData, setUserData, theme, setTheme, autoBackup, setAutoBackup } = useSettings();
   
   // Work Codes Hook
-  const { workCodes, hasAnyCodes } = useWorkCodes();
+  const { workCodes, hasAnyCodes, loadWorkCodes } = useWorkCodes();
 
   // Default Code: erster aus User-Codes oder Fallback 1
   const getDefaultCode = () => {
@@ -84,8 +84,10 @@ export default function App() {
   const { showExportModal, setShowExportModal, exportData, handleExportToFolder, handleExportShare, handleImport } = useExport({
     entries,
     userData,
+    workCodes,
     importEntries,
     setUserData,
+    importWorkCodes: loadWorkCodes,
     exportPayloadRef,
   });
 

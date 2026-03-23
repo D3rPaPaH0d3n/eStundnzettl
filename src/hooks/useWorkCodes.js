@@ -98,10 +98,23 @@ useEffect(() => {
       return false;
     }
 
+    if (!window.confirm(`Preset "${preset.name}" laden? Alle bestehenden Tätigkeitscodes werden ersetzt!`)) {
+      return false;
+    }
+
     // Deep copy um Referenzprobleme zu vermeiden
     const codes = JSON.parse(JSON.stringify(preset.codes));
     saveWorkCodes(codes);
 
+    return true;
+  }, [saveWorkCodes]);
+
+  // -------------------------------------------------------
+  // Codes importieren (aus Backup)
+  // -------------------------------------------------------
+  const loadWorkCodes = useCallback((codes) => {
+    if (!Array.isArray(codes)) return false;
+    saveWorkCodes(codes);
     return true;
   }, [saveWorkCodes]);
 
@@ -176,6 +189,7 @@ useEffect(() => {
     // Utilities
     clearAllCodes,
     sortCodes,
+    loadWorkCodes,
   };
 };
 

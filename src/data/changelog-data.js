@@ -4,6 +4,59 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.5",
+  date: "23.03.2026",
+  title: "Neue Features & Bugfixes 🛠️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Sparkles',
+      title: "Neue Features",
+      items: [
+        "Neu: add automatic changelog generation from commits",
+        "Neu: add manual backup button, last backup display, and offline warning",
+        "Neu: add optional minute-level time input (1-min intervals) as toggle in onboarding and settings",
+        "Neu: add Demo-Daten option to onboarding wizard",
+        "Neu: add demo data loader, update changelog to v6.2.3, bump APP_VERSION"
+      ]
+    },
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: ChangelogModal overlay and scrolling behavior",
+        "Fix: export/import includes work codes, protect loadPreset with confirm dialog",
+        "Fix: extract Python script to separate file, fix YAML syntax",
+        "Fix: restore missing toLocalDateString import that was accidentally removed during comment cleanup"
+      ]
+    },
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Chore: add v6.3.2 changelog",
+        "Refactor: extract CHANGELOG_DATA to src/data/changelog-data.js",
+        "Refactor: extract useAppActions and useAppData hooks, remove duplicate toLocalHHMM, streamline App.jsx",
+        "Chore: remove dead code startFromLive/startFromAutoCheckout from useFormState",
+        "Chore: remove debug logs, stale comments, fix swipe-delete layout and orange→emerald color consistency",
+        "Refactor: extract useFormState hook — form state out of App.jsx",
+        "Refactor: extract useExport hook — 130 lines out of App.jsx",
+        "Refactor: eliminate magic numbers for work codes",
+        "Chore: update all dependencies",
+        "Chore: Quick Wins — remove expanded_apk from tracking, disable DEBUG_MODE, add ErrorBoundary"
+      ]
+    },
+    {
+      iconName: 'Rocket',
+      title: "Performance",
+      items: [
+        "Perf: lazy-load changelog data + icons as separate chunk, reduce initial bundle"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.3",
   date: "23.03.2026",

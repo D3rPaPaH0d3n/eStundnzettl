@@ -2,7 +2,7 @@
 // CONSTANTS.JS - Zentrale Konstanten für eStundnzettl Zeiterfassung
 // ============================================================
 
-export const APP_VERSION = "v6.3.4";
+export const APP_VERSION = "v6.3.5";
 
 // -------------------------------------------------------
 // BACKUP & SYNC KONFIGURATION (NEU & WICHTIG)

@@ -6,6 +6,22 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.7",
+  date: "23.03.2026",
+  title: "Updates 🔄",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Refactor: combine settings cards into unified 'Einstellungen & Daten' section"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.6",
   date: "23.03.2026",

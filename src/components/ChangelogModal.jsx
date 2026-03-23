@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { X, Rocket } from "lucide-react";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 // Lazy-load changelog data + icons to keep initial bundle small
 let cachedData = null;
@@ -27,6 +27,16 @@ const ChangelogModal = ({ isOpen, onClose }) => {
   const [changelogData, setChangelogData] = useState(null);
   const [icons, setIcons] = useState({});
   const [loading, setLoading] = useState(false);
+  const dragControls = useDragControls();
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && !changelogData) {
@@ -42,23 +52,45 @@ const ChangelogModal = ({ isOpen, onClose }) => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40"
-          onClick={onClose}
-        >
+        <>
           <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed left-0 top-0 w-screen h-screen bg-black/60 backdrop-blur-sm z-[150]"
+            onClick={onClose}
+          />
+
+          <motion.div
+            initial={{ y: "100%", opacity: 0.5 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-white dark:bg-zinc-900 w-full sm:max-w-md max-h-screen sm:max-h-[80vh] overflow-hidden flex flex-col rounded-t-3xl sm:rounded-2xl"
-            onClick={(e) => e.stopPropagation()}
+            drag="y"
+            dragConstraints={{ top: 0 }}
+            dragElastic={0.2}
+            dragListener={false}
+            dragControls={dragControls}
+            onDragEnd={(_, info) => {
+              if (info.offset.y > 100) onClose();
+            }}
+            className={`
+              fixed z-[160] flex flex-col bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden
+              inset-x-0 bottom-0 rounded-t-3xl border-t border-zinc-200 dark:border-zinc-800
+              max-h-[85vh] h-[85vh]
+              md:inset-auto md:w-[600px] md:h-[85vh] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl
+            `}
           >
+            {/* DRAG HANDLE */}
+            <div
+              className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-zinc-900 shrink-0 cursor-grab active:cursor-grabbing touch-none"
+              onPointerDown={(e) => dragControls.start(e)}
+            >
+              <div className="w-12 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full" />
+            </div>
+
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="text-lg">📋</div>
                 <h2 className="font-bold text-zinc-800 dark:text-white">Änderungsprotokoll</h2>
@@ -122,7 +154,7 @@ const ChangelogModal = ({ isOpen, onClose }) => {
               )}
             </div>
           </motion.div>
-        </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

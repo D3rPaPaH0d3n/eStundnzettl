@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { User, Briefcase, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, RefreshCw, Building2 } from "lucide-react";
+import { User, Briefcase, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, RefreshCw, Building2, FlaskConical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
 import { analyzeBackupData, applyBackup, readJsonFile, readBackupFromFolder, selectBackupFolder } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
 import { WORK_MODELS, STORAGE_KEYS } from "../hooks/constants";
+import { DEMO_DATA } from "../utils/demoData";
 
 const OnboardingWizard = ({ onComplete }) => {
   const [step, setStep] = useState(0); 
@@ -41,6 +42,16 @@ const OnboardingWizard = ({ onComplete }) => {
   const handleStartRestore = () => {
     setIsRestoreFlow(true);
     setStep(3); 
+  };
+
+  const handleDemoMode = () => {
+    const demoEntries = DEMO_DATA.generateEntries();
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(DEMO_DATA.user));
+    localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(DEMO_DATA.workCodes));
+    localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(demoEntries));
+    localStorage.setItem(STORAGE_KEYS.LAST_CODE, String(DEMO_DATA.workCodes[0]?.id ?? 1));
+    toast.success("Demo-Daten geladen! Du kannst die App jetzt ausprobieren.");
+    onComplete();
   };
 
   const nextStep = () => {
@@ -312,6 +323,14 @@ const OnboardingWizard = ({ onComplete }) => {
                   >
                     <RefreshCw size={20} />
                     Backup laden
+                  </button>
+
+                  <button 
+                    onClick={handleDemoMode}
+                    className="w-full p-5 bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-2xl font-bold text-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all flex items-center justify-center gap-3"
+                  >
+                    <FlaskConical size={20} />
+                    Demo-Daten ausprobieren
                   </button>
                 </div>
               </motion.div>

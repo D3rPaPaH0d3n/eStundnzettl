@@ -2,6 +2,24 @@ import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Slid
 
 export const CHANGELOG_DATA = [
   {
+  version: "6.3.2",
+  date: "23.03.2026",
+  title: "Backup-System verbessert 🛡️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Cloud',
+      icon: Cloud,
+      title: "Backup",
+      items: [
+        "Neu: "Jetzt sichern"-Button für sofortiges Backup (Google Drive + Lokal)",
+        "Neu: Letztes Backup wird angezeigt ("vor X Min./Std.")",
+        "Neu: Offline-Warnung wenn Google Drive Token abgelaufen"
+      ]
+    }
+  ]
+},
+  {
   version: "6.3.1",
   date: "23.03.2026",
   title: "Performance-Optimierung & Changelog Lazy-Load ⚡",

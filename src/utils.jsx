@@ -5,6 +5,12 @@ import { APP_VERSION, GITHUB, WORK_CODE } from "./hooks/constants";
 // HELPER-FUNKTIONEN
 // -------------------------------------------------------
 
+export const toLocalHHMM = (dateObj) => {
+  const h = String(dateObj.getHours()).padStart(2, '0');
+  const m = String(dateObj.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+};
+
 export const toLocalDateString = (date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");

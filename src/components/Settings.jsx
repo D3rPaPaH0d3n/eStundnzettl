@@ -538,15 +538,21 @@ const Settings = ({
         </div>
       </Card>
 
-      {/* 3. ZEITEINGABE */}
+      {/* 3. EINSTELLUNGEN & DATEN */}
       <Card className="p-5 space-y-4">
-        <div className="flex items-center justify-between">
+        <h3 className="font-bold text-zinc-700 dark:text-white flex items-center gap-2 mb-2">
+          <Settings size={18} className="text-emerald-500" />
+          <span>Einstellungen & Daten</span>
+        </h3>
+        
+        {/* Minütige Zeiteingabe */}
+        <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
           <div className="flex items-center gap-3">
-            <div className="text-2xl">⏱️</div>
+            <div className="text-xl">⏱️</div>
             <div>
-              <h3 className="font-bold text-zinc-700 dark:text-white">Minütige Zeiteingabe</h3>
+              <div className="font-medium text-zinc-700 dark:text-white">Minütige Zeiteingabe</div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                {userData?.minuteInput ? "1-Minuten-Modus aktiv" : "Standard: 15-Min-Schritte"}
+                {userData?.minuteInput ? "1-Minuten-Modus" : "15-Minuten-Schritte"}
               </p>
             </div>
           </div>
@@ -561,26 +567,63 @@ const Settings = ({
             }`} />
           </button>
         </div>
-      </Card>
-
-      {/* 4. TÄTIGKEITSCODES */}
-      <Card className="p-5 space-y-3">
-        <h3 className="font-bold text-zinc-700 dark:text-white flex items-center gap-2">
-            <ListChecks size={18} className="text-sky-500" />
-            <span>Tätigkeitscodes</span>
-        </h3>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Verwalte deine Tätigkeitscodes oder lade ein Preset für deine Branche.
-        </p>
-        <button 
-          onClick={() => {
-            Haptics.impact({ style: ImpactStyle.Light });
-            setShowWorkCodeManager(true);
-          }}
-          className="w-full py-3 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-sky-100 dark:hover:bg-sky-900/30 transition-colors"
-        >
-          <ListChecks size={18} /> Codes verwalten
-        </button>
+        
+        {/* Tätigkeitscodes */}
+        <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <ListChecks size={18} className="text-sky-500" />
+              <div>
+                <div className="font-medium text-zinc-700 dark:text-white">Tätigkeitscodes</div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Presets für deine Branche laden
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => {
+                Haptics.impact({ style: ImpactStyle.Light });
+                setShowWorkCodeManager(true);
+              }}
+              className="px-4 py-2 bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-300 font-medium rounded-lg hover:bg-sky-200 dark:hover:bg-sky-900/40 transition-colors flex items-center gap-2"
+            >
+              <ListChecks size={16} /> Verwalten
+            </button>
+          </div>
+        </div>
+        
+        {/* Demo-Daten */}
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800 rounded-xl">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <FlaskConical size={18} className="text-emerald-600 dark:text-emerald-400" />
+              <div>
+                <div className="font-medium text-zinc-700 dark:text-white">Demo-Daten</div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Testdaten für die App laden
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => {
+                Haptics.impact({ style: ImpactStyle.Medium });
+                if (window.confirm("Demo-Daten laden? Alle bisherigen Daten werden ersetzt!")) {
+                  const demoUser = { ...DEMO_DATA.user };
+                  const demoEntries = DEMO_DATA.generateEntries();
+                  localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
+                  localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(demoEntries));
+                  localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(DEMO_DATA.workCodes));
+                  localStorage.removeItem(STORAGE_KEYS.LAST_CODE);
+                  toast.success("Demo-Daten geladen! Seite wird neu geladen...");
+                  setTimeout(() => window.location.reload(), 1000);
+                }
+              }}
+              className="px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/40 transition-colors flex items-center gap-2"
+            >
+              <FlaskConical size={16} /> Laden
+            </button>
+          </div>
+        </div>
       </Card>
 
       {/* 4. THEME */}
@@ -744,36 +787,7 @@ const Settings = ({
           </button>
       </Card>
 
-      {/* 7. DEVELOPER OPTIONS */}
-      <Card className="p-5 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10">
-        <div className="flex items-center gap-2 mb-2">
-            <FlaskConical className="text-emerald-600 dark:text-emerald-400" size={20} />
-            <h3 className="font-bold text-emerald-700 dark:text-emerald-400">Entwickler-Optionen</h3>
-        </div>
 
-        <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80 mb-4 font-medium leading-relaxed">
-          Lädt 3 Monate Testdaten mit "Max Mustermann" — alle原有 Daten werden überschrieben.
-        </p>
-
-        <button
-            onClick={() => {
-              Haptics.impact({ style: ImpactStyle.Medium });
-              if (window.confirm("Demo-Daten laden? Alle bisherigen Daten werden ersetzt!")) {
-                const demoUser = { ...DEMO_DATA.user };
-                const demoEntries = DEMO_DATA.generateEntries();
-                localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
-                localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(demoEntries));
-                localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(DEMO_DATA.workCodes));
-                localStorage.removeItem(STORAGE_KEYS.LAST_CODE);
-                toast.success("Demo-Daten geladen! Seite wird neu geladen...");
-                setTimeout(() => window.location.reload(), 1000);
-              }
-            }}
-            className="w-full py-3 bg-white dark:bg-zinc-800 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-bold rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors flex items-center justify-center gap-2"
-        >
-            <FlaskConical size={18} /> Demo-Daten laden
-        </button>
-      </Card>
 
       {/* 8. DANGER ZONE */}
       <Card className="p-5 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/10">

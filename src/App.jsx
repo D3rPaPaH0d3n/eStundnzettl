@@ -15,10 +15,8 @@ import {
   parseTime, 
   getTargetMinutesForDate, 
   checkForUpdate,
-  toLocalDateString // NEU: Wichtig für Zeitzonen-Fix!
 } from "./utils";
 
-// NEU: Imports aus constants - WORK_CODES entfernt, useWorkCodes hinzugefügt
 import { WORK_MODELS, STORAGE_KEYS, WORK_CODE } from "./hooks/constants";
 import { useWorkCodes } from "./hooks/useWorkCodes";
 
@@ -52,17 +50,11 @@ const pageVariants = { initial: { opacity: 0, x: 20 }, in: { opacity: 1, x: 0 },
 const pageTransition = { type: "tween", ease: "anticipate", duration: 0.3 };
 const reportVariants = { initial: { y: "100%", opacity: 0 }, in: { y: 0, opacity: 1 }, out: { y: "100%", opacity: 0 } };
 
-// Migration beim App-Start ausführen
+// Run once on module import
 migrateStorageKeys();
 
-// 🔍 DEBUG: Backup Status beim Start
-console.log("━━━━━━━━━ APP START ━━━━━━━━━");
-console.log("Cloud:", localStorage.getItem("estundnzettl_cloud_sync_enabled"));
-console.log("Lokal:", localStorage.getItem("estundnzettl_local_backup_enabled"));
-console.log("Backup Target:", localStorage.getItem("estundnzettl_backup_target"));
-console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
 export default function App() {
+
   // --- 1. DATEN & LOGIK ÜBER HOOKS ---
   const { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries } = useEntries();
   const { userData, setUserData, theme, setTheme, autoBackup, setAutoBackup } = useSettings();
@@ -118,7 +110,6 @@ export default function App() {
   }, []); // Hier wurde der fehlende Abschluss hinzugefügt
 
   useEffect(() => {
-    // FIX: toLocalDateString statt toISOString
     const todayStr = toLocalDateString(new Date());
     const target = getTargetMinutesForDate(todayStr, userData?.workDays);
     setTodayTarget(target);
@@ -270,7 +261,6 @@ export default function App() {
       return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
     });
     const today = new Date();
-    // FIX: toLocalDateString statt toISOString
     const todayStr = toLocalDateString(today);
 
     const holidayEntries = [];
@@ -364,7 +354,6 @@ export default function App() {
 
   const startNewEntry = () => {
     form.setEditingEntry(null); form.setEntryType("work"); 
-    // FIX: toLocalDateString statt toISOString
     form.setFormDate(toLocalDateString(new Date()));
     form.setStartTime("06:00"); form.setEndTime("16:30"); form.setPauseDuration(30); form.setProject(""); 
     form.setCode(getDefaultCode());

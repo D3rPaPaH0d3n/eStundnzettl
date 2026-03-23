@@ -33,7 +33,6 @@ export const useLiveTimer = () => {
     };
   });
 
-  // NEU: State für das automatische Ausstempeln
   const [autoCheckoutData, setAutoCheckoutData] = useState(null);
 
   useEffect(() => {
@@ -52,9 +51,7 @@ export const useLiveTimer = () => {
                         startDate.getFullYear() === now.getFullYear();
 
       if (!isSameDay) {
-        // AUTOMATISCHER STOPP!
-        console.log("Auto-Checkout triggered: Start date was in the past.");
-        
+        // Auto-stop: timer started on a past day — close it out at 23:59
         // Endzeit auf 23:59 des Start-Tages setzen
         const autoEnd = new Date(startDate);
         autoEnd.setHours(23, 59, 0, 0);

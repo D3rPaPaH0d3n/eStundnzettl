@@ -127,7 +127,7 @@ const Dashboard = ({
           <div className="flex flex-wrap justify-between items-center text-xs pt-1">
              <div className="text-zinc-500 dark:text-zinc-400">
                {stats.drive > 0 && (
-                 <> <span>Fahrzeit (19): </span> <span className="font-semibold">{formatTime(stats.drive)}</span> </>
+                 <> <span>Fahrzeit ({WORK_CODE.DRIVE}): </span> <span className="font-semibold">{formatTime(stats.drive)}</span> </>
                )}
              </div>
 
@@ -274,9 +274,9 @@ const Dashboard = ({
                                           } 
 
                                           return ( 
-                                            <div key={entry.id} className="relative overflow-hidden bg-red-500"> 
-                                              <div className="absolute inset-0 flex items-center justify-end pr-4 text-white"> <Trash2 size={20} /> </div> 
-                                              <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.5, right: 0.05 }} onDragEnd={(_, info) => { if (info.offset.x < -80) { Haptics.impact({ style: ImpactStyle.Heavy }); onDeleteEntry(entry.id); } }} onClick={() => onEditEntry(entry)} className={`relative z-10 bg-white dark:bg-zinc-800 ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`} layout > 
+                                            <div key={entry.id} className="relative overflow-hidden"> 
+                                              <div className="absolute inset-0 flex items-center justify-end pr-4 text-white bg-red-500"> <Trash2 size={20} /> </div> 
+                                              <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.5, right: 0.05 }} onDragEnd={(_, info) => { if (info.offset.x < -80) { Haptics.impact({ style: ImpactStyle.Heavy }); onDeleteEntry(entry.id); } }} onClick={() => onEditEntry(entry)} className={`relative z-10 bg-white dark:bg-zinc-800 overflow-hidden ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`} layout > 
                                                 <div className={`p-3 flex justify-between items-start gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${isTimeComp ? "bg-purple-50/30 dark:bg-purple-900/10" : ""}`}> 
                                                   <div className="min-w-0 flex-1 flex flex-col gap-1"> 
                                                     <div className={`font-bold text-sm leading-none ${isTimeComp ? "text-purple-700 dark:text-purple-400" : "text-zinc-900 dark:text-zinc-100"}`}> {timeLabel} {pauseLabel && <span className="font-normal opacity-70">{pauseLabel}</span>} </div> 

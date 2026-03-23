@@ -77,7 +77,6 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
                 <button
                   key={model.id}
                   onClick={() => applyPreset(model.days)}
-                  // CHANGE: border-slate -> border-zinc, hover:border-orange -> hover:border-emerald, bg-orange -> bg-emerald
                   className="flex items-center justify-between p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-all text-left group"
                 >
                   <div>
@@ -85,7 +84,6 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
                     <div className="text-xs text-zinc-500 dark:text-zinc-400">{model.description}</div>
                   </div>
                   {JSON.stringify(days) === JSON.stringify(model.days) && (
-                    // CHANGE: text-orange -> text-emerald
                     <Check size={18} className="text-emerald-500" />
                   )}
                 </button>
@@ -112,7 +110,6 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
                         </label>
                         <div 
                             onClick={() => handleDayClick(idx)}
-                            // CHANGE: bg-white -> zinc styles, hover:border-orange -> hover:border-emerald
                             className={`w-full h-10 flex items-center justify-center rounded-lg text-sm font-bold border transition-colors cursor-pointer select-none active:scale-95 ${
                                 days[idx] > 0 
                                 ? "bg-white dark:bg-zinc-700 border-zinc-300 dark:border-zinc-600 text-zinc-800 dark:text-white hover:border-emerald-500" 
@@ -140,7 +137,6 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
           </button>
           <button 
             onClick={() => onSave(days)}
-            // CHANGE: bg-slate -> bg-emerald (Primary)
             className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg flex justify-center items-center gap-2"
           >
             <Check size={18} />

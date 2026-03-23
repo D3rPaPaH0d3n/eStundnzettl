@@ -54,8 +54,6 @@ const UpdateModal = ({ updateData, onClose }) => {
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          // CHANGE: bg-white dark:bg-slate-900 -> bg-white dark:bg-zinc-900
-          // CHANGE: border-slate-200 -> border-zinc-200
           className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800"
         >
           {/* Header mit schönem Farbverlauf */}
@@ -89,7 +87,6 @@ const UpdateModal = ({ updateData, onClose }) => {
             <div className="flex gap-3 pt-2">
               <button 
                 onClick={onClose}
-                // CHANGE: text-slate-500 -> text-zinc-500, hover:bg-slate-100 -> hover:bg-zinc-100
                 className="flex-1 py-3 font-bold text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 rounded-xl transition-colors"
               >
                 Später
@@ -98,7 +95,6 @@ const UpdateModal = ({ updateData, onClose }) => {
               {/* Button nur anzeigen wenn Download URL da ist (meist APK) */}
               <button 
                 onClick={handleDownload}
-                // CHANGE: bg-slate-900 -> bg-emerald-600 (Primary Action)
                 className="flex-[2] py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 <Download size={20} />

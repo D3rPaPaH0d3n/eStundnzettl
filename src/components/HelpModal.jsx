@@ -37,8 +37,6 @@ const HelpModal = ({ isOpen, onClose }) => {
             onDragEnd={(_, info) => {
               if (info.offset.y > 100) onClose();
             }}
-            // CHANGE: bg-white dark:bg-slate-900 -> bg-white dark:bg-zinc-900
-            // CHANGE: border-slate-200 -> border-zinc-200
             className={`
               fixed z-[160] flex flex-col bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden
               inset-x-0 bottom-0 rounded-t-3xl border-t border-zinc-200 dark:border-zinc-800
@@ -48,8 +46,6 @@ const HelpModal = ({ isOpen, onClose }) => {
           >
             {/* DRAG HANDLE */}
             <div 
-              // CHANGE: bg-white dark:bg-slate-900 -> bg-white dark:bg-zinc-900
-              // CHANGE: bg-slate-200 -> bg-zinc-200
               className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-zinc-900 shrink-0 cursor-grab active:cursor-grabbing touch-none"
               onPointerDown={(e) => dragControls.start(e)}
             >
@@ -67,7 +63,6 @@ const HelpModal = ({ isOpen, onClose }) => {
               </div>
               <button 
                 onClick={onClose} 
-                // CHANGE: bg-slate-100 -> bg-zinc-100, text-slate-500 -> text-zinc-500, hover:text-slate-800 -> hover:text-zinc-800
                 className="p-2 -mr-2 -mt-2 bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors"
               >
                 <X size={24} />
@@ -76,7 +71,6 @@ const HelpModal = ({ isOpen, onClose }) => {
 
             {/* CONTENT */}
             <div 
-              // CHANGE: bg-white dark:bg-slate-900 -> bg-white dark:bg-zinc-900
               className="overflow-y-auto p-5 scrollbar-hide space-y-8 bg-white dark:bg-zinc-900"
               style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}
             >

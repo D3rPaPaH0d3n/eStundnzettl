@@ -52,15 +52,13 @@ const migrateKoglerKeys = () => {
       localStorage.setItem(newKey, oldValue);
       localStorage.removeItem(oldKey);
       migrationCount++;
-      console.log(`✅ Migriert: ${oldKey} → ${newKey}`);
+
     }
   });
 
   localStorage.setItem("estundnzettl_migrated", "true");
   
-  if (migrationCount > 0) {
-    console.log(`🎉 Storage-Migration abgeschlossen! ${migrationCount} Keys migriert.`);
-  }
+  // Migration completed silently
 };
 
 // -------------------------------------------------------
@@ -87,7 +85,7 @@ const migrateWorkCodes = () => {
       STORAGE_KEYS.WORK_CODES, 
       JSON.stringify(WORK_CODE_PRESETS.kogler.codes)
     );
-    console.log("✅ Work Codes Migration: Kogler-Preset für bestehenden User geladen.");
+
   }
 
   localStorage.setItem("estundnzettl_workcodes_migrated", "true");

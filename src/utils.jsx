@@ -5,7 +5,6 @@ import { APP_VERSION, GITHUB, WORK_CODE } from "./hooks/constants";
 // HELPER-FUNKTIONEN
 // -------------------------------------------------------
 
-// NEU: Sichere Datumsumwandlung (verhindert den Zeitzonen-Bug!)
 export const toLocalDateString = (date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -13,8 +12,6 @@ export const toLocalDateString = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-// CHANGE: bg-white dark:bg-slate-800 -> bg-white dark:bg-zinc-800
-// CHANGE: border-slate-200 -> border-zinc-200
 export const Card = ({ children, className = "" }) => (
   <div
     className={`bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden ${className}`}
@@ -176,7 +173,6 @@ export const calculatePeriodStats = (
   const weeklyMap = {}; // Zum Sammeln für die 40h Regel
 
   while (loopDate <= loopEnd) {
-    // FIX: Hier nutzen wir jetzt die lokale Umwandlung statt toISOString!
     const dateStr = toLocalDateString(loopDate);
     const target = getTargetMinutesForDate(dateStr, userData?.workDays);
     stats.totalTarget += target;
@@ -215,7 +211,6 @@ export const calculatePeriodStats = (
 };
 
 // -------------------------------------------------------
-// NEU: WOCHEN-HELPER (Zentralisiert)
 // -------------------------------------------------------
 
 /**
@@ -274,7 +269,6 @@ export const getHolidayData = (year) => {
   const addDays = (date, days) => {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
-    // FIX: Auch hier lokale Umwandlung nutzen, sonst verschieben sich Ostern & Co.
     return toLocalDateString(d);
   };
 

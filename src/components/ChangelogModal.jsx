@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-// FIX: Building2 hinzugefügt
 import { X, Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Sliders, Download, Cloud, Building2 } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
@@ -72,7 +71,7 @@ const CHANGELOG_DATA = [
         ]
       },
       {
-        icon: Building2, // Hier wurde es verwendet, ohne importiert zu sein
+        icon: Building2,
         title: "Neutral & Flexibel",
         items: [
           "Deine Firma: Du kannst jetzt in den Einstellungen deinen eigenen Firmennamen hinterlegen.",
@@ -504,8 +503,6 @@ const ChangelogModal = ({ isOpen, onClose }) => {
             dragListener={false}
             dragControls={dragControls}
             onDragEnd={(_, info) => { if (info.offset.y > 100) onClose(); }}
-            // CHANGE: bg-white dark:bg-slate-900 -> bg-white dark:bg-zinc-900
-            // CHANGE: border-slate-200 -> border-zinc-200
             className={`
               fixed z-[160] flex flex-col bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden
               inset-x-0 bottom-0 rounded-t-3xl border-t border-zinc-200 dark:border-zinc-800
@@ -515,8 +512,6 @@ const ChangelogModal = ({ isOpen, onClose }) => {
           >
             {/* DRAG HANDLE */}
             <div 
-                // CHANGE: bg-white dark:bg-slate-900 -> bg-white dark:bg-zinc-900
-                // CHANGE: bg-slate-200 -> bg-zinc-200
                 className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-zinc-900 shrink-0 cursor-grab active:cursor-grabbing touch-none" 
                 onPointerDown={(e) => dragControls.start(e)}
             >
@@ -542,8 +537,6 @@ const ChangelogModal = ({ isOpen, onClose }) => {
               style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}
             >
               {CHANGELOG_DATA.map((release, idx) => (
-                // CHANGE: border-slate-100 -> border-zinc-100
-                // CHANGE: bg-orange-50 -> bg-emerald-50 (für Major Highlights)
                 <div key={release.version} className={`p-6 ${idx < CHANGELOG_DATA.length - 1 ? 'border-b border-zinc-100 dark:border-zinc-800' : ''} ${release.isMajor ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : ''}`}>
                   
                   <div className="flex justify-between items-baseline mb-3">
@@ -569,7 +562,6 @@ const ChangelogModal = ({ isOpen, onClose }) => {
                         </h4>
                         <ul className="space-y-2">
                           {section.items.map((item, iIdx) => (
-                            // CHANGE: text-slate-600 -> text-zinc-600
                             <li key={iIdx} className="text-sm text-zinc-600 dark:text-zinc-300 flex items-start gap-2 leading-relaxed">
                               {/* CHANGE: bg-slate-300 -> bg-zinc-300 */}
                               <span className="block w-1.5 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-600 mt-1.5 shrink-0" />

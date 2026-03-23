@@ -57,7 +57,6 @@ const Settings = ({
 
   useEffect(() => {
     initGoogleAuth();
-    // FIX: Hier lesen wir jetzt den korrekten Key aus der constants.js
     setIsCloudConnected(localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true");
     setHasBackupFolder(hasBackupTarget());
   }, []);
@@ -172,7 +171,6 @@ const Settings = ({
     if (isCloudConnected) {
         try {
             await signOutGoogle();
-            // FIX: Auch beim Logout den neuen Key entfernen
             localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
             setIsCloudConnected(false);
             setAutoBackup(false); // UI State syncen
@@ -187,7 +185,6 @@ const Settings = ({
         try {
             const user = await signInGoogle();
             if (user && user.authentication.accessToken) {
-                // FIX: Beim Login den neuen Key setzen
                 localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
                 setIsCloudConnected(true);
                 if (!autoBackup) setAutoBackup(true); // Aktiviert auch den Hook

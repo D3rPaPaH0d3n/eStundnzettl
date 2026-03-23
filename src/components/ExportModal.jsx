@@ -30,7 +30,6 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            // CHANGE: bg-white dark:bg-slate-800 -> bg-white dark:bg-zinc-800
             className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
           >
             {/* Header */}
@@ -41,10 +40,8 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
                   {/* CHANGE: bg-orange-100 -> bg-emerald-100 */}
                   <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
                     {isPdf ? (
-                      // CHANGE: text-orange-600 -> text-emerald-600
                       <FileText size={22} className="text-emerald-600 dark:text-emerald-400" />
                     ) : (
-                      // CHANGE: text-orange-600 -> text-emerald-600
                       <HardDrive size={22} className="text-emerald-600 dark:text-emerald-400" />
                     )}
                   </div>
@@ -61,7 +58,6 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
                 </div>
                 <button
                   onClick={onClose}
-                  // CHANGE: hover:bg-slate-100 -> hover:bg-zinc-100
                   className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full transition-colors"
                 >
                   {/* CHANGE: text-slate-400 -> text-zinc-400 */}
@@ -75,7 +71,6 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
               {/* Option 1: Ordner / Documents */}
               <button
                 onClick={() => handleChoice('folder')}
-                // CHANGE: bg-slate-50 -> bg-zinc-50, hover:bg-zinc-100, border-zinc-200
                 className="w-full flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl border border-zinc-200 dark:border-zinc-600 transition-all active:scale-[0.98]"
               >
                 <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
@@ -99,7 +94,6 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
               {/* Option 2: Teilen */}
               <button
                 onClick={() => handleChoice('share')}
-                // CHANGE: bg-slate-50 -> bg-zinc-50, hover:bg-zinc-100, border-zinc-200
                 className="w-full flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl border border-zinc-200 dark:border-zinc-600 transition-all active:scale-[0.98]"
               >
                 <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
@@ -122,7 +116,6 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
             <div className="px-4 pb-4">
               <button
                 onClick={onClose}
-                // CHANGE: text-slate-500 -> text-zinc-500, hover:bg-slate-50 -> hover:bg-zinc-50
                 className="w-full py-3 text-zinc-500 dark:text-zinc-400 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-700/50 rounded-xl transition-colors"
               >
                 Abbrechen

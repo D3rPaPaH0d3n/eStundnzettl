@@ -15,7 +15,6 @@ import SelectionDrawer from "./SelectionDrawer";
 
 registerLocale("de", de);
 
-// CHANGE: slate -> zinc, focus:border-orange -> focus:border-emerald
 const CustomInput = forwardRef(({ value, onClick, icon: Icon }, ref) => (
   <button
     type="button"
@@ -191,7 +190,6 @@ const EntryForm = ({
                    handleCopyLastEntry();
                    Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
                  }}
-                 // CHANGE: Orange -> Emerald für diesen "Action Button"
                  className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-800/50"
                >
                  <Wand2 size={12} />
@@ -204,7 +202,7 @@ const EntryForm = ({
             {/* WORK */}
             <button type="button" onClick={() => { setEntryType("work"); setCode(defaultCode); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "work" && code !== WORK_CODE.ARRIVAL ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}>Arbeit</button>
             {/* FAHRT (Bleibt Orange als Kategorie-Farbe) */}
-            <button type="button" onClick={() => { setEntryType("drive"); setCode(WORK_CODE.DRIVE); setPauseDuration(0); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "drive" || code === WORK_CODE.ARRIVAL ? "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Fahrt</button>
+            <button type="button" onClick={() => { setEntryType("drive"); setCode(WORK_CODE.DRIVE); setPauseDuration(0); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "drive" || code === WORK_CODE.ARRIVAL ? "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Fahrt</button>
             {/* KRANK (Rot) */}
             <button type="button" onClick={() => setEntryType("sick")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "sick" ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Krank</button>
             {/* URLAUB (Blau) */}
@@ -218,7 +216,7 @@ const EntryForm = ({
               <button type="button" onClick={() => { setEntryType("work"); setCode(WORK_CODE.ARRIVAL); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${code === WORK_CODE.ARRIVAL ? "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 ring-2 ring-green-500 ring-offset-1" : "bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300"}`}>
                 <span>An/Abreise</span><span className="text-[10px] uppercase bg-green-200 dark:bg-green-800 px-1 rounded text-green-800 dark:text-green-200">Bezahlt</span>
               </button>
-              <button type="button" onClick={() => { setEntryType("drive"); setCode(WORK_CODE.DRIVE); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${entryType === "drive" && code === WORK_CODE.DRIVE ? "bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-400 ring-2 ring-orange-500 ring-offset-1" : "bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300"}`}>
+              <button type="button" onClick={() => { setEntryType("drive"); setCode(WORK_CODE.DRIVE); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${entryType === "drive" && code === WORK_CODE.DRIVE ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-400 ring-2 ring-emerald-500 ring-offset-1" : "bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300"}`}>
                 <span>Fahrtzeit</span><span className="text-[10px] uppercase bg-zinc-200 dark:bg-zinc-600 px-1 rounded text-zinc-600 dark:text-zinc-300">Unbezahlt</span>
               </button>
             </div>
@@ -261,7 +259,7 @@ const EntryForm = ({
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Start</label>
-                  {/* CHANGE: active:border-orange -> active:border-emerald */}
+
                   <button type="button" onClick={() => setActiveTimeField('start')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
                     <span className="flex-1 text-center text-lg">{startTime}</span>
                     <Clock size={18} className="text-zinc-400 ml-2" />
@@ -374,7 +372,6 @@ const EntryForm = ({
                         <div 
                           key={idx}
                           onMouseDown={() => selectSuggestion(s)}
-                          // CHANGE: hover:bg-orange -> hover:bg-emerald
                           className="px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer border-b border-zinc-50 dark:border-zinc-700 last:border-0"
                         >
                           {s}
@@ -389,7 +386,7 @@ const EntryForm = ({
 
           <div className="pt-2 flex gap-3">
             <button type="button" onClick={onCancel} className="flex-1 py-3 font-bold text-zinc-500 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-xl">Abbrechen</button>
-            {/* CHANGE: bg-slate-900/orange-500 -> bg-zinc-900 / bg-emerald-600 */}
+
             <button type="submit" className="flex-[2] py-3 font-bold text-white bg-zinc-900 dark:bg-emerald-600 hover:bg-zinc-800 dark:hover:bg-emerald-700 rounded-xl shadow-lg flex items-center justify-center gap-2"><Save size={18} /> Speichern</button>
           </div>
         </form>

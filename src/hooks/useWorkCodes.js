@@ -33,7 +33,7 @@ useEffect(() => {
         const defaultCodes = JSON.parse(JSON.stringify(defaultPreset.codes));
         localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(defaultCodes));
         setWorkCodes(defaultCodes);
-        console.log("✅ Neue User: 'Allgemein' Preset als Default geladen");
+
       }
     }
     setIsLoading(false);
@@ -101,7 +101,7 @@ useEffect(() => {
     // Deep copy um Referenzprobleme zu vermeiden
     const codes = JSON.parse(JSON.stringify(preset.codes));
     saveWorkCodes(codes);
-    console.log(`✅ Preset "${preset.name}" geladen (${codes.length} Codes)`);
+
     return true;
   }, [saveWorkCodes]);
 
@@ -122,13 +122,13 @@ useEffect(() => {
     const newCodes = preset.codes.filter((c) => !existingIds.has(c.id));
     
     if (newCodes.length === 0) {
-      console.log("Keine neuen Codes zum Hinzufügen.");
+
       return false;
     }
 
     const mergedCodes = [...workCodes, ...newCodes];
     saveWorkCodes(mergedCodes);
-    console.log(`✅ ${newCodes.length} Codes aus "${preset.name}" hinzugefügt`);
+
     return true;
   }, [workCodes, saveWorkCodes]);
 

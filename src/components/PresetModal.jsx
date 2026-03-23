@@ -49,7 +49,6 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }) => {
             </h3>
             <button 
                 onClick={onClose}
-                // CHANGE: hover:bg-slate -> hover:bg-zinc, text-slate -> text-zinc
                 className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors text-zinc-500 dark:text-zinc-400"
             >
                 <X size={20} />
@@ -64,8 +63,6 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }) => {
                     <div 
                         key={model.id}
                         onClick={() => setSelectedId(model.id)}
-                        // CHANGE: border-orange -> border-emerald, bg-orange -> bg-emerald
-                        // CHANGE: border-slate -> border-zinc, hover:border-orange -> hover:border-emerald
                         className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between group
                             ${isSelected 
                                 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" 
@@ -84,7 +81,6 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }) => {
                         </div>
                         
                         {isSelected && (
-                            // CHANGE: text-orange -> text-emerald
                             <Check size={22} strokeWidth={3} className="text-emerald-500" />
                         )}
                     </div>
@@ -113,7 +109,6 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }) => {
             </button>
             <button 
                 onClick={handleSave}
-                // CHANGE: bg-slate-900 -> bg-emerald-600 (Primary Action)
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center gap-2"
             >
                 <Save size={18} />

@@ -3,7 +3,7 @@ import { Check, X } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
-const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, title }) => {
+const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, title, minuteInterval = 15 }) => {
   const hoursRef = useRef(null);
   const decimalsRef = useRef(null);
   const dragControls = useDragControls();
@@ -17,9 +17,18 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
     const m = mins % 60;
     
     let d = 0;
-    if (m >= 45) d = 0.75;
-    else if (m >= 30) d = 0.5;
-    else if (m >= 15) d = 0.25;
+    if (minuteInterval === 1) {
+      // 1-Minuten-Schritte: Minuten als Dezimalbruch (z.B. 30 Minuten = 0.5)
+      d = m / 60;
+      // Auf nächsten Schritt runden
+      const step = 1 / 60; // 1 Minute = 0.016666...
+      d = Math.round(d / step) * step;
+    } else {
+      // 15-Minuten-Schritte (default)
+      if (m >= 45) d = 0.75;
+      else if (m >= 30) d = 0.5;
+      else if (m >= 15) d = 0.25;
+    }
     
     return { h, d };
   };
@@ -47,8 +56,20 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
     }
   };
 
-  const hours = Array.from({ length: 25 }, (_, i) => i); 
-  const decimals = [0, 0.25, 0.5, 0.75]; 
+  const hours = Array.from({ length: 25 }, (_, i) => i);
+  
+  // Dezimalwerte basierend auf minuteInterval
+  const getDecimals = () => {
+    if (minuteInterval === 1) {
+      // 1-Minuten-Schritte: 0 bis 59 Minuten als Dezimalbruch
+      return Array.from({ length: 60 }, (_, i) => i / 60);
+    } else {
+      // 15-Minuten-Schritte (default)
+      return [0, 0.25, 0.5, 0.75];
+    }
+  };
+  
+  const decimals = getDecimals(); 
 
   const handleScroll = (e, type) => {
     const scrollTop = e.target.scrollTop;
@@ -76,11 +97,18 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   };
 
   const formatDecimal = (d) => {
-    if (d === 0) return ", 00";
-    if (d === 0.25) return ", 25";
-    if (d === 0.5) return ", 50";
-    if (d === 0.75) return ", 75";
-    return String(d).replace("0.", ", "); 
+    if (minuteInterval === 1) {
+      // 1-Minuten-Schritte: Minuten als zweistellige Zahl
+      const minutes = Math.round(d * 60);
+      return `, ${minutes.toString().padStart(2, '0')}`;
+    } else {
+      // 15-Minuten-Schritte
+      if (d === 0) return ", 00";
+      if (d === 0.25) return ", 25";
+      if (d === 0.5) return ", 50";
+      if (d === 0.75) return ", 75";
+      return String(d).replace("0.", ", ");
+    }
   };
 
   return (

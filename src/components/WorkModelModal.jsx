@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { X, Check, RotateCcw, Calendar } from "lucide-react";
+import { X, Check, RotateCcw, Calendar, Clock } from "lucide-react";
 import { WORK_MODELS } from "../hooks/constants";
 import DecimalDurationPicker from "./DecimalDurationPicker";
+import { useSettings } from "../hooks/useSettings";
 
 const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
   const [days, setDays] = useState(currentWorkDays || [0, 0, 0, 0, 0, 0, 0]);
+  const { userData } = useSettings();
   
   const [showPicker, setShowPicker] = useState(false);
   const [activeDayIdx, setActiveDayIdx] = useState(null);
+  const [useMinutePrecision, setUseMinutePrecision] = useState(false);
 
   const FULL_DAY_NAMES = [
     "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"
@@ -17,11 +20,24 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
     if (isOpen && currentWorkDays) {
       setDays([...currentWorkDays]);
     }
-  }, [isOpen, currentWorkDays]);
+    // Set minute precision based on user setting
+    if (isOpen && userData?.minuteInput !== undefined) {
+      setUseMinutePrecision(userData.minuteInput);
+    }
+  }, [isOpen, currentWorkDays, userData]);
 
   if (!isOpen) return null;
 
-  const minToHours = (m) => (m === 0 ? "" : Number(m / 60).toFixed(2).replace('.', ',')); 
+  const minToHours = (m) => {
+    if (m === 0) return "";
+    if (useMinutePrecision) {
+      // Bei 1-Minuten-Präzision: Stunden mit 2 Dezimalstellen
+      return (m / 60).toFixed(2).replace('.', ',');
+    } else {
+      // Bei 15-Minuten-Schritten: Stunden mit 2 Dezimalstellen (immer .00, .25, .50, .75)
+      return (m / 60).toFixed(2).replace('.', ',');
+    }
+  }; 
   
   const handleDayClick = (index) => {
     setActiveDayIdx(index); 
@@ -62,9 +78,24 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
             <Calendar className="text-emerald-500" size={20} />
             Arbeitszeit Modell
           </h3>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
-            <X size={20} className="text-zinc-500" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Minute Precision Toggle */}
+            <button 
+              onClick={() => setUseMinutePrecision(!useMinutePrecision)}
+              className={`p-2 rounded-full transition-colors flex items-center gap-1 ${
+                useMinutePrecision 
+                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" 
+                  : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+              }`}
+              title={useMinutePrecision ? "1-Minuten-Schritte" : "15-Minuten-Schritte"}
+            >
+              <Clock size={16} />
+              <span className="text-xs font-bold">{useMinutePrecision ? "1'" : "15'"}</span>
+            </button>
+            <button onClick={onClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
+              <X size={20} className="text-zinc-500" />
+            </button>
+          </div>
         </div>
 
         <div className="overflow-y-auto p-4 space-y-6">
@@ -151,6 +182,7 @@ const WorkModelModal = ({ isOpen, onClose, currentWorkDays, onSave }) => {
         initialMinutes={activeDayIdx !== null ? days[activeDayIdx] : 0}
         onConfirm={handlePickerConfirm}
         title={getPickerTitle()}
+        minuteInterval={useMinutePrecision ? 1 : 15}
       />
     </div>
   );

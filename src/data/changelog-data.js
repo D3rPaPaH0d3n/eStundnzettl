@@ -22,7 +22,8 @@ export const CHANGELOG_DATA = [
       title: "Neue Features",
       items: [
         "Neu: Demo-Daten laden in den Entwickler-Optionen (Einstellungen)",
-        "Neu: Export/Import sichert jetzt auch Tätigkeitscodes mit"
+        "Neu: Export/Import sichert jetzt auch Tätigkeitscodes mit",
+        "Neu: Demo-Daten direkt im Onboarding ausprobieren (ohne App zu überschreiben)"
       ]
     },
     {

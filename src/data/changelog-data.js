@@ -7,6 +7,23 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.8",
+  date: "23.03.2026",
+  title: "Updates 🔄",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Chore: deduplicate changelog entries, extract AUTH_STATE to constants, remove unused form helpers",
+        "Refactor: remove dead code hooks and deduplicate helper functions"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.7",
   date: "23.03.2026",

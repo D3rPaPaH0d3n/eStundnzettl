@@ -1,6 +1,150 @@
 import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Sliders, Download, Cloud, Building2 } from "lucide-react";
 
 export const CHANGELOG_DATA = [
+
+
+
+  {
+  version: "6.3.3",
+  date: "23.03.2026",
+  title: "Neue Features & Bugfixes 🛠️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: ChangelogModal overlay and scrolling behavior"
+      ]
+    },
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Chore: add v6.3.2 changelog"
+      ]
+    },
+    {
+      iconName: 'Sparkles',
+      title: "Neue Features",
+      items: [
+        "Neu: add manual backup button, last backup display, and offline warning",
+        "Neu: add optional minute-level time input (1-min intervals) as toggle in onboarding and settings"
+      ]
+    },
+    {
+      iconName: 'Rocket',
+      title: "Performance",
+      items: [
+        "Perf: lazy-load changelog data + icons as separate chunk, reduce initial bundle"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.3",
+  date: "23.03.2026",
+  title: "Neue Features & Bugfixes 🛠️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: ChangelogModal overlay and scrolling behavior",
+        "Fix: escape quotes in changelog strings",
+        "Fix: sync APP_VERSION in constants.js during version bump, update changelog to v6.2.5"
+      ]
+    },
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Chore: add v6.3.2 changelog"
+      ]
+    },
+    {
+      iconName: 'Sparkles',
+      title: "Neue Features",
+      items: [
+        "Neu: add manual backup button, last backup display, and offline warning",
+        "Neu: add optional minute-level time input (1-min intervals) as toggle in onboarding and settings"
+      ]
+    },
+    {
+      iconName: 'Rocket',
+      title: "Performance",
+      items: [
+        "Perf: lazy-load changelog data + icons as separate chunk, reduce initial bundle"
+      ]
+    },
+    {
+      iconName: 'FileText',
+      title: "Dokumentation",
+      items: [
+        "Docs: add Demo onboarding feature to changelog v6.2.3"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.3",
+  date: "23.03.2026",
+  title: "Neue Features & Bugfixes 🛠️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: ChangelogModal overlay and scrolling behavior",
+        "Fix: bump versionCode to 68 (67 already used), versionName 6.3.3",
+        "Fix: escape quotes in changelog strings",
+        "Fix: sync APP_VERSION in constants.js during version bump, update changelog to v6.2.5",
+        "Fix: fix grep regex for versionName extraction, add bump_version step id"
+      ]
+    },
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Chore: add v6.3.2 changelog",
+        "Chore: bump to v6.3.2 for Play Store deploy",
+        "Chore: sync versionName to v6.3.1",
+        "Chore: bump to v6.3.0 for Play Store deploy",
+        "Chore: update changelog to v6.3.0, add minute input feature",
+        "Chore: bump to v6.2.6 for Play Store deploy",
+        "Chore: bump to v6.2.5 for Play Store deploy",
+        "Chore: bump version to v6.2.4 in constants and changelog",
+        "Chore: bump to v6.2.4 for Play Store deploy",
+        "Chore: bump versionCode for Play Store deploy"
+      ]
+    },
+    {
+      iconName: 'Sparkles',
+      title: "Neue Features",
+      items: [
+        "Neu: add manual backup button, last backup display, and offline warning",
+        "Neu: add optional minute-level time input (1-min intervals) as toggle in onboarding and settings"
+      ]
+    },
+    {
+      iconName: 'Rocket',
+      title: "Performance",
+      items: [
+        "Perf: lazy-load changelog data + icons as separate chunk, reduce initial bundle",
+        "CI: add SemVer versionName bumping (patch/minor/major) to deploy workflow"
+      ]
+    },
+    {
+      iconName: 'FileText',
+      title: "Dokumentation",
+      items: [
+        "Docs: add Demo onboarding feature to changelog v6.2.3"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.2",
   date: "23.03.2026",

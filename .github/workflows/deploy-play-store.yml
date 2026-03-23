@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed for git log and tags
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -78,31 +80,22 @@ jobs:
           CURRENT_CODE=${{ steps.read_versions.outputs.version_code }}
           CURRENT_NAME=${{ steps.read_versions.outputs.version_name }}
 
-          # Bump versionCode
           NEXT_CODE=$((CURRENT_CODE + 1))
           sed -i "s/versionCode $CURRENT_CODE/versionCode $NEXT_CODE/" android/app/build.gradle
           echo "versionCode: $CURRENT_CODE → $NEXT_CODE"
 
-          # Parse versionName (x.y.z)
           IFS='.' read -r major minor patch <<< "$CURRENT_NAME"
           echo "Parsed version: $major.$minor.$patch"
 
-          # Apply bump type
           case "$BUMP_TYPE" in
             major)
-              new_major=$((major + 1))
-              new_minor=0
-              new_patch=0
+              new_major=$((major + 1)); new_minor=0; new_patch=0
               ;;
             minor)
-              new_major=$major
-              new_minor=$((minor + 1))
-              new_patch=0
+              new_major=$major; new_minor=$((minor + 1)); new_patch=0
               ;;
             patch)
-              new_major=$major
-              new_minor=$minor
-              new_patch=$((patch + 1))
+              new_major=$major; new_minor=$minor; new_patch=$((patch + 1))
               ;;
           esac
 
@@ -111,7 +104,6 @@ jobs:
           echo "versionName: $CURRENT_NAME → $NEW_NAME ($BUMP_TYPE bump)"
           echo "new_version_name=$NEW_NAME" >> $GITHUB_OUTPUT
 
-          # Sync APP_VERSION in constants.js
           sed -i "s/APP_VERSION = \"[^\"]*\"/APP_VERSION = \"v$NEW_NAME\"/" src/hooks/constants.js
           echo "constants.js updated to v$NEW_NAME"
 
@@ -153,12 +145,35 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: python3 .github/workflows/scripts/deploy-play.py
 
-      - name: Commit version bump
+      - name: Generate changelog from commits
+        id: changelog
+        if: github.event.inputs.skip_version_bump != 'true'
+        run: |
+          python3 .github/workflows/scripts/generate-changelog.py
+
+      - name: Commit version bump and changelog
         if: github.event.inputs.skip_version_bump != 'true'
         run: |
           NEW_NAME=${{ steps.bump_version.outputs.new_version_name }}
-          git config user.name "GitHub Actions" && \
-          git config user.email "actions@github.com" && \
-          git add android/app/build.gradle src/hooks/constants.js && \
-          git commit -m "chore: bump to v$NEW_NAME for Play Store deploy" || true && \
-          git push origin main || echo "Push blocked by branch protection"
+
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          # Stage version files
+          git add android/app/build.gradle src/hooks/constants.js
+
+          # Add changelog if it was updated
+          if git diff --name-only | grep -q "changelog-data.js"; then
+            git add src/data/changelog-data.js
+          fi
+
+          # Only commit if there are staged changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: bump to v$NEW_NAME and update changelog"
+            git push origin main && \
+              git tag "v$NEW_NAME" -a -m "Version v$NEW_NAME" && \
+              git push origin "v$NEW_NAME" || \
+              echo "Push or tag blocked (may already exist)"
+          fi

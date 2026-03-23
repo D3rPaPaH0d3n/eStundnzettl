@@ -5,6 +5,22 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.6",
+  date: "23.03.2026",
+  title: "Neue Features ✨",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Sparkles',
+      title: "Neue Features",
+      items: [
+        "Neu: add minute precision toggle to WorkModelModal"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.5",
   date: "23.03.2026",

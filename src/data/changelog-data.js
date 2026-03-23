@@ -12,8 +12,8 @@ export const CHANGELOG_DATA = [
       icon: Cloud,
       title: "Backup",
       items: [
-        "Neu: "Jetzt sichern"-Button für sofortiges Backup (Google Drive + Lokal)",
-        "Neu: Letztes Backup wird angezeigt ("vor X Min./Std.")",
+        "Neu: 'Jetzt sichern'-Button für sofortiges Backup (Google Drive + Lokal)",
+        "Neu: Letztes Backup wird angezeigt ('vor X Min./Std.')",
         "Neu: Offline-Warnung wenn Google Drive Token abgelaufen"
       ]
     }

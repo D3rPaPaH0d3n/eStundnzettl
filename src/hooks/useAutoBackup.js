@@ -58,6 +58,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
           if (authResponse?.accessToken) {
             await uploadOrUpdateFile(authResponse.accessToken, BACKUP_CONFIG.FILENAME, payload);
             lastHash.current = currentHash;
+            localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, new Date().toISOString());
           }
         } catch (cloudErr) {
           // Silent fail for cloud backup
@@ -66,6 +67,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
 
       if (localActive && !cloudActive) {
         lastHash.current = currentHash;
+        localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, new Date().toISOString());
       }
     } catch (err) {
       // Silent fail

@@ -14,7 +14,7 @@ import HelpModal from "./HelpModal";
 import WorkCodeManager from "./WorkCodeManager";
 import { initGoogleAuth, signInGoogle, signOutGoogle } from "../utils/googleDrive";
 import { DEMO_DATA } from "../utils/demoData";
-import { selectBackupFolder, hasBackupTarget, clearBackupTarget, analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
+import { selectBackupFolder, hasBackupTarget, clearBackupTarget, analyzeBackupData, applyBackup, readJsonFile, triggerManualBackup } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
 import PresetModal from "./PresetModal";
 import DecimalDurationPicker from "./DecimalDurationPicker"; 
@@ -40,6 +40,9 @@ const Settings = ({
   
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [hasBackupFolder, setHasBackupFolder] = useState(false);
+  const [lastBackupDate, setLastBackupDate] = useState(null);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isTokenValid, setIsTokenValid] = useState(true);
 
   const [pendingImport, setPendingImport] = useState(null); 
   const importInputRef = useRef(null);
@@ -56,10 +59,31 @@ const Settings = ({
 
   const [isLocked, setIsLocked] = useState(true);
 
+  const formatLastBackup = (isoString) => {
+    if (!isoString) return null;
+    const diff = Date.now() - new Date(isoString).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "gerade eben";
+    if (mins < 60) return `vor ${mins} Min.`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `vor ${hrs} Std.`;
+    const days = Math.floor(hrs / 24);
+    return `vor ${days} Tag${days > 1 ? "en" : ""}`;
+  };
+
   useEffect(() => {
     initGoogleAuth();
     setIsCloudConnected(localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true");
     setHasBackupFolder(hasBackupTarget());
+    const saved = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
+    if (saved) setLastBackupDate(saved);
+    // Check if we have a valid stored auth token
+    try {
+      const stored = JSON.parse(localStorage.getItem("google_auth_state") || "null");
+      setIsTokenValid(!!stored?.accessToken);
+    } catch {
+      setIsTokenValid(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -221,6 +245,32 @@ const Settings = ({
         } catch (err) {
             toast.error("Auswahl abgebrochen");
         }
+    }
+  };
+
+  const handleManualBackup = async () => {
+    if (isBackingUp) return;
+    Haptics.impact({ style: ImpactStyle.Light });
+    setIsBackingUp(true);
+    try {
+      const result = await triggerManualBackup();
+      if (result.success) {
+        const now = new Date().toISOString();
+        setLastBackupDate(now);
+        if (result.gdrive && result.local) {
+          toast.success("Backup gespeichert (Drive + Lokal)");
+        } else if (result.gdrive) {
+          toast.success("Backup zu Google Drive gesendet");
+        } else {
+          toast.success("Lokales Backup erstellt");
+        }
+      } else {
+        toast.error(result.message || "Backup fehlgeschlagen");
+      }
+    } catch (e) {
+      toast.error("Backup fehlgeschlagen");
+    } finally {
+      setIsBackingUp(false);
     }
   };
 
@@ -565,10 +615,17 @@ const Settings = ({
                 <div className={`p-2 rounded-full ${isCloudConnected ? "bg-blue-100 text-blue-600" : "bg-zinc-200 text-zinc-400"}`}>
                     {isCloudConnected ? <Cloud size={20} /> : <CloudOff size={20} />}
                 </div>
-                <div>
-                    <span className="block font-bold text-sm text-zinc-800 dark:text-white">Google Drive</span>
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                        <span className="block font-bold text-sm text-zinc-800 dark:text-white">Google Drive</span>
+                        {isCloudConnected && !isTokenValid && (
+                          <span title="Token abgelaufen — bitte neu anmelden" className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded-full">
+                            <AlertTriangle size={10} /> Offline
+                          </span>
+                        )}
+                    </div>
                     <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                        {isCloudConnected ? "Sync Aktiv" : "Nicht verbunden"}
+                        {isCloudConnected ? (isTokenValid ? "Sync Aktiv" : "Token abgelaufen") : "Nicht verbunden"}
                     </span>
                 </div>
             </div>
@@ -599,6 +656,33 @@ const Settings = ({
                 {hasBackupFolder ? "Trennen" : "Wählen"}
             </button>
         </div>
+
+        {/* Letztes Backup + Jetzt sichern */}
+        {(isCloudConnected || hasBackupFolder) && (
+          <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-3 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-600">
+                {isBackingUp ? <Loader size={18} className="animate-spin" /> : <HardDrive size={18} />}
+              </div>
+              <div>
+                <span className="block font-bold text-sm text-emerald-700 dark:text-emerald-300">
+                  {isBackingUp ? "Sichere..." : "Backup"}
+                </span>
+                <span className="block text-xs text-emerald-600 dark:text-emerald-400">
+                  {lastBackupDate ? `Zuletzt: ${formatLastBackup(lastBackupDate)}` : "Noch nie gesichert"}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleManualBackup}
+              disabled={isBackingUp}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {isBackingUp ? <Loader size={14} className="animate-spin" /> : <Upload size={14} />}
+              {isBackingUp ? "Sichere..." : "Jetzt sichern"}
+            </button>
+          </div>
+        )}
         
         <div className="grid grid-cols-2 gap-2 pt-2">
           <button 

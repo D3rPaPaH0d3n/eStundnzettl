@@ -1,6 +1,7 @@
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
-import { STORAGE_KEYS } from "../hooks/constants";
+import { STORAGE_KEYS, BACKUP_CONFIG } from "../hooks/constants";
+import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "./googleDrive";
 
 // =========================================================
 // BACKUP ORDNER
@@ -220,5 +221,61 @@ export const applyBackup = (analyzedData, mode = 'ALL') => {
   } catch (error) {
     console.error("Fehler beim Anwenden des Backups:", error);
     return false;
+  }
+};
+
+// 6. MANUELLER BACKUP (für "Jetzt sichern"-Button)
+export const triggerManualBackup = async () => {
+  try {
+    const userData = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null');
+    const entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]');
+    const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
+    const localActive = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
+
+    if (!entries || entries.length === 0) {
+      return { success: false, message: "Keine Daten zum Sichern" };
+    }
+
+    const payload = {
+      user: userData,
+      entries,
+      lastModified: new Date().toISOString(),
+      note: "eStundnzettl Manueller Backup",
+      version: "v6"
+    };
+
+    let gdriveOk = false;
+    let localOk = false;
+
+    if (cloudActive) {
+      try {
+        await initGoogleAuth().catch(() => {});
+        const auth = await getValidToken();
+        if (auth?.accessToken) {
+          await uploadOrUpdateFile(auth.accessToken, BACKUP_CONFIG.FILENAME, payload);
+          gdriveOk = true;
+        }
+      } catch (e) {
+        // cloud backup failed silently
+      }
+    }
+
+    if (localActive) {
+      try {
+        await writeBackupFile(BACKUP_CONFIG.FILENAME, payload);
+        localOk = true;
+      } catch (e) {
+        // local backup failed silently
+      }
+    }
+
+    if (gdriveOk || localOk) {
+      localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, new Date().toISOString());
+      return { success: true, gdrive: gdriveOk, local: localOk };
+    }
+
+    return { success: false, message: "Kein Backup-Ziel konfiguriert" };
+  } catch (err) {
+    return { success: false, message: "Backup fehlgeschlagen" };
   }
 };

@@ -6,14 +6,14 @@ on:
   workflow_dispatch:
     inputs:
       skip_version_bump:
-        description: 'Skip version bump'
+        description: Skip version bump
         required: false
         default: 'false'
         type: boolean
 
 jobs:
   deploy-internal:
-    name: Build & Deploy AAB to Internal Testing
+    name: Build & Deploy AAB
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -52,24 +52,17 @@ jobs:
           find node_modules/@capacitor -name "build.gradle" \
             -exec sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" {} \;
 
-      - name: Read current versionCode
-        id: read_version
-        run: |
-          CURRENT=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
-          echo "current=$CURRENT" >> $GITHUB_OUTPUT
-          echo "Current versionCode: $CURRENT"
-
       - name: Bump versionCode
         if: github.event.inputs.skip_version_bump != 'true'
         run: |
-          NEXT=$(( ${{ steps.read_version.outputs.current }} + 1 ))
-          sed -i "s/versionCode\s*${{ steps.read_version.outputs.current }}/versionCode $NEXT/" android/app/build.gradle
-          echo "Bumped versionCode: ${{ steps.read_version.outputs.current }} → $NEXT"
-          echo "next=$NEXT" >> $GITHUB_OUTPUT
+          CURRENT=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
+          NEXT=$((CURRENT + 1))
+          sed -i "s/versionCode\s*$CURRENT/versionCode $NEXT/" android/app/build.gradle
+          echo "Bumped versionCode: $CURRENT -> $NEXT"
 
-      - name: Show versionCode (no bump mode)
+      - name: Show current versionCode
         if: github.event.inputs.skip_version_bump == 'true'
-        run: echo "Version bump skipped, using versionCode ${{ steps.read_version.outputs.current }}"
+        run: grep -oP 'versionCode\s+\K\d+' android/app/build.gradle
 
       - name: Build release AAB
         run: |
@@ -108,67 +101,10 @@ jobs:
         run: |
           echo "$PLAY_DEPLOY_KEY_BASE64" | base64 -d > /tmp/play-key.json
 
-      - name: Deploy to Play Console (Internal Testing)
-        run: python3 << 'PYEOF'
-import os
-from google.auth.transport.requests import Request
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-from googleapiclient.errors import HttpError
-
-PACKAGE = "com.estundnzettl.app"
-AAB_PATH = "android/app/build/outputs/bundle/release/app-release.aab"
-
-# Get version code from file
-with open("android/app/build.gradle") as f:
-    import re
-    match = re.search(r'versionCode\s+(\d+)', f.read())
-    VERSION_CODE = match.group(1) if match else "0"
-
-SCOPES = ["https://www.googleapis.com/auth/androidpublisher"]
-creds = service_account.Credentials.from_service_account_file(
-    "/tmp/play-key.json", scopes=SCOPES
-)
-service = build("androidpublisher", "v3", credentials=creds)
-
-# Create edit
-edit = service.edits().insert(body={}, packageName=PACKAGE).execute()
-edit_id = edit["id"]
-print(f"Edit: {edit_id}")
-
-# Upload AAB
-media = MediaFileUpload(AAB_PATH, mimetype="application/octet-stream", resumable=True)
-bundle = service.edits().bundles().upload(
-    packageName=PACKAGE, editId=edit_id, media_body=media
-).execute()
-vc = bundle["versionCode"]
-print(f"Uploaded: versionCode {vc}")
-
-# Get existing internal track releases
-try:
-    track = service.edits().tracks().get(
-        packageName=PACKAGE, editId=edit_id, track="internal"
-    ).execute()
-    releases = track.get("releases", [])
-except HttpError:
-    releases = []
-
-# Replace with new release only
-new_releases = [{
-    "versionCodes": [str(vc)],
-    "status": "completed",
-    "name": f"v{vc} - GitHub Actions Auto-Deploy"
-}]
-service.edits().tracks().update(
-    packageName=PACKAGE, editId=edit_id, track="internal",
-    body={"releases": new_releases}
-).execute()
-
-# Commit
-commit = service.edits().commit(packageName=PACKAGE, editId=edit_id).execute()
-print(f"✅ Deployed versionCode {vc} to Internal Testing!")
-PYEOF
+      - name: Deploy to Play Console
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/play-key.json
+        run: python3 .github/scripts/deploy-play.py
 
       - name: Commit version bump
         if: github.event.inputs.skip_version_bump != 'true'
@@ -177,4 +113,4 @@ PYEOF
           git config user.email "actions@github.com"
           git add android/app/build.gradle
           git commit -m "chore: bump versionCode for Play Store deploy" || echo "Nothing to commit"
-          git push origin main || echo "Push blocked (branch protection)"
+          git push origin main || echo "Push skipped"

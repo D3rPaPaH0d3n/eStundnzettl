@@ -55,32 +55,6 @@ export function useFormState({ getDefaultCode }) {
     setIsLiveEntry(false);
   };
 
-  // --- Populate from live timer stop ---
-  const startFromLive = (result) => {
-    setFormDate(toLocalDateStr(result.start));
-    setEntryType("work");
-    setStartTime(toLocalHHMM(result.start));
-    setEndTime(toLocalHHMM(result.end));
-    setPauseDuration(result.pause);
-    setProject("");
-    setCode(getDefaultCode());
-    setEditingEntry(null);
-    setIsLiveEntry(true);
-  };
-
-  // --- Populate from auto-checkout ---
-  const startFromAutoCheckout = (autoCheckoutData) => {
-    setFormDate(toLocalDateStr(autoCheckoutData.start));
-    setEntryType("work");
-    setStartTime(toLocalHHMM(autoCheckoutData.start));
-    setEndTime(toLocalHHMM(autoCheckoutData.end));
-    setPauseDuration(autoCheckoutData.pause);
-    setProject("");
-    setCode(getDefaultCode());
-    setEditingEntry(null);
-    setIsLiveEntry(true);
-  };
-
   // --- Populate from existing entry (edit mode) ---
   const startEdit = (entry) => {
     const isDrive = entry.type === "work" && entry.code === WORK_CODE.DRIVE;
@@ -113,8 +87,6 @@ export function useFormState({ getDefaultCode }) {
     isLiveEntry, setIsLiveEntry,
     // Actions
     resetForm,
-    startFromLive,
-    startFromAutoCheckout,
     startEdit,
   };
 }

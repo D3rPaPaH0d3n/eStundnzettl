@@ -6,14 +6,14 @@ on:
   workflow_dispatch:
     inputs:
       skip_version_bump:
-        description: Skip version bump
+        description: 'Skip version bump'
         required: false
         default: 'false'
         type: boolean
 
 jobs:
   deploy-internal:
-    name: Build & Deploy AAB
+    name: Build & Deploy AAB to Internal Testing
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -52,28 +52,27 @@ jobs:
           find node_modules/@capacitor -name "build.gradle" \
             -exec sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" {} \;
 
+      - name: Read current versionCode
+        id: read_version
+        run: |
+          CURRENT=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+
       - name: Bump versionCode
         if: github.event.inputs.skip_version_bump != 'true'
         run: |
-          CURRENT=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
-          NEXT=$((CURRENT + 1))
-          sed -i "s/versionCode\s*$CURRENT/versionCode $NEXT/" android/app/build.gradle
-          echo "Bumped versionCode: $CURRENT -> $NEXT"
-
-      - name: Show current versionCode
-        if: github.event.inputs.skip_version_bump == 'true'
-        run: grep -oP 'versionCode\s+\K\d+' android/app/build.gradle
+          NEXT=$(( ${{ steps.read_version.outputs.current }} + 1 ))
+          sed -i "s/versionCode ${{ steps.read_version.outputs.current }}/versionCode $NEXT/" android/app/build.gradle
+          echo "Bumped: ${{ steps.read_version.outputs.current }} → $NEXT"
 
       - name: Build release AAB
         run: |
-          cd android
-          ./gradlew bundleRelease --no-daemon
+          cd android && ./gradlew bundleRelease --no-daemon
 
       - name: Decode keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
+        run: echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
 
       - name: Sign AAB
         env:
@@ -98,19 +97,17 @@ jobs:
       - name: Decode service account key
         env:
           PLAY_DEPLOY_KEY_BASE64: ${{ secrets.PLAY_DEPLOY_KEY_BASE64 }}
-        run: |
-          echo "$PLAY_DEPLOY_KEY_BASE64" | base64 -d > /tmp/play-key.json
+        run: echo "$PLAY_DEPLOY_KEY_BASE64" | base64 -d > /tmp/play-key.json
 
-      - name: Deploy to Play Console
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/play-key.json
-        run: python3 .github/scripts/deploy-play.py
+      - name: Deploy to Play Console (Internal Testing)
+        working-directory: ${{ github.workspace }}
+        run: python3 .github/workflows/scripts/deploy-play.py
 
       - name: Commit version bump
         if: github.event.inputs.skip_version_bump != 'true'
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add android/app/build.gradle
-          git commit -m "chore: bump versionCode for Play Store deploy" || echo "Nothing to commit"
-          git push origin main || echo "Push skipped"
+          git config user.name "GitHub Actions" && \
+          git config user.email "actions@github.com" && \
+          git add android/app/build.gradle && \
+          git commit -m "chore: bump versionCode for Play Store deploy" || true && \
+          git push origin main || echo "Push blocked by branch protection"

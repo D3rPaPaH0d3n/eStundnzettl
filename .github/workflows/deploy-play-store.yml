@@ -10,6 +10,15 @@ on:
         required: false
         default: 'false'
         type: boolean
+      version_bump:
+        description: 'Version bump type (only used when skip_version_bump is false)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 jobs:
   deploy-internal:
@@ -52,18 +61,54 @@ jobs:
           find node_modules/@capacitor -name "build.gradle" \
             -exec sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" {} \;
 
-      - name: Read current versionCode
-        id: read_version
+      - name: Read versions
+        id: read_versions
         run: |
-          CURRENT=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
-          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          CURRENT_CODE=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
+          CURRENT_NAME=$(grep -oP 'versionName\s+"([^"]+)"' android/app/build.gradle | grep -oP '(?<=versionName\s+")[^(]+')
+          echo "version_code=$CURRENT_CODE" >> $GITHUB_OUTPUT
+          echo "version_name=$CURRENT_NAME" >> $GITHUB_OUTPUT
+          echo "Bumping versionName from $CURRENT_NAME"
 
-      - name: Bump versionCode
+      - name: Bump versionCode and versionName
         if: github.event.inputs.skip_version_bump != 'true'
         run: |
-          NEXT=$(( ${{ steps.read_version.outputs.current }} + 1 ))
-          sed -i "s/versionCode ${{ steps.read_version.outputs.current }}/versionCode $NEXT/" android/app/build.gradle
-          echo "Bumped: ${{ steps.read_version.outputs.current }} → $NEXT"
+          BUMP_TYPE=${{ github.event.inputs.version_bump || 'patch' }}
+          CURRENT_CODE=${{ steps.read_versions.outputs.version_code }}
+          CURRENT_NAME=${{ steps.read_versions.outputs.version_name }}
+
+          # Bump versionCode
+          NEXT_CODE=$((CURRENT_CODE + 1))
+          sed -i "s/versionCode $CURRENT_CODE/versionCode $NEXT_CODE/" android/app/build.gradle
+          echo "versionCode: $CURRENT_CODE → $NEXT_CODE"
+
+          # Parse versionName (x.y.z)
+          IFS='.' read -r major minor patch <<< "$CURRENT_NAME"
+          echo "Parsed version: $major.$minor.$patch"
+
+          # Apply bump type
+          case "$BUMP_TYPE" in
+            major)
+              new_major=$((major + 1))
+              new_minor=0
+              new_patch=0
+              ;;
+            minor)
+              new_major=$major
+              new_minor=$((minor + 1))
+              new_patch=0
+              ;;
+            patch)
+              new_major=$major
+              new_minor=$minor
+              new_patch=$((patch + 1))
+              ;;
+          esac
+
+          NEW_NAME="${new_major}.${new_minor}.${new_patch}"
+          sed -i "s/versionName \"$CURRENT_NAME\"/versionName \"$NEW_NAME\"/" android/app/build.gradle
+          echo "versionName: $CURRENT_NAME → $NEW_NAME ($BUMP_TYPE bump)"
+          echo "new_version_name=$NEW_NAME" >> $GITHUB_OUTPUT
 
       - name: Build release AAB
         run: |
@@ -106,8 +151,9 @@ jobs:
       - name: Commit version bump
         if: github.event.inputs.skip_version_bump != 'true'
         run: |
+          NEW_NAME=${{ steps.read_versions.outputs.new_version_name || steps.read_versions.outputs.version_name }}
           git config user.name "GitHub Actions" && \
           git config user.email "actions@github.com" && \
           git add android/app/build.gradle && \
-          git commit -m "chore: bump versionCode for Play Store deploy" || true && \
+          git commit -m "chore: bump to v$NEW_NAME for Play Store deploy" || true && \
           git push origin main || echo "Push blocked by branch protection"

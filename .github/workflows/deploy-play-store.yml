@@ -111,6 +111,10 @@ jobs:
           echo "versionName: $CURRENT_NAME → $NEW_NAME ($BUMP_TYPE bump)"
           echo "new_version_name=$NEW_NAME" >> $GITHUB_OUTPUT
 
+          # Sync APP_VERSION in constants.js
+          sed -i "s/APP_VERSION = \"[^\"]*\"/APP_VERSION = \"v$NEW_NAME\"/" src/hooks/constants.js
+          echo "constants.js updated to v$NEW_NAME"
+
       - name: Build release AAB
         run: |
           cd android && ./gradlew bundleRelease --no-daemon
@@ -155,6 +159,6 @@ jobs:
           NEW_NAME=${{ steps.bump_version.outputs.new_version_name }}
           git config user.name "GitHub Actions" && \
           git config user.email "actions@github.com" && \
-          git add android/app/build.gradle && \
+          git add android/app/build.gradle src/hooks/constants.js && \
           git commit -m "chore: bump to v$NEW_NAME for Play Store deploy" || true && \
           git push origin main || echo "Push blocked by branch protection"

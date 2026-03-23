@@ -2,7 +2,7 @@ import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Slid
 
 export const CHANGELOG_DATA = [
   {
-  version: "6.2.4",
+  version: "6.2.5",
   date: "23.03.2026",
   title: "Demo-Daten & Export-Fix ⚡",
   isMajor: false,

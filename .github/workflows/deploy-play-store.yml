@@ -65,12 +65,13 @@ jobs:
         id: read_versions
         run: |
           CURRENT_CODE=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
-          CURRENT_NAME=$(grep -oP 'versionName\s+"([^"]+)"' android/app/build.gradle | grep -oP '(?<=versionName\s+")[^(]+')
+          CURRENT_NAME=$(grep -oP 'versionName\s+"\K[^"]+' android/app/build.gradle)
           echo "version_code=$CURRENT_CODE" >> $GITHUB_OUTPUT
           echo "version_name=$CURRENT_NAME" >> $GITHUB_OUTPUT
           echo "Bumping versionName from $CURRENT_NAME"
 
       - name: Bump versionCode and versionName
+        id: bump_version
         if: github.event.inputs.skip_version_bump != 'true'
         run: |
           BUMP_TYPE=${{ github.event.inputs.version_bump || 'patch' }}
@@ -106,7 +107,7 @@ jobs:
           esac
 
           NEW_NAME="${new_major}.${new_minor}.${new_patch}"
-          sed -i "s/versionName \"$CURRENT_NAME\"/versionName \"$NEW_NAME\"/" android/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$NEW_NAME\"/" android/app/build.gradle
           echo "versionName: $CURRENT_NAME → $NEW_NAME ($BUMP_TYPE bump)"
           echo "new_version_name=$NEW_NAME" >> $GITHUB_OUTPUT
 
@@ -151,7 +152,7 @@ jobs:
       - name: Commit version bump
         if: github.event.inputs.skip_version_bump != 'true'
         run: |
-          NEW_NAME=${{ steps.read_versions.outputs.new_version_name || steps.read_versions.outputs.version_name }}
+          NEW_NAME=${{ steps.bump_version.outputs.new_version_name }}
           git config user.name "GitHub Actions" && \
           git config user.email "actions@github.com" && \
           git add android/app/build.gradle && \

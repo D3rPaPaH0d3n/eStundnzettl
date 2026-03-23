@@ -1,12 +1,12 @@
 ﻿import { SocialLogin } from '@capgo/capacitor-social-login';
-import { BACKUP_CONFIG, STORAGE_KEYS } from '../hooks/constants';
+import { BACKUP_CONFIG } from '../hooks/constants';
 
 // --- CONFIG ---
 const WEB_CLIENT_ID = "618528142382-pes4415amf381rk4bjovlamgh4emhrov.apps.googleusercontent.com";
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
 
 // Token Storage
-const TOKEN_STORAGE_KEY = STORAGE_KEYS.AUTH_STATE;
+const TOKEN_STORAGE_KEY = "google_auth_state";
 
 const getStoredAuth = () => {
   try {

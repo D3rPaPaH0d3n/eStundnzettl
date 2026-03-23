@@ -36,7 +36,6 @@ export const STORAGE_KEYS = {
   // Temporäre/Status Keys
   LAST_CODE: "estundnzettl_last_code",
   LIVE_TIMER: "estundnzettl_live_timer",
-  AUTH_STATE: "google_auth_state",
   
   // @Deprecated - Wir nutzen jetzt CLOUD_SYNC_ENABLED für Präzision
   // AUTO_BACKUP: "estundnzettl_auto_backup", 

@@ -107,6 +107,16 @@ jobs:
           sed -i "s/APP_VERSION = \"[^\"]*\"/APP_VERSION = \"v$NEW_NAME\"/" src/hooks/constants.js
           echo "constants.js updated to v$NEW_NAME"
 
+          # Sync package.json (single source of truth for version)
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$NEW_NAME';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log('package.json → $NEW_NAME');
+          "
+          echo "package.json synced to $NEW_NAME"
+
       - name: Build release AAB
         run: |
           cd android && ./gradlew bundleRelease --no-daemon
@@ -159,8 +169,8 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-          # Stage version files
-          git add android/app/build.gradle src/hooks/constants.js
+          # Stage version files (including package.json as source of truth)
+          git add android/app/build.gradle src/hooks/constants.js package.json
 
           # Add changelog if it was updated
           if git diff --name-only | grep -q "changelog-data.js"; then

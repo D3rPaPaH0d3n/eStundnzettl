@@ -3,12 +3,17 @@ import { Check, X } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
-const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
+const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInterval = 15 }) => {
   const hoursRef = useRef(null);
   const minutesRef = useRef(null);
   const dragControls = useDragControls();
   
-  const ITEM_HEIGHT = 64; 
+  const ITEM_HEIGHT = 64;
+  
+  // minuteInterval: 1 = every minute, 15 = every 15 minutes
+  const minutes = minuteInterval === 1
+    ? Array.from({ length: 60 }, (_, i) => i)
+    : [0, 15, 30, 45];
 
   useEffect(() => {
     if (isOpen) {
@@ -27,7 +32,6 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
 
   const [selectedHour, selectedMinute] = value ? value.split(":").map(Number) : [6, 0];
   const hours = Array.from({ length: 24 }, (_, i) => i);
-  const minutes = [0, 15, 30, 45];
 
   const updateTime = (h, m) => {
     const hh = String(h).padStart(2, "0");
@@ -37,7 +41,7 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }) => {
 
   const handleScroll = (e, type) => {
     const scrollTop = e.target.scrollTop;
-    const index = Math.round(scrollTop / ITEM_HEIGHT);
+    const index = Math.min(Math.max(0, Math.round(scrollTop / ITEM_HEIGHT)), minutes.length - 1);
     
     if (type === 'hour') {
       const newHour = hours[index];

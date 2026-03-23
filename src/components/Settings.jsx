@@ -488,7 +488,32 @@ const Settings = ({
         </div>
       </Card>
 
-      {/* 3. TÄTIGKEITSCODES */}
+      {/* 3. ZEITEINGABE */}
+      <Card className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">⏱️</div>
+            <div>
+              <h3 className="font-bold text-zinc-700 dark:text-white">Minütige Zeiteingabe</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {userData?.minuteInput ? "1-Minuten-Modus aktiv" : "Standard: 15-Min-Schritte"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setUserData(p => ({ ...p, minuteInput: !p?.minuteInput }))}
+            className={`relative w-12 h-7 rounded-full transition-colors duration-200 shrink-0 ${
+              userData?.minuteInput ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-600"
+            }`}
+          >
+            <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+              userData?.minuteInput ? "translate-x-6" : "translate-x-1"
+            }`} />
+          </button>
+        </div>
+      </Card>
+
+      {/* 4. TÄTIGKEITSCODES */}
       <Card className="p-5 space-y-3">
         <h3 className="font-bold text-zinc-700 dark:text-white flex items-center gap-2">
             <ListChecks size={18} className="text-sky-500" />

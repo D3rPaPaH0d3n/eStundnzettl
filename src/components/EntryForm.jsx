@@ -165,6 +165,7 @@ const EntryForm = ({
         title={activeTimeField === 'start' ? "Startzeit" : "Endzeit"}
         value={activeTimeField === 'start' ? startTime : endTime}
         onChange={(val) => activeTimeField === 'start' ? setStartTime(val) : setEndTime(val)}
+        minuteInterval={userData?.minuteInput ? 1 : 15}
       />
 
       <SelectionDrawer

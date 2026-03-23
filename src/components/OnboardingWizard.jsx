@@ -20,7 +20,8 @@ const OnboardingWizard = ({ onComplete }) => {
     photo: null,
     workDays: WORK_MODELS[0].days, 
     autoBackup: false,
-    localBackupEnabled: false 
+    localBackupEnabled: false,
+    minuteInput: false,
   });
   
   const [restoreData, setRestoreData] = useState(null);
@@ -134,6 +135,10 @@ const OnboardingWizard = ({ onComplete }) => {
     }
   };
 
+  const handleMinuteInputToggle = () => {
+    setFormData(p => ({...p, minuteInput: !p.minuteInput}));
+  };
+
   // --- FINISH (BUGFIX: Persistenz korrigiert) ---
   const finishSetup = () => {
     // 1. User Daten speichern
@@ -144,6 +149,7 @@ const OnboardingWizard = ({ onComplete }) => {
       position: formData.role, 
       photo: formData.photo,
       workDays: formData.workDays,
+      minuteInput: formData.minuteInput,
       // Legacy settings im User-Objekt (optional, für Rückwärtskompatibilität)
       settings: {
         autoBackup: formData.autoBackup,
@@ -477,6 +483,27 @@ const OnboardingWizard = ({ onComplete }) => {
                           </div>
                       </div>
                   )}
+                </div>
+
+                {/* Minütige Zeiteingabe Toggle */}
+                <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">⏱️</div>
+                    <div>
+                      <div className="font-bold text-sm text-zinc-800 dark:text-white">Minütige Zeiteingabe</div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400"> statt in 15-Min-Schritten</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleMinuteInputToggle}
+                    className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
+                      formData.minuteInput ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-600"
+                    }`}
+                  >
+                    <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                      formData.minuteInput ? "translate-x-6" : "translate-x-1"
+                    }`} />
+                  </button>
                 </div>
               </motion.div>
             )}

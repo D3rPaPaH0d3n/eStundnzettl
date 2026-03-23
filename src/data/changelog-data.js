@@ -2,9 +2,9 @@ import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Slid
 
 export const CHANGELOG_DATA = [
   {
-  version: "6.2.5",
+  version: "6.3.0",
   date: "23.03.2026",
-  title: "Demo-Daten & Export-Fix ⚡",
+  title: "Minütige Zeiteingabe ⚡",
   isMajor: false,
   sections: [
     {
@@ -23,7 +23,8 @@ export const CHANGELOG_DATA = [
       items: [
         "Neu: Demo-Daten laden in den Entwickler-Optionen (Einstellungen)",
         "Neu: Export/Import sichert jetzt auch Tätigkeitscodes mit",
-        "Neu: Demo-Daten direkt im Onboarding ausprobieren (ohne App zu überschreiben)"
+        "Neu: Demo-Daten direkt im Onboarding ausprobieren (ohne App zu überschreiben)",
+        "Neu: Minütige Zeiteingabe (1-Min statt 15-Min Schritte) — in Einstellungen & Onboarding umschaltbar"
       ]
     },
     {

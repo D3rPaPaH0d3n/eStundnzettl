@@ -3,7 +3,7 @@ import {
   User, Sun, Camera, Trash2, Upload, Loader, 
   History, BookOpen, RefreshCw, Briefcase, Calendar, 
   Cloud, CloudOff, CheckCircle2, HardDrive, List, Lock, Unlock, AlertTriangle, Building2,
-  ListChecks, FlaskConical
+  ListChecks, FlaskConical, Settings as SettingsIcon
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -548,7 +548,7 @@ const Settings = ({
       {/* 3. EINSTELLUNGEN & DATEN */}
       <Card className="p-5 space-y-4">
         <h3 className="font-bold text-zinc-700 dark:text-white flex items-center gap-2 mb-2">
-          <Settings size={18} className="text-emerald-500" />
+          <SettingsIcon size={18} className="text-emerald-500" />
           <span>Einstellungen & Daten</span>
         </h3>
         

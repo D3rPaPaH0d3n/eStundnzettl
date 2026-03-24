@@ -10,7 +10,13 @@ export function useSettings() {
       const stored = localStorage.getItem(STORAGE_KEYS.USER);
       if (stored && stored !== "undefined") {
         const parsed = JSON.parse(stored);
-        if (parsed && typeof parsed === "object") return parsed;
+        if (parsed && typeof parsed === "object") {
+          // Ensure workDays always exists and is valid
+          if (!Array.isArray(parsed.workDays) || parsed.workDays.length !== 7) {
+            parsed.workDays = [...WORK_MODELS[0].days];
+          }
+          return parsed;
+        }
       }
     } catch (e) { /* corrupt data */ }
     return {

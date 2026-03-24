@@ -1,6 +1,17 @@
 import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Sliders, Download, Cloud, Building2 } from "lucide-react";
 
 export const CHANGELOG_DATA = [
+  {
+    version: "6.3.16",
+    date: "24.03.2026",
+    title: "Kritischer Bugfix: Settings-Crash behoben",
+    icon: Bug,
+    color: "red",
+    changes: [
+      "Fix: Settings-Seite crashte durch rekursive Komponenten-Referenz (Settings-Icon war fälschlich die Komponente selbst)",
+      "Fix: workDays-Guard in useSettings — fehlende/ungültige Arbeitstage werden automatisch mit Standard-Modell aufgefüllt",
+    ]
+  },
 
 
 

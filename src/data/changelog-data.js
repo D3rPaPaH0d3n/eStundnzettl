@@ -10,6 +10,22 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.11",
+  date: "24.03.2026",
+  title: "Bugfixes 🔧",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: show actual error message in ErrorBoundary for debugging settings crash"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.10",
   date: "24.03.2026",

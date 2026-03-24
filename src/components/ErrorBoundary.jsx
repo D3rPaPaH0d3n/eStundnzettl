@@ -37,11 +37,21 @@ export default class ErrorBoundary extends React.Component {
             Die App ist abgestürzt. Bitte sende diese Fehlermeldung an den Entwickler:
           </p>
           <div className="w-full max-w-lg bg-zinc-800 rounded-xl p-4 mb-6 text-left overflow-auto max-h-64">
-            <p className="text-red-400 font-mono text-xs break-all">{errorMsg}</p>
+            <input
+              type="text"
+              readOnly
+              value={errorMsg}
+              className="w-full text-red-400 font-mono text-xs bg-transparent border-0 outline-none mb-2 cursor-text"
+              onClick={(e) => e.target.select()}
+            />
             {errorStack && (
-              <pre className="text-zinc-500 font-mono text-xs mt-2 whitespace-pre-wrap break-all max-h-32 overflow-auto">
-                {errorStack.substring(0, 1000)}
-              </pre>
+              <textarea
+                readOnly
+                value={errorStack.substring(0, 1500)}
+                className="w-full text-zinc-500 font-mono text-xs bg-transparent border-0 outline-none resize-none cursor-text"
+                rows={6}
+                onClick={(e) => e.target.select()}
+              />
             )}
           </div>
           <button

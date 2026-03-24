@@ -25,23 +25,31 @@ export default class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      const errorMsg = this.state.error?.toString() || "Unbekannter Fehler";
+      const errorStack = this.state.error?.stack || "";
       return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-6">
-          <div className="text-center max-w-sm">
-            <div className="text-5xl mb-4">😵</div>
-            <h1 className="text-xl font-bold text-zinc-800 dark:text-white mb-2">
-              Etwas ist schiefgelaufen
-            </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-              Ein unerwarteter Fehler ist aufgetreten. Deine Daten sind sicher gespeichert.
-            </p>
-            <button
-              onClick={this.handleReload}
-              className="px-6 py-3 bg-zinc-900 dark:bg-emerald-600 text-white font-bold rounded-xl shadow-lg hover:bg-zinc-800 dark:hover:bg-emerald-700 transition-colors"
-            >
-              App neu laden
-            </button>
+        <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-900 text-white p-6 overflow-auto">
+          <div className="text-6xl mb-4">😵</div>
+          <h1 className="text-2xl font-bold mb-2 text-center">
+            Fehler in den Einstellungen
+          </h1>
+          <p className="text-sm text-red-400 mb-4 text-center max-w-lg">
+            Die App ist abgestürzt. Bitte sende diese Fehlermeldung an den Entwickler:
+          </p>
+          <div className="w-full max-w-lg bg-zinc-800 rounded-xl p-4 mb-6 text-left overflow-auto max-h-64">
+            <p className="text-red-400 font-mono text-xs break-all">{errorMsg}</p>
+            {errorStack && (
+              <pre className="text-zinc-500 font-mono text-xs mt-2 whitespace-pre-wrap break-all max-h-32 overflow-auto">
+                {errorStack.substring(0, 1000)}
+              </pre>
+            )}
           </div>
+          <button
+            onClick={this.handleReload}
+            className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg hover:bg-emerald-700 transition-colors"
+          >
+            App neu laden
+          </button>
         </div>
       );
     }

@@ -13,6 +13,22 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.14",
+  date: "24.03.2026",
+  title: "Bugfixes 🔧",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: add safeUserData guard in Settings and fix useEntries/ useSettings against JSON.parse('undefined')"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.13",
   date: "24.03.2026",

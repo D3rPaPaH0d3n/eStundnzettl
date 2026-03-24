@@ -72,8 +72,13 @@ const Settings = ({
   };
 
   useEffect(() => {
-    initGoogleAuth();
-    setIsCloudConnected(localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true");
+    // Only init Google Auth when cloud sync is enabled — avoids potential
+    // WebView crash on Android 17 when SocialLogin plugin fails to init
+    const cloudEnabled = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
+    if (cloudEnabled) {
+      initGoogleAuth().catch(() => {});
+    }
+    setIsCloudConnected(cloudEnabled);
     setHasBackupFolder(hasBackupTarget());
     const saved = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
     if (saved) setLastBackupDate(saved);

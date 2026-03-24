@@ -114,3 +114,4 @@ Die vollständige Versionshistorie findest du in der App unter **Einstellungen �
 **Developed with ❤️ by Markus Kainer 🤝 Claude 🤝 Gemini**
 
 </div>
+# CI Pipeline: deploy-play-store.yml

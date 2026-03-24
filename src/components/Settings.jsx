@@ -131,7 +131,7 @@ const Settings = ({
   const handleDurationConfirm = (minutes) => {
     if (pickerTargetIndex === null) return;
     
-    const newWorkDays = [...userData.workDays];
+    const newWorkDays = [...safeUserData.workDays];
     newWorkDays[pickerTargetIndex] = minutes;
     
     setUserData({ ...userData, workDays: newWorkDays });
@@ -378,7 +378,7 @@ const Settings = ({
       <DecimalDurationPicker
         isOpen={showDurationPicker}
         onClose={() => setShowDurationPicker(false)}
-        initialMinutes={pickerTargetIndex !== null ? userData.workDays[pickerTargetIndex] : 0}
+        initialMinutes={pickerTargetIndex !== null ? safeUserData.workDays[pickerTargetIndex] : 0}
         onConfirm={handleDurationConfirm}
         title={pickerTargetIndex !== null ? `${["So","Mo","Di","Mi","Do","Fr","Sa"][pickerTargetIndex]} bearbeiten` : ""}
       />
@@ -393,8 +393,8 @@ const Settings = ({
             >
               {isProcessingImg ? (
                 <Loader className="animate-spin text-emerald-500" size={24} />
-              ) : userData.photo ? (
-                <img src={userData.photo} alt="Profil" className="w-full h-full object-cover" />
+              ) : safeUserData.photo ? (
+                <img src={safeUserData.photo} alt="Profil" className="w-full h-full object-cover" />
               ) : (
                 <User size={32} className="text-zinc-400 dark:text-zinc-500" />
               )}
@@ -405,7 +405,7 @@ const Settings = ({
               )}
             </div>
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-            {userData.photo && !isProcessingImg && (
+            {safeUserData.photo && !isProcessingImg && (
               <button 
                 onClick={removePhoto}
                 className="absolute -bottom-1 -right-1 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 p-1.5 rounded-full shadow-sm hover:scale-110 transition-transform border border-white dark:border-zinc-800"
@@ -426,7 +426,7 @@ const Settings = ({
                <User size={18} className="text-zinc-400" />
                <input
                 type="text"
-                value={userData.name || ""}
+                value={safeUserData.name || ""}
                 onChange={(e) => setUserData({ ...userData, name: e.target.value })}
                 className="w-full bg-transparent font-bold text-zinc-800 dark:text-white outline-none"
                 placeholder="Max Mustermann"
@@ -441,7 +441,7 @@ const Settings = ({
                <Building2 size={18} className="text-zinc-400" />
                <input
                 type="text"
-                value={userData.company || ""}
+                value={safeUserData.company || ""}
                 onChange={(e) => setUserData({ ...userData, company: e.target.value })}
                 className="w-full bg-transparent font-bold text-zinc-800 dark:text-white outline-none"
                 placeholder="Firmenname GmbH"
@@ -455,7 +455,7 @@ const Settings = ({
                <Briefcase size={18} className="text-zinc-400" />
                <input
                 type="text"
-                value={userData.position || ""}
+                value={safeUserData.position || ""}
                 onChange={(e) => setUserData({ ...userData, position: e.target.value })}
                 className="w-full bg-transparent font-bold text-zinc-800 dark:text-white outline-none"
                 placeholder="Monteur"
@@ -527,9 +527,9 @@ const Settings = ({
                                 }
                             `}
                         >
-                            {userData.workDays[dayIndex] > 0 ? minToHours(userData.workDays[dayIndex]) : "-"}
+                            {safeUserData.workDays[dayIndex] > 0 ? minToHours(safeUserData.workDays[dayIndex]) : "-"}
                             
-                            {userData.workDays[dayIndex] > 0 && (
+                            {safeUserData.workDays[dayIndex] > 0 && (
                                  <div className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isInteractive ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}></div>
                             )}
                         </div>
@@ -540,7 +540,7 @@ const Settings = ({
 
         <div className="text-center">
             <span className="inline-block px-3 py-1 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-full">
-                Wochenstunden: {(userData.workDays.reduce((a,b)=>a+b,0)/60).toLocaleString('de-DE')} h
+                Wochenstunden: {(safeUserData.workDays.reduce((a,b)=>a+b,0)/60).toLocaleString('de-DE')} h
             </span>
         </div>
       </Card>

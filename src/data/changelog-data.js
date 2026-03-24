@@ -11,6 +11,22 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.12",
+  date: "24.03.2026",
+  title: "Bugfixes 🔧",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: make error message copyable as text field in ErrorBoundary"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.11",
   date: "24.03.2026",

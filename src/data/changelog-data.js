@@ -8,6 +8,22 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.9",
+  date: "23.03.2026",
+  title: "Updates 🔄",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Chore: deduplicate 6.3.3 changelog entries (3→1), keep most complete"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.8",
   date: "23.03.2026",

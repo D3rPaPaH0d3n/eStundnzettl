@@ -53,7 +53,9 @@ const Settings = ({
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [pickerTargetIndex, setPickerTargetIndex] = useState(null); 
 
-  const activeModelId = userData.workModelId || 'custom';
+  // Defensive: userData should never be undefined, but guard anyway
+  const safeUserData = userData || {};
+  const activeModelId = safeUserData.workModelId || 'custom';
   const isCustomMode = activeModelId === 'custom';
   const activeModelLabel = WORK_MODELS.find(m => m.id === activeModelId)?.label || "Benutzerdefiniert";
 

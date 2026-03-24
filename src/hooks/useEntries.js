@@ -2,10 +2,18 @@ import { useState, useEffect } from "react";
 import { STORAGE_KEYS } from "./constants";
 
 export function useEntries() {
-  // Initial laden
-  const [entries, setEntries] = useState(() => 
-    JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || "[]")
-  );
+  // Initial laden — Guard gegen "undefined" string oder corrupt JSON
+  const loadEntries = () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.ENTRIES);
+      if (stored && stored !== "undefined") {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) { /* corrupt */ }
+    return [];
+  };
+  const [entries, setEntries] = useState(loadEntries);
 
   // Automatisch speichern bei Änderungen
   useEffect(() => {

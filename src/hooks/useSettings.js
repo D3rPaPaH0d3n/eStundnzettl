@@ -4,15 +4,23 @@ import { STORAGE_KEYS, WORK_MODELS } from "./constants";
 export function useSettings() {
   // --- USER DATA ---
   // Lädt Benutzerdaten oder Fallback auf Standardwerte
-  const [userData, setUserData] = useState(() => 
-    JSON.parse(localStorage.getItem(STORAGE_KEYS.USER)) || {
-      name: "", 
-      position: "", 
+  // Guard: localStorage kann "undefined" (String) enthalten → JSON.parse("undefined") = undefined
+  const loadUserData = () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.USER);
+      if (stored && stored !== "undefined") {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === "object") return parsed;
+      }
+    } catch (e) { /* corrupt data */ }
+    return {
+      name: "",
+      position: "",
       photo: null,
-      // Default: 38.5h Standard Modell
-      workDays: [...WORK_MODELS[0].days] 
-    }
-  );
+      workDays: [...WORK_MODELS[0].days]
+    };
+  };
+  const [userData, setUserData] = useState(loadUserData);
 
   // --- THEME ---
   const [theme, setTheme] = useState(() => 

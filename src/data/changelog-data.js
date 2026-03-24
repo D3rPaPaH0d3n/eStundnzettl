@@ -1,6 +1,23 @@
 import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Sliders, Download, Cloud, Building2 } from "lucide-react";
 
 export const CHANGELOG_DATA = [
+
+  {
+  version: "6.3.17",
+  date: "24.03.2026",
+  title: "Bugfixes 🔧",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: resolve Settings crash — recursive component reference & workDays guard",
+        "Fix: guard setUserData against null/undefined values from localStorage"
+      ]
+    }
+  ]
+  },
   {
     version: "6.3.16",
     date: "24.03.2026",

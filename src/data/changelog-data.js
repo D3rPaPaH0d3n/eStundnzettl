@@ -3,6 +3,22 @@ import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Slid
 export const CHANGELOG_DATA = [
 
 
+
+  {
+  version: "6.3.19",
+  date: "24.03.2026",
+  title: "Bugfixes 🔧",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: normalize icon sizes for Firma and Position fields (SVG size→width/height)"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.18",
   date: "24.03.2026",

@@ -9,6 +9,22 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.10",
+  date: "24.03.2026",
+  title: "Bugfixes 🔧",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: guard initGoogleAuth behind cloudEnabled check to prevent Android 17 WebView crash"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.9",
   date: "23.03.2026",

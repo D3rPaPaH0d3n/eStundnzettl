@@ -138,9 +138,12 @@ export default function App() {
     if (storedUserStr) {
       try {
         const storedUser = JSON.parse(storedUserStr);
-        setUserData(storedUser);
-        if (storedUser.settings?.autoBackup !== undefined) {
-            setAutoBackup(storedUser.settings.autoBackup);
+        // Guard: nur setzen wenn gültiges Objekt
+        if (storedUser && typeof storedUser === "object") {
+          setUserData(storedUser);
+          if (storedUser.settings?.autoBackup !== undefined) {
+              setAutoBackup(storedUser.settings.autoBackup);
+          }
         }
       } catch (e) { console.error("Error loading user data", e); }
     }
@@ -562,8 +565,8 @@ export default function App() {
                 <PrintReport 
                   entries={entriesWithHolidays} 
                   monthDate={currentDate} 
-                  employeeName={userData.name} 
-                  userPhoto={userData.photo} 
+                  employeeName={userData?.name || ""} 
+                  userPhoto={userData?.photo || null} 
                   onClose={() => setView("dashboard")} 
                   onMonthChange={setCurrentDate}
                   userData={userData} 

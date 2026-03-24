@@ -14,6 +14,22 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.15",
+  date: "24.03.2026",
+  title: "Bugfixes 🔧",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: replace all unguarded userData. accesses with safeUserData. in Settings"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.14",
   date: "24.03.2026",

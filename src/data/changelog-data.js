@@ -4,6 +4,29 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.20",
+  date: "24.03.2026",
+  title: "Updates 🔄",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'FileText',
+      title: "Dokumentation",
+      items: [
+        "Docs: README CI Hinweis [test]"
+      ]
+    },
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Refactor: CI Pipeline vereinfacht — nur noch Play Store Deploy"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.19",
   date: "24.03.2026",

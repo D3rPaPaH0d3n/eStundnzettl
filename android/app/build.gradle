@@ -8,8 +8,8 @@ android {
         applicationId "com.estundnzettl.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 76          // Hochgezählt für Updates
-        versionName "6.3.11"    // Deine aktuelle Version
+        versionCode 77          // Hochgezählt für Updates
+        versionName "6.3.12"    // Deine aktuelle Version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

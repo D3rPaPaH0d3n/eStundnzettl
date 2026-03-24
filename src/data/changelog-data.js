@@ -2,6 +2,23 @@ import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Slid
 
 export const CHANGELOG_DATA = [
 
+
+  {
+  version: "6.3.18",
+  date: "24.03.2026",
+  title: "Updates 🔄",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Refactor: split Settings.jsx into ProfileSettings, WorkModelSettings, DataSettings, ThemeSettings, BackupSettings, AppInfoSettings",
+        "Refactor: extract useAppData and useAppActions from App.jsx"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.17",
   date: "24.03.2026",

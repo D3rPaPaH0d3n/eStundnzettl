@@ -350,9 +350,7 @@ export const checkForUpdate = async () => {
       return {
         version: latestVersion,
         notes: data.body,
-        downloadUrl:
-          data.assets.find((a) => a.name.endsWith(".apk"))
-            ?.browser_download_url || data.html_url,
+        downloadUrl: "https://play.google.com/store/apps/details?id=com.estundnzettl.app",
         date: new Date(data.published_at).toLocaleDateString("de-DE"),
       };
     }

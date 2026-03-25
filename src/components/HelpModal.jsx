@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { X, Rocket, BookOpen, Car, ShieldCheck, Play, Square, Wand2, Fingerprint, Hourglass, FileText } from "lucide-react";
+import { X, Rocket, BookOpen, Car, ShieldCheck, Play, Square, Wand2, Fingerprint, Hourglass, FileText, Clock, Briefcase, Tag, Cloud } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 const HelpModal = ({ isOpen, onClose }) => {
@@ -184,6 +184,62 @@ const HelpModal = ({ isOpen, onClose }) => {
                     <div className="text-sm text-zinc-600 dark:text-zinc-400">
                         Dort siehst du eine Vorschau. Prüfe alles und klicke dann auf <strong>PDF</strong>, um den Bericht zu senden oder zu speichern.
                     </div>
+                </div>
+              </section>
+
+              {/* SCHRITT 5: Einstellungen */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 flex items-center justify-center font-bold text-sm shadow-lg">5</div>
+                    <h3 className="font-bold text-lg text-zinc-800 dark:text-white">Einstellungen — So passt du die App an</h3>
+                </div>
+                
+                <div className="ml-4 border-l-2 border-zinc-100 dark:border-zinc-800 pl-6 py-1 space-y-4">
+                  
+                  {/* Zeiteingabe */}
+                  <div className="flex items-start gap-3">
+                    <Clock className="text-emerald-500 mt-0.5 shrink-0" size={20} />
+                    <div>
+                      <p className="text-sm font-bold text-zinc-800 dark:text-white">Zeiteingabe</p>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5">
+                        Standardäßig rundet die App auf 15-Minuten-Schritte. Wenn du es genauer brauchst, stell in den Einstellungen auf <strong>1-Minuten-Modus</strong> um — dann werden Zeiten exakt erfasst.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Arbeitszeit-Modell */}
+                  <div className="flex items-start gap-3">
+                    <Briefcase className="text-emerald-500 mt-0.5 shrink-0" size={20} />
+                    <div>
+                      <p className="text-sm font-bold text-zinc-800 dark:text-white">Arbeitszeit-Modell</p>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5">
+                        Vollzeit, Teilzeit, BAV — damit berechnet die App deine Soll-Stunden pro Tag (z.B. Vollzeit = 8,5h). Stell dein Modell in den <strong>Einstellungen</strong> ein oder leg eigene Modelle an.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Tätigkeitscodes */}
+                  <div className="flex items-start gap-3">
+                    <Tag className="text-emerald-500 mt-0.5 shrink-0" size={20} />
+                    <div>
+                      <p className="text-sm font-bold text-zinc-800 dark:text-white">Tätigkeitscodes</p>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5">
+                        Kurze Kürzel wie <strong>„190"</strong> für Anreise oder <strong>„19"</strong> für Fahrtzeit. Du kannst in den Einstellungen eigene Codes anlegen oder Branchen-Presets laden. Die Codes erscheinen beim Stempeln und landen im PDF.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Backup */}
+                  <div className="flex items-start gap-3">
+                    <Cloud className="text-emerald-500 mt-0.5 shrink-0" size={20} />
+                    <div>
+                      <p className="text-sm font-bold text-zinc-800 dark:text-white">Backup</p>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5">
+                        Die App sichert täglich automatisch lokal. Für Cloud-Sicherung einfach <strong>Google Drive Backup</strong> in den Einstellungen → <strong>Daten & Backup</strong> einrichten.
+                      </p>
+                    </div>
+                  </div>
+
                 </div>
               </section>
 

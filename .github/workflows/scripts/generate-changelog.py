@@ -23,8 +23,8 @@ TYPE_MAP = {
     },
     'refactor': {
         'iconName': 'Zap',
-        'title': 'Code-Qualität',
-        'prefix': 'Refactor:'
+        'title': 'Verbesserungen',
+        'prefix': ''
     },
     'perf': {
         'iconName': 'Rocket',
@@ -38,15 +38,88 @@ TYPE_MAP = {
     },
     'chore': {
         'iconName': 'Zap',
-        'title': 'Code-Qualität',
-        'prefix': 'Chore:'
+        'title': 'Verbesserungen',
+        'prefix': ''
     },
     'ci': {
         'iconName': 'Rocket',
-        'title': 'CI/CD',
-        'prefix': 'CI:'
+        'title': 'Backend',
+        'prefix': ''
     },
 }
+
+# Translate technical commit descriptions to human-readable German
+# Order matters: more specific patterns first
+TRANSLATIONS = [
+    # Settings / UI Refactoring
+    (r'split Settings\.jsx into .+', 'Einstellungen aufgeräumt und schneller'),
+    (r'merge WorkModelSettings into DataSettings', 'Einstellungen vereinfacht'),
+    (r'extract useApp(Data|Actions) from App\.jsx', 'App-Code organisiert'),
+    (r'extract useFormState hook', 'Formular-Code aufgeräumt'),
+    (r'extract useExport hook', 'Export-Funktion verbessert'),
+    (r'combine settings cards into unified', 'Einstellungen übersichtlicher'),
+    (r'Settings\.jsx into \w+Settings\.jsx', 'Einstellungen in einzelne Teile aufgeteilt'),
+    (r'extract \w+ hook', 'Code in wiederverwendbare Teile aufgeteilt'),
+
+    # Icon / UI fixes
+    (r'normalize icon sizes for (\w+) and (\w+)', r'Icons bei \1 und \2 optimiert'),
+    (r'normalize icon sizes', 'Icons optimiert'),
+    (r'fix: enable edge-to-edge display', 'Edge-to-Edge Anzeige für Android 15+'),
+    (r'icon sizes', 'Icons verbessert'),
+    (r'increase icon size in (\w+)', r'Icons in \1 vergrößert'),
+
+    # Data / Settings fixes
+    (r'unguarded userData', 'Daten werden sicherer geladen'),
+    (r'safeUserData guard', 'App startet stabiler'),
+    (r'guard against JSON\.parse', 'App startet robuster'),
+    (r'recursive component reference', 'App stürzt nicht mehr ab'),
+    (r'Settings crash', 'Einstellungen funktionieren wieder'),
+    (r'export/import includes work codes', 'Export sichert jetzt auch Tätigkeitscodes'),
+    (r'workDays guard', 'Arbeitstage werden richtig gespeichert'),
+
+    # Changelog / Docs
+    (r'人有 changelog entries', 'Changelog aufgeräumt'),
+    (r'deduplicate changelog', 'Changelog aufgeräumt'),
+    (r'rewrite changelog entries to human', 'Changelog verbessert'),
+
+    # GDrive / Cloud
+    (r'guard initGoogleAuth behind cloudEnabled', 'Google Drive funktioniert auf älteren Android-Versionen'),
+
+    # Error handling
+    (r'make error message copyable', 'Fehlermeldungen können jetzt kopiert werden'),
+    (r'show actual error message', 'Fehler-Details werden richtig angezeigt'),
+
+    # Backup
+    (r'add manual backup button', 'Manueller Backup-Button hinzugefügt'),
+    (r'add last backup display', 'Letztes Backup wird angezeigt'),
+    (r'offline warning', 'Warnung wenn kein Backup vorhanden'),
+
+    # Onboarding / Demo
+    (r'add Demo-Daten option', 'Demo-Daten zum Ausprobieren'),
+    (r'demo data toggle', 'Demo-Daten in den Einstellungen'),
+
+    # Time input
+    (r'minute precision toggle', 'Minütige Zeiteingabe umschaltbar'),
+    (r'add minute-level time input', 'Minütige Zeiteingabe optional'),
+
+    # Misc technical (map to generic human messages)
+    (r'remove dead code', 'Internes aufgeräumt'),
+    (r'deduplicate', 'Code verschlankt'),
+    (r'extract \w+ to constants', 'Einstellungen organisiert'),
+    (r'eliminate magic numbers', 'Internes verbessert'),
+    (r'refactor: .+', lambda m: m.group(0)[10:50] + '...' if len(m.group(0)) > 50 else m.group(0)[10:]),
+]
+
+def humanize_description(desc):
+    """Translate technical description to human-readable German."""
+    for pattern, replacement in TRANSLATIONS:
+        if callable(replacement):
+            new_desc, count = re.subn(pattern, replacement, desc, flags=re.IGNORECASE)
+        else:
+            new_desc, count = re.subn(pattern, replacement, desc, flags=re.IGNORECASE)
+        if count > 0:
+            return new_desc.strip()
+    return desc
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))  # .github/workflows/scripts/ -> repo root
@@ -139,7 +212,15 @@ def generate_changelog_entry(version_name, commits):
         if icon not in sections:
             sections[icon] = {'title': info['title'], 'items': []}
 
-        sections[icon]['items'].append(f"{info['prefix']} {description}")
+        # Humanize the technical description
+        human_desc = humanize_description(description)
+        prefix = info['prefix']
+        if prefix:
+            item_text = f"{prefix} {human_desc}"
+        else:
+            item_text = human_desc
+
+        sections[icon]['items'].append(item_text)
 
     if not sections:
         print("No conventional commits found for changelog.")

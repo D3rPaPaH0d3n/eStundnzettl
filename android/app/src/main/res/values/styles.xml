@@ -16,7 +16,6 @@
 
     <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
         <item name="android:windowBackground">#020617</item>
-        <item name="android:statusBarColor">#020617</item> 
     </style>
 
 </resources>

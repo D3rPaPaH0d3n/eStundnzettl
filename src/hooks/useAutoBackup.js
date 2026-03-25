@@ -1,14 +1,19 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { App } from "@capacitor/app";
 import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
 import { STORAGE_KEYS, BACKUP_CONFIG } from "./constants";
+
+const BACKUP_FAIL_KEY = "estundnzettl_backup_fail_count";
 
 export function useAutoBackup(entries, userData, isEnabled) {
   const latestDataRef = useRef({ entries, userData });
   const lastHash = useRef("");
   const debounceTimer = useRef(null);
   const isUploading = useRef(false);
+  const [backupFailCount, setBackupFailCount] = useState(
+    () => parseInt(localStorage.getItem(BACKUP_FAIL_KEY) || "0", 10)
+  );
 
   useEffect(() => {
     latestDataRef.current = { entries, userData };
@@ -59,9 +64,17 @@ export function useAutoBackup(entries, userData, isEnabled) {
             await uploadOrUpdateFile(authResponse.accessToken, BACKUP_CONFIG.FILENAME, payload);
             lastHash.current = currentHash;
             localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, new Date().toISOString());
+            // Erfolg: Fehler-Counter zurücksetzen
+            localStorage.setItem(BACKUP_FAIL_KEY, "0");
+            setBackupFailCount(0);
           }
         } catch (cloudErr) {
-          // Silent fail for cloud backup
+          // Fehler-Counter hochzählen
+          const current = parseInt(localStorage.getItem(BACKUP_FAIL_KEY) || "0", 10);
+          const newCount = current + 1;
+          localStorage.setItem(BACKUP_FAIL_KEY, String(newCount));
+          setBackupFailCount(newCount);
+          console.warn("Cloud-Backup fehlgeschlagen:", cloudErr);
         }
       }
 
@@ -94,4 +107,6 @@ export function useAutoBackup(entries, userData, isEnabled) {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
   }, [entries, userData, isEnabled]);
+
+  return { backupFailCount };
 }

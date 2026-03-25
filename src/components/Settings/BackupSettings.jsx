@@ -36,6 +36,7 @@ const BackupSettings = ({
   const [lastBackupDate, setLastBackupDate] = useState(null);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isTokenValid, setIsTokenValid] = useState(true);
+  const [backupFailCount, setBackupFailCount] = useState(0);
 
   const formatLastBackup = (isoString) => {
     if (!isoString) return null;
@@ -67,6 +68,9 @@ const BackupSettings = ({
     } catch {
       setIsTokenValid(false);
     }
+    // Backup-Fehler-Counter lesen
+    const failCount = parseInt(localStorage.getItem("estundnzettl_backup_fail_count") || "0", 10);
+    setBackupFailCount(failCount);
   }, []);
 
   const handleGoogleToggle = async () => {
@@ -243,6 +247,15 @@ const BackupSettings = ({
           {hasBackupFolder ? "Trennen" : "Wählen"}
         </button>
       </div>
+
+      {isCloudConnected && backupFailCount >= 3 && (
+        <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
+          <AlertTriangle size={18} className="text-amber-500 flex-shrink-0" />
+          <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+            ⚠️ Letzte Backups fehlgeschlagen. Bitte Google Drive Verbindung prüfen.
+          </span>
+        </div>
+      )}
 
       {(isCloudConnected || hasBackupFolder) && (
         <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-3 rounded-xl">

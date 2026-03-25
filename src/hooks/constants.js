@@ -2,7 +2,9 @@
 // CONSTANTS.JS - Zentrale Konstanten für eStundnzettl Zeiterfassung
 // ============================================================
 
-export const APP_VERSION = "v6.3.22";
+// Version wird zur Build-Zeit von Vite aus package.json injiziert (Single Point of Truth)
+// eslint-disable-next-line no-undef
+export const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? 'v' + __APP_VERSION__ : 'dev';
 
 // -------------------------------------------------------
 // BACKUP & SYNC KONFIGURATION (NEU & WICHTIG)

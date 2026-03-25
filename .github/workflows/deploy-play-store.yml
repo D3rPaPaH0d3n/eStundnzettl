@@ -275,7 +275,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            MSG="✅ *eStundnzettl Deploy erfolgreich*%0A%0AVersion: v${{ steps.bump.outputs.new_name }} (Code ${{ steps.bump.outputs.new_code }})%0ATrack: Internal Testing%0AStatus: Verifiziert im Play Store"
+            MSG="✅ *eStundnzettl Deploy erfolgreich*%0A%0AVersion: v${{ steps.bump.outputs.new_name }} (Code ${{ steps.bump.outputs.new_code }})%0ATrack: Internal Testing%0AStatus: Hochgeladen und verifiziert%0A%0A⏳ Download in ca. 10-30 Min im Play Store verfügbar."
           else
             MSG="❌ *eStundnzettl Deploy fehlgeschlagen*%0A%0AVersion: v${{ steps.bump.outputs.new_name || 'unbekannt' }}%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi

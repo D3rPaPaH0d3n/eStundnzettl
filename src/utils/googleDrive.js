@@ -83,13 +83,23 @@ export const signInGoogle = async () => {
 
 // --- AUTH: Get valid access token ---
 // WICHTIG: Ersetzt die defekte 'refresh'-Methode
+// Token-Expiry: Access Tokens laufen nach ~1h ab, wir prüfen nach 50 Min.
+const TOKEN_MAX_AGE_MS = 50 * 60 * 1000; // 50 Minuten
+
 export const getValidToken = async () => {
   // 1. Versuche gespeichertes Token
   const stored = getStoredAuth();
   if (stored?.accessToken) {
+    // Expiry-Check: Token ohne Timestamp oder älter als 50 Min → abgelaufen
+    const tokenAge = stored.savedAt ? Date.now() - stored.savedAt : Infinity;
+    if (tokenAge < TOKEN_MAX_AGE_MS) {
       return { accessToken: stored.accessToken };
+    }
+    // Token abgelaufen → löschen und neu anfordern
+    console.log("GDrive Token abgelaufen, fordere neues an...");
+    clearAuth();
   }
-  // 2. Wenn leer, versuche Silent Login (funktioniert oft, wenn App Session noch lebt)
+  // 2. Wenn leer oder abgelaufen, versuche Silent Login
   try {
       return await signInGoogle();
   } catch(e) {

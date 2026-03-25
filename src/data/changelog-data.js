@@ -1,5 +1,53 @@
 export const CHANGELOG_DATA = [
 
+
+  {
+  version: "6.3.26",
+  date: "25.03.2026",
+  title: "Neue Features & Bugfixes 🛠️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: enable edge-to-edge display for Android 15+ compatibility",
+        "Fix: Telegram-Notification klarer formuliert [skip ci]",
+        "Fix: minifyEnabled true + Proguard Keep-Rules für WebView/Capacitor",
+        "Fix: Update-Checker verlinkt auf Play Store statt GitHub APK",
+        "Fix: removeAllListeners() durch gezieltes Listener-Cleanup ersetzt",
+        "Fix: Backup-Fehler sichtbar machen mit Fail-Counter und Warnung",
+        "Fix: GDrive Token-Expiry-Check nach 50 Minuten"
+      ]
+    },
+    {
+      iconName: 'Sparkles',
+      title: "Neue Features",
+      items: [
+        "Neu: Changelog aufgeräumt + Accordion UI [skip ci]",
+        "Neu: Deploy-Verifizierung + Telegram-Notification in CI"
+      ]
+    },
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Refactor: Single-Point-of-Truth Versionierung via Vite define",
+        "Chore: privacy datum + logo optimiert",
+        "Chore: Dead Code WorkModelModal.jsx entfernt (191 Zeilen, nirgends importiert)",
+        "Chore: icon.png und logo.png optimiert (4.4MB→88KB, 1.2MB→89KB)",
+        "Refactor: CI Pipeline vereinfacht — nur noch Play Store Deploy"
+      ]
+    },
+    {
+      iconName: 'FileText',
+      title: "Dokumentation",
+      items: [
+        "Docs: README CI Hinweis [test]"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.25",
   date: "25.03.2026",

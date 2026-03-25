@@ -3,8 +3,134 @@ import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Slid
 export const CHANGELOG_DATA = [
 
 
-
-
+  {
+  version: "6.3.27",
+  date: "25.03.2026",
+  title: "Einstellungen neu organisiert ⚙️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Sliders',
+      title: "Einstellungen",
+      items: [
+        "WorkModelSettings in DataSettings integriert",
+        "Neue collapsible UI für钸terse Einstellungen",
+        "Demo-Daten Warnung verbessert"
+      ]
+    },
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "App stürzt nicht mehr ab beim Öffnen der Einstellungen"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.26",
+  date: "25.03.2026",
+  title: "Android 15+ Edge-to-Edge Fix 📱",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Shield',
+      title: "Android-Kompatibilität",
+      items: [
+        "Edge-to-Edge Display für Android 15+ aktiviert",
+        "App wird nicht mehr von der Statusleiste überlagert"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.25",
+  date: "25.03.2026",
+  title: "Changelog aufgeräumt + Accordion UI 🛠️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Sparkles',
+      title: "Neue Features",
+      items: [
+        "Changelog erscheint als schickes Accordion-Overlay",
+        "Versionen können eingeklappt werden"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.24",
+  date: "25.03.2026",
+  title: "Deploy-Verifizierung + Telegram-Benachrichtigungen 📲",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Rocket',
+      title: "CI/CD",
+      items: [
+        "Deploy wird jetzt über GitHub Actions verifiziert",
+        "Telegram-Benachrichtigung nach erfolgreichem Deploy"
+      ]
+    },
+    {
+      iconName: 'Zap',
+      title: "Versionierung",
+      items: [
+        "Single-Point-of-Truth Versionierung via Vite define"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.23",
+  date: "25.03.2026",
+  title: "Single-Point-of-Truth Versionierung ⚡",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Version wird jetzt zentral über Vite define verwaltet",
+        "Keine Inkonsistenzen zwischen package.json und build.gradle mehr"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.22",
+  date: "25.03.2026",
+  title: "Logo & Datenschutz optimiert 🖼️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Sparkles',
+      title: "Design",
+      items: [
+        "Logo und Icons für Play Store optimiert",
+        "Datumsformat im Sinne der DSGVO angepasst"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.21",
+  date: "25.03.2026",
+  title: "App-Größe reduziert 📦",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Rocket',
+      title: "Performance",
+      items: [
+        "Icon-Dateien drastisch komprimiert (4.4MB→88KB)",
+        "Logo optimiert (1.2MB→89KB)",
+        "App startet schneller, weniger Speicherplatz"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.20",
   date: "24.03.2026",

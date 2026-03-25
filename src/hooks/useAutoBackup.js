@@ -89,10 +89,16 @@ export function useAutoBackup(entries, userData, isEnabled) {
     }
   };
 
+  const listenerHandle = useRef(null);
+
   useEffect(() => {
     const setupListener = async () => {
-      await App.removeAllListeners();
-      App.addListener('appStateChange', ({ isActive }) => {
+      // Nur eigenen Listener entfernen, nicht alle App-Listener!
+      if (listenerHandle.current) {
+        await listenerHandle.current.remove();
+        listenerHandle.current = null;
+      }
+      listenerHandle.current = await App.addListener('appStateChange', ({ isActive }) => {
         if (!isActive) performBackup("Background");
       });
     };
@@ -105,6 +111,10 @@ export function useAutoBackup(entries, userData, isEnabled) {
 
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      if (listenerHandle.current) {
+        listenerHandle.current.remove();
+        listenerHandle.current = null;
+      }
     };
   }, [entries, userData, isEnabled]);
 

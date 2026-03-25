@@ -9,15 +9,16 @@
 # WAS PASSIERT? (in dieser Reihenfolge)
 #   1. Code auschecken
 #   2. Node.js + Dependencies installieren
-#   3. Frontend bauen (Vite)
-#   4. Capacitor Sync (Web Assets → Android Projekt kopieren)
-#   5. Capacitor Proguard-Bug fixen (MUSS nach cap sync sein!)
-#   6. Version hochzählen (versionCode +1, versionName patch/minor/major)
-#   7. Release AAB bauen (./gradlew bundleRelease)
-#   8. AAB signieren (jarsigner mit Keystore)
-#   9. AAB zum Play Store hochladen (Internal Testing Track)
-#  10. Changelog aus Commits generieren
-#  11. Version-Bump + Changelog committen & pushen mit [skip ci]
+#   3. Version hochzählen (VOR dem Build! → Vite liest aus package.json)
+#   4. Frontend bauen (Vite — injiziert Version via __APP_VERSION__)
+#   5. Capacitor Sync (Web Assets → Android Projekt kopieren)
+#   6. Capacitor Proguard-Bug fixen (MUSS nach cap sync sein!)
+#   7. Java Setup
+#   8. Release AAB bauen (./gradlew bundleRelease)
+#   9. AAB signieren (jarsigner mit Keystore)
+#  10. AAB zum Play Store hochladen (Internal Testing Track)
+#  11. Changelog aus Commits generieren
+#  12. Version-Bump + Changelog committen & pushen mit [skip ci]
 #
 # SECRETS (müssen in GitHub Repo Settings → Secrets gesetzt sein):
 #   - KEYSTORE_BASE64        → Base64-encoded Keystore (.jks)
@@ -76,42 +77,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # ── 3. Frontend bauen (Vite) ─────────────────────────────────────
-      - name: Build web assets
-        run: npm run build
-
-      # ── 4. Capacitor Sync ────────────────────────────────────────────
-      # Kopiert die gebauten Web Assets ins Android-Projekt
-      - name: Sync Capacitor
-        run: npx cap sync android
-
-      # ── 5. Proguard-Fix (Capacitor Bug) ──────────────────────────────
-      # WICHTIG: Muss NACH cap sync kommen!
-      # cap sync kopiert node_modules/@capacitor ins Android-Projekt.
-      # Danach müssen wir den kaputten Proguard-Pfad fixen,
-      # sonst schlägt der Gradle Build fehl.
-      - name: Fix Capacitor Proguard reference
-        run: |
-          find node_modules/@capacitor -name "build.gradle" \
-            -exec sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" {} \;
-
-      # ── 6. Java Setup ────────────────────────────────────────────────
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
-
-      # ── 7. Version hochzählen ────────────────────────────────────────
+      # ── 3. Version hochzählen (VOR dem Build!) ──────────────────────
       # versionCode: Ganzzahl, wird um +1 erhöht (Play Store braucht immer höher)
-      # versionName: Semver String (z.B. "6.3.19" → "6.3.20")
-      # Wird in 3 Dateien synchronisiert:
-      #   - android/app/build.gradle  (versionCode + versionName)
-      #   - src/hooks/constants.js    (APP_VERSION für die UI)
-      #   - package.json              (npm version, Source of Truth)
+      # versionName: Semver String (z.B. "6.3.21" → "6.3.22")
+      # package.json ist Single Point of Truth — Vite liest die Version daraus
       - name: Read current version
         id: read_version
         run: |
@@ -141,9 +110,8 @@ jobs:
           esac
           NEW_NAME="${new_major}.${new_minor}.${new_patch}"
 
-          # In allen 3 Dateien aktualisieren
+          # In build.gradle + package.json aktualisieren (constants.js nicht mehr nötig!)
           sed -i "s/versionName \"[^\"]*\"/versionName \"$NEW_NAME\"/" android/app/build.gradle
-          sed -i "s/APP_VERSION = \"[^\"]*\"/APP_VERSION = \"v$NEW_NAME\"/" src/hooks/constants.js
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -154,6 +122,33 @@ jobs:
           echo "new_code=$NEW_CODE" >> $GITHUB_OUTPUT
           echo "new_name=$NEW_NAME" >> $GITHUB_OUTPUT
           echo "🔼 Version: $OLD_NAME ($OLD_CODE) → $NEW_NAME ($NEW_CODE)"
+
+      # ── 4. Frontend bauen (Vite) ─────────────────────────────────────
+      # Vite liest die Version aus package.json via __APP_VERSION__ define
+      - name: Build web assets
+        run: npm run build
+
+      # ── 5. Capacitor Sync ────────────────────────────────────────────
+      # Kopiert die gebauten Web Assets ins Android-Projekt
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      # ── 6. Proguard-Fix (Capacitor Bug) ──────────────────────────────
+      # WICHTIG: Muss NACH cap sync kommen!
+      - name: Fix Capacitor Proguard reference
+        run: |
+          find node_modules/@capacitor -name "build.gradle" \
+            -exec sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" {} \;
+
+      # ── 7. Java Setup ────────────────────────────────────────────────
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
 
       # ── 8. Release AAB bauen ─────────────────────────────────────────
       - name: Build release AAB
@@ -208,8 +203,8 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-          # Alle Version-Dateien stagen
-          git add android/app/build.gradle src/hooks/constants.js package.json
+          # Alle Version-Dateien stagen (constants.js nicht mehr nötig — liest aus Build)
+          git add android/app/build.gradle package.json
 
           # Changelog stagen (falls aktualisiert)
           git diff --name-only | grep -q "changelog-data.js" && \
@@ -223,3 +218,68 @@ jobs:
           else
             echo "ℹ️ Keine Änderungen zu committen"
           fi
+
+      # ── 13. Deploy-Verifizierung ─────────────────────────────────────
+      # Prüft ob die neue versionCode wirklich im Internal Testing Track ist
+      - name: Verify Play Store deployment
+        env:
+          PLAY_DEPLOY_KEY_BASE64: ${{ secrets.PLAY_DEPLOY_KEY_BASE64 }}
+        run: |
+          echo "$PLAY_DEPLOY_KEY_BASE64" | base64 -d > /tmp/play-key.json
+          pip install google-auth google-api-python-client -q
+
+          python3 << 'PYEOF'
+          import json, time, sys
+          from google.oauth2 import service_account
+          from googleapiclient.discovery import build
+
+          creds = service_account.Credentials.from_service_account_file(
+              '/tmp/play-key.json',
+              scopes=['https://www.googleapis.com/auth/androidpublisher']
+          )
+          service = build('androidpublisher', 'v3', credentials=creds)
+          pkg = 'com.estundnzettl.app'
+
+          # Maximal 5 Minuten warten
+          for attempt in range(10):
+              try:
+                  edit = service.edits().insert(body={}, packageName=pkg).execute()
+                  track = service.edits().tracks().get(
+                      packageName=pkg, editId=edit['id'], track='internal'
+                  ).execute()
+                  service.edits().delete(packageName=pkg, editId=edit['id']).execute()
+
+                  releases = track.get('releases', [])
+                  for rel in releases:
+                      codes = [int(c) for c in rel.get('versionCodes', [])]
+                      target = int('${{ steps.bump.outputs.new_code }}')
+                      if target in codes and rel.get('status') == 'completed':
+                          print(f"✅ versionCode {target} ist im Internal Testing Track!")
+                          sys.exit(0)
+              except Exception as e:
+                  print(f"⚠️ Versuch {attempt+1}: {e}")
+
+              print(f"⏳ Versuch {attempt+1}/10 — warte 30s...")
+              time.sleep(30)
+
+          print("❌ Version nach 5 Minuten nicht im Track gefunden!")
+          sys.exit(1)
+          PYEOF
+
+      # ── 14. Telegram Notification ────────────────────────────────────
+      # Läuft IMMER — auch bei Fehler (if: always())
+      - name: Telegram notification
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            MSG="✅ *eStundnzettl Deploy erfolgreich*%0A%0AVersion: v${{ steps.bump.outputs.new_name }} (Code ${{ steps.bump.outputs.new_code }})%0ATrack: Internal Testing%0AStatus: Hochgeladen und verifiziert%0A%0A⏳ Download in ca. 10-30 Min im Play Store verfügbar."
+          else
+            MSG="❌ *eStundnzettl Deploy fehlgeschlagen*%0A%0AVersion: v${{ steps.bump.outputs.new_name || 'unbekannt' }}%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MSG}" \
+            -d "parse_mode=Markdown"

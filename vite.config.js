@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import pkg from './package.json' with { type: 'json' }
 
 // ══════════════════════════════════════════════════════════════
 // 🔧 DEBUG TOGGLE - Ändere nur diese Zeile!
@@ -10,6 +11,10 @@ const DEBUG_MODE = false;  // true = Logs behalten, false = Logs entfernen (Rele
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Version aus package.json zur Build-Zeit injizieren (Single Point of Truth)
+  define: {
+    '__APP_VERSION__': JSON.stringify(pkg.version),
+  },
   plugins: [
     react(),
     tailwindcss(), 

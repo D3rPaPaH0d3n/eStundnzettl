@@ -1,15 +1,11 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { STORAGE_KEYS } from "../hooks/constants";
 import ChangelogModal from "./ChangelogModal";
 import HelpModal from "./HelpModal";
 import WorkCodeManager from "./WorkCodeManager";
 import ImportConflictModal from "./ImportConflictModal";
-import PresetModal from "./PresetModal";
 import DecimalDurationPicker from "./DecimalDurationPicker";
-import ConfirmModal from "./ConfirmModal";
 import ProfileSettings from "./Settings/ProfileSettings";
-import WorkModelSettings from "./Settings/WorkModelSettings";
 import DataSettings from "./Settings/DataSettings";
 import ThemeSettings from "./Settings/ThemeSettings";
 import BackupSettings from "./Settings/BackupSettings";
@@ -35,9 +31,6 @@ const Settings = ({
 
   const [pendingImport, setPendingImport] = useState(null);
 
-  const [showPresetModal, setShowPresetModal] = useState(false);
-  const [showPresetWarning, setShowPresetWarning] = useState(false);
-
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [pickerTargetIndex, setPickerTargetIndex] = useState(null);
 
@@ -61,9 +54,6 @@ const Settings = ({
       document.body.style.overflow = "";
     };
   }, [showWorkCodeManager]);
-
-  const minToHours = (m) =>
-    m === 0 ? "" : Number(m / 60).toFixed(2).replace(".", ",");
 
   const openDayPicker = (index) => {
     const isCustomMode = activeModelId === "custom";
@@ -91,18 +81,6 @@ const Settings = ({
 
     setUserData({ ...userData, workDays: newWorkDays });
     toast.success("Zeit aktualisiert");
-  };
-
-  const handlePresetSelect = (model) => {
-    const newUserData = { ...userData, workModelId: model.id };
-    if (model.id !== "custom" && model.days) {
-      newUserData.workDays = [...model.days];
-    }
-    setUserData(newUserData);
-    toast.success(
-      model.id === "custom" ? "Benutzerdefiniert aktiviert" : "Vorlage übernommen"
-    );
-    Haptics.impact({ style: ImpactStyle.Medium });
   };
 
   const toggleLock = () => {
@@ -151,11 +129,6 @@ const Settings = ({
     setTimeout(() => window.location.reload(), 1000);
   };
 
-  const handleShowPresetWarning = () => {
-    Haptics.impact({ style: ImpactStyle.Light });
-    setShowPresetWarning(true);
-  };
-
   return (
     <main className="w-full p-4 space-y-6 pb-20">
       {/* Modals */}
@@ -172,26 +145,6 @@ const Settings = ({
         analysisData={pendingImport}
         onConfirm={handleConfirmImport}
         onCancel={() => setPendingImport(null)}
-      />
-
-      <PresetModal
-        isOpen={showPresetModal}
-        onClose={() => setShowPresetModal(false)}
-        onSelect={handlePresetSelect}
-        currentModelId={activeModelId}
-      />
-
-      <ConfirmModal
-        isOpen={showPresetWarning}
-        onClose={() => setShowPresetWarning(false)}
-        onConfirm={() => {
-          setShowPresetWarning(false);
-          setTimeout(() => setShowPresetModal(true), 100);
-        }}
-        title="Arbeitszeitmodell ändern?"
-        message="Achtung: Eine Änderung des Modells führt zu einer Neuberechnung der Überstunden aller bisherigen Einträge! Möchtest du fortfahren?"
-        confirmText="Verstanden"
-        confirmColor="red"
       />
 
       <DecimalDurationPicker
@@ -213,27 +166,20 @@ const Settings = ({
       {/* 1. Profile Settings */}
       <ProfileSettings userData={userData} setUserData={setUserData} />
 
-      {/* 2. Work Model Settings */}
-      <WorkModelSettings
-        userData={userData}
-        setUserData={setUserData}
-        isLocked={isLocked}
-        onToggleLock={toggleLock}
-        onOpenDayPicker={openDayPicker}
-        onShowPresetWarning={handleShowPresetWarning}
-      />
-
-      {/* 3. Data Settings */}
+      {/* 2. Data Settings (includes WorkModel, Data, and Demo-Daten) */}
       <DataSettings
         userData={userData}
         setUserData={setUserData}
         setShowWorkCodeManager={setShowWorkCodeManager}
+        isLocked={isLocked}
+        onToggleLock={toggleLock}
+        onOpenDayPicker={openDayPicker}
       />
 
-      {/* 4. Theme Settings */}
+      {/* 3. Theme Settings */}
       <ThemeSettings theme={theme} setTheme={setTheme} />
 
-      {/* 5. Backup Settings */}
+      {/* 4. Backup Settings */}
       <BackupSettings
         autoBackup={autoBackup}
         setAutoBackup={setAutoBackup}
@@ -242,7 +188,7 @@ const Settings = ({
         onFileImport={handleFileImport}
       />
 
-      {/* 6. App Info & Danger Zone */}
+      {/* 5. App Info & Danger Zone */}
       <AppInfoSettings
         onCheckUpdate={onCheckUpdate}
         onDeleteAll={onDeleteAll}

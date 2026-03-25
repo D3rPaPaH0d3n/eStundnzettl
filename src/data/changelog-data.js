@@ -8,6 +8,51 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.3.24",
+  date: "25.03.2026",
+  title: "Neue Features & Bugfixes 🛠️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Sparkles',
+      title: "Neue Features",
+      items: [
+        "Neu: Deploy-Verifizierung + Telegram-Notification in CI"
+      ]
+    },
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Refactor: Single-Point-of-Truth Versionierung via Vite define",
+        "Chore: privacy datum + logo optimiert",
+        "Chore: Dead Code WorkModelModal.jsx entfernt (191 Zeilen, nirgends importiert)",
+        "Chore: icon.png und logo.png optimiert (4.4MB→88KB, 1.2MB→89KB)",
+        "Refactor: CI Pipeline vereinfacht — nur noch Play Store Deploy"
+      ]
+    },
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: minifyEnabled true + Proguard Keep-Rules für WebView/Capacitor",
+        "Fix: Update-Checker verlinkt auf Play Store statt GitHub APK",
+        "Fix: removeAllListeners() durch gezieltes Listener-Cleanup ersetzt",
+        "Fix: Backup-Fehler sichtbar machen mit Fail-Counter und Warnung",
+        "Fix: GDrive Token-Expiry-Check nach 50 Minuten"
+      ]
+    },
+    {
+      iconName: 'FileText',
+      title: "Dokumentation",
+      items: [
+        "Docs: README CI Hinweis [test]"
+      ]
+    }
+  ]
+  },
   {
   version: "6.3.23",
   date: "25.03.2026",

@@ -12,17 +12,10 @@ export const CHANGELOG_DATA = [
   isMajor: false,
   sections: [
     {
-      iconName: 'FileText',
-      title: "Dokumentation",
+      iconName: 'Rocket',
+      title: "Backend",
       items: [
-        "Docs: README CI Hinweis [test]"
-      ]
-    },
-    {
-      iconName: 'Zap',
-      title: "Code-Qualität",
-      items: [
-        "Refactor: CI Pipeline vereinfacht — nur noch Play Store Deploy"
+        "Deploy-Prozess verschlankt und automatisiert"
       ]
     }
   ]
@@ -37,7 +30,7 @@ export const CHANGELOG_DATA = [
       iconName: 'Bug',
       title: "Bugfixes",
       items: [
-        "Fix: normalize icon sizes for Firma and Position fields (SVG size→width/height)"
+        "Icons bei Firmenname und Position in den Einstellungen optimiert"
       ]
     }
   ]
@@ -49,11 +42,11 @@ export const CHANGELOG_DATA = [
   isMajor: false,
   sections: [
     {
-      iconName: 'Zap',
-      title: "Code-Qualität",
+      iconName: 'Sparkles',
+      title: "Neue Features",
       items: [
-        "Refactor: split Settings.jsx into ProfileSettings, WorkModelSettings, DataSettings, ThemeSettings, BackupSettings, AppInfoSettings",
-        "Refactor: extract useAppData and useAppActions from App.jsx"
+        "Einstellungen aufgeräumt und übersichtlicher",
+        "App läuft schneller und spart Akku"
       ]
     }
   ]
@@ -68,8 +61,8 @@ export const CHANGELOG_DATA = [
       iconName: 'Bug',
       title: "Bugfixes",
       items: [
-        "Fix: resolve Settings crash — recursive component reference & workDays guard",
-        "Fix: guard setUserData against null/undefined values from localStorage"
+        "Einstellungen funktionieren wieder stabil",
+        "Bessere Handhabung von gespeicherten Daten"
       ]
     }
   ]
@@ -81,8 +74,8 @@ export const CHANGELOG_DATA = [
     icon: Bug,
     color: "red",
     changes: [
-      "Fix: Settings-Seite crashte durch rekursive Komponenten-Referenz (Settings-Icon war fälschlich die Komponente selbst)",
-      "Fix: workDays-Guard in useSettings — fehlende/ungültige Arbeitstage werden automatisch mit Standard-Modell aufgefüllt",
+      "App stürzt nicht mehr ab wenn man die Einstellungen öffnet",
+      "Fehlende Arbeitstage werden automatisch auf Standardwerte gesetzt"
     ]
   },
 
@@ -109,7 +102,7 @@ export const CHANGELOG_DATA = [
       iconName: 'Bug',
       title: "Bugfixes",
       items: [
-        "Fix: replace all unguarded userData. accesses with safeUserData. in Settings"
+        "Einstellungen reagieren stabiler"
       ]
     }
   ]
@@ -124,7 +117,7 @@ export const CHANGELOG_DATA = [
       iconName: 'Bug',
       title: "Bugfixes",
       items: [
-        "Fix: add safeUserData guard in Settings and fix useEntries/ useSettings against JSON.parse('undefined')"
+        "Daten werden zuverlässiger geladen"
       ]
     }
   ]
@@ -139,7 +132,7 @@ export const CHANGELOG_DATA = [
       iconName: 'Bug',
       title: "Bugfixes",
       items: [
-        "Fix: guard against JSON.parse('undefined') in useSettings userData init"
+        "App startet robuster"
       ]
     }
   ]
@@ -154,7 +147,7 @@ export const CHANGELOG_DATA = [
       iconName: 'Bug',
       title: "Bugfixes",
       items: [
-        "Fix: make error message copyable as text field in ErrorBoundary"
+        "Fehlermeldungen können jetzt kopiert werden"
       ]
     }
   ]
@@ -169,7 +162,7 @@ export const CHANGELOG_DATA = [
       iconName: 'Bug',
       title: "Bugfixes",
       items: [
-        "Fix: show actual error message in ErrorBoundary for debugging settings crash"
+        "Fehler-Details werden jetzt richtig angezeigt"
       ]
     }
   ]
@@ -184,7 +177,7 @@ export const CHANGELOG_DATA = [
       iconName: 'Bug',
       title: "Bugfixes",
       items: [
-        "Fix: guard initGoogleAuth behind cloudEnabled check to prevent Android 17 WebView crash"
+        "Google Drive funktioniert auf älteren Android-Versionen"
       ]
     }
   ]
@@ -197,9 +190,9 @@ export const CHANGELOG_DATA = [
   sections: [
     {
       iconName: 'Zap',
-      title: "Code-Qualität",
+      title: "Verbesserungen",
       items: [
-        "Chore: deduplicate 6.3.3 changelog entries (3→1), keep most complete"
+        "Changelog aufgeräumt"
       ]
     }
   ]
@@ -212,10 +205,9 @@ export const CHANGELOG_DATA = [
   sections: [
     {
       iconName: 'Zap',
-      title: "Code-Qualität",
+      title: "Verbesserungen",
       items: [
-        "Chore: deduplicate changelog entries, extract AUTH_STATE to constants, remove unused form helpers",
-        "Refactor: remove dead code hooks and deduplicate helper functions"
+        "Internes aufgeräumt — App läuft flüssiger"
       ]
     }
   ]
@@ -227,10 +219,10 @@ export const CHANGELOG_DATA = [
   isMajor: false,
   sections: [
     {
-      iconName: 'Zap',
-      title: "Code-Qualität",
+      iconName: 'Sparkles',
+      title: "Neue Features",
       items: [
-        "Refactor: combine settings cards into unified 'Einstellungen & Daten' section"
+        "Einstellungen übersichtlicher organisiert"
       ]
     }
   ]
@@ -245,7 +237,7 @@ export const CHANGELOG_DATA = [
       iconName: 'Sparkles',
       title: "Neue Features",
       items: [
-        "Neu: add minute precision toggle to WorkModelModal"
+        "Minütige Zeiteingabe in den Einstellungen umschaltbar"
       ]
     }
   ]
@@ -260,21 +252,18 @@ export const CHANGELOG_DATA = [
       iconName: 'Sparkles',
       title: "Neue Features",
       items: [
-        "Neu: add automatic changelog generation from commits",
-        "Neu: add manual backup button, last backup display, and offline warning",
-        "Neu: add optional minute-level time input (1-min intervals) as toggle in onboarding and settings",
-        "Neu: add Demo-Daten option to onboarding wizard",
-        "Neu: add demo data loader, update changelog to v6.2.3, bump APP_VERSION"
+        "Manueller Backup-Button hinzugefügt",
+        "Minütige Zeiteingabe (1-Min-Modus) in den Einstellungen",
+        "Demo-Daten direkt im Onboarding ausprobieren",
+        "Letztes Backup wird angezeigt"
       ]
     },
     {
       iconName: 'Bug',
       title: "Bugfixes",
       items: [
-        "Fix: ChangelogModal overlay and scrolling behavior",
-        "Fix: export/import includes work codes, protect loadPreset with confirm dialog",
-        "Fix: extract Python script to separate file, fix YAML syntax",
-        "Fix: restore missing toLocalDateString import that was accidentally removed during comment cleanup"
+        "Changelog scrollt und schließt sich richtig",
+        "Export/Import sichert jetzt auch Tätigkeitscodes mit"
       ]
     },
     {

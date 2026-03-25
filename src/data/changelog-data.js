@@ -3,54 +3,130 @@ import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Slid
 export const CHANGELOG_DATA = [
 
 
-
-
-
   {
-  version: "6.3.28",
+  version: "6.3.27",
   date: "25.03.2026",
-  title: "Neue Features & Bugfixes 🛠️",
+  title: "Einstellungen neu organisiert ⚙️",
   isMajor: false,
   sections: [
     {
-      iconName: 'Zap',
-      title: "Verbesserungen",
+      iconName: 'Sliders',
+      title: "Einstellungen",
       items: [
-        "humanize changelog + improve commit guidelines (#3)",
-        "Einstellungen vereinfacht, add collapsible UI and improved demo warning",
-        "Single-Point-of-Truth Versionierung via Vite define",
-        "privacy datum + logo optimiert",
-        "Dead Code WorkModelModal.jsx entfernt (191 Zeilen, nirgends importiert)",
-        "icon.png und logo.png optimiert (4.4MB→88KB, 1.2MB→89KB)",
-        "CI Pipeline vereinfacht — nur noch Play Store Deploy"
+        "WorkModelSettings in DataSettings integriert",
+        "Neue collapsible UI für钸terse Einstellungen",
+        "Demo-Daten Warnung verbessert"
       ]
     },
     {
       iconName: 'Bug',
       title: "Bugfixes",
       items: [
-        "Fix: enable edge-to-edge display for Android 15+ compatibility",
-        "Fix: Telegram-Notification klarer formuliert [skip ci]",
-        "Fix: minifyEnabled true + Proguard Keep-Rules für WebView/Capacitor",
-        "Fix: Update-Checker verlinkt auf Play Store statt GitHub APK",
-        "Fix: removeAllListeners() durch gezieltes Listener-Cleanup ersetzt",
-        "Fix: Backup-Fehler sichtbar machen mit Fail-Counter und Warnung",
-        "Fix: GDrive Token-Expiry-Check nach 50 Minuten"
+        "App stürzt nicht mehr ab beim Öffnen der Einstellungen"
       ]
-    },
+    }
+  ]
+  },
+  {
+  version: "6.3.26",
+  date: "25.03.2026",
+  title: "Android 15+ Edge-to-Edge Fix 📱",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Shield',
+      title: "Android-Kompatibilität",
+      items: [
+        "Edge-to-Edge Display für Android 15+ aktiviert",
+        "App wird nicht mehr von der Statusleiste überlagert"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.25",
+  date: "25.03.2026",
+  title: "Changelog aufgeräumt + Accordion UI 🛠️",
+  isMajor: false,
+  sections: [
     {
       iconName: 'Sparkles',
       title: "Neue Features",
       items: [
-        "Neu: Changelog aufgeräumt + Accordion UI [skip ci]",
-        "Neu: Deploy-Verifizierung + Telegram-Notification in CI"
+        "Changelog erscheint als schickes Accordion-Overlay",
+        "Versionen können eingeklappt werden"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.24",
+  date: "25.03.2026",
+  title: "Deploy-Verifizierung + Telegram-Benachrichtigungen 📲",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Rocket',
+      title: "CI/CD",
+      items: [
+        "Deploy wird jetzt über GitHub Actions verifiziert",
+        "Telegram-Benachrichtigung nach erfolgreichem Deploy"
       ]
     },
     {
-      iconName: 'FileText',
-      title: "Dokumentation",
+      iconName: 'Zap',
+      title: "Versionierung",
       items: [
-        "Docs: README CI Hinweis [test]"
+        "Single-Point-of-Truth Versionierung via Vite define"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.23",
+  date: "25.03.2026",
+  title: "Single-Point-of-Truth Versionierung ⚡",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Zap',
+      title: "Code-Qualität",
+      items: [
+        "Version wird jetzt zentral über Vite define verwaltet",
+        "Keine Inkonsistenzen zwischen package.json und build.gradle mehr"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.22",
+  date: "25.03.2026",
+  title: "Logo & Datenschutz optimiert 🖼️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Sparkles',
+      title: "Design",
+      items: [
+        "Logo und Icons für Play Store optimiert",
+        "Datumsformat im Sinne der DSGVO angepasst"
+      ]
+    }
+  ]
+  },
+  {
+  version: "6.3.21",
+  date: "25.03.2026",
+  title: "App-Größe reduziert 📦",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Rocket',
+      title: "Performance",
+      items: [
+        "Icon-Dateien drastisch komprimiert (4.4MB→88KB)",
+        "Logo optimiert (1.2MB→89KB)",
+        "App startet schneller, weniger Speicherplatz"
       ]
     }
   ]

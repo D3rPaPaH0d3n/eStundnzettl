@@ -10,7 +10,7 @@ import {
   deleteAllEntriesFromDb,
   bulkInsertEntries,
 } from "../db/repositories/entriesRepo";
-import { migrateEntriesToSQLite } from "../db/migrate-from-localstorage";
+import { migrateAllToSQLite } from "../db/migrate-from-localstorage";
 
 /**
  * useEntries — Hook für CRUD auf Entries.
@@ -59,9 +59,9 @@ export function useEntries() {
         setStorageMode("sqlite");
         sqliteReady.current = true;
 
-        // Migration versuchen (localStorage → SQLite, einmalig)
+        // Migration versuchen (localStorage → SQLite, alle Domänen, einmalig)
         try {
-          await migrateEntriesToSQLite();
+          await migrateAllToSQLite();
         } catch (migErr) {
           console.error("[useEntries] Migration fehlgeschlagen, arbeite mit localStorage-Daten weiter:", migErr);
         }

@@ -1,20 +1,18 @@
 /**
- * SQLite Schema für eStundnzettl — Welle 1: nur Entries
+ * SQLite Schema für eStundnzettl — Welle 1+2: Entries, Settings, WorkCodes
  *
  * Alle Schema-Versionen und Migrations-SQL zentral verwaltet.
  */
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const DB_NAME = "estundnzettl";
 
+// ─── Welle 1: Entries ────────────────────────────────────────
+
 /**
- * Initiales Schema (Version 1) — Entries-Tabelle
- *
- * Felder entsprechen 1:1 dem bestehenden Entry-Objekt:
- *   { id, type, date, start, end, pause, project, code, netDuration }
- *
- * id ist INTEGER PRIMARY KEY (der bestehende Date.now()-basierte id-Wert).
+ * Entries-Tabelle (Welle 1)
+ * Felder entsprechen 1:1 dem bestehenden Entry-Objekt.
  */
 export const CREATE_ENTRIES_TABLE = `
   CREATE TABLE IF NOT EXISTS entries (
@@ -35,9 +33,51 @@ export const CREATE_DATE_INDEX = `
   CREATE INDEX IF NOT EXISTS idx_entries_date ON entries (date);
 `;
 
+// ─── Welle 2: Settings ──────────────────────────────────────
+
 /**
- * Gibt alle SQL-Statements zurück, die für eine frische DB (Version 1) nötig sind.
+ * Settings-Tabelle (Welle 2) — Key-Value-Store
+ *
+ * Speichert alle App-Settings als Key/Value-Paare.
+ * Values werden als JSON-Strings gespeichert (auch für primitive Werte).
+ *
+ * Keys entsprechen den bestehenden STORAGE_KEYS:
+ *   - "user"                → JSON-Objekt { name, position, photo, workDays }
+ *   - "theme"               → "system" | "dark" | "light"
+ *   - "cloud_sync_enabled"  → "true" | "false"
+ *   - "local_backup_enabled"→ "true" | "false"
+ */
+export const CREATE_SETTINGS_TABLE = `
+  CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+`;
+
+// ─── Welle 2: Work Codes ────────────────────────────────────
+
+/**
+ * WorkCodes-Tabelle (Welle 2)
+ * Speichert Tätigkeitscodes 1:1 zum bestehenden { id, label } Format.
+ */
+export const CREATE_WORK_CODES_TABLE = `
+  CREATE TABLE IF NOT EXISTS work_codes (
+    id    INTEGER PRIMARY KEY,
+    label TEXT    NOT NULL
+  );
+`;
+
+/**
+ * Gibt alle SQL-Statements zurück, die für die aktuelle Schema-Version nötig sind.
+ * Alle Statements nutzen IF NOT EXISTS → idempotent & safe für bestehende DBs.
  */
 export function getInitSQL() {
-  return [CREATE_ENTRIES_TABLE, CREATE_DATE_INDEX];
+  return [
+    // Welle 1
+    CREATE_ENTRIES_TABLE,
+    CREATE_DATE_INDEX,
+    // Welle 2
+    CREATE_SETTINGS_TABLE,
+    CREATE_WORK_CODES_TABLE,
+  ];
 }

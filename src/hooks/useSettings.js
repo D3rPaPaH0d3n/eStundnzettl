@@ -1,64 +1,140 @@
-import { useState, useEffect } from "react";
+/**
+ * useSettings.js — Hook für App-Settings
+ *
+ * Welle 2: SQLite-primär mit Dual-Write auf localStorage als Sicherheitsnetz.
+ * API für Consumer bleibt 100% identisch.
+ *
+ * Settings-Keys in SQLite (settings-Tabelle):
+ *   "user"                → { name, position, photo, workDays }
+ *   "theme"               → "system" | "dark" | "light"
+ *   "cloud_sync_enabled"  → true | false
+ *   "local_backup_enabled"→ true | false
+ */
+
+import { useState, useEffect, useCallback, useRef } from "react";
 import { STORAGE_KEYS, WORK_MODELS } from "./constants";
+import { isSQLiteActive } from "../db/storageMode";
+import { getSetting, setSetting, deleteSetting } from "../db/repositories/settingsRepo";
+
+// ─── localStorage Helper (identisch zum Original) ───────────
+
+function loadUserDataFromLS() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.USER);
+    if (stored && stored !== "undefined") {
+      const parsed = JSON.parse(stored);
+      if (parsed && typeof parsed === "object") {
+        if (!Array.isArray(parsed.workDays) || parsed.workDays.length !== 7) {
+          parsed.workDays = [...WORK_MODELS[0].days];
+        }
+        return parsed;
+      }
+    }
+  } catch (e) { /* corrupt */ }
+  return null;
+}
+
+function defaultUserData() {
+  return {
+    name: "",
+    position: "",
+    photo: null,
+    workDays: [...WORK_MODELS[0].days],
+  };
+}
+
+// ─── Hook ────────────────────────────────────────────────────
 
 export function useSettings() {
-  // --- USER DATA ---
-  // Lädt Benutzerdaten oder Fallback auf Standardwerte
-  // Guard: localStorage kann "undefined" (String) enthalten → JSON.parse("undefined") = undefined
-  const loadUserData = () => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.USER);
-      if (stored && stored !== "undefined") {
-        const parsed = JSON.parse(stored);
-        if (parsed && typeof parsed === "object") {
-          // Ensure workDays always exists and is valid
-          if (!Array.isArray(parsed.workDays) || parsed.workDays.length !== 7) {
-            parsed.workDays = [...WORK_MODELS[0].days];
+  // --- Initialer State: immer sofort aus localStorage (kein async-Warten) ---
+  const [userData, setUserData] = useState(() => loadUserDataFromLS() || defaultUserData());
+
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.THEME) || "system"
+  );
+
+  const [cloudSyncEnabled, setCloudSyncEnabled] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true"
+  );
+
+  const [localBackupEnabled, setLocalBackupEnabled] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true"
+  );
+
+  const sqliteReady = useRef(false);
+  const initDone = useRef(false);
+
+  // ─── SQLite-Init: Daten aus SQLite nachladen (wenn verfügbar) ───
+  useEffect(() => {
+    if (initDone.current) return;
+    initDone.current = true;
+
+    if (!isSQLiteActive()) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        sqliteReady.current = true;
+
+        // Settings aus SQLite laden — nur überschreiben wenn vorhanden
+        const [sqlUser, sqlTheme, sqlCloud, sqlLocal] = await Promise.all([
+          getSetting("user"),
+          getSetting("theme"),
+          getSetting("cloud_sync_enabled"),
+          getSetting("local_backup_enabled"),
+        ]);
+
+        if (cancelled) return;
+
+        if (sqlUser && typeof sqlUser === "object") {
+          if (!Array.isArray(sqlUser.workDays) || sqlUser.workDays.length !== 7) {
+            sqlUser.workDays = [...WORK_MODELS[0].days];
           }
-          return parsed;
+          setUserData(sqlUser);
         }
+        if (sqlTheme) setTheme(sqlTheme);
+        if (sqlCloud !== null) setCloudSyncEnabled(!!sqlCloud);
+        if (sqlLocal !== null) setLocalBackupEnabled(!!sqlLocal);
+      } catch (err) {
+        console.error("[useSettings] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
+        sqliteReady.current = false;
       }
-    } catch (e) { /* corrupt data */ }
-    return {
-      name: "",
-      position: "",
-      photo: null,
-      workDays: [...WORK_MODELS[0].days]
-    };
-  };
-  const [userData, setUserData] = useState(loadUserData);
+    })();
 
-  // --- THEME ---
-  const [theme, setTheme] = useState(() => 
-    localStorage.getItem(STORAGE_KEYS.THEME) || "system"
-  );
+    return () => { cancelled = true; };
+  }, []);
 
-  // --- BACKUP SETTINGS (Single Source of Truth Fix) ---
-  
-  // 1. Google Drive (ehemals 'autoBackup')
-  // Liest jetzt vom neuen standardisierten Key
-  const [cloudSyncEnabled, setCloudSyncEnabled] = useState(() => 
-    localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true"
-  );
+  // ─── SQLite-Write Helper (fire-and-forget) ───
+  const sqliteWrite = useCallback(async (key, value) => {
+    if (!sqliteReady.current) return;
+    try {
+      if (value === null || value === undefined) {
+        await deleteSetting(key);
+      } else {
+        await setSetting(key, value);
+      }
+    } catch (err) {
+      console.error(`[useSettings] SQLite-Write für "${key}" fehlgeschlagen:`, err);
+    }
+  }, []);
 
-  // 2. Lokales Backup (Neu)
-  const [localBackupEnabled, setLocalBackupEnabled] = useState(() => 
-    localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true"
-  );
+  // ─── Persistenz: Dual-Write (localStorage + SQLite) ───
 
-  // --- PERSISTENZ EFFECTS ---
-
-  // User Data speichern
+  // User Data
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-  }, [userData]);
-  
-  // Theme Logik & Speichern
+    sqliteWrite("user", userData);
+  }, [userData, sqliteWrite]);
+
+  // Theme (+ DOM-Klasse)
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.THEME, theme);
+    sqliteWrite("theme", theme);
+
     const root = document.documentElement;
     const systemQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    
+
     const applyTheme = () => {
       if (theme === "dark") root.classList.add("dark");
       else if (theme === "light") root.classList.remove("dark");
@@ -67,48 +143,50 @@ export function useSettings() {
         else root.classList.remove("dark");
       }
     };
-    
+
     applyTheme();
-    
-    // Listener für System-Änderungen (nur wenn 'system' aktiv)
+
     if (theme === "system") {
       systemQuery.addEventListener("change", applyTheme);
       return () => systemQuery.removeEventListener("change", applyTheme);
     }
-  }, [theme]);
+  }, [theme, sqliteWrite]);
 
-  // Cloud Sync Status speichern (Sauberes Setzen/Löschen)
+  // Cloud Sync
   useEffect(() => {
     if (cloudSyncEnabled) {
       localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
     } else {
       localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
     }
-  }, [cloudSyncEnabled]);
+    sqliteWrite("cloud_sync_enabled", cloudSyncEnabled);
+  }, [cloudSyncEnabled, sqliteWrite]);
 
-  // Local Backup Status speichern
+  // Local Backup
   useEffect(() => {
     if (localBackupEnabled) {
       localStorage.setItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED, "true");
     } else {
       localStorage.removeItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
     }
-  }, [localBackupEnabled]);
+    sqliteWrite("local_backup_enabled", localBackupEnabled);
+  }, [localBackupEnabled, sqliteWrite]);
 
+  // ─── Return (API identisch zum Original) ───
   return {
     userData,
     setUserData,
     theme,
     setTheme,
-    
+
     // Mapping für UI-Kompatibilität (Settings.jsx erwartet 'autoBackup')
-    autoBackup: cloudSyncEnabled, 
+    autoBackup: cloudSyncEnabled,
     setAutoBackup: setCloudSyncEnabled,
-    
+
     // Explizite neue Exports
     cloudSyncEnabled,
     setCloudSyncEnabled,
     localBackupEnabled,
-    setLocalBackupEnabled
+    setLocalBackupEnabled,
   };
 }

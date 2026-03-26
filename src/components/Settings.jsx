@@ -18,8 +18,14 @@ const Settings = ({
   setUserData,
   theme,
   setTheme,
-  autoBackup,
-  setAutoBackup,
+  cloudSyncEnabled,
+  setCloudSyncEnabled,
+  localBackupEnabled,
+  setLocalBackupEnabled,
+  entries = [],
+  lastBackup = null,
+  importEntries,
+  importWorkCodes,
   onExport,
   onImport,
   onDeleteAll,
@@ -111,7 +117,7 @@ const Settings = ({
       if (analysis.hasSettings) {
         setPendingImport(analysis);
       } else {
-        applyBackup(analysis, "ALL");
+        await applyBackup(analysis, "ALL");
         toast.success(`${analysis.entryCount} Einträge importiert!`);
         setTimeout(() => window.location.reload(), 1500);
       }
@@ -121,9 +127,9 @@ const Settings = ({
     e.target.value = null;
   };
 
-  const handleConfirmImport = (mode) => {
+  const handleConfirmImport = async (mode) => {
     if (!pendingImport) return;
-    applyBackup(pendingImport, mode);
+    await applyBackup(pendingImport, mode);
     toast.success("Erfolgreich wiederhergestellt!");
     setPendingImport(null);
     setTimeout(() => window.location.reload(), 1000);
@@ -174,6 +180,10 @@ const Settings = ({
         isLocked={isLocked}
         onToggleLock={toggleLock}
         onOpenDayPicker={openDayPicker}
+        entries={entries}
+        lastBackup={lastBackup}
+        importEntries={importEntries}
+        importWorkCodes={importWorkCodes}
       />
 
       {/* 3. Theme Settings */}
@@ -181,8 +191,10 @@ const Settings = ({
 
       {/* 4. Backup Settings */}
       <BackupSettings
-        autoBackup={autoBackup}
-        setAutoBackup={setAutoBackup}
+        cloudSyncEnabled={cloudSyncEnabled}
+        setCloudSyncEnabled={setCloudSyncEnabled}
+        localBackupEnabled={localBackupEnabled}
+        setLocalBackupEnabled={setLocalBackupEnabled}
         onExport={onExport}
         onImport={() => {}}
         onFileImport={handleFileImport}

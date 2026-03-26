@@ -18,23 +18,10 @@ import { migrateAllToSQLite } from "../db/migrate-from-localstorage";
  * API für Consumer bleibt 100% identisch:
  *   { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries }
  *
- * Intern: SQLite-primär mit Dual-Write auf localStorage als Sicherheitsnetz.
- * Auf Web (dev) wird wie bisher nur localStorage genutzt.
+ * Intern: SQLite-primär (reine Android-App).
  */
 export function useEntries() {
-  // ─── localStorage-Laden (immer, als Fallback / Sofort-Daten) ───
-  const loadFromLocalStorage = () => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.ENTRIES);
-      if (stored && stored !== "undefined") {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) { /* corrupt */ }
-    return [];
-  };
-
-  const [entries, setEntries] = useState(loadFromLocalStorage);
+  const [entries, setEntries] = useState([]);
   const sqliteReady = useRef(false);
   const initDone = useRef(false);
 
@@ -47,15 +34,8 @@ export function useEntries() {
 
     (async () => {
       try {
+        // SQLite ist immer verfügbar
         const db = await getDb();
-
-        if (!db) {
-          // Web/Dev → nur localStorage
-          setStorageMode("localStorage");
-          return;
-        }
-
-        // SQLite ist verfügbar
         setStorageMode("sqlite");
         sqliteReady.current = true;
 
@@ -63,7 +43,7 @@ export function useEntries() {
         try {
           await migrateAllToSQLite();
         } catch (migErr) {
-          console.error("[useEntries] Migration fehlgeschlagen, arbeite mit localStorage-Daten weiter:", migErr);
+          console.error("[useEntries] Migration fehlgeschlagen:", migErr);
         }
 
         // Entries aus SQLite laden und State aktualisieren
@@ -71,35 +51,26 @@ export function useEntries() {
           try {
             const sqliteEntries = await getAllEntries();
             setEntries(sqliteEntries);
-            // Dual-Write: auch localStorage aktualisieren
-            localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(sqliteEntries));
           } catch (loadErr) {
-            console.error("[useEntries] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", loadErr);
+            console.error("[useEntries] SQLite-Load fehlgeschlagen:", loadErr);
             sqliteReady.current = false;
           }
         }
       } catch (err) {
         console.error("[useEntries] DB-Init fehlgeschlagen:", err);
-        setStorageMode("localStorage");
+        // Kein Fallback mehr — SQLite ist Pflicht
       }
     })();
 
     return () => { cancelled = true; };
   }, []);
 
-  // ─── Dual-Write: localStorage immer aktuell halten ───
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(entries));
-  }, [entries]);
-
-  // ─── SQLite-Write Helper (fire-and-forget mit Error-Log) ───
+  // ─── SQLite-Write Helper ───
   const sqliteWrite = useCallback(async (operation) => {
-    if (!sqliteReady.current) return;
     try {
       await operation();
     } catch (err) {
       console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
-      // localStorage hat die Daten schon → kein Datenverlust
     }
   }, []);
 

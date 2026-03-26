@@ -4,7 +4,7 @@
  * Kapselt die gesamte Plugin-Interaktion.
  * Consumer nutzen nur getDb() und closeDb().
  *
- * Auf Web (dev/browser) gibt getDb() null zurück → Caller fällt auf localStorage zurück.
+ * eStundnzettl ist eine reine Android-App — SQLite ist IMMER verfügbar.
  */
 
 import { Capacitor } from "@capacitor/core";
@@ -16,10 +16,14 @@ let _dbOpen = false;
 
 /**
  * Prüft ob wir auf einer nativen Plattform laufen, auf der SQLite funktioniert.
+ * eStundnzettl ist eine reine Android-App — Web-Fallback wird nicht mehr unterstützt.
  */
 function isNative() {
   const platform = Capacitor.getPlatform();
-  return platform === "android" || platform === "ios";
+  if (platform !== "android" && platform !== "ios") {
+    throw new Error("eStundnzettl ist eine reine Android-App — Web-Fallback wird nicht mehr unterstützt");
+  }
+  return true;
 }
 
 /**
@@ -27,11 +31,6 @@ function isNative() {
  * Gibt true zurück wenn SQLite genutzt werden kann, false sonst.
  */
 async function init() {
-  if (!isNative()) {
-    console.info("[db] Web-Plattform erkannt — SQLite deaktiviert, localStorage-Fallback aktiv");
-    return false;
-  }
-
   try {
     // Konsistenzcheck (empfohlen vom Plugin)
     await CapacitorSQLite.checkConnectionsConsistency({
@@ -62,19 +61,18 @@ async function init() {
     console.info("[db] SQLite-Verbindung hergestellt und Schema geprüft");
     return true;
   } catch (err) {
-    console.error("[db] SQLite-Initialisierung fehlgeschlagen — Fallback auf localStorage", err);
+    console.error("[db] SQLite-Initialisierung fehlgeschlagen", err);
     _dbOpen = false;
-    return false;
+    throw new Error("SQLite-Initialisierung fehlgeschlagen — App kann nicht starten");
   }
 }
 
 /**
- * Gibt den DB-Namen zurück wenn SQLite verfügbar ist, sonst null.
+ * Gibt den DB-Namen zurück (immer verfügbar).
  * Lazy-Init beim ersten Aufruf.
  *
  * Nutzung:
- *   const db = await getDb();
- *   if (!db) { /* localStorage-Fallback *\/ }
+ *   const db = await getDb(); // db ist immer DB_NAME
  */
 export async function getDb() {
   if (_ready === null) {
@@ -113,7 +111,6 @@ export async function closeDb() {
  */
 export async function execute(sql) {
   const db = await getDb();
-  if (!db) throw new Error("SQLite nicht verfügbar");
   return CapacitorSQLite.execute({ database: db, statements: sql });
 }
 
@@ -122,7 +119,6 @@ export async function execute(sql) {
  */
 export async function run(sql, values = []) {
   const db = await getDb();
-  if (!db) throw new Error("SQLite nicht verfügbar");
   return CapacitorSQLite.run({ database: db, statement: sql, values });
 }
 
@@ -131,7 +127,6 @@ export async function run(sql, values = []) {
  */
 export async function query(sql, values = []) {
   const db = await getDb();
-  if (!db) throw new Error("SQLite nicht verfügbar");
   const result = await CapacitorSQLite.query({ database: db, statement: sql, values });
   return result.values || [];
 }

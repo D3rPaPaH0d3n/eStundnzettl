@@ -3,7 +3,10 @@ import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS, BACKUP_CONFIG } from "../hooks/constants";
 import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "./googleDrive";
 import { isSQLiteActive } from "../db/storageMode";
-import { getSetting, setSetting, deleteSetting } from "../db/repositories/settingsRepo";
+import { setSetting, deleteSetting } from "../db/repositories/settingsRepo";
+import { bulkInsertEntries } from "../db/repositories/entriesRepo";
+import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
+import { bulkReplaceAttachments, bulkReplaceLabelSuggestions } from "../db/repositories/attachmentsRepo";
 
 // =========================================================
 // BACKUP ORDNER
@@ -205,21 +208,66 @@ export const readJsonFile = (file) => {
   });
 };
 
+const normalizeEntries = (value) => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.entries)) return value.entries;
+  if (Array.isArray(value?.data?.entries)) return value.data.entries;
+  if (Array.isArray(value?.items)) return value.items;
+  return [];
+};
+
+const normalizeSettings = (value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value.user || value.settings || value.profile || value.userData || value.employee || null;
+};
+
+const normalizeWorkCodes = (value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  const raw = value.workCodes || value.codes || value.workcodes || [];
+  return Array.isArray(raw) ? raw : [];
+};
+
+const normalizeAttachments = (value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  const raw = value.attachments || value.files || [];
+  return Array.isArray(raw) ? raw : [];
+};
+
+const normalizeAttachmentLabels = (value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  const raw = value.attachmentLabels || value.labels || value.attachment_labels || [];
+  return Array.isArray(raw) ? raw : [];
+};
+
+const normalizeTimestamp = (value) => {
+  return value?.backupDate || value?.exportedAt || value?.lastModified || value?.timestamp || new Date().toISOString();
+};
+
 // 1. ANALYSE - Schaut in die Daten, OHNE zu speichern
 export const analyzeBackupData = (data) => {
   if (!data) return { valid: false, isValid: false };
 
-  const isArray = Array.isArray(data);
-  const entries = isArray ? data : (data.entries || []);
-  const settings = (!isArray && data.user) ? data.user : null;
+  const entries = normalizeEntries(data);
+  const settings = normalizeSettings(data);
+  const workCodes = normalizeWorkCodes(data);
+  const attachments = normalizeAttachments(data);
+  const attachmentLabels = normalizeAttachmentLabels(data);
+
+  const hasUsefulData = entries.length > 0 || !!settings || workCodes.length > 0 || attachments.length > 0 || attachmentLabels.length > 0;
+  if (!hasUsefulData) return { valid: false, isValid: false };
 
   const analysisResult = {
     valid: true,
     entryCount: entries.length,
     hasSettings: !!settings,
+    hasWorkCodes: workCodes.length > 0,
+    hasAttachments: attachments.length > 0,
     entries,
     settings,
-    timestamp: data.backupDate || new Date().toISOString()
+    workCodes,
+    attachments,
+    attachmentLabels,
+    timestamp: normalizeTimestamp(data)
   };
 
   return {
@@ -230,14 +278,46 @@ export const analyzeBackupData = (data) => {
 };
 
 // 2. ANWENDEN - Speichert die Daten basierend auf der Entscheidung
-export const applyBackup = (analyzedData, mode = 'ALL') => {
+export const applyBackup = async (analyzedData, mode = 'ALL') => {
   if (!analyzedData || !analyzedData.valid) return false;
 
   try {
-    localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(analyzedData.entries));
+    localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(analyzedData.entries || []));
 
     if (mode === 'ALL' && analyzedData.hasSettings && analyzedData.settings) {
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(analyzedData.settings));
+    }
+
+    if (analyzedData.hasWorkCodes) {
+      localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(analyzedData.workCodes));
+    }
+
+    if (analyzedData.hasAttachments) {
+      localStorage.setItem(STORAGE_KEYS.ATTACHMENTS, JSON.stringify(analyzedData.attachments));
+    }
+
+    if (analyzedData.attachmentLabels?.length) {
+      localStorage.setItem(STORAGE_KEYS.ATTACHMENT_LABELS, JSON.stringify(analyzedData.attachmentLabels));
+    }
+
+    if (isSQLiteActive()) {
+      await bulkInsertEntries(analyzedData.entries || []);
+
+      if (mode === 'ALL' && analyzedData.hasSettings && analyzedData.settings) {
+        await setSetting('user', analyzedData.settings);
+      }
+
+      if (analyzedData.hasWorkCodes) {
+        await bulkReplaceWorkCodes(analyzedData.workCodes);
+      }
+
+      if (analyzedData.hasAttachments) {
+        await bulkReplaceAttachments(analyzedData.attachments);
+      }
+
+      if (analyzedData.attachmentLabels?.length) {
+        await bulkReplaceLabelSuggestions(analyzedData.attachmentLabels);
+      }
     }
 
     return true;

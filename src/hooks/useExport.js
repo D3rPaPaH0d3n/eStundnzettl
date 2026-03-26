@@ -17,13 +17,14 @@ import { toLocalDateString } from "../utils";
  * @param {Function} importWorkCodes — callback to import work codes
  * @returns {Object} export state + handlers
  */
-export function useExport({ entries, userData, workCodes, importEntries, setUserData, importWorkCodes, exportPayloadRef }) {
+export function useExport({ entries, userData, workCodes, attachments = [], importEntries, setUserData, importWorkCodes, exportPayloadRef }) {
   const [showExportModal, setShowExportModal] = useState(false);
 
   const buildPayload = () => ({
     user: userData,
     entries,
     workCodes,
+    attachments,
     exportedAt: new Date().toISOString(),
   });
 

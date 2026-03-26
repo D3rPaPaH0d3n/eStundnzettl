@@ -19,6 +19,8 @@ export function useAppActions({
   userData,
   // Work Codes für Label-Lookup
   workCodes,
+  // Attachments Cleanup
+  removeAttachmentsForEntry,
   // Default-Code Funktion
   getDefaultCode,
   // useEntries Funktionen
@@ -218,11 +220,19 @@ export function useAppActions({
   // LÖSCHEN
   // =====================
 
-  const executeDelete = useCallback((deleteTarget) => {
+  const executeDelete = useCallback(async (deleteTarget) => {
     if (deleteTarget?.type === "single") {
+      if (removeAttachmentsForEntry) {
+        await removeAttachmentsForEntry(deleteTarget.id);
+      }
       deleteEntry(deleteTarget.id);
       toast.success("🗑️ Eintrag gelöscht");
     } else if (deleteTarget?.type === "all") {
+      if (entries?.length && removeAttachmentsForEntry) {
+        for (const entry of entries) {
+          await removeAttachmentsForEntry(entry.id);
+        }
+      }
       deleteAllEntries();
       const emptyUser = {
         name: "",
@@ -232,10 +242,12 @@ export function useAppActions({
       };
       setUserData(emptyUser);
       localStorage.removeItem(STORAGE_KEYS.LAST_CODE);
+      localStorage.removeItem(STORAGE_KEYS.ATTACHMENTS);
+      localStorage.removeItem(STORAGE_KEYS.ATTACHMENT_LABELS);
       toast.success("🧹 App vollständig zurückgesetzt");
     }
     setDeleteTarget(null);
-  }, [deleteEntry, deleteAllEntries, setUserData, setDeleteTarget]);
+  }, [deleteEntry, deleteAllEntries, entries, removeAttachmentsForEntry, setUserData, setDeleteTarget]);
 
   // =====================
   // ONBOARDING

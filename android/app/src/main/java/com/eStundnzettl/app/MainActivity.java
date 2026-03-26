@@ -13,10 +13,19 @@ import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
 public class MainActivity extends BridgeActivity implements ModifiedMainActivityForSocialLoginPlugin {
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
+        // Register custom plugins before super.onCreate
+        registerPlugin(MultiSharePlugin.class);
+
         super.onCreate(savedInstanceState);
         // Enable edge-to-edge display for Android 15+ compatibility
         EdgeToEdge.enable(this);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.clear();
     }
 
     @Override

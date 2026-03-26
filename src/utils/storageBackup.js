@@ -47,7 +47,8 @@ const ensureInternalBackupFolder = async () => {
 export const selectBackupFolder = async () => {
   try {
     await ensureInternalBackupFolder();
-    localStorage.setItem(STORAGE_KEYS.BACKUP_TARGET, 'documents');
+    // BACKUP_TARGET wird jetzt in SQLite Settings gespeichert
+    await setSetting("backupTarget", 'documents');
     return true;
   } catch (err) {
     console.error("Backup-Ordner konnte nicht erstellt werden:", err);
@@ -55,9 +56,10 @@ export const selectBackupFolder = async () => {
   }
 };
 
-// 2. Zugriff prüfen
-export const hasBackupTarget = () => {
-  return localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET) === 'documents';
+// 2. Zugriff prüfen (muss async werden!)
+export const hasBackupTarget = async () => {
+  const target = await getSetting("backupTarget", null);
+  return target === 'documents';
 };
 
 // 3. Backup schreiben (AUTO-BACKUP - intern, keine Permission-Probleme)
@@ -82,8 +84,8 @@ export const writeBackupFile = async (fileName, dataObj) => {
 };
 
 // 4. Zugriff entfernen
-export const clearBackupTarget = () => {
-  localStorage.removeItem(STORAGE_KEYS.BACKUP_TARGET);
+export const clearBackupTarget = async () => {
+  await setSetting("backupTarget", null);
 };
 
 // 5. Einmaliger Export (JSON) - in Documents für User sichtbar
@@ -213,21 +215,11 @@ export const applyBackup = async (analyzedData, mode = 'ALL') => {
   if (!analyzedData || !analyzedData.valid) return false;
 
   try {
-    const dbEntries = await getAllEntries().catch(() => null);
+    await deleteAllEntriesFromDb();
+    await bulkInsertEntries(analyzedData.entries || []);
 
-    if (dbEntries) {
-      await deleteAllEntriesFromDb();
-      await bulkInsertEntries(analyzedData.entries || []);
-
-      if (mode === 'ALL' && analyzedData.hasSettings && analyzedData.settings) {
-        await setSetting("userData", analyzedData.settings);
-      }
-    } else {
-      localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(analyzedData.entries));
-
-      if (mode === 'ALL' && analyzedData.hasSettings && analyzedData.settings) {
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(analyzedData.settings));
-      }
+    if (mode === 'ALL' && analyzedData.hasSettings && analyzedData.settings) {
+      await setSetting("userData", analyzedData.settings);
     }
 
     return true;
@@ -239,13 +231,12 @@ export const applyBackup = async (analyzedData, mode = 'ALL') => {
 
 // 6. MANUELLER BACKUP (für "Jetzt sichern"-Button)
 // @param {Object} options - { entries, userData, cloudSyncEnabled, localBackupEnabled }
-// Falls nicht übergeben, wird aus localStorage gelesen (Backward Compatibility)
 export const triggerManualBackup = async (options = {}) => {
   try {
-    const entries = options.entries || await getAllEntries().catch(() => JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]'));
-    const userData = options.userData || await getSetting('userData', null).catch(() => JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null'));
-    const cloudActive = options.cloudSyncEnabled ?? await getSetting('cloudSyncEnabled', false).catch(() => localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true");
-    const localActive = options.localBackupEnabled ?? await getSetting('localBackupEnabled', false).catch(() => localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true");
+    const entries = options.entries || await getAllEntries().catch(() => []);
+    const userData = options.userData || await getSetting('userData', null).catch(() => null);
+    const cloudActive = options.cloudSyncEnabled ?? await getSetting('cloudSyncEnabled', false).catch(() => false);
+    const localActive = options.localBackupEnabled ?? await getSetting('localBackupEnabled', false).catch(() => false);
 
     if (!entries || entries.length === 0) {
       return { success: false, message: "Keine Daten zum Sichern" };
@@ -286,7 +277,6 @@ export const triggerManualBackup = async (options = {}) => {
 
     if (gdriveOk || localOk) {
       const timestamp = new Date().toISOString();
-      localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, timestamp);
       await setSetting('lastBackup', timestamp).catch(() => {});
       return { success: true, gdrive: gdriveOk, local: localOk };
     }

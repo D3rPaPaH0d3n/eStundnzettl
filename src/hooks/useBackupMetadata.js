@@ -24,36 +24,26 @@ export function useBackupMetadata() {
 
     (async () => {
       try {
+        // SQLite ist immer verfügbar
         const db = await getDb();
-
-        if (!db) {
-          // Web/Dev → nur localStorage
-          setStorageMode("localStorage");
+        setStorageMode("sqlite");
+        try {
+          const metadata = await getLastBackupMetadata();
           if (!cancelled) {
-            const stored = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
-            if (stored) setLastBackup(stored);
+            setLastBackup(metadata?.timestamp || null);
           }
-        } else {
-          // SQLite
-          setStorageMode("sqlite");
-          try {
-            const metadata = await getLastBackupMetadata();
-            if (!cancelled) {
-              setLastBackup(metadata?.timestamp || null);
-            }
-          } catch {
-            // Fallback to localStorage
-            if (!cancelled) {
-              const stored = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
-              if (stored) setLastBackup(stored);
-            }
+        } catch {
+          // Kein Fallback mehr — SQLite ist Pflicht
+          if (!cancelled) {
+            setLastBackup(null);
           }
         }
       } catch (err) {
         console.error("[useBackupMetadata] Init fehlgeschlagen:", err);
-        // Fallback
-        const stored = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
-        if (stored) setLastBackup(stored);
+        // Kein Fallback mehr
+        if (!cancelled) {
+          setLastBackup(null);
+        }
       }
 
       if (!cancelled) setIsLoaded(true);
@@ -64,21 +54,16 @@ export function useBackupMetadata() {
 
   // ─── Update Last Backup ───
   const updateLastBackup = useCallback(async (timestamp = new Date().toISOString()) => {
-    // localStorage für Web/Dev und Backup-Kompatibilität
-    localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, timestamp);
     setLastBackup(timestamp);
 
     // SQLite
-    const db = await getDb();
-    if (db) {
-      try {
-        await insertBackupMetadata({
-          type: "manual",
-          timestamp,
-        });
-      } catch (err) {
-        console.error("[useBackupMetadata] Failed to insert metadata:", err);
-      }
+    try {
+      await insertBackupMetadata({
+        type: "manual",
+        timestamp,
+      });
+    } catch (err) {
+      console.error("[useBackupMetadata] Failed to insert metadata:", err);
     }
   }, []);
 

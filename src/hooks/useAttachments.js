@@ -114,39 +114,29 @@ export function useAttachments() {
 
     (async () => {
       try {
+        // SQLite ist immer verfügbar
         const db = await getDb();
+        setStorageMode("sqlite");
+        await migrateAttachmentsToSQLite();
 
-        if (!db) {
-          // Web/Dev → nur localStorage
-          setStorageMode("localStorage");
-          if (!cancelled) {
-            setAttachments(readJsonFallback(STORAGE_KEYS.ATTACHMENTS, []));
-            setLabelSuggestions(readJsonFallback(STORAGE_KEYS.ATTACHMENT_LABELS, []));
-          }
-        } else {
-          // SQLite
-          setStorageMode("sqlite");
-          await migrateAttachmentsToSQLite();
-
-          if (!cancelled) {
-            try {
-              const [dbAttachments, dbLabels] = await Promise.all([
-                getAllAttachments(),
-                getAllLabelSuggestions(),
-              ]);
-              setAttachments(dbAttachments);
-              setLabelSuggestions(dbLabels);
-            } catch {
-              // Fallback to localStorage
-              setAttachments(readJsonFallback(STORAGE_KEYS.ATTACHMENTS, []));
-              setLabelSuggestions(readJsonFallback(STORAGE_KEYS.ATTACHMENT_LABELS, []));
-            }
+        if (!cancelled) {
+          try {
+            const [dbAttachments, dbLabels] = await Promise.all([
+              getAllAttachments(),
+              getAllLabelSuggestions(),
+            ]);
+            setAttachments(dbAttachments);
+            setLabelSuggestions(dbLabels);
+          } catch {
+            // Kein Fallback mehr — SQLite ist Pflicht
+            setAttachments([]);
+            setLabelSuggestions([]);
           }
         }
       } catch (err) {
         console.error("[useAttachments] Init fehlgeschlagen:", err);
-        setAttachments(readJsonFallback(STORAGE_KEYS.ATTACHMENTS, []));
-        setLabelSuggestions(readJsonFallback(STORAGE_KEYS.ATTACHMENT_LABELS, []));
+        setAttachments([]);
+        setLabelSuggestions([]);
       }
 
       if (!cancelled) setIsLoading(false);
@@ -157,23 +147,11 @@ export function useAttachments() {
 
   // ─── Persist Helpers ───
   const persistAttachments = useCallback((atts) => {
-    getDb().then((db) => {
-      if (db) {
-        bulkUpsertAttachments(atts).catch(console.error);
-        return;
-      }
-      localStorage.setItem(STORAGE_KEYS.ATTACHMENTS, JSON.stringify(atts));
-    });
+    bulkUpsertAttachments(atts).catch(console.error);
   }, []);
 
   const persistLabelSuggestions = useCallback((labels) => {
-    getDb().then((db) => {
-      if (db) {
-        bulkUpsertLabelSuggestions(labels).catch(console.error);
-        return;
-      }
-      localStorage.setItem(STORAGE_KEYS.ATTACHMENT_LABELS, JSON.stringify(labels));
-    });
+    bulkUpsertLabelSuggestions(labels).catch(console.error);
   }, []);
 
   const updateSuggestions = useCallback((label) => {
@@ -189,10 +167,7 @@ export function useAttachments() {
     });
 
     // SQLite upsert
-    const db = getDb();
-    if (db) {
-      upsertLabelSuggestion(trimmed).catch(console.error);
-    }
+    upsertLabelSuggestion(trimmed).catch(console.error);
   }, [persistLabelSuggestions]);
 
   const addAttachment = useCallback(async ({ entryId, file, label }) => {
@@ -241,10 +216,7 @@ export function useAttachments() {
     updateSuggestions(trimmedLabel);
 
     // SQLite
-    const db = await getDb();
-    if (db) {
-      await upsertAttachment(attachment).catch(console.error);
-    }
+    await upsertAttachment(attachment).catch(console.error);
 
     return attachment;
   }, [persistAttachments, updateSuggestions]);

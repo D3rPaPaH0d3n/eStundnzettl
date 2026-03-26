@@ -61,7 +61,12 @@ const BackupSettings = ({
       initGoogleAuth().catch(() => {});
     }
     setIsCloudConnected(cloudSyncEnabled);
-    setHasBackupFolder(hasBackupTarget());
+    
+    // hasBackupTarget ist jetzt async
+    hasBackupTarget().then((hasTarget) => {
+      setHasBackupFolder(hasTarget);
+    }).catch(() => setHasBackupFolder(false));
+    
     if (lastBackup) setLastBackupDate(lastBackup);
     try {
       const stored = JSON.parse(

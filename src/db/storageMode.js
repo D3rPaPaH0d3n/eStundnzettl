@@ -1,39 +1,39 @@
 /**
  * storageMode.js — Zentrale Steuerung: SQLite oder localStorage?
  *
- * Wird einmalig beim App-Start initialisiert.
- * Danach können alle Module synchron abfragen, welcher Storage aktiv ist.
+ * eStundnzettl ist eine reine Android-App — SQLite ist IMMER der aktive Speicher.
+ * Diese Datei bleibt für API-Kompatibilität, aber alle Funktionen geben "sqlite" zurück.
  */
 
-let _mode = "localStorage"; // Default/Fallback
 let _initialized = false;
 
 /**
- * Setzt den aktiven Storage-Modus.
- * Wird von der DB-Initialisierung aufgerufen.
+ * Setzt den aktiven Storage-Modus (nur "sqlite" erlaubt).
  *
  * @param {"sqlite"|"localStorage"} mode
  */
 export function setStorageMode(mode) {
-  _mode = mode;
+  if (mode !== "sqlite") {
+    console.warn(`[storageMode] Nur "sqlite" erlaubt, aber "${mode}" übergeben — ignoriert`);
+  }
   _initialized = true;
-  console.info(`[storageMode] Aktiver Speicher: ${mode}`);
+  console.info(`[storageMode] Aktiver Speicher: sqlite`);
 }
 
 /**
- * Gibt den aktuellen Storage-Modus zurück.
- * @returns {"sqlite"|"localStorage"}
+ * Gibt den aktuellen Storage-Modus zurück (immer "sqlite").
+ * @returns {"sqlite"}
  */
 export function getStorageMode() {
-  return _mode;
+  return "sqlite";
 }
 
 /**
- * Prüft ob SQLite der aktive Speicher ist.
+ * Prüft ob SQLite der aktive Speicher ist (immer true).
  * @returns {boolean}
  */
 export function isSQLiteActive() {
-  return _mode === "sqlite";
+  return true;
 }
 
 /**

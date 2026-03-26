@@ -18,22 +18,10 @@ import { migrateEntriesToSQLite } from "../db/migrate-from-localstorage";
  * API für Consumer bleibt 100% identisch:
  *   { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries }
  *
- * Intern: SQLite-primär. Auf Web (dev) wird nur localStorage genutzt.
+ * Intern: SQLite-primär (reine Android-App).
  */
 export function useEntries() {
-  // ─── localStorage-Laden (Fallback für Web/Dev) ───
-  const loadFromLocalStorage = () => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.ENTRIES);
-      if (stored && stored !== "undefined") {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) { /* corrupt */ }
-    return [];
-  };
-
-  const [entries, setEntries] = useState(loadFromLocalStorage);
+  const [entries, setEntries] = useState([]);
   const sqliteReady = useRef(false);
   const initDone = useRef(false);
 
@@ -46,15 +34,8 @@ export function useEntries() {
 
     (async () => {
       try {
+        // SQLite ist immer verfügbar
         const db = await getDb();
-
-        if (!db) {
-          // Web/Dev → nur localStorage
-          setStorageMode("localStorage");
-          return;
-        }
-
-        // SQLite ist verfügbar
         setStorageMode("sqlite");
         sqliteReady.current = true;
 
@@ -62,7 +43,7 @@ export function useEntries() {
         try {
           await migrateEntriesToSQLite();
         } catch (migErr) {
-          console.error("[useEntries] Migration fehlgeschlagen, arbeite mit localStorage-Daten weiter:", migErr);
+          console.error("[useEntries] Migration fehlgeschlagen:", migErr);
         }
 
         // Entries aus SQLite laden und State aktualisieren
@@ -71,22 +52,21 @@ export function useEntries() {
             const sqliteEntries = await getAllEntries();
             setEntries(sqliteEntries);
           } catch (loadErr) {
-            console.error("[useEntries] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", loadErr);
+            console.error("[useEntries] SQLite-Load fehlgeschlagen:", loadErr);
             sqliteReady.current = false;
           }
         }
       } catch (err) {
         console.error("[useEntries] DB-Init fehlgeschlagen:", err);
-        setStorageMode("localStorage");
+        // Kein Fallback mehr — SQLite ist Pflicht
       }
     })();
 
     return () => { cancelled = true; };
   }, []);
 
-  // ─── SQLite-Write Helper (fire-and-forget mit Error-Log) ───
+  // ─── SQLite-Write Helper ───
   const sqliteWrite = useCallback(async (operation) => {
-    if (!sqliteReady.current) return;
     try {
       await operation();
     } catch (err) {

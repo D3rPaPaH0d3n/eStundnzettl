@@ -79,71 +79,34 @@ export function useSettings() {
 
     (async () => {
       try {
+        // SQLite ist immer verfügbar (reine Android-App)
         const db = await getDb();
+        setStorageMode("sqlite");
+        await migrateSettingsToSQLite();
 
-        if (!db) {
-          // Web/Dev → nur localStorage
-          setStorageMode("localStorage");
-          if (!cancelled) {
-            // Load from localStorage
-            try {
-              const stored = localStorage.getItem(STORAGE_KEYS.USER);
-              if (stored && stored !== "undefined") {
-                const parsed = JSON.parse(stored);
-                if (parsed && typeof parsed === "object") {
-                  if (!Array.isArray(parsed.workDays) || parsed.workDays.length !== 7) {
-                    parsed.workDays = [...WORK_MODELS[0].days];
-                  }
-                  setUserDataState(parsed);
-                }
+        if (!cancelled) {
+          try {
+            const dbUser = await getSetting("userData", null);
+            if (dbUser && typeof dbUser === "object") {
+              if (!Array.isArray(dbUser.workDays) || dbUser.workDays.length !== 7) {
+                dbUser.workDays = [...WORK_MODELS[0].days];
               }
-            } catch {}
+              setUserDataState(dbUser);
+            }
+          } catch {}
 
-            const storedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
-            if (storedTheme) setThemeState(storedTheme);
+          const dbTheme = await getSetting("theme", "system");
+          setThemeState(dbTheme);
 
-            const storedCloud = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
-            setCloudSyncState(storedCloud === "true");
+          const dbCloud = await getSetting("cloudSyncEnabled", false);
+          setCloudSyncState(dbCloud);
 
-            const storedLocal = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
-            setLocalBackupState(storedLocal === "true");
-          }
-        } else {
-          // SQLite verfügbar → Migration + Load
-          setStorageMode("sqlite");
-          await migrateSettingsToSQLite();
-
-          if (!cancelled) {
-            try {
-              const dbUser = await getSetting("userData", null);
-              if (dbUser && typeof dbUser === "object") {
-                if (!Array.isArray(dbUser.workDays) || dbUser.workDays.length !== 7) {
-                  dbUser.workDays = [...WORK_MODELS[0].days];
-                }
-                setUserDataState(dbUser);
-              }
-            } catch {}
-
-            const dbTheme = await getSetting("theme", "system");
-            setThemeState(dbTheme);
-
-            const dbCloud = await getSetting("cloudSyncEnabled", false);
-            setCloudSyncState(dbCloud);
-
-            const dbLocal = await getSetting("localBackupEnabled", false);
-            setLocalBackupState(dbLocal);
-          }
+          const dbLocal = await getSetting("localBackupEnabled", false);
+          setLocalBackupState(dbLocal);
         }
       } catch (err) {
         console.error("[useSettings] Init fehlgeschlagen:", err);
-        // Fallback auf localStorage
-        setStorageMode("localStorage");
-        try {
-          const stored = localStorage.getItem(STORAGE_KEYS.USER);
-          if (stored && stored !== "undefined") {
-            setUserDataState(JSON.parse(stored));
-          }
-        } catch {}
+        // Kein Fallback mehr — SQLite ist Pflicht
       }
 
       if (!cancelled) setIsLoaded(true);
@@ -177,52 +140,23 @@ export function useSettings() {
   // ─── Setters mit SQLite-Persistenz ───
   const setUserData = useCallback((newData) => {
     setUserDataState(newData);
-    // Persist async
-    getDb().then((db) => {
-      if (db) {
-        setSetting("userData", newData).catch(console.error);
-      }
-      // localStorage für Web/Dev und Backup-Kompatibilität
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newData));
-    });
+    // Persist in SQLite
+    setSetting("userData", newData).catch(console.error);
   }, []);
 
   const setTheme = useCallback((newTheme) => {
     setThemeState(newTheme);
-    getDb().then((db) => {
-      if (db) {
-        setSetting("theme", newTheme).catch(console.error);
-      }
-      localStorage.setItem(STORAGE_KEYS.THEME, newTheme);
-    });
+    setSetting("theme", newTheme).catch(console.error);
   }, []);
 
   const setCloudSyncEnabled = useCallback((enabled) => {
     setCloudSyncState(enabled);
-    getDb().then((db) => {
-      if (db) {
-        setSetting("cloudSyncEnabled", enabled).catch(console.error);
-      }
-      if (enabled) {
-        localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
-      }
-    });
+    setSetting("cloudSyncEnabled", enabled).catch(console.error);
   }, []);
 
   const setLocalBackupEnabled = useCallback((enabled) => {
     setLocalBackupState(enabled);
-    getDb().then((db) => {
-      if (db) {
-        setSetting("localBackupEnabled", enabled).catch(console.error);
-      }
-      if (enabled) {
-        localStorage.setItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED, "true");
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
-      }
-    });
+    setSetting("localBackupEnabled", enabled).catch(console.error);
   }, []);
 
   // Legacy alias

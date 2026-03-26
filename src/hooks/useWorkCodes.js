@@ -46,54 +46,29 @@ export const useWorkCodes = () => {
 
     (async () => {
       try {
+        // SQLite ist immer verfügbar
         const db = await getDb();
+        setStorageMode("sqlite");
+        await migrateWorkCodesToSQLite();
 
-        if (!db) {
-          // Web/Dev → nur localStorage
-          setStorageMode("localStorage");
-          if (!cancelled) {
-            const stored = localStorage.getItem(STORAGE_KEYS.WORK_CODES);
-            if (stored) {
-              try {
-                setWorkCodes(JSON.parse(stored));
-              } catch {
-                setWorkCodes([]);
-              }
+        if (!cancelled) {
+          try {
+            const dbCodes = await getAllWorkCodes();
+            if (dbCodes.length > 0) {
+              setWorkCodes(dbCodes);
             } else {
               // Default preset
               const defaultCodes = JSON.parse(JSON.stringify(WORK_CODE_PRESETS.allgemein.codes));
-              localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(defaultCodes));
+              await bulkUpsertWorkCodes(defaultCodes);
               setWorkCodes(defaultCodes);
             }
-          }
-        } else {
-          // SQLite
-          setStorageMode("sqlite");
-          await migrateWorkCodesToSQLite();
-
-          if (!cancelled) {
-            try {
-              const dbCodes = await getAllWorkCodes();
-              if (dbCodes.length > 0) {
-                setWorkCodes(dbCodes);
-              } else {
-                // Default preset
-                const defaultCodes = JSON.parse(JSON.stringify(WORK_CODE_PRESETS.allgemein.codes));
-                await bulkUpsertWorkCodes(defaultCodes);
-                setWorkCodes(defaultCodes);
-              }
-            } catch {
-              setWorkCodes([]);
-            }
+          } catch {
+            setWorkCodes([]);
           }
         }
       } catch (err) {
         console.error("[useWorkCodes] Init fehlgeschlagen:", err);
-        // Fallback
-        try {
-          const stored = localStorage.getItem(STORAGE_KEYS.WORK_CODES);
-          if (stored) setWorkCodes(JSON.parse(stored));
-        } catch {}
+        // Kein Fallback mehr — SQLite ist Pflicht
       }
 
       if (!cancelled) setIsLoading(false);
@@ -104,13 +79,8 @@ export const useWorkCodes = () => {
 
   // ─── Persist Helper ───
   const persist = useCallback(async (codes) => {
-    // localStorage für Web/Dev und Backup-Kompatibilität
-    localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(codes));
     // SQLite async
-    const db = await getDb();
-    if (db) {
-      await bulkUpsertWorkCodes(codes).catch(console.error);
-    }
+    await bulkUpsertWorkCodes(codes).catch(console.error);
   }, []);
 
   // ─── Speichern bei Änderungen ───

@@ -26,8 +26,8 @@ export function useAutoBackup(entries, userData, isEnabled) {
   const performBackup = async (source) => {
     const { entries, userData } = latestDataRef.current;
 
-    const cloudActive = await getSetting("cloudSyncEnabled", false).catch(() => localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true");
-    const localActive = await getSetting("localBackupEnabled", false).catch(() => localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true");
+    const cloudActive = await getSetting("cloudSyncEnabled", false).catch(() => false);
+    const localActive = await getSetting("localBackupEnabled", false).catch(() => false);
 
     if (!isEnabled && !cloudActive && !localActive) return;
     if (!entries || entries.length === 0) return;
@@ -64,19 +64,16 @@ export function useAutoBackup(entries, userData, isEnabled) {
             await uploadOrUpdateFile(authResponse.accessToken, BACKUP_CONFIG.FILENAME, payload);
             lastHash.current = currentHash;
             const timestamp = new Date().toISOString();
-            localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, timestamp);
             await setSetting("lastBackup", timestamp).catch(() => {});
             await insertBackupMetadata({ type: "auto", timestamp }).catch(() => {});
             await setSetting(BACKUP_FAIL_KEY, 0).catch(() => {});
-            localStorage.setItem(BACKUP_FAIL_KEY, "0");
             setBackupFailCount(0);
           }
         } catch (cloudErr) {
           // Fehler-Counter hochzählen
-          const current = await getSetting(BACKUP_FAIL_KEY, 0).catch(() => parseInt(localStorage.getItem(BACKUP_FAIL_KEY) || "0", 10));
+          const current = await getSetting(BACKUP_FAIL_KEY, 0).catch(() => 0);
           const newCount = current + 1;
           await setSetting(BACKUP_FAIL_KEY, newCount).catch(() => {});
-          localStorage.setItem(BACKUP_FAIL_KEY, String(newCount));
           setBackupFailCount(newCount);
           console.warn("Cloud-Backup fehlgeschlagen:", cloudErr);
         }
@@ -85,7 +82,6 @@ export function useAutoBackup(entries, userData, isEnabled) {
       if (localActive && !cloudActive) {
         lastHash.current = currentHash;
         const timestamp = new Date().toISOString();
-        localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, timestamp);
         await setSetting("lastBackup", timestamp).catch(() => {});
         await insertBackupMetadata({ type: "auto", timestamp }).catch(() => {});
       }

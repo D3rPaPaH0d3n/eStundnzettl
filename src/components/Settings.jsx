@@ -117,7 +117,7 @@ const Settings = ({
       if (analysis.hasSettings) {
         setPendingImport(analysis);
       } else {
-        applyBackup(analysis, "ALL");
+        await applyBackup(analysis, "ALL");
         toast.success(`${analysis.entryCount} Einträge importiert!`);
         setTimeout(() => window.location.reload(), 1500);
       }
@@ -127,9 +127,9 @@ const Settings = ({
     e.target.value = null;
   };
 
-  const handleConfirmImport = (mode) => {
+  const handleConfirmImport = async (mode) => {
     if (!pendingImport) return;
-    applyBackup(pendingImport, mode);
+    await applyBackup(pendingImport, mode);
     toast.success("Erfolgreich wiederhergestellt!");
     setPendingImport(null);
     setTimeout(() => window.location.reload(), 1000);

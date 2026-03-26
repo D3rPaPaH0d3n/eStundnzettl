@@ -9,7 +9,7 @@ export const CHANGELOG_DATA = [
 
 
   {
-  version: "6.4.1",
+  version: "6.4.0",
   date: "26.03.2026",
   title: "Neue Features & Bugfixes 🛠️",
   isMajor: false,

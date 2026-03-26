@@ -5,10 +5,10 @@ import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
 import { analyzeBackupData, applyBackup, readJsonFile, readBackupFromFolder, selectBackupFolder } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
-import { WORK_MODELS, STORAGE_KEYS } from "../hooks/constants";
+import { WORK_MODELS } from "../hooks/constants";
 import { DEMO_DATA } from "../utils/demoData";
 
-const OnboardingWizard = ({ onComplete }) => {
+const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCodes, setCloudSyncEnabled, setLocalBackupEnabled, setTheme }) => {
   const [step, setStep] = useState(0); 
   const [loading, setLoading] = useState(false);
   const [isRestoreFlow, setIsRestoreFlow] = useState(false); 
@@ -47,10 +47,9 @@ const OnboardingWizard = ({ onComplete }) => {
 
   const handleDemoMode = () => {
     const demoEntries = DEMO_DATA.generateEntries();
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(DEMO_DATA.user));
-    localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(DEMO_DATA.workCodes));
-    localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(demoEntries));
-    localStorage.setItem(STORAGE_KEYS.LAST_CODE, String(DEMO_DATA.workCodes[0]?.id ?? 1));
+    setUserData(DEMO_DATA.user);
+    importWorkCodes?.(DEMO_DATA.workCodes);
+    importEntries?.(demoEntries);
     toast.success("Demo-Daten geladen! Du kannst die App jetzt ausprobieren.");
     onComplete();
   };
@@ -140,47 +139,32 @@ const OnboardingWizard = ({ onComplete }) => {
   };
 
   // --- FINISH (BUGFIX: Persistenz korrigiert) ---
-  const finishSetup = () => {
-    // 1. User Daten speichern
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({
+  const finishSetup = async () => {
+    setUserData({
       name: formData.name,
       company: formData.company,
       role: formData.role,
-      position: formData.role, 
+      position: formData.role,
       photo: formData.photo,
       workDays: formData.workDays,
       minuteInput: formData.minuteInput,
-      // Legacy settings im User-Objekt (optional, für Rückwärtskompatibilität)
       settings: {
         autoBackup: formData.autoBackup,
-        theme: 'system' 
+        theme: 'system'
       }
-    }));
+    });
 
-    // 2. Backup-Einstellungen EXPLIZIT setzen (Single Source of Truth)
-    // Damit useSettings und useAutoBackup den Status sofort erkennen
-    if (formData.autoBackup) {
-        localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
-    } else {
-        localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
-    }
-
-    if (formData.localBackupEnabled) {
-        localStorage.setItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED, "true");
-    } else {
-        localStorage.removeItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
-    }
-
-    // 3. Theme Default setzen
-    localStorage.setItem(STORAGE_KEYS.THEME, 'system');
+    setCloudSyncEnabled?.(formData.autoBackup);
+    setLocalBackupEnabled?.(formData.localBackupEnabled);
+    setTheme?.('system');
 
     if (restoreData) {
-       applyBackup(restoreData);
+       await applyBackup(restoreData);
        toast.success("Daten wiederhergestellt!");
     } else {
        toast.success("Willkommen!");
     }
-    
+
     onComplete();
   };
 

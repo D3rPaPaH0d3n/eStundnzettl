@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Settings as SettingsIcon, ListChecks, Calendar, Lock, Unlock, List, ChevronDown, ChevronRight } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
-import { WORK_MODELS, STORAGE_KEYS } from "../../hooks/constants";
+import { WORK_MODELS } from "../../hooks/constants";
 import { DEMO_DATA } from "../../utils/demoData";
 import toast from "react-hot-toast";
 import PresetModal from "../PresetModal";
@@ -17,6 +17,8 @@ const DataSettings = ({
   onOpenDayPicker,
   entries = [],
   lastBackup = null,
+  importEntries,
+  importWorkCodes,
 }) => {
   const [isWorkModelExpanded, setIsWorkModelExpanded] = useState(true);
   const [showPresetModal, setShowPresetModal] = useState(false);
@@ -68,17 +70,13 @@ const DataSettings = ({
     setShowDemoWarning(true);
   };
 
-  const handleConfirmDemoData = () => {
+  const handleConfirmDemoData = async () => {
     Haptics.impact({ style: ImpactStyle.Medium });
     const demoUser = { ...DEMO_DATA.user };
     const demoEntries = DEMO_DATA.generateEntries();
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
-    localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(demoEntries));
-    localStorage.setItem(
-      STORAGE_KEYS.WORK_CODES,
-      JSON.stringify(DEMO_DATA.workCodes)
-    );
-    localStorage.removeItem(STORAGE_KEYS.LAST_CODE);
+    setUserData(demoUser);
+    importEntries?.(demoEntries);
+    importWorkCodes?.(DEMO_DATA.workCodes);
     toast.success("Demo-Daten geladen! Seite wird neu geladen...");
     setTimeout(() => window.location.reload(), 1000);
   };

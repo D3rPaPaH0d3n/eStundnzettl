@@ -3,6 +3,8 @@ import { App } from "@capacitor/app";
 import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
 import { STORAGE_KEYS, BACKUP_CONFIG } from "./constants";
+import { getSetting, setSetting } from "../db/repositories/settingsRepo";
+import { insertBackupMetadata } from "../db/repositories/backupMetadataRepo";
 
 const BACKUP_FAIL_KEY = "estundnzettl_backup_fail_count";
 
@@ -11,9 +13,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
   const lastHash = useRef("");
   const debounceTimer = useRef(null);
   const isUploading = useRef(false);
-  const [backupFailCount, setBackupFailCount] = useState(
-    () => parseInt(localStorage.getItem(BACKUP_FAIL_KEY) || "0", 10)
-  );
+  const [backupFailCount, setBackupFailCount] = useState(0);
 
   useEffect(() => {
     latestDataRef.current = { entries, userData };
@@ -26,8 +26,8 @@ export function useAutoBackup(entries, userData, isEnabled) {
   const performBackup = async (source) => {
     const { entries, userData } = latestDataRef.current;
 
-    const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
-    const localActive = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
+    const cloudActive = await getSetting("cloudSyncEnabled", false).catch(() => localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true");
+    const localActive = await getSetting("localBackupEnabled", false).catch(() => localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true");
 
     if (!isEnabled && !cloudActive && !localActive) return;
     if (!entries || entries.length === 0) return;
@@ -63,15 +63,19 @@ export function useAutoBackup(entries, userData, isEnabled) {
           if (authResponse?.accessToken) {
             await uploadOrUpdateFile(authResponse.accessToken, BACKUP_CONFIG.FILENAME, payload);
             lastHash.current = currentHash;
-            localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, new Date().toISOString());
-            // Erfolg: Fehler-Counter zurücksetzen
+            const timestamp = new Date().toISOString();
+            localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, timestamp);
+            await setSetting("lastBackup", timestamp).catch(() => {});
+            await insertBackupMetadata({ type: "auto", timestamp }).catch(() => {});
+            await setSetting(BACKUP_FAIL_KEY, 0).catch(() => {});
             localStorage.setItem(BACKUP_FAIL_KEY, "0");
             setBackupFailCount(0);
           }
         } catch (cloudErr) {
           // Fehler-Counter hochzählen
-          const current = parseInt(localStorage.getItem(BACKUP_FAIL_KEY) || "0", 10);
+          const current = await getSetting(BACKUP_FAIL_KEY, 0).catch(() => parseInt(localStorage.getItem(BACKUP_FAIL_KEY) || "0", 10));
           const newCount = current + 1;
+          await setSetting(BACKUP_FAIL_KEY, newCount).catch(() => {});
           localStorage.setItem(BACKUP_FAIL_KEY, String(newCount));
           setBackupFailCount(newCount);
           console.warn("Cloud-Backup fehlgeschlagen:", cloudErr);
@@ -80,7 +84,10 @@ export function useAutoBackup(entries, userData, isEnabled) {
 
       if (localActive && !cloudActive) {
         lastHash.current = currentHash;
-        localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, new Date().toISOString());
+        const timestamp = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, timestamp);
+        await setSetting("lastBackup", timestamp).catch(() => {});
+        await insertBackupMetadata({ type: "auto", timestamp }).catch(() => {});
       }
     } catch (err) {
       // Silent fail

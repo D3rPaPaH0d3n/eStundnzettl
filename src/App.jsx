@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import { ArrowLeft, Settings as SettingsIcon, FileBarChart, Plus } from "lucide-react";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -59,10 +59,16 @@ export default function App() {
   // Work Codes Hook
   const { workCodes, hasAnyCodes, loadWorkCodes } = useWorkCodes();
 
-  // Default Code: erster aus User-Codes oder Fallback 1
+  // Default Code: letzter verwendeter Arbeitscode aus Entries oder Fallback
+  const lastUsedCode = useMemo(() => {
+    const matching = [...entries]
+      .filter((entry) => entry.type === "work" && entry.code && entry.code !== WORK_CODE.DRIVE && entry.code !== WORK_CODE.ARRIVAL)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    return matching?.code ?? null;
+  }, [entries]);
+
   const getDefaultCode = () => {
-    const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
-    if (lastCode) return Number(lastCode);
+    if (lastUsedCode) return Number(lastUsedCode);
     if (hasAnyCodes) return workCodes[0].id;
     return WORK_CODE.DEFAULT;
   };
@@ -252,7 +258,15 @@ export default function App() {
       <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#27272a', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#10b981', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />
 
       {showOnboarding && (
-        <OnboardingWizard onComplete={handleOnboardingFinish} />
+        <OnboardingWizard
+          onComplete={handleOnboardingFinish}
+          setUserData={setUserData}
+          importEntries={importEntries}
+          importWorkCodes={loadWorkCodes}
+          setCloudSyncEnabled={setCloudSyncEnabled}
+          setLocalBackupEnabled={setLocalBackupEnabled}
+          setTheme={setTheme}
+        />
       )}
 
       <ConfirmModal
@@ -374,6 +388,8 @@ export default function App() {
                 localBackupEnabled={localBackupEnabled}
                 setLocalBackupEnabled={setLocalBackupEnabled}
                 entries={entries}
+                importEntries={importEntries}
+                importWorkCodes={loadWorkCodes}
                 onExport={exportData}
                 onImport={() => fileInputRef.current?.click()}
                 onDeleteAll={() => setDeleteTarget({ type: 'all' })}

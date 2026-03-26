@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 import { parseTime, getTargetMinutesForDate, toLocalDateString, checkForUpdate } from "../utils";
-import { STORAGE_KEYS, WORK_CODE, WORK_MODELS } from "./constants";
+import { WORK_CODE, WORK_MODELS } from "./constants";
 
 /**
  * Zentralisiert alle Event-Handler aus App.jsx
@@ -200,15 +200,6 @@ export function useAppActions({
     if (form.editingEntry) updateEntry(newEntry);
     else addEntry(newEntry);
 
-    if (
-      storedType === "work" &&
-      usedCode &&
-      usedCode !== WORK_CODE.DRIVE &&
-      usedCode !== WORK_CODE.ARRIVAL
-    ) {
-      localStorage.setItem(STORAGE_KEYS.LAST_CODE, usedCode);
-    }
-
     toast.success(form.editingEntry ? "✏️ Eintrag aktualisiert" : "💾 Eintrag gespeichert");
     form.setEditingEntry(null);
     form.setProject("");
@@ -241,9 +232,6 @@ export function useAppActions({
         workDays: [...WORK_MODELS[0].days],
       };
       setUserData(emptyUser);
-      localStorage.removeItem(STORAGE_KEYS.LAST_CODE);
-      localStorage.removeItem(STORAGE_KEYS.ATTACHMENTS);
-      localStorage.removeItem(STORAGE_KEYS.ATTACHMENT_LABELS);
       toast.success("🧹 App vollständig zurückgesetzt");
     }
     setDeleteTarget(null);
@@ -254,35 +242,10 @@ export function useAppActions({
   // =====================
 
   const handleOnboardingFinish = useCallback(() => {
-    const storedUserStr = localStorage.getItem(STORAGE_KEYS.USER);
-    if (storedUserStr) {
-      try {
-        const storedUser = JSON.parse(storedUserStr);
-        if (storedUser && typeof storedUser === "object") {
-          setUserData(storedUser);
-          if (storedUser.settings?.autoBackup !== undefined) {
-            setAutoBackup(storedUser.settings.autoBackup);
-          }
-        }
-      } catch (e) {
-        console.error("Error loading user data", e);
-      }
-    }
-
-    const storedEntriesStr = localStorage.getItem(STORAGE_KEYS.ENTRIES);
-    if (storedEntriesStr) {
-      try {
-        const storedEntries = JSON.parse(storedEntriesStr);
-        importEntries(storedEntries);
-      } catch (e) {
-        console.error("Error loading entries", e);
-      }
-    }
-
     setShowOnboarding(false);
     toast.success("Einrichtung abgeschlossen!");
     Haptics.notification({ type: NotificationType.Success });
-  }, [setUserData, setAutoBackup, importEntries, setShowOnboarding]);
+  }, [setShowOnboarding]);
 
   // =====================
   // UPDATE CHECK

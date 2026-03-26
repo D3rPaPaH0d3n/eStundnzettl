@@ -71,9 +71,6 @@ const BackupSettings = ({
     } catch {
       setIsTokenValid(false);
     }
-    // Backup-Fehler-Counter lesen
-    const failCount = parseInt(localStorage.getItem("estundnzettl_backup_fail_count") || "0", 10);
-    setBackupFailCount(failCount);
   }, [cloudSyncEnabled, lastBackup]);
 
   const handleGoogleToggle = async () => {

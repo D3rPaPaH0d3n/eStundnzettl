@@ -157,19 +157,23 @@ export function useAttachments() {
 
   // ─── Persist Helpers ───
   const persistAttachments = useCallback((atts) => {
-    localStorage.setItem(STORAGE_KEYS.ATTACHMENTS, JSON.stringify(atts));
-    const db = getDb();
-    if (db) {
-      bulkUpsertAttachments(atts).catch(console.error);
-    }
+    getDb().then((db) => {
+      if (db) {
+        bulkUpsertAttachments(atts).catch(console.error);
+        return;
+      }
+      localStorage.setItem(STORAGE_KEYS.ATTACHMENTS, JSON.stringify(atts));
+    });
   }, []);
 
   const persistLabelSuggestions = useCallback((labels) => {
-    localStorage.setItem(STORAGE_KEYS.ATTACHMENT_LABELS, JSON.stringify(labels));
-    const db = getDb();
-    if (db) {
-      bulkUpsertLabelSuggestions(labels).catch(console.error);
-    }
+    getDb().then((db) => {
+      if (db) {
+        bulkUpsertLabelSuggestions(labels).catch(console.error);
+        return;
+      }
+      localStorage.setItem(STORAGE_KEYS.ATTACHMENT_LABELS, JSON.stringify(labels));
+    });
   }, []);
 
   const updateSuggestions = useCallback((label) => {

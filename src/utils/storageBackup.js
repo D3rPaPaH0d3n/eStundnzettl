@@ -2,6 +2,8 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS, BACKUP_CONFIG } from "../hooks/constants";
 import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "./googleDrive";
+import { getSetting, setSetting } from "../db/repositories/settingsRepo";
+import { getAllEntries, deleteAllEntriesFromDb, bulkInsertEntries } from "../db/repositories/entriesRepo";
 
 // =========================================================
 // BACKUP ORDNER
@@ -207,14 +209,25 @@ export const analyzeBackupData = (data) => {
 };
 
 // 2. ANWENDEN - Speichert die Daten basierend auf der Entscheidung
-export const applyBackup = (analyzedData, mode = 'ALL') => {
+export const applyBackup = async (analyzedData, mode = 'ALL') => {
   if (!analyzedData || !analyzedData.valid) return false;
 
   try {
-    localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(analyzedData.entries));
+    const dbEntries = await getAllEntries().catch(() => null);
 
-    if (mode === 'ALL' && analyzedData.hasSettings && analyzedData.settings) {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(analyzedData.settings));
+    if (dbEntries) {
+      await deleteAllEntriesFromDb();
+      await bulkInsertEntries(analyzedData.entries || []);
+
+      if (mode === 'ALL' && analyzedData.hasSettings && analyzedData.settings) {
+        await setSetting("userData", analyzedData.settings);
+      }
+    } else {
+      localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(analyzedData.entries));
+
+      if (mode === 'ALL' && analyzedData.hasSettings && analyzedData.settings) {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(analyzedData.settings));
+      }
     }
 
     return true;
@@ -229,11 +242,10 @@ export const applyBackup = (analyzedData, mode = 'ALL') => {
 // Falls nicht übergeben, wird aus localStorage gelesen (Backward Compatibility)
 export const triggerManualBackup = async (options = {}) => {
   try {
-    // Wenn options nicht übergeben, fallback auf localStorage (Backward Compatibility)
-    const entries = options.entries || JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]');
-    const userData = options.userData || JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null');
-    const cloudActive = options.cloudSyncEnabled ?? localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
-    const localActive = options.localBackupEnabled ?? localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
+    const entries = options.entries || await getAllEntries().catch(() => JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]'));
+    const userData = options.userData || await getSetting('userData', null).catch(() => JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null'));
+    const cloudActive = options.cloudSyncEnabled ?? await getSetting('cloudSyncEnabled', false).catch(() => localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true");
+    const localActive = options.localBackupEnabled ?? await getSetting('localBackupEnabled', false).catch(() => localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true");
 
     if (!entries || entries.length === 0) {
       return { success: false, message: "Keine Daten zum Sichern" };
@@ -273,7 +285,9 @@ export const triggerManualBackup = async (options = {}) => {
     }
 
     if (gdriveOk || localOk) {
-      localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, new Date().toISOString());
+      const timestamp = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, timestamp);
+      await setSetting('lastBackup', timestamp).catch(() => {});
       return { success: true, gdrive: gdriveOk, local: localOk };
     }
 

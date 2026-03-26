@@ -24,6 +24,8 @@ const Settings = ({
   setLocalBackupEnabled,
   entries = [],
   lastBackup = null,
+  importEntries,
+  importWorkCodes,
   onExport,
   onImport,
   onDeleteAll,
@@ -180,6 +182,8 @@ const Settings = ({
         onOpenDayPicker={openDayPicker}
         entries={entries}
         lastBackup={lastBackup}
+        importEntries={importEntries}
+        importWorkCodes={importWorkCodes}
       />
 
       {/* 3. Theme Settings */}

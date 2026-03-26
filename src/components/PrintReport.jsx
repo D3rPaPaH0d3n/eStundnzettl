@@ -4,6 +4,7 @@ import html2pdf from "html2pdf.js";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
+import { useAttachmentShare } from "../hooks/useAttachmentShare";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -36,7 +37,7 @@ const PRINT_STYLES = {
   borderLight: '#e4e4e7', // Zinc-200
 };
 
-const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onMonthChange, userData }) => {
+const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onMonthChange, userData, attachments = [], readAttachmentFile }) => {
   
   // Work Codes aus dem Hook laden
   const { workCodes } = useWorkCodes();
@@ -57,6 +58,18 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
   const [showExportModal, setShowExportModal] = useState(false); 
 
   const reportRef = useRef(null);
+  const { shareReportBundle } = useAttachmentShare({
+    readAttachmentFile: async (file) => {
+      if (file.storagePath && file.mimeType === "application/pdf" && file.label === "Stundenzettel") {
+        const result = await Filesystem.readFile({
+          path: file.storagePath,
+          directory: Directory.Cache,
+        });
+        return result.data;
+      }
+      return readAttachmentFile(file);
+    },
+  });
 
   useEffect(() => {
     const calculateFitScale = () => {
@@ -133,6 +146,16 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
   const stats = usePeriodStats(entries, userData, periodStart, periodEnd);
   // -----------------
 
+  const attachmentsByEntryId = useMemo(() => {
+    const map = new Map();
+    attachments.forEach((attachment) => {
+      const list = map.get(attachment.entryId) || [];
+      list.push(attachment);
+      map.set(attachment.entryId, list);
+    });
+    return map;
+  }, [attachments]);
+
   const dayMetaMap = useMemo(() => {
     const map = {}; let currentDateStr = ""; let dayIndex = 0; const sums = {};
     filteredEntries.forEach((e) => {
@@ -172,6 +195,8 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
       }
       const timestamp = new Date().getTime().toString().slice(-6); 
       const filename = `${employeeNameClean}_Stundenzettel_${timePeriod.replace(/\s+/g, '_')}_${timestamp}.pdf`; 
+      const periodEntryIds = filteredEntries.map((entry) => entry.id);
+      const reportAttachments = attachments.filter((attachment) => periodEntryIds.includes(attachment.entryId));
 
       const opt = {
         margin: 5, 
@@ -195,8 +220,21 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
         if (actionType === 'share') {
           await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache, encoding: Encoding.BASE64, recursive: true });
           const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache }); 
-          await Share.share({ title: "Stundenzettel", url: uriResult.uri });
-          toast.success("Bereit zum Teilen");
+
+          if (reportAttachments.length === 0) {
+            await Share.share({ title: "Stundenzettel", url: uriResult.uri });
+            toast.success("Bereit zum Teilen");
+          } else {
+            await shareReportBundle({
+              pdfFile: {
+                fileName: filename,
+                mimeType: "application/pdf",
+                storagePath: filename,
+                label: "Stundenzettel",
+              },
+              attachments: reportAttachments,
+            });
+          }
         } else {
           await Filesystem.writeFile({ path: `eStundnzettl/${filename}`, data: base64, directory: Directory.Documents, recursive: true });
           toast.success("Gespeichert in 'Dokumente/eStundnzettl'", { icon: "📂" });
@@ -354,6 +392,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                   }
 
                   const borderStyle = isLastOfDay ? `1px solid ${PRINT_STYLES.borderLight}` : 'none';
+                  const entryAttachments = attachmentsByEntryId.get(e.id) || [];
 
                   return (
                     <tr key={e.id} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', backgroundColor: rowBg, borderBottom: borderStyle }}>
@@ -363,6 +402,11 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'top' }}>{timeCellContent}</td>
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'top', whiteSpace: 'normal', wordWrap: 'break-word', paddingRight: '0.5rem' }}>
                         <span style={{ fontWeight: '500', color: e.type === "public_holiday" ? PRINT_STYLES.textBlue : e.type === "time_comp" ? '#7e22ce' : PRINT_STYLES.textMedium }}>{projectText}</span>
+                        {entryAttachments.length > 0 && (
+                          <div style={{ marginTop: '4px', fontSize: '0.68rem', color: PRINT_STYLES.textLight, lineHeight: 1.35 }}>
+                            <span style={{ fontWeight: 'bold' }}>Dokumente:</span> {entryAttachments.map((attachment) => attachment.label).join(', ')}
+                          </div>
+                        )}
                       </td>
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'top', fontSize: '0.75rem', color: PRINT_STYLES.textMedium, whiteSpace: 'normal', wordWrap: 'break-word' }}>{codeText}</td>
                       <td style={{ padding: '0.5rem 0', verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold', color: timeColor }}>{durationDisplay}</td>

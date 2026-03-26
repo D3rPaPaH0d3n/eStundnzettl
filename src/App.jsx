@@ -23,6 +23,7 @@ import UpdateModal from "./components/UpdateModal";
 import LiveTimerOverlay from "./components/LiveTimerOverlay";
 import OnboardingWizard from "./components/OnboardingWizard";
 import ExportModal from "./components/ExportModal";
+import AttachmentManager from "./components/AttachmentManager";
 
 // CUSTOM HOOKS
 import { useEntries } from "./hooks/useEntries";
@@ -33,6 +34,7 @@ import { useExport } from "./hooks/useExport";
 import { useFormState } from "./hooks/useFormState";
 import { useAppData } from "./hooks/useAppData";
 import { useAppActions } from "./hooks/useAppActions";
+import { useAttachments } from "./hooks/useAttachments";
 
 // MIGRATION
 import { migrateStorageKeys } from "./utils/migration";
@@ -74,12 +76,26 @@ export default function App() {
   // --- AUTO BACKUP ---
   useAutoBackup(entries, userData, autoBackup);
 
+  // --- ATTACHMENTS ---
+  const {
+    attachments,
+    addAttachment,
+    removeAttachment,
+    removeAttachmentsForEntry,
+    getAttachmentsForEntry,
+    getAttachmentsForEntries,
+    getLabelSuggestions,
+    readAttachmentFile,
+    formatFileSize,
+  } = useAttachments();
+
   // --- EXPORT / IMPORT ---
   const exportPayloadRef = useRef(null);
   const { showExportModal, setShowExportModal, exportData, handleExportToFolder, handleExportShare, handleImport } = useExport({
     entries,
     userData,
     workCodes,
+    attachments,
     importEntries,
     setUserData,
     importWorkCodes: loadWorkCodes,
@@ -92,6 +108,7 @@ export default function App() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [updateData, setUpdateData] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [attachmentEntry, setAttachmentEntry] = useState(null);
 
   const fileInputRef = useRef(null);
 
@@ -126,6 +143,7 @@ export default function App() {
     entries,
     userData,
     workCodes,
+    removeAttachmentsForEntry,
     getDefaultCode,
     addEntry,
     updateEntry,
@@ -252,6 +270,17 @@ export default function App() {
         onSelectShare={handleExportShare}
       />
 
+      <AttachmentManager
+        isOpen={!!attachmentEntry}
+        onClose={() => setAttachmentEntry(null)}
+        entry={attachmentEntry}
+        attachments={attachmentEntry ? getAttachmentsForEntry(attachmentEntry.id) : []}
+        addAttachment={addAttachment}
+        removeAttachment={removeAttachment}
+        getLabelSuggestions={getLabelSuggestions}
+        formatFileSize={formatFileSize}
+      />
+
       {updateData && <UpdateModal updateData={updateData} onClose={() => setUpdateData(null)} />}
 
       <input type="file" className="hidden" ref={fileInputRef} accept="application/json" onChange={handleImport} />
@@ -297,6 +326,8 @@ export default function App() {
                 onStartNewEntry={startNewEntry}
                 onEditEntry={startEdit}
                 onDeleteEntry={(id) => setDeleteTarget({ type: 'single', id })}
+                onManageAttachments={setAttachmentEntry}
+                getAttachmentsForEntry={getAttachmentsForEntry}
                 userData={userData}
               />
             </motion.div>
@@ -366,6 +397,8 @@ export default function App() {
                   onClose={() => setView("dashboard")}
                   onMonthChange={setCurrentDate}
                   userData={userData}
+                  attachments={attachments}
+                  readAttachmentFile={readAttachmentFile}
                 />
               </Suspense>
             </motion.div>

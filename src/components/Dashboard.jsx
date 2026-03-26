@@ -1,5 +1,5 @@
 import React, { forwardRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Calendar, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Paperclip, Trash2 } from "lucide-react";
 import { 
   Card, 
   formatTime, 
@@ -33,7 +33,7 @@ const CustomMonthInput = forwardRef(({ value, onClick }, ref) => (
 const Dashboard = ({
   currentDate, onSetCurrentDate, changeMonth,
   stats, 
-  overtime, progressPercent, groupedByWeek, viewMonth, viewYear, onEditEntry, onDeleteEntry, userData
+  overtime, progressPercent, groupedByWeek, viewMonth, viewYear, onEditEntry, onDeleteEntry, onManageAttachments, getAttachmentsForEntry, userData
 }) => {
   
   // Work Codes aus dem Hook laden
@@ -273,6 +273,8 @@ const Dashboard = ({
                                             ); 
                                           } 
 
+                                          const attachmentCount = getAttachmentsForEntry ? getAttachmentsForEntry(entry.id).length : 0;
+
                                           return ( 
                                             <div key={entry.id} className="relative overflow-hidden"> 
                                               <div className="absolute inset-0 flex items-center justify-end pr-4 text-white bg-red-500"> <Trash2 size={20} /> </div> 
@@ -282,6 +284,19 @@ const Dashboard = ({
                                                     <div className={`font-bold text-sm leading-none ${isTimeComp ? "text-purple-700 dark:text-purple-400" : "text-zinc-900 dark:text-zinc-100"}`}> {timeLabel} {pauseLabel && <span className="font-normal opacity-70">{pauseLabel}</span>} </div> 
                                                     <div className="text-sm text-zinc-700 dark:text-zinc-300 font-medium leading-tight">{entry.project}</div> 
                                                     <div className="flex items-center flex-wrap gap-2 text-xs text-zinc-500 dark:text-zinc-400 leading-tight"> {codeLabel && <span>{codeLabel}</span>} </div> 
+                                                    <div className="flex items-center gap-2 pt-1">
+                                                      <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          onManageAttachments?.(entry);
+                                                        }}
+                                                        className="inline-flex items-center gap-1 rounded-full bg-zinc-100 dark:bg-zinc-700 px-2 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                                                      >
+                                                        <Paperclip size={12} />
+                                                        <span>{attachmentCount > 0 ? `${attachmentCount} Dokument${attachmentCount > 1 ? 'e' : ''}` : 'Dokumente'}</span>
+                                                      </button>
+                                                    </div>
                                                   </div> 
                                                   <div className="flex items-center gap-2 pl-2 border-l border-zinc-100 dark:border-zinc-700 ml-1"> <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span> </div> 
                                                 </div> 

@@ -197,7 +197,7 @@ jobs:
       # ── 12. Version-Bump + Changelog committen ───────────────────────
       # WICHTIG: [skip ci] im Commit verhindert, dass dieser Push
       # den Workflow nochmal auslöst → keine Endlosschleife!
-      - name: Commit and push version bump
+      - name: Commit and push release metadata
         run: |
           NEW_NAME=${{ steps.bump.outputs.new_name }}
 
@@ -213,9 +213,9 @@ jobs:
 
           # Nur committen wenn es Änderungen gibt
           if ! git diff --staged --quiet; then
-            git commit -m "chore: bump to v$NEW_NAME [skip ci]"
+            git commit -m "chore: release metadata for v$NEW_NAME [skip ci]"
             git push origin main
-            echo "✅ Version v$NEW_NAME committed und gepusht"
+            echo "✅ Release-Metadaten für v$NEW_NAME committed und gepusht"
           else
             echo "ℹ️ Keine Änderungen zu committen"
           fi

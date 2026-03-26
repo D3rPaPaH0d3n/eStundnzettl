@@ -116,13 +116,12 @@ jobs:
           fi
 
           sed -i "s/versionCode $OLD_CODE/versionCode $NEW_CODE/" android/app/build.gradle
-          sed -i "s/versionName "[^"]*"/versionName "$NEW_NAME"/" android/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$NEW_NAME\"/" android/app/build.gradle
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             pkg.version = '$NEW_NAME';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '
-');
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');
           "
 
           echo "new_code=$NEW_CODE" >> $GITHUB_OUTPUT

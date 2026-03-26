@@ -91,38 +91,48 @@ jobs:
           echo "name=$NAME" >> $GITHUB_OUTPUT
           echo "📌 Aktuelle Version: $NAME (versionCode $CODE)"
 
-      - name: Bump version
+      - name: Prepare release version
         id: bump
         run: |
-          BUMP_TYPE=${{ github.event.inputs.version_bump || 'patch' }}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BUMP_TYPE=${{ github.event.inputs.version_bump || 'none' }}
+          else
+            BUMP_TYPE=none
+          fi
+
           OLD_CODE=${{ steps.read_version.outputs.code }}
           OLD_NAME=${{ steps.read_version.outputs.name }}
-
-          # versionCode +1
           NEW_CODE=$((OLD_CODE + 1))
+          NEW_NAME="$OLD_NAME"
+
+          if [ "$BUMP_TYPE" != "none" ]; then
+            IFS='.' read -r major minor patch <<< "$OLD_NAME"
+            case "$BUMP_TYPE" in
+              major) new_major=$((major + 1)); new_minor=0; new_patch=0 ;;
+              minor) new_major=$major; new_minor=$((minor + 1)); new_patch=0 ;;
+              patch) new_major=$major; new_minor=$minor; new_patch=$((patch + 1)) ;;
+            esac
+            NEW_NAME="${new_major}.${new_minor}.${new_patch}"
+          fi
+
           sed -i "s/versionCode $OLD_CODE/versionCode $NEW_CODE/" android/app/build.gradle
-
-          # versionName bumpen (Semver)
-          IFS='.' read -r major minor patch <<< "$OLD_NAME"
-          case "$BUMP_TYPE" in
-            major) new_major=$((major + 1)); new_minor=0; new_patch=0 ;;
-            minor) new_major=$major; new_minor=$((minor + 1)); new_patch=0 ;;
-            patch) new_major=$major; new_minor=$minor; new_patch=$((patch + 1)) ;;
-          esac
-          NEW_NAME="${new_major}.${new_minor}.${new_patch}"
-
-          # In build.gradle + package.json aktualisieren (constants.js nicht mehr nötig!)
-          sed -i "s/versionName \"[^\"]*\"/versionName \"$NEW_NAME\"/" android/app/build.gradle
+          sed -i "s/versionName "[^"]*"/versionName "$NEW_NAME"/" android/app/build.gradle
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             pkg.version = '$NEW_NAME';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '
+');
           "
 
           echo "new_code=$NEW_CODE" >> $GITHUB_OUTPUT
           echo "new_name=$NEW_NAME" >> $GITHUB_OUTPUT
-          echo "🔼 Version: $OLD_NAME ($OLD_CODE) → $NEW_NAME ($NEW_CODE)"
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+          if [ "$BUMP_TYPE" = "none" ]; then
+            echo "🔼 VersionCode: $OLD_CODE → $NEW_CODE | VersionName bleibt bei $NEW_NAME"
+          else
+            echo "🔼 Version: $OLD_NAME ($OLD_CODE) → $NEW_NAME ($NEW_CODE)"
+          fi
 
       # ── 4. Frontend bauen (Vite) ─────────────────────────────────────
       # Vite liest die Version aus package.json via __APP_VERSION__ define

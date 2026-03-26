@@ -7,6 +7,10 @@ import { DEMO_DATA } from "../../utils/demoData";
 import toast from "react-hot-toast";
 import PresetModal from "../PresetModal";
 import ConfirmModal from "../ConfirmModal";
+import { isSQLiteActive } from "../../db/storageMode";
+import { setSetting, deleteSetting } from "../../db/repositories/settingsRepo";
+import { bulkInsertEntries } from "../../db/repositories/entriesRepo";
+import { bulkReplaceWorkCodes } from "../../db/repositories/workCodesRepo";
 
 const DataSettings = ({
   userData,
@@ -57,12 +61,18 @@ const DataSettings = ({
     Haptics.impact({ style: ImpactStyle.Medium });
   };
 
-  // Check if user has data without backup (sync read from localStorage — ok for UI hint)
+  // Check if user has data without backup (sync read — ok for UI hint)
   const hasEntriesWithoutBackup = () => {
     try {
-      const entries = localStorage.getItem(STORAGE_KEYS.ENTRIES);
-      const lastBackup = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
-      return entries && JSON.parse(entries).length > 0 && !lastBackup;
+      // Try localStorage first (Web/Dev)
+      const entriesLS = localStorage.getItem(STORAGE_KEYS.ENTRIES);
+      const lastBackupLS = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
+      if (entriesLS && JSON.parse(entriesLS).length > 0 && !lastBackupLS) {
+        return true;
+      }
+      
+      // For SQLite, we'd need async check - return false for now (UI hint only)
+      return false;
     } catch { return false; }
   };
 
@@ -70,10 +80,12 @@ const DataSettings = ({
     setShowDemoWarning(true);
   };
 
-  const handleConfirmDemoData = () => {
+  const handleConfirmDemoData = async () => {
     Haptics.impact({ style: ImpactStyle.Medium });
     const demoUser = { ...DEMO_DATA.user };
     const demoEntries = DEMO_DATA.generateEntries();
+    
+    // Dual-Write: localStorage (für Web/Dev Fallback)
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
     localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(demoEntries));
     localStorage.setItem(
@@ -81,6 +93,21 @@ const DataSettings = ({
       JSON.stringify(DEMO_DATA.workCodes)
     );
     localStorage.removeItem(STORAGE_KEYS.LAST_CODE);
+    
+    // SQLite (für Android)
+    if (isSQLiteActive()) {
+      try {
+        await Promise.all([
+          setSetting("user", demoUser),
+          bulkInsertEntries(demoEntries),
+          bulkReplaceWorkCodes(DEMO_DATA.workCodes),
+          deleteSetting("last_code")
+        ]);
+      } catch (err) {
+        console.error("[DataSettings] SQLite-Demo-Daten schreiben fehlgeschlagen:", err);
+      }
+    }
+    
     toast.success("Demo-Daten geladen! Seite wird neu geladen...");
     setTimeout(() => window.location.reload(), 1000);
   };

@@ -196,8 +196,11 @@ export default function App() {
   useEffect(() => {
     const isNewUser = userData && !userData.name;
     const isLegacyUser = userData && userData.name && !userData.workDays;
+
     if (isNewUser || isLegacyUser) {
       setShowOnboarding(true);
+    } else {
+      setShowOnboarding(false);
     }
   }, [userData]);
 
@@ -275,7 +278,15 @@ export default function App() {
       <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#27272a', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#10b981', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />
 
       {showOnboarding && (
-        <OnboardingWizard onComplete={handleOnboardingFinish} />
+        <OnboardingWizard
+          onComplete={handleOnboardingFinish}
+          setUserData={setUserData}
+          importEntries={importEntries}
+          importWorkCodes={loadWorkCodes}
+          setCloudSyncEnabled={setAutoBackup}
+          setLocalBackupEnabled={() => {}}
+          setTheme={setTheme}
+        />
       )}
 
       <ConfirmModal

@@ -45,9 +45,22 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     setStep(3); 
   };
 
-  const handleDemoMode = () => {
+  const handleDemoMode = async () => {
     const demoEntries = DEMO_DATA.generateEntries();
-    setUserData(DEMO_DATA.user);
+
+    try {
+      const { setSetting } = await import("../db/repositories/settingsRepo");
+      const { bulkReplaceWorkCodes } = await import("../db/repositories/workCodesRepo");
+      const { bulkInsertEntries } = await import("../db/repositories/entriesRepo");
+
+      await setSetting("user", DEMO_DATA.user);
+      await bulkReplaceWorkCodes(DEMO_DATA.workCodes);
+      await bulkInsertEntries(demoEntries);
+    } catch (err) {
+      console.error("[Onboarding Demo] SQLite write failed:", err);
+    }
+
+    setUserData?.(DEMO_DATA.user);
     importWorkCodes?.(DEMO_DATA.workCodes);
     importEntries?.(demoEntries);
     toast.success("Demo-Daten geladen! Du kannst die App jetzt ausprobieren.");
@@ -140,7 +153,11 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
 
   // --- FINISH (BUGFIX: Persistenz korrigiert) ---
   const finishSetup = async () => {
-    setUserData({
+    // HARD-CODED LOGS die Proguard nicht entfernen kann
+    window._debugOnboarding = window._debugOnboarding || [];
+    window._debugOnboarding.push({ type: 'finishSetup_start', timestamp: Date.now(), formData });
+    
+    const userDataToSave = {
       name: formData.name,
       company: formData.company,
       role: formData.role,
@@ -152,19 +169,37 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
         autoBackup: formData.autoBackup,
         theme: 'system'
       }
-    });
-
+    };
+    
+    window._debugOnboarding.push({ type: 'userData_to_save', data: userDataToSave });
+    
+    // FIX: Zuerst direkt in SQLite schreiben, DANN State updaten
+    try {
+      // Direkt in SQLite schreiben (synchronisiert mit localStorage via useSettings)
+      const { setSetting } = await import("../db/repositories/settingsRepo");
+      await setSetting("user", userDataToSave);
+      window._debugOnboarding.push({ type: 'sqlite_write_done' });
+    } catch (err) {
+      console.error("[Onboarding] SQLite write failed:", err);
+      window._debugOnboarding.push({ type: 'sqlite_write_error', error: err.message });
+      // Fortfahren, useSettings wird es in localStorage schreiben
+    }
+    
+    // Jetzt State updaten (useSettings wird auch in localStorage schreiben)
+    setUserData?.(userDataToSave);
     setCloudSyncEnabled?.(formData.autoBackup);
     setLocalBackupEnabled?.(formData.localBackupEnabled);
     setTheme?.('system');
 
     if (restoreData) {
-       await applyBackup(restoreData);
-       toast.success("Daten wiederhergestellt!");
+      window._debugOnboarding.push({ type: 'applying_restore', restoreData });
+      await applyBackup(restoreData);
+      toast.success("Daten wiederhergestellt!");
     } else {
-       toast.success("Willkommen!");
+      toast.success("Willkommen!");
     }
 
+    window._debugOnboarding.push({ type: 'calling_onComplete' });
     onComplete();
   };
 

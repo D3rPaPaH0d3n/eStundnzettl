@@ -24,6 +24,7 @@ const MIGRATION_FLAGS = {
   SETTINGS:    "estundnzettl_sqlite_settings_migration_done",
   WORK_CODES:  "estundnzettl_sqlite_workcodes_migration_done",
   ATTACHMENTS: "estundnzettl_sqlite_attachments_migration_done",
+  BACKUP_META: "estundnzettl_sqlite_backup_meta_migration_done",
 };
 
 /**
@@ -236,7 +237,65 @@ export async function migrateAttachmentsToSQLite() {
   }
 }
 
-// ─── Welle 2+3: Alles migrieren ─────────────────────────────
+// ─── Welle 4: Backup-Metadaten & LAST_CODE ──────────────────
+
+/**
+ * Migriert Backup-Meta-Keys von localStorage nach SQLite (Welle 4).
+ *
+ * Betrifft: LAST_CODE, LAST_BACKUP, BACKUP_TARGET, BACKUP_FAIL_COUNT.
+ * Idempotent — schreibt nur vorhandene Werte, löscht nichts aus localStorage.
+ *
+ * @returns {Promise<{migrated: number, skipped: boolean}>}
+ */
+export async function migrateBackupMetaToSQLite() {
+  if (localStorage.getItem(MIGRATION_FLAGS.BACKUP_META) === "true") {
+    return { migrated: 0, skipped: true };
+  }
+
+  const settings = {};
+
+  // LAST_CODE (number)
+  const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
+  if (lastCode) {
+    const num = Number(lastCode);
+    if (!isNaN(num)) settings.last_code = num;
+  }
+
+  // LAST_BACKUP (ISO-String)
+  const lastBackup = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
+  if (lastBackup) settings.last_backup = lastBackup;
+
+  // BACKUP_TARGET ("documents" | null)
+  const backupTarget = localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET);
+  if (backupTarget) settings.backup_target = backupTarget;
+
+  // BACKUP_FAIL_COUNT (number-as-string)
+  const failRaw = localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT);
+  if (failRaw) {
+    const failNum = parseInt(failRaw, 10);
+    if (!isNaN(failNum)) settings.backup_fail_count = failNum;
+  }
+
+  const count = Object.keys(settings).length;
+
+  if (count === 0) {
+    localStorage.setItem(MIGRATION_FLAGS.BACKUP_META, "true");
+    console.info("[migration] Keine Backup-Meta in localStorage — Migration übersprungen");
+    return { migrated: 0, skipped: false };
+  }
+
+  try {
+    await bulkWriteSettings(settings);
+    localStorage.setItem(MIGRATION_FLAGS.BACKUP_META, "true");
+    console.info(`[migration] ${count} Backup-Meta-Keys erfolgreich nach SQLite migriert`);
+    return { migrated: count, skipped: false };
+  } catch (err) {
+    console.error("[migration] Backup-Meta-Insert fehlgeschlagen:", err);
+    throw err;
+  }
+}
+
+// ─── Welle 2+3+4: Alles migrieren ───────────────────────────
 
 /**
  * Führt alle Migrationen aus (Entries + Settings + WorkCodes + Attachments).
@@ -245,7 +304,7 @@ export async function migrateAttachmentsToSQLite() {
  * @returns {Promise<{entries: Object, settings: Object, workCodes: Object, attachments: Object}>}
  */
 export async function migrateAllToSQLite() {
-  const results = { entries: null, settings: null, workCodes: null, attachments: null };
+  const results = { entries: null, settings: null, workCodes: null, attachments: null, backupMeta: null };
 
   try {
     results.entries = await migrateEntriesToSQLite();
@@ -269,6 +328,12 @@ export async function migrateAllToSQLite() {
     results.attachments = await migrateAttachmentsToSQLite();
   } catch (err) {
     results.attachments = { error: err.message };
+  }
+
+  try {
+    results.backupMeta = await migrateBackupMetaToSQLite();
+  } catch (err) {
+    results.backupMeta = { error: err.message };
   }
 
   console.info("[migration] Ergebnisse:", results);

@@ -39,6 +39,10 @@ import { useAttachments } from "./hooks/useAttachments";
 // MIGRATION
 import { migrateStorageKeys } from "./utils/migration";
 
+// DB (Welle 4: LAST_CODE aus SQLite nachladen)
+import { isSQLiteActive } from "./db/storageMode";
+import { getSetting } from "./db/repositories/settingsRepo";
+
 // LAZY LOADING
 const PrintReport = React.lazy(() => import("./components/PrintReport"));
 
@@ -59,9 +63,28 @@ export default function App() {
   // Work Codes Hook
   const { workCodes, hasAnyCodes, loadWorkCodes } = useWorkCodes();
 
+  // Cached LAST_CODE (sync aus localStorage für Sofort-Zugriff, SQLite nachladen)
+  const lastCodeRef = useRef(localStorage.getItem(STORAGE_KEYS.LAST_CODE));
+
+  useEffect(() => {
+    // Einmalig: LAST_CODE aus SQLite nachladen (wenn verfügbar)
+    let cancelled = false;
+    if (isSQLiteActive()) {
+      (async () => {
+        try {
+          const sqlVal = await getSetting("last_code");
+          if (!cancelled && sqlVal !== null) {
+            lastCodeRef.current = String(sqlVal);
+          }
+        } catch { /* keep localStorage value */ }
+      })();
+    }
+    return () => { cancelled = true; };
+  }, []);
+
   // Default Code: erster aus User-Codes oder Fallback 1
   const getDefaultCode = () => {
-    const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
+    const lastCode = lastCodeRef.current || localStorage.getItem(STORAGE_KEYS.LAST_CODE);
     if (lastCode) return Number(lastCode);
     if (hasAnyCodes) return workCodes[0].id;
     return WORK_CODE.DEFAULT;

@@ -57,11 +57,13 @@ const DataSettings = ({
     Haptics.impact({ style: ImpactStyle.Medium });
   };
 
-  // Check if user has data without backup
+  // Check if user has data without backup (sync read from localStorage — ok for UI hint)
   const hasEntriesWithoutBackup = () => {
-    const entries = localStorage.getItem(STORAGE_KEYS.ENTRIES);
-    const lastBackup = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
-    return entries && JSON.parse(entries).length > 0 && !lastBackup;
+    try {
+      const entries = localStorage.getItem(STORAGE_KEYS.ENTRIES);
+      const lastBackup = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
+      return entries && JSON.parse(entries).length > 0 && !lastBackup;
+    } catch { return false; }
   };
 
   const handleLoadDemoData = () => {

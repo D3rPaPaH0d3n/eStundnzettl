@@ -1,10 +1,29 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { App } from "@capacitor/app";
 import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
 import { STORAGE_KEYS, BACKUP_CONFIG } from "./constants";
+import { isSQLiteActive } from "../db/storageMode";
+import { getSetting, setSetting } from "../db/repositories/settingsRepo";
 
-const BACKUP_FAIL_KEY = "estundnzettl_backup_fail_count";
+// ─── Dual-Write Helpers (SQLite + localStorage) ─────────────
+
+/** Liest aus localStorage (sync, für Init-State). SQLite wird async nachgeladen. */
+function readLSInt(key, fallback = 0) {
+  return parseInt(localStorage.getItem(key) || String(fallback), 10);
+}
+
+/** Dual-Write: localStorage + SQLite (fire & forget). */
+async function dualWrite(lsKey, sqlKey, value) {
+  localStorage.setItem(lsKey, String(value));
+  if (isSQLiteActive()) {
+    try { await setSetting(sqlKey, value); } catch (e) {
+      console.error(`[useAutoBackup] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
+    }
+  }
+}
+
+// ─── Hook ────────────────────────────────────────────────────
 
 export function useAutoBackup(entries, userData, isEnabled) {
   const latestDataRef = useRef({ entries, userData });
@@ -12,8 +31,23 @@ export function useAutoBackup(entries, userData, isEnabled) {
   const debounceTimer = useRef(null);
   const isUploading = useRef(false);
   const [backupFailCount, setBackupFailCount] = useState(
-    () => parseInt(localStorage.getItem(BACKUP_FAIL_KEY) || "0", 10)
+    () => readLSInt(STORAGE_KEYS.BACKUP_FAIL_COUNT)
   );
+
+  // SQLite-Nachladen (einmalig, async)
+  const sqliteInitDone = useRef(false);
+  useEffect(() => {
+    if (sqliteInitDone.current || !isSQLiteActive()) return;
+    sqliteInitDone.current = true;
+    (async () => {
+      try {
+        const sqlFail = await getSetting("backup_fail_count");
+        if (sqlFail !== null && typeof sqlFail === "number") {
+          setBackupFailCount(sqlFail);
+        }
+      } catch { /* keep localStorage value */ }
+    })();
+  }, []);
 
   useEffect(() => {
     latestDataRef.current = { entries, userData };
@@ -63,16 +97,17 @@ export function useAutoBackup(entries, userData, isEnabled) {
           if (authResponse?.accessToken) {
             await uploadOrUpdateFile(authResponse.accessToken, BACKUP_CONFIG.FILENAME, payload);
             lastHash.current = currentHash;
-            localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, new Date().toISOString());
-            // Erfolg: Fehler-Counter zurücksetzen
-            localStorage.setItem(BACKUP_FAIL_KEY, "0");
+            // Dual-Write: LAST_BACKUP
+            await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
+            // Erfolg: Fehler-Counter zurücksetzen (Dual-Write)
+            await dualWrite(STORAGE_KEYS.BACKUP_FAIL_COUNT, "backup_fail_count", "0");
             setBackupFailCount(0);
           }
         } catch (cloudErr) {
-          // Fehler-Counter hochzählen
-          const current = parseInt(localStorage.getItem(BACKUP_FAIL_KEY) || "0", 10);
+          // Fehler-Counter hochzählen (Dual-Write)
+          const current = readLSInt(STORAGE_KEYS.BACKUP_FAIL_COUNT);
           const newCount = current + 1;
-          localStorage.setItem(BACKUP_FAIL_KEY, String(newCount));
+          await dualWrite(STORAGE_KEYS.BACKUP_FAIL_COUNT, "backup_fail_count", String(newCount));
           setBackupFailCount(newCount);
           console.warn("Cloud-Backup fehlgeschlagen:", cloudErr);
         }
@@ -80,7 +115,8 @@ export function useAutoBackup(entries, userData, isEnabled) {
 
       if (localActive && !cloudActive) {
         lastHash.current = currentHash;
-        localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, new Date().toISOString());
+        // Dual-Write: LAST_BACKUP
+        await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
       }
     } catch (err) {
       // Silent fail
@@ -93,7 +129,6 @@ export function useAutoBackup(entries, userData, isEnabled) {
 
   useEffect(() => {
     const setupListener = async () => {
-      // Nur eigenen Listener entfernen, nicht alle App-Listener!
       if (listenerHandle.current) {
         await listenerHandle.current.remove();
         listenerHandle.current = null;

@@ -3,6 +3,28 @@ import toast from "react-hot-toast";
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 import { parseTime, getTargetMinutesForDate, toLocalDateString, checkForUpdate } from "../utils";
 import { STORAGE_KEYS, WORK_CODE, WORK_MODELS } from "./constants";
+import { isSQLiteActive } from "../db/storageMode";
+import { setSetting, deleteSetting } from "../db/repositories/settingsRepo";
+
+// ─── Dual-Write Helpers (localStorage + SQLite) ─────────────
+
+function dualWriteSync(lsKey, sqlKey, value) {
+  localStorage.setItem(lsKey, String(value));
+  if (isSQLiteActive()) {
+    setSetting(sqlKey, value).catch(e =>
+      console.error(`[useAppActions] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e)
+    );
+  }
+}
+
+function dualRemoveSync(lsKey, sqlKey) {
+  localStorage.removeItem(lsKey);
+  if (isSQLiteActive()) {
+    deleteSetting(sqlKey).catch(e =>
+      console.error(`[useAppActions] SQLite-Delete "${sqlKey}" fehlgeschlagen:`, e)
+    );
+  }
+}
 
 /**
  * Zentralisiert alle Event-Handler aus App.jsx
@@ -206,7 +228,7 @@ export function useAppActions({
       usedCode !== WORK_CODE.DRIVE &&
       usedCode !== WORK_CODE.ARRIVAL
     ) {
-      localStorage.setItem(STORAGE_KEYS.LAST_CODE, usedCode);
+      dualWriteSync(STORAGE_KEYS.LAST_CODE, "last_code", usedCode);
     }
 
     toast.success(form.editingEntry ? "✏️ Eintrag aktualisiert" : "💾 Eintrag gespeichert");
@@ -241,7 +263,7 @@ export function useAppActions({
         workDays: [...WORK_MODELS[0].days],
       };
       setUserData(emptyUser);
-      localStorage.removeItem(STORAGE_KEYS.LAST_CODE);
+      dualRemoveSync(STORAGE_KEYS.LAST_CODE, "last_code");
       localStorage.removeItem(STORAGE_KEYS.ATTACHMENTS);
       localStorage.removeItem(STORAGE_KEYS.ATTACHMENT_LABELS);
       toast.success("🧹 App vollständig zurückgesetzt");

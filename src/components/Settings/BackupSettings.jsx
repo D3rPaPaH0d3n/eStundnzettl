@@ -11,6 +11,8 @@ import {
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
 import { STORAGE_KEYS } from "../../hooks/constants";
+import { isSQLiteActive } from "../../db/storageMode";
+import { getSetting } from "../../db/repositories/settingsRepo";
 import {
   initGoogleAuth,
   signInGoogle,
@@ -51,6 +53,7 @@ const BackupSettings = ({
   };
 
   useEffect(() => {
+    // 1) Sofort aus localStorage laden (schnelle UI)
     const cloudEnabled =
       localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
     if (cloudEnabled) {
@@ -58,8 +61,10 @@ const BackupSettings = ({
     }
     setIsCloudConnected(cloudEnabled);
     setHasBackupFolder(hasBackupTarget());
+
     const saved = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
     if (saved) setLastBackupDate(saved);
+
     try {
       const stored = JSON.parse(
         localStorage.getItem("google_auth_state") || "null"
@@ -68,9 +73,25 @@ const BackupSettings = ({
     } catch {
       setIsTokenValid(false);
     }
-    // Backup-Fehler-Counter lesen
-    const failCount = parseInt(localStorage.getItem("estundnzettl_backup_fail_count") || "0", 10);
+
+    const failCount = parseInt(localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT) || "0", 10);
     setBackupFailCount(failCount);
+
+    // 2) SQLite nachladen (async, überschreibt wenn vorhanden)
+    if (isSQLiteActive()) {
+      (async () => {
+        try {
+          const [sqlLastBackup, sqlFailCount] = await Promise.all([
+            getSetting("last_backup"),
+            getSetting("backup_fail_count"),
+          ]);
+          if (sqlLastBackup) setLastBackupDate(sqlLastBackup);
+          if (sqlFailCount !== null) {
+            setBackupFailCount(parseInt(String(sqlFailCount), 10) || 0);
+          }
+        } catch { /* keep localStorage values */ }
+      })();
+    }
   }, []);
 
   const handleGoogleToggle = async () => {
@@ -108,7 +129,7 @@ const BackupSettings = ({
     Haptics.impact({ style: ImpactStyle.Light });
 
     if (hasBackupFolder) {
-      clearBackupTarget();
+      await clearBackupTarget();
       setHasBackupFolder(false);
       localStorage.removeItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
       toast("Backup-Ordner getrennt");

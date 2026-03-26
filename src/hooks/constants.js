@@ -40,6 +40,7 @@ export const STORAGE_KEYS = {
   LIVE_TIMER: "estundnzettl_live_timer",
   ATTACHMENTS: "estundnzettl_attachments",
   ATTACHMENT_LABELS: "estundnzettl_attachment_labels",
+  BACKUP_FAIL_COUNT: "estundnzettl_backup_fail_count",
   
   // @Deprecated - Wir nutzen jetzt CLOUD_SYNC_ENABLED für Präzision
   // AUTO_BACKUP: "estundnzettl_auto_backup", 

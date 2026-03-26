@@ -2,6 +2,8 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS, BACKUP_CONFIG } from "../hooks/constants";
 import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "./googleDrive";
+import { isSQLiteActive } from "../db/storageMode";
+import { getSetting, setSetting, deleteSetting } from "../db/repositories/settingsRepo";
 
 // =========================================================
 // BACKUP ORDNER
@@ -10,6 +12,26 @@ import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "./googleDrive
 // =========================================================
 
 const BACKUP_FOLDER = 'eStundnzettl';
+
+// ─── Dual-Write Helper ──────────────────────────────────────
+
+async function dualWrite(lsKey, sqlKey, value) {
+  localStorage.setItem(lsKey, String(value));
+  if (isSQLiteActive()) {
+    try { await setSetting(sqlKey, value); } catch (e) {
+      console.error(`[storageBackup] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
+    }
+  }
+}
+
+async function dualRemove(lsKey, sqlKey) {
+  localStorage.removeItem(lsKey);
+  if (isSQLiteActive()) {
+    try { await deleteSetting(sqlKey); } catch (e) {
+      console.error(`[storageBackup] SQLite-Delete "${sqlKey}" fehlgeschlagen:`, e);
+    }
+  }
+}
 
 // Ordner erstellen falls nicht vorhanden (für Documents - manueller Export)
 const ensureBackupFolder = async () => {
@@ -45,7 +67,8 @@ const ensureInternalBackupFolder = async () => {
 export const selectBackupFolder = async () => {
   try {
     await ensureInternalBackupFolder();
-    localStorage.setItem(STORAGE_KEYS.BACKUP_TARGET, 'documents');
+    // Dual-Write: BACKUP_TARGET
+    await dualWrite(STORAGE_KEYS.BACKUP_TARGET, "backup_target", "documents");
     return true;
   } catch (err) {
     console.error("Backup-Ordner konnte nicht erstellt werden:", err);
@@ -53,7 +76,7 @@ export const selectBackupFolder = async () => {
   }
 };
 
-// 2. Zugriff prüfen
+// 2. Zugriff prüfen (synchron, aus localStorage — schnell für UI)
 export const hasBackupTarget = () => {
   return localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET) === 'documents';
 };
@@ -80,8 +103,8 @@ export const writeBackupFile = async (fileName, dataObj) => {
 };
 
 // 4. Zugriff entfernen
-export const clearBackupTarget = () => {
-  localStorage.removeItem(STORAGE_KEYS.BACKUP_TARGET);
+export const clearBackupTarget = async () => {
+  await dualRemove(STORAGE_KEYS.BACKUP_TARGET, "backup_target");
 };
 
 // 5. Einmaliger Export (JSON) - in Documents für User sichtbar
@@ -270,7 +293,8 @@ export const triggerManualBackup = async () => {
     }
 
     if (gdriveOk || localOk) {
-      localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, new Date().toISOString());
+      // Dual-Write: LAST_BACKUP
+      await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
       return { success: true, gdrive: gdriveOk, local: localOk };
     }
 

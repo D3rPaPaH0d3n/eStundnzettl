@@ -15,6 +15,8 @@ const DataSettings = ({
   isLocked,
   onToggleLock,
   onOpenDayPicker,
+  entries = [],
+  lastBackup = null,
 }) => {
   const [isWorkModelExpanded, setIsWorkModelExpanded] = useState(true);
   const [showPresetModal, setShowPresetModal] = useState(false);
@@ -59,9 +61,7 @@ const DataSettings = ({
 
   // Check if user has data without backup
   const hasEntriesWithoutBackup = () => {
-    const entries = localStorage.getItem(STORAGE_KEYS.ENTRIES);
-    const lastBackup = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
-    return entries && JSON.parse(entries).length > 0 && !lastBackup;
+    return entries.length > 0 && !lastBackup;
   };
 
   const handleLoadDemoData = () => {

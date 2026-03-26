@@ -18,8 +18,12 @@ const Settings = ({
   setUserData,
   theme,
   setTheme,
-  autoBackup,
-  setAutoBackup,
+  cloudSyncEnabled,
+  setCloudSyncEnabled,
+  localBackupEnabled,
+  setLocalBackupEnabled,
+  entries = [],
+  lastBackup = null,
   onExport,
   onImport,
   onDeleteAll,
@@ -174,6 +178,8 @@ const Settings = ({
         isLocked={isLocked}
         onToggleLock={toggleLock}
         onOpenDayPicker={openDayPicker}
+        entries={entries}
+        lastBackup={lastBackup}
       />
 
       {/* 3. Theme Settings */}
@@ -181,8 +187,10 @@ const Settings = ({
 
       {/* 4. Backup Settings */}
       <BackupSettings
-        autoBackup={autoBackup}
-        setAutoBackup={setAutoBackup}
+        cloudSyncEnabled={cloudSyncEnabled}
+        setCloudSyncEnabled={setCloudSyncEnabled}
+        localBackupEnabled={localBackupEnabled}
+        setLocalBackupEnabled={setLocalBackupEnabled}
         onExport={onExport}
         onImport={() => {}}
         onFileImport={handleFileImport}

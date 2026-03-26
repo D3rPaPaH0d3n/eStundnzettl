@@ -54,7 +54,7 @@ export default function App() {
 
   // --- 1. DATEN & LOGIK ÜBER HOOKS ---
   const { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries } = useEntries();
-  const { userData, setUserData, theme, setTheme, autoBackup, setAutoBackup } = useSettings();
+  const { userData, setUserData, theme, setTheme, autoBackup, setAutoBackup, cloudSyncEnabled, setCloudSyncEnabled, localBackupEnabled, setLocalBackupEnabled } = useSettings();
 
   // Work Codes Hook
   const { workCodes, hasAnyCodes, loadWorkCodes } = useWorkCodes();
@@ -369,8 +369,11 @@ export default function App() {
                 setUserData={setUserData}
                 theme={theme}
                 setTheme={setTheme}
-                autoBackup={autoBackup}
-                setAutoBackup={setAutoBackup}
+                cloudSyncEnabled={cloudSyncEnabled}
+                setCloudSyncEnabled={setCloudSyncEnabled}
+                localBackupEnabled={localBackupEnabled}
+                setLocalBackupEnabled={setLocalBackupEnabled}
+                entries={entries}
                 onExport={exportData}
                 onImport={() => fileInputRef.current?.click()}
                 onDeleteAll={() => setDeleteTarget({ type: 'all' })}

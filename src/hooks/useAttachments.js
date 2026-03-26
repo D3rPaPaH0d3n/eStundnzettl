@@ -1,8 +1,24 @@
+/**
+ * useAttachments.js — Hook für Attachments mit SQLite-Persistenz
+ */
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
-import toast from "react-hot-toast";
 import { STORAGE_KEYS } from "./constants";
+import { getDb } from "../db/database";
+import { setStorageMode } from "../db/storageMode";
+import {
+  getAllAttachments,
+  bulkUpsertAttachments,
+  upsertAttachment,
+  deleteAttachment as dbDeleteAttachment,
+} from "../db/repositories/attachmentsRepo";
+import {
+  getAllLabelSuggestions,
+  upsertLabelSuggestion,
+  bulkUpsertLabelSuggestions,
+} from "../db/repositories/labelSuggestionsRepo";
 
 const ATTACHMENTS_DIR = "attachments";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -13,22 +29,51 @@ const ALLOWED_MIME_TYPES = [
   "image/webp",
 ];
 
-const readJson = (key, fallback) => {
+// ─── Migration ───
+const ATTACHMENTS_MIGRATION_FLAG = "estundnzettl_attachments_migrated";
+
+function isAttachmentsMigrationDone() {
+  return localStorage.getItem(ATTACHMENTS_MIGRATION_FLAG) === "true";
+}
+
+async function migrateAttachmentsToSQLite() {
+  if (isAttachmentsMigrationDone()) return;
+
+  try {
+    // Attachments
+    const storedAtts = localStorage.getItem(STORAGE_KEYS.ATTACHMENTS);
+    if (storedAtts) {
+      const attachments = JSON.parse(storedAtts);
+      if (Array.isArray(attachments) && attachments.length > 0) {
+        await bulkUpsertAttachments(attachments);
+      }
+    }
+
+    // Label Suggestions
+    const storedLabels = localStorage.getItem(STORAGE_KEYS.ATTACHMENT_LABELS);
+    if (storedLabels) {
+      const labels = JSON.parse(storedLabels);
+      if (Array.isArray(labels) && labels.length > 0) {
+        await bulkUpsertLabelSuggestions(labels);
+      }
+    }
+
+    localStorage.setItem(ATTACHMENTS_MIGRATION_FLAG, "true");
+    console.info("[useAttachments] Migration nach SQLite abgeschlossen");
+  } catch (err) {
+    console.error("[useAttachments] Migration fehlgeschlagen:", err);
+  }
+}
+
+// ─── Helpers ─────────────────────────────────────────────
+
+const readJsonFallback = (key, fallback) => {
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
   } catch {
     return fallback;
   }
-};
-
-const persistJson = (key, value) => {
-  localStorage.setItem(key, JSON.stringify(value));
-};
-
-const sanitizeFileName = (name = "dokument") => {
-  const safe = name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return safe || "dokument";
 };
 
 const getExtension = (fileName = "") => {
@@ -59,16 +104,73 @@ const fileToBase64 = (file) =>
   });
 
 export function useAttachments() {
-  const [attachments, setAttachments] = useState(() => readJson(STORAGE_KEYS.ATTACHMENTS, []));
-  const [labelSuggestions, setLabelSuggestions] = useState(() => readJson(STORAGE_KEYS.ATTACHMENT_LABELS, []));
+  const [attachments, setAttachments] = useState([]);
+  const [labelSuggestions, setLabelSuggestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // ─── Initial Load ───
   useEffect(() => {
-    persistJson(STORAGE_KEYS.ATTACHMENTS, attachments);
-  }, [attachments]);
+    let cancelled = false;
 
-  useEffect(() => {
-    persistJson(STORAGE_KEYS.ATTACHMENT_LABELS, labelSuggestions);
-  }, [labelSuggestions]);
+    (async () => {
+      try {
+        const db = await getDb();
+
+        if (!db) {
+          // Web/Dev → nur localStorage
+          setStorageMode("localStorage");
+          if (!cancelled) {
+            setAttachments(readJsonFallback(STORAGE_KEYS.ATTACHMENTS, []));
+            setLabelSuggestions(readJsonFallback(STORAGE_KEYS.ATTACHMENT_LABELS, []));
+          }
+        } else {
+          // SQLite
+          setStorageMode("sqlite");
+          await migrateAttachmentsToSQLite();
+
+          if (!cancelled) {
+            try {
+              const [dbAttachments, dbLabels] = await Promise.all([
+                getAllAttachments(),
+                getAllLabelSuggestions(),
+              ]);
+              setAttachments(dbAttachments);
+              setLabelSuggestions(dbLabels);
+            } catch {
+              // Fallback to localStorage
+              setAttachments(readJsonFallback(STORAGE_KEYS.ATTACHMENTS, []));
+              setLabelSuggestions(readJsonFallback(STORAGE_KEYS.ATTACHMENT_LABELS, []));
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[useAttachments] Init fehlgeschlagen:", err);
+        setAttachments(readJsonFallback(STORAGE_KEYS.ATTACHMENTS, []));
+        setLabelSuggestions(readJsonFallback(STORAGE_KEYS.ATTACHMENT_LABELS, []));
+      }
+
+      if (!cancelled) setIsLoading(false);
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
+
+  // ─── Persist Helpers ───
+  const persistAttachments = useCallback((atts) => {
+    localStorage.setItem(STORAGE_KEYS.ATTACHMENTS, JSON.stringify(atts));
+    const db = getDb();
+    if (db) {
+      bulkUpsertAttachments(atts).catch(console.error);
+    }
+  }, []);
+
+  const persistLabelSuggestions = useCallback((labels) => {
+    localStorage.setItem(STORAGE_KEYS.ATTACHMENT_LABELS, JSON.stringify(labels));
+    const db = getDb();
+    if (db) {
+      bulkUpsertLabelSuggestions(labels).catch(console.error);
+    }
+  }, []);
 
   const updateSuggestions = useCallback((label) => {
     const trimmed = (label || "").trim();
@@ -77,9 +179,17 @@ export function useAttachments() {
     setLabelSuggestions((prev) => {
       const lower = trimmed.toLowerCase();
       const next = [trimmed, ...prev.filter((item) => item.toLowerCase() !== lower)];
-      return next.slice(0, 20);
+      const result = next.slice(0, 20);
+      persistLabelSuggestions(result);
+      return result;
     });
-  }, []);
+
+    // SQLite upsert
+    const db = getDb();
+    if (db) {
+      upsertLabelSuggestion(trimmed).catch(console.error);
+    }
+  }, [persistLabelSuggestions]);
 
   const addAttachment = useCallback(async ({ entryId, file, label }) => {
     ensureNative();
@@ -100,7 +210,6 @@ export function useAttachments() {
 
     const id = `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const extension = getExtension(file.name);
-    const fileName = sanitizeFileName(file.name);
     const storagePath = `${ATTACHMENTS_DIR}/${id}.${extension}`;
     const base64 = await fileToBase64(file);
 
@@ -114,40 +223,56 @@ export function useAttachments() {
     const attachment = {
       id,
       entryId,
-      label: trimmedLabel,
-      fileName,
-      mimeType: file.type,
-      storagePath,
-      fileSize: file.size,
+      type: "file",
+      uri: storagePath,
+      thumbnail: null,
       createdAt: new Date().toISOString(),
     };
 
-    setAttachments((prev) => [attachment, ...prev]);
+    setAttachments((prev) => {
+      const next = [attachment, ...prev];
+      persistAttachments(next);
+      return next;
+    });
     updateSuggestions(trimmedLabel);
 
+    // SQLite
+    const db = await getDb();
+    if (db) {
+      await upsertAttachment(attachment).catch(console.error);
+    }
+
     return attachment;
-  }, [updateSuggestions]);
+  }, [persistAttachments, updateSuggestions]);
 
   const removeAttachment = useCallback(async (attachmentId) => {
     let removed = null;
 
     setAttachments((prev) => {
       removed = prev.find((item) => item.id === attachmentId) || null;
-      return prev.filter((item) => item.id !== attachmentId);
+      const next = prev.filter((item) => item.id !== attachmentId);
+      persistAttachments(next);
+      return next;
     });
 
-    if (removed?.storagePath) {
+    if (removed?.uri) {
       try {
         ensureNative();
         await Filesystem.deleteFile({
-          path: removed.storagePath,
+          path: removed.uri,
           directory: Directory.Data,
         });
       } catch {
-        // Datei evtl. schon weg — Metadaten trotzdem entfernt.
+        // Datei evtl. schon weg
       }
     }
-  }, []);
+
+    // SQLite
+    const db = await getDb();
+    if (db) {
+      await dbDeleteAttachment(attachmentId).catch(console.error);
+    }
+  }, [persistAttachments]);
 
   const removeAttachmentsForEntry = useCallback(async (entryId) => {
     const matching = attachments.filter((item) => item.entryId === entryId);
@@ -178,7 +303,7 @@ export function useAttachments() {
   const readAttachmentFile = useCallback(async (attachment) => {
     ensureNative();
     const result = await Filesystem.readFile({
-      path: attachment.storagePath,
+      path: attachment.uri,
       directory: Directory.Data,
     });
     return result.data;
@@ -199,6 +324,7 @@ export function useAttachments() {
     attachments,
     labelSuggestions,
     attachmentStats,
+    isLoading,
     addAttachment,
     removeAttachment,
     removeAttachmentsForEntry,

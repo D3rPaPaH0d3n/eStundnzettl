@@ -11,6 +11,7 @@ import {
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
 import { STORAGE_KEYS } from "../../hooks/constants";
+import { useBackupMetadata } from "../../hooks/useBackupMetadata";
 import {
   initGoogleAuth,
   signInGoogle,
@@ -25,8 +26,9 @@ import {
 import toast from "react-hot-toast";
 
 const BackupSettings = ({
-  autoBackup,
-  setAutoBackup,
+  cloudSyncEnabled,
+  setCloudSyncEnabled,
+  setLocalBackupEnabled,
   onExport,
   onFileImport,
 }) => {
@@ -37,6 +39,9 @@ const BackupSettings = ({
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isTokenValid, setIsTokenValid] = useState(true);
   const [backupFailCount, setBackupFailCount] = useState(0);
+
+  // SQLite-backed backup metadata
+  const { lastBackup, updateLastBackup } = useBackupMetadata();
 
   const formatLastBackup = (isoString) => {
     if (!isoString) return null;
@@ -50,16 +55,14 @@ const BackupSettings = ({
     return `vor ${days} Tag${days > 1 ? "en" : ""}`;
   };
 
+  // Sync with props and load backup metadata
   useEffect(() => {
-    const cloudEnabled =
-      localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
-    if (cloudEnabled) {
+    if (cloudSyncEnabled) {
       initGoogleAuth().catch(() => {});
     }
-    setIsCloudConnected(cloudEnabled);
+    setIsCloudConnected(cloudSyncEnabled);
     setHasBackupFolder(hasBackupTarget());
-    const saved = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
-    if (saved) setLastBackupDate(saved);
+    if (lastBackup) setLastBackupDate(lastBackup);
     try {
       const stored = JSON.parse(
         localStorage.getItem("google_auth_state") || "null"
@@ -71,7 +74,7 @@ const BackupSettings = ({
     // Backup-Fehler-Counter lesen
     const failCount = parseInt(localStorage.getItem("estundnzettl_backup_fail_count") || "0", 10);
     setBackupFailCount(failCount);
-  }, []);
+  }, [cloudSyncEnabled, lastBackup]);
 
   const handleGoogleToggle = async () => {
     Haptics.impact({ style: ImpactStyle.Light });
@@ -79,22 +82,19 @@ const BackupSettings = ({
     if (isCloudConnected) {
       try {
         await signOutGoogle();
-        localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
+        setCloudSyncEnabled(false);
         setIsCloudConnected(false);
-        setAutoBackup(false);
       } catch (e) {
         console.error(e);
-        localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
+        setCloudSyncEnabled(false);
         setIsCloudConnected(false);
-        setAutoBackup(false);
       }
     } else {
       try {
         const user = await signInGoogle();
         if (user && user.authentication.accessToken) {
-          localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
+          setCloudSyncEnabled(true);
           setIsCloudConnected(true);
-          if (!autoBackup) setAutoBackup(true);
           toast.success(`Verbunden: ${user.givenName || "Drive"}`);
         }
       } catch (error) {
@@ -110,15 +110,14 @@ const BackupSettings = ({
     if (hasBackupFolder) {
       clearBackupTarget();
       setHasBackupFolder(false);
-      localStorage.removeItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
+      setLocalBackupEnabled(false);
       toast("Backup-Ordner getrennt");
     } else {
       try {
         const success = await selectBackupFolder();
         if (success) {
           setHasBackupFolder(true);
-          localStorage.setItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED, "true");
-          if (!autoBackup) setAutoBackup(true);
+          setLocalBackupEnabled(true);
           toast.success("Backup aktiviert!");
         }
       } catch (err) {
@@ -135,6 +134,7 @@ const BackupSettings = ({
       const result = await triggerManualBackup();
       if (result.success) {
         const now = new Date().toISOString();
+        updateLastBackup(now);
         setLastBackupDate(now);
         if (result.gdrive && result.local) {
           toast.success("Backup gespeichert (Drive + Lokal)");

@@ -18,11 +18,10 @@ import { migrateEntriesToSQLite } from "../db/migrate-from-localstorage";
  * API für Consumer bleibt 100% identisch:
  *   { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries }
  *
- * Intern: SQLite-primär mit Dual-Write auf localStorage als Sicherheitsnetz.
- * Auf Web (dev) wird wie bisher nur localStorage genutzt.
+ * Intern: SQLite-primär. Auf Web (dev) wird nur localStorage genutzt.
  */
 export function useEntries() {
-  // ─── localStorage-Laden (immer, als Fallback / Sofort-Daten) ───
+  // ─── localStorage-Laden (Fallback für Web/Dev) ───
   const loadFromLocalStorage = () => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.ENTRIES);
@@ -71,8 +70,6 @@ export function useEntries() {
           try {
             const sqliteEntries = await getAllEntries();
             setEntries(sqliteEntries);
-            // Dual-Write: auch localStorage aktualisieren
-            localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(sqliteEntries));
           } catch (loadErr) {
             console.error("[useEntries] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", loadErr);
             sqliteReady.current = false;
@@ -87,11 +84,6 @@ export function useEntries() {
     return () => { cancelled = true; };
   }, []);
 
-  // ─── Dual-Write: localStorage immer aktuell halten ───
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(entries));
-  }, [entries]);
-
   // ─── SQLite-Write Helper (fire-and-forget mit Error-Log) ───
   const sqliteWrite = useCallback(async (operation) => {
     if (!sqliteReady.current) return;
@@ -99,7 +91,6 @@ export function useEntries() {
       await operation();
     } catch (err) {
       console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
-      // localStorage hat die Daten schon → kein Datenverlust
     }
   }, []);
 

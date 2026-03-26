@@ -225,12 +225,15 @@ export const applyBackup = (analyzedData, mode = 'ALL') => {
 };
 
 // 6. MANUELLER BACKUP (für "Jetzt sichern"-Button)
-export const triggerManualBackup = async () => {
+// @param {Object} options - { entries, userData, cloudSyncEnabled, localBackupEnabled }
+// Falls nicht übergeben, wird aus localStorage gelesen (Backward Compatibility)
+export const triggerManualBackup = async (options = {}) => {
   try {
-    const userData = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null');
-    const entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]');
-    const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
-    const localActive = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
+    // Wenn options nicht übergeben, fallback auf localStorage (Backward Compatibility)
+    const entries = options.entries || JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]');
+    const userData = options.userData || JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null');
+    const cloudActive = options.cloudSyncEnabled ?? localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
+    const localActive = options.localBackupEnabled ?? localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
 
     if (!entries || entries.length === 0) {
       return { success: false, message: "Keine Daten zum Sichern" };

@@ -3,6 +3,15 @@ import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
 import toast from "react-hot-toast";
 import { STORAGE_KEYS } from "./constants";
+import { isSQLiteActive } from "../db/storageMode";
+import {
+  getAllAttachments,
+  insertAttachment,
+  deleteAttachmentFromDb,
+  deleteAttachmentsByEntryId,
+  getAllLabelSuggestions,
+  pushLabelSuggestion,
+} from "../db/repositories/attachmentsRepo";
 
 const ATTACHMENTS_DIR = "attachments";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -12,6 +21,8 @@ const ALLOWED_MIME_TYPES = [
   "image/png",
   "image/webp",
 ];
+
+// ─── localStorage Helpers (Dual-Write / Fallback) ────────────
 
 const readJson = (key, fallback) => {
   try {
@@ -25,6 +36,8 @@ const readJson = (key, fallback) => {
 const persistJson = (key, value) => {
   localStorage.setItem(key, JSON.stringify(value));
 };
+
+// ─── File Helpers ────────────────────────────────────────────
 
 const sanitizeFileName = (name = "dokument") => {
   const safe = name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -58,10 +71,55 @@ const fileToBase64 = (file) =>
     reader.readAsDataURL(file);
   });
 
+/**
+ * useAttachments — Welle 3: SQLite-primär mit Dual-Write auf localStorage.
+ *
+ * Identische API wie bisher. Intern:
+ * - Initialer State aus localStorage (sofortige UI)
+ * - SQLite-Daten nachladen wenn verfügbar
+ * - Schreiboperationen: SQLite + localStorage (Dual-Write)
+ */
 export function useAttachments() {
+  // Sofort aus localStorage laden (schnelle UI, kein async-Warten)
   const [attachments, setAttachments] = useState(() => readJson(STORAGE_KEYS.ATTACHMENTS, []));
   const [labelSuggestions, setLabelSuggestions] = useState(() => readJson(STORAGE_KEYS.ATTACHMENT_LABELS, []));
 
+  // ─── SQLite nachladen beim Start ───────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadFromSQLite = async () => {
+      if (!isSQLiteActive()) return;
+
+      try {
+        const [sqlAttachments, sqlLabels] = await Promise.all([
+          getAllAttachments(),
+          getAllLabelSuggestions(),
+        ]);
+
+        if (cancelled) return;
+
+        // SQLite-Daten haben Vorrang (sind die Source of Truth)
+        if (sqlAttachments.length > 0 || readJson(STORAGE_KEYS.ATTACHMENTS, []).length === 0) {
+          setAttachments(sqlAttachments);
+          // Dual-Write: localStorage aktualisieren
+          persistJson(STORAGE_KEYS.ATTACHMENTS, sqlAttachments);
+        }
+
+        if (sqlLabels.length > 0 || readJson(STORAGE_KEYS.ATTACHMENT_LABELS, []).length === 0) {
+          setLabelSuggestions(sqlLabels);
+          persistJson(STORAGE_KEYS.ATTACHMENT_LABELS, sqlLabels);
+        }
+      } catch (err) {
+        console.error("[useAttachments] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
+      }
+    };
+
+    loadFromSQLite();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ─── Dual-Write: localStorage immer aktuell halten ─────────
   useEffect(() => {
     persistJson(STORAGE_KEYS.ATTACHMENTS, attachments);
   }, [attachments]);
@@ -70,16 +128,28 @@ export function useAttachments() {
     persistJson(STORAGE_KEYS.ATTACHMENT_LABELS, labelSuggestions);
   }, [labelSuggestions]);
 
+  // ─── Label-Suggestion Update (SQLite + State) ─────────────
+
   const updateSuggestions = useCallback((label) => {
     const trimmed = (label || "").trim();
     if (!trimmed) return;
 
+    // State updaten (MRU)
     setLabelSuggestions((prev) => {
       const lower = trimmed.toLowerCase();
       const next = [trimmed, ...prev.filter((item) => item.toLowerCase() !== lower)];
       return next.slice(0, 20);
     });
+
+    // SQLite (fire & forget, Dual-Write)
+    if (isSQLiteActive()) {
+      pushLabelSuggestion(trimmed).catch((err) => {
+        console.error("[useAttachments] SQLite label-push fehlgeschlagen:", err);
+      });
+    }
   }, []);
+
+  // ─── Add Attachment ───────────────────────────────────────
 
   const addAttachment = useCallback(async ({ entryId, file, label }) => {
     ensureNative();
@@ -125,8 +195,17 @@ export function useAttachments() {
     setAttachments((prev) => [attachment, ...prev]);
     updateSuggestions(trimmedLabel);
 
+    // SQLite-Write (fire & forget, localStorage hat die Daten bereits)
+    if (isSQLiteActive()) {
+      insertAttachment(attachment).catch((err) => {
+        console.error("[useAttachments] SQLite-Insert fehlgeschlagen:", err);
+      });
+    }
+
     return attachment;
   }, [updateSuggestions]);
+
+  // ─── Remove Attachment ────────────────────────────────────
 
   const removeAttachment = useCallback(async (attachmentId) => {
     let removed = null;
@@ -135,6 +214,13 @@ export function useAttachments() {
       removed = prev.find((item) => item.id === attachmentId) || null;
       return prev.filter((item) => item.id !== attachmentId);
     });
+
+    // SQLite löschen (fire & forget)
+    if (isSQLiteActive()) {
+      deleteAttachmentFromDb(attachmentId).catch((err) => {
+        console.error("[useAttachments] SQLite-Delete fehlgeschlagen:", err);
+      });
+    }
 
     if (removed?.storagePath) {
       try {
@@ -149,12 +235,24 @@ export function useAttachments() {
     }
   }, []);
 
+  // ─── Remove all Attachments for an Entry ──────────────────
+
   const removeAttachmentsForEntry = useCallback(async (entryId) => {
     const matching = attachments.filter((item) => item.entryId === entryId);
+
+    // SQLite: Bulk-Delete per entryId (effizienter als einzeln)
+    if (isSQLiteActive()) {
+      deleteAttachmentsByEntryId(entryId).catch((err) => {
+        console.error("[useAttachments] SQLite bulk-delete fehlgeschlagen:", err);
+      });
+    }
+
     for (const item of matching) {
       await removeAttachment(item.id);
     }
   }, [attachments, removeAttachment]);
+
+  // ─── Read Helpers (unverändert) ───────────────────────────
 
   const getAttachmentsForEntry = useCallback((entryId) => {
     return attachments

@@ -3,6 +3,7 @@
  *
  * Welle 1: Entries
  * Welle 2: Settings + WorkCodes
+ * Welle 3: Attachments + Label-Suggestions
  *
  * Strategie:
  * - Jede Domäne hat ein eigenes Flag → unabhängige, idempotente Migrations
@@ -14,13 +15,15 @@ import { STORAGE_KEYS, WORK_MODELS, WORK_CODE_PRESETS } from "../hooks/constants
 import { bulkInsertEntries } from "./repositories/entriesRepo";
 import { bulkWriteSettings } from "./repositories/settingsRepo";
 import { bulkReplaceWorkCodes } from "./repositories/workCodesRepo";
+import { bulkReplaceAttachments, bulkReplaceLabelSuggestions } from "./repositories/attachmentsRepo";
 
 // ─── Migration Flags ─────────────────────────────────────────
 
 const MIGRATION_FLAGS = {
-  ENTRIES:    "estundnzettl_sqlite_migration_done",
-  SETTINGS:   "estundnzettl_sqlite_settings_migration_done",
-  WORK_CODES: "estundnzettl_sqlite_workcodes_migration_done",
+  ENTRIES:     "estundnzettl_sqlite_migration_done",
+  SETTINGS:    "estundnzettl_sqlite_settings_migration_done",
+  WORK_CODES:  "estundnzettl_sqlite_workcodes_migration_done",
+  ATTACHMENTS: "estundnzettl_sqlite_attachments_migration_done",
 };
 
 /**
@@ -172,16 +175,77 @@ export async function migrateWorkCodesToSQLite() {
   }
 }
 
-// ─── Welle 2: Alles migrieren ───────────────────────────────
+// ─── Welle 3: Attachments + Labels ──────────────────────────
 
 /**
- * Führt alle Migrationen aus (Entries + Settings + WorkCodes).
+ * Migriert Attachments und Label-Suggestions von localStorage nach SQLite (Welle 3).
+ *
+ * Liest STORAGE_KEYS.ATTACHMENTS und STORAGE_KEYS.ATTACHMENT_LABELS
+ * und schreibt sie in die attachments/attachment_labels-Tabellen.
+ *
+ * @returns {Promise<{migrated: number, labels: number, skipped: boolean}>}
+ */
+export async function migrateAttachmentsToSQLite() {
+  if (localStorage.getItem(MIGRATION_FLAGS.ATTACHMENTS) === "true") {
+    return { migrated: 0, labels: 0, skipped: true };
+  }
+
+  // Attachments lesen
+  let attachments = [];
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.ATTACHMENTS);
+    if (stored && stored !== "undefined") {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) attachments = parsed;
+    }
+  } catch (err) {
+    console.error("[migration] Fehler beim Lesen der Attachments:", err);
+  }
+
+  // Label-Suggestions lesen
+  let labels = [];
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.ATTACHMENT_LABELS);
+    if (stored && stored !== "undefined") {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) labels = parsed;
+    }
+  } catch (err) {
+    console.error("[migration] Fehler beim Lesen der Attachment-Labels:", err);
+  }
+
+  if (attachments.length === 0 && labels.length === 0) {
+    localStorage.setItem(MIGRATION_FLAGS.ATTACHMENTS, "true");
+    console.info("[migration] Keine Attachments/Labels in localStorage — Migration übersprungen");
+    return { migrated: 0, labels: 0, skipped: false };
+  }
+
+  try {
+    if (attachments.length > 0) {
+      await bulkReplaceAttachments(attachments);
+    }
+    if (labels.length > 0) {
+      await bulkReplaceLabelSuggestions(labels);
+    }
+    localStorage.setItem(MIGRATION_FLAGS.ATTACHMENTS, "true");
+    console.info(`[migration] ${attachments.length} Attachments + ${labels.length} Labels erfolgreich nach SQLite migriert`);
+    return { migrated: attachments.length, labels: labels.length, skipped: false };
+  } catch (err) {
+    console.error("[migration] Attachments-Insert fehlgeschlagen:", err);
+    throw err;
+  }
+}
+
+// ─── Welle 2+3: Alles migrieren ─────────────────────────────
+
+/**
+ * Führt alle Migrationen aus (Entries + Settings + WorkCodes + Attachments).
  * Jede Migration ist unabhängig — Fehler in einer blockieren die anderen nicht.
  *
- * @returns {Promise<{entries: Object, settings: Object, workCodes: Object}>}
+ * @returns {Promise<{entries: Object, settings: Object, workCodes: Object, attachments: Object}>}
  */
 export async function migrateAllToSQLite() {
-  const results = { entries: null, settings: null, workCodes: null };
+  const results = { entries: null, settings: null, workCodes: null, attachments: null };
 
   try {
     results.entries = await migrateEntriesToSQLite();
@@ -199,6 +263,12 @@ export async function migrateAllToSQLite() {
     results.workCodes = await migrateWorkCodesToSQLite();
   } catch (err) {
     results.workCodes = { error: err.message };
+  }
+
+  try {
+    results.attachments = await migrateAttachmentsToSQLite();
+  } catch (err) {
+    results.attachments = { error: err.message };
   }
 
   console.info("[migration] Ergebnisse:", results);

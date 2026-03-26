@@ -8,6 +8,69 @@ export const CHANGELOG_DATA = [
 
 
 
+
+  {
+  version: "6.4.0",
+  date: "26.03.2026",
+  title: "Neue Features & Bugfixes 🛠️",
+  isMajor: false,
+  sections: [
+    {
+      iconName: 'Bug',
+      title: "Bugfixes",
+      items: [
+        "Fix: Workflow-Syntax für Release-Version korrigieren",
+        "Fix: Version nur noch manuell erhöhen",
+        "Fix: Versionsquellen wieder konsistent machen",
+        "Fix: Versionsstand wieder auf 6.4.0 angleichen",
+        "Fix: Auto-Bump nur noch manuell auslösen",
+        "Fix: remove internal-only entries from user-facing changelog",
+        "Fix: add missing changelog entries (6.3.21–6.3.27) + group bugfix releases (#4)",
+        "Fix: enable edge-to-edge display for Android 15+ compatibility",
+        "Fix: Telegram-Notification klarer formuliert [skip ci]",
+        "Fix: minifyEnabled true + Proguard Keep-Rules für WebView/Capacitor",
+        "Fix: Update-Checker verlinkt auf Play Store statt GitHub APK",
+        "Fix: removeAllListeners() durch gezieltes Listener-Cleanup ersetzt",
+        "Fix: Backup-Fehler sichtbar machen mit Fail-Counter und Warnung",
+        "Fix: GDrive Token-Expiry-Check nach 50 Minuten"
+      ]
+    },
+    {
+      iconName: 'Sparkles',
+      title: "Neue Features",
+      items: [
+        "Neu: Versionssprung auf 6.4.0 und Changelog aufräumen",
+        "Neu: Anhänge und Label-Vorschläge in SQLite speichern",
+        "Neu: Einstellungen und Tätigkeitscodes auf SQLite vorbereiten",
+        "Neu: Zeiteinträge auf SQLite mit Fallback vorbereiten",
+        "Neu: Dokumente an Einträge anhängen und gemeinsam teilen",
+        "Neu: Changelog aufgeräumt + Accordion UI [skip ci]",
+        "Neu: Deploy-Verifizierung + Telegram-Notification in CI"
+      ]
+    },
+    {
+      iconName: 'Zap',
+      title: "Verbesserungen",
+      items: [
+        "Restdaten und Backup-Metadaten an SQLite anbinden",
+        "humanize changelog + improve commit guidelines (#3)",
+        "Einstellungen vereinfacht, add collapsible UI and improved demo warning",
+        "Single-Point-of-Truth Versionierung via Vite define",
+        "privacy datum + logo optimiert",
+        "Dead Code WorkModelModal.jsx entfernt (191 Zeilen, nirgends importiert)",
+        "icon.png und logo.png optimiert (4.4MB→88KB, 1.2MB→89KB)",
+        "CI Pipeline vereinfacht — nur noch Play Store Deploy"
+      ]
+    },
+    {
+      iconName: 'FileText',
+      title: "Dokumentation",
+      items: [
+        "Docs: README CI Hinweis [test]"
+      ]
+    }
+  ]
+  },
   {
     version: "6.4.0",
     date: "26.03.2026",

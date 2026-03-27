@@ -18,10 +18,8 @@ const Settings = ({
   setUserData,
   theme,
   setTheme,
-  cloudSyncEnabled,
-  setCloudSyncEnabled,
-  localBackupEnabled,
-  setLocalBackupEnabled,
+  autoBackup,
+  setAutoBackup,
   entries = [],
   lastBackup = null,
   importEntries,
@@ -191,12 +189,9 @@ const Settings = ({
 
       {/* 4. Backup Settings */}
       <BackupSettings
-        cloudSyncEnabled={cloudSyncEnabled}
-        setCloudSyncEnabled={setCloudSyncEnabled}
-        localBackupEnabled={localBackupEnabled}
-        setLocalBackupEnabled={setLocalBackupEnabled}
+        autoBackup={autoBackup}
+        setAutoBackup={setAutoBackup}
         onExport={onExport}
-        onImport={() => {}}
         onFileImport={handleFileImport}
       />
 

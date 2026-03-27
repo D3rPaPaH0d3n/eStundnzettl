@@ -90,8 +90,13 @@ export const getValidToken = async () => {
   // 1. Versuche gespeichertes Token
   const stored = getStoredAuth();
   if (stored?.accessToken) {
-    // Expiry-Check: Token ohne Timestamp oder älter als 50 Min → abgelaufen
-    const tokenAge = stored.savedAt ? Date.now() - stored.savedAt : Infinity;
+    // Compat-Fix: Token ohne savedAt (z.B. aus v6.2.2) → jetzt stempeln und 50-Min-Fenster geben
+    if (!stored.savedAt) {
+      stored.savedAt = Date.now();
+      localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(stored));
+    }
+    // Expiry-Check: Token älter als 50 Min → abgelaufen
+    const tokenAge = Date.now() - stored.savedAt;
     if (tokenAge < TOKEN_MAX_AGE_MS) {
       return { accessToken: stored.accessToken };
     }

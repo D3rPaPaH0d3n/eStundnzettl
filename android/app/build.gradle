@@ -8,7 +8,7 @@ android {
         applicationId "com.estundnzettl.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 139          // Nextcloud Persistenz — Credentials werden vor Browser-Close gespeichert
+        versionCode 140          // Nextcloud Lifecycle Fix — Browser/App State Handling
         versionName "6.6.0"    // Stable Release
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

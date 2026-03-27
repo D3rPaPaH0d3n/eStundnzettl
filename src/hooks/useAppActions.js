@@ -7,6 +7,7 @@ import { isSQLiteActive } from "../db/storageMode";
 import { setSetting, deleteSetting, getSetting } from "../db/repositories/settingsRepo";
 import { getAllEntries } from "../db/repositories/entriesRepo";
 import { getAllWorkCodes } from "../db/repositories/workCodesRepo";
+import { execute } from "../db/database";
 
 // ─── Dual-Write Helpers (localStorage + SQLite) ─────────────
 
@@ -268,6 +269,12 @@ export function useAppActions({
       dualRemoveSync(STORAGE_KEYS.LAST_CODE, "last_code");
       localStorage.removeItem(STORAGE_KEYS.ATTACHMENTS);
       localStorage.removeItem(STORAGE_KEYS.ATTACHMENT_LABELS);
+      // SQLite: attachment_labels ebenfalls leeren
+      if (isSQLiteActive()) {
+        execute("DELETE FROM attachment_labels;").catch((err) =>
+          console.error("[useAppActions] SQLite attachment_labels Reset fehlgeschlagen:", err)
+        );
+      }
       toast.success("🧹 App vollständig zurückgesetzt");
     }
     setDeleteTarget(null);
@@ -278,39 +285,23 @@ export function useAppActions({
   // =====================
 
   const handleOnboardingFinish = useCallback(async () => {
-    // HARD-CODED LOGS
-    window._debugOnboarding = window._debugOnboarding || [];
-    window._debugOnboarding.push({ type: 'handleOnboardingFinish_start', timestamp: Date.now() });
-    
     // SQLite-first: Lade Daten aus SQLite, wenn verfügbar
     if (isSQLiteActive()) {
-      window._debugOnboarding.push({ type: 'sqlite_active' });
       try {
-        // User-Daten aus settingsRepo laden - verwende "user" key (nicht "user_data")
         const userDataFromSQLite = await getSetting("user");
-        window._debugOnboarding.push({ type: 'got_user_from_sqlite', data: userDataFromSQLite });
-        
         if (userDataFromSQLite) {
-          // userDataFromSQLite ist bereits ein Objekt (nicht JSON-String)
           setUserData(userDataFromSQLite);
           if (userDataFromSQLite.settings?.autoBackup !== undefined) {
             setAutoBackup(userDataFromSQLite.settings.autoBackup);
           }
         }
 
-        // Einträge aus entriesRepo laden
         const entriesFromSQLite = await getAllEntries();
-        window._debugOnboarding.push({ type: 'got_entries_from_sqlite', count: entriesFromSQLite?.length });
-        
         importEntries(entriesFromSQLite || []);
 
-        // Work Codes aus workCodesRepo laden
-        const workCodesFromSQLite = await getAllWorkCodes();
-        window._debugOnboarding.push({ type: 'got_workcodes_from_sqlite', count: workCodesFromSQLite?.length });
-        
         // Work Codes werden bereits durch useWorkCodes Hook geladen
+        await getAllWorkCodes();
       } catch (e) {
-        window._debugOnboarding.push({ type: 'sqlite_error', error: e.message });
         // Fallback auf localStorage (falls noch vorhanden)
         const storedUserStr = localStorage.getItem(STORAGE_KEYS.USER);
         if (storedUserStr) {
@@ -322,23 +313,17 @@ export function useAppActions({
                 setAutoBackup(storedUser.settings.autoBackup);
               }
             }
-          } catch (e2) {
-            window._debugOnboarding.push({ type: 'localstorage_user_error', error: e2.message });
-          }
+          } catch { /* corrupt */ }
         }
 
         const storedEntriesStr = localStorage.getItem(STORAGE_KEYS.ENTRIES);
         if (storedEntriesStr) {
           try {
-            const storedEntries = JSON.parse(storedEntriesStr);
-            importEntries(storedEntries);
-          } catch (e2) {
-            window._debugOnboarding.push({ type: 'localstorage_entries_error', error: e2.message });
-          }
+            importEntries(JSON.parse(storedEntriesStr));
+          } catch { /* corrupt */ }
         }
       }
     } else {
-      window._debugOnboarding.push({ type: 'sqlite_not_active' });
       // Fallback: Web/Dev Mode - localStorage
       const storedUserStr = localStorage.getItem(STORAGE_KEYS.USER);
       if (storedUserStr) {
@@ -350,23 +335,17 @@ export function useAppActions({
               setAutoBackup(storedUser.settings.autoBackup);
             }
           }
-        } catch (e) {
-          window._debugOnboarding.push({ type: 'localstorage_user_error_web', error: e.message });
-        }
+        } catch { /* corrupt */ }
       }
 
       const storedEntriesStr = localStorage.getItem(STORAGE_KEYS.ENTRIES);
       if (storedEntriesStr) {
         try {
-          const storedEntries = JSON.parse(storedEntriesStr);
-          importEntries(storedEntries);
-        } catch (e) {
-          window._debugOnboarding.push({ type: 'localstorage_entries_error_web', error: e.message });
-        }
+          importEntries(JSON.parse(storedEntriesStr));
+        } catch { /* corrupt */ }
       }
     }
 
-    window._debugOnboarding.push({ type: 'setting_showOnboarding_false' });
     setShowOnboarding(false);
     setView("dashboard");
     toast.success("Einrichtung abgeschlossen!");

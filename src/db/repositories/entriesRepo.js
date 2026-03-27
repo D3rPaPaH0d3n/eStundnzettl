@@ -102,8 +102,7 @@ export async function bulkInsertEntries(entries) {
     return;
   }
 
-  // Alles in einem execute-Block als Transaktion
-  let sql = "DELETE FROM entries;\n";
+  let sql = "BEGIN TRANSACTION;\nDELETE FROM entries;\n";
   for (const e of entries) {
     const type = esc(e.type || "work");
     const date = esc(e.date);
@@ -116,6 +115,7 @@ export async function bulkInsertEntries(entries) {
 
     sql += `INSERT OR REPLACE INTO entries (id, type, date, start, end, pause, project, code, netDuration) VALUES (${e.id}, ${type}, ${date}, ${start}, ${end}, ${pause}, ${project}, ${code}, ${netDuration});\n`;
   }
+  sql += "COMMIT;\n";
 
   await execute(sql);
 }

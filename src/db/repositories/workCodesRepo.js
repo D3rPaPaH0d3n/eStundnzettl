@@ -61,7 +61,7 @@ export async function deleteAllWorkCodes() {
  * @returns {Promise<void>}
  */
 export async function bulkReplaceWorkCodes(codes) {
-  let sql = "DELETE FROM work_codes;\n";
+  let sql = "BEGIN TRANSACTION;\nDELETE FROM work_codes;\n";
 
   if (codes && codes.length > 0) {
     for (const c of codes) {
@@ -69,6 +69,7 @@ export async function bulkReplaceWorkCodes(codes) {
       sql += `INSERT INTO work_codes (id, label) VALUES (${c.id}, ${label});\n`;
     }
   }
+  sql += "COMMIT;\n";
 
   await execute(sql);
 }

@@ -77,13 +77,14 @@ export async function deleteAttachmentsByEntryId(entryId) {
  * @returns {Promise<void>}
  */
 export async function bulkReplaceAttachments(attachments) {
-  let sql = "DELETE FROM attachments;\n";
+  let sql = "BEGIN TRANSACTION;\nDELETE FROM attachments;\n";
 
   if (attachments && attachments.length > 0) {
     for (const att of attachments) {
       sql += `INSERT OR REPLACE INTO attachments (id, entryId, label, fileName, mimeType, storagePath, fileSize, createdAt) VALUES (${esc(att.id)}, ${att.entryId}, ${esc(att.label || "")}, ${esc(att.fileName || "")}, ${esc(att.mimeType || "")}, ${esc(att.storagePath || "")}, ${att.fileSize ?? 0}, ${esc(att.createdAt || "")});\n`;
     }
   }
+  sql += "COMMIT;\n";
 
   await execute(sql);
 }
@@ -107,13 +108,14 @@ export async function getAllLabelSuggestions() {
  * @returns {Promise<void>}
  */
 export async function bulkReplaceLabelSuggestions(labels) {
-  let sql = "DELETE FROM attachment_labels;\n";
+  let sql = "BEGIN TRANSACTION;\nDELETE FROM attachment_labels;\n";
 
   if (labels && labels.length > 0) {
     for (let i = 0; i < labels.length; i++) {
       sql += `INSERT OR REPLACE INTO attachment_labels (label, position) VALUES (${esc(labels[i])}, ${i});\n`;
     }
   }
+  sql += "COMMIT;\n";
 
   await execute(sql);
 }

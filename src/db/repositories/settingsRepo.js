@@ -72,11 +72,12 @@ export async function getAllSettings() {
 export async function bulkWriteSettings(settings) {
   if (!settings || Object.keys(settings).length === 0) return;
 
-  let sql = "";
+  let sql = "BEGIN TRANSACTION;\n";
   for (const [key, value] of Object.entries(settings)) {
     const jsonVal = esc(JSON.stringify(value));
     sql += `INSERT OR REPLACE INTO settings (key, value) VALUES (${esc(key)}, ${jsonVal});\n`;
   }
+  sql += "COMMIT;\n";
   await execute(sql);
 }
 

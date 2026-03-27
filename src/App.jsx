@@ -58,7 +58,22 @@ export default function App() {
 
   // --- 1. DATEN & LOGIK ÜBER HOOKS ---
   const { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries } = useEntries();
-  const { userData, setUserData, theme, setTheme, autoBackup, setAutoBackup } = useSettings();
+  const { 
+    userData, 
+    setUserData, 
+    theme, 
+    setTheme, 
+    autoBackup, 
+    setAutoBackup,
+    nextcloudEnabled,
+    nextcloudUrl,
+    nextcloudUser,
+    nextcloudPass,
+    setNextcloudEnabled,
+    setNextcloudUrl,
+    setNextcloudUser,
+    setNextcloudPass
+  } = useSettings();
 
   // Work Codes Hook
   const { workCodes, hasAnyCodes, loadWorkCodes } = useWorkCodes();
@@ -409,6 +424,15 @@ export default function App() {
                 onImport={() => fileInputRef.current?.click()}
                 onDeleteAll={() => setDeleteTarget({ type: 'all' })}
                 onCheckUpdate={handleManualUpdateCheck}
+                // Nextcloud State
+                nextcloudEnabled={nextcloudEnabled}
+                nextcloudUrl={nextcloudUrl}
+                nextcloudUser={nextcloudUser}
+                nextcloudPass={nextcloudPass}
+                setNextcloudEnabled={setNextcloudEnabled}
+                setNextcloudUrl={setNextcloudUrl}
+                setNextcloudUser={setNextcloudUser}
+                setNextcloudPass={setNextcloudPass}
               />
             </motion.div>
           )}

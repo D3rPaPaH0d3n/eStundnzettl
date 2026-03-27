@@ -28,6 +28,15 @@ const Settings = ({
   onImport,
   onDeleteAll,
   onCheckUpdate,
+  // Nextcloud State
+  nextcloudEnabled,
+  nextcloudUrl,
+  nextcloudUser,
+  nextcloudPass,
+  setNextcloudEnabled,
+  setNextcloudUrl,
+  setNextcloudUser,
+  setNextcloudPass,
 }) => {
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -193,6 +202,15 @@ const Settings = ({
         setAutoBackup={setAutoBackup}
         onExport={onExport}
         onFileImport={handleFileImport}
+        // Nextcloud State
+        nextcloudEnabled={nextcloudEnabled}
+        nextcloudUrl={nextcloudUrl}
+        nextcloudUser={nextcloudUser}
+        nextcloudPass={nextcloudPass}
+        setNextcloudEnabled={setNextcloudEnabled}
+        setNextcloudUrl={setNextcloudUrl}
+        setNextcloudUser={setNextcloudUser}
+        setNextcloudPass={setNextcloudPass}
       />
 
       {/* 5. App Info & Danger Zone */}

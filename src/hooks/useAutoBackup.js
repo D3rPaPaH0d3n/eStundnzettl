@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { App } from "@capacitor/app";
-import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "../utils/googleDrive";
+import { uploadOrUpdateFile, getValidToken, initGoogleAuth, backgroundTokenRefresh } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
 import { STORAGE_KEYS, BACKUP_CONFIG } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
@@ -34,7 +34,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
     () => readLSInt(STORAGE_KEYS.BACKUP_FAIL_COUNT)
   );
 
-  // SQLite-Nachladen (einmalig, async)
+  // SQLite-Nachladen + proaktiver Token-Refresh (einmalig, async)
   const sqliteInitDone = useRef(false);
   useEffect(() => {
     if (sqliteInitDone.current || !isSQLiteActive()) return;
@@ -46,6 +46,12 @@ export function useAutoBackup(entries, userData, isEnabled) {
           setBackupFailCount(sqlFail);
         }
       } catch { /* keep localStorage value */ }
+
+      // Proaktiver Token-Refresh im Hintergrund beim App-Start
+      const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
+      if (cloudActive) {
+        backgroundTokenRefresh().catch(() => {});
+      }
     })();
   }, []);
 

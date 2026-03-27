@@ -17,6 +17,7 @@ import {
   initGoogleAuth,
   signInGoogle,
   signOutGoogle,
+  isGoogleLoggedIn,
 } from "../../utils/googleDrive";
 import {
   selectBackupFolder,
@@ -65,14 +66,9 @@ const BackupSettings = ({
     const saved = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
     if (saved) setLastBackupDate(saved);
 
-    try {
-      const stored = JSON.parse(
-        localStorage.getItem("google_auth_state") || "null"
-      );
-      setIsTokenValid(!!stored?.accessToken);
-    } catch {
-      setIsTokenValid(false);
-    }
+    // Token-Validität: Prüfe ob überhaupt ein Token gespeichert ist.
+    // Echte Validität wird erst bei API-Calls geprüft (401 → Auto-Refresh).
+    setIsTokenValid(isGoogleLoggedIn());
 
     const failCount = parseInt(localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT) || "0", 10);
     setBackupFailCount(failCount);

@@ -5,9 +5,10 @@ import { BACKUP_CONFIG } from '../hooks/constants';
 const WEB_CLIENT_ID = "618528142382-pes4415amf381rk4bjovlamgh4emhrov.apps.googleusercontent.com";
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
 
-// Token Storage
+// Token Storage Key
 const TOKEN_STORAGE_KEY = "google_auth_state";
 
+// --- TOKEN STORAGE (localStorage — schnell, synchron) ---
 const getStoredAuth = () => {
   try {
     const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
@@ -38,31 +39,28 @@ export const initGoogleAuth = async () => {
         mode: 'online'
       }
     });
-    console.log("Google Auth initialized");
   } catch (err) {
     // Fehler ignorieren, wenn bereits initialisiert
     if (!err.message?.includes('already')) {
-       console.error("Google Auth init error:", err);
+      console.error("Google Auth init error:", err);
     }
   }
 };
 
-// --- AUTH: Sign In (dient auf Android auch als Silent Refresh) ---
+// --- AUTH: Sign In (auf Android = Silent Refresh wenn User bereits berechtigt) ---
 export const signInGoogle = async () => {
   try {
-    // Auf Android führt ein erneutes Login oft einen Silent Refresh durch,
-    // wenn der User bereits berechtigt ist.
     const result = await SocialLogin.login({
       provider: 'google',
       options: {
         scopes: SCOPES
       }
     });
-    
+
     if (result.provider === 'google' && result.result) {
       const r = result.result;
       const accessToken = r.accessToken?.token || r.accessToken;
-      
+
       if (accessToken) {
         const userInfo = {
           email: r.profile?.email || r.email,
@@ -81,40 +79,81 @@ export const signInGoogle = async () => {
   }
 };
 
-// --- AUTH: Get valid access token ---
-// WICHTIG: Ersetzt die defekte 'refresh'-Methode
-// Token-Expiry: Access Tokens laufen nach ~1h ab, wir prüfen nach 50 Min.
-const TOKEN_MAX_AGE_MS = 50 * 60 * 1000; // 50 Minuten
-
-export const getValidToken = async () => {
-  // 1. Versuche gespeichertes Token
-  const stored = getStoredAuth();
-  if (stored?.accessToken) {
-    // Compat-Fix: Token ohne savedAt (z.B. aus v6.2.2) → jetzt stempeln und 50-Min-Fenster geben
-    if (!stored.savedAt) {
-      stored.savedAt = Date.now();
-      localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(stored));
-    }
-    // Expiry-Check: Token älter als 50 Min → abgelaufen
-    const tokenAge = Date.now() - stored.savedAt;
-    if (tokenAge < TOKEN_MAX_AGE_MS) {
-      return { accessToken: stored.accessToken };
-    }
-    // Token abgelaufen → löschen und neu anfordern
-    console.log("GDrive Token abgelaufen, fordere neues an...");
-    clearAuth();
-  }
-  // 2. Wenn leer oder abgelaufen, versuche Silent Login
+// --- AUTH: Silently refresh token via re-login ---
+// Auf Android macht SocialLogin.login() ein Silent Refresh wenn der User schon berechtigt ist.
+// Das ist der EINZIGE Refresh-Mechanismus den das Plugin bietet.
+const silentRefresh = async () => {
   try {
-      return await signInGoogle();
-  } catch(e) {
-      return null;
+    await initGoogleAuth();
+    const result = await signInGoogle();
+    return result?.authentication?.accessToken || null;
+  } catch (e) {
+    console.warn("Silent refresh fehlgeschlagen:", e.message);
+    return null;
   }
 };
 
-// Veraltet/Defekt auf Android -> Wir leiten es auf getValidToken um
+// --- AUTH: Get valid access token ---
+// KEIN künstliches 50-Min-Ablaufdatum mehr!
+// Wir geben das gespeicherte Token zurück und prüfen erst bei echtem 401.
+export const getValidToken = async () => {
+  const stored = getStoredAuth();
+  if (stored?.accessToken) {
+    return { accessToken: stored.accessToken };
+  }
+  // Kein Token gespeichert → versuche Silent Login
+  const freshToken = await silentRefresh();
+  if (freshToken) {
+    return { accessToken: freshToken };
+  }
+  return null;
+};
+
+// --- AUTH: Fetch mit Auto-Retry bei 401 ---
+// Das Herzstück: Jeder Google Drive API-Call geht durch diese Funktion.
+// Bei 401 (Token abgelaufen) wird EIN Silent Refresh versucht und der Call wiederholt.
+const authFetch = async (url, options = {}) => {
+  const stored = getStoredAuth();
+  if (!stored?.accessToken) {
+    // Kein Token → erstmal Silent Refresh probieren
+    const freshToken = await silentRefresh();
+    if (!freshToken) {
+      throw new Error("AUTH_REQUIRED");
+    }
+    options.headers = {
+      ...options.headers,
+      Authorization: `Bearer ${freshToken}`
+    };
+    return fetch(url, options);
+  }
+
+  // Erster Versuch mit gespeichertem Token
+  options.headers = {
+    ...options.headers,
+    Authorization: `Bearer ${stored.accessToken}`
+  };
+
+  const response = await fetch(url, options);
+
+  // Bei 401/403: Token abgelaufen → Silent Refresh + Retry
+  if (response.status === 401 || response.status === 403) {
+    console.log("GDrive API 401/403 — versuche Silent Refresh...");
+    const freshToken = await silentRefresh();
+    if (!freshToken) {
+      clearAuth();
+      throw new Error("AUTH_REQUIRED");
+    }
+    // Retry mit neuem Token
+    options.headers.Authorization = `Bearer ${freshToken}`;
+    return fetch(url, options);
+  }
+
+  return response;
+};
+
+// Backwards-compatible
 export const refreshGoogleToken = async () => {
-    return await getValidToken();
+  return await getValidToken();
 };
 
 export const isGoogleLoggedIn = () => {
@@ -126,6 +165,22 @@ export const signOutGoogle = async () => {
   try {
     await SocialLogin.logout({ provider: 'google' });
   } catch (e) { }
+};
+
+// --- Beim App-Start aufrufen: Background Token Refresh ---
+// Prüft ob ein gespeichertes Token vorhanden ist und refresht es leise im Hintergrund.
+// So hat der User beim nächsten Backup schon ein frisches Token.
+export const backgroundTokenRefresh = async () => {
+  const stored = getStoredAuth();
+  if (!stored?.accessToken) return false;
+
+  // Prüfe ob Token älter als 45 Min ist → proaktiver Refresh
+  const tokenAge = Date.now() - (stored.savedAt || 0);
+  if (tokenAge > 45 * 60 * 1000) {
+    const freshToken = await silentRefresh();
+    return !!freshToken;
+  }
+  return true; // Token ist noch jung genug
 };
 
 // --- HELPER: Multipart Body bauen ---
@@ -144,16 +199,12 @@ const createMultipartBody = (metadata, jsonContent, boundary) => {
   );
 };
 
-// --- CORE: Datei suchen ---
+// --- CORE: Datei suchen (mit Auto-Retry) ---
 const findFileIdByName = async (accessToken, fileName) => {
   const query = `name = '${fileName}' and trashed = false`;
   const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id)`;
-  
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  
+
+  const response = await authFetch(url, { method: "GET" });
   const data = await response.json();
   if (data.files && data.files.length > 0) {
     return data.files[0].id;
@@ -161,7 +212,7 @@ const findFileIdByName = async (accessToken, fileName) => {
   return null;
 };
 
-// --- CORE: Upload ---
+// --- CORE: Upload (mit Auto-Retry) ---
 export const uploadOrUpdateFile = async (accessToken, fileName, jsonContent) => {
   const boundary = "foo_bar_baz";
   const existingFileId = await findFileIdByName(accessToken, fileName);
@@ -184,10 +235,9 @@ export const uploadOrUpdateFile = async (accessToken, fileName, jsonContent) => 
 
   const body = createMultipartBody(metadata, jsonContent, boundary);
 
-  const response = await fetch(url, {
+  const response = await authFetch(url, {
     method: method,
     headers: {
-      Authorization: `Bearer ${accessToken}`,
       "Content-Type": `multipart/related; boundary=${boundary}`,
     },
     body: body,
@@ -201,35 +251,29 @@ export const uploadOrUpdateFile = async (accessToken, fileName, jsonContent) => 
   return await response.json();
 };
 
-// --- RESTORE ---
+// --- RESTORE (mit Auto-Retry) ---
 export const findLatestBackup = async (accessToken) => {
   // V6 Suche
   let query = `name = '${BACKUP_CONFIG.FILENAME}' and trashed=false`;
   let url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&orderBy=modifiedTime desc&pageSize=1&fields=files(id, name, createdTime, modifiedTime)`;
 
-  let response = await fetch(url, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  let response = await authFetch(url, { method: "GET" });
 
   if (!response.ok) throw new Error("Fehler beim Suchen (V6)");
 
   let data = await response.json();
-  
+
   // Fallback Legacy
   if (!data.files || data.files.length === 0) {
-      console.log("Suche Legacy...", BACKUP_CONFIG.LEGACY_FILENAME);
-      query = `name = '${BACKUP_CONFIG.LEGACY_FILENAME}' and trashed=false`;
-      url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&orderBy=modifiedTime desc&pageSize=1&fields=files(id, name, createdTime, modifiedTime)`;
-      
-      response = await fetch(url, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      
-      if (response.ok) {
-          data = await response.json();
-      }
+    console.log("Suche Legacy...", BACKUP_CONFIG.LEGACY_FILENAME);
+    query = `name = '${BACKUP_CONFIG.LEGACY_FILENAME}' and trashed=false`;
+    url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&orderBy=modifiedTime desc&pageSize=1&fields=files(id, name, createdTime, modifiedTime)`;
+
+    response = await authFetch(url, { method: "GET" });
+
+    if (response.ok) {
+      data = await response.json();
+    }
   }
 
   return (data.files && data.files.length > 0) ? data.files[0] : null;
@@ -237,7 +281,7 @@ export const findLatestBackup = async (accessToken) => {
 
 export const downloadFileContent = async (accessToken, fileId) => {
   const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const response = await authFetch(url, { method: "GET" });
   if (!response.ok) throw new Error("Fehler beim Download");
   return await response.json();
 };

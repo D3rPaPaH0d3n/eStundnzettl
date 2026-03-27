@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { User, Briefcase, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, RefreshCw, Building2, FlaskConical } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
-import { downloadBackup as ncDownloadBackup, initiateLoginFlow, pollLoginResult } from "../utils/nextcloudClient";
+import { downloadBackup as ncDownloadBackup, initiateLoginFlow, pollLoginResult, getNextcloudErrorMessage } from "../utils/nextcloudClient";
 import { Browser } from "@capacitor/browser";
 import { analyzeBackupData, applyBackup, readJsonFile, readBackupFromFolder, selectBackupFolder } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
@@ -182,7 +182,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
       // Direkt in SQLite schreiben (synchronisiert mit localStorage via useSettings)
       const { setSetting } = await import("../db/repositories/settingsRepo");
       await setSetting("user", userDataToSave);
-    } catch (err) {
+    } catch {
       // Fortfahren, useSettings wird es in localStorage schreiben
     }
     
@@ -251,7 +251,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
       } else {
           toast.error("Kein Backup gefunden.");
       }
-    } catch (error) {
+    } catch {
         toast.error("Fehler beim Zugriff.");
     } finally {
         setLoading(false);
@@ -272,7 +272,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
       } else {
         toast.error("Ungültiges Format.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Datei konnte nicht gelesen werden.");
     } finally {
       setLoading(false);
@@ -287,7 +287,12 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     }
     try {
       setNcRestoreConnecting(true);
-      const { loginUrl, pollToken, pollEndpoint } = await initiateLoginFlow(ncRestoreUrl);
+      const startResult = await initiateLoginFlow(ncRestoreUrl);
+      if (!startResult.ok) {
+        throw new Error(getNextcloudErrorMessage(startResult));
+      }
+
+      const { loginUrl, token, pollEndpoint } = startResult;
       await Browser.open({ url: loginUrl });
 
       let attempts = 0;
@@ -300,8 +305,12 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
           return;
         }
         try {
-          const result = await pollLoginResult(pollEndpoint, pollToken);
-          if (result) {
+          const result = await pollLoginResult(pollEndpoint, token);
+          if (!result.ok) {
+            throw new Error(getNextcloudErrorMessage(result));
+          }
+
+          if (result.status === 'complete') {
             clearInterval(ncRestorePollRef.current);
             setNcRestoreConnecting(false);
             setLoading(true);
@@ -327,15 +336,15 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
               setLoading(false);
             }
           }
-        } catch {
+        } catch (error) {
           clearInterval(ncRestorePollRef.current);
           setNcRestoreConnecting(false);
-          toast.error("Nextcloud Login fehlgeschlagen");
+          toast.error(error?.message || "Nextcloud Login fehlgeschlagen");
         }
       }, 3000);
-    } catch {
+    } catch (error) {
       setNcRestoreConnecting(false);
-      toast.error("Server nicht erreichbar oder Login Flow v2 nicht unterstützt");
+      toast.error(error?.message || "Server nicht erreichbar oder Login Flow v2 nicht unterstützt");
     }
   };
 

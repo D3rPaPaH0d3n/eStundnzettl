@@ -26,7 +26,7 @@ import {
   clearBackupTarget,
   triggerManualBackup,
 } from "../../utils/storageBackup";
-import { testConnection as ncTestConnection, initiateLoginFlow, pollLoginResult, ensureFolder as ncEnsureFolder } from "../../utils/nextcloudClient";
+import { testConnection as ncTestConnection, initiateLoginFlow, pollLoginResult, ensureFolder as ncEnsureFolder, getNextcloudErrorMessage } from "../../utils/nextcloudClient";
 import { Browser } from "@capacitor/browser";
 import toast from "react-hot-toast";
 
@@ -54,12 +54,11 @@ const BackupSettings = ({
   const [ncUser, setNcUser] = useState(
     () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || ""
   );
-  const [ncPass, setNcPass] = useState(
+  const [, setNcPass] = useState(
     () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || ""
   );
   const [ncExpanded, setNcExpanded] = useState(false);
-  const [ncTesting, setNcTesting] = useState(false);
-  const [ncStatus, setNcStatus] = useState(null); // null | "ok" | "error"
+  const [, setNcStatus] = useState(null); // null | "ok" | "error"
   const [ncConnecting, setNcConnecting] = useState(false);
   const [ncLoginName, setNcLoginName] = useState(
     () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || ""
@@ -152,7 +151,12 @@ const BackupSettings = ({
     }
     try {
       setNcConnecting(true);
-      const { loginUrl, pollToken, pollEndpoint } = await initiateLoginFlow(ncUrl);
+      const startResult = await initiateLoginFlow(ncUrl);
+      if (!startResult.ok) {
+        throw new Error(getNextcloudErrorMessage(startResult));
+      }
+
+      const { loginUrl, token, pollEndpoint } = startResult;
 
       // Browser öffnen
       await Browser.open({ url: loginUrl });
@@ -168,8 +172,12 @@ const BackupSettings = ({
           return;
         }
         try {
-          const result = await pollLoginResult(pollEndpoint, pollToken);
-          if (result) {
+          const result = await pollLoginResult(pollEndpoint, token);
+          if (!result.ok) {
+            throw new Error(getNextcloudErrorMessage(result));
+          }
+
+          if (result.status === 'complete') {
             clearInterval(ncPollInterval.current);
             // Credentials speichern
             const serverUrl = result.server.replace(/\/+$/, '');
@@ -193,10 +201,10 @@ const BackupSettings = ({
               await ncEnsureFolder(serverUrl, result.loginName, result.appPassword);
             } catch { /* nicht kritisch */ }
           }
-        } catch {
+        } catch (error) {
           clearInterval(ncPollInterval.current);
           setNcConnecting(false);
-          toast.error("Nextcloud Login fehlgeschlagen");
+          toast.error(error?.message || "Nextcloud Login fehlgeschlagen");
         }
       }, 3000);
     } catch (err) {
@@ -271,7 +279,7 @@ const BackupSettings = ({
           if (!autoBackup) setAutoBackup(true);
           toast.success("Backup aktiviert!");
         }
-      } catch (err) {
+      } catch {
         // Partiellen State bereinigen (dualWrite könnte BACKUP_TARGET bereits gesetzt haben)
         await clearBackupTarget();
         setHasBackupFolder(false);
@@ -300,7 +308,7 @@ const BackupSettings = ({
       } else {
         toast.error(result.message || "Backup fehlgeschlagen");
       }
-    } catch (e) {
+    } catch {
       toast.error("Backup fehlgeschlagen");
     } finally {
       setIsBackingUp(false);

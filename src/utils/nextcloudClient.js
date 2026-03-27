@@ -1,112 +1,185 @@
-import { Http } from '@capacitor-community/http';
 import { Capacitor } from '@capacitor/core';
+import { NextcloudLoginFlow } from '../plugins/NextcloudLoginFlowPlugin';
 
 /**
  * nextcloudClient.js — WebDAV-Client für Nextcloud Backup
- * 
- * Login Flow v2 läuft auf Android nativ über CapacitorHttp, um WebView/CORS-Probleme zu vermeiden.
- * App-Passwörter laufen nie ab → kein Token-Refresh nötig.
+ *
+ * Android nutzt für Login Flow v2 ein kleines natives Plugin,
+ * Web bleibt beim fetch-Fallback.
  */
 
-/**
- * Startet den Nextcloud Login Flow v2
- * @param {string} serverUrl - Nextcloud Server URL
- * @returns {Promise<{ loginUrl: string, pollToken: string, pollEndpoint: string }>}
- */
-export async function initiateLoginFlow(serverUrl) {
-  let baseUrl = serverUrl.trim();
-  if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
-    baseUrl = 'https://' + baseUrl;
+function buildError(code, message, httpStatus, retriable = false) {
+  return {
+    ok: false,
+    error: {
+      code,
+      message,
+      ...(httpStatus ? { httpStatus } : {}),
+      retriable,
+    },
+  };
+}
+
+function normalizeServerUrl(serverUrl) {
+  const input = String(serverUrl || '').trim();
+  if (!input) {
+    return buildError('INVALID_URL', 'Server-URL fehlt');
   }
-  baseUrl = baseUrl.replace(/\/+$/, '');
+
+  let normalized = input;
+  if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+    normalized = `https://${normalized}`;
+  }
+  normalized = normalized.replace(/\/+$/, '');
 
   try {
-    let status;
-    let data;
-    let rawText = '';
-
-    if (Capacitor.getPlatform() === 'android') {
-      const response = await Http.post({
-        url: `${baseUrl}/index.php/login/v2`,
-        headers: {
-          Accept: 'application/json'
-        }
-      });
-      status = response.status;
-      data = response.data;
-      if (typeof response.data === 'string') {
-        rawText = response.data;
-        try {
-          data = rawText ? JSON.parse(rawText) : null;
-        } catch {
-          // rawText behalten für Debug
-        }
-      } else {
-        rawText = data ? JSON.stringify(data) : '';
-      }
-    } else {
-      const res = await fetch(`${baseUrl}/index.php/login/v2`, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json'
-        }
-      });
-      status = res.status;
-      rawText = await res.text();
-      try {
-        data = rawText ? JSON.parse(rawText) : null;
-      } catch {
-        // rawText behalten für Debug
-      }
+    const url = new URL(normalized);
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return buildError('INVALID_URL', 'Server-URL ist ungültig');
     }
-
-    if (status < 200 || status >= 300) {
-      const details = `HTTP ${status}${rawText ? ` — ${rawText.slice(0, 160)}` : ''}`;
-      throw new Error(details);
-    }
-
-    if (!data?.login || !data?.poll?.token || !data?.poll?.endpoint) {
-      throw new Error(`Ungültige Antwort vom Server${rawText ? ` — ${rawText.slice(0, 160)}` : ''}`);
-    }
-
-    return {
-      loginUrl: data.login,
-      pollToken: data.poll.token,
-      pollEndpoint: data.poll.endpoint
-    };
-  } catch (err) {
-    const message = err?.message || 'Unbekannter Fehler';
-    console.error('Nextcloud Login Flow error:', message);
-    throw new Error(message);
+    return { ok: true, value: url.toString().replace(/\/+$/, '') };
+  } catch {
+    return buildError('INVALID_URL', 'Server-URL ist ungültig');
   }
 }
 
-/**
- * Pollt auf Login-Ergebnis des Login Flow v2
- * @returns {Promise<{ server: string, loginName: string, appPassword: string } | null>}
- */
-export async function pollLoginResult(pollEndpoint, pollToken) {
-  if (Capacitor.getPlatform() === 'android') {
-    const response = await Http.post({
-      url: pollEndpoint,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      data: `token=${encodeURIComponent(pollToken)}`
-    });
-    if (response.status === 404) return null;
-    if (response.status < 200 || response.status >= 300) {
-      throw new Error(`Login Flow fehlgeschlagen (${response.status})`);
-    }
-    return response.data;
+function validatePollInput(pollEndpoint, token) {
+  if (!pollEndpoint || typeof pollEndpoint !== 'string') {
+    return buildError('INVALID_POLL_ENDPOINT', 'Poll-Endpunkt fehlt');
+  }
+  if (!token || typeof token !== 'string') {
+    return buildError('INVALID_TOKEN', 'Token fehlt');
   }
 
-  const res = await fetch(pollEndpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `token=${encodeURIComponent(pollToken)}`
-  });
-  if (res.status === 404) return null; // Noch nicht autorisiert
-  if (!res.ok) throw new Error('Login Flow fehlgeschlagen');
-  return await res.json(); // { server, loginName, appPassword }
+  try {
+    const url = new URL(pollEndpoint);
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return buildError('INVALID_POLL_ENDPOINT', 'Poll-Endpunkt ist ungültig');
+    }
+  } catch {
+    return buildError('INVALID_POLL_ENDPOINT', 'Poll-Endpunkt ist ungültig');
+  }
+
+  return { ok: true };
+}
+
+async function parseJsonResponse(response, fallbackMessage) {
+  const httpStatus = response.status;
+  const rawText = await response.text();
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('text/html') || rawText.trim().startsWith('<')) {
+    return buildError('INVALID_CONTENT_TYPE', 'Server liefert HTML statt JSON', httpStatus);
+  }
+
+  let data;
+  try {
+    data = rawText ? JSON.parse(rawText) : null;
+  } catch {
+    return buildError('INVALID_JSON', fallbackMessage || 'Server liefert ungültiges JSON', httpStatus);
+  }
+
+  return { ok: true, data, rawText, httpStatus };
+}
+
+export async function initiateLoginFlow(serverUrl) {
+  const normalized = normalizeServerUrl(serverUrl);
+  if (!normalized.ok) return normalized;
+
+  if (Capacitor.getPlatform() === 'android') {
+    try {
+      return await NextcloudLoginFlow.startLoginFlow({ serverUrl: normalized.value });
+    } catch (error) {
+      return buildError('PLUGIN_ERROR', error?.message || 'Native Android-Integration fehlgeschlagen', undefined, true);
+    }
+  }
+
+  try {
+    const response = await fetch(`${normalized.value}/index.php/login/v2`, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (response.status < 200 || response.status >= 300) {
+      const rawText = await response.text();
+      return buildError(
+        'HTTP_ERROR',
+        `Login Flow konnte nicht gestartet werden${rawText ? ` (HTTP ${response.status}: ${rawText.slice(0, 180)})` : ''}`,
+        response.status,
+        response.status === 408 || response.status === 429 || response.status >= 500,
+      );
+    }
+
+    const parsed = await parseJsonResponse(response, 'Server liefert ungültiges JSON');
+    if (!parsed.ok) return parsed;
+
+    const data = parsed.data;
+    if (!data?.login || !data?.poll?.endpoint || !data?.poll?.token) {
+      return buildError('INVALID_RESPONSE', 'Antwort vom Server ist unvollständig', parsed.httpStatus);
+    }
+
+    return {
+      ok: true,
+      loginUrl: data.login,
+      pollEndpoint: data.poll.endpoint,
+      token: data.poll.token,
+    };
+  } catch (error) {
+    return buildError('NETWORK_ERROR', error?.message || 'Netzwerkfehler bei der Verbindung zu Nextcloud', undefined, true);
+  }
+}
+
+export async function pollLoginResult(pollEndpoint, token) {
+  const validation = validatePollInput(pollEndpoint, token);
+  if (!validation.ok) return validation;
+
+  if (Capacitor.getPlatform() === 'android') {
+    try {
+      return await NextcloudLoginFlow.pollLoginFlow({ pollEndpoint, token });
+    } catch (error) {
+      return buildError('PLUGIN_ERROR', error?.message || 'Native Android-Integration fehlgeschlagen', undefined, true);
+    }
+  }
+
+  try {
+    const response = await fetch(pollEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `token=${encodeURIComponent(token)}`,
+    });
+
+    if (response.status === 404) {
+      return { ok: true, status: 'pending' };
+    }
+
+    if (response.status < 200 || response.status >= 300) {
+      const rawText = await response.text();
+      return buildError(
+        'HTTP_ERROR',
+        `Polling des Login Flow fehlgeschlagen${rawText ? ` (HTTP ${response.status}: ${rawText.slice(0, 180)})` : ''}`,
+        response.status,
+        response.status === 408 || response.status === 429 || response.status >= 500,
+      );
+    }
+
+    const parsed = await parseJsonResponse(response, 'Server liefert ungültiges JSON');
+    if (!parsed.ok) return parsed;
+
+    const data = parsed.data;
+    if (!data?.server || !data?.loginName || !data?.appPassword) {
+      return buildError('INVALID_RESPONSE', 'Antwort vom Server ist unvollständig', parsed.httpStatus);
+    }
+
+    return {
+      ok: true,
+      status: 'complete',
+      server: data.server,
+      loginName: data.loginName,
+      appPassword: data.appPassword,
+    };
+  } catch (error) {
+    return buildError('NETWORK_ERROR', error?.message || 'Netzwerkfehler bei der Verbindung zu Nextcloud', undefined, true);
+  }
 }
 
 const BACKUP_FOLDER = "eStundnzettl";
@@ -129,6 +202,10 @@ function davPath(url, user) {
   return `${normalizeUrl(url)}/remote.php/dav/files/${encodeURIComponent(user)}`;
 }
 
+export function getNextcloudErrorMessage(result, fallback = 'Nextcloud Login fehlgeschlagen') {
+  return result?.error?.message || fallback;
+}
+
 /**
  * Verbindung testen via PROPFIND auf den User-Root.
  * @returns {Promise<{ok: boolean, error?: string}>}
@@ -146,7 +223,7 @@ export async function testConnection(url, user, pass) {
     if (res.status === 401) return { ok: false, error: "Ungültige Anmeldedaten (401)" };
     if (res.status === 404) return { ok: false, error: "Server nicht gefunden (404)" };
     return { ok: false, error: `Unerwarteter Status: ${res.status}` };
-  } catch (err) {
+  } catch {
     return { ok: false, error: "Verbindung fehlgeschlagen — URL prüfen" };
   }
 }
@@ -160,10 +237,8 @@ export async function ensureFolder(url, user, pass) {
       method: "MKCOL",
       headers: authHeaders(user, pass),
     });
-    // 201 = erstellt, 405 = existiert bereits — beides OK
     if (res.status === 201 || res.status === 405) return true;
     if (res.status === 401) throw new Error("Nicht autorisiert (401)");
-    // Manche Nextcloud-Versionen geben 409 wenn Ordner existiert
     if (res.status === 409) return true;
     throw new Error(`MKCOL fehlgeschlagen: ${res.status}`);
   } catch (err) {
@@ -172,9 +247,6 @@ export async function ensureFolder(url, user, pass) {
   }
 }
 
-/**
- * Backup-JSON hochladen (PUT).
- */
 export async function uploadBackup(url, user, pass, jsonData) {
   await ensureFolder(url, user, pass);
   const content = typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData, null, 2);
@@ -191,10 +263,6 @@ export async function uploadBackup(url, user, pass, jsonData) {
   throw new Error(`Upload fehlgeschlagen: ${res.status}`);
 }
 
-/**
- * Backup-JSON herunterladen (GET).
- * @returns {Promise<object|null>} Parsed JSON oder null bei 404.
- */
 export async function downloadBackup(url, user, pass) {
   const res = await fetch(`${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`, {
     method: "GET",
@@ -206,10 +274,6 @@ export async function downloadBackup(url, user, pass) {
   return await res.json();
 }
 
-/**
- * Prüfen ob ein Backup existiert (PROPFIND auf die Datei).
- * @returns {Promise<boolean>}
- */
 export async function findBackup(url, user, pass) {
   try {
     const res = await fetch(`${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`, {

@@ -1,7 +1,10 @@
+import { Http } from '@capacitor-community/http';
+import { Capacitor } from '@capacitor/core';
+
 /**
  * nextcloudClient.js — WebDAV-Client für Nextcloud Backup
  * 
- * Nutzt nur fetch() + Basic Auth (kein npm-Dependency).
+ * Login Flow v2 läuft auf Android nativ über CapacitorHttp, um WebView/CORS-Probleme zu vermeiden.
  * App-Passwörter laufen nie ab → kein Token-Refresh nötig.
  */
 
@@ -18,23 +21,47 @@ export async function initiateLoginFlow(serverUrl) {
   baseUrl = baseUrl.replace(/\/+$/, '');
 
   try {
-    const res = await fetch(`${baseUrl}/index.php/login/v2`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json'
-      }
-    });
+    let status;
+    let data;
+    let rawText = '';
 
-    const rawText = await res.text();
-    let data = null;
-    try {
-      data = rawText ? JSON.parse(rawText) : null;
-    } catch {
-      // rawText behalten für Debug
+    if (Capacitor.getPlatform() === 'android') {
+      const response = await Http.post({
+        url: `${baseUrl}/index.php/login/v2`,
+        headers: {
+          Accept: 'application/json'
+        }
+      });
+      status = response.status;
+      data = response.data;
+      if (typeof response.data === 'string') {
+        rawText = response.data;
+        try {
+          data = rawText ? JSON.parse(rawText) : null;
+        } catch {
+          // rawText behalten für Debug
+        }
+      } else {
+        rawText = data ? JSON.stringify(data) : '';
+      }
+    } else {
+      const res = await fetch(`${baseUrl}/index.php/login/v2`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json'
+        }
+      });
+      status = res.status;
+      rawText = await res.text();
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        // rawText behalten für Debug
+      }
     }
 
-    if (!res.ok) {
-      const details = `HTTP ${res.status} ${res.statusText}${rawText ? ` — ${rawText.slice(0, 160)}` : ''}`;
+    if (status < 200 || status >= 300) {
+      const details = `HTTP ${status}${rawText ? ` — ${rawText.slice(0, 160)}` : ''}`;
       throw new Error(details);
     }
 
@@ -59,6 +86,19 @@ export async function initiateLoginFlow(serverUrl) {
  * @returns {Promise<{ server: string, loginName: string, appPassword: string } | null>}
  */
 export async function pollLoginResult(pollEndpoint, pollToken) {
+  if (Capacitor.getPlatform() === 'android') {
+    const response = await Http.post({
+      url: pollEndpoint,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      data: `token=${encodeURIComponent(pollToken)}`
+    });
+    if (response.status === 404) return null;
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(`Login Flow fehlgeschlagen (${response.status})`);
+    }
+    return response.data;
+  }
+
   const res = await fetch(pollEndpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

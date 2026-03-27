@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@capacitor-community/date-picker": "^7.1.0",
+    "@capacitor-community/http": "^1.4.1",
     "@capacitor-community/sqlite": "^8.0.1",
     "@capacitor/android": "^8.2.0",
     "@capacitor/app": "^8.0.1",

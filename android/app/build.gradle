@@ -8,7 +8,7 @@ android {
         applicationId "com.estundnzettl.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 134          // Hochgezählt für Updates
+        versionCode 135          // Hochgezählt für Updates
         versionName "6.6.0"    // Stable Release
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

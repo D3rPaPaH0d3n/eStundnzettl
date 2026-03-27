@@ -26,7 +26,8 @@ import {
   clearBackupTarget,
   triggerManualBackup,
 } from "../../utils/storageBackup";
-import { testConnection as ncTestConnection } from "../../utils/nextcloudClient";
+import { testConnection as ncTestConnection, initiateLoginFlow, pollLoginResult, ensureFolder as ncEnsureFolder } from "../../utils/nextcloudClient";
+import { Browser } from "@capacitor/browser";
 import toast from "react-hot-toast";
 
 const BackupSettings = ({
@@ -59,6 +60,11 @@ const BackupSettings = ({
   const [ncExpanded, setNcExpanded] = useState(false);
   const [ncTesting, setNcTesting] = useState(false);
   const [ncStatus, setNcStatus] = useState(null); // null | "ok" | "error"
+  const [ncConnecting, setNcConnecting] = useState(false);
+  const [ncLoginName, setNcLoginName] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || ""
+  );
+  const ncPollInterval = useRef(null);
 
   const formatLastBackup = (isoString) => {
     if (!isoString) return null;
@@ -71,6 +77,11 @@ const BackupSettings = ({
     const days = Math.floor(hrs / 24);
     return `vor ${days} Tag${days > 1 ? "en" : ""}`;
   };
+
+  // Cleanup Polling bei Unmount
+  useEffect(() => () => {
+    if (ncPollInterval.current) clearInterval(ncPollInterval.current);
+  }, []);
 
   useEffect(() => {
     // 1) Sofort aus localStorage laden (schnelle UI)
@@ -134,76 +145,79 @@ const BackupSettings = ({
     }
   };
 
-  const handleNcTest = async () => {
-    if (!ncUrl || !ncUser || !ncPass) {
-      toast.error("Bitte alle Felder ausfüllen");
+  const handleNcConnect = async () => {
+    if (!ncUrl) {
+      toast.error("Bitte Server-URL eingeben");
       return;
     }
-    setNcTesting(true);
     try {
-      const result = await ncTestConnection(ncUrl, ncUser, ncPass);
-      if (result.ok) {
-        setNcStatus("ok");
-        toast.success("Nextcloud verbunden!");
-      } else {
-        setNcStatus("error");
-        toast.error(result.error || "Verbindung fehlgeschlagen");
-      }
-    } catch {
-      setNcStatus("error");
-      toast.error("Verbindungstest fehlgeschlagen");
-    } finally {
-      setNcTesting(false);
+      setNcConnecting(true);
+      const { loginUrl, pollToken, pollEndpoint } = await initiateLoginFlow(ncUrl);
+
+      // Browser öffnen
+      await Browser.open({ url: loginUrl });
+
+      // Polling starten
+      let attempts = 0;
+      ncPollInterval.current = setInterval(async () => {
+        attempts++;
+        if (attempts > 100) { // ~5 Min bei 3s Intervall
+          clearInterval(ncPollInterval.current);
+          setNcConnecting(false);
+          toast.error("Zeitüberschreitung — bitte erneut versuchen");
+          return;
+        }
+        try {
+          const result = await pollLoginResult(pollEndpoint, pollToken);
+          if (result) {
+            clearInterval(ncPollInterval.current);
+            // Credentials speichern
+            const serverUrl = result.server.replace(/\/+$/, '');
+            saveNcSetting(STORAGE_KEYS.NEXTCLOUD_URL, "nextcloud_url", serverUrl);
+            saveNcSetting(STORAGE_KEYS.NEXTCLOUD_USER, "nextcloud_user", result.loginName);
+            saveNcSetting(STORAGE_KEYS.NEXTCLOUD_PASS, "nextcloud_pass", result.appPassword);
+            saveNcSetting(STORAGE_KEYS.NEXTCLOUD_ENABLED, "nextcloud_enabled", "true");
+            setNcUrl(serverUrl);
+            setNcUser(result.loginName);
+            setNcPass(result.appPassword);
+            setNcLoginName(result.loginName);
+            setNcEnabled(true);
+            setNcStatus("ok");
+            setNcExpanded(false);
+            setNcConnecting(false);
+            if (!autoBackup) setAutoBackup(true);
+            toast.success(`Verbunden als ${result.loginName}`);
+            // Verbindungstest + Ordner anlegen
+            try {
+              await ncTestConnection(serverUrl, result.loginName, result.appPassword);
+              await ncEnsureFolder(serverUrl, result.loginName, result.appPassword);
+            } catch { /* nicht kritisch */ }
+          }
+        } catch {
+          clearInterval(ncPollInterval.current);
+          setNcConnecting(false);
+          toast.error("Nextcloud Login fehlgeschlagen");
+        }
+      }, 3000);
+    } catch (err) {
+      setNcConnecting(false);
+      toast.error("Server nicht erreichbar oder Login Flow v2 nicht unterstützt");
     }
   };
 
-  const handleNcToggle = async () => {
+  const handleNcDisconnect = () => {
     Haptics.impact({ style: ImpactStyle.Light });
-    if (ncEnabled) {
-      // Trennen
-      clearNcSettings();
-      setNcEnabled(false);
-      setNcUrl("");
-      setNcUser("");
-      setNcPass("");
-      setNcExpanded(false);
-      setNcStatus(null);
-      toast("Nextcloud getrennt");
-    } else {
-      // Expandieren zum Konfigurieren
-      setNcExpanded(true);
-    }
-  };
-
-  const handleNcSave = async () => {
-    if (!ncUrl || !ncUser || !ncPass) {
-      toast.error("Bitte alle Felder ausfüllen");
-      return;
-    }
-    // Test first
-    setNcTesting(true);
-    try {
-      const result = await ncTestConnection(ncUrl, ncUser, ncPass);
-      if (result.ok) {
-        saveNcSetting(STORAGE_KEYS.NEXTCLOUD_URL, "nextcloud_url", ncUrl);
-        saveNcSetting(STORAGE_KEYS.NEXTCLOUD_USER, "nextcloud_user", ncUser);
-        saveNcSetting(STORAGE_KEYS.NEXTCLOUD_PASS, "nextcloud_pass", ncPass);
-        saveNcSetting(STORAGE_KEYS.NEXTCLOUD_ENABLED, "nextcloud_enabled", "true");
-        setNcEnabled(true);
-        setNcStatus("ok");
-        setNcExpanded(false);
-        if (!autoBackup) setAutoBackup(true);
-        toast.success("Nextcloud Backup aktiviert!");
-      } else {
-        setNcStatus("error");
-        toast.error(result.error || "Verbindung fehlgeschlagen");
-      }
-    } catch {
-      setNcStatus("error");
-      toast.error("Verbindungstest fehlgeschlagen");
-    } finally {
-      setNcTesting(false);
-    }
+    if (ncPollInterval.current) clearInterval(ncPollInterval.current);
+    clearNcSettings();
+    setNcEnabled(false);
+    setNcUrl("");
+    setNcUser("");
+    setNcPass("");
+    setNcLoginName("");
+    setNcExpanded(false);
+    setNcStatus(null);
+    setNcConnecting(false);
+    toast("Nextcloud getrennt");
   };
 
   const handleGoogleToggle = async () => {
@@ -368,19 +382,24 @@ const BackupSettings = ({
                 <span className="block font-bold text-sm text-zinc-800 dark:text-white">
                   Nextcloud
                 </span>
-                {ncEnabled && ncStatus === "ok" && (
+                {ncEnabled && (
                   <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full">
                     ✅ Verbunden
                   </span>
                 )}
               </div>
               <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                {ncEnabled ? "Sync Aktiv" : "Nicht konfiguriert"}
+                {ncEnabled
+                  ? `Verbunden als ${ncLoginName || ncUser}`
+                  : ncConnecting
+                    ? "Warte auf Anmeldung..."
+                    : "Nicht konfiguriert"}
               </span>
             </div>
           </div>
           <button
-            onClick={ncEnabled ? handleNcToggle : () => setNcExpanded(!ncExpanded)}
+            onClick={ncEnabled ? handleNcDisconnect : () => setNcExpanded(!ncExpanded)}
+            disabled={ncConnecting}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${
               ncEnabled
                 ? "border-red-200 bg-red-50 text-red-600"
@@ -391,61 +410,48 @@ const BackupSettings = ({
           </button>
         </div>
 
-        {/* Nextcloud Konfiguration (expandiert) */}
+        {/* Nextcloud Login Flow v2 */}
         {ncExpanded && !ncEnabled && (
           <div className="px-3 pb-3 space-y-3 border-t border-zinc-200 dark:border-zinc-600 pt-3">
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-1">Server-URL</label>
-              <input
-                type="url"
-                value={ncUrl}
-                onChange={(e) => setNcUrl(e.target.value)}
-                placeholder="https://cloud.example.com"
-                className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none focus:border-orange-400"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-1">Benutzer</label>
-              <input
-                type="text"
-                value={ncUser}
-                onChange={(e) => setNcUser(e.target.value)}
-                placeholder="dein-benutzername"
-                className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none focus:border-orange-400"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-1">App-Passwort</label>
-              <input
-                type="password"
-                value={ncPass}
-                onChange={(e) => setNcPass(e.target.value)}
-                placeholder="xxxxx-xxxxx-xxxxx-xxxxx-xxxxx"
-                className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none focus:border-orange-400"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleNcTest}
-                disabled={ncTesting}
-                className="flex-1 py-2 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors flex items-center justify-center gap-1.5"
-              >
-                {ncTesting ? <Loader size={14} className="animate-spin" /> : null}
-                {ncTesting ? "Teste..." : "Verbindung testen"}
-              </button>
-              <button
-                onClick={handleNcSave}
-                disabled={ncTesting}
-                className="flex-1 py-2 text-xs font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-1.5"
-              >
-                {ncTesting ? <Loader size={14} className="animate-spin" /> : null}
-                Aktivieren
-              </button>
-            </div>
-            {ncStatus === "error" && (
-              <div className="flex items-center gap-2 text-xs text-red-500 font-medium">
-                <AlertTriangle size={14} /> Verbindung fehlgeschlagen
+            {ncConnecting ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <Loader size={24} className="animate-spin text-orange-500" />
+                <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                  Warte auf Anmeldung in Nextcloud...
+                </span>
+                <span className="text-xs text-zinc-400">
+                  Bitte im Browser anmelden und Zugriff gewähren
+                </span>
+                <button
+                  onClick={() => {
+                    if (ncPollInterval.current) clearInterval(ncPollInterval.current);
+                    setNcConnecting(false);
+                  }}
+                  className="mt-2 px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors"
+                >
+                  Abbrechen
+                </button>
               </div>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-zinc-500 mb-1">Server-URL</label>
+                  <input
+                    type="url"
+                    value={ncUrl}
+                    onChange={(e) => setNcUrl(e.target.value)}
+                    placeholder="https://cloud.example.com"
+                    className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none focus:border-orange-400"
+                  />
+                </div>
+                <button
+                  onClick={handleNcConnect}
+                  className="w-full py-2.5 text-sm font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-2"
+                >
+                  <ServerCog size={16} />
+                  Mit Nextcloud verbinden
+                </button>
+              </>
             )}
           </div>
         )}

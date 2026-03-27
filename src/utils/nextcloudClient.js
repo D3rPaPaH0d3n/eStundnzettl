@@ -5,6 +5,38 @@
  * App-Passwörter laufen nie ab → kein Token-Refresh nötig.
  */
 
+/**
+ * Startet den Nextcloud Login Flow v2
+ * @param {string} serverUrl - Nextcloud Server URL
+ * @returns {Promise<{ loginUrl: string, pollToken: string, pollEndpoint: string }>}
+ */
+export async function initiateLoginFlow(serverUrl) {
+  const baseUrl = serverUrl.replace(/\/+$/, '');
+  const res = await fetch(`${baseUrl}/index.php/login/v2`, { method: 'POST' });
+  if (!res.ok) throw new Error('Nextcloud Login Flow nicht verfügbar');
+  const data = await res.json();
+  return {
+    loginUrl: data.login,
+    pollToken: data.poll.token,
+    pollEndpoint: data.poll.endpoint
+  };
+}
+
+/**
+ * Pollt auf Login-Ergebnis des Login Flow v2
+ * @returns {Promise<{ server: string, loginName: string, appPassword: string } | null>}
+ */
+export async function pollLoginResult(pollEndpoint, pollToken) {
+  const res = await fetch(pollEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `token=${encodeURIComponent(pollToken)}`
+  });
+  if (res.status === 404) return null; // Noch nicht autorisiert
+  if (!res.ok) throw new Error('Login Flow fehlgeschlagen');
+  return await res.json(); // { server, loginName, appPassword }
+}
+
 const BACKUP_FOLDER = "eStundnzettl";
 const BACKUP_FILENAME = "estundnzettl_backup.json";
 

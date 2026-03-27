@@ -81,13 +81,19 @@ const BackupSettings = ({
     if (isSQLiteActive()) {
       (async () => {
         try {
-          const [sqlLastBackup, sqlFailCount] = await Promise.all([
+          const [sqlLastBackup, sqlFailCount, sqlCloudEnabled] = await Promise.all([
             getSetting("last_backup"),
             getSetting("backup_fail_count"),
+            getSetting("cloud_sync_enabled"),
           ]);
           if (sqlLastBackup) setLastBackupDate(sqlLastBackup);
           if (sqlFailCount !== null) {
             setBackupFailCount(parseInt(String(sqlFailCount), 10) || 0);
+          }
+          if (sqlCloudEnabled !== null) {
+            const enabled = !!sqlCloudEnabled;
+            setIsCloudConnected(enabled);
+            if (enabled) initGoogleAuth().catch(() => {});
           }
         } catch { /* keep localStorage values */ }
       })();
@@ -111,6 +117,7 @@ const BackupSettings = ({
       }
     } else {
       try {
+        await initGoogleAuth().catch(() => {});
         const user = await signInGoogle();
         if (user && user.authentication.accessToken) {
           localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");

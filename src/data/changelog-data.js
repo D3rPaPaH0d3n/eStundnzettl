@@ -2,6 +2,42 @@ import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Slid
 
 export const CHANGELOG_DATA = [
   {
+    version: "6.6.0",
+    date: "27.03.2026",
+    title: "Noch mehr Privacy — Nextcloud Backup 🔒☁️",
+    isMajor: true,
+    sections: [
+      {
+        iconName: 'Cloud',
+        title: "Nextcloud Backup",
+        items: [
+          "Deine Daten auf deinem eigenen Server — Nextcloud als Backup-Ziel",
+          "Einfache Einrichtung: Server-URL, Benutzer und App-Passwort eingeben",
+          "Verbindungstest direkt in der App — sofort sehen ob alles passt",
+          "Auto-Backup funktioniert genauso wie mit Google Drive"
+        ]
+      },
+      {
+        iconName: 'Lock',
+        title: "Privacy & Kontrolle",
+        items: [
+          "Kein Google-Konto nötig — volle Kontrolle über deine Daten",
+          "App-Passwort statt OAuth — läuft nie ab, kein Token-Stress",
+          "Auch beim Onboarding: Backup direkt aus Nextcloud wiederherstellen"
+        ]
+      },
+      {
+        iconName: 'RefreshCw',
+        title: "Google Drive verbessert",
+        items: [
+          "Token wird automatisch erneuert wenn du die App öffnest",
+          "Kein manuelles Neu-Verbinden mehr nötig",
+          "Doppelte Absicherung: Auto-Retry bei abgelaufenem Token"
+        ]
+      }
+    ]
+  },
+  {
     version: "6.5.0",
     date: "27.03.2026",
     title: "SQLite-Migration abgeschlossen — stabiler Neustart 🚀",

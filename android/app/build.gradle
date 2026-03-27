@@ -8,7 +8,7 @@ android {
         applicationId "com.estundnzettl.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 137          // Hotfix: motion-Import gefixt
+        versionCode 138          // Nextcloud Login Flow — Browser-Auth Polling-Fix
         versionName "6.6.0"    // Stable Release
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

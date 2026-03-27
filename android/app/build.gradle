@@ -8,8 +8,8 @@ android {
         applicationId "com.estundnzettl.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 126          // Hochgezählt für Updates
-        versionName "6.4.7-beta"    // Beta-Testbuild
+        versionCode 127          // Hochgezählt für Updates
+        versionName "6.4.8-beta"    // Beta-Testbuild
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

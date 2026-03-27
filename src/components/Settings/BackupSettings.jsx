@@ -201,12 +201,9 @@ const BackupSettings = ({
       }, 3000);
     } catch (err) {
       setNcConnecting(false);
-      console.error('Nextcloud connect error:', err);
-      if (err.message.includes('nicht verfügbar')) {
-        toast.error("Nextcloud Login Flow v2 nicht verfügbar — Server unterstützt das nicht");
-      } else {
-        toast.error("Server nicht erreichbar — prüfe URL und Internetverbindung");
-      }
+      const message = err?.message || 'Unbekannter Fehler';
+      console.error('Nextcloud connect error:', message);
+      toast.error(`Nextcloud Login fehlgeschlagen: ${message}`);
     }
   };
 

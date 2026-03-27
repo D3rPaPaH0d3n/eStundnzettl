@@ -11,36 +11,46 @@
  * @returns {Promise<{ loginUrl: string, pollToken: string, pollEndpoint: string }>}
  */
 export async function initiateLoginFlow(serverUrl) {
-  // URL validieren und normalisieren
   let baseUrl = serverUrl.trim();
   if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
     baseUrl = 'https://' + baseUrl;
   }
   baseUrl = baseUrl.replace(/\/+$/, '');
-  
+
   try {
-    const res = await fetch(`${baseUrl}/index.php/login/v2`, { 
+    const res = await fetch(`${baseUrl}/index.php/login/v2`, {
       method: 'POST',
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        Accept: 'application/json'
       }
     });
-    
-    if (!res.ok) {
-      console.error('Nextcloud Login Flow failed:', res.status, res.statusText);
-      throw new Error('Nextcloud Login Flow nicht verfügbar');
+
+    const rawText = await res.text();
+    let data = null;
+    try {
+      data = rawText ? JSON.parse(rawText) : null;
+    } catch {
+      // rawText behalten für Debug
     }
-    
-    const data = await res.json();
+
+    if (!res.ok) {
+      const details = `HTTP ${res.status} ${res.statusText}${rawText ? ` — ${rawText.slice(0, 160)}` : ''}`;
+      throw new Error(details);
+    }
+
+    if (!data?.login || !data?.poll?.token || !data?.poll?.endpoint) {
+      throw new Error(`Ungültige Antwort vom Server${rawText ? ` — ${rawText.slice(0, 160)}` : ''}`);
+    }
+
     return {
       loginUrl: data.login,
       pollToken: data.poll.token,
       pollEndpoint: data.poll.endpoint
     };
   } catch (err) {
-    console.error('Nextcloud Login Flow error:', err.message);
-    throw new Error('Server nicht erreichbar oder Login Flow v2 nicht unterstützt');
+    const message = err?.message || 'Unbekannter Fehler';
+    console.error('Nextcloud Login Flow error:', message);
+    throw new Error(message);
   }
 }
 

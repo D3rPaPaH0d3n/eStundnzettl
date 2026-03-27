@@ -3,8 +3,8 @@ import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS, BACKUP_CONFIG } from "../hooks/constants";
 import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "./googleDrive";
 import { isSQLiteActive } from "../db/storageMode";
-import { setSetting, deleteSetting } from "../db/repositories/settingsRepo";
-import { bulkInsertEntries } from "../db/repositories/entriesRepo";
+import { setSetting, deleteSetting, getSetting } from "../db/repositories/settingsRepo";
+import { getAllEntries, bulkInsertEntries } from "../db/repositories/entriesRepo";
 import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
 import { bulkReplaceAttachments, bulkReplaceLabelSuggestions } from "../db/repositories/attachmentsRepo";
 
@@ -330,8 +330,27 @@ export const applyBackup = async (analyzedData, mode = 'ALL') => {
 // 6. MANUELLER BACKUP (für "Jetzt sichern"-Button)
 export const triggerManualBackup = async () => {
   try {
-    const userData = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null');
-    const entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]');
+    // Daten aus SQLite laden (Source of Truth), localStorage nur als Fallback
+    let userData = null;
+    let entries = [];
+
+    if (isSQLiteActive()) {
+      try {
+        userData = await getSetting("user");
+        entries = await getAllEntries();
+      } catch (e) {
+        console.warn("[triggerManualBackup] SQLite-Read fehlgeschlagen, Fallback auf localStorage:", e);
+      }
+    }
+
+    // Fallback auf localStorage
+    if (!userData) {
+      try { userData = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null'); } catch { /* corrupt */ }
+    }
+    if (!entries || entries.length === 0) {
+      try { entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]'); } catch { entries = []; }
+    }
+
     const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
     const localActive = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
 

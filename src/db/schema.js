@@ -110,6 +110,23 @@ export const CREATE_ATTACHMENT_LABELS_TABLE = `
   );
 `;
 
+// ─── Welle 4: Backup-Metadaten ──────────────────────────────
+
+/**
+ * Backup-Metadaten-Tabelle (Welle 4)
+ *
+ * Speichert Informationen über durchgeführte Backups (Typ, Zeitpunkt, Größe, Ort).
+ */
+export const CREATE_BACKUP_METADATA_TABLE = `
+  CREATE TABLE IF NOT EXISTS backup_metadata (
+    id          INTEGER PRIMARY KEY,
+    type        TEXT,
+    timestamp   TEXT,
+    size_bytes  INTEGER,
+    location    TEXT
+  );
+`;
+
 /**
  * Gibt alle SQL-Statements zurück, die für die aktuelle Schema-Version nötig sind.
  * Alle Statements nutzen IF NOT EXISTS → idempotent & safe für bestehende DBs.
@@ -126,5 +143,7 @@ export function getInitSQL() {
     CREATE_ATTACHMENTS_TABLE,
     CREATE_ATTACHMENTS_ENTRY_INDEX,
     CREATE_ATTACHMENT_LABELS_TABLE,
+    // Welle 4
+    CREATE_BACKUP_METADATA_TABLE,
   ];
 }

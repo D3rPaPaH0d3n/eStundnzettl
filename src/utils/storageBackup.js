@@ -2,6 +2,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS, BACKUP_CONFIG } from "../hooks/constants";
 import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "./googleDrive";
+import { uploadBackup as ncUploadBackup } from "./nextcloudClient";
 import { isSQLiteActive } from "../db/storageMode";
 import { setSetting, deleteSetting, getSetting } from "../db/repositories/settingsRepo";
 import { getAllEntries, bulkInsertEntries } from "../db/repositories/entriesRepo";
@@ -353,6 +354,7 @@ export const triggerManualBackup = async () => {
 
     const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
     const localActive = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
+    const ncActive = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true";
 
     if (!entries || entries.length === 0) {
       return { success: false, message: "Keine Daten zum Sichern" };
@@ -368,6 +370,7 @@ export const triggerManualBackup = async () => {
 
     let gdriveOk = false;
     let localOk = false;
+    let nextcloudOk = false;
 
     if (cloudActive) {
       try {
@@ -391,10 +394,24 @@ export const triggerManualBackup = async () => {
       }
     }
 
-    if (gdriveOk || localOk) {
+    if (ncActive) {
+      try {
+        const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
+        const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
+        const ncPass = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "";
+        if (ncUrl && ncUser && ncPass) {
+          await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
+          nextcloudOk = true;
+        }
+      } catch (e) {
+        // nextcloud backup failed silently
+      }
+    }
+
+    if (gdriveOk || localOk || nextcloudOk) {
       // Dual-Write: LAST_BACKUP
       await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
-      return { success: true, gdrive: gdriveOk, local: localOk };
+      return { success: true, gdrive: gdriveOk, local: localOk, nextcloud: nextcloudOk };
     }
 
     return { success: false, message: "Kein Backup-Ziel konfiguriert" };

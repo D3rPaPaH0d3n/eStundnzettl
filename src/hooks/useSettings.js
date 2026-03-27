@@ -61,6 +61,20 @@ export function useSettings() {
     () => localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true"
   );
 
+  // Nextcloud
+  const [nextcloudEnabled, setNextcloudEnabled] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true"
+  );
+  const [nextcloudUrl, setNextcloudUrl] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || ""
+  );
+  const [nextcloudUser, setNextcloudUser] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || ""
+  );
+  const [nextcloudPass, setNextcloudPass] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || ""
+  );
+
   const sqliteReady = useRef(false);
   const initDone = useRef(false);
 
@@ -78,11 +92,15 @@ export function useSettings() {
         sqliteReady.current = true;
 
         // Settings aus SQLite laden — nur überschreiben wenn vorhanden
-        const [sqlUser, sqlTheme, sqlCloud, sqlLocal] = await Promise.all([
+        const [sqlUser, sqlTheme, sqlCloud, sqlLocal, sqlNcEnabled, sqlNcUrl, sqlNcUser, sqlNcPass] = await Promise.all([
           getSetting("user"),
           getSetting("theme"),
           getSetting("cloud_sync_enabled"),
           getSetting("local_backup_enabled"),
+          getSetting("nextcloud_enabled"),
+          getSetting("nextcloud_url"),
+          getSetting("nextcloud_user"),
+          getSetting("nextcloud_pass"),
         ]);
 
         if (cancelled) return;
@@ -96,6 +114,10 @@ export function useSettings() {
         if (sqlTheme) setTheme(sqlTheme);
         if (sqlCloud !== null) setCloudSyncEnabled(!!sqlCloud);
         if (sqlLocal !== null) setLocalBackupEnabled(!!sqlLocal);
+        if (sqlNcEnabled !== null) setNextcloudEnabled(!!sqlNcEnabled);
+        if (sqlNcUrl) setNextcloudUrl(sqlNcUrl);
+        if (sqlNcUser) setNextcloudUser(sqlNcUser);
+        if (sqlNcPass) setNextcloudPass(sqlNcPass);
       } catch (err) {
         console.error("[useSettings] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
         sqliteReady.current = false;
@@ -172,6 +194,31 @@ export function useSettings() {
     sqliteWrite("local_backup_enabled", localBackupEnabled);
   }, [localBackupEnabled, sqliteWrite]);
 
+  // Nextcloud
+  useEffect(() => {
+    if (nextcloudEnabled) {
+      localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_ENABLED, "true");
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.NEXTCLOUD_ENABLED);
+    }
+    sqliteWrite("nextcloud_enabled", nextcloudEnabled);
+  }, [nextcloudEnabled, sqliteWrite]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_URL, nextcloudUrl);
+    sqliteWrite("nextcloud_url", nextcloudUrl);
+  }, [nextcloudUrl, sqliteWrite]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_USER, nextcloudUser);
+    sqliteWrite("nextcloud_user", nextcloudUser);
+  }, [nextcloudUser, sqliteWrite]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_PASS, nextcloudPass);
+    sqliteWrite("nextcloud_pass", nextcloudPass);
+  }, [nextcloudPass, sqliteWrite]);
+
   // ─── Return (API identisch zum Original) ───
   return {
     userData,
@@ -188,5 +235,15 @@ export function useSettings() {
     setCloudSyncEnabled,
     localBackupEnabled,
     setLocalBackupEnabled,
+
+    // Nextcloud
+    nextcloudEnabled,
+    setNextcloudEnabled,
+    nextcloudUrl,
+    setNextcloudUrl,
+    nextcloudUser,
+    setNextcloudUser,
+    nextcloudPass,
+    setNextcloudPass,
   };
 }

@@ -7,6 +7,7 @@ import {
   Upload,
   Loader,
   AlertTriangle,
+  ServerCog,
 } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
@@ -25,6 +26,7 @@ import {
   clearBackupTarget,
   triggerManualBackup,
 } from "../../utils/storageBackup";
+import { testConnection as ncTestConnection } from "../../utils/nextcloudClient";
 import toast from "react-hot-toast";
 
 const BackupSettings = ({
@@ -40,6 +42,23 @@ const BackupSettings = ({
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isTokenValid, setIsTokenValid] = useState(true);
   const [backupFailCount, setBackupFailCount] = useState(0);
+
+  // Nextcloud State (direkt aus localStorage geladen, kein Prop-Drilling)
+  const [ncEnabled, setNcEnabled] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true"
+  );
+  const [ncUrl, setNcUrl] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || ""
+  );
+  const [ncUser, setNcUser] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || ""
+  );
+  const [ncPass, setNcPass] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || ""
+  );
+  const [ncExpanded, setNcExpanded] = useState(false);
+  const [ncTesting, setNcTesting] = useState(false);
+  const [ncStatus, setNcStatus] = useState(null); // null | "ok" | "error"
 
   const formatLastBackup = (isoString) => {
     if (!isoString) return null;
@@ -95,6 +114,97 @@ const BackupSettings = ({
       })();
     }
   }, []);
+
+  // Nextcloud: Credentials in localStorage + SQLite speichern
+  const saveNcSetting = (key, sqlKey, value) => {
+    localStorage.setItem(key, value);
+    if (isSQLiteActive()) {
+      import("../../db/repositories/settingsRepo").then(({ setSetting }) => {
+        setSetting(sqlKey, value).catch(() => {});
+      });
+    }
+  };
+
+  const clearNcSettings = () => {
+    [STORAGE_KEYS.NEXTCLOUD_ENABLED, STORAGE_KEYS.NEXTCLOUD_URL, STORAGE_KEYS.NEXTCLOUD_USER, STORAGE_KEYS.NEXTCLOUD_PASS].forEach(k => localStorage.removeItem(k));
+    if (isSQLiteActive()) {
+      import("../../db/repositories/settingsRepo").then(({ deleteSetting }) => {
+        ["nextcloud_enabled", "nextcloud_url", "nextcloud_user", "nextcloud_pass"].forEach(k => deleteSetting(k).catch(() => {}));
+      });
+    }
+  };
+
+  const handleNcTest = async () => {
+    if (!ncUrl || !ncUser || !ncPass) {
+      toast.error("Bitte alle Felder ausfüllen");
+      return;
+    }
+    setNcTesting(true);
+    try {
+      const result = await ncTestConnection(ncUrl, ncUser, ncPass);
+      if (result.ok) {
+        setNcStatus("ok");
+        toast.success("Nextcloud verbunden!");
+      } else {
+        setNcStatus("error");
+        toast.error(result.error || "Verbindung fehlgeschlagen");
+      }
+    } catch {
+      setNcStatus("error");
+      toast.error("Verbindungstest fehlgeschlagen");
+    } finally {
+      setNcTesting(false);
+    }
+  };
+
+  const handleNcToggle = async () => {
+    Haptics.impact({ style: ImpactStyle.Light });
+    if (ncEnabled) {
+      // Trennen
+      clearNcSettings();
+      setNcEnabled(false);
+      setNcUrl("");
+      setNcUser("");
+      setNcPass("");
+      setNcExpanded(false);
+      setNcStatus(null);
+      toast("Nextcloud getrennt");
+    } else {
+      // Expandieren zum Konfigurieren
+      setNcExpanded(true);
+    }
+  };
+
+  const handleNcSave = async () => {
+    if (!ncUrl || !ncUser || !ncPass) {
+      toast.error("Bitte alle Felder ausfüllen");
+      return;
+    }
+    // Test first
+    setNcTesting(true);
+    try {
+      const result = await ncTestConnection(ncUrl, ncUser, ncPass);
+      if (result.ok) {
+        saveNcSetting(STORAGE_KEYS.NEXTCLOUD_URL, "nextcloud_url", ncUrl);
+        saveNcSetting(STORAGE_KEYS.NEXTCLOUD_USER, "nextcloud_user", ncUser);
+        saveNcSetting(STORAGE_KEYS.NEXTCLOUD_PASS, "nextcloud_pass", ncPass);
+        saveNcSetting(STORAGE_KEYS.NEXTCLOUD_ENABLED, "nextcloud_enabled", "true");
+        setNcEnabled(true);
+        setNcStatus("ok");
+        setNcExpanded(false);
+        if (!autoBackup) setAutoBackup(true);
+        toast.success("Nextcloud Backup aktiviert!");
+      } else {
+        setNcStatus("error");
+        toast.error(result.error || "Verbindung fehlgeschlagen");
+      }
+    } catch {
+      setNcStatus("error");
+      toast.error("Verbindungstest fehlgeschlagen");
+    } finally {
+      setNcTesting(false);
+    }
+  };
 
   const handleGoogleToggle = async () => {
     Haptics.impact({ style: ImpactStyle.Light });
@@ -163,12 +273,13 @@ const BackupSettings = ({
       if (result.success) {
         const now = new Date().toISOString();
         setLastBackupDate(now);
-        if (result.gdrive && result.local) {
-          toast.success("Backup gespeichert (Drive + Lokal)");
-        } else if (result.gdrive) {
-          toast.success("Backup zu Google Drive gesendet");
-        } else {
-          toast.success("Lokales Backup erstellt");
+        const targets = [
+          result.gdrive && "Drive",
+          result.nextcloud && "Nextcloud",
+          result.local && "Lokal",
+        ].filter(Boolean);
+        if (targets.length > 0) {
+          toast.success(`Backup gespeichert (${targets.join(" + ")})`);
         }
       } else {
         toast.error(result.message || "Backup fehlgeschlagen");
@@ -239,6 +350,107 @@ const BackupSettings = ({
         </button>
       </div>
 
+      {/* Nextcloud Backup */}
+      <div className="bg-zinc-100 dark:bg-zinc-700 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between p-3">
+          <div className="flex items-center gap-3">
+            <div
+              className={`p-2 rounded-full ${
+                ncEnabled
+                  ? "bg-orange-100 text-orange-600"
+                  : "bg-zinc-200 text-zinc-400"
+              }`}
+            >
+              <ServerCog size={20} />
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="block font-bold text-sm text-zinc-800 dark:text-white">
+                  Nextcloud
+                </span>
+                {ncEnabled && ncStatus === "ok" && (
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full">
+                    ✅ Verbunden
+                  </span>
+                )}
+              </div>
+              <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                {ncEnabled ? "Sync Aktiv" : "Nicht konfiguriert"}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={ncEnabled ? handleNcToggle : () => setNcExpanded(!ncExpanded)}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${
+              ncEnabled
+                ? "border-red-200 bg-red-50 text-red-600"
+                : "border-zinc-300 bg-white text-zinc-700"
+            }`}
+          >
+            {ncEnabled ? "Trennen" : "Einrichten"}
+          </button>
+        </div>
+
+        {/* Nextcloud Konfiguration (expandiert) */}
+        {ncExpanded && !ncEnabled && (
+          <div className="px-3 pb-3 space-y-3 border-t border-zinc-200 dark:border-zinc-600 pt-3">
+            <div>
+              <label className="block text-xs font-bold text-zinc-500 mb-1">Server-URL</label>
+              <input
+                type="url"
+                value={ncUrl}
+                onChange={(e) => setNcUrl(e.target.value)}
+                placeholder="https://cloud.example.com"
+                className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none focus:border-orange-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-zinc-500 mb-1">Benutzer</label>
+              <input
+                type="text"
+                value={ncUser}
+                onChange={(e) => setNcUser(e.target.value)}
+                placeholder="dein-benutzername"
+                className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none focus:border-orange-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-zinc-500 mb-1">App-Passwort</label>
+              <input
+                type="password"
+                value={ncPass}
+                onChange={(e) => setNcPass(e.target.value)}
+                placeholder="xxxxx-xxxxx-xxxxx-xxxxx-xxxxx"
+                className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none focus:border-orange-400"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleNcTest}
+                disabled={ncTesting}
+                className="flex-1 py-2 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors flex items-center justify-center gap-1.5"
+              >
+                {ncTesting ? <Loader size={14} className="animate-spin" /> : null}
+                {ncTesting ? "Teste..." : "Verbindung testen"}
+              </button>
+              <button
+                onClick={handleNcSave}
+                disabled={ncTesting}
+                className="flex-1 py-2 text-xs font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-1.5"
+              >
+                {ncTesting ? <Loader size={14} className="animate-spin" /> : null}
+                Aktivieren
+              </button>
+            </div>
+            {ncStatus === "error" && (
+              <div className="flex items-center gap-2 text-xs text-red-500 font-medium">
+                <AlertTriangle size={14} /> Verbindung fehlgeschlagen
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl">
         <div className="flex items-center gap-3">
           <div
@@ -284,7 +496,7 @@ const BackupSettings = ({
         </div>
       )}
 
-      {(isCloudConnected || hasBackupFolder) && (
+      {(isCloudConnected || hasBackupFolder || ncEnabled) && (
         <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-3 rounded-xl">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-600">

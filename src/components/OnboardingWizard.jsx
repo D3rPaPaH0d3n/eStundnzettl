@@ -3,6 +3,7 @@ import { User, Briefcase, ShieldCheck, Camera, ChevronRight, Check, Upload, Play
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
+import { downloadBackup as ncDownloadBackup, testConnection as ncTestConnection } from "../utils/nextcloudClient";
 import { analyzeBackupData, applyBackup, readJsonFile, readBackupFromFolder, selectBackupFolder } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
 import { WORK_MODELS } from "../hooks/constants";
@@ -27,6 +28,11 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
   const [restoreData, setRestoreData] = useState(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
   
+  const [showNcRestore, setShowNcRestore] = useState(false);
+  const [ncRestoreUrl, setNcRestoreUrl] = useState("");
+  const [ncRestoreUser, setNcRestoreUser] = useState("");
+  const [ncRestorePass, setNcRestorePass] = useState("");
+
   const fileInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
@@ -267,6 +273,39 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     } finally {
       setLoading(false);
       e.target.value = null;
+    }
+  };
+
+  const handleNextcloudRestore = async () => {
+    if (!ncRestoreUrl || !ncRestoreUser || !ncRestorePass) {
+      toast.error("Bitte alle Felder ausfüllen");
+      return;
+    }
+    try {
+      setLoading(true);
+      const testResult = await ncTestConnection(ncRestoreUrl, ncRestoreUser, ncRestorePass);
+      if (!testResult.ok) {
+        toast.error(testResult.error || "Verbindung fehlgeschlagen");
+        return;
+      }
+      const content = await ncDownloadBackup(ncRestoreUrl, ncRestoreUser, ncRestorePass);
+      if (!content) {
+        toast.error("Kein Backup auf Nextcloud gefunden");
+        return;
+      }
+      const { isValid, data } = analyzeBackupData(content);
+      if (isValid) {
+        setRestoreData(data);
+        toast.success("Backup von Nextcloud geladen!");
+        setShowNcRestore(false);
+        setStep(4);
+      } else {
+        toast.error("Ungültiges Backup-Format");
+      }
+    } catch (err) {
+      toast.error(err.message || "Fehler beim Laden");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -609,6 +648,53 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
                               <div className="font-bold text-sm text-zinc-800 dark:text-white">Aus Google Drive</div>
                             </div>
                         </button>
+
+                        <button
+                          onClick={() => setShowNcRestore(!showNcRestore)}
+                          disabled={loading}
+                          className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors group"
+                        >
+                            <div className="p-2 bg-white dark:bg-zinc-700 rounded-lg shadow-sm group-hover:scale-110 transition-transform">
+                              <Cloud size={18} className="text-orange-500" />
+                            </div>
+                            <div className="text-left flex-1">
+                              <div className="font-bold text-sm text-zinc-800 dark:text-white">Aus Nextcloud</div>
+                            </div>
+                        </button>
+
+                        {showNcRestore && (
+                          <div className="p-3 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10 space-y-2">
+                            <input
+                              type="url"
+                              value={ncRestoreUrl}
+                              onChange={(e) => setNcRestoreUrl(e.target.value)}
+                              placeholder="https://cloud.example.com"
+                              className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                            />
+                            <input
+                              type="text"
+                              value={ncRestoreUser}
+                              onChange={(e) => setNcRestoreUser(e.target.value)}
+                              placeholder="Benutzer"
+                              className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                            />
+                            <input
+                              type="password"
+                              value={ncRestorePass}
+                              onChange={(e) => setNcRestorePass(e.target.value)}
+                              placeholder="App-Passwort"
+                              className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                            />
+                            <button
+                              onClick={handleNextcloudRestore}
+                              disabled={loading}
+                              className="w-full py-2 text-sm font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-1.5"
+                            >
+                              {loading ? <Loader size={14} className="animate-spin" /> : null}
+                              {loading ? "Lade..." : "Backup laden"}
+                            </button>
+                          </div>
+                        )}
 
                         <div className="grid grid-cols-2 gap-2">
                             <button

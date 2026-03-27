@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { App } from "@capacitor/app";
 import { uploadOrUpdateFile, getValidToken, initGoogleAuth, backgroundTokenRefresh } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
+import { uploadBackup as ncUploadBackup, ensureFolder as ncEnsureFolder } from "../utils/nextcloudClient";
 import { STORAGE_KEYS, BACKUP_CONFIG } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
 import { getSetting, setSetting } from "../db/repositories/settingsRepo";
@@ -68,8 +69,9 @@ export function useAutoBackup(entries, userData, isEnabled) {
 
     const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
     const localActive = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
+    const ncActive = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true";
 
-    if (!isEnabled && !cloudActive && !localActive) return;
+    if (!isEnabled && !cloudActive && !localActive && !ncActive) return;
     if (!entries || entries.length === 0) return;
     if (isUploading.current) return;
 
@@ -119,7 +121,23 @@ export function useAutoBackup(entries, userData, isEnabled) {
         }
       }
 
-      if (localActive && !cloudActive) {
+      // Nextcloud Backup
+      if (ncActive) {
+        try {
+          const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
+          const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
+          const ncPass = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "";
+          if (ncUrl && ncUser && ncPass) {
+            await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
+            lastHash.current = currentHash;
+            await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
+          }
+        } catch (ncErr) {
+          console.warn("Nextcloud-Backup fehlgeschlagen:", ncErr);
+        }
+      }
+
+      if (localActive && !cloudActive && !ncActive) {
         lastHash.current = currentHash;
         // Dual-Write: LAST_BACKUP
         await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());

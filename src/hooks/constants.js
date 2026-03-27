@@ -41,6 +41,12 @@ export const STORAGE_KEYS = {
   ATTACHMENTS: "estundnzettl_attachments",
   ATTACHMENT_LABELS: "estundnzettl_attachment_labels",
   BACKUP_FAIL_COUNT: "estundnzettl_backup_fail_count",
+
+  // Nextcloud Backup
+  NEXTCLOUD_ENABLED: "estundnzettl_nextcloud_enabled",
+  NEXTCLOUD_URL: "estundnzettl_nextcloud_url",
+  NEXTCLOUD_USER: "estundnzettl_nextcloud_user",
+  NEXTCLOUD_PASS: "estundnzettl_nextcloud_pass",
   
   // @Deprecated - Wir nutzen jetzt CLOUD_SYNC_ENABLED für Präzision
   // AUTO_BACKUP: "estundnzettl_auto_backup", 

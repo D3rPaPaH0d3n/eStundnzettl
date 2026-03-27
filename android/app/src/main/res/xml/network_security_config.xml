@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Erlaubt HTTP (cleartext) für alle Domains -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <!-- System-Zertifikate (Let's Encrypt, etc.) -->
+            <certificates src="system" />
+            <!-- User-installierte Zertifikate (selbst-signiert) -->
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

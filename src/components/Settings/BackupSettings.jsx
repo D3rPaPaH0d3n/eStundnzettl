@@ -126,21 +126,24 @@ const BackupSettings = ({
   }, []);
 
   // Nextcloud: Credentials in localStorage + SQLite speichern
-  const saveNcSetting = (key, sqlKey, value) => {
+  const saveNcSetting = async (key, sqlKey, value) => {
     localStorage.setItem(key, value);
     if (isSQLiteActive()) {
-      import("../../db/repositories/settingsRepo").then(({ setSetting }) => {
-        setSetting(sqlKey, value).catch(() => {});
-      });
+      const { setSetting } = await import("../../db/repositories/settingsRepo");
+      await setSetting(sqlKey, value);
     }
   };
 
-  const clearNcSettings = () => {
+  const clearNcSettings = async () => {
     [STORAGE_KEYS.NEXTCLOUD_ENABLED, STORAGE_KEYS.NEXTCLOUD_URL, STORAGE_KEYS.NEXTCLOUD_USER, STORAGE_KEYS.NEXTCLOUD_PASS].forEach(k => localStorage.removeItem(k));
     if (isSQLiteActive()) {
-      import("../../db/repositories/settingsRepo").then(({ deleteSetting }) => {
-        ["nextcloud_enabled", "nextcloud_url", "nextcloud_user", "nextcloud_pass"].forEach(k => deleteSetting(k).catch(() => {}));
-      });
+      const { deleteSetting } = await import("../../db/repositories/settingsRepo");
+      await Promise.all([
+        deleteSetting("nextcloud_enabled").catch(() => {}),
+        deleteSetting("nextcloud_url").catch(() => {}),
+        deleteSetting("nextcloud_user").catch(() => {}),
+        deleteSetting("nextcloud_pass").catch(() => {}),
+      ]);
     }
   };
 
@@ -183,28 +186,36 @@ const BackupSettings = ({
 
           if (result.status === 'complete') {
             clearInterval(ncPollInterval.current);
-            try { await Browser.close(); } catch {}
-            // Credentials speichern
             const serverUrl = result.server.replace(/\/+$/, '');
-            saveNcSetting(STORAGE_KEYS.NEXTCLOUD_URL, "nextcloud_url", serverUrl);
-            saveNcSetting(STORAGE_KEYS.NEXTCLOUD_USER, "nextcloud_user", result.loginName);
-            saveNcSetting(STORAGE_KEYS.NEXTCLOUD_PASS, "nextcloud_pass", result.appPassword);
-            saveNcSetting(STORAGE_KEYS.NEXTCLOUD_ENABLED, "nextcloud_enabled", "true");
-            setNcUrl(serverUrl);
-            setNcUser(result.loginName);
-            setNcPass(result.appPassword);
-            setNcLoginName(result.loginName);
-            setNcEnabled(true);
-            setNcStatus("ok");
-            setNcExpanded(false);
-            setNcConnecting(false);
-            if (!autoBackup) setAutoBackup(true);
-            toast.success(`Verbunden als ${result.loginName}`);
-            // Verbindungstest + Ordner anlegen
+
             try {
-              await ncTestConnection(serverUrl, result.loginName, result.appPassword);
-              await ncEnsureFolder(serverUrl, result.loginName, result.appPassword);
-            } catch { /* nicht kritisch */ }
+              await saveNcSetting(STORAGE_KEYS.NEXTCLOUD_URL, "nextcloud_url", serverUrl);
+              await saveNcSetting(STORAGE_KEYS.NEXTCLOUD_USER, "nextcloud_user", result.loginName);
+              await saveNcSetting(STORAGE_KEYS.NEXTCLOUD_PASS, "nextcloud_pass", result.appPassword);
+              await saveNcSetting(STORAGE_KEYS.NEXTCLOUD_ENABLED, "nextcloud_enabled", "true");
+
+              setNcUrl(serverUrl);
+              setNcUser(result.loginName);
+              setNcPass(result.appPassword);
+              setNcLoginName(result.loginName);
+              setNcEnabled(true);
+              setNcStatus("ok");
+              setNcExpanded(false);
+              setNcConnecting(false);
+              if (!autoBackup) setAutoBackup(true);
+
+              try {
+                await ncTestConnection(serverUrl, result.loginName, result.appPassword);
+                await ncEnsureFolder(serverUrl, result.loginName, result.appPassword);
+              } catch { /* nicht kritisch */ }
+
+              try { await Browser.close(); } catch {}
+              toast.success(`Verbunden als ${result.loginName}`);
+            } catch (persistError) {
+              setNcConnecting(false);
+              toast.error("Nextcloud verbunden, aber Speichern in der App fehlgeschlagen");
+              return;
+            }
           }
         } catch (error) {
           clearInterval(ncPollInterval.current);

@@ -7,7 +7,6 @@ import { isSQLiteActive } from "../db/storageMode";
 import { setSetting, deleteSetting, getSetting } from "../db/repositories/settingsRepo";
 import { getAllEntries } from "../db/repositories/entriesRepo";
 import { getAllWorkCodes } from "../db/repositories/workCodesRepo";
-import { execute } from "../db/database";
 
 // ─── Dual-Write Helpers (localStorage + SQLite) ─────────────
 
@@ -269,12 +268,6 @@ export function useAppActions({
       dualRemoveSync(STORAGE_KEYS.LAST_CODE, "last_code");
       localStorage.removeItem(STORAGE_KEYS.ATTACHMENTS);
       localStorage.removeItem(STORAGE_KEYS.ATTACHMENT_LABELS);
-      // SQLite: attachment_labels ebenfalls leeren
-      if (isSQLiteActive()) {
-        execute("DELETE FROM attachment_labels;").catch((err) =>
-          console.error("[useAppActions] SQLite attachment_labels Reset fehlgeschlagen:", err)
-        );
-      }
       toast.success("🧹 App vollständig zurückgesetzt");
     }
     setDeleteTarget(null);
@@ -288,19 +281,26 @@ export function useAppActions({
     // SQLite-first: Lade Daten aus SQLite, wenn verfügbar
     if (isSQLiteActive()) {
       try {
+        // User-Daten aus settingsRepo laden - verwende "user" key (nicht "user_data")
         const userDataFromSQLite = await getSetting("user");
+        
         if (userDataFromSQLite) {
+          // userDataFromSQLite ist bereits ein Objekt (nicht JSON-String)
           setUserData(userDataFromSQLite);
           if (userDataFromSQLite.settings?.autoBackup !== undefined) {
             setAutoBackup(userDataFromSQLite.settings.autoBackup);
           }
         }
 
+        // Einträge aus entriesRepo laden
         const entriesFromSQLite = await getAllEntries();
+        
         importEntries(entriesFromSQLite || []);
 
-        // Work Codes werden bereits durch useWorkCodes Hook geladen
+        // Work Codes aus workCodesRepo laden
         await getAllWorkCodes();
+        
+        // Work Codes werden bereits durch useWorkCodes Hook geladen
       } catch (e) {
         // Fallback auf localStorage (falls noch vorhanden)
         const storedUserStr = localStorage.getItem(STORAGE_KEYS.USER);
@@ -313,14 +313,17 @@ export function useAppActions({
                 setAutoBackup(storedUser.settings.autoBackup);
               }
             }
-          } catch { /* corrupt */ }
+          } catch (e2) {
+          }
         }
 
         const storedEntriesStr = localStorage.getItem(STORAGE_KEYS.ENTRIES);
         if (storedEntriesStr) {
           try {
-            importEntries(JSON.parse(storedEntriesStr));
-          } catch { /* corrupt */ }
+            const storedEntries = JSON.parse(storedEntriesStr);
+            importEntries(storedEntries);
+          } catch (e2) {
+          }
         }
       }
     } else {
@@ -335,14 +338,17 @@ export function useAppActions({
               setAutoBackup(storedUser.settings.autoBackup);
             }
           }
-        } catch { /* corrupt */ }
+        } catch (e) {
+        }
       }
 
       const storedEntriesStr = localStorage.getItem(STORAGE_KEYS.ENTRIES);
       if (storedEntriesStr) {
         try {
-          importEntries(JSON.parse(storedEntriesStr));
-        } catch { /* corrupt */ }
+          const storedEntries = JSON.parse(storedEntriesStr);
+          importEntries(storedEntries);
+        } catch (e) {
+        }
       }
     }
 

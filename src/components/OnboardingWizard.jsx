@@ -153,10 +153,6 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
 
   // --- FINISH (BUGFIX: Persistenz korrigiert) ---
   const finishSetup = async () => {
-    // HARD-CODED LOGS die Proguard nicht entfernen kann
-    window._debugOnboarding = window._debugOnboarding || [];
-    window._debugOnboarding.push({ type: 'finishSetup_start', timestamp: Date.now(), formData });
-    
     const userDataToSave = {
       name: formData.name,
       company: formData.company,
@@ -171,17 +167,12 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
       }
     };
     
-    window._debugOnboarding.push({ type: 'userData_to_save', data: userDataToSave });
-    
     // FIX: Zuerst direkt in SQLite schreiben, DANN State updaten
     try {
       // Direkt in SQLite schreiben (synchronisiert mit localStorage via useSettings)
       const { setSetting } = await import("../db/repositories/settingsRepo");
       await setSetting("user", userDataToSave);
-      window._debugOnboarding.push({ type: 'sqlite_write_done' });
     } catch (err) {
-      console.error("[Onboarding] SQLite write failed:", err);
-      window._debugOnboarding.push({ type: 'sqlite_write_error', error: err.message });
       // Fortfahren, useSettings wird es in localStorage schreiben
     }
     
@@ -192,14 +183,12 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     setTheme?.('system');
 
     if (restoreData) {
-      window._debugOnboarding.push({ type: 'applying_restore', restoreData });
       await applyBackup(restoreData);
       toast.success("Daten wiederhergestellt!");
     } else {
       toast.success("Willkommen!");
     }
 
-    window._debugOnboarding.push({ type: 'calling_onComplete' });
     onComplete();
   };
 

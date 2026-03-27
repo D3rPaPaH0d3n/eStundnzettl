@@ -11,15 +11,37 @@
  * @returns {Promise<{ loginUrl: string, pollToken: string, pollEndpoint: string }>}
  */
 export async function initiateLoginFlow(serverUrl) {
-  const baseUrl = serverUrl.replace(/\/+$/, '');
-  const res = await fetch(`${baseUrl}/index.php/login/v2`, { method: 'POST' });
-  if (!res.ok) throw new Error('Nextcloud Login Flow nicht verfügbar');
-  const data = await res.json();
-  return {
-    loginUrl: data.login,
-    pollToken: data.poll.token,
-    pollEndpoint: data.poll.endpoint
-  };
+  // URL validieren und normalisieren
+  let baseUrl = serverUrl.trim();
+  if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+    baseUrl = 'https://' + baseUrl;
+  }
+  baseUrl = baseUrl.replace(/\/+$/, '');
+  
+  try {
+    const res = await fetch(`${baseUrl}/index.php/login/v2`, { 
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!res.ok) {
+      console.error('Nextcloud Login Flow failed:', res.status, res.statusText);
+      throw new Error('Nextcloud Login Flow nicht verfügbar');
+    }
+    
+    const data = await res.json();
+    return {
+      loginUrl: data.login,
+      pollToken: data.poll.token,
+      pollEndpoint: data.poll.endpoint
+    };
+  } catch (err) {
+    console.error('Nextcloud Login Flow error:', err.message);
+    throw new Error('Server nicht erreichbar oder Login Flow v2 nicht unterstützt');
+  }
 }
 
 /**

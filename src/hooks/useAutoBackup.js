@@ -140,7 +140,13 @@ export function useAutoBackup(entries, userData, isEnabled) {
         listenerHandle.current = null;
       }
       listenerHandle.current = await App.addListener('appStateChange', ({ isActive }) => {
-        if (!isActive) performBackup("Background");
+        if (isActive) {
+          // App kommt in den Vordergrund → proaktiver Token-Refresh
+          const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
+          if (cloudActive) backgroundTokenRefresh().catch(() => {});
+        } else {
+          performBackup("Background");
+        }
       });
     };
     setupListener();

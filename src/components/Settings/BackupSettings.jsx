@@ -143,7 +143,10 @@ const BackupSettings = ({
           toast.success("Backup aktiviert!");
         }
       } catch (err) {
-        toast.error("Auswahl abgebrochen");
+        // Partiellen State bereinigen (dualWrite könnte BACKUP_TARGET bereits gesetzt haben)
+        await clearBackupTarget();
+        setHasBackupFolder(false);
+        toast.error("Backup konnte nicht aktiviert werden");
       }
     }
   };

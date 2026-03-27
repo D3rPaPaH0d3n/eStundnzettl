@@ -177,8 +177,13 @@ const BackupSettings = ({
             throw new Error(getNextcloudErrorMessage(result));
           }
 
+          if (result.status === 'pending') {
+            return;
+          }
+
           if (result.status === 'complete') {
             clearInterval(ncPollInterval.current);
+            try { await Browser.close(); } catch {}
             // Credentials speichern
             const serverUrl = result.server.replace(/\/+$/, '');
             saveNcSetting(STORAGE_KEYS.NEXTCLOUD_URL, "nextcloud_url", serverUrl);

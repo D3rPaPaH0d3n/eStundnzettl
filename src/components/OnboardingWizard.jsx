@@ -310,8 +310,13 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
             throw new Error(getNextcloudErrorMessage(result));
           }
 
+          if (result.status === 'pending') {
+            return;
+          }
+
           if (result.status === 'complete') {
             clearInterval(ncRestorePollRef.current);
+            try { await Browser.close(); } catch {}
             setNcRestoreConnecting(false);
             setLoading(true);
             try {

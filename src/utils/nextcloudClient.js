@@ -185,6 +185,7 @@ export async function pollLoginResult(pollEndpoint, token) {
 
 const BACKUP_FOLDER = "eStundnzettl";
 const BACKUP_FILENAME = "estundnzettl_backup.json";
+const DIRECT_ROOT_UPLOAD = true; // temporärer Debug-Fix: direkt in WebDAV-Root hochladen
 
 /** URL normalisieren: trailing slash entfernen */
 function normalizeUrl(url) {
@@ -315,17 +316,27 @@ export async function ensureFolder(url, user, pass) {
 
 export async function uploadBackup(url, user, pass, jsonData) {
   ncLog(`uploadBackup: url=${url} user=${user}`);
-  await ensureFolder(url, user, pass);
   const content = typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData, null, 2);
-  ncLog(`uploadBackup: PUT ${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME} (${content.length} bytes)`);
+
+  const targetUrl = DIRECT_ROOT_UPLOAD
+    ? `${davPath(url, user)}/${BACKUP_FILENAME}`
+    : `${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`;
+
+  if (!DIRECT_ROOT_UPLOAD) {
+    await ensureFolder(url, user, pass);
+  } else {
+    ncLog(`uploadBackup: DIRECT_ROOT_UPLOAD aktiv, MKCOL wird übersprungen`);
+  }
+
+  ncLog(`uploadBackup: PUT ${targetUrl} (${content.length} bytes)`);
   const res = await nativeHttp(
-    `${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`,
+    targetUrl,
     "PUT", user, pass, content, "application/json"
   );
   ncLog(`uploadBackup: status=${res.status}`);
   if (res.status === 201 || res.status === 204) { ncLog(`uploadBackup: ✅ Erfolg`); return true; }
   if (res.status === 401) throw new Error("Nicht autorisiert (401)");
-  throw new Error(`Upload ${res.status} auf ${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME} body=${(res.body || "").substring(0, 200)}`);
+  throw new Error(`Upload ${res.status} auf ${targetUrl} body=${(res.body || "").substring(0, 200)}`);
 }
 
 export async function downloadBackup(url, user, pass) {

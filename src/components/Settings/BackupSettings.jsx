@@ -333,12 +333,12 @@ const BackupSettings = ({
       
       if (!autoBackup) setAutoBackup(true);
 
-      // Test connection and ensure folder mit korrekter userId
+      // Test connection; Folder-Setup ist aktuell non-critical/temporär deaktiviert,
+      // weil wir zum Debuggen direkt in den WebDAV-Root hochladen.
       try {
         ncLog(`testConnection mit userId="${userId}"`);
         await ncTestConnection(serverUrl, userId, appPassword);
-        ncLog(`ensureFolder mit userId="${userId}"`);
-        await ncEnsureFolder(serverUrl, userId, appPassword);
+        ncLog(`Folder setup übersprungen (DIRECT_ROOT_UPLOAD)`);
       } catch (folderError) {
         ncLog(`⚠️ Folder setup: ${folderError?.message}`);
         // Non-critical - continue

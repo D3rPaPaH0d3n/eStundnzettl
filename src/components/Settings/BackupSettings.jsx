@@ -528,6 +528,14 @@ const BackupSettings = ({
         if (result.nextcloud === false) failed.push("Nextcloud");
         if (failed.length > 0) {
           toast.error(`Fehlgeschlagen: ${failed.join(", ")}`);
+          // Debug: Zeige detaillierte Fehlermeldung in Alert (scrollbar)
+          const details = [];
+          if (result.nextcloud === false && result.nextcloudError) {
+            details.push(`Nextcloud: ${result.nextcloudError}`);
+          }
+          if (details.length > 0) {
+            setTimeout(() => alert(`Backup-Fehler Details:\n\n${details.join("\n\n")}`), 500);
+          }
         }
       } else {
         toast.error(result?.message || "Backup fehlgeschlagen");

@@ -376,6 +376,7 @@ export const triggerManualBackup = async () => {
     let gdriveOk = cloudActive ? false : null;
     let localOk = localActive ? false : null;
     let nextcloudOk = ncActive ? false : null;
+    let nextcloudError = null;
 
     if (cloudActive) {
       try {
@@ -408,10 +409,12 @@ export const triggerManualBackup = async () => {
           await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
           nextcloudOk = true;
         } else {
-          console.warn("[triggerManualBackup] Nextcloud aktiv aber Credentials unvollständig");
+          console.warn("[triggerManualBackup] Nextcloud aktiv aber Credentials unvollständig:", { ncUrl: !!ncUrl, ncUser: !!ncUser, ncPass: !!ncPass });
+          nextcloudError = "Nextcloud-Anmeldedaten unvollständig";
         }
       } catch (e) {
-        console.error("[triggerManualBackup] Nextcloud-Upload fehlgeschlagen:", e);
+        console.error("[triggerManualBackup] Nextcloud-Upload fehlgeschlagen:", e?.message || e);
+        nextcloudError = e?.message || "Nextcloud-Upload fehlgeschlagen";
       }
     }
 
@@ -431,7 +434,8 @@ export const triggerManualBackup = async () => {
       gdrive: gdriveOk,
       local: localOk,
       nextcloud: nextcloudOk,
-      message: anySuccess ? undefined : "Alle Backup-Ziele fehlgeschlagen"
+      nextcloudError,
+      message: anySuccess ? undefined : (nextcloudError || "Alle Backup-Ziele fehlgeschlagen")
     };
   } catch (err) {
     return { success: false, message: "Backup fehlgeschlagen" };

@@ -8,7 +8,7 @@ android {
         applicationId "com.estundnzettl.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 145          // Fix: CapacitorHttp für Nextcloud, kein Google-Login-Popup ohne Token
+        versionCode 146          // Fix: Nextcloud WebDAV über natives Plugin, kein CORS-Block mehr
         versionName "6.6.0"    // Stable Release
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

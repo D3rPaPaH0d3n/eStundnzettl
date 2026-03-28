@@ -207,24 +207,46 @@ export function getNextcloudErrorMessage(result, fallback = 'Nextcloud Login feh
 }
 
 /**
+ * Native HTTP-Request über das Capacitor Plugin (umgeht CORS auf Android).
+ * Fällt auf fetch() zurück wenn nicht auf Android.
+ */
+async function nativeHttp(url, method, user, pass, body, contentType) {
+  if (Capacitor.getPlatform() === 'android') {
+    const result = await NextcloudLoginFlow.httpRequest({
+      url,
+      method,
+      username: user,
+      password: pass,
+      body: body || undefined,
+      contentType: contentType || undefined,
+    });
+    if (!result.ok) {
+      throw new Error(result.error?.message || `Native HTTP fehlgeschlagen: ${result.error?.code}`);
+    }
+    return { status: result.status, body: result.body || "" };
+  }
+
+  // Web-Fallback
+  const headers = { ...authHeaders(user, pass) };
+  if (contentType) headers["Content-Type"] = contentType;
+  if (method === "PROPFIND") headers["Depth"] = "0";
+  const res = await fetch(url, { method, headers, body: body || undefined });
+  return { status: res.status, body: await res.text() };
+}
+
+/**
  * Verbindung testen via PROPFIND auf den User-Root.
  * @returns {Promise<{ok: boolean, error?: string}>}
  */
 export async function testConnection(url, user, pass) {
   try {
-    const res = await fetch(`${davPath(url, user)}/`, {
-      method: "PROPFIND",
-      headers: {
-        ...authHeaders(user, pass),
-        Depth: "0",
-      },
-    });
+    const res = await nativeHttp(`${davPath(url, user)}/`, "PROPFIND", user, pass);
     if (res.status === 207) return { ok: true };
     if (res.status === 401) return { ok: false, error: "Ungültige Anmeldedaten (401)" };
     if (res.status === 404) return { ok: false, error: "Server nicht gefunden (404)" };
     return { ok: false, error: `Unerwarteter Status: ${res.status}` };
-  } catch {
-    return { ok: false, error: "Verbindung fehlgeschlagen — URL prüfen" };
+  } catch (e) {
+    return { ok: false, error: `Verbindung fehlgeschlagen: ${e.message}` };
   }
 }
 
@@ -233,10 +255,7 @@ export async function testConnection(url, user, pass) {
  */
 export async function ensureFolder(url, user, pass) {
   try {
-    const res = await fetch(`${davPath(url, user)}/${BACKUP_FOLDER}`, {
-      method: "MKCOL",
-      headers: authHeaders(user, pass),
-    });
+    const res = await nativeHttp(`${davPath(url, user)}/${BACKUP_FOLDER}`, "MKCOL", user, pass);
     if (res.status === 201 || res.status === 405) return true;
     if (res.status === 401) throw new Error("Nicht autorisiert (401)");
     if (res.status === 409) return true;
@@ -250,39 +269,36 @@ export async function ensureFolder(url, user, pass) {
 export async function uploadBackup(url, user, pass, jsonData) {
   await ensureFolder(url, user, pass);
   const content = typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData, null, 2);
-  const res = await fetch(`${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`, {
-    method: "PUT",
-    headers: {
-      ...authHeaders(user, pass),
-      "Content-Type": "application/json",
-    },
-    body: content,
-  });
+  const res = await nativeHttp(
+    `${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`,
+    "PUT", user, pass, content, "application/json"
+  );
   if (res.status === 201 || res.status === 204) return true;
   if (res.status === 401) throw new Error("Nicht autorisiert (401)");
   throw new Error(`Upload fehlgeschlagen: ${res.status}`);
 }
 
 export async function downloadBackup(url, user, pass) {
-  const res = await fetch(`${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`, {
-    method: "GET",
-    headers: authHeaders(user, pass),
-  });
+  const res = await nativeHttp(
+    `${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`,
+    "GET", user, pass
+  );
   if (res.status === 404) return null;
   if (res.status === 401) throw new Error("Nicht autorisiert (401)");
-  if (!res.ok) throw new Error(`Download fehlgeschlagen: ${res.status}`);
-  return await res.json();
+  if (res.status < 200 || res.status >= 300) throw new Error(`Download fehlgeschlagen: ${res.status}`);
+  try {
+    return JSON.parse(res.body);
+  } catch {
+    throw new Error("Backup-Datei ist kein gültiges JSON");
+  }
 }
 
 export async function findBackup(url, user, pass) {
   try {
-    const res = await fetch(`${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`, {
-      method: "PROPFIND",
-      headers: {
-        ...authHeaders(user, pass),
-        Depth: "0",
-      },
-    });
+    const res = await nativeHttp(
+      `${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`,
+      "PROPFIND", user, pass
+    );
     return res.status === 207;
   } catch {
     return false;

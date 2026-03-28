@@ -83,6 +83,80 @@ public class NextcloudLoginFlowPlugin extends Plugin {
         }
     }
 
+    /**
+     * Generic HTTP request for WebDAV operations (MKCOL, PROPFIND, PUT, GET, etc.)
+     * Supports Basic Auth and arbitrary HTTP methods.
+     */
+    @PluginMethod
+    public void httpRequest(PluginCall call) {
+        String urlStr = call.getString("url");
+        String method = call.getString("method", "GET");
+        String body = call.getString("body");
+        String username = call.getString("username");
+        String password = call.getString("password");
+        String reqContentType = call.getString("contentType");
+
+        if (TextUtils.isEmpty(urlStr)) {
+            call.resolve(errorResult("INVALID_URL", "URL fehlt", null, false));
+            return;
+        }
+
+        new Thread(() -> {
+            try {
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod(method.toUpperCase());
+                conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
+                conn.setReadTimeout(30000); // longer for uploads
+                conn.setInstanceFollowRedirects(true);
+                conn.setUseCaches(false);
+
+                // Basic Auth
+                if (username != null && password != null) {
+                    String credentials = username + ":" + password;
+                    String encoded = android.util.Base64.encodeToString(
+                        credentials.getBytes(StandardCharsets.UTF_8),
+                        android.util.Base64.NO_WRAP
+                    );
+                    conn.setRequestProperty("Authorization", "Basic " + encoded);
+                }
+
+                if (reqContentType != null) {
+                    conn.setRequestProperty("Content-Type", reqContentType);
+                }
+
+                // Write body for PUT, POST, PROPPATCH
+                if (body != null && !method.equalsIgnoreCase("GET") && !method.equalsIgnoreCase("HEAD")) {
+                    conn.setDoOutput(true);
+                    byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+                    conn.setFixedLengthStreamingMode(bytes.length);
+                    try (OutputStream os = conn.getOutputStream()) {
+                        os.write(bytes);
+                    }
+                }
+
+                int statusCode = conn.getResponseCode();
+                InputStream is = statusCode >= 400 ? conn.getErrorStream() : conn.getInputStream();
+                String responseBody = is != null ? readBody(is) : "";
+                conn.disconnect();
+
+                JSObject result = new JSObject();
+                result.put("ok", true);
+                result.put("status", statusCode);
+                result.put("body", responseBody);
+                call.resolve(result);
+            } catch (SocketTimeoutException e) {
+                call.resolve(errorResult("TIMEOUT", "Zeitüberschreitung", null, true));
+            } catch (SSLException e) {
+                call.resolve(errorResult("TLS_ERROR", "TLS/SSL-Fehler: " + safeMessage(e, "Unbekannt"), null, true));
+            } catch (IOException e) {
+                call.resolve(errorResult("NETWORK_ERROR", safeMessage(e, "Netzwerkfehler"), null, true));
+            } catch (Exception e) {
+                call.resolve(errorResult("UNKNOWN_ERROR", safeMessage(e, "Unbekannter Fehler"), null, false));
+            }
+        }).start();
+    }
+
     @PluginMethod
     public void pollLoginFlow(PluginCall call) {
         String pollEndpoint = call.getString("pollEndpoint");

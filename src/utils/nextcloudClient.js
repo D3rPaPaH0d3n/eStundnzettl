@@ -211,6 +211,7 @@ export function getNextcloudErrorMessage(result, fallback = 'Nextcloud Login feh
  * Fällt auf fetch() zurück wenn nicht auf Android.
  */
 async function nativeHttp(url, method, user, pass, body, contentType) {
+  console.log(`[Nextcloud WebDAV] ${method} ${url} (user: ${user})`);
   if (Capacitor.getPlatform() === 'android') {
     const result = await NextcloudLoginFlow.httpRequest({
       url,
@@ -223,6 +224,7 @@ async function nativeHttp(url, method, user, pass, body, contentType) {
     if (!result.ok) {
       throw new Error(result.error?.message || `Native HTTP fehlgeschlagen: ${result.error?.code}`);
     }
+    console.log(`[Nextcloud WebDAV] Response: ${result.status}`, result.body?.substring(0, 200));
     return { status: result.status, body: result.body || "" };
   }
 
@@ -259,7 +261,7 @@ export async function ensureFolder(url, user, pass) {
     if (res.status === 201 || res.status === 405) return true;
     if (res.status === 401) throw new Error("Nicht autorisiert (401)");
     if (res.status === 409) return true;
-    throw new Error(`MKCOL fehlgeschlagen: ${res.status}`);
+    throw new Error(`MKCOL ${res.status} auf ${davPath(url, user)}/${BACKUP_FOLDER}`);
   } catch (err) {
     if (err.message.includes("401")) throw err;
     throw new Error(`Ordner erstellen fehlgeschlagen: ${err.message}`);
@@ -275,7 +277,7 @@ export async function uploadBackup(url, user, pass, jsonData) {
   );
   if (res.status === 201 || res.status === 204) return true;
   if (res.status === 401) throw new Error("Nicht autorisiert (401)");
-  throw new Error(`Upload fehlgeschlagen: ${res.status}`);
+  throw new Error(`Upload ${res.status} auf ${davPath(url, user)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`);
 }
 
 export async function downloadBackup(url, user, pass) {

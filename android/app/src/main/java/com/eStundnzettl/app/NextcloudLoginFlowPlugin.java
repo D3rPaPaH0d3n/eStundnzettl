@@ -18,15 +18,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLException;
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 @CapacitorPlugin(name = "NextcloudLoginFlow")
 public class NextcloudLoginFlowPlugin extends Plugin {
@@ -87,6 +93,7 @@ public class NextcloudLoginFlowPlugin extends Plugin {
     /**
      * Generic HTTP request for WebDAV operations (MKCOL, PROPFIND, PUT, GET, etc.)
      * Supports Basic Auth and arbitrary HTTP methods.
+     * Uses OkHttp for native support of non-standard HTTP methods (no reflection needed).
      */
     @PluginMethod
     public void httpRequest(PluginCall call) {
@@ -104,13 +111,16 @@ public class NextcloudLoginFlowPlugin extends Plugin {
 
         new Thread(() -> {
             try {
-                URL url = new URL(urlStr);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                setHttpMethod(conn, method.toUpperCase());
-                conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
-                conn.setReadTimeout(30000); // longer for uploads
-                conn.setInstanceFollowRedirects(true);
-                conn.setUseCaches(false);
+                final String upperMethod = method.toUpperCase();
+
+                OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                    .readTimeout(30000, TimeUnit.MILLISECONDS) // longer for uploads
+                    .followRedirects(true)
+                    .followSslRedirects(true)
+                    .build();
+
+                Request.Builder requestBuilder = new Request.Builder().url(urlStr);
 
                 // Basic Auth
                 if (username != null && password != null) {
@@ -119,52 +129,57 @@ public class NextcloudLoginFlowPlugin extends Plugin {
                         credentials.getBytes(StandardCharsets.UTF_8),
                         android.util.Base64.NO_WRAP
                     );
-                    conn.setRequestProperty("Authorization", "Basic " + encoded);
+                    requestBuilder.header("Authorization", "Basic " + encoded);
                 }
-
-                final String upperMethod = method.toUpperCase();
 
                 if (reqContentType != null) {
-                    conn.setRequestProperty("Content-Type", reqContentType);
+                    requestBuilder.header("Content-Type", reqContentType);
                 }
 
-                conn.setRequestProperty("Accept", "*/*");
-                conn.setRequestProperty("User-Agent", "eStundnzettl/Android");
+                requestBuilder.header("Accept", "*/*");
+                requestBuilder.header("User-Agent", "eStundnzettl/Android");
 
                 // WebDAV PROPFIND requires Depth header
                 if ("PROPFIND".equals(upperMethod)) {
-                    conn.setRequestProperty("Depth", "0");
-                }
-
-                // MKCOL must be sent without request body, explicitly zero length
-                if ("MKCOL".equals(upperMethod)) {
-                    conn.setDoOutput(false);
-                    conn.setRequestProperty("Content-Length", "0");
+                    requestBuilder.header("Depth", "0");
                 }
 
                 // OCS API requires this header
                 if (urlStr.contains("/ocs/")) {
-                    conn.setRequestProperty("OCS-APIRequest", "true");
+                    requestBuilder.header("OCS-APIRequest", "true");
                 }
 
-                // Write body only for methods that actually carry one
-                if (body != null
-                        && !upperMethod.equals("GET")
-                        && !upperMethod.equals("HEAD")
-                        && !upperMethod.equals("MKCOL")
-                        && !upperMethod.equals("PROPFIND")) {
-                    conn.setDoOutput(true);
-                    byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-                    conn.setFixedLengthStreamingMode(bytes.length);
-                    try (OutputStream os = conn.getOutputStream()) {
-                        os.write(bytes);
-                    }
+                // Build the request body based on method
+                RequestBody requestBody = null;
+                if ("GET".equals(upperMethod) || "HEAD".equals(upperMethod) || "DELETE".equals(upperMethod)) {
+                    // No body for GET/HEAD/DELETE
+                    requestBody = null;
+                } else if ("MKCOL".equals(upperMethod)) {
+                    // MKCOL needs an empty body (not null!) for OkHttp
+                    requestBody = RequestBody.create(new byte[0], null);
+                } else if ("PROPFIND".equals(upperMethod)) {
+                    // PROPFIND with empty body
+                    requestBody = RequestBody.create(new byte[0], null);
+                } else if (body != null) {
+                    // PUT, POST, etc. with actual body
+                    MediaType mediaType = reqContentType != null
+                        ? MediaType.parse(reqContentType)
+                        : null;
+                    requestBody = RequestBody.create(body.getBytes(StandardCharsets.UTF_8), mediaType);
+                } else {
+                    // Other methods without body — empty body
+                    requestBody = RequestBody.create(new byte[0], null);
                 }
 
-                int statusCode = conn.getResponseCode();
-                InputStream is = statusCode >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                String responseBody = is != null ? readBody(is) : "";
-                conn.disconnect();
+                // OkHttp .method() supports arbitrary HTTP methods natively
+                requestBuilder.method(upperMethod, requestBody);
+
+                Request request = requestBuilder.build();
+                Response response = client.newCall(request).execute();
+
+                int statusCode = response.code();
+                String responseBody = response.body() != null ? response.body().string() : "";
+                response.close();
 
                 JSObject result = new JSObject();
                 result.put("ok", true);
@@ -181,25 +196,6 @@ public class NextcloudLoginFlowPlugin extends Plugin {
                 call.resolve(errorResult("UNKNOWN_ERROR", safeMessage(e, "Unbekannter Fehler"), null, false));
             }
         }).start();
-    }
-
-    /**
-     * Set HTTP method, including non-standard WebDAV methods (MKCOL, PROPFIND, etc.)
-     * Uses reflection to bypass HttpURLConnection's method whitelist.
-     */
-    private void setHttpMethod(HttpURLConnection conn, String method) throws IOException {
-        try {
-            conn.setRequestMethod(method);
-        } catch (java.net.ProtocolException e) {
-            // HttpURLConnection rejects WebDAV methods — use reflection
-            try {
-                Field methodField = HttpURLConnection.class.getDeclaredField("method");
-                methodField.setAccessible(true);
-                methodField.set(conn, method);
-            } catch (Exception ex) {
-                throw new IOException("HTTP-Methode nicht unterstützt: " + method);
-            }
-        }
     }
 
     @PluginMethod

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -105,7 +106,7 @@ public class NextcloudLoginFlowPlugin extends Plugin {
             try {
                 URL url = new URL(urlStr);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod(method.toUpperCase());
+                setHttpMethod(conn, method.toUpperCase());
                 conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
                 conn.setReadTimeout(30000); // longer for uploads
                 conn.setInstanceFollowRedirects(true);
@@ -123,6 +124,11 @@ public class NextcloudLoginFlowPlugin extends Plugin {
 
                 if (reqContentType != null) {
                     conn.setRequestProperty("Content-Type", reqContentType);
+                }
+
+                // WebDAV PROPFIND requires Depth header
+                if ("PROPFIND".equals(method.toUpperCase())) {
+                    conn.setRequestProperty("Depth", "0");
                 }
 
                 // Write body for PUT, POST, PROPPATCH
@@ -155,6 +161,25 @@ public class NextcloudLoginFlowPlugin extends Plugin {
                 call.resolve(errorResult("UNKNOWN_ERROR", safeMessage(e, "Unbekannter Fehler"), null, false));
             }
         }).start();
+    }
+
+    /**
+     * Set HTTP method, including non-standard WebDAV methods (MKCOL, PROPFIND, etc.)
+     * Uses reflection to bypass HttpURLConnection's method whitelist.
+     */
+    private void setHttpMethod(HttpURLConnection conn, String method) throws IOException {
+        try {
+            conn.setRequestMethod(method);
+        } catch (java.net.ProtocolException e) {
+            // HttpURLConnection rejects WebDAV methods — use reflection
+            try {
+                Field methodField = HttpURLConnection.class.getDeclaredField("method");
+                methodField.setAccessible(true);
+                methodField.set(conn, method);
+            } catch (Exception ex) {
+                throw new IOException("HTTP-Methode nicht unterstützt: " + method);
+            }
+        }
     }
 
     @PluginMethod

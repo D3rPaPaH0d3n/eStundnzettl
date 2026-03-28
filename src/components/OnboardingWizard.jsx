@@ -274,15 +274,15 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     if (ncCredentials) {
       try {
         const { setSetting: setNcSetting } = await import("../db/repositories/settingsRepo");
-        await setNcSetting("nextcloudUrl", ncCredentials.server);
-        await setNcSetting("nextcloudUser", ncCredentials.userId);
-        await setNcSetting("nextcloudPass", ncCredentials.appPassword);
-        await setNcSetting("nextcloudActive", true);
-        // Auch in localStorage für sofortige Verfügbarkeit
-        localStorage.setItem("nextcloud_url", ncCredentials.server);
-        localStorage.setItem("nextcloud_user", ncCredentials.userId);
-        localStorage.setItem("nextcloud_pass", ncCredentials.appPassword);
-        localStorage.setItem("nextcloud_enabled", "true");
+        await setNcSetting("nextcloud_url", ncCredentials.server);
+        await setNcSetting("nextcloud_user", ncCredentials.userId);
+        await setNcSetting("nextcloud_pass", ncCredentials.appPassword);
+        await setNcSetting("nextcloud_enabled", true);
+        // Auch in localStorage für sofortige Verfügbarkeit (Keys MÜSSEN mit STORAGE_KEYS übereinstimmen!)
+        localStorage.setItem("estundnzettl_nextcloud_url", ncCredentials.server);
+        localStorage.setItem("estundnzettl_nextcloud_user", ncCredentials.userId);
+        localStorage.setItem("estundnzettl_nextcloud_pass", ncCredentials.appPassword);
+        localStorage.setItem("estundnzettl_nextcloud_enabled", "true");
       } catch (err) {
         console.error("Nextcloud settings save failed:", err);
       }

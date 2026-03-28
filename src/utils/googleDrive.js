@@ -84,6 +84,12 @@ export const signInGoogle = async () => {
 // Das ist der EINZIGE Refresh-Mechanismus den das Plugin bietet.
 const silentRefresh = async () => {
   try {
+    // Nur refreshen wenn wir bereits einen gespeicherten Token haben
+    // Sonst würde signInGoogle() den Login-Dialog öffnen!
+    const stored = getStoredAuth();
+    if (!stored?.accessToken) {
+      return null;
+    }
     await initGoogleAuth();
     const result = await signInGoogle();
     return result?.authentication?.accessToken || null;

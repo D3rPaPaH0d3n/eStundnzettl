@@ -352,7 +352,11 @@ export const triggerManualBackup = async () => {
       try { entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]'); } catch { entries = []; }
     }
 
-    const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
+    // Cloud-Status: Flag UND gespeicherter Token müssen vorhanden sein,
+    // sonst öffnet signInGoogle() einen Login-Dialog obwohl der User gar nicht verbunden ist!
+    const cloudFlag = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
+    const hasGoogleToken = !!localStorage.getItem("google_auth_state");
+    const cloudActive = cloudFlag && hasGoogleToken;
     const localActive = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
     const ncActive = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true";
 

@@ -2,7 +2,13 @@
   "appId": "com.estundnzettl.app",
   "appName": "eStundnzettl",
   "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
   "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
     "SocialLogin": {
       "google": {
         "webClientId": "618528142382-pes4415amf381rk4bjovlamgh4emhrov.apps.googleusercontent.com"

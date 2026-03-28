@@ -185,7 +185,7 @@ export async function pollLoginResult(pollEndpoint, token) {
 
 const BACKUP_FOLDER = "eStundnzettl";
 const BACKUP_FILENAME = "estundnzettl_backup.json";
-const DIRECT_ROOT_UPLOAD = true; // temporärer Debug-Fix: direkt in WebDAV-Root hochladen
+const DIRECT_ROOT_UPLOAD = false;
 
 /** URL normalisieren: trailing slash entfernen */
 function normalizeUrl(url) {
@@ -298,15 +298,18 @@ export async function testConnection(url, user, pass) {
  * Backup-Ordner anlegen (MKCOL, ignoriert 405 = existiert bereits).
  */
 export async function ensureFolder(url, user, pass) {
-  const folderUrl = `${davPath(url, user)}/${BACKUP_FOLDER}`;
+  const folderUrl = `${davPath(url, user)}/${BACKUP_FOLDER}/`;
   ncLog(`ensureFolder: MKCOL ${folderUrl}`);
   try {
     const res = await nativeHttp(folderUrl, "MKCOL", user, pass);
     ncLog(`ensureFolder: status=${res.status}`);
-    if (res.status === 201 || res.status === 405) return true;
+    if (res.status === 201 || res.status === 405) {
+      ncLog(`ensureFolder: ✅ ${res.status === 201 ? "created" : "already exists"}`);
+      return true;
+    }
     if (res.status === 401) throw new Error("Nicht autorisiert (401)");
     if (res.status === 409) return true;
-    throw new Error(`MKCOL ${res.status} auf ${folderUrl} body=${(res.body || "").substring(0, 200)}`);
+    throw new Error(`MKCOL ${res.status} auf ${folderUrl} body=${(res.body || "").substring(0, 500)}`);
   } catch (err) {
     ncLog(`ensureFolder: ❌ ${err.message}`);
     if (err.message.includes("401")) throw err;

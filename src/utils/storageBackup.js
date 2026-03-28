@@ -368,9 +368,10 @@ export const triggerManualBackup = async () => {
       version: "v6"
     };
 
-    let gdriveOk = false;
-    let localOk = false;
-    let nextcloudOk = false;
+    // null = nicht aktiv, true = erfolgreich, false = fehlgeschlagen
+    let gdriveOk = cloudActive ? false : null;
+    let localOk = localActive ? false : null;
+    let nextcloudOk = ncActive ? false : null;
 
     if (cloudActive) {
       try {
@@ -381,7 +382,7 @@ export const triggerManualBackup = async () => {
           gdriveOk = true;
         }
       } catch (e) {
-        // cloud backup failed silently
+        console.error("[triggerManualBackup] Google Drive fehlgeschlagen:", e);
       }
     }
 
@@ -390,7 +391,7 @@ export const triggerManualBackup = async () => {
         await writeBackupFile(BACKUP_CONFIG.FILENAME, payload);
         localOk = true;
       } catch (e) {
-        // local backup failed silently
+        console.error("[triggerManualBackup] Lokales Backup fehlgeschlagen:", e);
       }
     }
 
@@ -402,19 +403,32 @@ export const triggerManualBackup = async () => {
         if (ncUrl && ncUser && ncPass) {
           await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
           nextcloudOk = true;
+        } else {
+          console.warn("[triggerManualBackup] Nextcloud aktiv aber Credentials unvollständig");
         }
       } catch (e) {
-        // nextcloud backup failed silently
+        console.error("[triggerManualBackup] Nextcloud-Upload fehlgeschlagen:", e);
       }
     }
 
-    if (gdriveOk || localOk || nextcloudOk) {
-      // Dual-Write: LAST_BACKUP
-      await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
-      return { success: true, gdrive: gdriveOk, local: localOk, nextcloud: nextcloudOk };
+    const anySuccess = gdriveOk === true || localOk === true || nextcloudOk === true;
+    const anyConfigured = gdriveOk !== null || localOk !== null || nextcloudOk !== null;
+
+    if (!anyConfigured) {
+      return { success: false, message: "Kein Backup-Ziel konfiguriert" };
     }
 
-    return { success: false, message: "Kein Backup-Ziel konfiguriert" };
+    if (anySuccess) {
+      await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
+    }
+
+    return {
+      success: anySuccess,
+      gdrive: gdriveOk,
+      local: localOk,
+      nextcloud: nextcloudOk,
+      message: anySuccess ? undefined : "Alle Backup-Ziele fehlgeschlagen"
+    };
   } catch (err) {
     return { success: false, message: "Backup fehlgeschlagen" };
   }

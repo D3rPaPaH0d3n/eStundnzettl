@@ -8,7 +8,7 @@ android {
         applicationId "com.estundnzettl.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 141          // Nextcloud Lifecycle Fix — Browser/App State Handling
+        versionCode 142          // Fix: Backup-Erfolgsmeldung zeigt jetzt korrekten Status pro Ziel
         versionName "6.6.0"    // Stable Release
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

@@ -507,14 +507,30 @@ const BackupSettings = ({
     if (isBackingUp) return;
     setIsBackingUp(true);
     try {
-      const success = await triggerManualBackup();
-      if (success) {
+      const result = await triggerManualBackup();
+
+      if (result?.success) {
         const now = new Date().toISOString();
         setLastBackupDate(now);
         localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, now);
-        toast.success("Backup erstellt!");
+
+        // Differenzierte Erfolgsmeldung
+        const parts = [];
+        if (result.gdrive) parts.push("Google Drive");
+        if (result.local) parts.push("Lokal");
+        if (result.nextcloud) parts.push("Nextcloud");
+        toast.success(`Backup erstellt: ${parts.join(", ")}`);
+
+        // Warnung für fehlgeschlagene Ziele
+        const failed = [];
+        if (result.gdrive === false) failed.push("Google Drive");
+        if (result.local === false) failed.push("Lokal");
+        if (result.nextcloud === false) failed.push("Nextcloud");
+        if (failed.length > 0) {
+          toast.error(`Fehlgeschlagen: ${failed.join(", ")}`);
+        }
       } else {
-        toast.error("Backup fehlgeschlagen");
+        toast.error(result?.message || "Backup fehlgeschlagen");
       }
     } catch (error) {
       console.error(error);

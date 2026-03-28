@@ -200,7 +200,11 @@ function authHeaders(user, pass) {
 
 /** WebDAV-Basispfad für Dateien */
 function davPath(url, user) {
-  return `${normalizeUrl(url)}/remote.php/dav/files/${encodeURIComponent(user)}`;
+  // Zwei mögliche Pfade testen:
+  // 1. /remote.php/dav/files/{uid}/  ← persönlicher Bereich
+  // 2. /remote.php/webdav/            ← WebDAV-Root
+  // Wir testen erstmal mit webdav, weil MKCOL auf files/{uid}/ nicht klappt
+  return `${normalizeUrl(url)}/remote.php/webdav`;
 }
 
 /**
@@ -275,7 +279,10 @@ export async function testConnection(url, user, pass) {
   ncLog(`testConnection: davPath=${davPath(url, user)}/`);
   try {
     const res = await nativeHttp(`${davPath(url, user)}/`, "PROPFIND", user, pass);
-    if (res.status === 207) { ncLog(`testConnection: ✅ 207`); return { ok: true }; }
+    if (res.status === 207 || res.status === 200) { 
+      ncLog(`testConnection: ✅ ${res.status}`); 
+      return { ok: true }; 
+    }
     if (res.status === 401) { ncLog(`testConnection: ❌ 401`); return { ok: false, error: "Ungültige Anmeldedaten (401)" }; }
     if (res.status === 404) { ncLog(`testConnection: ❌ 404`); return { ok: false, error: "Server nicht gefunden (404)" }; }
     ncLog(`testConnection: ❌ ${res.status}`);

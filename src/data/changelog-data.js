@@ -1,724 +1,48 @@
 import { Sparkles, Zap, FileText, Shield, Bug, Globe, Clock, Timer, Rocket, Sliders, Download, Cloud, Building2, Lock, Database, Smartphone, CheckCircle, AlertTriangle, Users, Palette, RefreshCw } from "lucide-react";
 
 export const CHANGELOG_DATA = [
-
-
-
-
-
-
   {
-  version: "6.6.0",
-  date: "28.03.2026",
-  title: "Neue Features & Bugfixes 🛠️",
-  isMajor: false,
-  sections: [
-    {
-      iconName: 'Zap',
-      title: "Verbesserungen",
-      items: [
-        "release metadata for v6.6.0 [skip ci]",
-        "release metadata for v6.6.0 [skip ci]",
-        "release metadata for v6.6.0 [skip ci]",
-        "release metadata for v6.6.0 [skip ci]",
-        "release metadata for v6.6.0 [skip ci]",
-        "Changelog für v6.5.0 aktualisiert — SQLite-Migration abgeschlossen",
-        "Onboarding-Debug-Logs entfernen (Konflikt gelöst)",
-        "release metadata for v6.4.0 [skip ci]",
-        "release metadata for v6.4.0 [skip ci]",
-        "Restdaten und Backup-Metadaten an SQLite anbinden",
-        "humanize changelog + improve commit guidelines (#3)",
-        "Einstellungen vereinfacht, add collapsible UI and improved demo warning",
-        "Single-Point-of-Truth Versionierung via Vite define",
-        "privacy datum + logo optimiert",
-        "Dead Code WorkModelModal.jsx entfernt (191 Zeilen, nirgends importiert)",
-        "icon.png und logo.png optimiert (4.4MB→88KB, 1.2MB→89KB)",
-        "CI Pipeline vereinfacht — nur noch Play Store Deploy"
-      ]
-    },
-    {
-      iconName: 'Bug',
-      title: "Bugfixes",
-      items: [
-        "Fix: WebDAV-Methoden (MKCOL, PROPFIND) im nativen Plugin",
-        "Fix: Nextcloud WebDAV über natives Android-Plugin statt fetch()",
-        "Fix: CapacitorHttp für Nextcloud-Upload, kein Google-Login ohne Verbindung",
-        "Fix: Backup-Erfolgsmeldung zeigt jetzt korrekten Status pro Ziel",
-        "Fix: Nextcloud Login Flow Lifecycle für Android",
-        "Fix: Nextcloud-Credentials werden jetzt robust gespeichert",
-        "Fix: Nextcloud Login — Browser schließt jetzt automatisch nach erfolgreicher Auth",
-        "Fix: fehlender motion-Import im OnboardingWizard — App crasht nicht mehr bei Erstinstallation",
-        "Fix: Nextcloud Login Flow läuft nativ auf Android",
-        "Fix: Nextcloud Login Flow nutzt natives HTTP auf Android",
-        "Fix: Android Network Security Config — erlaubt HTTP/HTTPS zu allen Domains",
-        "Fix: Nextcloud Login Flow v2 — bessere URL-Validierung & Fehlermeldungen",
-        "Fix: Google Token-Refresh bei jedem App-Öffnen",
-        "Fix: Google Drive Auth bleibt jetzt dauerhaft verbunden",
-        "Fix: Props-Mismatch behoben — autoBackup/setAutoBackup korrekt weitergeleitet",
-        "Fix: play-services-auth explizit als Dependency deklariert",
-        "Fix: catch-Block räumt partiellen State nach Fehler auf",
-        "Fix: triggerManualBackup liest Daten aus SQLite statt localStorage",
-        "Fix: 5 Bugs aus Migrationsanalyse behoben",
-        "Fix: JSON-Backup-Restore mit SQLite-Integration (WorkCodes, Attachments, Labels)",
-        "Fix: onboarding and data settings improvements",
-        "Fix: applyBackup korrekt awaiten nach async-Umstellung",
-        "Fix: Workflow-Syntax für Release-Version korrigieren",
-        "Fix: Version nur noch manuell erhöhen",
-        "Fix: Versionsquellen wieder konsistent machen",
-        "Fix: Versionsstand wieder auf 6.4.0 angleichen",
-        "Fix: Auto-Bump nur noch manuell auslösen",
-        "Fix: remove internal-only entries from user-facing changelog",
-        "Fix: add missing changelog entries (6.3.21–6.3.27) + group bugfix releases (#4)",
-        "Fix: enable edge-to-edge display for Android 15+ compatibility",
-        "Fix: Telegram-Notification klarer formuliert [skip ci]",
-        "Fix: minifyEnabled true + Proguard Keep-Rules für WebView/Capacitor",
-        "Fix: Update-Checker verlinkt auf Play Store statt GitHub APK",
-        "Fix: removeAllListeners() durch gezieltes Listener-Cleanup ersetzt",
-        "Fix: Backup-Fehler sichtbar machen mit Fail-Counter und Warnung",
-        "Fix: GDrive Token-Expiry-Check nach 50 Minuten"
-      ]
-    },
-    {
-      iconName: 'Sparkles',
-      title: "Neue Features",
-      items: [
-        "Neu: Nextcloud Login Flow v2 — Ein-Klick Verbindung",
-        "Neu: Changelog für v6.6.0 — Nextcloud Backup 🔒☁️",
-        "Neu: Nextcloud Backup-Unterstützung",
-        "Neu: localStorage komplett entfernt — nur noch SQLite für Android",
-        "Neu: SQLite als Hauptspeicher fertig verdrahtet",
-        "Neu: vollständige SQLite-Migration — Dual-Write entfernt, Backup/Import auf SQLite umgestellt",
-        "Neu: Versionssprung auf 6.4.0 und Changelog aufräumen",
-        "Neu: Anhänge und Label-Vorschläge in SQLite speichern",
-        "Neu: Einstellungen und Tätigkeitscodes auf SQLite vorbereiten",
-        "Neu: Zeiteinträge auf SQLite mit Fallback vorbereiten",
-        "Neu: Dokumente an Einträge anhängen und gemeinsam teilen",
-        "Neu: Changelog aufgeräumt + Accordion UI [skip ci]",
-        "Neu: Deploy-Verifizierung + Telegram-Notification in CI"
-      ]
-    },
-    {
-      iconName: 'FileText',
-      title: "Dokumentation",
-      items: [
-        "Docs: README CI Hinweis [test]"
-      ]
-    }
-  ]
-  },
-  {
-  version: "6.6.0",
-  date: "28.03.2026",
-  title: "Neue Features & Bugfixes 🛠️",
-  isMajor: false,
-  sections: [
-    {
-      iconName: 'Bug',
-      title: "Bugfixes",
-      items: [
-        "Fix: WebDAV-Methoden (MKCOL, PROPFIND) im nativen Plugin",
-        "Fix: Nextcloud WebDAV über natives Android-Plugin statt fetch()",
-        "Fix: CapacitorHttp für Nextcloud-Upload, kein Google-Login ohne Verbindung",
-        "Fix: Backup-Erfolgsmeldung zeigt jetzt korrekten Status pro Ziel",
-        "Fix: Nextcloud Login Flow Lifecycle für Android",
-        "Fix: Nextcloud-Credentials werden jetzt robust gespeichert",
-        "Fix: Nextcloud Login — Browser schließt jetzt automatisch nach erfolgreicher Auth",
-        "Fix: fehlender motion-Import im OnboardingWizard — App crasht nicht mehr bei Erstinstallation",
-        "Fix: Nextcloud Login Flow läuft nativ auf Android",
-        "Fix: Nextcloud Login Flow nutzt natives HTTP auf Android",
-        "Fix: Android Network Security Config — erlaubt HTTP/HTTPS zu allen Domains",
-        "Fix: Nextcloud Login Flow v2 — bessere URL-Validierung & Fehlermeldungen",
-        "Fix: Google Token-Refresh bei jedem App-Öffnen",
-        "Fix: Google Drive Auth bleibt jetzt dauerhaft verbunden",
-        "Fix: Props-Mismatch behoben — autoBackup/setAutoBackup korrekt weitergeleitet",
-        "Fix: play-services-auth explizit als Dependency deklariert",
-        "Fix: catch-Block räumt partiellen State nach Fehler auf",
-        "Fix: triggerManualBackup liest Daten aus SQLite statt localStorage",
-        "Fix: 5 Bugs aus Migrationsanalyse behoben",
-        "Fix: JSON-Backup-Restore mit SQLite-Integration (WorkCodes, Attachments, Labels)",
-        "Fix: onboarding and data settings improvements",
-        "Fix: applyBackup korrekt awaiten nach async-Umstellung",
-        "Fix: Workflow-Syntax für Release-Version korrigieren",
-        "Fix: Version nur noch manuell erhöhen",
-        "Fix: Versionsquellen wieder konsistent machen",
-        "Fix: Versionsstand wieder auf 6.4.0 angleichen",
-        "Fix: Auto-Bump nur noch manuell auslösen",
-        "Fix: remove internal-only entries from user-facing changelog",
-        "Fix: add missing changelog entries (6.3.21–6.3.27) + group bugfix releases (#4)",
-        "Fix: enable edge-to-edge display for Android 15+ compatibility",
-        "Fix: Telegram-Notification klarer formuliert [skip ci]",
-        "Fix: minifyEnabled true + Proguard Keep-Rules für WebView/Capacitor",
-        "Fix: Update-Checker verlinkt auf Play Store statt GitHub APK",
-        "Fix: removeAllListeners() durch gezieltes Listener-Cleanup ersetzt",
-        "Fix: Backup-Fehler sichtbar machen mit Fail-Counter und Warnung",
-        "Fix: GDrive Token-Expiry-Check nach 50 Minuten"
-      ]
-    },
-    {
-      iconName: 'Zap',
-      title: "Verbesserungen",
-      items: [
-        "release metadata for v6.6.0 [skip ci]",
-        "release metadata for v6.6.0 [skip ci]",
-        "release metadata for v6.6.0 [skip ci]",
-        "release metadata for v6.6.0 [skip ci]",
-        "Changelog für v6.5.0 aktualisiert — SQLite-Migration abgeschlossen",
-        "Onboarding-Debug-Logs entfernen (Konflikt gelöst)",
-        "release metadata for v6.4.0 [skip ci]",
-        "release metadata for v6.4.0 [skip ci]",
-        "Restdaten und Backup-Metadaten an SQLite anbinden",
-        "humanize changelog + improve commit guidelines (#3)",
-        "Einstellungen vereinfacht, add collapsible UI and improved demo warning",
-        "Single-Point-of-Truth Versionierung via Vite define",
-        "privacy datum + logo optimiert",
-        "Dead Code WorkModelModal.jsx entfernt (191 Zeilen, nirgends importiert)",
-        "icon.png und logo.png optimiert (4.4MB→88KB, 1.2MB→89KB)",
-        "CI Pipeline vereinfacht — nur noch Play Store Deploy"
-      ]
-    },
-    {
-      iconName: 'Sparkles',
-      title: "Neue Features",
-      items: [
-        "Neu: Nextcloud Login Flow v2 — Ein-Klick Verbindung",
-        "Neu: Changelog für v6.6.0 — Nextcloud Backup 🔒☁️",
-        "Neu: Nextcloud Backup-Unterstützung",
-        "Neu: localStorage komplett entfernt — nur noch SQLite für Android",
-        "Neu: SQLite als Hauptspeicher fertig verdrahtet",
-        "Neu: vollständige SQLite-Migration — Dual-Write entfernt, Backup/Import auf SQLite umgestellt",
-        "Neu: Versionssprung auf 6.4.0 und Changelog aufräumen",
-        "Neu: Anhänge und Label-Vorschläge in SQLite speichern",
-        "Neu: Einstellungen und Tätigkeitscodes auf SQLite vorbereiten",
-        "Neu: Zeiteinträge auf SQLite mit Fallback vorbereiten",
-        "Neu: Dokumente an Einträge anhängen und gemeinsam teilen",
-        "Neu: Changelog aufgeräumt + Accordion UI [skip ci]",
-        "Neu: Deploy-Verifizierung + Telegram-Notification in CI"
-      ]
-    },
-    {
-      iconName: 'FileText',
-      title: "Dokumentation",
-      items: [
-        "Docs: README CI Hinweis [test]"
-      ]
-    }
-  ]
-  },
-  {
-  version: "6.6.0",
-  date: "28.03.2026",
-  title: "Neue Features & Bugfixes 🛠️",
-  isMajor: false,
-  sections: [
-    {
-      iconName: 'Bug',
-      title: "Bugfixes",
-      items: [
-        "Fix: Nextcloud WebDAV über natives Android-Plugin statt fetch()",
-        "Fix: CapacitorHttp für Nextcloud-Upload, kein Google-Login ohne Verbindung",
-        "Fix: Backup-Erfolgsmeldung zeigt jetzt korrekten Status pro Ziel",
-        "Fix: Nextcloud Login Flow Lifecycle für Android",
-        "Fix: Nextcloud-Credentials werden jetzt robust gespeichert",
-        "Fix: Nextcloud Login — Browser schließt jetzt automatisch nach erfolgreicher Auth",
-        "Fix: fehlender motion-Import im OnboardingWizard — App crasht nicht mehr bei Erstinstallation",
-        "Fix: Nextcloud Login Flow läuft nativ auf Android",
-        "Fix: Nextcloud Login Flow nutzt natives HTTP auf Android",
-        "Fix: Android Network Security Config — erlaubt HTTP/HTTPS zu allen Domains",
-        "Fix: Nextcloud Login Flow v2 — bessere URL-Validierung & Fehlermeldungen",
-        "Fix: Google Token-Refresh bei jedem App-Öffnen",
-        "Fix: Google Drive Auth bleibt jetzt dauerhaft verbunden",
-        "Fix: Props-Mismatch behoben — autoBackup/setAutoBackup korrekt weitergeleitet",
-        "Fix: play-services-auth explizit als Dependency deklariert",
-        "Fix: catch-Block räumt partiellen State nach Fehler auf",
-        "Fix: triggerManualBackup liest Daten aus SQLite statt localStorage",
-        "Fix: 5 Bugs aus Migrationsanalyse behoben",
-        "Fix: JSON-Backup-Restore mit SQLite-Integration (WorkCodes, Attachments, Labels)",
-        "Fix: onboarding and data settings improvements",
-        "Fix: applyBackup korrekt awaiten nach async-Umstellung",
-        "Fix: Workflow-Syntax für Release-Version korrigieren",
-        "Fix: Version nur noch manuell erhöhen",
-        "Fix: Versionsquellen wieder konsistent machen",
-        "Fix: Versionsstand wieder auf 6.4.0 angleichen",
-        "Fix: Auto-Bump nur noch manuell auslösen",
-        "Fix: remove internal-only entries from user-facing changelog",
-        "Fix: add missing changelog entries (6.3.21–6.3.27) + group bugfix releases (#4)",
-        "Fix: enable edge-to-edge display for Android 15+ compatibility",
-        "Fix: Telegram-Notification klarer formuliert [skip ci]",
-        "Fix: minifyEnabled true + Proguard Keep-Rules für WebView/Capacitor",
-        "Fix: Update-Checker verlinkt auf Play Store statt GitHub APK",
-        "Fix: removeAllListeners() durch gezieltes Listener-Cleanup ersetzt",
-        "Fix: Backup-Fehler sichtbar machen mit Fail-Counter und Warnung",
-        "Fix: GDrive Token-Expiry-Check nach 50 Minuten"
-      ]
-    },
-    {
-      iconName: 'Zap',
-      title: "Verbesserungen",
-      items: [
-        "release metadata for v6.6.0 [skip ci]",
-        "release metadata for v6.6.0 [skip ci]",
-        "release metadata for v6.6.0 [skip ci]",
-        "Changelog für v6.5.0 aktualisiert — SQLite-Migration abgeschlossen",
-        "Onboarding-Debug-Logs entfernen (Konflikt gelöst)",
-        "release metadata for v6.4.0 [skip ci]",
-        "release metadata for v6.4.0 [skip ci]",
-        "Restdaten und Backup-Metadaten an SQLite anbinden",
-        "humanize changelog + improve commit guidelines (#3)",
-        "Einstellungen vereinfacht, add collapsible UI and improved demo warning",
-        "Single-Point-of-Truth Versionierung via Vite define",
-        "privacy datum + logo optimiert",
-        "Dead Code WorkModelModal.jsx entfernt (191 Zeilen, nirgends importiert)",
-        "icon.png und logo.png optimiert (4.4MB→88KB, 1.2MB→89KB)",
-        "CI Pipeline vereinfacht — nur noch Play Store Deploy"
-      ]
-    },
-    {
-      iconName: 'Sparkles',
-      title: "Neue Features",
-      items: [
-        "Neu: Nextcloud Login Flow v2 — Ein-Klick Verbindung",
-        "Neu: Changelog für v6.6.0 — Nextcloud Backup 🔒☁️",
-        "Neu: Nextcloud Backup-Unterstützung",
-        "Neu: localStorage komplett entfernt — nur noch SQLite für Android",
-        "Neu: SQLite als Hauptspeicher fertig verdrahtet",
-        "Neu: vollständige SQLite-Migration — Dual-Write entfernt, Backup/Import auf SQLite umgestellt",
-        "Neu: Versionssprung auf 6.4.0 und Changelog aufräumen",
-        "Neu: Anhänge und Label-Vorschläge in SQLite speichern",
-        "Neu: Einstellungen und Tätigkeitscodes auf SQLite vorbereiten",
-        "Neu: Zeiteinträge auf SQLite mit Fallback vorbereiten",
-        "Neu: Dokumente an Einträge anhängen und gemeinsam teilen",
-        "Neu: Changelog aufgeräumt + Accordion UI [skip ci]",
-        "Neu: Deploy-Verifizierung + Telegram-Notification in CI"
-      ]
-    },
-    {
-      iconName: 'FileText',
-      title: "Dokumentation",
-      items: [
-        "Docs: README CI Hinweis [test]"
-      ]
-    }
-  ]
-  },
-  {
-  version: "6.6.0",
-  date: "28.03.2026",
-  title: "Neue Features & Bugfixes 🛠️",
-  isMajor: false,
-  sections: [
-    {
-      iconName: 'Bug',
-      title: "Bugfixes",
-      items: [
-        "Fix: CapacitorHttp für Nextcloud-Upload, kein Google-Login ohne Verbindung",
-        "Fix: Backup-Erfolgsmeldung zeigt jetzt korrekten Status pro Ziel",
-        "Fix: Nextcloud Login Flow Lifecycle für Android",
-        "Fix: Nextcloud-Credentials werden jetzt robust gespeichert",
-        "Fix: Nextcloud Login — Browser schließt jetzt automatisch nach erfolgreicher Auth",
-        "Fix: fehlender motion-Import im OnboardingWizard — App crasht nicht mehr bei Erstinstallation",
-        "Fix: Nextcloud Login Flow läuft nativ auf Android",
-        "Fix: Nextcloud Login Flow nutzt natives HTTP auf Android",
-        "Fix: Android Network Security Config — erlaubt HTTP/HTTPS zu allen Domains",
-        "Fix: Nextcloud Login Flow v2 — bessere URL-Validierung & Fehlermeldungen",
-        "Fix: Google Token-Refresh bei jedem App-Öffnen",
-        "Fix: Google Drive Auth bleibt jetzt dauerhaft verbunden",
-        "Fix: Props-Mismatch behoben — autoBackup/setAutoBackup korrekt weitergeleitet",
-        "Fix: play-services-auth explizit als Dependency deklariert",
-        "Fix: catch-Block räumt partiellen State nach Fehler auf",
-        "Fix: triggerManualBackup liest Daten aus SQLite statt localStorage",
-        "Fix: 5 Bugs aus Migrationsanalyse behoben",
-        "Fix: JSON-Backup-Restore mit SQLite-Integration (WorkCodes, Attachments, Labels)",
-        "Fix: onboarding and data settings improvements",
-        "Fix: applyBackup korrekt awaiten nach async-Umstellung",
-        "Fix: Workflow-Syntax für Release-Version korrigieren",
-        "Fix: Version nur noch manuell erhöhen",
-        "Fix: Versionsquellen wieder konsistent machen",
-        "Fix: Versionsstand wieder auf 6.4.0 angleichen",
-        "Fix: Auto-Bump nur noch manuell auslösen",
-        "Fix: remove internal-only entries from user-facing changelog",
-        "Fix: add missing changelog entries (6.3.21–6.3.27) + group bugfix releases (#4)",
-        "Fix: enable edge-to-edge display for Android 15+ compatibility",
-        "Fix: Telegram-Notification klarer formuliert [skip ci]",
-        "Fix: minifyEnabled true + Proguard Keep-Rules für WebView/Capacitor",
-        "Fix: Update-Checker verlinkt auf Play Store statt GitHub APK",
-        "Fix: removeAllListeners() durch gezieltes Listener-Cleanup ersetzt",
-        "Fix: Backup-Fehler sichtbar machen mit Fail-Counter und Warnung",
-        "Fix: GDrive Token-Expiry-Check nach 50 Minuten"
-      ]
-    },
-    {
-      iconName: 'Zap',
-      title: "Verbesserungen",
-      items: [
-        "release metadata for v6.6.0 [skip ci]",
-        "release metadata for v6.6.0 [skip ci]",
-        "Changelog für v6.5.0 aktualisiert — SQLite-Migration abgeschlossen",
-        "Onboarding-Debug-Logs entfernen (Konflikt gelöst)",
-        "release metadata for v6.4.0 [skip ci]",
-        "release metadata for v6.4.0 [skip ci]",
-        "Restdaten und Backup-Metadaten an SQLite anbinden",
-        "humanize changelog + improve commit guidelines (#3)",
-        "Einstellungen vereinfacht, add collapsible UI and improved demo warning",
-        "Single-Point-of-Truth Versionierung via Vite define",
-        "privacy datum + logo optimiert",
-        "Dead Code WorkModelModal.jsx entfernt (191 Zeilen, nirgends importiert)",
-        "icon.png und logo.png optimiert (4.4MB→88KB, 1.2MB→89KB)",
-        "CI Pipeline vereinfacht — nur noch Play Store Deploy"
-      ]
-    },
-    {
-      iconName: 'Sparkles',
-      title: "Neue Features",
-      items: [
-        "Neu: Nextcloud Login Flow v2 — Ein-Klick Verbindung",
-        "Neu: Changelog für v6.6.0 — Nextcloud Backup 🔒☁️",
-        "Neu: Nextcloud Backup-Unterstützung",
-        "Neu: localStorage komplett entfernt — nur noch SQLite für Android",
-        "Neu: SQLite als Hauptspeicher fertig verdrahtet",
-        "Neu: vollständige SQLite-Migration — Dual-Write entfernt, Backup/Import auf SQLite umgestellt",
-        "Neu: Versionssprung auf 6.4.0 und Changelog aufräumen",
-        "Neu: Anhänge und Label-Vorschläge in SQLite speichern",
-        "Neu: Einstellungen und Tätigkeitscodes auf SQLite vorbereiten",
-        "Neu: Zeiteinträge auf SQLite mit Fallback vorbereiten",
-        "Neu: Dokumente an Einträge anhängen und gemeinsam teilen",
-        "Neu: Changelog aufgeräumt + Accordion UI [skip ci]",
-        "Neu: Deploy-Verifizierung + Telegram-Notification in CI"
-      ]
-    },
-    {
-      iconName: 'FileText',
-      title: "Dokumentation",
-      items: [
-        "Docs: README CI Hinweis [test]"
-      ]
-    }
-  ]
-  },
-  {
-  version: "6.6.0",
-  date: "28.03.2026",
-  title: "Neue Features & Bugfixes 🛠️",
-  isMajor: false,
-  sections: [
-    {
-      iconName: 'Bug',
-      title: "Bugfixes",
-      items: [
-        "Fix: Backup-Erfolgsmeldung zeigt jetzt korrekten Status pro Ziel",
-        "Fix: Nextcloud Login Flow Lifecycle für Android",
-        "Fix: Nextcloud-Credentials werden jetzt robust gespeichert",
-        "Fix: Nextcloud Login — Browser schließt jetzt automatisch nach erfolgreicher Auth",
-        "Fix: fehlender motion-Import im OnboardingWizard — App crasht nicht mehr bei Erstinstallation",
-        "Fix: Nextcloud Login Flow läuft nativ auf Android",
-        "Fix: Nextcloud Login Flow nutzt natives HTTP auf Android",
-        "Fix: Android Network Security Config — erlaubt HTTP/HTTPS zu allen Domains",
-        "Fix: Nextcloud Login Flow v2 — bessere URL-Validierung & Fehlermeldungen",
-        "Fix: Google Token-Refresh bei jedem App-Öffnen",
-        "Fix: Google Drive Auth bleibt jetzt dauerhaft verbunden",
-        "Fix: Props-Mismatch behoben — autoBackup/setAutoBackup korrekt weitergeleitet",
-        "Fix: play-services-auth explizit als Dependency deklariert",
-        "Fix: catch-Block räumt partiellen State nach Fehler auf",
-        "Fix: triggerManualBackup liest Daten aus SQLite statt localStorage",
-        "Fix: 5 Bugs aus Migrationsanalyse behoben",
-        "Fix: JSON-Backup-Restore mit SQLite-Integration (WorkCodes, Attachments, Labels)",
-        "Fix: onboarding and data settings improvements",
-        "Fix: applyBackup korrekt awaiten nach async-Umstellung",
-        "Fix: Workflow-Syntax für Release-Version korrigieren",
-        "Fix: Version nur noch manuell erhöhen",
-        "Fix: Versionsquellen wieder konsistent machen",
-        "Fix: Versionsstand wieder auf 6.4.0 angleichen",
-        "Fix: Auto-Bump nur noch manuell auslösen",
-        "Fix: remove internal-only entries from user-facing changelog",
-        "Fix: add missing changelog entries (6.3.21–6.3.27) + group bugfix releases (#4)",
-        "Fix: enable edge-to-edge display for Android 15+ compatibility",
-        "Fix: Telegram-Notification klarer formuliert [skip ci]",
-        "Fix: minifyEnabled true + Proguard Keep-Rules für WebView/Capacitor",
-        "Fix: Update-Checker verlinkt auf Play Store statt GitHub APK",
-        "Fix: removeAllListeners() durch gezieltes Listener-Cleanup ersetzt",
-        "Fix: Backup-Fehler sichtbar machen mit Fail-Counter und Warnung",
-        "Fix: GDrive Token-Expiry-Check nach 50 Minuten"
-      ]
-    },
-    {
-      iconName: 'Zap',
-      title: "Verbesserungen",
-      items: [
-        "release metadata for v6.6.0 [skip ci]",
-        "Changelog für v6.5.0 aktualisiert — SQLite-Migration abgeschlossen",
-        "Onboarding-Debug-Logs entfernen (Konflikt gelöst)",
-        "release metadata for v6.4.0 [skip ci]",
-        "release metadata for v6.4.0 [skip ci]",
-        "Restdaten und Backup-Metadaten an SQLite anbinden",
-        "humanize changelog + improve commit guidelines (#3)",
-        "Einstellungen vereinfacht, add collapsible UI and improved demo warning",
-        "Single-Point-of-Truth Versionierung via Vite define",
-        "privacy datum + logo optimiert",
-        "Dead Code WorkModelModal.jsx entfernt (191 Zeilen, nirgends importiert)",
-        "icon.png und logo.png optimiert (4.4MB→88KB, 1.2MB→89KB)",
-        "CI Pipeline vereinfacht — nur noch Play Store Deploy"
-      ]
-    },
-    {
-      iconName: 'Sparkles',
-      title: "Neue Features",
-      items: [
-        "Neu: Nextcloud Login Flow v2 — Ein-Klick Verbindung",
-        "Neu: Changelog für v6.6.0 — Nextcloud Backup 🔒☁️",
-        "Neu: Nextcloud Backup-Unterstützung",
-        "Neu: localStorage komplett entfernt — nur noch SQLite für Android",
-        "Neu: SQLite als Hauptspeicher fertig verdrahtet",
-        "Neu: vollständige SQLite-Migration — Dual-Write entfernt, Backup/Import auf SQLite umgestellt",
-        "Neu: Versionssprung auf 6.4.0 und Changelog aufräumen",
-        "Neu: Anhänge und Label-Vorschläge in SQLite speichern",
-        "Neu: Einstellungen und Tätigkeitscodes auf SQLite vorbereiten",
-        "Neu: Zeiteinträge auf SQLite mit Fallback vorbereiten",
-        "Neu: Dokumente an Einträge anhängen und gemeinsam teilen",
-        "Neu: Changelog aufgeräumt + Accordion UI [skip ci]",
-        "Neu: Deploy-Verifizierung + Telegram-Notification in CI"
-      ]
-    },
-    {
-      iconName: 'FileText',
-      title: "Dokumentation",
-      items: [
-        "Docs: README CI Hinweis [test]"
-      ]
-    }
-  ]
-  },
-  {
-  version: "6.6.0",
-  date: "27.03.2026",
-  title: "Neue Features & Bugfixes 🛠️",
-  isMajor: false,
-  sections: [
-    {
-      iconName: 'Bug',
-      title: "Bugfixes",
-      items: [
-        "Fix: Nextcloud Login Flow Lifecycle für Android",
-        "Fix: Nextcloud-Credentials werden jetzt robust gespeichert",
-        "Fix: Nextcloud Login — Browser schließt jetzt automatisch nach erfolgreicher Auth",
-        "Fix: fehlender motion-Import im OnboardingWizard — App crasht nicht mehr bei Erstinstallation",
-        "Fix: Nextcloud Login Flow läuft nativ auf Android",
-        "Fix: Nextcloud Login Flow nutzt natives HTTP auf Android",
-        "Fix: Android Network Security Config — erlaubt HTTP/HTTPS zu allen Domains",
-        "Fix: Nextcloud Login Flow v2 — bessere URL-Validierung & Fehlermeldungen",
-        "Fix: Google Token-Refresh bei jedem App-Öffnen",
-        "Fix: Google Drive Auth bleibt jetzt dauerhaft verbunden",
-        "Fix: Props-Mismatch behoben — autoBackup/setAutoBackup korrekt weitergeleitet",
-        "Fix: play-services-auth explizit als Dependency deklariert",
-        "Fix: catch-Block räumt partiellen State nach Fehler auf",
-        "Fix: triggerManualBackup liest Daten aus SQLite statt localStorage",
-        "Fix: 5 Bugs aus Migrationsanalyse behoben",
-        "Fix: JSON-Backup-Restore mit SQLite-Integration (WorkCodes, Attachments, Labels)",
-        "Fix: onboarding and data settings improvements",
-        "Fix: applyBackup korrekt awaiten nach async-Umstellung",
-        "Fix: Workflow-Syntax für Release-Version korrigieren",
-        "Fix: Version nur noch manuell erhöhen",
-        "Fix: Versionsquellen wieder konsistent machen",
-        "Fix: Versionsstand wieder auf 6.4.0 angleichen",
-        "Fix: Auto-Bump nur noch manuell auslösen",
-        "Fix: remove internal-only entries from user-facing changelog",
-        "Fix: add missing changelog entries (6.3.21–6.3.27) + group bugfix releases (#4)",
-        "Fix: enable edge-to-edge display for Android 15+ compatibility",
-        "Fix: Telegram-Notification klarer formuliert [skip ci]",
-        "Fix: minifyEnabled true + Proguard Keep-Rules für WebView/Capacitor",
-        "Fix: Update-Checker verlinkt auf Play Store statt GitHub APK",
-        "Fix: removeAllListeners() durch gezieltes Listener-Cleanup ersetzt",
-        "Fix: Backup-Fehler sichtbar machen mit Fail-Counter und Warnung",
-        "Fix: GDrive Token-Expiry-Check nach 50 Minuten"
-      ]
-    },
-    {
-      iconName: 'Sparkles',
-      title: "Neue Features",
-      items: [
-        "Neu: Nextcloud Login Flow v2 — Ein-Klick Verbindung",
-        "Neu: Changelog für v6.6.0 — Nextcloud Backup 🔒☁️",
-        "Neu: Nextcloud Backup-Unterstützung",
-        "Neu: localStorage komplett entfernt — nur noch SQLite für Android",
-        "Neu: SQLite als Hauptspeicher fertig verdrahtet",
-        "Neu: vollständige SQLite-Migration — Dual-Write entfernt, Backup/Import auf SQLite umgestellt",
-        "Neu: Versionssprung auf 6.4.0 und Changelog aufräumen",
-        "Neu: Anhänge und Label-Vorschläge in SQLite speichern",
-        "Neu: Einstellungen und Tätigkeitscodes auf SQLite vorbereiten",
-        "Neu: Zeiteinträge auf SQLite mit Fallback vorbereiten",
-        "Neu: Dokumente an Einträge anhängen und gemeinsam teilen",
-        "Neu: Changelog aufgeräumt + Accordion UI [skip ci]",
-        "Neu: Deploy-Verifizierung + Telegram-Notification in CI"
-      ]
-    },
-    {
-      iconName: 'Zap',
-      title: "Verbesserungen",
-      items: [
-        "Changelog für v6.5.0 aktualisiert — SQLite-Migration abgeschlossen",
-        "Onboarding-Debug-Logs entfernen (Konflikt gelöst)",
-        "release metadata for v6.4.0 [skip ci]",
-        "release metadata for v6.4.0 [skip ci]",
-        "Restdaten und Backup-Metadaten an SQLite anbinden",
-        "humanize changelog + improve commit guidelines (#3)",
-        "Einstellungen vereinfacht, add collapsible UI and improved demo warning",
-        "Single-Point-of-Truth Versionierung via Vite define",
-        "privacy datum + logo optimiert",
-        "Dead Code WorkModelModal.jsx entfernt (191 Zeilen, nirgends importiert)",
-        "icon.png und logo.png optimiert (4.4MB→88KB, 1.2MB→89KB)",
-        "CI Pipeline vereinfacht — nur noch Play Store Deploy"
-      ]
-    },
-    {
-      iconName: 'FileText',
-      title: "Dokumentation",
-      items: [
-        "Docs: README CI Hinweis [test]"
-      ]
-    }
-  ]
-  },
-  {
-    version: "6.6.0",
-    date: "27.03.2026",
-    title: "Noch mehr Privacy — Nextcloud Backup 🔒☁️",
+    version: "7.0.0",
+    date: "28.03.2026",
+    title: "Nextcloud Privacy Update 🔒☁️",
     isMajor: true,
     sections: [
       {
         iconName: 'Cloud',
-        title: "Nextcloud Backup",
+        title: "Nextcloud-Integration",
         items: [
-          "Deine Daten auf deinem eigenen Server — Nextcloud als Backup-Ziel",
-          "Einfache Einrichtung: Server-URL, Benutzer und App-Passwort eingeben",
-          "Verbindungstest direkt in der App — sofort sehen ob alles passt",
-          "Auto-Backup funktioniert genauso wie mit Google Drive"
+          "Nextcloud als Backup-Ziel — deine Daten auf deinem eigenen Server",
+          "Direkt im Einrichtungs-Wizard: Nextcloud sofort einrichten",
+          "Login Flow v2 — sicher und ohne Passwort-Eingabe in der App",
+          "Auch beim Wiederherstellen: Backup direkt aus Nextcloud laden"
         ]
       },
-      {
-        iconName: 'Lock',
-        title: "Privacy & Kontrolle",
-        items: [
-          "Kein Google-Konto nötig — volle Kontrolle über deine Daten",
-          "App-Passwort statt OAuth — läuft nie ab, kein Token-Stress",
-          "Auch beim Onboarding: Backup direkt aus Nextcloud wiederherstellen"
-        ]
-      },
-      {
-        iconName: 'RefreshCw',
-        title: "Google Drive verbessert",
-        items: [
-          "Token wird automatisch erneuert wenn du die App öffnest",
-          "Kein manuelles Neu-Verbinden mehr nötig",
-          "Doppelte Absicherung: Auto-Retry bei abgelaufenem Token"
-        ]
-      }
-    ]
-  },
-  {
-    version: "6.5.0",
-    date: "27.03.2026",
-    title: "SQLite-Migration abgeschlossen — stabiler Neustart 🚀",
-    isMajor: true,
-    sections: [
       {
         iconName: 'Database',
-        title: "Neue Datenbank-Architektur",
+        title: "SQLite-Speicher",
         items: [
-          "SQLite als Hauptspeicher für Android — stabiler, schneller und zuverlässiger",
-          "localStorage komplett entfernt — alle Kerndaten laufen jetzt über SQLite",
-          "Backup-Import migriert alte JSON-Daten direkt in SQLite"
+          "Alle Daten werden jetzt lokal in SQLite gespeichert",
+          "Schneller, stabiler und zuverlässiger als localStorage",
+          "Backup & Import nutzen SQLite als Source of Truth"
         ]
       },
       {
-        iconName: 'Users',
-        title: "Onboarding & Restore",
+        iconName: 'Zap',
+        title: "Verbesserungen",
         items: [
-          "Onboarding-Wizard: 'App starten' funktioniert jetzt zuverlässig",
-          "JSON-Restore: Alte Backups werden sauber in SQLite übernommen",
-          "Demo-Daten laden schreibt direkt in SQLite für sofortige UI-Aktualisierung"
-        ]
-      },
-      {
-        iconName: 'Cloud',
-        title: "Cloud Sync & Backup",
-        items: [
-          "Google Drive Login nach App-Upgrade funktioniert zuverlässig",
-          "Token-Ablauf wird besser erkannt und automatisch erneuert",
-          "Manuelle Backups lesen direkt aus SQLite (korrekter Source of Truth)"
+          "Einstellungen vereinfacht und übersichtlicher",
+          "App-Icons optimiert — weniger Speicher, schnellerer Start",
+          "Google Drive Token wird automatisch erneuert"
         ]
       },
       {
         iconName: 'Bug',
-        title: "Kritische Bugfixes",
+        title: "Bugfixes",
         items: [
-          "Race Condition im Onboarding behoben — Daten werden vor UI-Wechsel gespeichert",
-          "Infinite Loop bei leerem Usernamen gefixt",
-          "Props-Mismatch in Einstellungen (autoBackup/setAutoBackup) korrigiert"
-        ]
-      }
-    ]
-  },
-  {
-    version: "6.4.8-beta",
-    date: "27.03.2026",
-    title: "Beta: Cloud Sync & Backup stabilisiert ☁️",
-    isMajor: false,
-    sections: [
-      {
-        iconName: 'Cloud',
-        title: "Cloud Sync",
-        items: [
-          "Google Drive Login nach App-Upgrade funktioniert jetzt zuverlässig",
-          "Token-Ablauf wird besser erkannt und automatisch erneuert",
-          "Backup-Fehler werden sauber aufgeräumt — keine halben Zustände mehr"
-        ]
-      },
-      {
-        iconName: 'Shield',
-        title: "Datensicherheit",
-        items: [
-          "Manuelle Backups lesen jetzt direkt aus der SQLite-Datenbank (korrekter Source of Truth)",
-          "Backup-Aktivierung bei Fehlern robuster gemacht"
-        ]
-      },
-      {
-        iconName: 'Smartphone',
-        title: "Android",
-        items: [
-          "Google Play Services Auth als explizite Dependency hinzugefügt — stabilere Login-Flows"
-        ]
-      }
-    ]
-  },
-  {
-    version: "6.4.7-beta",
-    date: "27.03.2026",
-    title: "Beta: Onboarding & SQLite-Finalisierung 🚀",
-    isMajor: false,
-    sections: [
-      {
-        iconName: 'Database',
-        title: "SQLite-Migration abgeschlossen",
-        items: [
-          "localStorage komplett entfernt — alle Kerndaten laufen jetzt über SQLite",
-          "Backup-Import migriert alte JSON-Daten direkt in SQLite",
-          "Anhänge, Label-Vorschläge und Work-Codes sind jetzt vollständig in SQLite integriert"
-        ]
-      },
-      {
-        iconName: 'Users',
-        title: "Onboarding & Restore",
-        items: [
-          "Onboarding-Wizard: Props korrigiert — 'App starten' funktioniert jetzt",
-          "JSON-Restore: Alte Backups werden sauber in SQLite übernommen",
-          "Demo-Daten laden schreibt direkt in SQLite für sofortige UI-Aktualisierung"
-        ]
-      },
-      {
-        iconName: 'Bug',
-        title: "Kritische Bugfixes",
-        items: [
-          "Race Condition im Onboarding behoben — Daten werden vor UI-Wechsel gespeichert",
-          "Infinite Loop bei leerem Usernamen gefixt",
-          "Props-Mismatch in Einstellungen (autoBackup/setAutoBackup) korrigiert"
+          "App startet jetzt zuverlässig nach Einrichtung",
+          "Backup-Status zeigt korrekten Stand pro Ziel",
+          "Google Drive bleibt dauerhaft verbunden",
+          "JSON-Restore funktioniert mit SQLite-Integration"
         ]
       }
     ]
@@ -734,7 +58,6 @@ export const CHANGELOG_DATA = [
         title: "Neue Datenbank-Architektur",
         items: [
           "SQLite als Hauptspeicher für Android — stabiler und schneller",
-          "Dual-Write entfernt: Keine Spiegelung mehr zwischen localStorage und SQLite",
           "Backup & Import nutzen jetzt SQLite als Source of Truth"
         ]
       },
@@ -743,8 +66,7 @@ export const CHANGELOG_DATA = [
         title: "Dokumente & Anhänge",
         items: [
           "Dokumente direkt an Einträge anhängen (PDF, Bilder)",
-          "PDF-Berichte zusammen mit allen Anhängen teilen",
-          "Label-Vorschläge werden zuverlässig gespeichert und vorgeschlagen"
+          "PDF-Berichte zusammen mit allen Anhängen teilen"
         ]
       },
       {
@@ -752,7 +74,6 @@ export const CHANGELOG_DATA = [
         title: "Sicherheit & Stabilität",
         items: [
           "Backup-Fehler werden sichtbar gemacht mit Warnzähler",
-          "Google Drive Token-Expiry-Check nach 50 Minuten",
           "Edge-to-Edge Display für Android 15+ Kompatibilität"
         ]
       },
@@ -760,44 +81,8 @@ export const CHANGELOG_DATA = [
         iconName: 'Rocket',
         title: "Performance",
         items: [
-          "App-Icons optimiert (MB → ~90KB) — weniger Speicher, schnellerer Start",
-          "Proguard aktiviert — kleinere APK-Größe",
-          "Toter Code entfernt (WorkModelModal.jsx — 191 Zeilen)"
-        ]
-      }
-    ]
-  },
-  {
-    version: "6.3.40",
-    date: "25.03.2026",
-    title: "Kürzliche Bugfixes & Verbesserungen 🔧",
-    isMajor: false,
-    sections: [
-      {
-        iconName: 'Bug',
-        title: "Bugfixes",
-        items: [
-          "Einstellungen stürzen nicht mehr ab beim Öffnen",
-          "Changelog-UI: Accordion funktioniert, scrollt und schließt korrekt",
-          "Update-Checker verlinkt auf Play Store statt GitHub APK",
-          "Backup-Fehler werden mit Counter und Warnung angezeigt"
-        ]
-      },
-      {
-        iconName: 'Sparkles',
-        title: "Verbesserungen",
-        items: [
-          "Einstellungen übersichtlicher mit kollabierbaren Bereichen",
-          "Demo-Daten laden mit Bestätigungsdialog und Warnung",
-          "Changelog für Endnutzer lesbar gemacht — interne Einträge entfernt"
-        ]
-      },
-      {
-        iconName: 'Palette',
-        title: "Design",
-        items: [
-          "Logo und Icons für Play Store optimiert",
-          "Datumsformat DSGVO-konform angepasst"
+          "App-Icons optimiert (MB → ~90KB) — weniger Speicher",
+          "Proguard aktiviert — kleinere APK-Größe"
         ]
       }
     ]
@@ -856,31 +141,6 @@ export const CHANGELOG_DATA = [
         items: [
           "Tätigkeitscodes werden bei Export/Import mitgesichert",
           "Preset laden mit Bestätigungsdialog"
-        ]
-      }
-    ]
-  },
-  {
-    version: "6.2.2",
-    date: "22.01.2026",
-    title: "Backup-Stabilität & Dateizugriff 🛡️",
-    isMajor: false,
-    sections: [
-      {
-        iconName: 'Shield',
-        title: "Backup-System",
-        items: [
-          "Auto-Backup funktioniert zuverlässig auf allen Android-Versionen",
-          "Keine 'Permission Denied' Fehler mehr nach Neuinstallation",
-          "Eindeutige Dateinamen mit Zeitstempel verhindern Überschreib-Konflikte"
-        ]
-      },
-      {
-        iconName: 'FileText',
-        title: "PDF & Export",
-        items: [
-          "Robuster PDF-Export mit Zeitstempel im Dateinamen",
-          "Verbesserter Zugriff auf das Dateisystem"
         ]
       }
     ]

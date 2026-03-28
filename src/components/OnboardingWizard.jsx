@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { User, Briefcase, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, RefreshCw, Building2, FlaskConical } from "lucide-react";
+import { User, Briefcase, ShieldCheck, Camera, ChevronRight, Check, Upload, Play, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, RefreshCw, Building2, FlaskConical, ServerCog, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
@@ -34,6 +34,14 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
   const [ncRestoreConnecting, setNcRestoreConnecting] = useState(false);
   const ncRestorePollRef = useRef(null);
 
+  // Nextcloud Setup State (for new setup flow)
+  const [ncSetupActive, setNcSetupActive] = useState(false);
+  const [ncSetupUrl, setNcSetupUrl] = useState("");
+  const [ncSetupConnecting, setNcSetupConnecting] = useState(false);
+  const [ncSetupConnected, setNcSetupConnected] = useState(false);
+  const [ncCredentials, setNcCredentials] = useState(null);
+  const ncSetupPollRef = useRef(null);
+
   const fileInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
@@ -41,6 +49,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     initGoogleAuth().catch(() => console.log("Google Auth Init failed silently/already initialized"));
     return () => {
       if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
+      if (ncSetupPollRef.current) clearInterval(ncSetupPollRef.current);
     };
   }, []);
 
@@ -157,6 +166,81 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     }
   };
 
+  const handleNextcloudSetupToggle = () => {
+    if (ncSetupConnected) {
+      // Disconnect
+      setNcSetupConnected(false);
+      setNcCredentials(null);
+      setNcSetupActive(false);
+      setNcSetupUrl("");
+      toast("Nextcloud getrennt");
+      return;
+    }
+    setNcSetupActive(!ncSetupActive);
+  };
+
+  const handleNextcloudSetup = async () => {
+    if (!ncSetupUrl) {
+      toast.error("Bitte Server-URL eingeben");
+      return;
+    }
+    try {
+      setNcSetupConnecting(true);
+      const startResult = await initiateLoginFlow(ncSetupUrl);
+      if (!startResult.ok) {
+        throw new Error(getNextcloudErrorMessage(startResult));
+      }
+
+      const { loginUrl, token, pollEndpoint } = startResult;
+      await Browser.open({ url: loginUrl });
+
+      let attempts = 0;
+      ncSetupPollRef.current = setInterval(async () => {
+        attempts++;
+        if (attempts > 100) {
+          clearInterval(ncSetupPollRef.current);
+          ncSetupPollRef.current = null;
+          setNcSetupConnecting(false);
+          toast.error("Zeitüberschreitung — bitte erneut versuchen");
+          return;
+        }
+        try {
+          const result = await pollLoginResult(pollEndpoint, token);
+          if (!result.ok) {
+            throw new Error(getNextcloudErrorMessage(result));
+          }
+
+          if (result.status === 'pending') return;
+
+          if (result.status === 'complete') {
+            clearInterval(ncSetupPollRef.current);
+            ncSetupPollRef.current = null;
+            try { await Browser.close(); } catch {}
+            
+            const userId = await resolveUserId(result.server, result.loginName, result.appPassword);
+            setNcCredentials({
+              server: result.server.replace(/\/+$/, ''),
+              userId,
+              loginName: result.loginName,
+              appPassword: result.appPassword,
+            });
+            setNcSetupConnected(true);
+            setNcSetupConnecting(false);
+            toast.success("Nextcloud verbunden!");
+          }
+        } catch (error) {
+          clearInterval(ncSetupPollRef.current);
+          ncSetupPollRef.current = null;
+          setNcSetupConnecting(false);
+          toast.error(error?.message || "Nextcloud Login fehlgeschlagen");
+        }
+      }, 3000);
+    } catch (error) {
+      setNcSetupConnecting(false);
+      toast.error(error?.message || "Server nicht erreichbar");
+    }
+  };
+
   const handleMinuteInputToggle = () => {
     setFormData(p => ({...p, minuteInput: !p.minuteInput}));
   };
@@ -186,6 +270,24 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
       // Fortfahren, useSettings wird es in localStorage schreiben
     }
     
+    // Nextcloud Credentials speichern
+    if (ncCredentials) {
+      try {
+        const { setSetting: setNcSetting } = await import("../db/repositories/settingsRepo");
+        await setNcSetting("nextcloudUrl", ncCredentials.server);
+        await setNcSetting("nextcloudUser", ncCredentials.userId);
+        await setNcSetting("nextcloudPass", ncCredentials.appPassword);
+        await setNcSetting("nextcloudActive", true);
+        // Auch in localStorage für sofortige Verfügbarkeit
+        localStorage.setItem("nextcloud_url", ncCredentials.server);
+        localStorage.setItem("nextcloud_user", ncCredentials.userId);
+        localStorage.setItem("nextcloud_pass", ncCredentials.appPassword);
+        localStorage.setItem("nextcloud_enabled", "true");
+      } catch (err) {
+        console.error("Nextcloud settings save failed:", err);
+      }
+    }
+
     // Jetzt State updaten (useSettings wird auch in localStorage schreiben)
     setUserData?.(userDataToSave);
     setCloudSyncEnabled?.(formData.autoBackup);
@@ -675,6 +777,85 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
                             {formData.localBackupEnabled && <Check size={14} strokeWidth={3} />}
                           </div>
                       </div>
+
+                      {/* 3. NEXTCLOUD BACKUP */}
+                      <div 
+                        onClick={!ncSetupConnecting ? handleNextcloudSetupToggle : undefined}
+                        className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
+                          ncSetupConnected 
+                              ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-sm" 
+                              : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800"
+                        }`}
+                      >
+                          <div className="flex items-center gap-3">
+                             <div className={`p-2 rounded-lg ${ncSetupConnected ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-600' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400'}`}>
+                                  <ServerCog size={20}/>
+                             </div>
+                             <div className="text-left">
+                                <div className="font-bold text-zinc-800 dark:text-white">Nextcloud Backup</div>
+                                <div className="text-xs text-zinc-500">
+                                  {ncSetupConnected 
+                                    ? <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                                        <CheckCircle2 size={12} /> Verbunden als {ncCredentials?.loginName || ncCredentials?.userId}
+                                      </span>
+                                    : "Automatische Sicherung auf deiner Cloud"}
+                                </div>
+                             </div>
+                          </div>
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            ncSetupConnected ? "border-orange-500 bg-orange-500 text-white" : "border-zinc-300 dark:border-zinc-500"
+                          }`}>
+                            {ncSetupConnected && <Check size={14} strokeWidth={3} />}
+                          </div>
+                      </div>
+
+                      {/* Nextcloud Setup Expanded */}
+                      {ncSetupActive && !ncSetupConnected && (
+                        <div className="p-3 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10 space-y-2">
+                          {ncSetupConnecting ? (
+                            <div className="flex flex-col items-center gap-2 py-3">
+                              <Loader size={20} className="animate-spin text-orange-500" />
+                              <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                                Warte auf Anmeldung in Nextcloud...
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (ncSetupPollRef.current) {
+                                    clearInterval(ncSetupPollRef.current);
+                                    ncSetupPollRef.current = null;
+                                  }
+                                  setNcSetupConnecting(false);
+                                }}
+                                className="mt-1 px-3 py-1 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700"
+                              >
+                                Abbrechen
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <input
+                                type="url"
+                                value={ncSetupUrl}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => setNcSetupUrl(e.target.value)}
+                                placeholder="https://cloud.example.com"
+                                className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                              />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNextcloudSetup();
+                                }}
+                                className="w-full py-2 text-sm font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-1.5"
+                              >
+                                <ServerCog size={14} />
+                                Mit Nextcloud verbinden
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                    </>
                  )}
 

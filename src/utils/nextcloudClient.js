@@ -201,11 +201,7 @@ function authHeaders(user, pass) {
 
 /** WebDAV-Basispfad für Dateien */
 function davPath(url, user) {
-  // Zwei mögliche Pfade testen:
-  // 1. /remote.php/dav/files/{uid}/  ← persönlicher Bereich
-  // 2. /remote.php/webdav/            ← WebDAV-Root
-  // Wir testen erstmal mit webdav, weil MKCOL auf files/{uid}/ nicht klappt
-  return `${normalizeUrl(url)}/remote.php/webdav`;
+  return `${normalizeUrl(url)}/remote.php/dav/files/${encodeURIComponent(user)}`;
 }
 
 /**

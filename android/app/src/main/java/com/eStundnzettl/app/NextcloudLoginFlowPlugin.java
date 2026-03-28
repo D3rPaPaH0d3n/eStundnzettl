@@ -122,13 +122,24 @@ public class NextcloudLoginFlowPlugin extends Plugin {
                     conn.setRequestProperty("Authorization", "Basic " + encoded);
                 }
 
+                final String upperMethod = method.toUpperCase();
+
                 if (reqContentType != null) {
                     conn.setRequestProperty("Content-Type", reqContentType);
                 }
 
+                conn.setRequestProperty("Accept", "*/*");
+                conn.setRequestProperty("User-Agent", "eStundnzettl/Android");
+
                 // WebDAV PROPFIND requires Depth header
-                if ("PROPFIND".equals(method.toUpperCase())) {
+                if ("PROPFIND".equals(upperMethod)) {
                     conn.setRequestProperty("Depth", "0");
+                }
+
+                // MKCOL must be sent without request body, explicitly zero length
+                if ("MKCOL".equals(upperMethod)) {
+                    conn.setDoOutput(false);
+                    conn.setRequestProperty("Content-Length", "0");
                 }
 
                 // OCS API requires this header
@@ -136,8 +147,12 @@ public class NextcloudLoginFlowPlugin extends Plugin {
                     conn.setRequestProperty("OCS-APIRequest", "true");
                 }
 
-                // Write body for PUT, POST, PROPPATCH
-                if (body != null && !method.equalsIgnoreCase("GET") && !method.equalsIgnoreCase("HEAD")) {
+                // Write body only for methods that actually carry one
+                if (body != null
+                        && !upperMethod.equals("GET")
+                        && !upperMethod.equals("HEAD")
+                        && !upperMethod.equals("MKCOL")
+                        && !upperMethod.equals("PROPFIND")) {
                     conn.setDoOutput(true);
                     byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
                     conn.setFixedLengthStreamingMode(bytes.length);

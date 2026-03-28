@@ -8,7 +8,7 @@ android {
         applicationId "com.estundnzettl.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 150          // Debug: Zeige vollständige WebDAV-URL bei Fehler
+        versionCode 151          // Debug: Zeige vollständige WebDAV-URL bei Fehler
         versionName "6.6.0"    // Stable Release
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

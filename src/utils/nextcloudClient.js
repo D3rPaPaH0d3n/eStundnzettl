@@ -1,6 +1,5 @@
 import { Capacitor } from '@capacitor/core';
 import { NextcloudLoginFlow } from '../plugins/NextcloudLoginFlowPlugin';
-import { ncLog } from './ncDebugLog';
 
 /**
  * nextcloudClient.js — WebDAV-Client für Nextcloud Backup
@@ -213,21 +212,16 @@ function davPath(url, user) {
 export async function resolveUserId(serverUrl, loginName, appPassword) {
   try {
     const url = `${normalizeUrl(serverUrl)}/ocs/v1.php/cloud/user?format=json`;
-    ncLog(`resolveUserId: GET ${url} (loginName: ${loginName})`);
     const res = await nativeHttp(url, "GET", loginName, appPassword);
-    ncLog(`resolveUserId: status=${res.status} body=${(res.body || "").substring(0, 300)}`);
     if (res.status === 200 && res.body) {
       const data = typeof res.body === "string" ? JSON.parse(res.body) : res.body;
       const uid = data?.ocs?.data?.id;
       if (uid && uid.trim()) {
-        ncLog(`resolveUserId: ✅ loginName="${loginName}" → uid="${uid}"`);
         return uid.trim();
       }
     }
-    ncLog(`resolveUserId: ⚠️ OCS status ${res.status}, fallback to loginName`);
     return loginName;
   } catch (e) {
-    ncLog(`resolveUserId: ❌ ${e?.message}, fallback to loginName`);
     return loginName;
   }
 }
@@ -241,7 +235,6 @@ export function getNextcloudErrorMessage(result, fallback = 'Nextcloud Login feh
  * Fällt auf fetch() zurück wenn nicht auf Android.
  */
 async function nativeHttp(url, method, user, pass, body, contentType) {
-  ncLog(`→ ${method} ${url} (user: ${user})`);
   if (Capacitor.getPlatform() === 'android') {
     const result = await NextcloudLoginFlow.httpRequest({
       url,
@@ -253,10 +246,8 @@ async function nativeHttp(url, method, user, pass, body, contentType) {
     });
     if (!result.ok) {
       const errMsg = result.error?.message || `Native HTTP fehlgeschlagen: ${result.error?.code}`;
-      ncLog(`← ${method} ❌ ${errMsg}`);
       throw new Error(errMsg);
     }
-    ncLog(`← ${method} ${result.status} body=${(result.body || "").substring(0, 200)}`);
     return { status: result.status, body: result.body || "" };
   }
 
@@ -273,19 +264,15 @@ async function nativeHttp(url, method, user, pass, body, contentType) {
  * @returns {Promise<{ok: boolean, error?: string}>}
  */
 export async function testConnection(url, user, pass) {
-  ncLog(`testConnection: davPath=${davPath(url, user)}/`);
   try {
     const res = await nativeHttp(`${davPath(url, user)}/`, "PROPFIND", user, pass);
     if (res.status === 207 || res.status === 200) { 
-      ncLog(`testConnection: ✅ ${res.status}`); 
       return { ok: true }; 
     }
-    if (res.status === 401) { ncLog(`testConnection: ❌ 401`); return { ok: false, error: "Ungültige Anmeldedaten (401)" }; }
-    if (res.status === 404) { ncLog(`testConnection: ❌ 404`); return { ok: false, error: "Server nicht gefunden (404)" }; }
-    ncLog(`testConnection: ❌ ${res.status}`);
+    if (res.status === 401) { return { ok: false, error: "Ungültige Anmeldedaten (401)" }; }
+    if (res.status === 404) { return { ok: false, error: "Server nicht gefunden (404)" }; }
     return { ok: false, error: `Unerwarteter Status: ${res.status}` };
   } catch (e) {
-    ncLog(`testConnection: ❌ ${e.message}`);
     return { ok: false, error: `Verbindung fehlgeschlagen: ${e.message}` };
   }
 }
@@ -295,26 +282,21 @@ export async function testConnection(url, user, pass) {
  */
 export async function ensureFolder(url, user, pass) {
   const folderUrl = `${davPath(url, user)}/${BACKUP_FOLDER}/`;
-  ncLog(`ensureFolder: MKCOL ${folderUrl}`);
   try {
     const res = await nativeHttp(folderUrl, "MKCOL", user, pass);
-    ncLog(`ensureFolder: status=${res.status}`);
     if (res.status === 201 || res.status === 405) {
-      ncLog(`ensureFolder: ✅ ${res.status === 201 ? "created" : "already exists"}`);
       return true;
     }
     if (res.status === 401) throw new Error("Nicht autorisiert (401)");
     if (res.status === 409) return true;
     throw new Error(`MKCOL ${res.status} auf ${folderUrl} body=${(res.body || "").substring(0, 500)}`);
   } catch (err) {
-    ncLog(`ensureFolder: ❌ ${err.message}`);
     if (err.message.includes("401")) throw err;
     throw new Error(`Ordner erstellen fehlgeschlagen: ${err.message}`);
   }
 }
 
 export async function uploadBackup(url, user, pass, jsonData) {
-  ncLog(`uploadBackup: url=${url} user=${user}`);
   const content = typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData, null, 2);
 
   const targetUrl = DIRECT_ROOT_UPLOAD
@@ -324,16 +306,13 @@ export async function uploadBackup(url, user, pass, jsonData) {
   if (!DIRECT_ROOT_UPLOAD) {
     await ensureFolder(url, user, pass);
   } else {
-    ncLog(`uploadBackup: DIRECT_ROOT_UPLOAD aktiv, MKCOL wird übersprungen`);
   }
 
-  ncLog(`uploadBackup: PUT ${targetUrl} (${content.length} bytes)`);
   const res = await nativeHttp(
     targetUrl,
     "PUT", user, pass, content, "application/json"
   );
-  ncLog(`uploadBackup: status=${res.status}`);
-  if (res.status === 201 || res.status === 204) { ncLog(`uploadBackup: ✅ Erfolg`); return true; }
+  if (res.status === 201 || res.status === 204) { return true; }
   if (res.status === 401) throw new Error("Nicht autorisiert (401)");
   throw new Error(`Upload ${res.status} auf ${targetUrl} body=${(res.body || "").substring(0, 200)}`);
 }

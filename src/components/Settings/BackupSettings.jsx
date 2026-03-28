@@ -29,8 +29,6 @@ import {
   triggerManualBackup,
 } from "../../utils/storageBackup";
 import { testConnection as ncTestConnection, initiateLoginFlow, pollLoginResult, ensureFolder as ncEnsureFolder, getNextcloudErrorMessage, resolveUserId } from "../../utils/nextcloudClient";
-import NcDebugPanel from "./NcDebugPanel";
-import { ncLog } from "../../utils/ncDebugLog";
 import toast from "react-hot-toast";
 
 const BackupSettings = ({
@@ -312,12 +310,10 @@ const BackupSettings = ({
   };
 
   const handleLoginSuccess = async (serverUrl, loginName, appPassword) => {
-    ncLog(`Login success: ${loginName}@${serverUrl}`);
     
     try {
       // Resolve echte User-ID für WebDAV (loginName ≠ uid möglich)
       const userId = await resolveUserId(serverUrl, loginName, appPassword);
-      ncLog(`WebDAV userId: "${userId}" (loginName: "${loginName}")`);
       
       // Update central state via props — userId statt loginName für WebDAV!
       setNextcloudUrl(serverUrl);
@@ -334,12 +330,9 @@ const BackupSettings = ({
       if (!autoBackup) setAutoBackup(true);
 
       try {
-        ncLog(`testConnection mit userId="${userId}"`);
         await ncTestConnection(serverUrl, userId, appPassword);
-        ncLog(`ensureFolder mit userId="${userId}"`);
         await ncEnsureFolder(serverUrl, userId, appPassword);
       } catch (folderError) {
-        ncLog(`⚠️ Folder setup: ${folderError?.message}`);
         // Non-critical - continue
       }
 
@@ -788,9 +781,6 @@ const BackupSettings = ({
             </button>
           </div>
         )}
-
-        {/* Nextcloud Debug Panel */}
-        <NcDebugPanel />
 
         {/* Export/Import Buttons */}
         <div className="grid grid-cols-2 gap-2 pt-2">

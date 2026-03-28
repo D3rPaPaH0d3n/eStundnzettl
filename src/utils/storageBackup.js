@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS, BACKUP_CONFIG } from "../hooks/constants";
 import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "./googleDrive";
 import { uploadBackup as ncUploadBackup } from "./nextcloudClient";
+import { ncLog } from "./ncDebugLog";
 import { isSQLiteActive } from "../db/storageMode";
 import { setSetting, deleteSetting, getSetting } from "../db/repositories/settingsRepo";
 import { getAllEntries, bulkInsertEntries } from "../db/repositories/entriesRepo";
@@ -405,15 +406,17 @@ export const triggerManualBackup = async () => {
         const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
         const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
         const ncPass = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "";
+        ncLog(`triggerBackup: ncActive=true url=${ncUrl} user=${ncUser} pass=${ncPass ? "***" : "(leer)"}`);
         if (ncUrl && ncUser && ncPass) {
           await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
           nextcloudOk = true;
+          ncLog(`triggerBackup: ✅ Nextcloud Upload erfolgreich`);
         } else {
-          console.warn("[triggerManualBackup] Nextcloud aktiv aber Credentials unvollständig:", { ncUrl: !!ncUrl, ncUser: !!ncUser, ncPass: !!ncPass });
+          ncLog(`triggerBackup: ⚠️ Credentials unvollständig`);
           nextcloudError = "Nextcloud-Anmeldedaten unvollständig";
         }
       } catch (e) {
-        console.error("[triggerManualBackup] Nextcloud-Upload fehlgeschlagen:", e?.message || e);
+        ncLog(`triggerBackup: ❌ ${e?.message || e}`);
         nextcloudError = e?.message || "Nextcloud-Upload fehlgeschlagen";
       }
     }

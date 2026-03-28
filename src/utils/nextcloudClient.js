@@ -202,6 +202,32 @@ function davPath(url, user) {
   return `${normalizeUrl(url)}/remote.php/dav/files/${encodeURIComponent(user)}`;
 }
 
+/**
+ * Echte Nextcloud User-ID via OCS API auflösen.
+ * loginName aus Login Flow v2 kann vom WebDAV-Pfad abweichen
+ * (z.B. E-Mail vs. uid, Display-Name vs. uid).
+ * Gibt die echte uid zurück, oder den loginName als Fallback.
+ */
+export async function resolveUserId(serverUrl, loginName, appPassword) {
+  try {
+    const url = `${normalizeUrl(serverUrl)}/ocs/v1.php/cloud/user?format=json`;
+    const res = await nativeHttp(url, "GET", loginName, appPassword);
+    if (res.status === 200 && res.body) {
+      const data = typeof res.body === "string" ? JSON.parse(res.body) : res.body;
+      const uid = data?.ocs?.data?.id;
+      if (uid && uid.trim()) {
+        console.log(`[Nextcloud] Resolved userId: loginName="${loginName}" → uid="${uid}"`);
+        return uid.trim();
+      }
+    }
+    console.warn(`[Nextcloud] resolveUserId: OCS returned ${res.status}, using loginName as fallback`);
+    return loginName;
+  } catch (e) {
+    console.warn(`[Nextcloud] resolveUserId failed, using loginName as fallback:`, e?.message);
+    return loginName;
+  }
+}
+
 export function getNextcloudErrorMessage(result, fallback = 'Nextcloud Login fehlgeschlagen') {
   return result?.error?.message || fallback;
 }

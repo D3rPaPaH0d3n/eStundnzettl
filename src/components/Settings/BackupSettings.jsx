@@ -28,7 +28,7 @@ import {
   clearBackupTarget,
   triggerManualBackup,
 } from "../../utils/storageBackup";
-import { testConnection as ncTestConnection, initiateLoginFlow, pollLoginResult, ensureFolder as ncEnsureFolder, getNextcloudErrorMessage } from "../../utils/nextcloudClient";
+import { testConnection as ncTestConnection, initiateLoginFlow, pollLoginResult, ensureFolder as ncEnsureFolder, getNextcloudErrorMessage, resolveUserId } from "../../utils/nextcloudClient";
 import toast from "react-hot-toast";
 
 const BackupSettings = ({
@@ -313,9 +313,13 @@ const BackupSettings = ({
     console.log(`[Nextcloud] Login success for ${loginName}@${serverUrl}`);
     
     try {
-      // Update central state via props
+      // Resolve echte User-ID für WebDAV (loginName ≠ uid möglich)
+      const userId = await resolveUserId(serverUrl, loginName, appPassword);
+      console.log(`[Nextcloud] Using userId for WebDAV: "${userId}" (loginName was: "${loginName}")`);
+      
+      // Update central state via props — userId statt loginName für WebDAV!
       setNextcloudUrl(serverUrl);
-      setNextcloudUser(loginName);
+      setNextcloudUser(userId);
       setNextcloudPass(appPassword);
       setNextcloudEnabled(true);
       

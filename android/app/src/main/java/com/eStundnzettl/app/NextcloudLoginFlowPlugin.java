@@ -131,6 +131,11 @@ public class NextcloudLoginFlowPlugin extends Plugin {
                     conn.setRequestProperty("Depth", "0");
                 }
 
+                // OCS API requires this header
+                if (urlStr.contains("/ocs/")) {
+                    conn.setRequestProperty("OCS-APIRequest", "true");
+                }
+
                 // Write body for PUT, POST, PROPPATCH
                 if (body != null && !method.equalsIgnoreCase("GET") && !method.equalsIgnoreCase("HEAD")) {
                     conn.setDoOutput(true);

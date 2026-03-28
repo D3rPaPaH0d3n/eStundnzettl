@@ -3,7 +3,7 @@ import { User, Briefcase, ShieldCheck, Camera, ChevronRight, Check, Upload, Play
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
-import { downloadBackup as ncDownloadBackup, initiateLoginFlow, pollLoginResult, getNextcloudErrorMessage } from "../utils/nextcloudClient";
+import { downloadBackup as ncDownloadBackup, initiateLoginFlow, pollLoginResult, getNextcloudErrorMessage, resolveUserId } from "../utils/nextcloudClient";
 import { Browser } from "@capacitor/browser";
 import { analyzeBackupData, applyBackup, readJsonFile, readBackupFromFolder, selectBackupFolder } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
@@ -320,7 +320,8 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
             setNcRestoreConnecting(false);
             setLoading(true);
             try {
-              const content = await ncDownloadBackup(result.server, result.loginName, result.appPassword);
+              const userId = await resolveUserId(result.server, result.loginName, result.appPassword);
+              const content = await ncDownloadBackup(result.server, userId, result.appPassword);
               if (!content) {
                 toast.error("Kein Backup auf Nextcloud gefunden");
                 setLoading(false);

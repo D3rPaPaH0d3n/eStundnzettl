@@ -8,6 +8,7 @@ import { getNcLog, onNcLogChange, clearNcLog } from "../../utils/ncDebugLog";
 const NcDebugPanel = () => {
   const [logs, setLogs] = useState(getNcLog);
   const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -51,7 +52,30 @@ const NcDebugPanel = () => {
               ))
             )}
           </div>
-          <div className="flex justify-end px-2 py-1 bg-zinc-800">
+          <div className="flex justify-end gap-3 px-2 py-1 bg-zinc-800">
+            <button
+              onClick={() => {
+                const text = logs.join("\n");
+                if (navigator.clipboard?.writeText) {
+                  navigator.clipboard.writeText(text).then(() => setCopied(true));
+                  setTimeout(() => setCopied(false), 2000);
+                } else {
+                  // Fallback: textarea select+copy
+                  const ta = document.createElement("textarea");
+                  ta.value = text;
+                  ta.style.cssText = "position:fixed;left:-9999px";
+                  document.body.appendChild(ta);
+                  ta.select();
+                  document.execCommand("copy");
+                  document.body.removeChild(ta);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }
+              }}
+              className="text-[10px] text-zinc-400 hover:text-blue-400"
+            >
+              {copied ? "✅ Kopiert!" : "📋 Kopieren"}
+            </button>
             <button
               onClick={clearNcLog}
               className="text-[10px] text-zinc-400 hover:text-red-400"

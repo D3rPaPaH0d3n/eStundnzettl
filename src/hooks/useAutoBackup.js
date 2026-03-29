@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { App } from "@capacitor/app";
-import { uploadOrUpdateFile, getValidToken, initGoogleAuth, backgroundTokenRefresh } from "../utils/googleDrive";
+import { uploadOrUpdateFile, getValidToken } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
 import { uploadBackup as ncUploadBackup, ensureFolder as ncEnsureFolder } from "../utils/nextcloudClient";
 import { STORAGE_KEYS, BACKUP_CONFIG } from "./constants";
@@ -35,7 +35,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
     () => readLSInt(STORAGE_KEYS.BACKUP_FAIL_COUNT)
   );
 
-  // SQLite-Nachladen + proaktiver Token-Refresh (einmalig, async)
+  // SQLite-Nachladen (einmalig, async)
   const sqliteInitDone = useRef(false);
   useEffect(() => {
     if (sqliteInitDone.current || !isSQLiteActive()) return;
@@ -47,12 +47,6 @@ export function useAutoBackup(entries, userData, isEnabled) {
           setBackupFailCount(sqlFail);
         }
       } catch { /* keep localStorage value */ }
-
-      // Proaktiver Token-Refresh im Hintergrund beim App-Start
-      const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
-      if (cloudActive) {
-        backgroundTokenRefresh().catch(() => {});
-      }
     })();
   }, []);
 
@@ -99,20 +93,21 @@ export function useAutoBackup(entries, userData, isEnabled) {
 
       if (cloudActive) {
         try {
-          await initGoogleAuth().catch(() => {});
           const authResponse = await getValidToken();
 
           if (authResponse?.accessToken) {
             await uploadOrUpdateFile(authResponse.accessToken, BACKUP_CONFIG.FILENAME, payload);
             lastHash.current = currentHash;
-            // Dual-Write: LAST_BACKUP
             await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
-            // Erfolg: Fehler-Counter zurücksetzen (Dual-Write)
             await dualWrite(STORAGE_KEYS.BACKUP_FAIL_COUNT, "backup_fail_count", "0");
             setBackupFailCount(0);
+          } else {
+            throw new Error("AUTH_REQUIRED");
           }
         } catch (cloudErr) {
-          // Fehler-Counter hochzählen (Dual-Write)
+          if (String(cloudErr?.message || cloudErr || '').includes('AUTH_REQUIRED')) {
+            localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
+          }
           const current = readLSInt(STORAGE_KEYS.BACKUP_FAIL_COUNT);
           const newCount = current + 1;
           await dualWrite(STORAGE_KEYS.BACKUP_FAIL_COUNT, "backup_fail_count", String(newCount));
@@ -158,11 +153,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
         listenerHandle.current = null;
       }
       listenerHandle.current = await App.addListener('appStateChange', ({ isActive }) => {
-        if (isActive) {
-          // App kommt in den Vordergrund → proaktiver Token-Refresh
-          const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
-          if (cloudActive) backgroundTokenRefresh().catch(() => {});
-        } else {
+        if (!isActive) {
           performBackup("Background");
         }
       });

@@ -20,7 +20,7 @@ import {
   initGoogleAuth,
   signInGoogle,
   signOutGoogle,
-  isGoogleLoggedIn,
+  getGoogleAuthStatus,
 } from "../../utils/googleDrive";
 import {
   selectBackupFolder,
@@ -127,18 +127,19 @@ const BackupSettings = ({
     // 1) Sofort aus localStorage laden (schnelle UI)
     const cloudEnabled =
       localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
-    if (cloudEnabled) {
-      initGoogleAuth().catch(() => {});
-    }
     setIsCloudConnected(cloudEnabled);
     setHasBackupFolder(hasBackupTarget());
 
     const saved = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
     if (saved) setLastBackupDate(saved);
 
-    // Token-Validität: Prüfe ob überhaupt ein Token gespeichert ist.
-    // Echte Validität wird erst bei API-Calls geprüft (401 → Auto-Refresh).
-    setIsTokenValid(isGoogleLoggedIn());
+    Promise.resolve(getGoogleAuthStatus())
+      .then((googleStatus) => {
+        setIsTokenValid(!!googleStatus?.hasToken);
+      })
+      .catch(() => {
+        setIsTokenValid(false);
+      });
 
     const failCount = parseInt(localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT) || "0", 10);
     setBackupFailCount(failCount);
@@ -159,8 +160,9 @@ const BackupSettings = ({
           if (sqlCloudEnabled !== null) {
             const enabled = !!sqlCloudEnabled;
             setIsCloudConnected(enabled);
-            if (enabled) initGoogleAuth().catch(() => {});
           }
+          const refreshedStatus = await getGoogleAuthStatus();
+          setIsTokenValid(!!refreshedStatus?.hasToken);
         } catch { /* keep localStorage values */ }
       })();
     }
@@ -454,11 +456,13 @@ const BackupSettings = ({
         await signOutGoogle();
         localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
         setIsCloudConnected(false);
+        setIsTokenValid(false);
         setAutoBackup(false);
       } catch (e) {
         console.error(e);
         localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
         setIsCloudConnected(false);
+        setIsTokenValid(false);
         setAutoBackup(false);
       }
     } else {
@@ -468,12 +472,21 @@ const BackupSettings = ({
         if (user && user.authentication.accessToken) {
           localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
           setIsCloudConnected(true);
+          setIsTokenValid(true);
           if (!autoBackup) setAutoBackup(true);
-          toast.success(`Verbunden: ${user.givenName || "Drive"}`);
+          toast.success(`Verbunden: ${user.givenName || user.email || "Drive"}`);
         }
       } catch (error) {
         console.error(error);
-        toast.error("Anmeldung abgebrochen");
+        setIsTokenValid(false);
+        const message = String(error?.message || error || "");
+        if (message.includes("GOOGLE_DRIVE_AUTH_CANCELLED")) {
+          toast.error("Google-Anmeldung abgebrochen");
+        } else if (message.includes("GOOGLE_DRIVE_NATIVE_UNAVAILABLE")) {
+          toast.error("Google Drive ist auf diesem Gerät noch nicht verfügbar");
+        } else {
+          toast.error("Google-Drive-Verbindung fehlgeschlagen");
+        }
       }
     }
   };
@@ -580,7 +593,7 @@ const BackupSettings = ({
               </span>
               <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                 {isCloudConnected
-                  ? "Aktiv (Täglich)"
+                  ? (isTokenValid ? "Aktiv (Google Drive App-Daten)" : "Verbindung abgelaufen")
                   : "Nicht verbunden"}
               </span>
             </div>
@@ -736,11 +749,13 @@ const BackupSettings = ({
         </div>
 
         {/* Warning for failed backups */}
-        {isCloudConnected && backupFailCount >= 3 && (
+        {isCloudConnected && (!isTokenValid || backupFailCount >= 3) && (
           <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
             <AlertTriangle size={18} className="text-amber-500 flex-shrink-0" />
             <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-              ⚠️ Letzte Backups fehlgeschlagen. Bitte Google Drive Verbindung prüfen.
+              {isTokenValid
+                ? "⚠️ Letzte Backups fehlgeschlagen. Bitte Google Drive Verbindung prüfen."
+                : "⚠️ Google Drive muss neu verbunden werden, bevor wieder gesichert werden kann."}
             </span>
           </div>
         )}

@@ -17,6 +17,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         // Register custom plugins before super.onCreate
         registerPlugin(MultiSharePlugin.class);
         registerPlugin(NextcloudLoginFlowPlugin.class);
+        registerPlugin(GoogleDriveBackupPlugin.class);
 
         super.onCreate(savedInstanceState);
         // Enable edge-to-edge display for Android 15+ compatibility

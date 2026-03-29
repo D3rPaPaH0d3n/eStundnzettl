@@ -387,6 +387,9 @@ export const triggerManualBackup = async () => {
           gdriveOk = true;
         }
       } catch (e) {
+        if (String(e?.message || e || '').includes('AUTH_REQUIRED')) {
+          localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
+        }
         console.error("[triggerManualBackup] Google Drive fehlgeschlagen:", e);
       }
     }

@@ -28,8 +28,11 @@ import {
   clearBackupTarget,
   triggerManualBackup,
 } from "../../utils/storageBackup";
-import { testConnection as ncTestConnection, initiateLoginFlow, pollLoginResult, ensureFolder as ncEnsureFolder, getNextcloudErrorMessage, resolveUserId } from "../../utils/nextcloudClient";
+import { testConnection as ncTestConnection, initiateLoginFlow, pollLoginResult, ensureFolder as ncEnsureFolder, getNextcloudErrorMessage } from "../../utils/nextcloudClient";
 import toast from "react-hot-toast";
+
+const isGoogleConnectionReady = (status) => !!(status?.hasToken || (status?.connected && !status?.reauthRequired));
+const connectionBadgeClassName = "flex items-center px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full";
 
 const BackupSettings = ({
   autoBackup,
@@ -135,7 +138,7 @@ const BackupSettings = ({
 
     Promise.resolve(getGoogleAuthStatus())
       .then((googleStatus) => {
-        setIsTokenValid(!!googleStatus?.hasToken);
+        setIsTokenValid(isGoogleConnectionReady(googleStatus));
       })
       .catch(() => {
         setIsTokenValid(false);
@@ -162,7 +165,7 @@ const BackupSettings = ({
             setIsCloudConnected(enabled);
           }
           const refreshedStatus = await getGoogleAuthStatus();
-          setIsTokenValid(!!refreshedStatus?.hasToken);
+          setIsTokenValid(isGoogleConnectionReady(refreshedStatus));
         } catch { /* keep localStorage values */ }
       })();
     }
@@ -314,12 +317,10 @@ const BackupSettings = ({
   const handleLoginSuccess = async (serverUrl, loginName, appPassword) => {
     
     try {
-      // Resolve echte User-ID für WebDAV (loginName ≠ uid möglich)
-      const userId = await resolveUserId(serverUrl, loginName, appPassword);
-      
-      // Update central state via props — userId statt loginName für WebDAV!
+      // Für Auth immer den echten Login-Namen speichern.
+      // Die WebDAV-UID wird im Client später separat aufgelöst.
       setNextcloudUrl(serverUrl);
-      setNextcloudUser(userId);
+      setNextcloudUser(loginName);
       setNextcloudPass(appPassword);
       setNextcloudEnabled(true);
       
@@ -332,8 +333,8 @@ const BackupSettings = ({
       if (!autoBackup) setAutoBackup(true);
 
       try {
-        await ncTestConnection(serverUrl, userId, appPassword);
-        await ncEnsureFolder(serverUrl, userId, appPassword);
+        await ncTestConnection(serverUrl, loginName, appPassword);
+        await ncEnsureFolder(serverUrl, loginName, appPassword);
       } catch (folderError) {
         // Non-critical - continue
       }
@@ -587,10 +588,15 @@ const BackupSettings = ({
             >
               {isCloudConnected ? <Cloud size={20} /> : <CloudOff size={20} />}
             </div>
-            <div>
-              <span className="block font-bold text-sm text-zinc-800 dark:text-white">
-                Google Drive
-              </span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="block font-bold text-sm text-zinc-800 dark:text-white">
+                  Google Drive
+                </span>
+                {isCloudConnected && isTokenValid && (
+                  <span className={connectionBadgeClassName}>Verbunden</span>
+                )}
+              </div>
               <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                 {isCloudConnected
                   ? (isTokenValid ? "Aktiv (Google Drive App-Daten)" : "Verbindung abgelaufen")
@@ -630,8 +636,8 @@ const BackupSettings = ({
                   Nextcloud
                 </span>
                 {nextcloudEnabled && (
-                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full">
-                    ✅ Verbunden
+                  <span className={connectionBadgeClassName}>
+                    Verbunden
                   </span>
                 )}
               </div>
@@ -727,10 +733,15 @@ const BackupSettings = ({
                 <HardDrive size={20} />
               )}
             </div>
-            <div>
-              <span className="block font-bold text-sm text-zinc-800 dark:text-white">
-                Lokales Backup
-              </span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="block font-bold text-sm text-zinc-800 dark:text-white">
+                  Lokales Backup
+                </span>
+                {hasBackupFolder && (
+                  <span className={connectionBadgeClassName}>Verbunden</span>
+                )}
+              </div>
               <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                 {hasBackupFolder ? "Aktiv (Täglich)" : "Nicht konfiguriert"}
               </span>

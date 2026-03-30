@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { getHolidayData, getWeekNumber, getTargetMinutesForDate, toLocalDateString } from "../utils";
+import { getHolidayData, toLocalDateString } from "../utils";
+import { getWeekNumber, getTargetMinutesForDate } from "../utils/timeCalculations";
 import { usePeriodStats } from "./usePeriodStats";
 
 /**

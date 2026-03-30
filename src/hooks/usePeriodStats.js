@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { calculatePeriodStats } from "../utils";
+import { calculatePeriodStats } from "../utils/timeCalculations";
 
 /**
  * Custom Hook zur Berechnung der Zeit-Statistiken für einen Zeitraum.

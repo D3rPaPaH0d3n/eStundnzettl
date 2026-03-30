@@ -1,8 +1,9 @@
 import { useCallback } from "react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
-import { parseTime, getTargetMinutesForDate, toLocalDateString, checkForUpdate } from "../utils";
-import { STORAGE_KEYS, WORK_CODE, WORK_MODELS } from "./constants";
+import { toLocalDateString } from "../utils";
+import { parseTime, calculateEntryNetDuration } from "../utils/timeCalculations";
+import { PLAY_STORE, STORAGE_KEYS, WORK_CODE, WORK_MODELS } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
 import { setSetting, deleteSetting, getSetting } from "../db/repositories/settingsRepo";
 import { getAllEntries } from "../db/repositories/entriesRepo";
@@ -67,7 +68,6 @@ export function useAppActions({
   // Lokale State-Setter in App.jsx
   setDeleteTarget,
   setShowOnboarding,
-  setUpdateData,
 }) {
 
   // =====================
@@ -190,12 +190,27 @@ export function useAppActions({
         return;
       }
 
-      const usedPause = isDrive ? 0 : form.pauseDuration;
       const usedCode = isDrive ? WORK_CODE.DRIVE : form.code;
-      net = en - s - usedPause;
+      net = calculateEntryNetDuration({
+        entryType: form.entryType,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        pauseDuration: form.pauseDuration,
+        formDate: form.formDate,
+        userData,
+        code: form.code,
+      });
       label = workCodes.find((c) => c.id === usedCode)?.label || (isDrive ? "Fahrzeit" : "Arbeit");
     } else {
-      net = getTargetMinutesForDate(form.formDate, userData?.workDays);
+      net = calculateEntryNetDuration({
+        entryType: form.entryType,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        pauseDuration: form.pauseDuration,
+        formDate: form.formDate,
+        userData,
+        code: form.code,
+      });
       label =
         form.entryType === "vacation"
           ? "Urlaub"
@@ -364,26 +379,34 @@ export function useAppActions({
 
   const handleManualUpdateCheck = useCallback(async () => {
     if (!navigator.onLine) {
-      toast.error("Keine Internetverbindung 🌐");
+      toast.error("Keine Internetverbindung");
       return;
     }
-    const toastId = toast.loading("Suche nach Updates...");
+
+    const toastId = toast.loading("Oeffne den Play Store...");
     try {
-      await new Promise((r) => setTimeout(r, 800));
-      const data = await checkForUpdate();
+      await new Promise((r) => setTimeout(r, 250));
       toast.dismiss(toastId);
-      if (data) {
-        Haptics.impact({ style: ImpactStyle.Medium });
-        setUpdateData(data);
-      } else {
-        Haptics.impact({ style: ImpactStyle.Light });
-        toast.success("Alles auf dem neuesten Stand! ✨");
+
+      Haptics.impact({ style: ImpactStyle.Light });
+      const opened = window.open(PLAY_STORE.URL, "_system");
+
+      if (!opened) {
+        try {
+          await navigator.clipboard.writeText(PLAY_STORE.URL);
+          toast("Play-Store-Link in die Zwischenablage kopiert.", {
+            duration: 5000,
+            icon: "info",
+          });
+        } catch {
+          toast.error("Play Store konnte nicht geoeffnet werden.");
+        }
       }
-    } catch (e) {
+    } catch {
       toast.dismiss(toastId);
-      toast.error("Prüfung fehlgeschlagen.");
+      toast.error("Play Store konnte nicht geoeffnet werden.");
     }
-  }, [setUpdateData]);
+  }, []);
 
   return {
     handleStartLive,

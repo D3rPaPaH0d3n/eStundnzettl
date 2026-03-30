@@ -4,11 +4,7 @@
  */
 import { WORK_CODE } from "../hooks/constants";
 import { toLocalDateString } from "../utils";
-
-const parseTime = (timeStr) => {
-  const [h, m] = timeStr.split(":").map(Number);
-  return h * 60 + m;
-};
+import { calculateEntryNetDuration } from "./timeCalculations";
 
 const DEMO_USER = {
   name: "Max Mustermann",
@@ -45,7 +41,15 @@ const workEntry = (date, start, end, pause, project, code) => ({
   pause,
   project,
   code,
-  netDuration: parseTime(end) - parseTime(start) - pause,
+  netDuration: calculateEntryNetDuration({
+    entryType: "work",
+    startTime: start,
+    endTime: end,
+    pauseDuration: pause,
+    formDate: date,
+    userData: null,
+    code,
+  }),
 });
 
 // Generate entries for the past 3 months
@@ -124,7 +128,15 @@ export const generateDemoEntries = () => {
       pause,
       project,
       code,
-      netDuration: parseTime(end) - parseTime(start) - pause,
+      netDuration: calculateEntryNetDuration({
+        entryType: "work",
+        startTime: start,
+        endTime: end,
+        pauseDuration: pause,
+        formDate: dateStr,
+        userData: null,
+        code,
+      }),
     });
   }
 

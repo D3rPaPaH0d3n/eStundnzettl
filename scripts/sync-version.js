@@ -1,79 +1,42 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// __dirname Workaround für ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const repoRoot = path.join(__dirname, "..");
 
-// package.json einlesen (Quelle der Wahrheit)
-const packageJsonPath = path.join(__dirname, '../package.json');
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+const packageJsonPath = path.join(repoRoot, "package.json");
+const gradlePath = path.join(repoRoot, "android/app/build.gradle");
+
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 const newVersion = packageJson.version;
 
-console.log(`\n🔄 Synchronisiere Version auf: ${newVersion}...\n`);
+console.log(`\nSynchronisiere Release-Stand auf ${newVersion} ...\n`);
 
-let hasChanges = false;
-
-// --- A) UPDATE src/hooks/constants.js (MIT "v" PREFIX) ---
-const utilsPath = path.join(__dirname, '../src/hooks/constants.js');
-if (fs.existsSync(utilsPath)) {
-    let utilsContent = fs.readFileSync(utilsPath, 'utf8');
-    
-    const utilsRegex = /export const APP_VERSION = ".*";/;
-    if (utilsRegex.test(utilsContent)) {
-        utilsContent = utilsContent.replace(utilsRegex, `export const APP_VERSION = "v${newVersion}";`);
-        fs.writeFileSync(utilsPath, utilsContent);
-        console.log(`✅ src/hooks/constants.js → v${newVersion}`);
-        hasChanges = true;
-    } else {
-        console.error("⚠️  WARNUNG: APP_VERSION in src/hooks/constants.js nicht gefunden.");
-    }
-} else {
-    console.error("⚠️  WARNUNG: src/hooks/constants.js nicht gefunden.");
+if (!fs.existsSync(gradlePath)) {
+  console.error("android/app/build.gradle wurde nicht gefunden.");
+  process.exit(1);
 }
 
-// --- B) UPDATE android/app/build.gradle (OHNE "v" PREFIX) ---
-const gradlePath = path.join(__dirname, '../android/app/build.gradle');
-if (fs.existsSync(gradlePath)) {
-    let gradleContent = fs.readFileSync(gradlePath, 'utf8');
-    
-    // versionName ersetzen
-    gradleContent = gradleContent.replace(
-        /versionName ".*"/, 
-        `versionName "${newVersion}"`
-    );
+let gradleContent = fs.readFileSync(gradlePath, "utf8");
 
-    // versionCode +1 erhöhen
-    let oldCode, newCode;
-    gradleContent = gradleContent.replace(/versionCode (\d+)/, (match, code) => {
-        oldCode = parseInt(code);
-        newCode = oldCode + 1;
-        return `versionCode ${newCode}`;
-    });
+gradleContent = gradleContent.replace(
+  /versionName ".*"/,
+  `versionName "${newVersion}"`
+);
 
-    fs.writeFileSync(gradlePath, gradleContent);
-    console.log(`✅ build.gradle → versionName "${newVersion}", versionCode ${oldCode} → ${newCode}`);
-    hasChanges = true;
-} else {
-    console.error("⚠️  WARNUNG: android/app/build.gradle nicht gefunden.");
-}
+let oldCode = null;
+let newCode = null;
 
-// --- C) Dateien für Git stagen (wichtig für npm version Hook!) ---
-if (hasChanges) {
-    const { execSync } = await import('child_process');
-    try {
-        const filesToStage = [];
-        if (fs.existsSync(utilsPath)) filesToStage.push('src/hooks/constants.js');
-        if (fs.existsSync(gradlePath)) filesToStage.push('android/app/build.gradle');
-        
-        if (filesToStage.length > 0) {
-            execSync(`git add ${filesToStage.join(' ')}`, { cwd: path.join(__dirname, '..') });
-            console.log(`\n📦 Dateien gestaged: ${filesToStage.join(', ')}`);
-        }
-    } catch (e) {
-        console.error("⚠️  Git staging fehlgeschlagen:", e.message);
-    }
-}
+gradleContent = gradleContent.replace(/versionCode (\d+)/, (_, code) => {
+  oldCode = Number.parseInt(code, 10);
+  newCode = oldCode + 1;
+  return `versionCode ${newCode}`;
+});
 
-console.log("\n🚀 Version Sync abgeschlossen!\n");
+fs.writeFileSync(gradlePath, gradleContent);
+
+console.log(`build.gradle -> versionName "${newVersion}"`);
+console.log(`build.gradle -> versionCode ${oldCode} -> ${newCode}`);
+console.log("\nHinweis: Der Changelog bleibt bewusst manuell gepflegt, damit er menschlich bleibt.\n");

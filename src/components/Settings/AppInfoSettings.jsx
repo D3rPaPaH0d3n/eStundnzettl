@@ -30,7 +30,7 @@ const AppInfoSettings = ({
           }}
           className="w-full py-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
         >
-          <RefreshCw size={18} /> Auf Updates prüfen
+          <RefreshCw size={18} /> Im Play Store �ffnen
         </button>
 
         <button
@@ -90,7 +90,7 @@ const AppInfoSettings = ({
           Version {APP_VERSION}
         </p>
         <p className="text-[10px] text-zinc-300 dark:text-zinc-600 font-medium">
-          Developed with ❤️ by Markus Kainer 🤝 Claude 🤝 Gemini
+          Ausgetüftelt 💭 von Markus 👨 und mit Herz ❤️, Hirn 🧠 und KI-Agenten 🤖 gebaut!
         </p>
       </div>
     </>

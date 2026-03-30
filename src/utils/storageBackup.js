@@ -352,11 +352,10 @@ export const triggerManualBackup = async () => {
       try { entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]'); } catch { entries = []; }
     }
 
-    // Cloud-Status: Flag UND gespeicherter Token müssen vorhanden sein,
-    // sonst öffnet signInGoogle() einen Login-Dialog obwohl der User gar nicht verbunden ist!
+    // Cloud-Status: Nur das aktivierte Flag ist relevant.
+    // Das eigentliche Zugriffstoken wird nativ still erneuert.
     const cloudFlag = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
-    const hasGoogleToken = !!localStorage.getItem("google_auth_state");
-    const cloudActive = cloudFlag && hasGoogleToken;
+    const cloudActive = cloudFlag;
     const localActive = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
     const ncActive = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true";
 
@@ -387,9 +386,6 @@ export const triggerManualBackup = async () => {
           gdriveOk = true;
         }
       } catch (e) {
-        if (String(e?.message || e || '').includes('AUTH_REQUIRED')) {
-          localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
-        }
         console.error("[triggerManualBackup] Google Drive fehlgeschlagen:", e);
       }
     }

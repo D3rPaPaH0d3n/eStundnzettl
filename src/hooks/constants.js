@@ -190,9 +190,9 @@ export const ENTRY_TYPES = {
   TIME_COMP: "time_comp",
 };
 
-export const GITHUB = {
-  USER: "D3rPaPaH0d3n",
-  REPO: "eStundnzettl",
+export const PLAY_STORE = {
+  APP_ID: "com.estundnzettl.app",
+  URL: "https://play.google.com/store/apps/details?id=com.estundnzettl.app",
 };
 
 export const ANIMATION = {

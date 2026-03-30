@@ -9,6 +9,9 @@ import { analyzeBackupData, applyBackup, readJsonFile, readBackupFromFolder, sel
 import ImportConflictModal from "./ImportConflictModal";
 import { WORK_MODELS } from "../hooks/constants";
 import { DEMO_DATA } from "../utils/demoData";
+import { setSetting } from "../db/repositories/settingsRepo";
+import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
+import { bulkInsertEntries } from "../db/repositories/entriesRepo";
 
 const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCodes, setCloudSyncEnabled, setLocalBackupEnabled, setTheme }) => {
   const [step, setStep] = useState(0); 
@@ -68,10 +71,6 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     const demoEntries = DEMO_DATA.generateEntries();
 
     try {
-      const { setSetting } = await import("../db/repositories/settingsRepo");
-      const { bulkReplaceWorkCodes } = await import("../db/repositories/workCodesRepo");
-      const { bulkInsertEntries } = await import("../db/repositories/entriesRepo");
-
       await setSetting("user", DEMO_DATA.user);
       await bulkReplaceWorkCodes(DEMO_DATA.workCodes);
       await bulkInsertEntries(demoEntries);
@@ -264,7 +263,6 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     // FIX: Zuerst direkt in SQLite schreiben, DANN State updaten
     try {
       // Direkt in SQLite schreiben (synchronisiert mit localStorage via useSettings)
-      const { setSetting } = await import("../db/repositories/settingsRepo");
       await setSetting("user", userDataToSave);
     } catch {
       // Fortfahren, useSettings wird es in localStorage schreiben
@@ -273,11 +271,10 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     // Nextcloud Credentials speichern
     if (ncCredentials) {
       try {
-        const { setSetting: setNcSetting } = await import("../db/repositories/settingsRepo");
-        await setNcSetting("nextcloud_url", ncCredentials.server);
-        await setNcSetting("nextcloud_user", ncCredentials.userId);
-        await setNcSetting("nextcloud_pass", ncCredentials.appPassword);
-        await setNcSetting("nextcloud_enabled", true);
+        await setSetting("nextcloud_url", ncCredentials.server);
+        await setSetting("nextcloud_user", ncCredentials.userId);
+        await setSetting("nextcloud_pass", ncCredentials.appPassword);
+        await setSetting("nextcloud_enabled", true);
         // Auch in localStorage für sofortige Verfügbarkeit (Keys MÜSSEN mit STORAGE_KEYS übereinstimmen!)
         localStorage.setItem("estundnzettl_nextcloud_url", ncCredentials.server);
         localStorage.setItem("estundnzettl_nextcloud_user", ncCredentials.userId);

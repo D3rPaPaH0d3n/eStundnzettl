@@ -1,60 +1,86 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+
+const ITEM_HEIGHT = 64;
 
 const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInterval = 15 }) => {
   const hoursRef = useRef(null);
   const minutesRef = useRef(null);
   const dragControls = useDragControls();
-  
-  const ITEM_HEIGHT = 64;
-  
-  // minuteInterval: 1 = every minute, 15 = every 15 minutes
+
   const minutes = minuteInterval === 1
     ? Array.from({ length: 60 }, (_, i) => i)
     : [0, 15, 30, 45];
 
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        if (hoursRef.current) {
-          const selectedHourEl = hoursRef.current.querySelector('[data-selected="true"]');
-          if (selectedHourEl) selectedHourEl.scrollIntoView({ block: "center" });
-        }
-        if (minutesRef.current) {
-          const selectedMinEl = minutesRef.current.querySelector('[data-selected="true"]');
-          if (selectedMinEl) selectedMinEl.scrollIntoView({ block: "center" });
-        }
-      }, 100);
-    }
-  }, [isOpen]);
-
-  const [selectedHour, selectedMinute] = value ? value.split(":").map(Number) : [6, 0];
   const hours = Array.from({ length: 24 }, (_, i) => i);
+  const [selectedHour, setSelectedHour] = useState(6);
+  const [selectedMinute, setSelectedMinute] = useState(0);
 
-  const updateTime = (h, m) => {
-    const hh = String(h).padStart(2, "0");
-    const mm = String(m).padStart(2, "0");
+  const emitTime = (hour, minute) => {
+    const hh = String(hour).padStart(2, "0");
+    const mm = String(minute).padStart(2, "0");
     onChange(`${hh}:${mm}`);
   };
 
+  const scrollToValue = (ref, val) => {
+    if (ref.current) {
+      const el = ref.current.querySelector(`[data-value="${val}"]`);
+      if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const [initialHour, initialMinute] = value ? value.split(":").map(Number) : [6, 0];
+    setSelectedHour(initialHour);
+    setSelectedMinute(initialMinute);
+
+    setTimeout(() => {
+      scrollToValue(hoursRef, initialHour);
+      scrollToValue(minutesRef, initialMinute);
+    }, 100);
+  }, [isOpen, value, minuteInterval]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyTouchAction = document.body.style.touchAction;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.touchAction = previousBodyTouchAction;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [isOpen]);
+
   const handleScroll = (e, type) => {
-    const scrollTop = e.target.scrollTop;
-    const index = Math.min(Math.max(0, Math.round(scrollTop / ITEM_HEIGHT)), minutes.length - 1);
-    
-    if (type === 'hour') {
-      const newHour = hours[index];
-      if (newHour !== undefined && newHour !== selectedHour) {
+    const source = type === "hour" ? hours : minutes;
+    const index = Math.min(Math.max(0, Math.round(e.target.scrollTop / ITEM_HEIGHT)), source.length - 1);
+
+    if (type === "hour") {
+      const hour = source[index];
+      if (hour !== undefined && hour !== selectedHour) {
+        setSelectedHour(hour);
+        emitTime(hour, selectedMinute);
         Haptics.impact({ style: ImpactStyle.Light });
-        updateTime(newHour, selectedMinute);
       }
-    } else {
-      const newMinute = minutes[index];
-      if (newMinute !== undefined && newMinute !== selectedMinute) {
-        Haptics.impact({ style: ImpactStyle.Light });
-        updateTime(selectedHour, newMinute);
-      }
+      return;
+    }
+
+    const minute = source[index];
+    if (minute !== undefined && minute !== selectedMinute) {
+      setSelectedMinute(minute);
+      emitTime(selectedHour, minute);
+      Haptics.impact({ style: ImpactStyle.Light });
     }
   };
 
@@ -62,11 +88,11 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
     <AnimatePresence>
       {isOpen && (
         <>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
             onClick={onClose}
           />
 
@@ -78,87 +104,110 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
             drag="y"
             dragConstraints={{ top: 0 }}
             dragElastic={0.2}
-            dragListener={false} 
+            dragListener={false}
             dragControls={dragControls}
             onDragEnd={(_, info) => {
               if (info.offset.y > 100) onClose();
             }}
-            className="fixed bottom-0 left-0 right-0 z-[101] bg-white dark:bg-zinc-900 rounded-t-3xl shadow-2xl overflow-hidden flex flex-col pb-safe md:max-w-md md:mx-auto md:rounded-3xl md:bottom-4 md:border md:border-zinc-200 dark:md:border-zinc-700"
+            className="fixed bottom-0 left-0 right-0 z-[101] rounded-t-3xl overflow-visible flex flex-col overscroll-contain touch-none md:max-w-md md:mx-auto"
           >
-            <div 
-              className="w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing touch-none"
+            <div className="absolute inset-0 bg-white dark:bg-zinc-900 rounded-t-3xl shadow-2xl z-0" style={{ bottom: "-100px" }} />
+
+            <div
+              className="relative z-10 w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing touch-none"
               onPointerDown={(e) => dragControls.start(e)}
             >
               <div className="w-12 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full" />
             </div>
 
-            <div className="flex justify-between items-center px-5 pb-4 border-b border-zinc-100 dark:border-zinc-800">
-              <button onClick={onClose} className="p-3 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+            <div className="relative z-20 flex justify-between items-center px-5 pb-4 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-t-3xl">
+              <button
+                onClick={onClose}
+                className="p-3 text-red-500 bg-red-100 dark:bg-red-900/20 dark:text-red-400 rounded-full transition-transform active:scale-95"
+              >
                 <X size={24} />
               </button>
-              <span className="font-bold text-zinc-800 dark:text-white uppercase tracking-wide text-base">
+
+              <span className="font-bold text-zinc-800 dark:text-white tracking-wide text-base">
                 {title || "Zeit wählen"}
               </span>
-              {/* CHANGE: text-green -> text-emerald */}
-              <button 
+
+              <button
                 onClick={() => {
                   Haptics.impact({ style: ImpactStyle.Medium });
                   onClose();
-                }} 
+                }}
                 className="p-3 text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full font-bold transition-transform active:scale-95"
               >
                 <Check size={24} />
               </button>
             </div>
 
-            <div className="flex h-[320px] relative bg-white dark:bg-zinc-900 select-none">
-              
-              <div className="absolute top-1/2 left-4 right-4 h-[64px] -mt-[32px] bg-zinc-100 dark:bg-zinc-800 pointer-events-none z-0 border border-zinc-200 dark:border-zinc-700 rounded-xl" />
+            <div className="relative z-10 h-[280px] w-full select-none pb-safe overflow-hidden">
+              <div className="absolute top-1/2 left-4 right-4 h-[64px] -mt-[36px] bg-zinc-100 dark:bg-zinc-800 pointer-events-none z-0 border border-zinc-200 dark:border-zinc-700 rounded-xl" />
 
-              <div 
-                ref={hoursRef}
-                onScroll={(e) => handleScroll(e, 'hour')}
-                className="flex-1 overflow-y-auto snap-y snap-mandatory py-[128px] text-center z-10 scrollbar-hide"
+              <div
+                className="relative z-10 h-full w-full flex justify-center items-center"
+                style={{
+                  maskImage: "linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)",
+                  WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)",
+                }}
               >
-                {hours.map((h) => (
-                  <div 
-                    key={h}
-                    data-selected={h === selectedHour}
-                    onClick={() => updateTime(h, selectedMinute)}
-                    /* CHANGE: text-orange -> text-emerald */
-                    className={`h-[64px] flex items-center justify-center snap-center cursor-pointer transition-all duration-100 ${
-                      h === selectedHour 
-                        ? "font-bold text-4xl text-emerald-600 dark:text-emerald-500 scale-110" 
-                        : "text-zinc-400 dark:text-zinc-600 text-2xl opacity-60"
-                    }`}
+                <div className="flex items-center justify-center">
+                  <div
+                    ref={hoursRef}
+                    onScroll={(e) => handleScroll(e, "hour")}
+                    className="h-[280px] w-[86px] overflow-y-auto overscroll-contain snap-y snap-mandatory scrollbar-hide py-[108px] touch-pan-y"
                   >
-                    {String(h).padStart(2, "0")}
+                    {hours.map((hour) => (
+                      <div
+                        key={hour}
+                        data-value={hour}
+                        onClick={() => {
+                          setSelectedHour(hour);
+                          emitTime(hour, selectedMinute);
+                          scrollToValue(hoursRef, hour);
+                        }}
+                        className={`h-[64px] flex items-center justify-end pr-4 snap-center cursor-pointer transition-all duration-150 pt-1 ${
+                          hour === selectedHour
+                            ? "font-bold text-4xl text-zinc-800 dark:text-white scale-110"
+                            : "text-zinc-300 dark:text-zinc-600 text-2xl scale-90"
+                        }`}
+                      >
+                        {String(hour).padStart(2, "0")}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              <div className="flex items-center justify-center z-10 text-zinc-300 dark:text-zinc-600 font-bold text-2xl pb-2">:</div>
+                  <div className="h-[64px] flex items-center justify-center px-2 pt-1">
+                    <span className="text-2xl font-bold text-zinc-300 dark:text-zinc-600">:</span>
+                  </div>
 
-              <div 
-                ref={minutesRef}
-                onScroll={(e) => handleScroll(e, 'minute')}
-                className="flex-1 overflow-y-auto snap-y snap-mandatory py-[128px] text-center z-10 scrollbar-hide"
-              >
-                {minutes.map((m) => (
-                  <div 
-                    key={m}
-                    data-selected={m === selectedMinute}
-                    onClick={() => updateTime(selectedHour, m)}
-                    /* CHANGE: text-orange -> text-emerald */
-                    className={`h-[64px] flex items-center justify-center snap-center cursor-pointer transition-all duration-100 ${
-                      m === selectedMinute 
-                        ? "font-bold text-4xl text-emerald-600 dark:text-emerald-500 scale-110" 
-                        : "text-zinc-400 dark:text-zinc-600 text-2xl opacity-60"
-                    }`}
+                  <div
+                    ref={minutesRef}
+                    onScroll={(e) => handleScroll(e, "minute")}
+                    className="h-[280px] w-[86px] overflow-y-auto overscroll-contain snap-y snap-mandatory scrollbar-hide py-[108px] touch-pan-y"
                   >
-                    {String(m).padStart(2, "0")}
+                    {minutes.map((minute) => (
+                      <div
+                        key={minute}
+                        data-value={minute}
+                        onClick={() => {
+                          setSelectedMinute(minute);
+                          emitTime(selectedHour, minute);
+                          scrollToValue(minutesRef, minute);
+                        }}
+                        className={`h-[64px] flex items-center justify-start pl-4 snap-center cursor-pointer transition-all duration-150 pt-1 ${
+                          minute === selectedMinute
+                            ? "font-bold text-4xl text-emerald-500 scale-110"
+                            : "text-zinc-300 dark:text-zinc-600 text-2xl scale-90"
+                        }`}
+                      >
+                        {String(minute).padStart(2, "0")}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           </motion.div>

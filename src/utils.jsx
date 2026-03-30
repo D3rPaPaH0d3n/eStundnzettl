@@ -1,5 +1,14 @@
 import React from "react";
-import { APP_VERSION, GITHUB, WORK_CODE } from "./hooks/constants";
+import { APP_VERSION } from "./hooks/constants";
+import {
+  parseTime,
+  getTargetMinutesForDate,
+  getWeekNumber,
+  calculateOvertimeSplit,
+  calculatePeriodStats,
+  getWeekRangeInMonth,
+  calculateWeekStats,
+} from "./utils/timeCalculations";
 
 // -------------------------------------------------------
 // HELPER-FUNKTIONEN
@@ -41,52 +50,7 @@ export const formatSignedTime = (minutes) => {
   return `${sign}${h}h ${m.toString().padStart(2, "0")}m`;
 };
 
-export const parseTime = (timeStr) => {
-  const [h, m] = timeStr.split(":").map(Number);
-  return h * 60 + m;
-};
-
-export const getDayOfWeek = (dateStr) => {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d).getDay();
-};
-
-// FIX: Spezialregelung für 24.12. und 31.12. (halber Tag Sollzeit)
-export const getTargetMinutesForDate = (dateStr, customWorkDays) => {
-  // Check auf 24.12. oder 31.12.
-  const isHalfDay = dateStr.endsWith("-12-24") || dateStr.endsWith("-12-31");
-  
-  let dailyTarget = 0;
-  const day = getDayOfWeek(dateStr);
-
-  // 1. Grund-Soll ermitteln
-  if (
-    customWorkDays &&
-    Array.isArray(customWorkDays) &&
-    customWorkDays.length === 7
-  ) {
-    dailyTarget = customWorkDays[day];
-  } else {
-    // Standard-Fallback
-    if (day >= 1 && day <= 4) dailyTarget = 510; // Mo-Do: 8.5h
-    else if (day === 5) dailyTarget = 270;       // Fr: 4.5h
-    else dailyTarget = 0;                        // Sa/So: 0h
-  }
-
-  // 2. Wenn es der 24. oder 31.12. ist -> Soll halbieren
-  if (isHalfDay && dailyTarget > 0) {
-    return Math.round(dailyTarget / 2);
-  }
-
-  return dailyTarget;
-};
-
-export const getWeekNumber = (d) => {
-  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
-};
+export { parseTime, getTargetMinutesForDate, getWeekNumber };
 
 export const blobToBase64 = (blob) =>
   new Promise((resolve, reject) => {
@@ -99,122 +63,7 @@ export const blobToBase64 = (blob) =>
     reader.readAsDataURL(blob);
   });
 
-/**
- * Kernlogik für Mehrarbeit vs. Überstunden (Österreich)
- * Bis 40h = Mehrarbeit (MA). Darüber = Überstunden (ÜS).
- */
-export const calculateOvertimeSplit = (balanceMinutes, targetMinutes) => {
-  if (balanceMinutes <= 0) return { mehrarbeit: 0, ueberstunden: 0 };
-
-  const WEEKLY_LIMIT_MINUTES = 40 * 60;
-  const mehrarbeitBuffer = Math.max(0, WEEKLY_LIMIT_MINUTES - targetMinutes);
-
-  const mehrarbeit = Math.min(balanceMinutes, mehrarbeitBuffer);
-  const ueberstunden = Math.max(0, balanceMinutes - mehrarbeit);
-
-  return { mehrarbeit, ueberstunden };
-};
-
-/**
- * ZENTRALE STATISTIK-BERECHNUNG
- * Berechnet Summen, Sollzeit und MA/ÜS-Split für einen beliebigen Zeitraum.
- */
-export const calculatePeriodStats = (
-  entries,
-  userData,
-  periodStart,
-  periodEnd
-) => {
-  let stats = {
-    work: 0,
-    drive: 0,
-    holiday: 0,
-    vacation: 0,
-    sick: 0,
-    timeComp: 0,
-    totalIst: 0,
-    totalTarget: 0,
-    totalSaldo: 0,
-    overtimeSplit: { mehrarbeit: 0, ueberstunden: 0 },
-  };
-
-  // 1. Einträge filtern und summieren
-  const relevantEntries = entries.filter((e) => {
-    const d = new Date(e.date);
-    // Wir setzen die Zeitkomponente zurück für sauberen Datumsvergleich
-    const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const startOnly = new Date(
-      periodStart.getFullYear(),
-      periodStart.getMonth(),
-      periodStart.getDate()
-    );
-    const endOnly = new Date(
-      periodEnd.getFullYear(),
-      periodEnd.getMonth(),
-      periodEnd.getDate()
-    );
-    return dOnly >= startOnly && dOnly <= endOnly;
-  });
-
-  relevantEntries.forEach((e) => {
-    if (e.type === "work") {
-      if (e.code === WORK_CODE.DRIVE) stats.drive += e.netDuration;
-      else stats.work += e.netDuration;
-    }
-    if (e.type === "vacation") stats.vacation += e.netDuration;
-    if (e.type === "sick") stats.sick += e.netDuration;
-    if (e.type === "public_holiday") stats.holiday += e.netDuration;
-    if (e.type === "time_comp") stats.timeComp += e.netDuration;
-  });
-
-  stats.totalIst =
-    stats.work + stats.vacation + stats.sick + stats.holiday + stats.timeComp;
-
-  // 2. Sollzeit berechnen (Tag für Tag)
-  let loopDate = new Date(periodStart);
-  loopDate.setHours(0, 0, 0, 0);
-  const loopEnd = new Date(periodEnd);
-  loopEnd.setHours(23, 59, 59, 999);
-
-  const weeklyMap = {}; // Zum Sammeln für die 40h Regel
-
-  while (loopDate <= loopEnd) {
-    const dateStr = toLocalDateString(loopDate);
-    const target = getTargetMinutesForDate(dateStr, userData?.workDays);
-    stats.totalTarget += target;
-
-    const weekNum = getWeekNumber(new Date(loopDate));
-    if (!weeklyMap[weekNum]) weeklyMap[weekNum] = { target: 0, actual: 0 };
-    weeklyMap[weekNum].target += target;
-
-    loopDate.setDate(loopDate.getDate() + 1);
-  }
-
-  stats.totalSaldo = stats.totalIst - stats.totalTarget;
-
-  // 3. MA/ÜS Split berechnen (Wochenweise Summierung)
-  relevantEntries.forEach((e) => {
-    // Ausfallsprinzip: Alles außer Fahrzeit zählt zur Basis
-    if (!(e.type === "work" && e.code === WORK_CODE.DRIVE)) {
-      const w = getWeekNumber(new Date(e.date));
-      if (weeklyMap[w]) {
-        weeklyMap[w].actual += e.netDuration;
-      }
-    }
-  });
-
-  Object.values(weeklyMap).forEach((week) => {
-    const diff = week.actual - week.target;
-    const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
-      diff,
-      week.target
-    );
-    stats.overtimeSplit.mehrarbeit += mehrarbeit;
-    stats.overtimeSplit.ueberstunden += ueberstunden;
-  });
-
-  return stats;
-};
+export { calculateOvertimeSplit, calculatePeriodStats };
 
 // -------------------------------------------------------
 // -------------------------------------------------------
@@ -223,50 +72,7 @@ export const calculatePeriodStats = (
  * Berechnet den Start- und End-Tag einer Woche (Mo-So)
  * und kappt das Ganze, falls es über die Monatsgrenze des 'viewDate' hinausgeht.
  */
-export const getWeekRangeInMonth = (dateInWeek, viewDate) => {
-  const d = new Date(dateInWeek);
-  const day = d.getDay() || 7; // Mo=1 ... So=7
-  
-  // Montag der Woche ermitteln
-  const startOfWeek = new Date(d);
-  startOfWeek.setDate(d.getDate() - day + 1);
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  // Sonntag der Woche ermitteln
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  endOfWeek.setHours(23, 59, 59, 999);
-
-  // Wenn wir gar kein viewDate haben (z.B. Alles anzeigen), volle Woche zurückgeben
-  if (!viewDate) return { start: startOfWeek, end: endOfWeek };
-
-  // Monatsgrenzen des viewDate
-  const viewMonthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
-  const viewMonthEnd = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
-  viewMonthEnd.setHours(23, 59, 59, 999);
-
-  // Wir nehmen das "spätere" Datum als Start (entweder Montag oder 1. des Monats)
-  const effectiveStart = startOfWeek < viewMonthStart ? viewMonthStart : startOfWeek;
-  
-  // Wir nehmen das "frühere" Datum als Ende (entweder Sonntag oder Monatsende)
-  const effectiveEnd = endOfWeek > viewMonthEnd ? viewMonthEnd : endOfWeek;
-
-  return { start: effectiveStart, end: effectiveEnd };
-};
-
-/**
- * Berechnet die Statistik für eine Woche, aber respektiert den Monats-Kontext.
- * Das ist der "Wrapper", der die ganze Arbeit für Dashboard & Co macht.
- */
-export const calculateWeekStats = (weekEntries, userData, viewDate) => {
-  // 1. Wir holen uns den korrekten Zeitraum (z.B. 1.1. bis 5.1.)
-  // Wir nehmen das Datum vom ersten Eintrag, um die Woche zu identifizieren
-  const dateRef = weekEntries.length > 0 ? new Date(weekEntries[0].date) : new Date();
-  const { start, end } = getWeekRangeInMonth(dateRef, viewDate);
-
-  // 2. Wir nutzen deine existierende mächtige Statistik-Funktion für diesen Zeitraum
-  return calculatePeriodStats(weekEntries, userData, start, end);
-};
+export { getWeekRangeInMonth, calculateWeekStats };
 
 // -------------------------------------------------------
 // FEIERTAGE
@@ -335,27 +141,5 @@ const compareVersions = (v1, v2) => {
 };
 
 export const checkForUpdate = async () => {
-  try {
-    const { USER: GITHUB_USER, REPO: REPO_NAME } = GITHUB;
-    const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/releases/latest`
-    );
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    const latestVersion = data.tag_name;
-
-    if (compareVersions(latestVersion, APP_VERSION) > 0) {
-      return {
-        version: latestVersion,
-        notes: data.body,
-        downloadUrl: "https://play.google.com/store/apps/details?id=com.estundnzettl.app",
-        date: new Date(data.published_at).toLocaleDateString("de-DE"),
-      };
-    }
-    return null;
-  } catch (error) {
-    return null;
-  }
+  return null;
 };

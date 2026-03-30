@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -34,7 +35,12 @@ public class IntentSenderBridgeActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        PendingIntent pendingIntent = getIntent().getParcelableExtra(EXTRA_PENDING_INTENT);
+        PendingIntent pendingIntent;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pendingIntent = getIntent().getParcelableExtra(EXTRA_PENDING_INTENT, PendingIntent.class);
+        } else {
+            pendingIntent = getIntent().getParcelableExtra(EXTRA_PENDING_INTENT);
+        }
         if (pendingIntent == null) {
             setResult(Activity.RESULT_CANCELED);
             finish();

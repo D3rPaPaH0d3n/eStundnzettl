@@ -9,7 +9,7 @@ import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 import { SplashScreen } from '@capacitor/splash-screen';
 
 import AppLogo from "./assets/logo.png";
-import { toLocalDateString, checkForUpdate } from "./utils";
+import { toLocalDateString } from "./utils";
 
 import { WORK_MODELS, STORAGE_KEYS, WORK_CODE } from "./hooks/constants";
 import { useWorkCodes } from "./hooks/useWorkCodes";
@@ -19,7 +19,6 @@ import Dashboard from "./components/Dashboard";
 import EntryForm from "./components/EntryForm";
 import Settings from "./components/Settings";
 import ConfirmModal from "./components/ConfirmModal";
-import UpdateModal from "./components/UpdateModal";
 import LiveTimerOverlay from "./components/LiveTimerOverlay";
 import OnboardingWizard from "./components/OnboardingWizard";
 import ExportModal from "./components/ExportModal";
@@ -144,7 +143,6 @@ export default function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState("dashboard");
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [updateData, setUpdateData] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [attachmentEntry, setAttachmentEntry] = useState(null);
 
@@ -198,7 +196,6 @@ export default function App() {
     setCurrentDate,
     setDeleteTarget,
     setShowOnboarding,
-    setUpdateData,
   });
 
   // --- 5. EFFECTS ---
@@ -256,18 +253,6 @@ export default function App() {
       clearAutoCheckout();
     }
   }, [autoCheckoutData]);
-
-  // --- UPDATE CHECK ---
-  useEffect(() => {
-    const runUpdateCheck = async () => {
-      if (navigator.onLine) {
-        const data = await checkForUpdate();
-        if (data) setUpdateData(data);
-      }
-    };
-    const timer = setTimeout(runUpdateCheck, 2000);
-    return () => clearTimeout(timer);
-  }, []);
 
   // --- NAVIGATION ---
   const getHeaderTitle = () => {
@@ -329,8 +314,6 @@ export default function App() {
         getLabelSuggestions={getLabelSuggestions}
         formatFileSize={formatFileSize}
       />
-
-      {updateData && <UpdateModal updateData={updateData} onClose={() => setUpdateData(null)} />}
 
       <input type="file" className="hidden" ref={fileInputRef} accept="application/json" onChange={handleImport} />
 

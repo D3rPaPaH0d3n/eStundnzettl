@@ -4,10 +4,12 @@ import {
   Card, 
   formatTime, 
   formatSignedTime, 
-  getWeekNumber, 
-  // calculateWeekStats NEU importiert, die alten Helfer entfernt da nicht mehr hier benötigt
-  calculateWeekStats 
 } from "../utils";
+import {
+  getWeekNumber,
+  calculateWeekStats,
+  calculateDisplayedDayMinutes,
+} from "../utils/timeCalculations";
 import { WORK_CODE } from "../hooks/constants";
 import { useWorkCodes } from "../hooks/useWorkCodes";
 import { motion, AnimatePresence } from "framer-motion";
@@ -177,7 +179,18 @@ const Dashboard = ({
             const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
             
             const expanded = expandedWeeks[week];
-            let balanceColorClass = diff < 0 ? "text-red-600 dark:text-red-400 font-bold" : (ueberstunden > 0 ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-blue-600 dark:text-blue-400 font-bold");
+            let balanceColorClass = diff < 0
+                ? "text-red-600 dark:text-red-400 font-bold"
+                : (ueberstunden > 0
+                    ? "text-emerald-600 dark:text-emerald-400 font-bold"
+                    : "text-blue-600 dark:text-blue-400 font-bold");
+            const totalHoursColorClass = diff < 0
+                ? "text-red-600 dark:text-red-400 font-bold"
+                : (ueberstunden > 0
+                    ? "text-emerald-600 dark:text-emerald-400 font-bold"
+                    : (mehrarbeit > 0
+                        ? "text-blue-600 dark:text-blue-400 font-bold"
+                        : "text-zinc-700 dark:text-zinc-300 font-bold"));
 
             // Einträge nach Datum sortieren
             const daysMap = new Map(); 
@@ -196,7 +209,7 @@ const Dashboard = ({
                         
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <div className="text-sm flex gap-3">
-                                <span className={weekStats.work >= weekStats.totalTarget ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-zinc-700 dark:text-zinc-300 font-bold"}>{formatTime(workMinutes)}</span>
+                                <span className={totalHoursColorClass}>{formatTime(workMinutes)}</span>
                                 <span className={balanceColorClass}> {diff >= 0 ? "+" : "-"}{formatTime(Math.abs(diff))} </span>
                             </div>
 
@@ -227,7 +240,7 @@ const Dashboard = ({
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="overflow-hidden"> 
                       <div className="mt-2 space-y-3"> 
                         {sortedDays.map(([dateStr, dayEntries]) => { 
-                            const daySum = dayEntries.reduce((acc, curr) => (curr.type === "work" && curr.code === WORK_CODE.DRIVE) ? acc : acc + curr.netDuration, 0); 
+                            const daySum = calculateDisplayedDayMinutes(dayEntries); 
                             const d = new Date(dateStr); 
                             const sortedEntries = [...dayEntries].sort((a, b) => (a.start || "").localeCompare(b.start || "")); 
                             

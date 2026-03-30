@@ -8,13 +8,15 @@ import { useAttachmentShare } from "../hooks/useAttachmentShare";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  getWeekNumber, 
   formatTime, 
   formatSignedTime, 
-  blobToBase64, 
-  getTargetMinutesForDate,
-  getWeekRangeInMonth 
+  blobToBase64
 } from "../utils";
+import {
+  getWeekNumber,
+  getWeekRangeInMonth,
+  buildDayBalanceMetaMap,
+} from "../utils/timeCalculations";
 import { useWorkCodes } from "../hooks/useWorkCodes";
 import { WORK_CODE } from "../hooks/constants";
 import { usePeriodStats } from "../hooks/usePeriodStats"; 
@@ -156,22 +158,10 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     return map;
   }, [attachments]);
 
-  const dayMetaMap = useMemo(() => {
-    const map = {}; let currentDateStr = ""; let dayIndex = 0; const sums = {};
-    filteredEntries.forEach((e) => {
-      if (!sums[e.date]) sums[e.date] = { totalMinutes: 0 };
-      if (!(e.type === "work" && e.code === WORK_CODE.DRIVE)) sums[e.date].totalMinutes += e.netDuration;
-    });
-    filteredEntries.forEach((e, idx) => {
-      if (e.date !== currentDateStr) { dayIndex++; currentDateStr = e.date; }
-      const target = getTargetMinutesForDate(e.date, userData?.workDays);
-      const nextEntry = filteredEntries[idx + 1];
-      const isLastOfDay = !nextEntry || nextEntry.date !== e.date;
-      const balance = sums[e.date].totalMinutes - target;
-      map[e.id] = { dayIndex, isEvenDay: dayIndex % 2 === 0, showBalance: isLastOfDay && target > 0, balance: balance };
-    });
-    return map;
-  }, [filteredEntries, userData]);
+  const dayMetaMap = useMemo(
+    () => buildDayBalanceMetaMap(filteredEntries, userData),
+    [filteredEntries, userData]
+  );
 
   const handlePdfAction = async (actionType) => {
     try {

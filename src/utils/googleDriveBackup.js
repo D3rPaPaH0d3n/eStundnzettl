@@ -4,6 +4,10 @@ import { BACKUP_CONFIG } from '../hooks/constants';
 const TOKEN_STORAGE_KEY = 'google_auth_state';
 const AUTH_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const GoogleDriveBackupPlugin = registerPlugin('GoogleDriveBackup');
+const SESSION_TOKEN_MAX_AGE_MS = 45 * 60 * 1000;
+
+let sessionAccessToken = null;
+let sessionTokenSavedAt = 0;
 
 const getStoredAuth = () => {
   try {
@@ -19,15 +23,31 @@ const saveStoredAuth = (auth) => {
     scope: AUTH_SCOPE,
     savedAt: Date.now(),
     source: auth?.source || 'native-plugin',
-    accessToken: auth?.accessToken || null,
     accountEmail: auth?.accountEmail || null,
     userInfo: auth?.userInfo || (auth?.accountEmail ? { email: auth.accountEmail } : null),
-    nativeConnected: true,
+    nativeConnected: auth?.nativeConnected !== false,
+    reauthRequired: !!auth?.reauthRequired,
   }));
 };
 
 const clearStoredAuth = () => {
   localStorage.removeItem(TOKEN_STORAGE_KEY);
+  sessionAccessToken = null;
+  sessionTokenSavedAt = 0;
+};
+
+const cacheSessionToken = (accessToken) => {
+  sessionAccessToken = accessToken || null;
+  sessionTokenSavedAt = accessToken ? Date.now() : 0;
+};
+
+const getCachedSessionToken = () => {
+  if (!sessionAccessToken) return null;
+  if (Date.now() - sessionTokenSavedAt > SESSION_TOKEN_MAX_AGE_MS) {
+    cacheSessionToken(null);
+    return null;
+  }
+  return sessionAccessToken;
 };
 
 const parseNativeError = (error, fallback = 'GOOGLE_DRIVE_NATIVE_ERROR') => {
@@ -82,9 +102,9 @@ const getNativeStatus = async () => {
   } catch (error) {
     return {
       available: true,
-      connected: false,
+      connected: !!stored?.nativeConnected,
       hasToken: false,
-      reauthRequired: true,
+      reauthRequired: false,
       scope: AUTH_SCOPE,
       userInfo: stored?.userInfo || null,
       savedAt: stored?.savedAt || null,
@@ -114,11 +134,14 @@ const connectGoogleDrive = async () => {
       throw new Error('GOOGLE_DRIVE_AUTH_NO_ACCESS_TOKEN');
     }
 
+    cacheSessionToken(accessToken);
+
     const authRecord = {
-      accessToken,
       accountEmail: nativeResult?.accountEmail || null,
       source: nativeResult?.source || 'native-plugin',
       userInfo: nativeResult?.accountEmail ? { email: nativeResult.accountEmail } : null,
+      nativeConnected: true,
+      reauthRequired: false,
     };
 
     saveStoredAuth(authRecord);
@@ -147,37 +170,81 @@ const disconnectGoogleDrive = async () => {
 };
 
 const getValidGoogleToken = async () => {
-  const stored = getStoredAuth();
-  if (stored?.accessToken) {
-    return { accessToken: stored.accessToken };
+  const cachedToken = getCachedSessionToken();
+  if (cachedToken) {
+    return { accessToken: cachedToken };
   }
 
-  const status = await getNativeStatus();
-  if (status?.reauthRequired || !status?.hasToken) {
+  if (!(await nativeAvailable())) {
     clearStoredAuth();
     throw new Error('AUTH_REQUIRED');
   }
 
-  return null;
+  try {
+    const nativeResult = await GoogleDriveBackupPlugin.refreshToken({
+      scope: AUTH_SCOPE,
+    });
+
+    const accessToken = nativeResult?.accessToken || null;
+    if (!accessToken) {
+      throw new Error('AUTH_REQUIRED');
+    }
+
+    cacheSessionToken(accessToken);
+    saveStoredAuth({
+      accountEmail: nativeResult?.accountEmail || null,
+      source: nativeResult?.source || 'native-plugin',
+      userInfo: nativeResult?.accountEmail ? { email: nativeResult.accountEmail } : null,
+      nativeConnected: true,
+      reauthRequired: false,
+    });
+
+    return { accessToken };
+  } catch (error) {
+    const message = parseNativeError(error, 'AUTH_REQUIRED');
+    const stored = getStoredAuth();
+    const requiresReauth = message.includes('AUTH_REQUIRED');
+    saveStoredAuth({
+      accountEmail: stored?.accountEmail || null,
+      source: stored?.source || 'native-plugin',
+      userInfo: stored?.userInfo || null,
+      nativeConnected: true,
+      reauthRequired: requiresReauth,
+    });
+    cacheSessionToken(null);
+    throw new Error(requiresReauth ? 'AUTH_REQUIRED' : message);
+  }
 };
 
 const authFetch = async (url, options = {}) => {
+  const executeFetch = async (accessToken) => fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
   const auth = await getValidGoogleToken();
   if (!auth?.accessToken) {
     throw new Error('AUTH_REQUIRED');
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-      Authorization: `Bearer ${auth.accessToken}`,
-    },
-  });
+  let response = await executeFetch(auth.accessToken);
 
   if (response.status === 401 || response.status === 403) {
-    clearStoredAuth();
-    throw new Error('AUTH_REQUIRED');
+    cacheSessionToken(null);
+
+    const refreshedAuth = await getValidGoogleToken();
+    if (!refreshedAuth?.accessToken) {
+      throw new Error('AUTH_REQUIRED');
+    }
+
+    response = await executeFetch(refreshedAuth.accessToken);
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('AUTH_REQUIRED');
+    }
   }
 
   return response;

@@ -105,9 +105,6 @@ export function useAutoBackup(entries, userData, isEnabled) {
             throw new Error("AUTH_REQUIRED");
           }
         } catch (cloudErr) {
-          if (String(cloudErr?.message || cloudErr || '').includes('AUTH_REQUIRED')) {
-            localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
-          }
           const current = readLSInt(STORAGE_KEYS.BACKUP_FAIL_COUNT);
           const newCount = current + 1;
           await dualWrite(STORAGE_KEYS.BACKUP_FAIL_COUNT, "backup_fail_count", String(newCount));

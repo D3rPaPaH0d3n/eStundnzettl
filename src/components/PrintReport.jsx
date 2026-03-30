@@ -17,7 +17,6 @@ import {
   getWeekRangeInMonth,
   buildDayBalanceMetaMap,
 } from "../utils/timeCalculations";
-import { useWorkCodes } from "../hooks/useWorkCodes";
 import { WORK_CODE } from "../hooks/constants";
 import { usePeriodStats } from "../hooks/usePeriodStats"; 
 import ExportModal from "./ExportModal";
@@ -39,11 +38,7 @@ const PRINT_STYLES = {
   borderLight: '#e4e4e7', // Zinc-200
 };
 
-const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onMonthChange, userData, attachments = [], readAttachmentFile }) => {
-  
-  // Work Codes aus dem Hook laden
-  const { workCodes } = useWorkCodes();
-  
+const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile }) => {
   const [filterMode, setFilterMode] = useState(() => {
     const today = new Date();
     if (monthDate.getMonth() === today.getMonth() && monthDate.getFullYear() === today.getFullYear()) {
@@ -157,6 +152,10 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
     });
     return map;
   }, [attachments]);
+
+  const workCodeLabelMap = useMemo(() => {
+    return new Map(workCodes.map((code) => [code.id, code.label]));
+  }, [workCodes]);
 
   const dayMetaMap = useMemo(
     () => buildDayBalanceMetaMap(filteredEntries, userData),
@@ -357,7 +356,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                   else if (meta.isEvenDay) rowBg = PRINT_STYLES.bgZebra;
 
                   let projectText = e.project;
-                  let codeText = workCodes.find((c) => c.id === e.code)?.label || "";
+                  let codeText = workCodeLabelMap.get(e.code) || "";
                   let durationDisplay = formatTime(e.netDuration);
                   let timeColor = PRINT_STYLES.textDark;
                   

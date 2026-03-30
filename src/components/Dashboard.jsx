@@ -1,4 +1,4 @@
-import React, { forwardRef, useState } from "react";
+import React, { forwardRef, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Paperclip, Trash2 } from "lucide-react";
 import { 
   Card, 
@@ -11,7 +11,6 @@ import {
   calculateDisplayedDayMinutes,
 } from "../utils/timeCalculations";
 import { WORK_CODE } from "../hooks/constants";
-import { useWorkCodes } from "../hooks/useWorkCodes";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
@@ -35,12 +34,8 @@ const CustomMonthInput = forwardRef(({ value, onClick }, ref) => (
 const Dashboard = ({
   currentDate, onSetCurrentDate, changeMonth,
   stats, 
-  overtime, progressPercent, groupedByWeek, viewMonth, viewYear, onEditEntry, onDeleteEntry, onManageAttachments, getAttachmentsForEntry, userData
+  overtime, progressPercent, groupedByWeek, viewMonth, viewYear, onEditEntry, onDeleteEntry, onManageAttachments, getAttachmentsForEntry, userData, workCodes = []
 }) => {
-  
-  // Work Codes aus dem Hook laden
-  const { workCodes } = useWorkCodes();
-  
   const [expandedWeeks, setExpandedWeeks] = useState(() => {
     const currentWeek = getWeekNumber(new Date());
     return { [currentWeek]: true };
@@ -54,12 +49,32 @@ const Dashboard = ({
   const monthlyOvertimeSplit = stats.overtimeSplit || { mehrarbeit: 0, ueberstunden: 0 };
 
   // FIX 1: Sortierung der Wochen nach Datum (Startdatum der Einträge), nicht nach KW-Nummer.
-  const sortedWeeks = [...groupedByWeek].sort((a, b) => {
-    // a und b sind Arrays: [weekNum, entriesArray]
-    const dateA = new Date(a[1][0].date);
-    const dateB = new Date(b[1][0].date);
-    return dateB - dateA; // Absteigend (neueste oben)
-  });
+  const workCodeLabelMap = useMemo(
+    () => new Map(workCodes.map((code) => [code.id, code.label])),
+    [workCodes]
+  );
+
+  const sortedWeeks = useMemo(
+    () => [...groupedByWeek].sort((a, b) => {
+      const dateA = new Date(a[1][0].date);
+      const dateB = new Date(b[1][0].date);
+      return dateB - dateA;
+    }),
+    [groupedByWeek]
+  );
+
+  const attachmentCountByEntryId = useMemo(() => {
+    const counts = new Map();
+    if (!getAttachmentsForEntry) return counts;
+
+    sortedWeeks.forEach(([, weekEntries]) => {
+      weekEntries.forEach((entry) => {
+        counts.set(entry.id, getAttachmentsForEntry(entry.id).length);
+      });
+    });
+
+    return counts;
+  }, [sortedWeeks, getAttachmentsForEntry]);
 
   return (
     <motion.main initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="w-full p-3 space-y-4">
@@ -259,7 +274,7 @@ const Dashboard = ({
                                           let timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags"); 
                                           
                                           let codeLabel = ""; 
-                                          if(entry.type === "work") codeLabel = workCodes.find(c => c.id === entry.code)?.label || ""; 
+                                          if(entry.type === "work") codeLabel = workCodeLabelMap.get(entry.code) || ""; 
                                           else if(isHoliday) codeLabel = "Bezahlt frei"; 
                                           else if(isTimeComp) codeLabel = "Zeitausgleich"; 
                                           else codeLabel = entry.type === "vacation" ? "Urlaub" : "Krank"; 
@@ -286,7 +301,7 @@ const Dashboard = ({
                                             ); 
                                           } 
 
-                                          const attachmentCount = getAttachmentsForEntry ? getAttachmentsForEntry(entry.id).length : 0;
+                                          const attachmentCount = attachmentCountByEntryId.get(entry.id) || 0;
 
                                           return ( 
                                             <div key={entry.id} className="relative overflow-hidden"> 
@@ -340,4 +355,4 @@ const Dashboard = ({
   );
 };
 
-export default Dashboard;
+export default React.memo(Dashboard);

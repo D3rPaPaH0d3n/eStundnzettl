@@ -1,10 +1,5 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { Suspense, useRef, useState, useEffect } from "react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import ChangelogModal from "./ChangelogModal";
-import HelpModal from "./HelpModal";
-import WorkCodeManager from "./WorkCodeManager";
-import ImportConflictModal from "./ImportConflictModal";
-import DecimalDurationPicker from "./DecimalDurationPicker";
 import ProfileSettings from "./Settings/ProfileSettings";
 import DataSettings from "./Settings/DataSettings";
 import ThemeSettings from "./Settings/ThemeSettings";
@@ -12,6 +7,12 @@ import BackupSettings from "./Settings/BackupSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
 import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import toast from "react-hot-toast";
+
+const ChangelogModal = React.lazy(() => import("./ChangelogModal"));
+const HelpModal = React.lazy(() => import("./HelpModal"));
+const WorkCodeManager = React.lazy(() => import("./WorkCodeManager"));
+const ImportConflictModal = React.lazy(() => import("./ImportConflictModal"));
+const DecimalDurationPicker = React.lazy(() => import("./DecimalDurationPicker"));
 
 const Settings = ({
   userData,
@@ -145,36 +146,56 @@ const Settings = ({
   return (
     <main className="w-full p-4 space-y-6 pb-20">
       {/* Modals */}
-      <ChangelogModal
-        isOpen={showChangelog}
-        onClose={() => setShowChangelog(false)}
-      />
-      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
-      <WorkCodeManager
-        isOpen={showWorkCodeManager}
-        onClose={() => setShowWorkCodeManager(false)}
-      />
-      <ImportConflictModal
-        analysisData={pendingImport}
-        onConfirm={handleConfirmImport}
-        onCancel={() => setPendingImport(null)}
-      />
+      {showChangelog && (
+        <Suspense fallback={null}>
+          <ChangelogModal
+            isOpen={showChangelog}
+            onClose={() => setShowChangelog(false)}
+          />
+        </Suspense>
+      )}
+      {showHelp && (
+        <Suspense fallback={null}>
+          <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+        </Suspense>
+      )}
+      {showWorkCodeManager && (
+        <Suspense fallback={null}>
+          <WorkCodeManager
+            isOpen={showWorkCodeManager}
+            onClose={() => setShowWorkCodeManager(false)}
+          />
+        </Suspense>
+      )}
+      {pendingImport && (
+        <Suspense fallback={null}>
+          <ImportConflictModal
+            analysisData={pendingImport}
+            onConfirm={handleConfirmImport}
+            onCancel={() => setPendingImport(null)}
+          />
+        </Suspense>
+      )}
 
-      <DecimalDurationPicker
-        isOpen={showDurationPicker}
-        onClose={() => setShowDurationPicker(false)}
-        initialMinutes={
-          pickerTargetIndex !== null
-            ? safeUserData.workDays[pickerTargetIndex]
-            : 0
-        }
-        onConfirm={handleDurationConfirm}
-        title={
-          pickerTargetIndex !== null
-            ? `${["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][pickerTargetIndex]} bearbeiten`
-            : ""
-        }
-      />
+      {showDurationPicker && (
+        <Suspense fallback={null}>
+          <DecimalDurationPicker
+            isOpen={showDurationPicker}
+            onClose={() => setShowDurationPicker(false)}
+            initialMinutes={
+              pickerTargetIndex !== null
+                ? safeUserData.workDays[pickerTargetIndex]
+                : 0
+            }
+            onConfirm={handleDurationConfirm}
+            title={
+              pickerTargetIndex !== null
+                ? `${["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][pickerTargetIndex]} bearbeiten`
+                : ""
+            }
+          />
+        </Suspense>
+      )}
 
       {/* 1. Profile Settings */}
       <ProfileSettings userData={userData} setUserData={setUserData} />

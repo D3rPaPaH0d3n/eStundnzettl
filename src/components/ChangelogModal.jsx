@@ -1,138 +1,134 @@
-import React, { useState, useEffect } from "react";
-import { X, ChevronDown } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  X,
+  ChevronDown,
+  Zap,
+  Bug,
+  Shield,
+  Globe,
+  Clock,
+  Timer,
+  Rocket,
+  Sliders,
+  Download,
+  Cloud,
+  Building2,
+  Sparkles,
+  FileText,
+} from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { CHANGELOG_DATA } from "../data/changelog-data";
 
-// Lazy-load changelog data + icons to keep initial bundle small
-let cachedData = null;
-let cachedIcons = null;
-
-const loadChangelogData = async () => {
-  if (cachedData) return { data: cachedData, icons: cachedIcons };
-
-  const [
-    { CHANGELOG_DATA },
-    { Zap, Bug, Shield, Globe, Clock, Timer, Rocket, Sliders, Download, Cloud, Building2, Sparkles, FileText }
-  ] = await Promise.all([
-    import("../data/changelog-data"),
-    import("lucide-react")
-  ]);
-
-  const iconMap = { Zap, Bug, Shield, Globe, Clock, Timer, Rocket, Sliders, Download, Cloud, Building2, Sparkles, FileText };
-  cachedData = CHANGELOG_DATA;
-  cachedIcons = iconMap;
-  return { data: CHANGELOG_DATA, icons: iconMap };
+const ICON_MAP = {
+  Zap,
+  Bug,
+  Shield,
+  Globe,
+  Clock,
+  Timer,
+  Rocket,
+  Sliders,
+  Download,
+  Cloud,
+  Building2,
+  Sparkles,
+  FileText,
 };
 
-/**
- * Groups consecutive bugfix-only versions into a single "Kürzliche Bugfixes" entry.
- * A version is bugfix-only if ALL its sections have iconName === 'Bug'.
- */
 const groupBugfixVersions = (data) => {
   const result = [];
   let i = 0;
+
   while (i < data.length) {
     const version = data[i];
-    const isBugfixOnly = version.sections?.every(s => s.iconName === 'Bug');
+    const isBugfixOnly = version.sections?.every((section) => section.iconName === "Bug");
 
-    if (isBugfixOnly) {
-      // Collect consecutive bugfix-only versions
-      const group = { ...version, isBugfixGroup: true, groupedVersions: [version] };
-      let j = i + 1;
-      while (j < data.length) {
-        const next = data[j];
-        const nextIsBugfixOnly = next.sections?.every(s => s.iconName === 'Bug');
-        if (!nextIsBugfixOnly) break;
-        group.groupedVersions.push(next);
-        j++;
-      }
-      result.push(group);
-      i = j;
-    } else {
+    if (!isBugfixOnly) {
       result.push(version);
-      i++;
+      i += 1;
+      continue;
     }
+
+    const group = { ...version, isBugfixGroup: true, groupedVersions: [version] };
+    let j = i + 1;
+    while (j < data.length) {
+      const next = data[j];
+      const nextIsBugfixOnly = next.sections?.every((section) => section.iconName === "Bug");
+      if (!nextIsBugfixOnly) break;
+      group.groupedVersions.push(next);
+      j += 1;
+    }
+
+    result.push(group);
+    i = j;
   }
+
   return result;
 };
 
 const ChangelogModal = ({ isOpen, onClose }) => {
-  const [changelogData, setChangelogData] = useState(null);
-  const [icons, setIcons] = useState({});
-  const [loading, setLoading] = useState(false);
   const [openVersions, setOpenVersions] = useState({});
   const dragControls = useDragControls();
 
+  const changelogData = useMemo(() => groupBugfixVersions(CHANGELOG_DATA), []);
+
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
+    document.body.style.overflow = isOpen ? "hidden" : "";
+    return () => {
       document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
+    };
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && !changelogData) {
-      setLoading(true);
-      loadChangelogData().then(({ data, icons: iconMap }) => {
-        const grouped = groupBugfixVersions(data);
-        setChangelogData(grouped);
-        setIcons(iconMap);
-        // Open the first (newest) version or bugfix group by default
-        if (grouped && grouped.length > 0) {
-          setOpenVersions({ [grouped[0].version]: true });
-        }
-        setLoading(false);
-      }).catch(() => setLoading(false));
+    if (isOpen && changelogData.length > 0) {
+      setOpenVersions({ [changelogData[0].version]: true });
+      return;
     }
-  }, [isOpen, changelogData]);
 
-  // Reset open versions when modal closes
-  useEffect(() => {
     if (!isOpen) {
       setOpenVersions({});
     }
-  }, [isOpen]);
+  }, [isOpen, changelogData]);
 
   const toggleVersion = (version) => {
-    setOpenVersions(prev => ({
+    setOpenVersions((prev) => ({
       ...prev,
-      [version]: !prev[version]
+      [version]: !prev[version],
     }));
   };
 
-  // Render a bugfix group (consecutive bugfix-only versions collapsed into one)
-  const renderBugfixGroup = (group, groupIdx, isFirst) => {
-    const isOpen = !!openVersions[group.version];
+  const renderBugfixGroup = (group, isFirst) => {
+    const isVersionOpen = !!openVersions[group.version];
     const count = group.groupedVersions.length;
+
     return (
       <div key={group.version} className="mb-2">
-        {isFirst && <div className="border-t border-zinc-100 dark:border-zinc-800 mb-4" />}
-        {!isFirst && <div className="border-t border-zinc-100 dark:border-zinc-800 mb-4" />}
+        <div className="border-t border-zinc-100 dark:border-zinc-800 mb-4" />
 
-        {/* Group Header */}
         <button
           onClick={() => toggleVersion(group.version)}
           className="w-full flex items-center gap-3 text-left group"
         >
           <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
+            animate={{ rotate: isVersionOpen ? 180 : 0 }}
             transition={{ duration: 0.2 }}
             className="shrink-0"
           >
-            <ChevronDown size={16} className="text-zinc-400 group-hover:text-emerald-500 transition-colors" />
+            <ChevronDown
+              size={16}
+              className="text-zinc-400 group-hover:text-emerald-500 transition-colors"
+            />
           </motion.div>
           <div className="flex-1 min-w-0">
             <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-              Kürzliche Bugfixes 🔧
+              Kürzliche Bugfixes
             </span>
             <span className="text-zinc-400 text-xs ml-2">({count} Versionen)</span>
           </div>
         </button>
 
-        {/* Accordion Content — list each grouped version with its items */}
         <AnimatePresence initial={false}>
-          {isOpen && (
+          {isVersionOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -141,20 +137,18 @@ const ChangelogModal = ({ isOpen, onClose }) => {
               className="overflow-hidden"
             >
               <div className="pl-8 pt-3 space-y-4">
-                {group.groupedVersions.map((gv, gvIdx) => (
-                  <div key={gv.version} className={gvIdx > 0 ? "pt-2" : ""}>
+                {group.groupedVersions.map((groupedVersion, index) => (
+                  <div key={groupedVersion.version} className={index > 0 ? "pt-2" : ""}>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                        {gv.version}
+                        {groupedVersion.version}
                       </span>
-                      {gvIdx === 0 && icons.Bug && (
-                        <icons.Bug size={11} className="text-zinc-400" />
-                      )}
+                      {index === 0 && <Bug size={11} className="text-zinc-400" />}
                     </div>
                     <ul className="space-y-1.5">
-                      {gv.sections?.flatMap(s => s.items || []).map((item, i) => (
+                      {groupedVersion.sections?.flatMap((section) => section.items || []).map((item, itemIndex) => (
                         <li
-                          key={i}
+                          key={itemIndex}
                           className="text-sm text-zinc-600 dark:text-zinc-300 flex items-start gap-2"
                         >
                           <span className="text-emerald-500 mt-0.5 shrink-0">•</span>
@@ -172,9 +166,9 @@ const ChangelogModal = ({ isOpen, onClose }) => {
     );
   };
 
-  // Render a normal (non-grouped) version
   const renderVersion = (version, isFirst) => {
-    const isOpen = !!openVersions[version.version];
+    const isVersionOpen = !!openVersions[version.version];
+
     return (
       <div key={version.version} className="mb-2">
         {!isFirst && <div className="border-t border-zinc-100 dark:border-zinc-800 mb-4" />}
@@ -184,11 +178,14 @@ const ChangelogModal = ({ isOpen, onClose }) => {
           className="w-full flex items-center gap-3 text-left group"
         >
           <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
+            animate={{ rotate: isVersionOpen ? 180 : 0 }}
             transition={{ duration: 0.2 }}
             className="shrink-0"
           >
-            <ChevronDown size={16} className="text-zinc-400 group-hover:text-emerald-500 transition-colors" />
+            <ChevronDown
+              size={16}
+              className="text-zinc-400 group-hover:text-emerald-500 transition-colors"
+            />
           </motion.div>
           <div className="flex-1 min-w-0">
             <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
@@ -196,13 +193,13 @@ const ChangelogModal = ({ isOpen, onClose }) => {
             </span>
             <span className="text-zinc-400 text-xs ml-2">{version.date}</span>
             <span className="text-zinc-600 dark:text-zinc-300 text-sm ml-2 truncate">
-              — {version.title}
+              - {version.title}
             </span>
           </div>
         </button>
 
         <AnimatePresence initial={false}>
-          {isOpen && (
+          {isVersionOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -212,21 +209,20 @@ const ChangelogModal = ({ isOpen, onClose }) => {
             >
               <div className="pl-8 pt-3 space-y-4">
                 {version.sections?.map((section) => {
-                  const SectionIcon = icons[section.iconName];
+                  const SectionIcon = ICON_MAP[section.iconName];
+
                   return (
                     <div key={section.title} className="space-y-2">
                       <div className="flex items-center gap-2">
-                        {SectionIcon && (
-                          <SectionIcon size={13} className="text-zinc-400" />
-                        )}
+                        {SectionIcon && <SectionIcon size={13} className="text-zinc-400" />}
                         <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
                           {section.title}
                         </span>
                       </div>
                       <ul className="space-y-1.5">
-                        {section.items?.map((item, i) => (
+                        {section.items?.map((item, itemIndex) => (
                           <li
-                            key={i}
+                            key={itemIndex}
                             className="text-sm text-zinc-600 dark:text-zinc-300 flex items-start gap-2"
                           >
                             <span className="text-emerald-500 mt-0.5 shrink-0">•</span>
@@ -270,14 +266,13 @@ const ChangelogModal = ({ isOpen, onClose }) => {
             onDragEnd={(_, info) => {
               if (info.offset.y > 100) onClose();
             }}
-            className={`
+            className="
               fixed z-[160] flex flex-col bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden
               inset-x-0 bottom-0 rounded-t-3xl border-t border-zinc-200 dark:border-zinc-800
               max-h-[85vh] h-[85vh]
               md:inset-auto md:w-[600px] md:h-[85vh] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl
-            `}
+            "
           >
-            {/* DRAG HANDLE */}
             <div
               className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-zinc-900 shrink-0 cursor-grab active:cursor-grabbing touch-none"
               onPointerDown={(e) => dragControls.start(e)}
@@ -285,7 +280,6 @@ const ChangelogModal = ({ isOpen, onClose }) => {
               <div className="w-12 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full" />
             </div>
 
-            {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="text-lg">📋</div>
@@ -299,17 +293,11 @@ const ChangelogModal = ({ isOpen, onClose }) => {
               </button>
             </div>
 
-            {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              {loading ? (
-                <div className="text-center py-10 text-zinc-400 text-sm">Lädt...</div>
-              ) : (
-                changelogData?.map((version, idx) => {
-                  if (version.isBugfixGroup) {
-                    return renderBugfixGroup(version, idx, idx === 0);
-                  }
-                  return renderVersion(version, idx === 0);
-                })
+              {changelogData.map((version, index) =>
+                version.isBugfixGroup
+                  ? renderBugfixGroup(version, index === 0)
+                  : renderVersion(version, index === 0)
               )}
             </div>
           </motion.div>

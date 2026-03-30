@@ -16,13 +16,8 @@ import { useWorkCodes } from "./hooks/useWorkCodes";
 
 // COMPONENTS
 import Dashboard from "./components/Dashboard";
-import EntryForm from "./components/EntryForm";
-import Settings from "./components/Settings";
 import ConfirmModal from "./components/ConfirmModal";
 import LiveTimerOverlay from "./components/LiveTimerOverlay";
-import OnboardingWizard from "./components/OnboardingWizard";
-import ExportModal from "./components/ExportModal";
-import AttachmentManager from "./components/AttachmentManager";
 
 // CUSTOM HOOKS
 import { useEntries } from "./hooks/useEntries";
@@ -44,6 +39,11 @@ import { getSetting } from "./db/repositories/settingsRepo";
 
 // LAZY LOADING
 const PrintReport = React.lazy(() => import("./components/PrintReport"));
+const Settings = React.lazy(() => import("./components/Settings"));
+const AttachmentManager = React.lazy(() => import("./components/AttachmentManager"));
+const EntryForm = React.lazy(() => import("./components/EntryForm"));
+const OnboardingWizard = React.lazy(() => import("./components/OnboardingWizard"));
+const ExportModal = React.lazy(() => import("./components/ExportModal"));
 
 // ANIMATION CONFIG
 const pageVariants = { initial: { opacity: 0, x: 20 }, in: { opacity: 1, x: 0 }, out: { opacity: 0, x: -20 } };
@@ -278,15 +278,17 @@ export default function App() {
       <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#27272a', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#10b981', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />
 
       {showOnboarding && (
-        <OnboardingWizard
-          onComplete={handleOnboardingFinish}
-          setUserData={setUserData}
-          importEntries={importEntries}
-          importWorkCodes={loadWorkCodes}
-          setCloudSyncEnabled={setAutoBackup}
-          setLocalBackupEnabled={() => {}}
-          setTheme={setTheme}
-        />
+        <Suspense fallback={null}>
+          <OnboardingWizard
+            onComplete={handleOnboardingFinish}
+            setUserData={setUserData}
+            importEntries={importEntries}
+            importWorkCodes={loadWorkCodes}
+            setCloudSyncEnabled={setAutoBackup}
+            setLocalBackupEnabled={() => {}}
+            setTheme={setTheme}
+          />
+        </Suspense>
       )}
 
       <ConfirmModal
@@ -297,23 +299,31 @@ export default function App() {
         message={deleteTarget?.type === 'all' ? "Möchtest du wirklich alle Einträge unwiderruflich löschen? Auch dein Profil wird zurückgesetzt." : "Möchtest du diesen Eintrag wirklich entfernen?"}
       />
 
-      <ExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        onSelectFolder={handleExportToFolder}
-        onSelectShare={handleExportShare}
-      />
+      {showExportModal && (
+        <Suspense fallback={null}>
+          <ExportModal
+            isOpen={showExportModal}
+            onClose={() => setShowExportModal(false)}
+            onSelectFolder={handleExportToFolder}
+            onSelectShare={handleExportShare}
+          />
+        </Suspense>
+      )}
 
-      <AttachmentManager
-        isOpen={!!attachmentEntry}
-        onClose={() => setAttachmentEntry(null)}
-        entry={attachmentEntry}
-        attachments={attachmentEntry ? getAttachmentsForEntry(attachmentEntry.id) : []}
-        addAttachment={addAttachment}
-        removeAttachment={removeAttachment}
-        getLabelSuggestions={getLabelSuggestions}
-        formatFileSize={formatFileSize}
-      />
+      {!!attachmentEntry && (
+        <Suspense fallback={null}>
+          <AttachmentManager
+            isOpen={!!attachmentEntry}
+            onClose={() => setAttachmentEntry(null)}
+            entry={attachmentEntry}
+            attachments={getAttachmentsForEntry(attachmentEntry.id)}
+            addAttachment={addAttachment}
+            removeAttachment={removeAttachment}
+            getLabelSuggestions={getLabelSuggestions}
+            formatFileSize={formatFileSize}
+          />
+        </Suspense>
+      )}
 
       <input type="file" className="hidden" ref={fileInputRef} accept="application/json" onChange={handleImport} />
 
@@ -361,62 +371,67 @@ export default function App() {
                 onManageAttachments={setAttachmentEntry}
                 getAttachmentsForEntry={getAttachmentsForEntry}
                 userData={userData}
+                workCodes={workCodes}
               />
             </motion.div>
           )}
 
           {view === "add" && !showOnboarding && (
             <motion.div key="add" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
-              <EntryForm
-                onCancel={() => { setView("dashboard"); form.setEditingEntry(null); }}
-                onSubmit={handleSaveEntry}
-                entryType={form.entryType}
-                setEntryType={form.setEntryType}
-                code={form.code}
-                setCode={form.setCode}
-                pauseDuration={form.pauseDuration}
-                setPauseDuration={form.setPauseDuration}
-                formDate={form.formDate}
-                setFormDate={form.setFormDate}
-                startTime={form.startTime}
-                setStartTime={form.setStartTime}
-                endTime={form.endTime}
-                setEndTime={form.setEndTime}
-                project={form.project}
-                setProject={form.setProject}
-                lastWorkEntry={lastWorkEntry}
-                existingProjects={uniqueProjects}
-                allEntries={entries}
-                isEditing={!!form.editingEntry}
-                isLiveEntry={form.isLiveEntry}
-                userData={userData}
-              />
+              <Suspense fallback={null}>
+                <EntryForm
+                  onCancel={() => { setView("dashboard"); form.setEditingEntry(null); }}
+                  onSubmit={handleSaveEntry}
+                  entryType={form.entryType}
+                  setEntryType={form.setEntryType}
+                  code={form.code}
+                  setCode={form.setCode}
+                  pauseDuration={form.pauseDuration}
+                  setPauseDuration={form.setPauseDuration}
+                  formDate={form.formDate}
+                  setFormDate={form.setFormDate}
+                  startTime={form.startTime}
+                  setStartTime={form.setStartTime}
+                  endTime={form.endTime}
+                  setEndTime={form.setEndTime}
+                  project={form.project}
+                  setProject={form.setProject}
+                  lastWorkEntry={lastWorkEntry}
+                  existingProjects={uniqueProjects}
+                  allEntries={entries}
+                  isEditing={!!form.editingEntry}
+                  isLiveEntry={form.isLiveEntry}
+                  userData={userData}
+                />
+              </Suspense>
             </motion.div>
           )}
 
           {view === "settings" && !showOnboarding && (
             <motion.div key="settings" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
-              <Settings
-                userData={userData}
-                setUserData={setUserData}
-                theme={theme}
-                setTheme={setTheme}
-                autoBackup={autoBackup}
-                setAutoBackup={setAutoBackup}
-                onExport={exportData}
-                onImport={() => fileInputRef.current?.click()}
-                onDeleteAll={() => setDeleteTarget({ type: 'all' })}
-                onCheckUpdate={handleManualUpdateCheck}
-                // Nextcloud State
-                nextcloudEnabled={nextcloudEnabled}
-                nextcloudUrl={nextcloudUrl}
-                nextcloudUser={nextcloudUser}
-                nextcloudPass={nextcloudPass}
-                setNextcloudEnabled={setNextcloudEnabled}
-                setNextcloudUrl={setNextcloudUrl}
-                setNextcloudUser={setNextcloudUser}
-                setNextcloudPass={setNextcloudPass}
-              />
+              <Suspense fallback={null}>
+                <Settings
+                  userData={userData}
+                  setUserData={setUserData}
+                  theme={theme}
+                  setTheme={setTheme}
+                  autoBackup={autoBackup}
+                  setAutoBackup={setAutoBackup}
+                  onExport={exportData}
+                  onImport={() => fileInputRef.current?.click()}
+                  onDeleteAll={() => setDeleteTarget({ type: 'all' })}
+                  onCheckUpdate={handleManualUpdateCheck}
+                  // Nextcloud State
+                  nextcloudEnabled={nextcloudEnabled}
+                  nextcloudUrl={nextcloudUrl}
+                  nextcloudUser={nextcloudUser}
+                  nextcloudPass={nextcloudPass}
+                  setNextcloudEnabled={setNextcloudEnabled}
+                  setNextcloudUrl={setNextcloudUrl}
+                  setNextcloudUser={setNextcloudUser}
+                  setNextcloudPass={setNextcloudPass}
+                />
+              </Suspense>
             </motion.div>
           )}
 
@@ -436,11 +451,12 @@ export default function App() {
                   employeeName={userData?.name || ""}
                   userPhoto={userData?.photo || null}
                   onClose={() => setView("dashboard")}
-                  onMonthChange={setCurrentDate}
-                  userData={userData}
-                  attachments={attachments}
-                  readAttachmentFile={readAttachmentFile}
-                />
+                onMonthChange={setCurrentDate}
+                userData={userData}
+                workCodes={workCodes}
+                attachments={attachments}
+                readAttachmentFile={readAttachmentFile}
+              />
               </Suspense>
             </motion.div>
           )}

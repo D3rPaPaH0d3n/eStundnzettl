@@ -141,23 +141,24 @@ export const calculatePeriodStats = (
     overtimeSplit: { mehrarbeit: 0, ueberstunden: 0 },
   };
 
-  const relevantEntries = entries.filter((e) => {
-    const d = new Date(e.date);
-    const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const startOnly = new Date(
-      periodStart.getFullYear(),
-      periodStart.getMonth(),
-      periodStart.getDate()
-    );
-    const endOnly = new Date(
-      periodEnd.getFullYear(),
-      periodEnd.getMonth(),
-      periodEnd.getDate()
-    );
-    return dOnly >= startOnly && dOnly <= endOnly;
-  });
+  const startStr = [
+    periodStart.getFullYear(),
+    String(periodStart.getMonth() + 1).padStart(2, "0"),
+    String(periodStart.getDate()).padStart(2, "0"),
+  ].join("-");
+  const endStr = [
+    periodEnd.getFullYear(),
+    String(periodEnd.getMonth() + 1).padStart(2, "0"),
+    String(periodEnd.getDate()).padStart(2, "0"),
+  ].join("-");
 
-  relevantEntries.forEach((e) => {
+  const relevantEntries = [];
+  const weeklyMap = {};
+
+  entries.forEach((e) => {
+    if (e.date < startStr || e.date > endStr) return;
+    relevantEntries.push(e);
+
     if (e.type === "work") {
       if (e.code === WORK_CODE.DRIVE) stats.drive += e.netDuration;
       else stats.work += e.netDuration;
@@ -166,6 +167,12 @@ export const calculatePeriodStats = (
     if (e.type === "sick") stats.sick += e.netDuration;
     if (e.type === "public_holiday") stats.holiday += e.netDuration;
     if (e.type === "time_comp") stats.timeComp += e.netDuration;
+
+    if (!(e.type === "work" && e.code === WORK_CODE.DRIVE)) {
+      const weekNum = getWeekNumber(new Date(e.date));
+      if (!weeklyMap[weekNum]) weeklyMap[weekNum] = { target: 0, actual: 0 };
+      weeklyMap[weekNum].actual += e.netDuration;
+    }
   });
 
   stats.totalIst =
@@ -175,8 +182,6 @@ export const calculatePeriodStats = (
   loopDate.setHours(0, 0, 0, 0);
   const loopEnd = new Date(periodEnd);
   loopEnd.setHours(23, 59, 59, 999);
-
-  const weeklyMap = {};
 
   while (loopDate <= loopEnd) {
     const dateStr = [
@@ -196,15 +201,6 @@ export const calculatePeriodStats = (
   }
 
   stats.totalSaldo = stats.totalIst - stats.totalTarget;
-
-  relevantEntries.forEach((e) => {
-    if (!(e.type === "work" && e.code === WORK_CODE.DRIVE)) {
-      const w = getWeekNumber(new Date(e.date));
-      if (weeklyMap[w]) {
-        weeklyMap[w].actual += e.netDuration;
-      }
-    }
-  });
 
   Object.values(weeklyMap).forEach((week) => {
     const diff = week.actual - week.target;

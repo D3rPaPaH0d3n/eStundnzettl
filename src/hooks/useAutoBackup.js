@@ -58,6 +58,19 @@ export function useAutoBackup(entries, userData, isEnabled) {
     return JSON.stringify(data.userData).length + "-" + JSON.stringify(data.entries).length;
   };
 
+  const clearNextcloudErrorState = async () => {
+    await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT, "nextcloud_backup_fail_count", "0");
+    await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", "");
+  };
+
+  const registerNextcloudFailure = async (error) => {
+    const current = readLSInt(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT);
+    const newCount = current + 1;
+    const message = String(error?.message || error || "Nextcloud-Backup fehlgeschlagen");
+    await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT, "nextcloud_backup_fail_count", String(newCount));
+    await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", message);
+  };
+
   const performBackup = async (source) => {
     const { entries, userData } = latestDataRef.current;
 
@@ -123,8 +136,10 @@ export function useAutoBackup(entries, userData, isEnabled) {
             await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
             lastHash.current = currentHash;
             await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
+            await clearNextcloudErrorState();
           }
         } catch (ncErr) {
+          await registerNextcloudFailure(ncErr);
           console.warn("Nextcloud-Backup fehlgeschlagen:", ncErr);
         }
       }

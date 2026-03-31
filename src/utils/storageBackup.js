@@ -407,6 +407,8 @@ export const triggerManualBackup = async () => {
         if (ncUrl && ncUser && ncPass) {
           await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
           nextcloudOk = true;
+          await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT, "nextcloud_backup_fail_count", "0");
+          await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", "");
         } else {
           nextcloudError = "Nextcloud-Anmeldedaten unvollständig";
         }
@@ -424,6 +426,12 @@ export const triggerManualBackup = async () => {
 
     if (anySuccess) {
       await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
+    }
+
+    if (nextcloudOk === false && nextcloudError) {
+      const currentNcFailCount = parseInt(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT) || "0", 10);
+      await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT, "nextcloud_backup_fail_count", String(currentNcFailCount + 1));
+      await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", nextcloudError);
     }
 
     return {

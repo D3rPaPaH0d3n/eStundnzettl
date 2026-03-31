@@ -111,7 +111,7 @@ const AttachmentManager = ({
             className="w-full sm:max-w-lg bg-zinc-50 dark:bg-zinc-900 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[88vh] flex flex-col"
             onClick={stopClick}
           >
-            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900">
               <div>
                 <div className="flex items-center gap-2 text-zinc-900 dark:text-white font-bold text-lg">
                   <Paperclip size={18} className="text-emerald-500" />
@@ -126,7 +126,10 @@ const AttachmentManager = ({
               </button>
             </div>
 
-            <div className="p-4 overflow-y-auto space-y-4">
+            <div
+              className="p-4 overflow-y-auto space-y-4 bg-zinc-50 dark:bg-zinc-900"
+              style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
+            >
               <Card>
                 <div className="p-4 space-y-3">
                   <div>
@@ -220,6 +223,10 @@ const AttachmentManager = ({
                 )}
               </div>
             </div>
+            <div
+              className="shrink-0 bg-zinc-50 dark:bg-zinc-900 sm:hidden"
+              style={{ height: "env(safe-area-inset-bottom)" }}
+            />
           </motion.div>
         </motion.div>
       )}

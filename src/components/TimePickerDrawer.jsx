@@ -1,22 +1,36 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
-const ITEM_HEIGHT = 64;
+const VISIBLE_ITEMS = 5;
+const DEFAULT_ITEM_HEIGHT = 64;
 
 const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInterval = 15 }) => {
   const hoursRef = useRef(null);
   const minutesRef = useRef(null);
+  const scrollFrameRef = useRef({ hour: null, minute: null });
+  const scrollTimeoutRef = useRef({ hour: null, minute: null });
+  const selectedHourRef = useRef(6);
+  const selectedMinuteRef = useRef(0);
   const dragControls = useDragControls();
 
-  const minutes = minuteInterval === 1
-    ? Array.from({ length: 60 }, (_, i) => i)
-    : [0, 15, 30, 45];
+  const minutes = useMemo(
+    () => (minuteInterval === 1 ? Array.from({ length: 60 }, (_, i) => i) : [0, 15, 30, 45]),
+    [minuteInterval],
+  );
+  const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
 
-  const hours = Array.from({ length: 24 }, (_, i) => i);
   const [selectedHour, setSelectedHour] = useState(6);
   const [selectedMinute, setSelectedMinute] = useState(0);
+
+  useEffect(() => {
+    selectedHourRef.current = selectedHour;
+  }, [selectedHour]);
+
+  useEffect(() => {
+    selectedMinuteRef.current = selectedMinute;
+  }, [selectedMinute]);
 
   const emitTime = (hour, minute) => {
     const hh = String(hour).padStart(2, "0");
@@ -24,11 +38,51 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
     onChange(`${hh}:${mm}`);
   };
 
+  const getItemHeight = (element) => {
+    if (!element || typeof window === "undefined") return DEFAULT_ITEM_HEIGHT;
+    const rawValue = window.getComputedStyle(element).getPropertyValue("--picker-item-height").trim();
+    const parsed = Number.parseFloat(rawValue);
+    return Number.isFinite(parsed) ? parsed : DEFAULT_ITEM_HEIGHT;
+  };
+
+  const getScrollTopForValue = (source, val, element) => {
+    const index = source.indexOf(val);
+    const itemHeight = getItemHeight(element);
+    return index >= 0 ? index * itemHeight : 0;
+  };
+
   const scrollToValue = (ref, val) => {
-    if (ref.current) {
-      const el = ref.current.querySelector(`[data-value="${val}"]`);
-      if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+    const source = ref === hoursRef ? hours : minutes;
+    ref.current?.scrollTo({
+      top: getScrollTopForValue(source, val, ref.current),
+      behavior: "smooth",
+    });
+  };
+
+  const syncSelectionFromScroll = (element, type) => {
+    const source = type === "hour" ? hours : minutes;
+    const itemHeight = getItemHeight(element);
+    const index = Math.min(Math.max(0, Math.round(element.scrollTop / itemHeight)), source.length - 1);
+    const nextValue = source[index];
+
+    if (nextValue === undefined) return;
+
+    if (type === "hour") {
+      setSelectedHour((currentHour) => {
+        if (currentHour === nextValue) return currentHour;
+        emitTime(nextValue, selectedMinuteRef.current);
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+        return nextValue;
+      });
+      return;
     }
+
+    setSelectedMinute((currentMinute) => {
+      if (currentMinute === nextValue) return currentMinute;
+      emitTime(selectedHourRef.current, nextValue);
+      Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+      return nextValue;
+    });
   };
 
   useEffect(() => {
@@ -37,12 +91,22 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
     const [initialHour, initialMinute] = value ? value.split(":").map(Number) : [6, 0];
     setSelectedHour(initialHour);
     setSelectedMinute(initialMinute);
+    selectedHourRef.current = initialHour;
+    selectedMinuteRef.current = initialMinute;
 
-    setTimeout(() => {
-      scrollToValue(hoursRef, initialHour);
-      scrollToValue(minutesRef, initialMinute);
+    const timer = setTimeout(() => {
+      hoursRef.current?.scrollTo({
+        top: getScrollTopForValue(hours, initialHour, hoursRef.current),
+        behavior: "auto",
+      });
+      minutesRef.current?.scrollTo({
+        top: getScrollTopForValue(minutes, initialMinute, minutesRef.current),
+        behavior: "auto",
+      });
     }, 100);
-  }, [isOpen, value, minuteInterval]);
+
+    return () => clearTimeout(timer);
+  }, [hours, isOpen, minutes, value]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -56,6 +120,10 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
     document.documentElement.style.overflow = "hidden";
 
     return () => {
+      if (scrollFrameRef.current.hour) cancelAnimationFrame(scrollFrameRef.current.hour);
+      if (scrollFrameRef.current.minute) cancelAnimationFrame(scrollFrameRef.current.minute);
+      if (scrollTimeoutRef.current.hour) clearTimeout(scrollTimeoutRef.current.hour);
+      if (scrollTimeoutRef.current.minute) clearTimeout(scrollTimeoutRef.current.minute);
       document.body.style.overflow = previousBodyOverflow;
       document.body.style.touchAction = previousBodyTouchAction;
       document.documentElement.style.overflow = previousHtmlOverflow;
@@ -63,25 +131,50 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
   }, [isOpen]);
 
   const handleScroll = (e, type) => {
-    const source = type === "hour" ? hours : minutes;
-    const index = Math.min(Math.max(0, Math.round(e.target.scrollTop / ITEM_HEIGHT)), source.length - 1);
+    const element = e.target;
 
-    if (type === "hour") {
-      const hour = source[index];
-      if (hour !== undefined && hour !== selectedHour) {
-        setSelectedHour(hour);
-        emitTime(hour, selectedMinute);
-        Haptics.impact({ style: ImpactStyle.Light });
-      }
-      return;
+    if (scrollFrameRef.current[type]) {
+      cancelAnimationFrame(scrollFrameRef.current[type]);
     }
 
-    const minute = source[index];
-    if (minute !== undefined && minute !== selectedMinute) {
-      setSelectedMinute(minute);
-      emitTime(selectedHour, minute);
-      Haptics.impact({ style: ImpactStyle.Light });
+    scrollFrameRef.current[type] = requestAnimationFrame(() => {
+      syncSelectionFromScroll(element, type);
+      scrollFrameRef.current[type] = null;
+    });
+
+    if (scrollTimeoutRef.current[type]) {
+      clearTimeout(scrollTimeoutRef.current[type]);
     }
+
+    scrollTimeoutRef.current[type] = setTimeout(() => {
+      const ref = type === "hour" ? hoursRef : minutesRef;
+      const source = type === "hour" ? hours : minutes;
+      if (!ref.current) return;
+      const itemHeight = getItemHeight(ref.current);
+      const index = Math.min(Math.max(0, Math.round(ref.current.scrollTop / itemHeight)), source.length - 1);
+      ref.current.scrollTo({
+        top: index * itemHeight,
+        behavior: "smooth",
+      });
+      scrollTimeoutRef.current[type] = null;
+    }, 90);
+  };
+
+  const pickerMetrics = {
+    "--picker-item-height": "clamp(52px, 8dvh, 64px)",
+    "--picker-height": `calc(clamp(52px, 8dvh, 64px) * ${VISIBLE_ITEMS})`,
+    "--picker-side-width": "clamp(74px, 20vw, 86px)",
+  };
+
+  const pickerColumnStyle = {
+    height: "var(--picker-height)",
+    paddingTop: "calc((var(--picker-height) - var(--picker-item-height)) / 2)",
+    paddingBottom: "calc((var(--picker-height) - var(--picker-item-height)) / 2)",
+  };
+
+  const pickerItemStyle = {
+    height: "var(--picker-item-height)",
+    minHeight: "var(--picker-item-height)",
   };
 
   return (
@@ -109,9 +202,10 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
             onDragEnd={(_, info) => {
               if (info.offset.y > 100) onClose();
             }}
-            className="fixed bottom-0 left-0 right-0 z-[101] rounded-t-3xl overflow-visible flex flex-col overscroll-contain touch-none md:max-w-md md:mx-auto"
+            className="fixed bottom-0 left-0 right-0 z-[101] w-full md:w-[min(28rem,calc(100vw-2rem))] rounded-t-3xl overflow-visible flex flex-col overscroll-contain touch-none md:mx-auto md:bottom-4 md:rounded-3xl"
+            style={pickerMetrics}
           >
-            <div className="absolute inset-0 bg-white dark:bg-zinc-900 rounded-t-3xl shadow-2xl z-0" style={{ bottom: "-100px" }} />
+            <div className="absolute inset-0 bg-white dark:bg-zinc-900 rounded-t-3xl md:rounded-3xl shadow-2xl z-0" style={{ bottom: "-100px" }} />
 
             <div
               className="relative z-10 w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing touch-none"
@@ -120,16 +214,16 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
               <div className="w-12 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full" />
             </div>
 
-            <div className="relative z-20 flex justify-between items-center px-5 pb-4 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-t-3xl">
+            <div className="relative z-20 flex justify-between items-center px-4 sm:px-5 pb-4 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-t-3xl md:rounded-t-3xl">
               <button
                 onClick={onClose}
-                className="p-3 text-red-500 bg-red-100 dark:bg-red-900/20 dark:text-red-400 rounded-full transition-transform active:scale-95"
+                className="p-3 text-red-500 bg-red-100 dark:bg-red-900/20 dark:text-red-400 rounded-full transition-transform active:scale-95 shrink-0"
               >
                 <X size={24} />
               </button>
 
-              <span className="font-bold text-zinc-800 dark:text-white tracking-wide text-base">
-                {title || "Zeit wählen"}
+              <span className="font-bold text-zinc-800 dark:text-white tracking-wide text-sm sm:text-base text-center px-3">
+                {title || "Zeit wÃ¤hlen"}
               </span>
 
               <button
@@ -137,14 +231,17 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
                   Haptics.impact({ style: ImpactStyle.Medium });
                   onClose();
                 }}
-                className="p-3 text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full font-bold transition-transform active:scale-95"
+                className="p-3 text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full font-bold transition-transform active:scale-95 shrink-0"
               >
                 <Check size={24} />
               </button>
             </div>
 
-            <div className="relative z-10 h-[280px] w-full select-none pb-safe overflow-hidden">
-              <div className="absolute top-1/2 left-4 right-4 h-[64px] -mt-[36px] bg-zinc-100 dark:bg-zinc-800 pointer-events-none z-0 border border-zinc-200 dark:border-zinc-700 rounded-xl" />
+            <div className="relative z-10 w-full select-none pb-safe overflow-hidden" style={{ height: "var(--picker-height)" }}>
+              <div
+                className="absolute left-3 right-3 sm:left-4 sm:right-4 bg-zinc-100 dark:bg-zinc-800 pointer-events-none z-0 border border-zinc-200 dark:border-zinc-700 rounded-xl"
+                style={{ top: "50%", height: "var(--picker-item-height)", transform: "translateY(-50%)" }}
+              />
 
               <div
                 className="relative z-10 h-full w-full flex justify-center items-center"
@@ -153,11 +250,12 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
                   WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)",
                 }}
               >
-                <div className="flex items-center justify-center">
+                <div className="flex items-center justify-center gap-1 sm:gap-2">
                   <div
                     ref={hoursRef}
                     onScroll={(e) => handleScroll(e, "hour")}
-                    className="h-[280px] w-[86px] overflow-y-auto overscroll-contain snap-y snap-mandatory scrollbar-hide py-[108px] touch-pan-y"
+                    className="overflow-y-auto overscroll-contain snap-y snap-mandatory scrollbar-hide touch-pan-y"
+                    style={{ ...pickerColumnStyle, width: "var(--picker-side-width)" }}
                   >
                     {hours.map((hour) => (
                       <div
@@ -165,28 +263,30 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
                         data-value={hour}
                         onClick={() => {
                           setSelectedHour(hour);
-                          emitTime(hour, selectedMinute);
+                          emitTime(hour, selectedMinuteRef.current);
                           scrollToValue(hoursRef, hour);
                         }}
-                        className={`h-[64px] flex items-center justify-end pr-4 snap-center cursor-pointer transition-all duration-150 pt-1 ${
+                        className={`flex items-center justify-end pr-3 sm:pr-4 snap-center cursor-pointer transition-all duration-150 leading-none ${
                           hour === selectedHour
-                            ? "font-bold text-4xl text-zinc-800 dark:text-white scale-110"
-                            : "text-zinc-300 dark:text-zinc-600 text-2xl scale-90"
+                            ? "font-bold text-[clamp(2rem,6vw,2.35rem)] text-zinc-800 dark:text-white"
+                            : "text-zinc-300 dark:text-zinc-600 text-[clamp(1.35rem,4vw,1.7rem)]"
                         }`}
+                        style={pickerItemStyle}
                       >
                         {String(hour).padStart(2, "0")}
                       </div>
                     ))}
                   </div>
 
-                  <div className="h-[64px] flex items-center justify-center px-2 pt-1">
-                    <span className="text-2xl font-bold text-zinc-300 dark:text-zinc-600">:</span>
+                  <div className="flex items-center justify-center px-1 text-zinc-300 dark:text-zinc-600 leading-none" style={pickerItemStyle}>
+                    <span className="font-bold text-[clamp(1.5rem,4vw,2rem)]">:</span>
                   </div>
 
                   <div
                     ref={minutesRef}
                     onScroll={(e) => handleScroll(e, "minute")}
-                    className="h-[280px] w-[86px] overflow-y-auto overscroll-contain snap-y snap-mandatory scrollbar-hide py-[108px] touch-pan-y"
+                    className="overflow-y-auto overscroll-contain snap-y snap-mandatory scrollbar-hide touch-pan-y"
+                    style={{ ...pickerColumnStyle, width: "var(--picker-side-width)" }}
                   >
                     {minutes.map((minute) => (
                       <div
@@ -194,14 +294,15 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
                         data-value={minute}
                         onClick={() => {
                           setSelectedMinute(minute);
-                          emitTime(selectedHour, minute);
+                          emitTime(selectedHourRef.current, minute);
                           scrollToValue(minutesRef, minute);
                         }}
-                        className={`h-[64px] flex items-center justify-start pl-4 snap-center cursor-pointer transition-all duration-150 pt-1 ${
+                        className={`flex items-center justify-start pl-3 sm:pl-4 snap-center cursor-pointer transition-all duration-150 leading-none ${
                           minute === selectedMinute
-                            ? "font-bold text-4xl text-emerald-500 scale-110"
-                            : "text-zinc-300 dark:text-zinc-600 text-2xl scale-90"
+                            ? "font-bold text-[clamp(2rem,6vw,2.35rem)] text-emerald-500"
+                            : "text-zinc-300 dark:text-zinc-600 text-[clamp(1.35rem,4vw,1.7rem)]"
                         }`}
+                        style={pickerItemStyle}
                       >
                         {String(minute).padStart(2, "0")}
                       </div>

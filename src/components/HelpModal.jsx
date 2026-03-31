@@ -54,7 +54,7 @@ const HelpModal = ({ isOpen, onClose }) => {
 
             {/* HEADER */}
             {/* CHANGE: border-slate-100 -> border-zinc-100, bg-slate-900 -> bg-zinc-900 */}
-            <div className="flex justify-between items-start p-5 pb-4 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 z-10">
+            <div className="flex justify-between items-start p-5 pb-4 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
               <div>
                 {/* CHANGE: text-slate-800 -> text-zinc-800 */}
                 <h2 className="text-2xl font-black text-zinc-800 dark:text-white tracking-tight">Anleitung & Hilfe</h2>
@@ -264,6 +264,10 @@ const HelpModal = ({ isOpen, onClose }) => {
               </div>
 
             </div>
+            <div
+              className="shrink-0 bg-white dark:bg-zinc-900 md:hidden"
+              style={{ height: "env(safe-area-inset-bottom)" }}
+            />
           </motion.div>
         </>
       )}

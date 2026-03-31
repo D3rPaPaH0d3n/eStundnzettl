@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { ArrowLeft, Settings as SettingsIcon, FileBarChart, Plus } from "lucide-react";
+import { ArrowLeft, Settings as SettingsIcon, FileBarChart } from "lucide-react";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 
@@ -465,30 +465,13 @@ export default function App() {
 
       {!showOnboarding && (
         <>
-          <AnimatePresence>
-            {view === "dashboard" && (
-              <motion.button
-                initial={{ scale: 0, rotate: 90 }}
-                animate={{ scale: 1, rotate: 0 }}
-                exit={{ scale: 0, rotate: 90 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startNewEntry();
-                  Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
-                }}
-                style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
-                className="fixed right-6 bg-zinc-900 dark:bg-emerald-600 hover:bg-zinc-800 dark:hover:bg-emerald-700 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors z-[9999] cursor-pointer touch-manipulation"
-              >
-                <Plus size={28} />
-              </motion.button>
-            )}
-          </AnimatePresence>
-
           {view === "dashboard" && (
             <LiveTimerOverlay
               timerState={timerState}
+              onCreateEntry={() => {
+                startNewEntry();
+                Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
+              }}
               onStart={handleStartLive}
               onStop={handleStopLive}
               onPause={() => { Haptics.impact({ style: ImpactStyle.Light }); pauseTimer(); }}

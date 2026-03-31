@@ -94,9 +94,16 @@ const EntryForm = ({
     if (dayEntries.length > 0) {
       const sorted = [...dayEntries].sort((a, b) => (a.end || "").localeCompare(b.end || ""));
       const lastEnd = sorted[sorted.length - 1].end;
-      if (lastEnd) setStartTime(lastEnd);
+      if (lastEnd) {
+        setStartTime(lastEnd);
+        setEndTime(lastEnd);
+      }
+      return;
     }
-  }, [formDate, allEntries, entryType, isEditing, isLiveEntry]); 
+
+    setStartTime("06:00");
+    setEndTime("16:30");
+  }, [formDate, allEntries, entryType, isEditing, isLiveEntry, setStartTime, setEndTime]); 
 
   const holidayData = useMemo(() => {
       return {

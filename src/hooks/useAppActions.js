@@ -69,6 +69,25 @@ export function useAppActions({
   setDeleteTarget,
   setShowOnboarding,
 }) {
+  const getDefaultTimesForDate = useCallback((date) => {
+    const dayEntries = entries
+      .filter((entry) => entry.date === date && entry.type === "work" && entry.end)
+      .sort((a, b) => (a.end || "").localeCompare(b.end || ""));
+
+    const lastEnd = dayEntries.length ? dayEntries[dayEntries.length - 1].end : null;
+
+    if (lastEnd) {
+      return {
+        startTime: lastEnd,
+        endTime: lastEnd,
+      };
+    }
+
+    return {
+      startTime: "06:00",
+      endTime: "16:30",
+    };
+  }, [entries]);
 
   // =====================
   // LIVE TIMER
@@ -126,17 +145,20 @@ export function useAppActions({
   // =====================
 
   const startNewEntry = useCallback(() => {
+    const formDate = toLocalDateString(new Date());
+    const { startTime, endTime } = getDefaultTimesForDate(formDate);
+
     form.setEditingEntry(null);
     form.setEntryType("work");
-    form.setFormDate(toLocalDateString(new Date()));
-    form.setStartTime("06:00");
-    form.setEndTime("16:30");
+    form.setFormDate(formDate);
+    form.setStartTime(startTime);
+    form.setEndTime(endTime);
     form.setPauseDuration(30);
     form.setProject("");
     form.setCode(getDefaultCode());
     form.setIsLiveEntry(false);
     setView("add");
-  }, [form, getDefaultCode, setView]);
+  }, [form, getDefaultCode, getDefaultTimesForDate, setView]);
 
   const startEdit = useCallback((entry) => {
     form.setEditingEntry(entry);

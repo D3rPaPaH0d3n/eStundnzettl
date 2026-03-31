@@ -21,6 +21,7 @@ import {
   signInGoogle,
   signOutGoogle,
   getGoogleAuthStatus,
+  getStoredGoogleAuth,
 } from "../../utils/googleDrive";
 import {
   selectBackupFolder,
@@ -56,6 +57,9 @@ const BackupSettings = ({
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isTokenValid, setIsTokenValid] = useState(true);
   const [backupFailCount, setBackupFailCount] = useState(0);
+  const [googleAccountLabel, setGoogleAccountLabel] = useState("");
+  const [nextcloudBackupFailCount, setNextcloudBackupFailCount] = useState(0);
+  const [nextcloudBackupLastError, setNextcloudBackupLastError] = useState("");
 
   // Nextcloud UI State (local UI state, persisted via props)
   const [ncExpanded, setNcExpanded] = useState(false);
@@ -139,26 +143,45 @@ const BackupSettings = ({
     Promise.resolve(getGoogleAuthStatus())
       .then((googleStatus) => {
         setIsTokenValid(isGoogleConnectionReady(googleStatus));
+        const accountLabel =
+          googleStatus?.userInfo?.email ||
+          googleStatus?.accountEmail ||
+          getStoredGoogleAuth?.()?.userInfo?.email ||
+          getStoredGoogleAuth?.()?.accountEmail ||
+          "";
+        setGoogleAccountLabel(accountLabel);
       })
       .catch(() => {
         setIsTokenValid(false);
+        const storedAuth = getStoredGoogleAuth?.();
+        setGoogleAccountLabel(storedAuth?.userInfo?.email || storedAuth?.accountEmail || "");
       });
 
     const failCount = parseInt(localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT) || "0", 10);
     setBackupFailCount(failCount);
+    setNextcloudBackupFailCount(parseInt(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT) || "0", 10));
+    setNextcloudBackupLastError(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR) || "");
 
     // 2) SQLite nachladen (async, überschreibt wenn vorhanden)
     if (isSQLiteActive()) {
       (async () => {
         try {
-          const [sqlLastBackup, sqlFailCount, sqlCloudEnabled] = await Promise.all([
+          const [sqlLastBackup, sqlFailCount, sqlCloudEnabled, sqlNcFailCount, sqlNcLastError] = await Promise.all([
             getSetting("last_backup"),
             getSetting("backup_fail_count"),
             getSetting("cloud_sync_enabled"),
+            getSetting("nextcloud_backup_fail_count"),
+            getSetting("nextcloud_backup_last_error"),
           ]);
           if (sqlLastBackup) setLastBackupDate(sqlLastBackup);
           if (sqlFailCount !== null) {
             setBackupFailCount(parseInt(String(sqlFailCount), 10) || 0);
+          }
+          if (sqlNcFailCount !== null) {
+            setNextcloudBackupFailCount(parseInt(String(sqlNcFailCount), 10) || 0);
+          }
+          if (typeof sqlNcLastError === "string") {
+            setNextcloudBackupLastError(sqlNcLastError);
           }
           if (sqlCloudEnabled !== null) {
             const enabled = !!sqlCloudEnabled;
@@ -166,6 +189,13 @@ const BackupSettings = ({
           }
           const refreshedStatus = await getGoogleAuthStatus();
           setIsTokenValid(isGoogleConnectionReady(refreshedStatus));
+          setGoogleAccountLabel(
+            refreshedStatus?.userInfo?.email ||
+            refreshedStatus?.accountEmail ||
+            getStoredGoogleAuth?.()?.userInfo?.email ||
+            getStoredGoogleAuth?.()?.accountEmail ||
+            ""
+          );
         } catch { /* keep localStorage values */ }
       })();
     }
@@ -418,6 +448,8 @@ const BackupSettings = ({
     setNcExpanded(false);
     setNcStatus(null);
     setNcConnecting(false);
+    setNextcloudBackupFailCount(0);
+    setNextcloudBackupLastError("");
     
     toast("Nextcloud getrennt");
     console.log('[Nextcloud] Disconnected successfully');
@@ -458,12 +490,14 @@ const BackupSettings = ({
         localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
         setIsCloudConnected(false);
         setIsTokenValid(false);
+        setGoogleAccountLabel("");
         setAutoBackup(false);
       } catch (e) {
         console.error(e);
         localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
         setIsCloudConnected(false);
         setIsTokenValid(false);
+        setGoogleAccountLabel("");
         setAutoBackup(false);
       }
     } else {
@@ -474,6 +508,14 @@ const BackupSettings = ({
           localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
           setIsCloudConnected(true);
           setIsTokenValid(true);
+          const refreshedStatus = await getGoogleAuthStatus().catch(() => null);
+          setGoogleAccountLabel(
+            refreshedStatus?.userInfo?.email ||
+            refreshedStatus?.accountEmail ||
+            user.email ||
+            user.givenName ||
+            ""
+          );
           if (!autoBackup) setAutoBackup(true);
           toast.success(`Verbunden: ${user.givenName || user.email || "Drive"}`);
         }
@@ -599,7 +641,11 @@ const BackupSettings = ({
               </div>
               <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                 {isCloudConnected
-                  ? (isTokenValid ? "Aktiv (Google Drive App-Daten)" : "Verbindung abgelaufen")
+                  ? (isTokenValid
+                    ? (googleAccountLabel
+                      ? `Verbunden als ${googleAccountLabel}`
+                      : "Aktiv (Google Drive App-Daten)")
+                    : "Verbindung abgelaufen")
                   : "Nicht verbunden"}
               </span>
             </div>
@@ -767,6 +813,17 @@ const BackupSettings = ({
               {isTokenValid
                 ? "⚠️ Letzte Backups fehlgeschlagen. Bitte Google Drive Verbindung prüfen."
                 : "⚠️ Google Drive muss neu verbunden werden, bevor wieder gesichert werden kann."}
+            </span>
+          </div>
+        )}
+
+        {nextcloudEnabled && nextcloudBackupFailCount > 0 && (
+          <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
+            <AlertTriangle size={18} className="text-amber-500 flex-shrink-0" />
+            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+              {nextcloudBackupLastError
+                ? `Nextcloud-Backup fehlgeschlagen: ${nextcloudBackupLastError}`
+                : "Letzte Nextcloud-Backups sind fehlgeschlagen. Bitte Verbindung prüfen."}
             </span>
           </div>
         )}

@@ -280,7 +280,7 @@ const ChangelogModal = ({ isOpen, onClose }) => {
               <div className="w-12 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full" />
             </div>
 
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0 bg-white dark:bg-zinc-900">
               <div className="flex items-center gap-2">
                 <div className="text-lg">📋</div>
                 <h2 className="font-bold text-zinc-800 dark:text-white">Änderungsprotokoll</h2>
@@ -293,13 +293,20 @@ const ChangelogModal = ({ isOpen, onClose }) => {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4">
+            <div
+              className="flex-1 overflow-y-auto px-5 py-4 bg-white dark:bg-zinc-900"
+              style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+            >
               {changelogData.map((version, index) =>
                 version.isBugfixGroup
                   ? renderBugfixGroup(version, index === 0)
                   : renderVersion(version, index === 0)
               )}
             </div>
+            <div
+              className="shrink-0 bg-white dark:bg-zinc-900 md:hidden"
+              style={{ height: "env(safe-area-inset-bottom)" }}
+            />
           </motion.div>
         </>
       )}

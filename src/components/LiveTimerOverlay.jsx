@@ -1,46 +1,55 @@
-import React, { useState, useEffect } from "react";
-import { Play, Square, Pause } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Play, Square, Pause, Plus, ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
-const LiveTimerOverlay = ({ 
-  timerState, 
-  onStart, 
-  onStop, 
-  onPause, 
+const LONG_PRESS_MS = 260;
+const SWIPE_THRESHOLD = 28;
+
+const LiveTimerOverlay = ({
+  timerState,
+  onCreateEntry,
+  onStart,
+  onStop,
+  onPause,
   onResume,
-  targetMinutes = 510 
+  targetMinutes = 510,
 }) => {
-  const [displayStatus, setDisplayStatus] = useState({ text: "...", isOvertime: false });
+  const [displayStatus, setDisplayStatus] = useState({ text: "...", tone: "blue" });
+  const [isSwipeReady, setIsSwipeReady] = useState(false);
+  const longPressTimeoutRef = useRef(null);
+  const pointerStartYRef = useRef(null);
+  const gestureTriggeredRef = useRef(false);
+  const fabRef = useRef(null);
 
-  // Update Logik für die Anzeige
   useEffect(() => {
     if (!timerState.isRunning) return;
 
     const update = () => {
       const now = new Date();
       const start = new Date(timerState.startTime);
-      
+
       let currentPause = 0;
       if (timerState.isPaused && timerState.pauseStartTime) {
         currentPause = now - new Date(timerState.pauseStartTime);
       }
-      
+
       const totalPauseMs = (timerState.accumulatedPause || 0) + currentPause;
       const workedMs = now - start - totalPauseMs;
       const workedMinutes = workedMs / 1000 / 60;
-      
-      const diffMinutes = targetMinutes - workedMinutes;
+      const roundedWorkedMinutes = Math.max(0, Math.floor(workedMinutes));
+      const h = Math.floor(roundedWorkedMinutes / 60);
+      const m = roundedWorkedMinutes % 60;
 
-      if (diffMinutes > 0) {
-        const h = Math.floor(diffMinutes / 60);
-        const m = Math.floor(diffMinutes % 60);
-        setDisplayStatus({ text: `Noch ${h}h ${m}m`, isOvertime: false });
-      } else {
-        const overMinutes = Math.abs(diffMinutes);
-        const h = Math.floor(overMinutes / 60);
-        const m = Math.floor(overMinutes % 60);
-        setDisplayStatus({ text: `+ ${h}:${String(m).padStart(2, '0')} Std`, isOvertime: true });
+      let tone = "blue";
+      if (targetMinutes > 0) {
+        const progress = workedMinutes / targetMinutes;
+        if (progress >= 1) tone = "green";
+        else if (progress >= 0.6) tone = "blue";
+        else tone = "red";
       }
+
+      setDisplayStatus({ text: `${h}:${String(m).padStart(2, "0")} Std`, tone });
     };
 
     update();
@@ -48,77 +57,155 @@ const LiveTimerOverlay = ({
     return () => clearInterval(interval);
   }, [timerState, targetMinutes]);
 
-  // Design identisch zu FAB in App.jsx
+  useEffect(() => {
+    if (timerState.isRunning) {
+      setIsSwipeReady(false);
+      gestureTriggeredRef.current = false;
+    }
+  }, [timerState.isRunning]);
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimeoutRef.current) {
+        clearTimeout(longPressTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const bottomStyle = { bottom: "calc(3.5rem + env(safe-area-inset-bottom))" };
+
+  const resetGestureState = () => {
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+    pointerStartYRef.current = null;
+    gestureTriggeredRef.current = false;
+    setIsSwipeReady(false);
+  };
+
+  const triggerTimerStart = async () => {
+    if (gestureTriggeredRef.current || timerState.isRunning) return;
+    gestureTriggeredRef.current = true;
+    setIsSwipeReady(false);
+    Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
+    onStart();
+  };
+
+  const handlePointerDown = (event) => {
+    if (timerState.isRunning) return;
+    event.preventDefault();
+    if (event.currentTarget?.setPointerCapture) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    pointerStartYRef.current = event.clientY;
+    gestureTriggeredRef.current = false;
+
+    longPressTimeoutRef.current = setTimeout(() => {
+      setIsSwipeReady(true);
+      Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+    }, LONG_PRESS_MS);
+  };
+
+  const handlePointerMove = (event) => {
+    if (timerState.isRunning || !isSwipeReady || pointerStartYRef.current == null) return;
+    event.preventDefault();
+    const deltaY = pointerStartYRef.current - event.clientY;
+    if (deltaY >= SWIPE_THRESHOLD) {
+      triggerTimerStart();
+    }
+  };
+
+  const handlePointerEnd = (event) => {
+    if (timerState.isRunning) return;
+    event.preventDefault();
+    if (event.currentTarget?.releasePointerCapture && event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const hadSwipeReady = isSwipeReady;
+    const gestureTriggered = gestureTriggeredRef.current;
+    resetGestureState();
+
+    if (!gestureTriggered && !hadSwipeReady) {
+      onCreateEntry();
+    }
+  };
 
   return (
     <>
-      {/* 1. STATUS BLASE (Schwebt über dem Button) */}
       <AnimatePresence>
-        {timerState.isRunning && (
+        {(timerState.isRunning || isSwipeReady) && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.8 }}
-            className={`fixed left-6 z-[89] px-3 py-1.5 rounded-xl shadow-sm border mb-3 text-xs font-bold backdrop-blur-md pointer-events-none ${
-              displayStatus.isOvertime 
-                ? "bg-green-500/90 border-green-400 text-white" 
-                : "bg-zinc-800/90 border-zinc-600 text-white"
+            className={`fixed right-6 z-[89] px-3 py-1.5 rounded-xl shadow-sm border mb-3 text-xs font-bold backdrop-blur-md pointer-events-none ${
+              timerState.isRunning
+                ? (displayStatus.tone === "green"
+                  ? "bg-green-500/90 border-green-400 text-white"
+                  : displayStatus.tone === "red"
+                    ? "bg-red-500/90 border-red-400 text-white"
+                    : "bg-blue-500/90 border-blue-400 text-white")
+                : "bg-emerald-500/95 border-emerald-400 text-white"
             }`}
-            style={{ bottom: "calc(7rem + env(safe-area-inset-bottom))" }} // Etwas über dem Button
+            style={{ bottom: "calc(7rem + env(safe-area-inset-bottom))" }}
           >
-             {timerState.isPaused ? "Pausiert" : displayStatus.text}
+            {timerState.isRunning ? (timerState.isPaused ? "Pausiert" : displayStatus.text) : "Nach oben wischen zum Einstempeln"}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 2. DER BUTTON (FAB STYLE - LINKS) */}
       <motion.button
-        whileTap={{ scale: 0.9 }}
-        onClick={timerState.isRunning ? onStop : onStart}
-        onLongPress={timerState.isRunning ? (timerState.isPaused ? onResume : onPause) : undefined} 
+        whileTap={{ scale: 0.92 }}
+        onClick={timerState.isRunning ? onStop : undefined}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={resetGestureState}
         style={bottomStyle}
+        ref={fabRef}
         className={`
-          fixed left-6 w-14 h-14 rounded-full shadow-2xl z-[90] flex flex-col items-center justify-center transition-all border-2
-          ${timerState.isRunning 
-            ? "bg-white dark:bg-zinc-800 border-red-500 text-red-500" // AUS-Zustand
-            : "bg-zinc-900 dark:bg-orange-500 border-transparent text-white" // EIN-Zustand
-          }
+          fixed right-6 w-14 h-14 rounded-full shadow-2xl z-[90] flex flex-col items-center justify-center transition-all border-2 touch-none select-none
+          ${timerState.isRunning
+            ? "bg-white dark:bg-zinc-800 border-red-500 text-red-500"
+            : isSwipeReady
+              ? "bg-emerald-600 border-emerald-400 text-white"
+              : "bg-zinc-900 dark:bg-emerald-600 border-transparent text-white"}
         `}
       >
         {timerState.isRunning ? (
-            // AUSSTEMPELN DESIGN
-            <>
-                <Square size={18} fill="currentColor" className="mb-0.5" />
-                <span className="text-[9px] font-black leading-none">AUS</span>
-            </>
+          <>
+            <Square size={18} fill="currentColor" className="mb-0.5" />
+            <span className="text-[9px] font-black leading-none">AUS</span>
+          </>
+        ) : isSwipeReady ? (
+          <>
+            <ArrowUp size={18} className="mb-0.5" />
+            <span className="text-[8px] font-black leading-none">TIMER</span>
+          </>
         ) : (
-            // EINSTEMPELN DESIGN
-            <>
-                <Play size={20} fill="currentColor" className="ml-0.5 mb-0.5" />
-                <span className="text-[9px] font-black leading-none">EIN</span>
-            </>
+          <Plus size={28} />
         )}
       </motion.button>
-      
-      {/* 3. MINI PAUSE BUTTON (Rechts am Button klebend) */}
+
       <AnimatePresence>
         {timerState.isRunning && (
-            <motion.button
-                initial={{ scale: 0, x: -20, opacity: 0 }}
-                animate={{ scale: 1, x: 0, opacity: 1 }}
-                exit={{ scale: 0, x: -20, opacity: 0 }}
-                onClick={timerState.isPaused ? onResume : onPause}
-                style={bottomStyle}
-                className={`
-                    fixed left-24 w-10 h-10 rounded-full shadow-lg z-[88] flex items-center justify-center border
-                    ${timerState.isPaused 
-                        ? "bg-green-100 border-green-300 text-green-600" 
-                        : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-600 text-zinc-400"}
-                `}
-            >
-                {timerState.isPaused ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}
-            </motion.button>
+          <motion.button
+            initial={{ scale: 0, x: 20, opacity: 0 }}
+            animate={{ scale: 1, x: 0, opacity: 1 }}
+            exit={{ scale: 0, x: 20, opacity: 0 }}
+            onClick={timerState.isPaused ? onResume : onPause}
+            style={bottomStyle}
+            className={`
+              fixed right-24 w-10 h-10 rounded-full shadow-lg z-[88] flex items-center justify-center border
+              ${timerState.isPaused
+                ? "bg-green-100 border-green-300 text-green-600"
+                : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-600 text-zinc-400"}
+            `}
+          >
+            {timerState.isPaused ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}
+          </motion.button>
         )}
       </AnimatePresence>
     </>

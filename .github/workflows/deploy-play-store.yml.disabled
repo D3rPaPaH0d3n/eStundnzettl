@@ -199,11 +199,7 @@ jobs:
       - name: Upload to Play Console (Internal Testing)
         run: python3 .github/workflows/scripts/deploy-play.py
 
-      # ── 11. Changelog generieren ─────────────────────────────────────
-      - name: Generate changelog
-        run: python3 .github/workflows/scripts/generate-changelog.py
-
-      # ── 12. Version-Bump + Changelog committen ───────────────────────
+      # ── 11. Version-Bump committen ───────────────────────────────────
       # WICHTIG: [skip ci] im Commit verhindert, dass dieser Push
       # den Workflow nochmal auslöst → keine Endlosschleife!
       - name: Commit and push release metadata
@@ -213,12 +209,8 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-          # Alle Version-Dateien stagen (constants.js nicht mehr nötig — liest aus Build)
+          # Nur Versions-Dateien committen — Changelog bleibt bewusst manuell gepflegt
           git add android/app/build.gradle package.json
-
-          # Changelog stagen (falls aktualisiert)
-          git diff --name-only | grep -q "changelog-data.js" && \
-            git add src/data/changelog-data.js || true
 
           # Nur committen wenn es Änderungen gibt
           if ! git diff --staged --quiet; then
@@ -229,7 +221,7 @@ jobs:
             echo "ℹ️ Keine Änderungen zu committen"
           fi
 
-      # ── 13. Deploy-Verifizierung ─────────────────────────────────────
+      # ── 12. Deploy-Verifizierung ─────────────────────────────────────
       # Prüft ob die neue versionCode wirklich im Internal Testing Track ist
       - name: Verify Play Store deployment
         env:

@@ -30,7 +30,7 @@ const AppInfoSettings = ({
           }}
           className="w-full py-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
         >
-          <RefreshCw size={18} /> Im Play Store öffnen
+          <RefreshCw size={18} /> Im Play Store Ã¶ffnen
         </button>
 
         <button

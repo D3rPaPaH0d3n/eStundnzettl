@@ -177,9 +177,9 @@ const Dashboard = ({
         ) : (
           sortedWeeks.map(([week, weekEntries]) => {
             
-            // FIX 2: Berechnung komplett zentralisiert!
-            // calculateWeekStats kümmert sich um den Monats-Schnitt und liefert Soll/Ist/Saldo.
-            const weekStats = calculateWeekStats(weekEntries, userData, currentDate);
+            // Wochen-Stats immer für die VOLLE Woche (Mo-So) berechnen,
+            // damit Saldo und MA/ÜS korrekt auf 40h-Basis sind.
+            const weekStats = calculateWeekStats(weekEntries, userData);
             
             // Werte für die Anzeige extrahieren
             // totalIst enthält alle Arbeitszeiten + Urlaub/Krank/Feiertag (aber ohne Code 19 Fahrtzeit)

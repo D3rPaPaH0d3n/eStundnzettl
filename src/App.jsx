@@ -161,7 +161,7 @@ export default function App() {
     todayTarget,
     lastWorkEntry,
     uniqueProjects,
-  } = useAppData({ entries, userData, viewMonth, viewYear });
+  } = useAppData({ entries, userData, viewMonth, viewYear, allEntries: entries });
 
   // --- 4. HANDLERS (useAppActions) ---
   const {

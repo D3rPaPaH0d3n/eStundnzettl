@@ -247,7 +247,7 @@ export function useAppActions({
     const usedPause = storedType === "work" ? (isDrive ? 0 : form.pauseDuration) : 0;
 
     const newEntry = {
-      id: form.editingEntry ? form.editingEntry.id : Date.now(),
+      id: form.editingEntry ? form.editingEntry.id : Date.now() * 100 + Math.floor(Math.random() * 100),
       type: storedType,
       date: form.formDate,
       start: storedType === "work" ? form.startTime : null,

@@ -19,6 +19,8 @@ const DataSettings = ({
   isLocked,
   onToggleLock,
   onOpenDayPicker,
+  importEntries,
+  importWorkCodes,
 }) => {
   const [isWorkModelExpanded, setIsWorkModelExpanded] = useState(true);
   const [showPresetModal, setShowPresetModal] = useState(false);
@@ -84,32 +86,34 @@ const DataSettings = ({
     Haptics.impact({ style: ImpactStyle.Medium });
     const demoUser = { ...DEMO_DATA.user };
     const demoEntries = DEMO_DATA.generateEntries();
-    
+    const demoWorkCodes = DEMO_DATA.workCodes;
+
     // Dual-Write: localStorage (für Web/Dev Fallback)
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
     localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(demoEntries));
-    localStorage.setItem(
-      STORAGE_KEYS.WORK_CODES,
-      JSON.stringify(DEMO_DATA.workCodes)
-    );
+    localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(demoWorkCodes));
     localStorage.removeItem(STORAGE_KEYS.LAST_CODE);
-    
+
     // SQLite (für Android)
     if (isSQLiteActive()) {
       try {
         await Promise.all([
           setSetting("user", demoUser),
           bulkInsertEntries(demoEntries),
-          bulkReplaceWorkCodes(DEMO_DATA.workCodes),
+          bulkReplaceWorkCodes(demoWorkCodes),
           deleteSetting("last_code")
         ]);
       } catch (err) {
         console.error("[DataSettings] SQLite-Demo-Daten schreiben fehlgeschlagen:", err);
       }
     }
-    
-    toast.success("Demo-Daten geladen! Seite wird neu geladen...");
-    setTimeout(() => window.location.reload(), 1000);
+
+    // State direkt aktualisieren (kein Reload nötig)
+    setUserData(demoUser);
+    if (importEntries) importEntries(demoEntries);
+    if (importWorkCodes) importWorkCodes(demoWorkCodes);
+
+    toast.success("Demo-Daten geladen!");
   };
 
   return (

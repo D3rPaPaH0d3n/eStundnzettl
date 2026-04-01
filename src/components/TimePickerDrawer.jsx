@@ -253,6 +253,8 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
                 <div className="flex items-center justify-center gap-1 sm:gap-2">
                   <div
                     ref={hoursRef}
+                    role="listbox"
+                    aria-label="Stunden"
                     onScroll={(e) => handleScroll(e, "hour")}
                     className="overflow-y-auto overscroll-contain snap-y snap-mandatory scrollbar-hide touch-pan-y"
                     style={{ ...pickerColumnStyle, width: "var(--picker-side-width)" }}
@@ -260,6 +262,9 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
                     {hours.map((hour) => (
                       <div
                         key={hour}
+                        role="option"
+                        aria-selected={hour === selectedHour}
+                        aria-label={`${String(hour).padStart(2, "0")} Uhr`}
                         data-value={hour}
                         onClick={() => {
                           setSelectedHour(hour);
@@ -284,6 +289,8 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
 
                   <div
                     ref={minutesRef}
+                    role="listbox"
+                    aria-label="Minuten"
                     onScroll={(e) => handleScroll(e, "minute")}
                     className="overflow-y-auto overscroll-contain snap-y snap-mandatory scrollbar-hide touch-pan-y"
                     style={{ ...pickerColumnStyle, width: "var(--picker-side-width)" }}
@@ -291,6 +298,9 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
                     {minutes.map((minute) => (
                       <div
                         key={minute}
+                        role="option"
+                        aria-selected={minute === selectedMinute}
+                        aria-label={`${String(minute).padStart(2, "0")} Minuten`}
                         data-value={minute}
                         onClick={() => {
                           setSelectedMinute(minute);

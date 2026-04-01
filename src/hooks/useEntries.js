@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import toast from "react-hot-toast";
 import { STORAGE_KEYS } from "./constants";
 import { getDb } from "../db/database";
 import { setStorageMode, isSQLiteActive } from "../db/storageMode";
@@ -65,43 +66,76 @@ export function useEntries() {
     return () => { cancelled = true; };
   }, []);
 
-  // ─── SQLite-Write Helper ───
-  const sqliteWrite = useCallback(async (operation) => {
+  // ─── CRUD Operationen (optimistisches Update mit Revert bei Fehler) ───
+
+  const addEntry = useCallback(async (entry) => {
+    setEntries((prev) => [entry, ...prev]);
     try {
-      await operation();
+      await insertEntry(entry);
     } catch (err) {
       console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
+      setEntries((prev) => prev.filter((e) => e.id !== entry.id));
+      toast.error("Eintrag konnte nicht gespeichert werden");
     }
   }, []);
 
-  // ─── CRUD Operationen (API identisch zu vorher) ───
+  const updateEntry = useCallback(async (updatedEntry) => {
+    let previous = null;
+    setEntries((prev) => {
+      previous = prev.find((e) => e.id === updatedEntry.id) || null;
+      return prev.map((e) => (e.id === updatedEntry.id ? updatedEntry : e));
+    });
+    try {
+      await updateEntryInDb(updatedEntry);
+    } catch (err) {
+      console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
+      if (previous) {
+        setEntries((prev) => prev.map((e) => (e.id === updatedEntry.id ? previous : e)));
+      }
+      toast.error("Eintrag konnte nicht aktualisiert werden");
+    }
+  }, []);
 
-  const addEntry = useCallback((entry) => {
-    setEntries((prev) => [entry, ...prev]);
-    sqliteWrite(() => insertEntry(entry));
-  }, [sqliteWrite]);
+  const deleteEntry = useCallback(async (id) => {
+    let removed = null;
+    setEntries((prev) => {
+      removed = prev.find((e) => e.id === id) || null;
+      return prev.filter((e) => e.id !== id);
+    });
+    try {
+      await deleteEntryFromDb(id);
+    } catch (err) {
+      console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
+      if (removed) {
+        setEntries((prev) => [removed, ...prev]);
+      }
+      toast.error("Eintrag konnte nicht gelöscht werden");
+    }
+  }, []);
 
-  const updateEntry = useCallback((updatedEntry) => {
-    setEntries((prev) =>
-      prev.map((e) => (e.id === updatedEntry.id ? updatedEntry : e))
-    );
-    sqliteWrite(() => updateEntryInDb(updatedEntry));
-  }, [sqliteWrite]);
+  const deleteAllEntries = useCallback(async () => {
+    const backup = [];
+    setEntries((prev) => { backup.push(...prev); return []; });
+    try {
+      await deleteAllEntriesFromDb();
+    } catch (err) {
+      console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
+      setEntries(backup);
+      toast.error("Einträge konnten nicht gelöscht werden");
+    }
+  }, []);
 
-  const deleteEntry = useCallback((id) => {
-    setEntries((prev) => prev.filter((e) => e.id !== id));
-    sqliteWrite(() => deleteEntryFromDb(id));
-  }, [sqliteWrite]);
-
-  const deleteAllEntries = useCallback(() => {
-    setEntries([]);
-    sqliteWrite(() => deleteAllEntriesFromDb());
-  }, [sqliteWrite]);
-
-  const importEntries = useCallback((newEntries) => {
-    setEntries(newEntries);
-    sqliteWrite(() => bulkInsertEntries(newEntries));
-  }, [sqliteWrite]);
+  const importEntries = useCallback(async (newEntries) => {
+    const backup = [];
+    setEntries((prev) => { backup.push(...prev); return newEntries; });
+    try {
+      await bulkInsertEntries(newEntries);
+    } catch (err) {
+      console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
+      setEntries(backup);
+      toast.error("Import fehlgeschlagen");
+    }
+  }, []);
 
   return {
     entries,

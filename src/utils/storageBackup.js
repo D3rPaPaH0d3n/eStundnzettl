@@ -209,12 +209,21 @@ export const readJsonFile = (file) => {
   });
 };
 
+const isValidEntry = (entry) => {
+  if (!entry || typeof entry !== "object") return false;
+  if (entry.id === undefined || entry.id === null) return false;
+  if (!entry.date || typeof entry.date !== "string") return false;
+  if (!entry.type || typeof entry.type !== "string") return false;
+  return true;
+};
+
 const normalizeEntries = (value) => {
-  if (Array.isArray(value)) return value;
-  if (Array.isArray(value?.entries)) return value.entries;
-  if (Array.isArray(value?.data?.entries)) return value.data.entries;
-  if (Array.isArray(value?.items)) return value.items;
-  return [];
+  let raw = [];
+  if (Array.isArray(value)) raw = value;
+  else if (Array.isArray(value?.entries)) raw = value.entries;
+  else if (Array.isArray(value?.data?.entries)) raw = value.data.entries;
+  else if (Array.isArray(value?.items)) raw = value.items;
+  return raw.filter(isValidEntry);
 };
 
 const normalizeSettings = (value) => {

@@ -7,7 +7,7 @@ import { usePeriodStats } from "./usePeriodStats";
  * Zentralisiert alle abgeleiteten/rechene Daten aus App.jsx
  * Logik bleibt gleich, aber mit weniger Rechenarbeit pro Render.
  */
-export function useAppData({ entries, userData, viewMonth, viewYear }) {
+export function useAppData({ entries, userData, viewMonth, viewYear, allEntries }) {
   const todayTarget = useMemo(() => {
     const todayStr = toLocalDateString(new Date());
     return getTargetMinutesForDate(todayStr, userData?.workDays);
@@ -45,14 +45,39 @@ export function useAppData({ entries, userData, viewMonth, viewYear }) {
     );
   }, [entries, viewMonth, viewYear, userData]);
 
+  // Wochen-Nummern die in diesem Monat vorkommen (für Übergangswochen)
+  const weekNumbersInMonth = useMemo(() => {
+    const weeks = new Set();
+    entriesWithHolidays.forEach((entry) => {
+      weeks.add(getWeekNumber(new Date(entry.date)));
+    });
+    return weeks;
+  }, [entriesWithHolidays]);
+
+  // Für Übergangswochen: Entries aus Nachbarmonaten ergänzen,
+  // damit calculateWeekStats die volle Woche (Mo-So) berechnen kann.
   const groupedByWeek = useMemo(() => {
     const map = new Map();
 
+    // 1. Alle Einträge des aktuellen Monats gruppieren
     entriesWithHolidays.forEach((entry) => {
       const week = getWeekNumber(new Date(entry.date));
       if (!map.has(week)) map.set(week, []);
       map.get(week).push(entry);
     });
+
+    // 2. Für jede Woche im Monat: fehlende Tage aus allEntries ergänzen
+    if (allEntries && allEntries.length > 0) {
+      const monthEntryIds = new Set(entriesWithHolidays.map((e) => e.id));
+
+      allEntries.forEach((entry) => {
+        if (monthEntryIds.has(entry.id)) return; // Schon enthalten
+        const week = getWeekNumber(new Date(entry.date));
+        if (!weekNumbersInMonth.has(week)) return; // Woche nicht in diesem Monat
+        if (!map.has(week)) map.set(week, []);
+        map.get(week).push(entry);
+      });
+    }
 
     const groupedEntries = Array.from(map.entries());
     groupedEntries.forEach(([, list]) =>
@@ -60,7 +85,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear }) {
     );
 
     return groupedEntries.sort((a, b) => b[0] - a[0]);
-  }, [entriesWithHolidays]);
+  }, [entriesWithHolidays, allEntries, weekNumbersInMonth]);
 
   const periodStart = useMemo(
     () => new Date(viewYear, viewMonth, 1),

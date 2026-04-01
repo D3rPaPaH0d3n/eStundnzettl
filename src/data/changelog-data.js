@@ -1,5 +1,42 @@
 export const CHANGELOG_DATA = [
 
+  {
+    version: "3.0.2",
+    date: "01.04.2026",
+    title: "Gsunde Wochen, bessere Daten 🔧",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Bug",
+        title: "Fehlerbehebungen",
+        items: [
+          "Die Wochenstunden werden jetzt immer für die ganze Kalenderwoche (Mo–So) berechnet — auch wenn sie über zwei Monate geht.",
+          "Mehrarbeit und Überstunden stimmen jetzt auch bei Monatswechseln sauber.",
+          "Demo-Daten laden funktioniert sofort, ohne dass man die App neu starten muss.",
+          "Einträge die nicht in die Datenbank geschrieben werden konnten, verschwinden nicht mehr still — du bekommst eine Meldung.",
+          "Das Auto-Backup legt nicht mehr im Hintergrund doppelte Listener an."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Verbesserungen",
+        items: [
+          "Die Demo-Daten sehen jetzt praxisnah aus — mit Arbeitsmodell, Fahrzeit, Baustellen und einem ordentlichen Profil.",
+          "Popups (Änderungsprotokoll, Hilfe) gehen jetzt sauber bis unter die Navigationsleiste.",
+          "Der Zeitwähler ist jetzt auch für Screenreader bedienbar."
+        ]
+      },
+      {
+        iconName: "Download",
+        title: "Unter der Haube",
+        items: [
+          "Alle Capacitor-Plugins auf den neuesten Stand gebracht.",
+          "Import-Daten werden jetzt geprüft, bevor sie gespeichert werden — kaputte Einträge fliegen raus.",
+          "Eintrags-IDs sind jetzt kollisionssicher, auch bei schnellem Anlegen."
+        ]
+      }
+    ]
+  },
 
   {
     version: "3.0.1",

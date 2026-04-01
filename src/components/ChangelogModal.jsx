@@ -268,10 +268,11 @@ const ChangelogModal = ({ isOpen, onClose }) => {
             }}
             className="
               fixed z-[160] flex flex-col bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden
-              inset-x-0 bottom-0 rounded-t-3xl border-t border-zinc-200 dark:border-zinc-800
+              inset-x-0 rounded-t-3xl border-t border-zinc-200 dark:border-zinc-800
               max-h-[85vh] h-[85vh]
-              md:inset-auto md:w-[600px] md:h-[85vh] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl
+              md:inset-auto md:bottom-auto md:w-[600px] md:h-[85vh] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl
             "
+            style={{ bottom: "calc(-1 * env(safe-area-inset-bottom, 0px))" }}
           >
             <div
               className="md:hidden w-full flex justify-center pt-3 pb-1 bg-white dark:bg-zinc-900 shrink-0 cursor-grab active:cursor-grabbing touch-none"

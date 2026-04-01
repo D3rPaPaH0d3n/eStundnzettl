@@ -158,20 +158,28 @@ export function useAutoBackup(entries, userData, isEnabled) {
 
   const listenerHandle = useRef(null);
 
+  // Listener nur einmal registrieren (Mount/Unmount)
   useEffect(() => {
-    const setupListener = async () => {
-      if (listenerHandle.current) {
-        await listenerHandle.current.remove();
-        listenerHandle.current = null;
-      }
+    let cancelled = false;
+    (async () => {
       listenerHandle.current = await App.addListener('appStateChange', ({ isActive }) => {
-        if (!isActive) {
+        if (!isActive && !cancelled) {
           performBackup("Background");
         }
       });
-    };
-    setupListener();
+    })();
 
+    return () => {
+      cancelled = true;
+      if (listenerHandle.current) {
+        listenerHandle.current.remove();
+        listenerHandle.current = null;
+      }
+    };
+  }, []);
+
+  // Debounced Auto-Save bei Datenänderungen
+  useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
       performBackup("Auto-Save");
@@ -179,10 +187,6 @@ export function useAutoBackup(entries, userData, isEnabled) {
 
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      if (listenerHandle.current) {
-        listenerHandle.current.remove();
-        listenerHandle.current = null;
-      }
     };
   }, [entries, userData, isEnabled]);
 

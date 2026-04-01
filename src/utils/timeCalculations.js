@@ -239,8 +239,14 @@ export const getWeekRangeInMonth = (dateInWeek, viewDate) => {
   return { start: effectiveStart, end: effectiveEnd };
 };
 
-export const calculateWeekStats = (weekEntries, userData, viewDate) => {
+/**
+ * Berechnet Wochen-Stats immer für die VOLLE Woche (Mo-So),
+ * unabhängig vom angezeigten Monat.
+ * So sind Saldo und MA/ÜS-Split korrekt auf 40h-Basis.
+ */
+export const calculateWeekStats = (weekEntries, userData) => {
   const dateRef = weekEntries.length > 0 ? new Date(weekEntries[0].date) : new Date();
-  const { start, end } = getWeekRangeInMonth(dateRef, viewDate);
+  // Volle Woche ohne Monats-Clipping (kein viewDate)
+  const { start, end } = getWeekRangeInMonth(dateRef);
   return calculatePeriodStats(weekEntries, userData, start, end);
 };

@@ -274,6 +274,9 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
             dragListener={false}
             dragControls={dragControls}
             onDragEnd={(_, info) => { if (info.offset.y > 100) onClose(); }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title || "Zeit wählen"}
             className="fixed bottom-0 left-0 right-0 z-[101] w-full md:w-[min(28rem,calc(100vw-2rem))] rounded-t-3xl overflow-visible flex flex-col overscroll-contain touch-none md:mx-auto md:bottom-4 md:rounded-3xl"
           >
             <div className="absolute inset-0 bg-white dark:bg-zinc-900 rounded-t-3xl md:rounded-3xl shadow-2xl z-0" style={{ bottom: "-100px" }} />
@@ -289,6 +292,8 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
             {/* Header */}
             <div className="relative z-20 flex justify-between items-center px-4 sm:px-5 pb-4 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-t-3xl md:rounded-t-3xl">
               <button
+                type="button"
+                aria-label="Abbrechen"
                 onClick={onClose}
                 className="p-3 text-red-500 bg-red-100 dark:bg-red-900/20 dark:text-red-400 rounded-full transition-transform active:scale-95 shrink-0"
               >
@@ -300,6 +305,8 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
               </span>
 
               <button
+                type="button"
+                aria-label="Auswahl bestätigen"
                 onClick={() => {
                   Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
                   onClose();

@@ -22,9 +22,11 @@ registerLocale("de", de);
 
 // Stylt den Monatsnamen jetzt etwas größer als Überschrift
 const CustomMonthInput = forwardRef(({ value, onClick }, ref) => (
-  <button 
+  <button
+    type="button"
+    aria-label={`Monat wählen (aktuell ${value})`}
     className="font-bold text-zinc-800 dark:text-white text-lg hover:text-emerald-600 transition-colors capitalize"
-    onClick={onClick} 
+    onClick={onClick}
     ref={ref}
   >
     {value}
@@ -84,8 +86,10 @@ const Dashboard = ({
         
         {/* HEADER: MONATS-NAVIGATION */}
         <div className="flex items-center justify-between p-3 px-4 border-b border-zinc-100 dark:border-zinc-700/50">
-            <button 
-                className="p-2 -ml-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors" 
+            <button
+                type="button"
+                aria-label="Vorheriger Monat"
+                className="p-2 -ml-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
                 onClick={() => changeMonth(-1)}
             >
                 <ChevronLeft size={24} />
@@ -103,8 +107,10 @@ const Dashboard = ({
                 />
             </div>
 
-            <button 
-                className="p-2 -mr-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors" 
+            <button
+                type="button"
+                aria-label="Nächster Monat"
+                className="p-2 -mr-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
                 onClick={() => changeMonth(1)}
             >
                 <ChevronRight size={24} />

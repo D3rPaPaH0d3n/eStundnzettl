@@ -1,6 +1,48 @@
 export const CHANGELOG_DATA = [
 
   {
+    version: "3.1.0",
+    date: "04.04.2026",
+    title: "Härtung & Politur 🛡️",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "ShieldCheck",
+        title: "Sicherheit",
+        items: [
+          "Dein Nextcloud-App-Passwort wird jetzt echt verschlüsselt (AES-GCM über die Web-Crypto-Schnittstelle). Alte, nur base64-kodierte Passwörter werden beim ersten Start automatisch und transparent in das neue Format überführt.",
+          "Backups bekommen jetzt eine Prüfsumme (SHA-256). Wird ein importiertes Backup manipuliert, warnt dich die App sofort.",
+          "Alle bekannten Abhängigkeits-Sicherheitslücken wurden geschlossen (npm audit ist wieder sauber)."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Qualität & Stabilität",
+        items: [
+          "Erste Unit-Test-Suite eingezogen (38 Tests für Zeitberechnungen, Backup-Integrität und Verschlüsselung). Jeder zukünftige Release läuft nur dann durch den Play-Store-Workflow, wenn die Tests grün sind.",
+          "Neue zentrale Logging-Fassade — Debug-Ausgaben landen in Dev-Builds sauber im Log und sind in Release-Builds automatisch stumm."
+        ]
+      },
+      {
+        iconName: "Accessibility",
+        title: "Bedienbarkeit",
+        items: [
+          "Alle wichtigen Icon-Buttons (Monatsnavigation, Timer-FAB, Kopfzeile, Drawer) haben jetzt ordentliche Bezeichnungen für Screenreader.",
+          "Beim Öffnen von Einstellungen, Eintragsformular oder Einrichtungs-Assistent zeigt die App jetzt einen sauberen Lade-Skeleton statt einer leeren Fläche."
+        ]
+      },
+      {
+        iconName: "Globe",
+        title: "Unter der Haube",
+        items: [
+          "Mehrsprachigkeits-Infrastruktur (i18next) eingezogen — Deutsch bleibt Standard, englische Übersetzungen sind vorbereitet und folgen in einem späteren Release.",
+          "ESLint-Konfiguration verschärft und das Android-Build-Verzeichnis aus dem Lint-Scan ausgenommen."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "3.0.2",
     date: "01.04.2026",
     title: "Gsunde Wochen, bessere Daten 🔧",

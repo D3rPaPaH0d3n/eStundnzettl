@@ -13,6 +13,9 @@ import { setSetting } from "../db/repositories/settingsRepo";
 import { obfuscate } from "../utils/obfuscate";
 import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
 import { bulkInsertEntries } from "../db/repositories/entriesRepo";
+import { logger } from "../utils/logger";
+
+const log = logger.scope("Onboarding");
 
 const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCodes, setCloudSyncEnabled, setLocalBackupEnabled, setTheme }) => {
   const [step, setStep] = useState(0); 
@@ -50,7 +53,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
   const photoInputRef = useRef(null);
 
   useEffect(() => {
-    initGoogleAuth().catch(() => console.log("Google Auth Init failed silently/already initialized"));
+    initGoogleAuth().catch(() => log.debug("Google Auth Init failed silently/already initialized"));
     return () => {
       if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
       if (ncSetupPollRef.current) clearInterval(ncSetupPollRef.current);
@@ -76,7 +79,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
       await bulkReplaceWorkCodes(DEMO_DATA.workCodes);
       await bulkInsertEntries(demoEntries);
     } catch (err) {
-      console.error("[Onboarding Demo] SQLite write failed:", err);
+      log.error("Demo SQLite write failed:", err);
     }
 
     setUserData?.(DEMO_DATA.user);
@@ -139,7 +142,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
         // Erst setzen wenn Login erfolgreich war
         setFormData(p => ({...p, autoBackup: true}));
       } catch (error) {
-        console.error(error);
+        log.error(error);
         toast("Anmeldung abgebrochen oder fehlgeschlagen.", { icon: "⚠️" });
         // Nicht aktivieren bei Fehler
         setFormData(p => ({...p, autoBackup: false}));
@@ -158,7 +161,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
           toast.success("Ordner verknüpft!");
         }
       } catch (error) {
-        console.error(error);
+        log.error(error);
         toast.error("Auswahl abgebrochen");
       }
     } else {
@@ -272,17 +275,18 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     // Nextcloud Credentials speichern
     if (ncCredentials) {
       try {
+        const encryptedPass = await obfuscate(ncCredentials.appPassword);
         await setSetting("nextcloud_url", ncCredentials.server);
         await setSetting("nextcloud_user", ncCredentials.userId);
-        await setSetting("nextcloud_pass", obfuscate(ncCredentials.appPassword));
+        await setSetting("nextcloud_pass", encryptedPass);
         await setSetting("nextcloud_enabled", true);
         // Auch in localStorage für sofortige Verfügbarkeit (Keys MÜSSEN mit STORAGE_KEYS übereinstimmen!)
         localStorage.setItem("estundnzettl_nextcloud_url", ncCredentials.server);
         localStorage.setItem("estundnzettl_nextcloud_user", ncCredentials.userId);
-        localStorage.setItem("estundnzettl_nextcloud_pass", obfuscate(ncCredentials.appPassword));
+        localStorage.setItem("estundnzettl_nextcloud_pass", encryptedPass);
         localStorage.setItem("estundnzettl_nextcloud_enabled", "true");
       } catch (err) {
-        console.error("Nextcloud settings save failed:", err);
+        log.error("Nextcloud settings save failed:", err);
       }
     }
 
@@ -319,7 +323,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
       const content = await downloadFileContent(token, file.id);
       if (!content) throw new Error("Backup leer.");
 
-      const { isValid, data } = analyzeBackupData(content);
+      const { isValid, data } = await analyzeBackupData(content);
       if (isValid) {
         setRestoreData(data);
         toast.success("Backup geladen!");
@@ -328,7 +332,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
         toast.error("Format ungültig.");
       }
     } catch (err) {
-      console.error(err);
+      log.error(err);
       toast.error(err.message || "Fehler beim Laden");
     } finally {
       setLoading(false);
@@ -340,7 +344,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
       setLoading(true);
       const backupContent = await readBackupFromFolder();
       if (backupContent) {
-          const { isValid, data } = analyzeBackupData(backupContent);
+          const { isValid, data } = await analyzeBackupData(backupContent);
           if (isValid) {
               setRestoreData(data);
               toast.success("Backup geladen!");
@@ -364,8 +368,11 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
     try {
       setLoading(true);
       const content = await readJsonFile(file);
-      const { isValid, data } = analyzeBackupData(content);
+      const { isValid, data } = await analyzeBackupData(content);
       if (isValid) {
+        if (data.integrity === "mismatch") {
+          toast("⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert", { duration: 6000 });
+        }
         setRestoreData(data);
         toast.success("Backup geladen!");
         setStep(4);
@@ -427,7 +434,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
                 setLoading(false);
                 return;
               }
-              const { isValid, data } = analyzeBackupData(content);
+              const { isValid, data } = await analyzeBackupData(content);
               if (isValid) {
                 setRestoreData(data);
                 toast.success("Backup von Nextcloud geladen!");

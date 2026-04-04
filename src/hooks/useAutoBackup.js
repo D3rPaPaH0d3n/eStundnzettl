@@ -147,7 +147,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
         try {
           const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
           const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
-          const ncPass = deobfuscate(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "");
+          const ncPass = await deobfuscate(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "");
           if (ncUrl && ncUser && ncPass) {
             await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
             lastHash.current = currentHash;

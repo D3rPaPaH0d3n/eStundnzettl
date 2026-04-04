@@ -31,6 +31,9 @@ import {
 } from "../../utils/storageBackup";
 import { testConnection as ncTestConnection, initiateLoginFlow, pollLoginResult, ensureFolder as ncEnsureFolder, getNextcloudErrorMessage } from "../../utils/nextcloudClient";
 import toast from "react-hot-toast";
+import { logger } from "../../utils/logger";
+
+const log = logger.scope("Nextcloud");
 
 const isGoogleConnectionReady = (status) => !!(status?.hasToken || (status?.connected && !status?.reauthRequired));
 const connectionBadgeClassName = "flex items-center px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full";
@@ -92,20 +95,20 @@ const BackupSettings = ({
 
   // Initialize lifecycle listeners
   useEffect(() => {
-    console.log('[Nextcloud] Setting up lifecycle listeners');
+    log.debug('Setting up lifecycle listeners');
     
     // Generate unique ID for this login attempt
     loginAttemptId.current = `login_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Browser finished listener (for Custom Tabs)
     browserFinishedListener.current = Browser.addListener('browserFinished', () => {
-      console.log('[Nextcloud] Browser finished/closed');
+      log.debug('Browser finished/closed');
       handleBrowserFinished();
     });
 
     // App state change listener
     appStateListener.current = App.addListener('appStateChange', ({ isActive }) => {
-      console.log(`[Nextcloud] App state change: ${isActive ? 'active' : 'inactive'}`);
+      log.debug(`App state change: ${isActive ? 'active' : 'inactive'}`);
       appIsActive.current = isActive;
       
       if (isActive) {
@@ -119,7 +122,7 @@ const BackupSettings = ({
 
     // Cleanup on unmount
     return () => {
-      console.log('[Nextcloud] Cleaning up lifecycle listeners');
+      log.debug('Cleaning up lifecycle listeners');
       cleanupLifecycle();
     };
   }, []);
@@ -206,7 +209,7 @@ const BackupSettings = ({
   // =====================
 
   const cleanupLifecycle = () => {
-    console.log('[Nextcloud] Performing cleanup');
+    log.debug('Performing cleanup');
     
     // Clear polling interval
     if (ncPollInterval.current) {
@@ -234,11 +237,11 @@ const BackupSettings = ({
   };
 
   const handleBrowserFinished = () => {
-    console.log('[Nextcloud] Browser finished handler');
+    log.debug('Browser finished handler');
     
     // If we're still connecting, check if login completed
     if (ncConnecting) {
-      console.log('[Nextcloud] Browser closed while connecting - checking login status');
+      log.debug('Browser closed while connecting - checking login status');
       
       // Give a moment for the login to complete, then check
       setTimeout(() => {
@@ -251,11 +254,11 @@ const BackupSettings = ({
   };
 
   const handleAppResume = () => {
-    console.log('[Nextcloud] App resumed from background');
+    log.debug('App resumed from background');
     
     // If we were connecting, check if login completed while we were in background
     if (ncConnecting) {
-      console.log('[Nextcloud] App resumed while connecting - checking login status');
+      log.debug('App resumed while connecting - checking login status');
       
       // Force a poll check immediately
       if (ncPollInterval.current) {
@@ -265,7 +268,7 @@ const BackupSettings = ({
   };
 
   const pausePolling = () => {
-    console.log('[Nextcloud] Pausing polling (app in background)');
+    log.debug('Pausing polling (app in background)');
     // Polling logic checks appIsActive.current, so no action needed here
   };
 
@@ -276,7 +279,7 @@ const BackupSettings = ({
   const checkPollResult = async () => {
     // Skip if app is not active
     if (!appIsActive.current) {
-      console.log('[Nextcloud] Skipping poll check - app is inactive');
+      log.debug('Skipping poll check - app is inactive');
       return;
     }
 
@@ -284,14 +287,14 @@ const BackupSettings = ({
       // Get current poll endpoint and token from state
       // Note: In a real implementation, we'd need to store these
       // For now, we'll rely on the existing polling logic
-      console.log('[Nextcloud] Manual poll check triggered');
+      log.debug('Manual poll check triggered');
     } catch (error) {
-      console.error('[Nextcloud] Error in manual poll check:', error);
+      log.error('Error in manual poll check:', error);
     }
   };
 
   const startPolling = (pollEndpoint, token) => {
-    console.log(`[Nextcloud] Starting polling for attempt ${loginAttemptId.current}`);
+    log.debug(`Starting polling for attempt ${loginAttemptId.current}`);
     
     let attempts = 0;
     const maxAttempts = 100; // ~5 Min bei 3s Intervall
@@ -299,15 +302,15 @@ const BackupSettings = ({
     ncPollInterval.current = setInterval(async () => {
       // Skip if app is not active
       if (!appIsActive.current) {
-        console.log('[Nextcloud] Polling paused - app is inactive');
+        log.debug('Polling paused - app is inactive');
         return;
       }
       
       attempts++;
-      console.log(`[Nextcloud] Poll attempt ${attempts}/${maxAttempts}`);
+      log.debug(`Poll attempt ${attempts}/${maxAttempts}`);
       
       if (attempts > maxAttempts) {
-        console.log('[Nextcloud] Polling timeout');
+        log.debug('Polling timeout');
         clearInterval(ncPollInterval.current);
         ncPollInterval.current = null;
         setNcConnecting(false);
@@ -322,12 +325,12 @@ const BackupSettings = ({
         }
 
         if (result.status === 'pending') {
-          console.log('[Nextcloud] Login still pending');
+          log.debug('Login still pending');
           return;
         }
 
         if (result.status === 'complete') {
-          console.log('[Nextcloud] Login complete!');
+          log.debug('Login complete!');
           clearInterval(ncPollInterval.current);
           ncPollInterval.current = null;
           
@@ -335,7 +338,7 @@ const BackupSettings = ({
           await handleLoginSuccess(serverUrl, result.loginName, result.appPassword);
         }
       } catch (error) {
-        console.error('[Nextcloud] Polling error:', error);
+        log.error('Polling error:', error);
         clearInterval(ncPollInterval.current);
         ncPollInterval.current = null;
         setNcConnecting(false);
@@ -372,17 +375,17 @@ const BackupSettings = ({
       // Try to close browser
       try {
         await Browser.close();
-        console.log('[Nextcloud] Browser closed successfully');
+        log.debug('Browser closed successfully');
       } catch (browserError) {
-        console.warn('[Nextcloud] Browser close warning:', browserError);
+        log.warn('Browser close warning:', browserError);
         // Browser might already be closed - that's OK
       }
 
       toast.success(`Verbunden als ${loginName}`);
-      console.log('[Nextcloud] Login flow completed successfully');
+      log.debug('Login flow completed successfully');
       
     } catch (persistError) {
-      console.error('[Nextcloud] Persistence error:', persistError);
+      log.error('Persistence error:', persistError);
       setNcConnecting(false);
       toast.error("Nextcloud verbunden, aber Speichern in der App fehlgeschlagen");
     }
@@ -398,7 +401,7 @@ const BackupSettings = ({
       return;
     }
     
-    console.log(`[Nextcloud] Starting login flow for ${nextcloudUrl}`);
+    log.debug(`Starting login flow for ${nextcloudUrl}`);
     
     try {
       setNcConnecting(true);
@@ -410,17 +413,17 @@ const BackupSettings = ({
       }
 
       const { loginUrl, token, pollEndpoint } = startResult;
-      console.log(`[Nextcloud] Login URL: ${loginUrl}, Poll endpoint: ${pollEndpoint}`);
+      log.debug(`Login URL: ${loginUrl}, Poll endpoint: ${pollEndpoint}`);
 
       // Open browser
       await Browser.open({ url: loginUrl });
-      console.log('[Nextcloud] Browser opened');
+      log.debug('Browser opened');
 
       // Start polling
       startPolling(pollEndpoint, token);
       
     } catch (err) {
-      console.error('[Nextcloud] Login flow error:', err);
+      log.error('Login flow error:', err);
       setNcConnecting(false);
       const message = err?.message || 'Unbekannter Fehler';
       toast.error(`Nextcloud Login fehlgeschlagen: ${message}`);
@@ -428,7 +431,7 @@ const BackupSettings = ({
   };
 
   const handleNcDisconnect = () => {
-    console.log('[Nextcloud] Disconnecting');
+    log.debug('Disconnecting');
     Haptics.impact({ style: ImpactStyle.Light });
     
     // Cleanup polling
@@ -452,7 +455,7 @@ const BackupSettings = ({
     setNextcloudBackupLastError("");
     
     toast("Nextcloud getrennt");
-    console.log('[Nextcloud] Disconnected successfully');
+    log.debug('Disconnected successfully');
   };
 
   const handleNcTest = async () => {
@@ -493,7 +496,7 @@ const BackupSettings = ({
         setGoogleAccountLabel("");
         setAutoBackup(false);
       } catch (e) {
-        console.error(e);
+        log.error(e);
         localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
         setIsCloudConnected(false);
         setIsTokenValid(false);
@@ -520,7 +523,7 @@ const BackupSettings = ({
           toast.success(`Verbunden: ${user.givenName || user.email || "Drive"}`);
         }
       } catch (error) {
-        console.error(error);
+        log.error(error);
         setIsTokenValid(false);
         const message = String(error?.message || error || "");
         if (message.includes("GOOGLE_DRIVE_AUTH_CANCELLED")) {
@@ -597,7 +600,7 @@ const BackupSettings = ({
         toast.error(result?.message || "Backup fehlgeschlagen");
       }
     } catch (error) {
-      console.error(error);
+      log.error(error);
       toast.error("Backup fehlgeschlagen");
     } finally {
       setIsBackingUp(false);

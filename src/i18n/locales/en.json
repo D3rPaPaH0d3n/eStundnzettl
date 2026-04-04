@@ -1,0 +1,39 @@
+{
+  "common": {
+    "back": "Back",
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "loading": "Loading..."
+  },
+  "app": {
+    "subtitle": "Mobile time tracking"
+  },
+  "dashboard": {
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "selectMonth": "Select month"
+  },
+  "header": {
+    "settings": "Open settings",
+    "report": "Open report",
+    "backToOverview": "Back to overview"
+  },
+  "timer": {
+    "start": "Add new entry or start timer",
+    "stop": "Stop timer",
+    "pause": "Pause timer",
+    "resume": "Resume timer"
+  },
+  "skeleton": {
+    "default": "Loading...",
+    "settings": "Loading settings...",
+    "entryForm": "Loading entry form...",
+    "onboarding": "Loading setup wizard..."
+  },
+  "backup": {
+    "integrityMismatch": "Checksum mismatch — backup may have been tampered with",
+    "integrityUnverified": "Backup without checksum (legacy format)"
+  }
+}

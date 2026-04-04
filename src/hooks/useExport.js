@@ -3,7 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import toast from "react-hot-toast";
-import { exportToSelectedFolder } from "../utils/storageBackup";
+import { exportToSelectedFolder, attachBackupChecksum, verifyBackupIntegrity } from "../utils/storageBackup";
 import { toLocalDateString } from "../utils";
 
 /**
@@ -20,14 +20,18 @@ import { toLocalDateString } from "../utils";
 export function useExport({ entries, userData, workCodes, attachments = [], importEntries, setUserData, importWorkCodes, exportPayloadRef }) {
   const [showExportModal, setShowExportModal] = useState(false);
 
-  const buildPayload = () => ({
-    user: userData,
-    entries,
-    workCodes,
-    attachments,
-    exportedAt: new Date().toISOString(),
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  });
+  const buildPayload = async () => {
+    const payload = {
+      user: userData,
+      entries,
+      workCodes,
+      attachments,
+      exportedAt: new Date().toISOString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+    await attachBackupChecksum(payload);
+    return payload;
+  };
 
   // --- Web fallback: download as file ---
   const handleWebExport = async () => {
@@ -35,7 +39,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
     try {
       const dateStr = toLocalDateString(new Date());
       const fileName = `estundnzettl_${dateStr}.json`;
-      const payload = buildPayload();
+      const payload = await buildPayload();
       const json = JSON.stringify(payload, null, 2);
 
       const file = new File([json], fileName, { type: "application/json" });
@@ -69,7 +73,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
   // --- Main entry point ---
   const exportData = async () => {
     if (Capacitor.isNativePlatform()) {
-      exportPayloadRef.current = buildPayload();
+      exportPayloadRef.current = await buildPayload();
       setShowExportModal(true);
     } else {
       await handleWebExport();
@@ -167,10 +171,20 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
     }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const d = JSON.parse(e.target.result);
         if (d && typeof d !== "object") throw new Error("Ungültiges Format");
+
+        // Integritäts-Check: Mismatch = mögliche Manipulation, nur Warnung
+        try {
+          const integrity = await verifyBackupIntegrity(d);
+          if (integrity === "mismatch") {
+            toast("⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert", { duration: 6000 });
+          } else if (integrity === "unverified") {
+            toast("ℹ️ Backup ohne Prüfsumme (Legacy-Format)", { icon: "ℹ️" });
+          }
+        } catch { /* silent */ }
 
         if (d.entries) {
           if (!Array.isArray(d.entries)) throw new Error("entries ist kein Array");

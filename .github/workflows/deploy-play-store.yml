@@ -78,6 +78,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # ── 2.5 Tests ausführen (Vitest) ────────────────────────────────
+      # Schlägt der Build fehl, wird kein Release gebaut.
+      - name: Run unit tests
+        run: npm test
+
       # ── 3. Version hochzählen (VOR dem Build!) ──────────────────────
       # versionCode: Ganzzahl, wird um +1 erhöht (Play Store braucht immer höher)
       # versionName: Semver String (z.B. "6.3.21" → "6.3.22")

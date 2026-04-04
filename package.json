@@ -1,13 +1,16 @@
 {
   "name": "eStundnzettl",
   "private": true,
-  "version": "3.0.2",
+  "version": "3.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
     "postinstall": "npx replace-in-files-cli --string=\"proguard-android.txt\" --replacement=\"proguard-android-optimize.txt\" \"node_modules/@capacitor/*/android/build.gradle\" \"node_modules/@capgo/*/android/build.gradle\" \"node_modules/@capacitor-community/*/android/build.gradle\"",
     "cap:open": "npx cap open android",
     "version": "node scripts/sync-version.js",
@@ -33,11 +36,13 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
     "html2pdf.js": "^0.14.0",
+    "i18next": "^26.0.3",
     "lucide-react": "^1.7.0",
     "react": "^19.2.4",
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.4",
-    "react-hot-toast": "^2.6.0"
+    "react-hot-toast": "^2.6.0",
+    "react-i18next": "^17.0.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.3.0",
@@ -45,16 +50,22 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
+    "@vitest/coverage-v8": "^4.1.2",
     "autoprefixer": "^10.4.27",
     "eslint": "^9.39.4",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "jsdom": "^29.0.1",
     "postcss": "^8.5.8",
     "replace-in-files-cli": "^4.0.0",
     "tailwindcss": "^4.2.2",
     "terser": "^5.46.1",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^4.1.2"
+  },
+  "overrides": {
+    "brace-expansion": "^1.1.13"
   }
 }

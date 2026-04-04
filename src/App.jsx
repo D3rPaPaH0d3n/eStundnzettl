@@ -44,6 +44,7 @@ const AttachmentManager = React.lazy(() => import("./components/AttachmentManage
 const EntryForm = React.lazy(() => import("./components/EntryForm"));
 const OnboardingWizard = React.lazy(() => import("./components/OnboardingWizard"));
 const ExportModal = React.lazy(() => import("./components/ExportModal"));
+import SkeletonScreen from "./components/SkeletonScreen";
 
 // ANIMATION CONFIG
 const pageVariants = { initial: { opacity: 0, x: 20 }, in: { opacity: 1, x: 0 }, out: { opacity: 0, x: -20 } };
@@ -278,7 +279,7 @@ export default function App() {
       <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#27272a', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#10b981', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />
 
       {showOnboarding && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<SkeletonScreen label="Einrichtung wird geladen..." />}>
           <OnboardingWizard
             onComplete={handleOnboardingFinish}
             setUserData={setUserData}
@@ -332,7 +333,7 @@ export default function App() {
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
               {view !== "dashboard" && view !== "report" ? (
-                <button onClick={() => { setView("dashboard"); form.setEditingEntry(null); }} className="p-2 hover:bg-zinc-700 rounded-full transition-colors"><ArrowLeft size={24} /></button>
+                <button type="button" aria-label="Zurück zur Übersicht" onClick={() => { setView("dashboard"); form.setEditingEntry(null); }} className="p-2 hover:bg-zinc-700 rounded-full transition-colors"><ArrowLeft size={24} /></button>
               ) : (
                 <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-zinc-800 shadow-inner"><img src={AppLogo} alt="Logo" className="w-full h-full object-contain" /></div>
               )}
@@ -343,8 +344,8 @@ export default function App() {
             </div>
             {view === "dashboard" && (
               <div className="flex gap-2">
-                <button onClick={() => setView("settings")} className="p-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors active:scale-95"><SettingsIcon size={20} className="text-zinc-300" /></button>
-                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setView("report")} className="bg-emerald-600 hover:bg-emerald-700 p-2.5 rounded-xl transition-colors shadow-lg shadow-emerald-900/20"><FileBarChart size={20} className="text-white" /></motion.button>
+                <button type="button" aria-label="Einstellungen öffnen" onClick={() => setView("settings")} className="p-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors active:scale-95"><SettingsIcon size={20} className="text-zinc-300" /></button>
+                <motion.button type="button" aria-label="Bericht öffnen" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setView("report")} className="bg-emerald-600 hover:bg-emerald-700 p-2.5 rounded-xl transition-colors shadow-lg shadow-emerald-900/20"><FileBarChart size={20} className="text-white" /></motion.button>
               </div>
             )}
           </div>
@@ -378,7 +379,7 @@ export default function App() {
 
           {view === "add" && !showOnboarding && (
             <motion.div key="add" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
-              <Suspense fallback={null}>
+              <Suspense fallback={<SkeletonScreen label="Lade Eingabeformular..." />}>
                 <EntryForm
                   onCancel={() => { setView("dashboard"); form.setEditingEntry(null); }}
                   onSubmit={handleSaveEntry}
@@ -409,7 +410,7 @@ export default function App() {
 
           {view === "settings" && !showOnboarding && (
             <motion.div key="settings" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
-              <Suspense fallback={null}>
+              <Suspense fallback={<SkeletonScreen label="Lade Einstellungen..." />}>
                 <Settings
                   userData={userData}
                   setUserData={setUserData}

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Play, Square, Pause, Plus, ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { useTranslation } from "react-i18next";
 
 const LONG_PRESS_MS = 260;
 const SWIPE_THRESHOLD = 28;
@@ -15,6 +16,7 @@ const LiveTimerOverlay = ({
   onResume,
   targetMinutes = 510,
 }) => {
+  const { t } = useTranslation();
   const [displayStatus, setDisplayStatus] = useState({ text: "...", tone: "blue" });
   const [isSwipeReady, setIsSwipeReady] = useState(false);
   const longPressTimeoutRef = useRef(null);
@@ -157,6 +159,8 @@ const LiveTimerOverlay = ({
       </AnimatePresence>
 
       <motion.button
+        type="button"
+        aria-label={timerState.isRunning ? t("timer.stop") : t("timer.start")}
         whileTap={{ scale: 0.92 }}
         onClick={timerState.isRunning ? onStop : undefined}
         onPointerDown={handlePointerDown}
@@ -192,6 +196,8 @@ const LiveTimerOverlay = ({
       <AnimatePresence>
         {timerState.isRunning && (
           <motion.button
+            type="button"
+            aria-label={timerState.isPaused ? t("timer.resume") : t("timer.pause")}
             initial={{ scale: 0, x: 20, opacity: 0 }}
             animate={{ scale: 1, x: 0, opacity: 1 }}
             exit={{ scale: 0, x: 20, opacity: 0 }}

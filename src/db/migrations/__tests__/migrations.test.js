@@ -110,6 +110,44 @@ describe("runMigrations — Idempotenz", () => {
   });
 });
 
+describe("Migration 002 — Performance Indices", () => {
+  it("ist in der MIGRATIONS-Registry registriert", () => {
+    const m = MIGRATIONS.find((x) => x.version === 2);
+    expect(m).toBeDefined();
+    expect(m.name).toBe("performance_indices");
+  });
+
+  it("erhöht getLatestSchemaVersion auf mindestens 2", () => {
+    expect(getLatestSchemaVersion()).toBeGreaterThanOrEqual(2);
+  });
+
+  it("legt alle erwarteten Performance-Indizes an", async () => {
+    const db = createMockDb();
+    const createdIndices = new Set();
+    const originalExecute = db.execute;
+    db.execute = async (sql) => {
+      const idxMatch = sql.match(/CREATE INDEX IF NOT EXISTS\s+(\w+)/i);
+      if (idxMatch) createdIndices.add(idxMatch[1]);
+      return originalExecute(sql);
+    };
+
+    await runMigrations(db.execute, db.query, { logger: {} });
+
+    expect(createdIndices.has("idx_entries_date_id")).toBe(true);
+    expect(createdIndices.has("idx_attachments_entry_created")).toBe(true);
+    expect(createdIndices.has("idx_attachment_labels_position")).toBe(true);
+    expect(createdIndices.has("idx_backup_metadata_timestamp")).toBe(true);
+    expect(createdIndices.has("idx_backup_metadata_type_timestamp")).toBe(true);
+  });
+
+  it("wird beim zweiten Run übersprungen (idempotent)", async () => {
+    const db = createMockDb();
+    await runMigrations(db.execute, db.query, { logger: {} });
+    const second = await runMigrations(db.execute, db.query, { logger: {} });
+    expect(second.appliedVersions).toEqual([]);
+  });
+});
+
 describe("runMigrations — Fehlerbehandlung", () => {
   it("propagiert Fehler aus einer fehlschlagenden Migration", async () => {
     const db = createMockDb();

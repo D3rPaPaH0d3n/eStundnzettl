@@ -19,9 +19,11 @@
  */
 
 import { migration001InitialSchema } from "./001_initial_schema";
+import { migration002PerformanceIndices } from "./002_performance_indices";
 
 export const MIGRATIONS = Object.freeze([
   migration001InitialSchema,
+  migration002PerformanceIndices,
 ]);
 
 const SCHEMA_VERSION_TABLE_SQL = `

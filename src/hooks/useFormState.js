@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { WORK_CODE } from "./constants";
-import { toLocalDateString, toLocalHHMM } from "../utils";
+import { toLocalDateString } from "../utils";
 
 const DEFAULTS = {
   entryType: "work",

@@ -66,7 +66,7 @@ const BackupSettings = ({
 
   // Nextcloud UI State (local UI state, persisted via props)
   const [ncExpanded, setNcExpanded] = useState(false);
-  const [ncStatus, setNcStatus] = useState(null); // null | "ok" | "error"
+  const [, setNcStatus] = useState(null); // null | "ok" | "error"
   const [ncConnecting, setNcConnecting] = useState(false);
   const [ncLoginName, setNcLoginName] = useState(nextcloudUser || "");
   
@@ -231,7 +231,7 @@ const BackupSettings = ({
     // Try to close browser (best effort)
     try {
       Browser.close();
-    } catch (error) {
+    } catch {
       // Ignore errors - browser might already be closed
     }
   };
@@ -368,7 +368,7 @@ const BackupSettings = ({
       try {
         await ncTestConnection(serverUrl, loginName, appPassword);
         await ncEnsureFolder(serverUrl, loginName, appPassword);
-      } catch (folderError) {
+      } catch {
         // Non-critical - continue
       }
 
@@ -474,7 +474,7 @@ const BackupSettings = ({
         setNcStatus("error");
         toast.error(result.error || "Verbindung fehlgeschlagen");
       }
-    } catch (error) {
+    } catch {
       setNcStatus("error");
       toast.error("Test fehlgeschlagen");
     }

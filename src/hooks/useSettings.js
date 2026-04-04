@@ -32,7 +32,7 @@ function loadUserDataFromLS() {
         return parsed;
       }
     }
-  } catch (e) { /* corrupt */ }
+  } catch { /* corrupt */ }
   return null;
 }
 

@@ -118,7 +118,7 @@ const ensureBackupFolder = async () => {
       directory: Directory.Documents,
       recursive: true
     });
-  } catch (e) {
+  } catch {
     // Ordner existiert bereits - ignorieren
   }
 };
@@ -131,7 +131,7 @@ const ensureInternalBackupFolder = async () => {
       directory: Directory.Data,
       recursive: true
     });
-  } catch (e) {
+  } catch {
     // Ordner existiert bereits - ignorieren
   }
 };
@@ -197,7 +197,7 @@ export const exportToSelectedFolder = async (fileName, dataObj) => {
         path: filePath,
         directory: Directory.Documents
       });
-    } catch (e) {
+    } catch {
       // Ignorieren - Datei existiert nicht oder keine Rechte
     }
     
@@ -227,7 +227,7 @@ export const exportPdfToFolder = async (fileName, base64Data) => {
         path: filePath,
         directory: Directory.Documents
       });
-    } catch (e) {
+    } catch {
       // Ignorieren
     }
     
@@ -535,7 +535,7 @@ export const triggerManualBackup = async () => {
       nextcloudError,
       message: anySuccess ? undefined : (nextcloudError || "Alle Backup-Ziele fehlgeschlagen")
     };
-  } catch (err) {
+  } catch {
     return { success: false, message: "Backup fehlgeschlagen" };
   }
 };

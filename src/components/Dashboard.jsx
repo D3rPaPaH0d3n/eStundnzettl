@@ -32,11 +32,12 @@ const CustomMonthInput = forwardRef(({ value, onClick }, ref) => (
     {value}
   </button>
 ));
+CustomMonthInput.displayName = "CustomMonthInput";
 
 const Dashboard = ({
   currentDate, onSetCurrentDate, changeMonth,
   stats, 
-  overtime, progressPercent, groupedByWeek, viewMonth, viewYear, onEditEntry, onDeleteEntry, onManageAttachments, getAttachmentsForEntry, userData, workCodes = []
+  overtime, progressPercent, groupedByWeek, viewMonth: _viewMonth, viewYear: _viewYear, onEditEntry, onDeleteEntry, onManageAttachments, getAttachmentsForEntry, userData, workCodes = []
 }) => {
   const [expandedWeeks, setExpandedWeeks] = useState(() => {
     const currentWeek = getWeekNumber(new Date());
@@ -200,7 +201,7 @@ const Dashboard = ({
             const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
             
             const expanded = expandedWeeks[week];
-            let balanceColorClass = diff < 0
+            const balanceColorClass = diff < 0
                 ? "text-red-600 dark:text-red-400 font-bold"
                 : (ueberstunden > 0
                     ? "text-emerald-600 dark:text-emerald-400 font-bold"
@@ -277,7 +278,7 @@ const Dashboard = ({
                                       {sortedEntries.map((entry, idx) => { 
                                           const isHoliday = entry.type === "public_holiday"; 
                                           const isTimeComp = entry.type === "time_comp"; 
-                                          let timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags"); 
+                                          const timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags"); 
                                           
                                           let codeLabel = ""; 
                                           if(entry.type === "work") codeLabel = workCodeLabelMap.get(entry.code) || ""; 

@@ -33,7 +33,7 @@ const UpdateModal = ({ updateData, onClose }) => {
               duration: 5000,
               icon: '📋'
           });
-       } catch (e) {
+       } catch {
           toast.error("Fehler beim Starten des Downloads.");
        }
     }

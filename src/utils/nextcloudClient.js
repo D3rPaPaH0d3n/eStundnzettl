@@ -283,7 +283,7 @@ export async function resolveUserId(serverUrl, loginName, appPassword) {
       }
     }
     return loginName;
-  } catch (e) {
+  } catch {
     return loginName;
   }
 }
@@ -418,7 +418,6 @@ export async function uploadBackup(url, user, pass, jsonData) {
     if (folderResult?.reason === "rate_limited") {
       throw new Error(formatRateLimitMessage(getRateLimitRemaining(url, user) || DEFAULT_RATE_LIMIT_MS));
     }
-  } else {
   }
 
   const res = await nativeHttp(

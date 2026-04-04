@@ -104,7 +104,7 @@ export async function migrateSettingsToSQLite() {
         settings.user = parsed;
       }
     }
-  } catch (e) { /* corrupt */ }
+  } catch { /* corrupt */ }
 
   // Theme
   const theme = localStorage.getItem(STORAGE_KEYS.THEME);
@@ -155,7 +155,7 @@ export async function migrateWorkCodesToSQLite() {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) codes = parsed;
     }
-  } catch (e) { /* corrupt */ }
+  } catch { /* corrupt */ }
 
   // Keine Codes in localStorage → Default-Preset anwenden (wie im Hook)
   if (codes.length === 0) {

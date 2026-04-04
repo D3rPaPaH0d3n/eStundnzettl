@@ -178,7 +178,7 @@ export const calculatePeriodStats = (
   stats.totalIst =
     stats.work + stats.vacation + stats.sick + stats.holiday + stats.timeComp;
 
-  let loopDate = new Date(periodStart);
+  const loopDate = new Date(periodStart);
   loopDate.setHours(0, 0, 0, 0);
   const loopEnd = new Date(periodEnd);
   loopEnd.setHours(23, 59, 59, 999);

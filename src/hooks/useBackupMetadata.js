@@ -5,13 +5,11 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { STORAGE_KEYS } from "./constants";
 import { getDb } from "../db/database";
 import { setStorageMode } from "../db/storageMode";
 import {
   getLastBackupMetadata,
   insertBackupMetadata,
-  getBackupHistory,
 } from "../db/repositories/backupMetadataRepo";
 
 export function useBackupMetadata() {
@@ -25,7 +23,7 @@ export function useBackupMetadata() {
     (async () => {
       try {
         // SQLite ist immer verfügbar
-        const db = await getDb();
+        await getDb();
         setStorageMode("sqlite");
         try {
           const metadata = await getLastBackupMetadata();

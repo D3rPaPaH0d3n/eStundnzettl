@@ -26,6 +26,7 @@ const CustomInput = forwardRef(({ value, onClick, icon: Icon }, ref) => (
     {Icon && <Icon size={18} className="text-zinc-400 ml-2" />}
   </button>
 ));
+CustomInput.displayName = "CustomInput";
 
 const CalendarContainerAnimation = ({ className, children }) => {
   return (

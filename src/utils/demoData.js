@@ -28,14 +28,14 @@ const DEMO_WORK_CODES = [
 ];
 
 // Generate a date string N days ago
-const daysAgo = (n) => {
+const _daysAgo = (n) => {
   const d = new Date();
   d.setDate(d.getDate() - n);
   return toLocalDateString(d);
 };
 
 // Generate work entry
-const workEntry = (date, start, end, pause, project, code) => ({
+const _workEntry = (date, start, end, pause, project, code) => ({
   id: Date.now() + Math.random(),
   type: "work",
   date,

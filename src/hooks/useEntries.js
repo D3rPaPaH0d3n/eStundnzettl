@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
-import { STORAGE_KEYS } from "./constants";
 import { getDb } from "../db/database";
-import { setStorageMode, isSQLiteActive } from "../db/storageMode";
+import { setStorageMode } from "../db/storageMode";
 import {
   getAllEntries,
   insertEntry,
@@ -36,7 +35,7 @@ export function useEntries() {
     (async () => {
       try {
         // SQLite ist immer verfügbar
-        const db = await getDb();
+        await getDb();
         setStorageMode("sqlite");
         sqliteReady.current = true;
 

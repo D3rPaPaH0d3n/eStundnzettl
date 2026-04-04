@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React from "react";
 import { APP_VERSION } from "./hooks/constants";
 import {
@@ -124,7 +125,7 @@ export const getHolidayData = (year) => {
 // UPDATE CHECKER
 // -------------------------------------------------------
 
-const compareVersions = (v1, v2) => {
+const _compareVersions = (v1, v2) => {
   const cleanV1 = v1.replace(/[^0-9.]/g, "");
   const cleanV2 = v2.replace(/[^0-9.]/g, "");
 

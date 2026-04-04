@@ -19,7 +19,7 @@ export async function dualWriteSync(lsKey, sqlKey, value) {
       // Rollback localStorage bei SQLite-Fehler
       if (prev !== null) localStorage.setItem(lsKey, prev);
       else localStorage.removeItem(lsKey);
-      // eslint-disable-next-line no-console
+       
       console.error(`[dualWrite] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
     }
   }
@@ -34,7 +34,7 @@ export async function dualRemoveSync(lsKey, sqlKey) {
     } catch (e) {
       // Rollback localStorage bei SQLite-Fehler
       if (prev !== null) localStorage.setItem(lsKey, prev);
-      // eslint-disable-next-line no-console
+       
       console.error(`[dualWrite] SQLite-Delete "${sqlKey}" fehlgeschlagen:`, e);
     }
   }

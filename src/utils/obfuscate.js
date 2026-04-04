@@ -107,7 +107,7 @@ async function loadOrCreateMasterKey() {
     // Persistenz fehlgeschlagen — wir arbeiten in-memory weiter, aber
     // beim nächsten Start verliert der User seine verschlüsselten Werte.
     // Das ist besser als komplett zu scheitern.
-    // eslint-disable-next-line no-console
+     
     console.warn("[obfuscate] Master-Key konnte nicht persistiert werden:", err);
   }
   // Re-importieren als non-extractable für Benutzung
@@ -162,7 +162,7 @@ export async function obfuscate(val) {
   } catch (err) {
     // Fallback: Falls Krypto wirklich nicht geht, lieber im Legacy-Format
     // speichern als nichts zu speichern — verhindert Datenverlust.
-    // eslint-disable-next-line no-console
+     
     console.error("[obfuscate] Verschlüsselung fehlgeschlagen, Legacy-Fallback:", err);
     try {
       return LEGACY_OBF_PREFIX + btoa(unescape(encodeURIComponent(str)));
@@ -195,7 +195,7 @@ export async function deobfuscate(val) {
       );
       return utf8Decode(pt);
     } catch (err) {
-      // eslint-disable-next-line no-console
+       
       console.error("[obfuscate] Entschlüsselung fehlgeschlagen:", err);
       return "";
     }

@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { App } from "@capacitor/app";
 import toast from "react-hot-toast";
 import { uploadOrUpdateFile, getValidToken } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
-import { uploadBackup as ncUploadBackup, ensureFolder as ncEnsureFolder } from "../utils/nextcloudClient";
+import { uploadBackup as ncUploadBackup } from "../utils/nextcloudClient";
 import { STORAGE_KEYS, BACKUP_CONFIG } from "./constants";
 import { deobfuscate } from "../utils/obfuscate";
 import { isSQLiteActive } from "../db/storageMode";
@@ -112,7 +112,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
       if (localActive) {
         try {
           await writeBackupFile(BACKUP_CONFIG.FILENAME, payload);
-        } catch (locErr) {
+        } catch {
           // Silent fail for local backup
         }
       }
@@ -165,7 +165,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
         // Dual-Write: LAST_BACKUP
         await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
       }
-    } catch (err) {
+    } catch {
       // Silent fail
     } finally {
       isUploading.current = false;

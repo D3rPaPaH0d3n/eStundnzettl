@@ -7,7 +7,6 @@
  * eStundnzettl ist eine reine Android-App — SQLite ist IMMER verfügbar.
  */
 
-import { Capacitor } from "@capacitor/core";
 import { CapacitorSQLite } from "@capacitor-community/sqlite";
 import { DB_NAME } from "./schema";
 import { runMigrations, getLatestSchemaVersion } from "./migrations";
@@ -16,18 +15,6 @@ const SCHEMA_VERSION = getLatestSchemaVersion();
 
 let _ready = null; // Promise<boolean> — true = SQLite verfügbar, false = Fallback
 let _dbOpen = false;
-
-/**
- * Prüft ob wir auf einer nativen Plattform laufen, auf der SQLite funktioniert.
- * eStundnzettl ist eine reine Android-App — Web-Fallback wird nicht mehr unterstützt.
- */
-function isNative() {
-  const platform = Capacitor.getPlatform();
-  if (platform !== "android" && platform !== "ios") {
-    throw new Error("eStundnzettl ist eine reine Android-App — Web-Fallback wird nicht mehr unterstützt");
-  }
-  return true;
-}
 
 /**
  * Initialisiert die DB-Verbindung (einmalig).

@@ -222,8 +222,8 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
           if (result.status === 'complete') {
             clearInterval(ncSetupPollRef.current);
             ncSetupPollRef.current = null;
-            try { await Browser.close(); } catch {}
-            
+            try { await Browser.close(); } catch { /* browser already closed */ }
+
             const userId = await resolveUserId(result.server, result.loginName, result.appPassword);
             setNcCredentials({
               server: result.server.replace(/\/+$/, ''),
@@ -427,7 +427,7 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
 
           if (result.status === 'complete') {
             clearInterval(ncRestorePollRef.current);
-            try { await Browser.close(); } catch {}
+            try { await Browser.close(); } catch { /* browser already closed */ }
             setNcRestoreConnecting(false);
             setLoading(true);
             try {

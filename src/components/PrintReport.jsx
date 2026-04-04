@@ -104,7 +104,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
   };
 
   const filteredEntries = useMemo(() => {
-    let list = filterMode === "month" ? [...entries] : entries.filter((e) => getWeekNumber(new Date(e.date)) === Number(filterMode));
+    const list = filterMode === "month" ? [...entries] : entries.filter((e) => getWeekNumber(new Date(e.date)) === Number(filterMode));
     list.sort((a, b) => {
       const da = new Date(a.date); const db = new Date(b.date);
       if (da.getTime() !== db.getTime()) return da - db;
@@ -356,7 +356,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
                   else if (meta.isEvenDay) rowBg = PRINT_STYLES.bgZebra;
 
                   let projectText = e.project;
-                  let codeText = workCodeLabelMap.get(e.code) || "";
+                  const codeText = workCodeLabelMap.get(e.code) || "";
                   let durationDisplay = formatTime(e.netDuration);
                   let timeColor = PRINT_STYLES.textDark;
                   

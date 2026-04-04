@@ -29,20 +29,20 @@ function prefixArgs(scope, args) {
 export const logger = {
   debug(...args) {
     if (!isDev) return;
-    // eslint-disable-next-line no-console
+     
     console.debug(...args);
   },
   info(...args) {
     if (!isDev) return;
-    // eslint-disable-next-line no-console
+     
     console.info(...args);
   },
   warn(...args) {
-    // eslint-disable-next-line no-console
+     
     console.warn(...args);
   },
   error(...args) {
-    // eslint-disable-next-line no-console
+     
     console.error(...args);
   },
   /**
@@ -70,7 +70,7 @@ export const logger = {
 export function reportError(err, userMessage, options = {}) {
   const { scope, silent = false } = options;
   const prefix = scope ? `[${scope}]` : "[error]";
-  // eslint-disable-next-line no-console
+   
   console.error(prefix, userMessage || "", err);
   if (!silent && userMessage) {
     try {

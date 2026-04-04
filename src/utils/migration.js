@@ -39,20 +39,16 @@ const migrateKoglerKeys = () => {
   const alreadyMigrated = localStorage.getItem("estundnzettl_migrated");
   if (alreadyMigrated) return;
 
-  let migrationCount = 0;
-
   Object.keys(OLD_KEYS).forEach((key) => {
     const oldKey = OLD_KEYS[key];
     const newKey = NEW_KEYS[key];
-    
+
     const oldValue = localStorage.getItem(oldKey);
     const newValue = localStorage.getItem(newKey);
-    
+
     if (oldValue && !newValue) {
       localStorage.setItem(newKey, oldValue);
       localStorage.removeItem(oldKey);
-      migrationCount++;
-
     }
   });
 

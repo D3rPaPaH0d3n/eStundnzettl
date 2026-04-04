@@ -9,7 +9,6 @@ import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 import { SplashScreen } from '@capacitor/splash-screen';
 
 import AppLogo from "./assets/logo.png";
-import { toLocalDateString } from "./utils";
 
 import { WORK_MODELS, STORAGE_KEYS, WORK_CODE } from "./hooks/constants";
 import { useWorkCodes } from "./hooks/useWorkCodes";
@@ -121,7 +120,6 @@ export default function App() {
     removeAttachment,
     removeAttachmentsForEntry,
     getAttachmentsForEntry,
-    getAttachmentsForEntries,
     getLabelSuggestions,
     readAttachmentFile,
     formatFileSize,

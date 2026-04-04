@@ -97,7 +97,7 @@ const ChangelogModal = ({ isOpen, onClose }) => {
     }));
   };
 
-  const renderBugfixGroup = (group, isFirst) => {
+  const renderBugfixGroup = (group, _isFirst) => {
     const isVersionOpen = !!openVersions[group.version];
     const count = group.groupedVersions.length;
 

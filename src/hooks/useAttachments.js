@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
-import toast from "react-hot-toast";
 import { STORAGE_KEYS } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
 import {

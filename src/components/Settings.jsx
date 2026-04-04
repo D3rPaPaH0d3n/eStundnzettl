@@ -1,4 +1,4 @@
-import React, { Suspense, useRef, useState, useEffect } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import ProfileSettings from "./Settings/ProfileSettings";
 import DataSettings from "./Settings/DataSettings";
@@ -26,7 +26,7 @@ const Settings = ({
   importEntries,
   importWorkCodes,
   onExport,
-  onImport,
+  onImport: _onImport,
   onDeleteAll,
   onCheckUpdate,
   // Nextcloud State
@@ -132,7 +132,7 @@ const Settings = ({
         toast.success(`${analysis.entryCount} Einträge importiert!`);
         setTimeout(() => window.location.reload(), 1500);
       }
-    } catch (err) {
+    } catch {
       toast.error("Fehler beim Lesen der Datei");
     }
     e.target.value = null;

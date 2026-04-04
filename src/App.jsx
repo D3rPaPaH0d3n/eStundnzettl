@@ -187,8 +187,6 @@ export default function App() {
     importEntries,
     startTimer,
     stopTimer,
-    pauseTimer,
-    resumeTimer,
     setUserData,
     setAutoBackup,
     setView,

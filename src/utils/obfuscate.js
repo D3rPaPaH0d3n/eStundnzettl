@@ -25,6 +25,7 @@
  */
 
 import { logger } from "./logger";
+import { getSetting, setSetting } from "../db/repositories/settingsRepo";
 
 const ENC_PREFIX = "enc:v1:";
 const LEGACY_OBF_PREFIX = "obf:";
@@ -66,9 +67,10 @@ function getCrypto() {
 // ─── Master Key Management ─────────────────────────────────
 
 async function loadOrCreateMasterKey() {
-  // Lazy-Import, um Zyklen zu vermeiden (obfuscate wird auch aus useSettings importiert,
-  // und settingsRepo hängt indirekt vom DB-Init ab).
-  const { getSetting, setSetting } = await import("../db/repositories/settingsRepo");
+  // getSetting/setSetting sind static imports. Das war historisch ein
+  // dynamischer Import, um angenommene Zyklen zu vermeiden — settingsRepo
+  // importiert obfuscate aber nicht (verifiziert), daher ist der statische
+  // Import sicher und eliminiert die Vite build-Warnung.
   const crypto = getCrypto();
 
   let stored = null;

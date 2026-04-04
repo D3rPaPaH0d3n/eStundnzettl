@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { ArrowLeft, Settings as SettingsIcon, FileBarChart } from "lucide-react";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -145,6 +145,26 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [attachmentEntry, setAttachmentEntry] = useState(null);
 
+  // Stabile Callbacks, damit React.memo auf Dashboard & Co. greift.
+  // useState-Setter sind von React garantiert stabil → dependency-arrays
+  // können leer bleiben.
+  const handleRequestDeleteEntry = useCallback(
+    (id) => setDeleteTarget({ type: 'single', id }),
+    []
+  );
+  const handleRequestDeleteAll = useCallback(
+    () => setDeleteTarget({ type: 'all' }),
+    []
+  );
+  const handleCloseDeleteModal = useCallback(
+    () => setDeleteTarget(null),
+    []
+  );
+  const handleCloseAttachmentModal = useCallback(
+    () => setAttachmentEntry(null),
+    []
+  );
+
   const fileInputRef = useRef(null);
 
   // --- 3. ABGELEITETE DATEN (useAppData) ---
@@ -290,7 +310,7 @@ export default function App() {
 
       <ConfirmModal
         isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
+        onClose={handleCloseDeleteModal}
         onConfirm={() => executeDelete(deleteTarget)}
         title={deleteTarget?.type === 'all' ? "Alles löschen?" : "Eintrag löschen?"}
         message={deleteTarget?.type === 'all' ? "Möchtest du wirklich alle Einträge unwiderruflich löschen? Auch dein Profil wird zurückgesetzt." : "Möchtest du diesen Eintrag wirklich entfernen?"}
@@ -311,7 +331,7 @@ export default function App() {
         <Suspense fallback={null}>
           <AttachmentManager
             isOpen={!!attachmentEntry}
-            onClose={() => setAttachmentEntry(null)}
+            onClose={handleCloseAttachmentModal}
             entry={attachmentEntry}
             attachments={getAttachmentsForEntry(attachmentEntry.id)}
             addAttachment={addAttachment}
@@ -364,7 +384,7 @@ export default function App() {
                 viewYear={viewYear}
                 onStartNewEntry={startNewEntry}
                 onEditEntry={startEdit}
-                onDeleteEntry={(id) => setDeleteTarget({ type: 'single', id })}
+                onDeleteEntry={handleRequestDeleteEntry}
                 onManageAttachments={setAttachmentEntry}
                 getAttachmentsForEntry={getAttachmentsForEntry}
                 userData={userData}
@@ -416,7 +436,7 @@ export default function App() {
                   setAutoBackup={setAutoBackup}
                   onExport={exportData}
                   onImport={() => fileInputRef.current?.click()}
-                  onDeleteAll={() => setDeleteTarget({ type: 'all' })}
+                  onDeleteAll={handleRequestDeleteAll}
                   onCheckUpdate={handleManualUpdateCheck}
                   // Nextcloud State
                   nextcloudEnabled={nextcloudEnabled}

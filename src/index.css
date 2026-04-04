@@ -222,3 +222,54 @@
 .mb-safe {
   margin-bottom: env(safe-area-inset-bottom);
 }
+
+/* ============================================================
+   A11Y — GLOBALER FOCUS-VISIBLE RING
+   ============================================================
+   - Nur bei Tastatur-Navigation sichtbar (:focus-visible, nicht :focus),
+     damit Maus-/Touch-Klicks keine störenden Outlines zeigen.
+   - Emerald-600 als App-Akzent-Farbe für Kontinuität.
+   - 2px Offset + Rounded für visuelle Trennung vom Element.
+*/
+*:focus {
+  outline: none;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid #059669; /* emerald-600 */
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+.dark button:focus-visible,
+.dark a:focus-visible,
+.dark input:focus-visible,
+.dark select:focus-visible,
+.dark textarea:focus-visible,
+.dark [role="button"]:focus-visible,
+.dark [tabindex]:not([tabindex="-1"]):focus-visible {
+  outline-color: #10b981; /* emerald-500 für bessere Kontraste im Dark-Mode */
+}
+
+/* ============================================================
+   A11Y — REDUCED MOTION
+   ============================================================
+   framer-motion respektiert prefers-reduced-motion nicht automatisch;
+   wir setzen hier einen globalen CSS-Transition/Animation-Kill, der
+   auch CSS-basierte Bewegungen neutralisiert. Fokus-Ringe & Opacity-
+   Änderungen bleiben erhalten (keine Inhalts-Verluste).
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

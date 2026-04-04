@@ -11,6 +11,13 @@ yarn-error.log*
 # IDE
 .vscode/
 .idea/
+.claude/
+
+# Test coverage
+coverage/
+
+# Capacitor / Android — Gradle local JVM hint
+android/gradle/gradle-daemon-jvm.properties
 
 # Capacitor / Android
 android/.gradle/

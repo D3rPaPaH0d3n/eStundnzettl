@@ -5,6 +5,7 @@ import { Share } from "@capacitor/share";
 import toast from "react-hot-toast";
 import { exportToSelectedFolder, attachBackupChecksum, verifyBackupIntegrity } from "../utils/storageBackup";
 import { toLocalDateString } from "../utils";
+import { filterValidEntries } from "../schemas/entry";
 
 /**
  * useExport — encapsulates all export/import logic
@@ -148,17 +149,6 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
 
   // --- Import from JSON file ---
   const MAX_IMPORT_SIZE = 10 * 1024 * 1024; // 10 MB
-  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-  const TIME_RE = /^\d{2}:\d{2}$/;
-
-  const validateEntry = (e) => {
-    if (!e || typeof e !== "object") return false;
-    if (e.id == null) return false;
-    if (typeof e.date !== "string" || !DATE_RE.test(e.date)) return false;
-    if (e.start != null && typeof e.start === "string" && !TIME_RE.test(e.start)) return false;
-    if (e.end != null && typeof e.end === "string" && !TIME_RE.test(e.end)) return false;
-    return true;
-  };
 
   const handleImport = (event) => {
     const file = event.target.files?.[0];
@@ -188,7 +178,8 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
 
         if (d.entries) {
           if (!Array.isArray(d.entries)) throw new Error("entries ist kein Array");
-          const valid = d.entries.filter(validateEntry);
+          // Zod-basierte Validierung (src/schemas/entry.js)
+          const valid = filterValidEntries(d.entries);
           const skipped = d.entries.length - valid.length;
           if (valid.length > 0) {
             importEntries(valid);

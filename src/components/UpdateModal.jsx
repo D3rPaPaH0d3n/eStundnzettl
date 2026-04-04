@@ -2,7 +2,8 @@ import React from "react";
 import { Download, Gift, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Capacitor } from "@capacitor/core";
-import toast from "react-hot-toast"; 
+import toast from "react-hot-toast";
+import { logger } from "../utils/logger";
 
 const UpdateModal = ({ updateData, onClose }) => {
   if (!updateData) return null;
@@ -25,7 +26,7 @@ const UpdateModal = ({ updateData, onClose }) => {
        // Optional: Modal schließen? Hier lassen wir es offen.
     } else {
        // Fallback: Wenn window.open blockiert wurde
-       console.error("Konnte Browser nicht öffnen");
+       logger.error("Konnte Browser nicht öffnen");
        
        try {
           await navigator.clipboard.writeText(updateData.downloadUrl);

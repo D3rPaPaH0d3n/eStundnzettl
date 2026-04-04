@@ -10,6 +10,7 @@
 import { CapacitorSQLite } from "@capacitor-community/sqlite";
 import { DB_NAME } from "./schema";
 import { runMigrations, getLatestSchemaVersion } from "./migrations";
+import { logger } from "../utils/logger";
 
 const SCHEMA_VERSION = getLatestSchemaVersion();
 
@@ -52,15 +53,15 @@ async function init() {
     };
     const result = await runMigrations(executeFn, queryFn);
     if (result.appliedVersions.length > 0) {
-      console.info(
+      logger.info(
         `[db] Migrationen angewendet: ${result.appliedVersions.join(", ")}`
       );
     }
 
-    console.info("[db] SQLite-Verbindung hergestellt und Schema geprüft");
+    logger.info("[db] SQLite-Verbindung hergestellt und Schema geprüft");
     return true;
   } catch (err) {
-    console.error("[db] SQLite-Initialisierung fehlgeschlagen", err);
+    logger.error("[db] SQLite-Initialisierung fehlgeschlagen", err);
     _dbOpen = false;
     throw new Error("SQLite-Initialisierung fehlgeschlagen — App kann nicht starten");
   }
@@ -99,9 +100,9 @@ export async function closeDb() {
   try {
     await CapacitorSQLite.close({ database: DB_NAME });
     _dbOpen = false;
-    console.info("[db] Verbindung geschlossen");
+    logger.info("[db] Verbindung geschlossen");
   } catch (err) {
-    console.error("[db] Fehler beim Schließen", err);
+    logger.error("[db] Fehler beim Schließen", err);
   }
 }
 

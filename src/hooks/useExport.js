@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { exportToSelectedFolder, attachBackupChecksum, verifyBackupIntegrity } from "../utils/storageBackup";
 import { toLocalDateString } from "../utils";
 import { filterValidEntries } from "../schemas/entry";
+import { logger } from "../utils/logger";
 
 /**
  * useExport — encapsulates all export/import logic
@@ -99,7 +100,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
         toast.dismiss(toastId);
       }
     } catch (e) {
-      console.error("Export to folder error:", e);
+      logger.error("Export to folder error:", e);
       toast.error("Export abgebrochen oder fehlgeschlagen", { id: toastId });
     }
   };
@@ -138,7 +139,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
 
       toast.success("📤 Export bereitgestellt!", { id: toastId });
     } catch (e) {
-      console.error("Share error:", e);
+      logger.error("Share error:", e);
       if (e.message?.includes("canceled") || e.message?.includes("cancelled")) {
         toast.dismiss(toastId);
       } else {

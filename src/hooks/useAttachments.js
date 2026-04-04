@@ -3,6 +3,7 @@ import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
 import { STORAGE_KEYS } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
+import { logger } from "../utils/logger";
 import {
   getAllAttachments,
   insertAttachment,
@@ -110,7 +111,7 @@ export function useAttachments() {
           persistJson(STORAGE_KEYS.ATTACHMENT_LABELS, sqlLabels);
         }
       } catch (err) {
-        console.error("[useAttachments] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
+        logger.error("[useAttachments] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
       }
     };
 
@@ -143,7 +144,7 @@ export function useAttachments() {
     // SQLite (fire & forget, Dual-Write)
     if (isSQLiteActive()) {
       pushLabelSuggestion(trimmed).catch((err) => {
-        console.error("[useAttachments] SQLite label-push fehlgeschlagen:", err);
+        logger.error("[useAttachments] SQLite label-push fehlgeschlagen:", err);
       });
     }
   }, []);
@@ -197,7 +198,7 @@ export function useAttachments() {
     // SQLite-Write (fire & forget, localStorage hat die Daten bereits)
     if (isSQLiteActive()) {
       insertAttachment(attachment).catch((err) => {
-        console.error("[useAttachments] SQLite-Insert fehlgeschlagen:", err);
+        logger.error("[useAttachments] SQLite-Insert fehlgeschlagen:", err);
       });
     }
 
@@ -217,7 +218,7 @@ export function useAttachments() {
     // SQLite löschen (fire & forget)
     if (isSQLiteActive()) {
       deleteAttachmentFromDb(attachmentId).catch((err) => {
-        console.error("[useAttachments] SQLite-Delete fehlgeschlagen:", err);
+        logger.error("[useAttachments] SQLite-Delete fehlgeschlagen:", err);
       });
     }
 
@@ -242,7 +243,7 @@ export function useAttachments() {
     // SQLite: Bulk-Delete per entryId (effizienter als einzeln)
     if (isSQLiteActive()) {
       deleteAttachmentsByEntryId(entryId).catch((err) => {
-        console.error("[useAttachments] SQLite bulk-delete fehlgeschlagen:", err);
+        logger.error("[useAttachments] SQLite bulk-delete fehlgeschlagen:", err);
       });
     }
 

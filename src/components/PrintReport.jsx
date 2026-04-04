@@ -7,6 +7,7 @@ import { Capacitor } from "@capacitor/core";
 import { useAttachmentShare } from "../hooks/useAttachmentShare";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { logger } from "../utils/logger";
 import { 
   formatTime, 
   formatSignedTime, 
@@ -237,7 +238,7 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
       if (err.message && (err.message.includes("canceled") || err.message.includes("cancelled"))) { 
         setIsGenerating(false); setScale(1); return; 
       }
-      console.error(err);
+      logger.error(err);
       toast.error("Fehler: " + err.message);
       setIsGenerating(false);
       setScale(1); 

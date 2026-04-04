@@ -16,6 +16,7 @@ import { bulkInsertEntries } from "./repositories/entriesRepo";
 import { bulkWriteSettings } from "./repositories/settingsRepo";
 import { bulkReplaceWorkCodes } from "./repositories/workCodesRepo";
 import { bulkReplaceAttachments, bulkReplaceLabelSuggestions } from "./repositories/attachmentsRepo";
+import { logger } from "../utils/logger";
 
 // ─── Migration Flags ─────────────────────────────────────────
 
@@ -54,22 +55,22 @@ export async function migrateEntriesToSQLite() {
       if (Array.isArray(parsed)) entries = parsed;
     }
   } catch (err) {
-    console.error("[migration] Fehler beim Lesen der Entries:", err);
+    logger.error("[migration] Fehler beim Lesen der Entries:", err);
   }
 
   if (entries.length === 0) {
     localStorage.setItem(MIGRATION_FLAGS.ENTRIES, "true");
-    console.info("[migration] Keine Entries in localStorage — Migration übersprungen");
+    logger.info("[migration] Keine Entries in localStorage — Migration übersprungen");
     return { migrated: 0, skipped: false };
   }
 
   try {
     await bulkInsertEntries(entries);
     localStorage.setItem(MIGRATION_FLAGS.ENTRIES, "true");
-    console.info(`[migration] ${entries.length} Entries erfolgreich nach SQLite migriert`);
+    logger.info(`[migration] ${entries.length} Entries erfolgreich nach SQLite migriert`);
     return { migrated: entries.length, skipped: false };
   } catch (err) {
-    console.error("[migration] Entries-Insert fehlgeschlagen:", err);
+    logger.error("[migration] Entries-Insert fehlgeschlagen:", err);
     throw err;
   }
 }
@@ -122,17 +123,17 @@ export async function migrateSettingsToSQLite() {
 
   if (count === 0) {
     localStorage.setItem(MIGRATION_FLAGS.SETTINGS, "true");
-    console.info("[migration] Keine Settings in localStorage — Migration übersprungen");
+    logger.info("[migration] Keine Settings in localStorage — Migration übersprungen");
     return { migrated: 0, skipped: false };
   }
 
   try {
     await bulkWriteSettings(settings);
     localStorage.setItem(MIGRATION_FLAGS.SETTINGS, "true");
-    console.info(`[migration] ${count} Settings erfolgreich nach SQLite migriert`);
+    logger.info(`[migration] ${count} Settings erfolgreich nach SQLite migriert`);
     return { migrated: count, skipped: false };
   } catch (err) {
-    console.error("[migration] Settings-Insert fehlgeschlagen:", err);
+    logger.error("[migration] Settings-Insert fehlgeschlagen:", err);
     throw err;
   }
 }
@@ -168,10 +169,10 @@ export async function migrateWorkCodesToSQLite() {
   try {
     await bulkReplaceWorkCodes(codes);
     localStorage.setItem(MIGRATION_FLAGS.WORK_CODES, "true");
-    console.info(`[migration] ${codes.length} WorkCodes erfolgreich nach SQLite migriert`);
+    logger.info(`[migration] ${codes.length} WorkCodes erfolgreich nach SQLite migriert`);
     return { migrated: codes.length, skipped: false };
   } catch (err) {
-    console.error("[migration] WorkCodes-Insert fehlgeschlagen:", err);
+    logger.error("[migration] WorkCodes-Insert fehlgeschlagen:", err);
     throw err;
   }
 }
@@ -200,7 +201,7 @@ export async function migrateAttachmentsToSQLite() {
       if (Array.isArray(parsed)) attachments = parsed;
     }
   } catch (err) {
-    console.error("[migration] Fehler beim Lesen der Attachments:", err);
+    logger.error("[migration] Fehler beim Lesen der Attachments:", err);
   }
 
   // Label-Suggestions lesen
@@ -212,12 +213,12 @@ export async function migrateAttachmentsToSQLite() {
       if (Array.isArray(parsed)) labels = parsed;
     }
   } catch (err) {
-    console.error("[migration] Fehler beim Lesen der Attachment-Labels:", err);
+    logger.error("[migration] Fehler beim Lesen der Attachment-Labels:", err);
   }
 
   if (attachments.length === 0 && labels.length === 0) {
     localStorage.setItem(MIGRATION_FLAGS.ATTACHMENTS, "true");
-    console.info("[migration] Keine Attachments/Labels in localStorage — Migration übersprungen");
+    logger.info("[migration] Keine Attachments/Labels in localStorage — Migration übersprungen");
     return { migrated: 0, labels: 0, skipped: false };
   }
 
@@ -229,10 +230,10 @@ export async function migrateAttachmentsToSQLite() {
       await bulkReplaceLabelSuggestions(labels);
     }
     localStorage.setItem(MIGRATION_FLAGS.ATTACHMENTS, "true");
-    console.info(`[migration] ${attachments.length} Attachments + ${labels.length} Labels erfolgreich nach SQLite migriert`);
+    logger.info(`[migration] ${attachments.length} Attachments + ${labels.length} Labels erfolgreich nach SQLite migriert`);
     return { migrated: attachments.length, labels: labels.length, skipped: false };
   } catch (err) {
-    console.error("[migration] Attachments-Insert fehlgeschlagen:", err);
+    logger.error("[migration] Attachments-Insert fehlgeschlagen:", err);
     throw err;
   }
 }
@@ -280,17 +281,17 @@ export async function migrateBackupMetaToSQLite() {
 
   if (count === 0) {
     localStorage.setItem(MIGRATION_FLAGS.BACKUP_META, "true");
-    console.info("[migration] Keine Backup-Meta in localStorage — Migration übersprungen");
+    logger.info("[migration] Keine Backup-Meta in localStorage — Migration übersprungen");
     return { migrated: 0, skipped: false };
   }
 
   try {
     await bulkWriteSettings(settings);
     localStorage.setItem(MIGRATION_FLAGS.BACKUP_META, "true");
-    console.info(`[migration] ${count} Backup-Meta-Keys erfolgreich nach SQLite migriert`);
+    logger.info(`[migration] ${count} Backup-Meta-Keys erfolgreich nach SQLite migriert`);
     return { migrated: count, skipped: false };
   } catch (err) {
-    console.error("[migration] Backup-Meta-Insert fehlgeschlagen:", err);
+    logger.error("[migration] Backup-Meta-Insert fehlgeschlagen:", err);
     throw err;
   }
 }
@@ -336,7 +337,7 @@ export async function migrateAllToSQLite() {
     results.backupMeta = { error: err.message };
   }
 
-  console.info("[migration] Ergebnisse:", results);
+  logger.info("[migration] Ergebnisse:", results);
   return results;
 }
 

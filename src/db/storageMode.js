@@ -5,6 +5,8 @@
  * Diese Datei bleibt für API-Kompatibilität, aber alle Funktionen geben "sqlite" zurück.
  */
 
+import { logger } from "../utils/logger";
+
 let _initialized = false;
 
 /**
@@ -14,10 +16,10 @@ let _initialized = false;
  */
 export function setStorageMode(mode) {
   if (mode !== "sqlite") {
-    console.warn(`[storageMode] Nur "sqlite" erlaubt, aber "${mode}" übergeben — ignoriert`);
+    logger.warn(`[storageMode] Nur "sqlite" erlaubt, aber "${mode}" übergeben — ignoriert`);
   }
   _initialized = true;
-  console.info(`[storageMode] Aktiver Speicher: sqlite`);
+  logger.info(`[storageMode] Aktiver Speicher: sqlite`);
 }
 
 /**

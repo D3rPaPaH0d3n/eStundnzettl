@@ -8,6 +8,7 @@ import { STORAGE_KEYS, BACKUP_CONFIG } from "./constants";
 import { deobfuscate } from "../utils/obfuscate";
 import { isSQLiteActive } from "../db/storageMode";
 import { getSetting, setSetting } from "../db/repositories/settingsRepo";
+import { logger } from "../utils/logger";
 
 // ─── Dual-Write Helpers (SQLite + localStorage) ─────────────
 
@@ -26,7 +27,7 @@ async function dualWrite(lsKey, sqlKey, value) {
     } catch (e) {
       if (prev !== null) localStorage.setItem(lsKey, prev);
       else localStorage.removeItem(lsKey);
-      console.error(`[useAutoBackup] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
+      logger.error(`[useAutoBackup] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
     }
   }
 }
@@ -138,7 +139,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
           if (newCount === 5) {
             toast.error("Cloud-Backup fehlgeschlagen (5x). Bitte Einstellungen prüfen.", { duration: 8000 });
           }
-          console.warn("Cloud-Backup fehlgeschlagen:", cloudErr);
+          logger.warn("Cloud-Backup fehlgeschlagen:", cloudErr);
         }
       }
 
@@ -156,7 +157,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
           }
         } catch (ncErr) {
           await registerNextcloudFailure(ncErr);
-          console.warn("Nextcloud-Backup fehlgeschlagen:", ncErr);
+          logger.warn("Nextcloud-Backup fehlgeschlagen:", ncErr);
         }
       }
 

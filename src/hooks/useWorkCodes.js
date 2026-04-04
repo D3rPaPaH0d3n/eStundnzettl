@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { STORAGE_KEYS, WORK_CODE_PRESETS } from "./constants.js";
 import { isSQLiteActive } from "../db/storageMode";
+import { logger } from "../utils/logger";
 import {
   getAllWorkCodes,
   insertWorkCode,
@@ -37,7 +38,7 @@ export const useWorkCodes = () => {
       try {
         initialCodes = JSON.parse(stored);
       } catch (e) {
-        console.error("Fehler beim Laden der Work Codes:", e);
+        logger.error("Fehler beim Laden der Work Codes:", e);
         initialCodes = [];
       }
     }
@@ -65,7 +66,7 @@ export const useWorkCodes = () => {
             localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(sqlCodes));
           }
         } catch (err) {
-          console.error("[useWorkCodes] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
+          logger.error("[useWorkCodes] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
           sqliteReady.current = false;
         }
       })();
@@ -89,7 +90,7 @@ export const useWorkCodes = () => {
     try {
       await operation();
     } catch (err) {
-      console.error("[useWorkCodes] SQLite-Write fehlgeschlagen:", err);
+      logger.error("[useWorkCodes] SQLite-Write fehlgeschlagen:", err);
     }
   }, []);
 
@@ -160,7 +161,7 @@ export const useWorkCodes = () => {
     (presetId) => {
       const preset = WORK_CODE_PRESETS[presetId];
       if (!preset) {
-        console.error(`Preset "${presetId}" nicht gefunden!`);
+        logger.error(`Preset "${presetId}" nicht gefunden!`);
         return false;
       }
 
@@ -198,7 +199,7 @@ export const useWorkCodes = () => {
     (presetId) => {
       const preset = WORK_CODE_PRESETS[presetId];
       if (!preset) {
-        console.error(`Preset "${presetId}" nicht gefunden!`);
+        logger.error(`Preset "${presetId}" nicht gefunden!`);
         return false;
       }
 

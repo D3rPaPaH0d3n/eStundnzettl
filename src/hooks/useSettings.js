@@ -17,6 +17,7 @@ import { isSQLiteActive } from "../db/storageMode";
 import { getSetting, setSetting, deleteSetting } from "../db/repositories/settingsRepo";
 
 import { obfuscate, deobfuscate, deobfuscateLegacySync } from "../utils/obfuscate";
+import { logger } from "../utils/logger";
 
 // ─── localStorage Helper (identisch zum Original) ───────────
 
@@ -126,11 +127,11 @@ export function useSettings() {
             const plain = await deobfuscate(sqlNcPass);
             if (!cancelled && plain) setNextcloudPass(plain);
           } catch (err) {
-            console.error("[useSettings] Nextcloud-Pass konnte nicht entschlüsselt werden:", err);
+            logger.error("[useSettings] Nextcloud-Pass konnte nicht entschlüsselt werden:", err);
           }
         }
       } catch (err) {
-        console.error("[useSettings] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
+        logger.error("[useSettings] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
         sqliteReady.current = false;
       }
     })();
@@ -148,7 +149,7 @@ export function useSettings() {
         await setSetting(key, value);
       }
     } catch (err) {
-      console.error(`[useSettings] SQLite-Write für "${key}" fehlgeschlagen:`, err);
+      logger.error(`[useSettings] SQLite-Write für "${key}" fehlgeschlagen:`, err);
     }
   }, []);
 
@@ -234,7 +235,7 @@ export function useSettings() {
         localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_PASS, encrypted);
         sqliteWrite("nextcloud_pass", encrypted);
       } catch (err) {
-        console.error("[useSettings] Nextcloud-Pass konnte nicht verschlüsselt werden:", err);
+        logger.error("[useSettings] Nextcloud-Pass konnte nicht verschlüsselt werden:", err);
       }
     })();
     return () => { cancelled = true; };

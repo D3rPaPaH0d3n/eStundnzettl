@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getDb } from "../db/database";
 import { setStorageMode } from "../db/storageMode";
+import { logger } from "../utils/logger";
 import {
   getLastBackupMetadata,
   insertBackupMetadata,
@@ -37,7 +38,7 @@ export function useBackupMetadata() {
           }
         }
       } catch (err) {
-        console.error("[useBackupMetadata] Init fehlgeschlagen:", err);
+        logger.error("[useBackupMetadata] Init fehlgeschlagen:", err);
         // Kein Fallback mehr
         if (!cancelled) {
           setLastBackup(null);
@@ -61,7 +62,7 @@ export function useBackupMetadata() {
         timestamp,
       });
     } catch (err) {
-      console.error("[useBackupMetadata] Failed to insert metadata:", err);
+      logger.error("[useBackupMetadata] Failed to insert metadata:", err);
     }
   }, []);
 

@@ -9,6 +9,7 @@ import { setSetting, deleteSetting, getSetting } from "../db/repositories/settin
 import { getAllEntries, bulkInsertEntries } from "../db/repositories/entriesRepo";
 import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
 import { bulkReplaceAttachments, bulkReplaceLabelSuggestions } from "../db/repositories/attachmentsRepo";
+import { logger } from "./logger";
 
 // =========================================================
 // BACKUP ORDNER
@@ -55,7 +56,7 @@ export async function computeBackupChecksum(payload) {
   try {
     return await sha256Hex(canonicalJsonStringify(payload));
   } catch (err) {
-    console.error("[computeBackupChecksum] SHA-256 fehlgeschlagen:", err);
+    logger.error("[computeBackupChecksum] SHA-256 fehlgeschlagen:", err);
     return null;
   }
 }
@@ -96,7 +97,7 @@ async function dualWrite(lsKey, sqlKey, value) {
   localStorage.setItem(lsKey, String(value));
   if (isSQLiteActive()) {
     try { await setSetting(sqlKey, value); } catch (e) {
-      console.error(`[storageBackup] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
+      logger.error(`[storageBackup] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
     }
   }
 }
@@ -105,7 +106,7 @@ async function dualRemove(lsKey, sqlKey) {
   localStorage.removeItem(lsKey);
   if (isSQLiteActive()) {
     try { await deleteSetting(sqlKey); } catch (e) {
-      console.error(`[storageBackup] SQLite-Delete "${sqlKey}" fehlgeschlagen:`, e);
+      logger.error(`[storageBackup] SQLite-Delete "${sqlKey}" fehlgeschlagen:`, e);
     }
   }
 }
@@ -148,7 +149,7 @@ export const selectBackupFolder = async () => {
     await dualWrite(STORAGE_KEYS.BACKUP_TARGET, "backup_target", "documents");
     return true;
   } catch (err) {
-    console.error("Backup-Ordner konnte nicht erstellt werden:", err);
+    logger.error("Backup-Ordner konnte nicht erstellt werden:", err);
     throw err;
   }
 };
@@ -210,7 +211,7 @@ export const exportToSelectedFolder = async (fileName, dataObj) => {
     
     return true;
   } catch (err) {
-    console.error("Export Fehler:", err);
+    logger.error("Export Fehler:", err);
     throw err;
   }
 };
@@ -240,7 +241,7 @@ export const exportPdfToFolder = async (fileName, base64Data) => {
     
     return true;
   } catch (err) {
-    console.error("PDF Export Fehler:", err);
+    logger.error("PDF Export Fehler:", err);
     throw err;
   }
 };
@@ -256,7 +257,7 @@ export const readBackupFromFolder = async () => {
     
     return JSON.parse(result.data);
   } catch (err) {
-    console.warn("Kein internes Backup gefunden:", err);
+    logger.warn("Kein internes Backup gefunden:", err);
     return null;
   }
 };
@@ -345,7 +346,7 @@ export const analyzeBackupData = async (data) => {
   try {
     integrity = await verifyBackupIntegrity(data);
   } catch (err) {
-    console.warn("[analyzeBackupData] Integritätsprüfung fehlgeschlagen:", err);
+    logger.warn("[analyzeBackupData] Integritätsprüfung fehlgeschlagen:", err);
   }
 
   const analysisResult = {
@@ -415,7 +416,7 @@ export const applyBackup = async (analyzedData, mode = 'ALL') => {
 
     return true;
   } catch (error) {
-    console.error("Fehler beim Anwenden des Backups:", error);
+    logger.error("Fehler beim Anwenden des Backups:", error);
     return false;
   }
 };
@@ -432,7 +433,7 @@ export const triggerManualBackup = async () => {
         userData = await getSetting("user");
         entries = await getAllEntries();
       } catch (e) {
-        console.warn("[triggerManualBackup] SQLite-Read fehlgeschlagen, Fallback auf localStorage:", e);
+        logger.warn("[triggerManualBackup] SQLite-Read fehlgeschlagen, Fallback auf localStorage:", e);
       }
     }
 
@@ -479,7 +480,7 @@ export const triggerManualBackup = async () => {
           gdriveOk = true;
         }
       } catch (e) {
-        console.error("[triggerManualBackup] Google Drive fehlgeschlagen:", e);
+        logger.error("[triggerManualBackup] Google Drive fehlgeschlagen:", e);
       }
     }
 
@@ -488,7 +489,7 @@ export const triggerManualBackup = async () => {
         await writeBackupFile(BACKUP_CONFIG.FILENAME, payload);
         localOk = true;
       } catch (e) {
-        console.error("[triggerManualBackup] Lokales Backup fehlgeschlagen:", e);
+        logger.error("[triggerManualBackup] Lokales Backup fehlgeschlagen:", e);
       }
     }
 

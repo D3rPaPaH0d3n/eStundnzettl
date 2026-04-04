@@ -11,6 +11,7 @@ import {
   bulkInsertEntries,
 } from "../db/repositories/entriesRepo";
 import { migrateAllToSQLite } from "../db/migrate-from-localstorage";
+import { logger } from "../utils/logger";
 
 /**
  * useEntries — Hook für CRUD auf Entries.
@@ -43,7 +44,7 @@ export function useEntries() {
         try {
           await migrateAllToSQLite();
         } catch (migErr) {
-          console.error("[useEntries] Migration fehlgeschlagen:", migErr);
+          logger.error("[useEntries] Migration fehlgeschlagen:", migErr);
         }
 
         // Entries aus SQLite laden und State aktualisieren
@@ -52,12 +53,12 @@ export function useEntries() {
             const sqliteEntries = await getAllEntries();
             setEntries(sqliteEntries);
           } catch (loadErr) {
-            console.error("[useEntries] SQLite-Load fehlgeschlagen:", loadErr);
+            logger.error("[useEntries] SQLite-Load fehlgeschlagen:", loadErr);
             sqliteReady.current = false;
           }
         }
       } catch (err) {
-        console.error("[useEntries] DB-Init fehlgeschlagen:", err);
+        logger.error("[useEntries] DB-Init fehlgeschlagen:", err);
         // Kein Fallback mehr — SQLite ist Pflicht
       }
     })();
@@ -72,7 +73,7 @@ export function useEntries() {
     try {
       await insertEntry(entry);
     } catch (err) {
-      console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
+      logger.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
       setEntries((prev) => prev.filter((e) => e.id !== entry.id));
       toast.error("Eintrag konnte nicht gespeichert werden");
     }
@@ -87,7 +88,7 @@ export function useEntries() {
     try {
       await updateEntryInDb(updatedEntry);
     } catch (err) {
-      console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
+      logger.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
       if (previous) {
         setEntries((prev) => prev.map((e) => (e.id === updatedEntry.id ? previous : e)));
       }
@@ -104,7 +105,7 @@ export function useEntries() {
     try {
       await deleteEntryFromDb(id);
     } catch (err) {
-      console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
+      logger.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
       if (removed) {
         setEntries((prev) => [removed, ...prev]);
       }
@@ -118,7 +119,7 @@ export function useEntries() {
     try {
       await deleteAllEntriesFromDb();
     } catch (err) {
-      console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
+      logger.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
       setEntries(backup);
       toast.error("Einträge konnten nicht gelöscht werden");
     }
@@ -130,7 +131,7 @@ export function useEntries() {
     try {
       await bulkInsertEntries(newEntries);
     } catch (err) {
-      console.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
+      logger.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
       setEntries(backup);
       toast.error("Import fehlgeschlagen");
     }

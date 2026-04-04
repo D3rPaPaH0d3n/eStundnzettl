@@ -3,6 +3,7 @@ import { User, Camera, Trash2 } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
 import toast from "react-hot-toast";
+import { logger } from "../../utils/logger";
 
 const ProfileSettings = ({ userData, setUserData }) => {
   const fileInputRef = useRef(null);
@@ -50,7 +51,7 @@ const ProfileSettings = ({ userData, setUserData }) => {
       toast.success("Profilbild aktualisiert");
       Haptics.impact({ style: ImpactStyle.Light });
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       toast.error("Fehler beim Bild");
     } finally {
       setIsProcessingImg(false);

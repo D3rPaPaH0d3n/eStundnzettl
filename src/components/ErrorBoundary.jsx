@@ -1,4 +1,5 @@
 import React from "react";
+import { logger } from "../utils/logger";
 
 /**
  * Global Error Boundary - fängt unerwartete Render-Fehler ab
@@ -15,7 +16,7 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("ErrorBoundary caught:", error, errorInfo);
+    logger.error("ErrorBoundary caught:", error, errorInfo);
   }
 
   handleReload = () => {

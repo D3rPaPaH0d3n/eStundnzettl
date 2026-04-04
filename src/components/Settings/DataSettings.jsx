@@ -11,6 +11,7 @@ import { isSQLiteActive } from "../../db/storageMode";
 import { setSetting, deleteSetting } from "../../db/repositories/settingsRepo";
 import { bulkInsertEntries } from "../../db/repositories/entriesRepo";
 import { bulkReplaceWorkCodes } from "../../db/repositories/workCodesRepo";
+import { logger } from "../../utils/logger";
 
 const DataSettings = ({
   userData,
@@ -104,7 +105,7 @@ const DataSettings = ({
           deleteSetting("last_code")
         ]);
       } catch (err) {
-        console.error("[DataSettings] SQLite-Demo-Daten schreiben fehlgeschlagen:", err);
+        logger.error("[DataSettings] SQLite-Demo-Daten schreiben fehlgeschlagen:", err);
       }
     }
 

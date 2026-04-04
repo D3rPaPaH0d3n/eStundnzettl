@@ -24,6 +24,8 @@
  *    Wert wird anschließend asynchron aus SQLite nachgeladen.
  */
 
+import { logger } from "./logger";
+
 const ENC_PREFIX = "enc:v1:";
 const LEGACY_OBF_PREFIX = "obf:";
 const MASTER_KEY_SETTING = "crypto_mk_v1";
@@ -108,7 +110,7 @@ async function loadOrCreateMasterKey() {
     // beim nächsten Start verliert der User seine verschlüsselten Werte.
     // Das ist besser als komplett zu scheitern.
      
-    console.warn("[obfuscate] Master-Key konnte nicht persistiert werden:", err);
+    logger.warn("[obfuscate] Master-Key konnte nicht persistiert werden:", err);
   }
   // Re-importieren als non-extractable für Benutzung
   return await crypto.subtle.importKey(
@@ -163,7 +165,7 @@ export async function obfuscate(val) {
     // Fallback: Falls Krypto wirklich nicht geht, lieber im Legacy-Format
     // speichern als nichts zu speichern — verhindert Datenverlust.
      
-    console.error("[obfuscate] Verschlüsselung fehlgeschlagen, Legacy-Fallback:", err);
+    logger.error("[obfuscate] Verschlüsselung fehlgeschlagen, Legacy-Fallback:", err);
     try {
       return LEGACY_OBF_PREFIX + btoa(unescape(encodeURIComponent(str)));
     } catch {
@@ -196,7 +198,7 @@ export async function deobfuscate(val) {
       return utf8Decode(pt);
     } catch (err) {
        
-      console.error("[obfuscate] Entschlüsselung fehlgeschlagen:", err);
+      logger.error("[obfuscate] Entschlüsselung fehlgeschlagen:", err);
       return "";
     }
   }

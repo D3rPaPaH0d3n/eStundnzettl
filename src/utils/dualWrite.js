@@ -8,6 +8,7 @@
 
 import { isSQLiteActive } from "../db/storageMode";
 import { setSetting, deleteSetting } from "../db/repositories/settingsRepo";
+import { logger } from "./logger";
 
 export async function dualWriteSync(lsKey, sqlKey, value) {
   const prev = localStorage.getItem(lsKey);
@@ -20,7 +21,7 @@ export async function dualWriteSync(lsKey, sqlKey, value) {
       if (prev !== null) localStorage.setItem(lsKey, prev);
       else localStorage.removeItem(lsKey);
        
-      console.error(`[dualWrite] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
+      logger.error(`[dualWrite] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
     }
   }
 }
@@ -35,7 +36,7 @@ export async function dualRemoveSync(lsKey, sqlKey) {
       // Rollback localStorage bei SQLite-Fehler
       if (prev !== null) localStorage.setItem(lsKey, prev);
        
-      console.error(`[dualWrite] SQLite-Delete "${sqlKey}" fehlgeschlagen:`, e);
+      logger.error(`[dualWrite] SQLite-Delete "${sqlKey}" fehlgeschlagen:`, e);
     }
   }
 }

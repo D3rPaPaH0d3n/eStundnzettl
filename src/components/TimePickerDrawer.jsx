@@ -311,7 +311,7 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
             </div>
 
             {/* Picker-Area */}
-            <div className="relative z-10 w-full select-none pb-safe overflow-hidden" style={{ height: PICKER_H }}>
+            <div className="relative z-10 w-full select-none overflow-hidden" style={{ height: PICKER_H }}>
               {/* Highlight-Band */}
               <div
                 className="absolute left-3 right-3 sm:left-4 sm:right-4 bg-zinc-100 dark:bg-zinc-800 pointer-events-none z-0 border border-zinc-200 dark:border-zinc-700 rounded-xl"
@@ -337,6 +337,9 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
                 </div>
               </div>
             </div>
+
+            {/* Safe-Area-Spacer (separat, damit der fix-hohe Picker-Bereich oben mittig bleibt) */}
+            <div className="relative z-10" style={{ height: "env(safe-area-inset-bottom)" }} />
           </motion.div>
         </>
       )}

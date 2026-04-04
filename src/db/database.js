@@ -9,7 +9,10 @@
 
 import { Capacitor } from "@capacitor/core";
 import { CapacitorSQLite } from "@capacitor-community/sqlite";
-import { DB_NAME, SCHEMA_VERSION, getInitSQL } from "./schema";
+import { DB_NAME } from "./schema";
+import { runMigrations, getLatestSchemaVersion } from "./migrations";
+
+const SCHEMA_VERSION = getLatestSchemaVersion();
 
 let _ready = null; // Promise<boolean> — true = SQLite verfügbar, false = Fallback
 let _dbOpen = false;
@@ -53,9 +56,18 @@ async function init() {
     await CapacitorSQLite.open({ database: DB_NAME, readonly: false });
     _dbOpen = true;
 
-    // Schema anlegen (IF NOT EXISTS → idempotent)
-    for (const sql of getInitSQL()) {
-      await CapacitorSQLite.execute({ database: DB_NAME, statements: sql });
+    // Schema über Migrations-Framework aktualisieren (idempotent + versioniert)
+    const executeFn = (sql) =>
+      CapacitorSQLite.execute({ database: DB_NAME, statements: sql });
+    const queryFn = async (sql) => {
+      const res = await CapacitorSQLite.query({ database: DB_NAME, statement: sql });
+      return res?.values || [];
+    };
+    const result = await runMigrations(executeFn, queryFn);
+    if (result.appliedVersions.length > 0) {
+      console.info(
+        `[db] Migrationen angewendet: ${result.appliedVersions.join(", ")}`
+      );
     }
 
     console.info("[db] SQLite-Verbindung hergestellt und Schema geprüft");

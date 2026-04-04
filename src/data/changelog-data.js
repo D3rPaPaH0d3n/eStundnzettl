@@ -1,6 +1,39 @@
 export const CHANGELOG_DATA = [
 
   {
+    version: "3.2.0",
+    date: "05.04.2026",
+    title: "Struktur & Vertrauen 🧱",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "Database",
+        title: "Datenbank",
+        items: [
+          "Neues Migrations-Framework: Schema-Änderungen laufen jetzt über eine eigene Versionstabelle und können Schritt für Schritt aufeinander aufbauen. Zukünftige Updates können deine Datenbank sauber und ohne Datenverlust mit neuen Feldern erweitern."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Qualität & Stabilität",
+        items: [
+          "Die beiden größten internen Bausteine (Aktions-Zentrale und Einrichtungs-Assistent) wurden in kleinere, fokussierte Module zerlegt. Für dich unsichtbar, aber die App wird damit robuster und zukünftige Änderungen lassen sich gezielter testen.",
+          "Beim vollständigen Zurücksetzen der App wird vorher automatisch ein Sicherheits-Backup ins Cache-Verzeichnis geschrieben — für den Fall, dass du es dir in letzter Sekunde anders überlegst.",
+          "Import-Dateien werden jetzt gegen ein strenges Schema geprüft (Zod). Ungültige Einträge werden gezielt übersprungen statt den ganzen Import scheitern zu lassen, und du bekommst klare Rückmeldung, wie viele übersprungen wurden."
+        ]
+      },
+      {
+        iconName: "TestTube",
+        title: "Tests",
+        items: [
+          "Die Test-Suite ist von 38 auf 158 Tests gewachsen. Alle Datenbank-Repositories (Einträge, Einstellungen, Arbeitscodes, Anhänge, Backup-Metadaten) und alle neuen Aktions-Hooks werden jetzt automatisiert getestet.",
+          "Test-Abdeckung auf den getesteten Bereichen: Repositories 100 %, Schemas 100 %, Aktions-Hooks 76 %. Kritische Logik-Regressionen werden so vor dem Release im CI abgefangen."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "3.1.1",
     date: "04.04.2026",
     title: "Härtung & Politur 🛡️",

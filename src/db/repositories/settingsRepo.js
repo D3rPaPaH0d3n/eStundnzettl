@@ -5,7 +5,7 @@
  * Bei Fehler wird eine Exception geworfen → Caller entscheidet über Fallback.
  */
 
-import { run, query, execute } from "../database";
+import { run, query, executeSet } from "../database";
 
 /**
  * Einzelnen Setting-Wert lesen.
@@ -72,18 +72,10 @@ export async function getAllSettings() {
 export async function bulkWriteSettings(settings) {
   if (!settings || Object.keys(settings).length === 0) return;
 
-  let sql = "BEGIN TRANSACTION;\n";
-  for (const [key, value] of Object.entries(settings)) {
-    const jsonVal = esc(JSON.stringify(value));
-    sql += `INSERT OR REPLACE INTO settings (key, value) VALUES (${esc(key)}, ${jsonVal});\n`;
-  }
-  sql += "COMMIT;\n";
-  await execute(sql);
-}
+  const set = Object.entries(settings).map(([key, value]) => ({
+    statement: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+    values: [key, JSON.stringify(value)],
+  }));
 
-// ─── Helpers ─────────────────────────────────────────────────
-
-function esc(val) {
-  if (val === null || val === undefined) return "NULL";
-  return `'${String(val).replace(/'/g, "''")}'`;
+  await executeSet(set);
 }

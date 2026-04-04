@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useEffect, useMemo } from "react";
+import React, { forwardRef, useState, useEffect, useMemo, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus } from "lucide-react";
 import { Card, getHolidayData, toLocalDateString } from "../utils";
 import { WORK_CODE } from "../hooks/constants";
@@ -6,6 +6,8 @@ import { useWorkCodes } from "../hooks/useWorkCodes";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { Capacitor } from "@capacitor/core";
+import { DatePicker as NativeDatePicker } from "@capacitor-community/date-picker";
 
 import DatePicker, { registerLocale, CalendarContainer } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -73,6 +75,38 @@ const EntryForm = ({
   const { workCodes, hasAnyCodes, addCode } = useWorkCodes();
   
   const [activeTimeField, setActiveTimeField] = useState(null);
+
+  const openTimePicker = useCallback(async (field) => {
+    const currentValue = field === 'start' ? startTime : endTime;
+    const setter = field === 'start' ? setStartTime : setEndTime;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const [h, m] = currentValue.split(":").map(Number);
+        const d = new Date();
+        d.setHours(h, m, 0, 0);
+
+        const result = await NativeDatePicker.present({
+          mode: "time",
+          locale: "de_DE",
+          date: d.toISOString(),
+          is24h: true,
+          theme: "eStundnzettlTimePicker",
+        });
+
+        if (result?.value) {
+          const picked = new Date(result.value);
+          const hh = String(picked.getHours()).padStart(2, "0");
+          const mm = String(picked.getMinutes()).padStart(2, "0");
+          setter(`${hh}:${mm}`);
+        }
+      } catch {
+        // User cancelled
+      }
+    } else {
+      setActiveTimeField(field);
+    }
+  }, [startTime, endTime, setStartTime, setEndTime]);
   const [isWorkCodeOpen, setIsWorkCodeOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickAddValue, setQuickAddValue] = useState("");
@@ -268,14 +302,14 @@ const EntryForm = ({
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Start</label>
 
-                  <button type="button" onClick={() => setActiveTimeField('start')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
+                  <button type="button" onClick={() => openTimePicker('start')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
                     <span className="flex-1 text-center text-lg">{startTime}</span>
                     <Clock size={18} className="text-zinc-400 ml-2" />
                   </button>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Ende</label>
-                  <button type="button" onClick={() => setActiveTimeField('end')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
+                  <button type="button" onClick={() => openTimePicker('end')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
                     <span className="flex-1 text-center text-lg">{endTime}</span>
                     <Clock size={18} className="text-zinc-400 ml-2" />
                   </button>

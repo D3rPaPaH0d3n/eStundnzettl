@@ -16,6 +16,8 @@ import { STORAGE_KEYS, WORK_MODELS } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
 import { getSetting, setSetting, deleteSetting } from "../db/repositories/settingsRepo";
 
+import { obfuscate, deobfuscate } from "../utils/obfuscate";
+
 // ─── localStorage Helper (identisch zum Original) ───────────
 
 function loadUserDataFromLS() {
@@ -72,7 +74,7 @@ export function useSettings() {
     () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || ""
   );
   const [nextcloudPass, setNextcloudPass] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || ""
+    () => deobfuscate(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "")
   );
 
   const sqliteReady = useRef(false);
@@ -117,7 +119,7 @@ export function useSettings() {
         if (sqlNcEnabled !== null) setNextcloudEnabled(!!sqlNcEnabled);
         if (sqlNcUrl) setNextcloudUrl(sqlNcUrl);
         if (sqlNcUser) setNextcloudUser(sqlNcUser);
-        if (sqlNcPass) setNextcloudPass(sqlNcPass);
+        if (sqlNcPass) setNextcloudPass(deobfuscate(sqlNcPass));
       } catch (err) {
         console.error("[useSettings] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
         sqliteReady.current = false;
@@ -215,8 +217,8 @@ export function useSettings() {
   }, [nextcloudUser, sqliteWrite]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_PASS, nextcloudPass);
-    sqliteWrite("nextcloud_pass", nextcloudPass);
+    localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_PASS, obfuscate(nextcloudPass));
+    sqliteWrite("nextcloud_pass", obfuscate(nextcloudPass));
   }, [nextcloudPass, sqliteWrite]);
 
   // ─── Return (API identisch zum Original) ───

@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { STORAGE_KEYS, BACKUP_CONFIG } from "../hooks/constants";
 import { uploadOrUpdateFile, getValidToken, initGoogleAuth } from "./googleDrive";
 import { uploadBackup as ncUploadBackup } from "./nextcloudClient";
+import { deobfuscate } from "./obfuscate";
 import { isSQLiteActive } from "../db/storageMode";
 import { setSetting, deleteSetting, getSetting } from "../db/repositories/settingsRepo";
 import { getAllEntries, bulkInsertEntries } from "../db/repositories/entriesRepo";
@@ -412,7 +413,7 @@ export const triggerManualBackup = async () => {
       try {
         const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
         const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
-        const ncPass = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "";
+        const ncPass = deobfuscate(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "");
         if (ncUrl && ncUser && ncPass) {
           await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
           nextcloudOk = true;

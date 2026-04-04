@@ -25,17 +25,21 @@ export default class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      const isDev = import.meta.env.DEV;
       const errorMsg = this.state.error?.toString() || "Unbekannter Fehler";
-      const errorStack = this.state.error?.stack || "";
+      const errorStack = isDev ? (this.state.error?.stack || "") : "";
       return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-900 text-white p-6 overflow-auto">
           <div className="text-6xl mb-4">😵</div>
           <h1 className="text-2xl font-bold mb-2 text-center">
-            Fehler in den Einstellungen
+            Etwas ist schiefgelaufen
           </h1>
           <p className="text-sm text-red-400 mb-4 text-center max-w-lg">
-            Die App ist abgestürzt. Bitte sende diese Fehlermeldung an den Entwickler:
+            {isDev
+              ? "Die App ist abgestürzt. Fehlermeldung:"
+              : "Die App ist abgestürzt. Bitte starte die App neu."}
           </p>
+          {isDev && (
           <div className="w-full max-w-lg bg-zinc-800 rounded-xl p-4 mb-6 text-left overflow-auto max-h-64">
             <input
               type="text"
@@ -54,6 +58,7 @@ export default class ErrorBoundary extends React.Component {
               />
             )}
           </div>
+          )}
           <button
             onClick={this.handleReload}
             className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg hover:bg-emerald-700 transition-colors"

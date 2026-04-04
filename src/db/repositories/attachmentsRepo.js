@@ -5,7 +5,7 @@
  * Bei Fehler wird eine Exception geworfen → Caller entscheidet über Fallback.
  */
 
-import { run, query, execute } from "../database";
+import { run, query, execute, executeSet } from "../database";
 
 // ─── Attachments ─────────────────────────────────────────────
 
@@ -77,16 +77,24 @@ export async function deleteAttachmentsByEntryId(entryId) {
  * @returns {Promise<void>}
  */
 export async function bulkReplaceAttachments(attachments) {
-  let sql = "BEGIN TRANSACTION;\nDELETE FROM attachments;\n";
+  const set = [
+    { statement: "DELETE FROM attachments;", values: [] },
+    ...(attachments || []).map((att) => ({
+      statement: `INSERT OR REPLACE INTO attachments (id, entryId, label, fileName, mimeType, storagePath, fileSize, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      values: [
+        att.id,
+        att.entryId,
+        att.label || "",
+        att.fileName || "",
+        att.mimeType || "",
+        att.storagePath || "",
+        att.fileSize ?? 0,
+        att.createdAt || "",
+      ],
+    })),
+  ];
 
-  if (attachments && attachments.length > 0) {
-    for (const att of attachments) {
-      sql += `INSERT OR REPLACE INTO attachments (id, entryId, label, fileName, mimeType, storagePath, fileSize, createdAt) VALUES (${esc(att.id)}, ${att.entryId}, ${esc(att.label || "")}, ${esc(att.fileName || "")}, ${esc(att.mimeType || "")}, ${esc(att.storagePath || "")}, ${att.fileSize ?? 0}, ${esc(att.createdAt || "")});\n`;
-    }
-  }
-  sql += "COMMIT;\n";
-
-  await execute(sql);
+  await executeSet(set);
 }
 
 // ─── Label Suggestions ──────────────────────────────────────
@@ -108,16 +116,15 @@ export async function getAllLabelSuggestions() {
  * @returns {Promise<void>}
  */
 export async function bulkReplaceLabelSuggestions(labels) {
-  let sql = "BEGIN TRANSACTION;\nDELETE FROM attachment_labels;\n";
+  const set = [
+    { statement: "DELETE FROM attachment_labels;", values: [] },
+    ...(labels || []).map((label, i) => ({
+      statement: "INSERT OR REPLACE INTO attachment_labels (label, position) VALUES (?, ?)",
+      values: [label, i],
+    })),
+  ];
 
-  if (labels && labels.length > 0) {
-    for (let i = 0; i < labels.length; i++) {
-      sql += `INSERT OR REPLACE INTO attachment_labels (label, position) VALUES (${esc(labels[i])}, ${i});\n`;
-    }
-  }
-  sql += "COMMIT;\n";
-
-  await execute(sql);
+  await executeSet(set);
 }
 
 /**
@@ -163,7 +170,3 @@ function rowToAttachment(row) {
   };
 }
 
-function esc(val) {
-  if (val === null || val === undefined) return "NULL";
-  return `'${String(val).replace(/'/g, "''")}'`;
-}

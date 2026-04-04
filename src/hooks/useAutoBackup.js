@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { App } from "@capacitor/app";
+import toast from "react-hot-toast";
 import { uploadOrUpdateFile, getValidToken } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
 import { uploadBackup as ncUploadBackup, ensureFolder as ncEnsureFolder } from "../utils/nextcloudClient";
 import { STORAGE_KEYS, BACKUP_CONFIG } from "./constants";
+import { deobfuscate } from "../utils/obfuscate";
 import { isSQLiteActive } from "../db/storageMode";
 import { getSetting, setSetting } from "../db/repositories/settingsRepo";
 
@@ -14,11 +16,16 @@ function readLSInt(key, fallback = 0) {
   return parseInt(localStorage.getItem(key) || String(fallback), 10);
 }
 
-/** Dual-Write: localStorage + SQLite (fire & forget). */
+/** Dual-Write: localStorage + SQLite (mit Rollback bei Fehler). */
 async function dualWrite(lsKey, sqlKey, value) {
+  const prev = localStorage.getItem(lsKey);
   localStorage.setItem(lsKey, String(value));
   if (isSQLiteActive()) {
-    try { await setSetting(sqlKey, value); } catch (e) {
+    try {
+      await setSetting(sqlKey, value);
+    } catch (e) {
+      if (prev !== null) localStorage.setItem(lsKey, prev);
+      else localStorage.removeItem(lsKey);
       console.error(`[useAutoBackup] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
     }
   }
@@ -55,7 +62,12 @@ export function useAutoBackup(entries, userData, isEnabled) {
   }, [entries, userData]);
 
   const createHash = (data) => {
-    return JSON.stringify(data.userData).length + "-" + JSON.stringify(data.entries).length;
+    const str = JSON.stringify(data.userData) + JSON.stringify(data.entries);
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
+    }
+    return String(hash);
   };
 
   const clearNextcloudErrorState = async () => {
@@ -90,7 +102,8 @@ export function useAutoBackup(entries, userData, isEnabled) {
       entries,
       lastModified: new Date().toISOString(),
       note: "eStundnzettl Auto-Sync",
-      version: "v6"
+      version: "v6",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     };
 
     isUploading.current = true;
@@ -122,6 +135,9 @@ export function useAutoBackup(entries, userData, isEnabled) {
           const newCount = current + 1;
           await dualWrite(STORAGE_KEYS.BACKUP_FAIL_COUNT, "backup_fail_count", String(newCount));
           setBackupFailCount(newCount);
+          if (newCount === 5) {
+            toast.error("Cloud-Backup fehlgeschlagen (5x). Bitte Einstellungen prüfen.", { duration: 8000 });
+          }
           console.warn("Cloud-Backup fehlgeschlagen:", cloudErr);
         }
       }
@@ -131,7 +147,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
         try {
           const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
           const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
-          const ncPass = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "";
+          const ncPass = deobfuscate(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "");
           if (ncUrl && ncUser && ncPass) {
             await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
             lastHash.current = currentHash;

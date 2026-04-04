@@ -52,19 +52,20 @@ export const useLiveTimer = () => {
 
       if (!isSameDay) {
         // Auto-stop: timer started on a past day — close it out at 23:59
-        // Endzeit auf 23:59 des Start-Tages setzen
         const autoEnd = new Date(startDate);
         autoEnd.setHours(23, 59, 0, 0);
 
-        // Pause berechnen (falls wir über Nacht pausiert hätten, was unwahrscheinlich ist, aber sicher ist sicher)
         const pauseMinutes = Math.round((timerState.accumulatedPause || 0) / 1000 / 60);
 
-        // Daten für die App bereitstellen
+        // Berechne wie viele Tage übersprungen wurden
+        const daysDiff = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+
         setAutoCheckoutData({
           start: startDate,
           end: autoEnd,
           pause: pauseMinutes,
-          isAutoCheckout: true
+          isAutoCheckout: true,
+          daysMissed: daysDiff, // Ermöglicht UI-Hinweis wenn > 1 Tag übersprungen
         });
 
         // Timer zurücksetzen

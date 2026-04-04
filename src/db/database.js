@@ -123,6 +123,17 @@ export async function run(sql, values = []) {
 }
 
 /**
+ * Batch-Execute — führt mehrere parameterisierte Statements in einer Transaktion aus.
+ * @param {Array<{statement: string, values: Array}>} set
+ * @param {boolean} [transaction=true] — in Transaktion wrappen
+ */
+export async function executeSet(set, transaction = true) {
+  if (!set || set.length === 0) return;
+  const db = await getDb();
+  return CapacitorSQLite.executeSet({ database: db, set, transaction });
+}
+
+/**
  * Raw query — SELECT mit Parametern.
  */
 export async function query(sql, values = []) {

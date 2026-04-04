@@ -5,7 +5,7 @@
  * Bei SQLite-Fehler wird eine Exception geworfen → Caller entscheidet über Fallback.
  */
 
-import { run, query, execute } from "../database";
+import { run, query, execute, executeSet } from "../database";
 
 /**
  * Alle Entries laden, sortiert nach Datum absteigend (neueste zuerst).
@@ -102,22 +102,25 @@ export async function bulkInsertEntries(entries) {
     return;
   }
 
-  let sql = "BEGIN TRANSACTION;\nDELETE FROM entries;\n";
-  for (const e of entries) {
-    const type = esc(e.type || "work");
-    const date = esc(e.date);
-    const start = e.start ? esc(e.start) : "NULL";
-    const end = e.end ? esc(e.end) : "NULL";
-    const pause = e.pause ?? 0;
-    const project = e.project ? esc(e.project) : "NULL";
-    const code = e.code ?? "NULL";
-    const netDuration = e.netDuration ?? 0;
+  const set = [
+    { statement: "DELETE FROM entries;", values: [] },
+    ...entries.map((e) => ({
+      statement: `INSERT OR REPLACE INTO entries (id, type, date, start, end, pause, project, code, netDuration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      values: [
+        e.id,
+        e.type || "work",
+        e.date,
+        e.start ?? null,
+        e.end ?? null,
+        e.pause ?? 0,
+        e.project ?? null,
+        e.code ?? null,
+        e.netDuration ?? 0,
+      ],
+    })),
+  ];
 
-    sql += `INSERT OR REPLACE INTO entries (id, type, date, start, end, pause, project, code, netDuration) VALUES (${e.id}, ${type}, ${date}, ${start}, ${end}, ${pause}, ${project}, ${code}, ${netDuration});\n`;
-  }
-  sql += "COMMIT;\n";
-
-  await execute(sql);
+  await executeSet(set);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -138,13 +141,4 @@ function rowToEntry(row) {
     code: row.code ?? null,
     netDuration: row.netDuration ?? 0,
   };
-}
-
-/**
- * Escape für SQL-String-Literale (einfache Anführungszeichen verdoppeln).
- * Gibt 'wert' zurück.
- */
-function esc(val) {
-  if (val === null || val === undefined) return "NULL";
-  return `'${String(val).replace(/'/g, "''")}'`;
 }

@@ -10,6 +10,7 @@ import ImportConflictModal from "./ImportConflictModal";
 import { WORK_MODELS } from "../hooks/constants";
 import { DEMO_DATA } from "../utils/demoData";
 import { setSetting } from "../db/repositories/settingsRepo";
+import { obfuscate } from "../utils/obfuscate";
 import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
 import { bulkInsertEntries } from "../db/repositories/entriesRepo";
 
@@ -273,12 +274,12 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
       try {
         await setSetting("nextcloud_url", ncCredentials.server);
         await setSetting("nextcloud_user", ncCredentials.userId);
-        await setSetting("nextcloud_pass", ncCredentials.appPassword);
+        await setSetting("nextcloud_pass", obfuscate(ncCredentials.appPassword));
         await setSetting("nextcloud_enabled", true);
         // Auch in localStorage für sofortige Verfügbarkeit (Keys MÜSSEN mit STORAGE_KEYS übereinstimmen!)
         localStorage.setItem("estundnzettl_nextcloud_url", ncCredentials.server);
         localStorage.setItem("estundnzettl_nextcloud_user", ncCredentials.userId);
-        localStorage.setItem("estundnzettl_nextcloud_pass", ncCredentials.appPassword);
+        localStorage.setItem("estundnzettl_nextcloud_pass", obfuscate(ncCredentials.appPassword));
         localStorage.setItem("estundnzettl_nextcloud_enabled", "true");
       } catch (err) {
         console.error("Nextcloud settings save failed:", err);

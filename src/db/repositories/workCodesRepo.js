@@ -5,7 +5,7 @@
  * Bei Fehler wird eine Exception geworfen → Caller entscheidet über Fallback.
  */
 
-import { run, query, execute } from "../database";
+import { run, query, execute, executeSet } from "../database";
 
 /**
  * Alle WorkCodes laden, sortiert nach ID.
@@ -61,17 +61,15 @@ export async function deleteAllWorkCodes() {
  * @returns {Promise<void>}
  */
 export async function bulkReplaceWorkCodes(codes) {
-  let sql = "BEGIN TRANSACTION;\nDELETE FROM work_codes;\n";
+  const set = [
+    { statement: "DELETE FROM work_codes;", values: [] },
+    ...(codes || []).map((c) => ({
+      statement: "INSERT INTO work_codes (id, label) VALUES (?, ?)",
+      values: [c.id, c.label || ""],
+    })),
+  ];
 
-  if (codes && codes.length > 0) {
-    for (const c of codes) {
-      const label = esc(c.label);
-      sql += `INSERT INTO work_codes (id, label) VALUES (${c.id}, ${label});\n`;
-    }
-  }
-  sql += "COMMIT;\n";
-
-  await execute(sql);
+  await executeSet(set);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -81,9 +79,4 @@ function rowToWorkCode(row) {
     id: row.id,
     label: row.label || "",
   };
-}
-
-function esc(val) {
-  if (val === null || val === undefined) return "NULL";
-  return `'${String(val).replace(/'/g, "''")}'`;
 }

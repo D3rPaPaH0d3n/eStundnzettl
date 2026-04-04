@@ -9,23 +9,46 @@ import { setSetting, deleteSetting, getSetting } from "../db/repositories/settin
 import { getAllEntries } from "../db/repositories/entriesRepo";
 import { getAllWorkCodes } from "../db/repositories/workCodesRepo";
 
+// ─── ID Generation ──────────────────────────────────────────
+
+let _lastEntryId = 0;
+function generateEntryId() {
+  // Date.now() * 1000 ≈ 1.7e15, + random(1000) → innerhalb MAX_SAFE_INTEGER (9e15).
+  // Monotoner Counter verhindert Kollisionen bei schnellem Anlegen.
+  let id = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+  if (id <= _lastEntryId) id = _lastEntryId + 1;
+  _lastEntryId = id;
+  return id;
+}
+
 // ─── Dual-Write Helpers (localStorage + SQLite) ─────────────
 
-function dualWriteSync(lsKey, sqlKey, value) {
+async function dualWriteSync(lsKey, sqlKey, value) {
+  const prev = localStorage.getItem(lsKey);
   localStorage.setItem(lsKey, String(value));
   if (isSQLiteActive()) {
-    setSetting(sqlKey, value).catch(e =>
-      console.error(`[useAppActions] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e)
-    );
+    try {
+      await setSetting(sqlKey, value);
+    } catch (e) {
+      // Rollback localStorage bei SQLite-Fehler
+      if (prev !== null) localStorage.setItem(lsKey, prev);
+      else localStorage.removeItem(lsKey);
+      console.error(`[useAppActions] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
+    }
   }
 }
 
-function dualRemoveSync(lsKey, sqlKey) {
+async function dualRemoveSync(lsKey, sqlKey) {
+  const prev = localStorage.getItem(lsKey);
   localStorage.removeItem(lsKey);
   if (isSQLiteActive()) {
-    deleteSetting(sqlKey).catch(e =>
-      console.error(`[useAppActions] SQLite-Delete "${sqlKey}" fehlgeschlagen:`, e)
-    );
+    try {
+      await deleteSetting(sqlKey);
+    } catch (e) {
+      // Rollback localStorage bei SQLite-Fehler
+      if (prev !== null) localStorage.setItem(lsKey, prev);
+      console.error(`[useAppActions] SQLite-Delete "${sqlKey}" fehlgeschlagen:`, e);
+    }
   }
 }
 
@@ -247,7 +270,7 @@ export function useAppActions({
     const usedPause = storedType === "work" ? (isDrive ? 0 : form.pauseDuration) : 0;
 
     const newEntry = {
-      id: form.editingEntry ? form.editingEntry.id : Date.now() * 100 + Math.floor(Math.random() * 100),
+      id: form.editingEntry ? form.editingEntry.id : generateEntryId(),
       type: storedType,
       date: form.formDate,
       start: storedType === "work" ? form.startTime : null,
@@ -289,6 +312,18 @@ export function useAppActions({
       deleteEntry(deleteTarget.id);
       toast.success("🗑️ Eintrag gelöscht");
     } else if (deleteTarget?.type === "all") {
+      // Sicherheits-Backup vor dem Löschen: JSON im Cache speichern
+      try {
+        const { Filesystem, Directory, Encoding } = await import("@capacitor/filesystem");
+        const backupPayload = { entries, user: userData, deletedAt: new Date().toISOString() };
+        await Filesystem.writeFile({
+          path: "estundnzettl_pre_delete_backup.json",
+          data: JSON.stringify(backupPayload),
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
+        });
+      } catch { /* Best-effort, nicht blockierend */ }
+
       if (entries?.length && removeAttachmentsForEntry) {
         for (const entry of entries) {
           await removeAttachmentsForEntry(entry.id);
@@ -302,13 +337,13 @@ export function useAppActions({
         workDays: [...WORK_MODELS[0].days],
       };
       setUserData(emptyUser);
-      dualRemoveSync(STORAGE_KEYS.LAST_CODE, "last_code");
+      await dualRemoveSync(STORAGE_KEYS.LAST_CODE, "last_code");
       localStorage.removeItem(STORAGE_KEYS.ATTACHMENTS);
       localStorage.removeItem(STORAGE_KEYS.ATTACHMENT_LABELS);
       toast.success("🧹 App vollständig zurückgesetzt");
     }
     setDeleteTarget(null);
-  }, [deleteEntry, deleteAllEntries, entries, removeAttachmentsForEntry, setUserData, setDeleteTarget]);
+  }, [deleteEntry, deleteAllEntries, entries, userData, removeAttachmentsForEntry, setUserData, setDeleteTarget]);
 
   // =====================
   // ONBOARDING

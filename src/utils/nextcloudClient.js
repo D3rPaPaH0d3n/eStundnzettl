@@ -338,7 +338,14 @@ async function nativeHttp(url, method, user, pass, body, contentType) {
   const headers = { ...authHeaders(user, pass) };
   if (contentType) headers["Content-Type"] = contentType;
   if (method === "PROPFIND") headers["Depth"] = "0";
-  const res = await fetch(url, { method, headers, body: body || undefined });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  let res;
+  try {
+    res = await fetch(url, { method, headers, body: body || undefined, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
   if (res.status === 429) {
     setRateLimited(url, user);
     throw new Error(formatRateLimitMessage(DEFAULT_RATE_LIMIT_MS));

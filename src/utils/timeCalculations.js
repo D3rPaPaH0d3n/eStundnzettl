@@ -1,4 +1,4 @@
-import { WORK_CODE } from "../hooks/constants";
+import { WORK_CODE, HALF_DAYS } from "../hooks/constants";
 
 export const parseTime = (timeStr) => {
   const [h, m] = timeStr.split(":").map(Number);
@@ -11,7 +11,7 @@ export const getDayOfWeek = (dateStr) => {
 };
 
 export const getTargetMinutesForDate = (dateStr, customWorkDays) => {
-  const isHalfDay = dateStr.endsWith("-12-24") || dateStr.endsWith("-12-31");
+  const isHalfDay = HALF_DAYS.some((suffix) => dateStr.endsWith(`-${suffix}`));
 
   let dailyTarget = 0;
   const day = getDayOfWeek(dateStr);

@@ -26,6 +26,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
     workCodes,
     attachments,
     exportedAt: new Date().toISOString(),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
 
   // --- Web fallback: download as file ---
@@ -142,19 +143,51 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
   };
 
   // --- Import from JSON file ---
+  const MAX_IMPORT_SIZE = 10 * 1024 * 1024; // 10 MB
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const TIME_RE = /^\d{2}:\d{2}$/;
+
+  const validateEntry = (e) => {
+    if (!e || typeof e !== "object") return false;
+    if (e.id == null) return false;
+    if (typeof e.date !== "string" || !DATE_RE.test(e.date)) return false;
+    if (e.start != null && typeof e.start === "string" && !TIME_RE.test(e.start)) return false;
+    if (e.end != null && typeof e.end === "string" && !TIME_RE.test(e.end)) return false;
+    return true;
+  };
+
   const handleImport = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_IMPORT_SIZE) {
+      toast.error("Datei zu groß (max. 10 MB)");
+      event.target.value = "";
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const d = JSON.parse(e.target.result);
-        if (d.entries) importEntries(d.entries);
-        if (d.user) setUserData(d.user);
-        if (d.workCodes && importWorkCodes) importWorkCodes(d.workCodes);
-        toast.success("📥 Daten erfolgreich importiert!");
-      } catch {
-        toast.error("❌ Fehler: Datei ungültig.");
+        if (d && typeof d !== "object") throw new Error("Ungültiges Format");
+
+        if (d.entries) {
+          if (!Array.isArray(d.entries)) throw new Error("entries ist kein Array");
+          const valid = d.entries.filter(validateEntry);
+          const skipped = d.entries.length - valid.length;
+          if (valid.length > 0) {
+            importEntries(valid);
+          }
+          if (skipped > 0) {
+            toast(`${skipped} ungültige Einträge übersprungen`, { icon: "⚠️" });
+          }
+        }
+        if (d.user && typeof d.user === "object") setUserData(d.user);
+        if (d.workCodes && Array.isArray(d.workCodes) && importWorkCodes) importWorkCodes(d.workCodes);
+        toast.success("Daten erfolgreich importiert!");
+      } catch (err) {
+        toast.error(`Fehler: ${err.message || "Datei ungültig."}`);
       } finally {
         event.target.value = "";
       }

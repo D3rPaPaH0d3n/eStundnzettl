@@ -45,10 +45,13 @@ const OnboardingWizard = React.lazy(() => import("./components/OnboardingWizard"
 const ExportModal = React.lazy(() => import("./components/ExportModal"));
 import SkeletonScreen from "./components/SkeletonScreen";
 
-// ANIMATION CONFIG
-const pageVariants = { initial: { opacity: 0, x: 20 }, in: { opacity: 1, x: 0 }, out: { opacity: 0, x: -20 } };
-const pageTransition = { type: "tween", ease: "anticipate", duration: 0.3 };
-const reportVariants = { initial: { y: "100%", opacity: 0 }, in: { y: 0, opacity: 1 }, out: { y: "100%", opacity: 0 } };
+// ANIMATION CONFIG — zentrale Presets aus utils/motionPresets.js
+import {
+  pageVariants,
+  pageTransition,
+  reportVariants,
+  reportTransition,
+} from "./utils/motionPresets";
 
 // Run once on module import
 migrateStorageKeys();
@@ -453,7 +456,7 @@ export default function App() {
           )}
 
           {view === "report" && !showOnboarding && (
-            <motion.div key="report" initial="initial" animate="in" exit="out" variants={reportVariants} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed inset-0 z-[200] w-full h-full">
+            <motion.div key="report" initial="initial" animate="in" exit="out" variants={reportVariants} transition={reportTransition} className="fixed inset-0 z-[200] w-full h-full">
               <Suspense fallback={
                 <div className="flex items-center justify-center h-full w-full bg-zinc-900/50 backdrop-blur-sm">
                   <div className="bg-white dark:bg-zinc-800 p-4 rounded-xl shadow-xl flex items-center gap-3">

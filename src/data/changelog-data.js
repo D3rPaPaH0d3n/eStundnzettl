@@ -1,7 +1,7 @@
 export const CHANGELOG_DATA = [
 
   {
-    version: "3.1.0",
+    version: "3.1.1",
     date: "04.04.2026",
     title: "Härtung & Politur 🛡️",
     isMajor: true,

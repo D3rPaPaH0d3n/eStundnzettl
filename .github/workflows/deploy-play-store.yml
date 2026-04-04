@@ -84,14 +84,15 @@ jobs:
         run: npm test
 
       # ── 3. Version hochzählen (VOR dem Build!) ──────────────────────
-      # versionCode: Ganzzahl, wird um +1 erhöht (Play Store braucht immer höher)
-      # versionName: Semver String (z.B. "6.3.21" → "6.3.22")
-      # package.json ist Single Point of Truth — Vite liest die Version daraus
+      # versionCode: Ganzzahl, wird um +1 erhöht (Play Store braucht immer höher).
+      # versionName: Semver String — package.json ist Single Point of Truth!
+      #              build.gradle wird aus package.json gespiegelt, NICHT andersrum.
+      #              Vite liest die Version aus package.json via __APP_VERSION__.
       - name: Read current version
         id: read_version
         run: |
           CODE=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
-          NAME=$(grep -oP 'versionName\s+"\K[^"]+' android/app/build.gradle)
+          NAME=$(node -p "require('./package.json').version")
           echo "code=$CODE" >> $GITHUB_OUTPUT
           echo "name=$NAME" >> $GITHUB_OUTPUT
           echo "📌 Aktuelle Version: $NAME (versionCode $CODE)"
@@ -120,14 +121,21 @@ jobs:
             NEW_NAME="${new_major}.${new_minor}.${new_patch}"
           fi
 
+          # build.gradle wird aus package.json gespiegelt (Single Point of Truth = package.json).
           sed -i "s/versionCode $OLD_CODE/versionCode $NEW_CODE/" android/app/build.gradle
           sed -i "s/versionName \"[^\"]*\"/versionName \"$NEW_NAME\"/" android/app/build.gradle
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '$NEW_NAME';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');
-          "
+
+          # Nur bei echten Bumps auch package.json anpassen. Bei BUMP_TYPE=none bleibt
+          # package.json unverändert — sonst würden versehentliche Roll-Backs auftreten,
+          # falls build.gradle's versionName einmal nicht mit package.json übereinstimmt.
+          if [ "$BUMP_TYPE" != "none" ]; then
+            node -e "
+              const fs = require('fs');
+              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+              pkg.version = '$NEW_NAME';
+              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');
+            "
+          fi
 
           echo "new_code=$NEW_CODE" >> $GITHUB_OUTPUT
           echo "new_name=$NEW_NAME" >> $GITHUB_OUTPUT

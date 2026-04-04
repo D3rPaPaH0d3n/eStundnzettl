@@ -16,7 +16,7 @@ import { STORAGE_KEYS, WORK_MODELS } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
 import { getSetting, setSetting, deleteSetting } from "../db/repositories/settingsRepo";
 
-import { obfuscate, deobfuscate } from "../utils/obfuscate";
+import { obfuscate, deobfuscate, deobfuscateLegacySync } from "../utils/obfuscate";
 
 // ─── localStorage Helper (identisch zum Original) ───────────
 
@@ -73,8 +73,10 @@ export function useSettings() {
   const [nextcloudUser, setNextcloudUser] = useState(
     () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || ""
   );
+  // Sync-Init nur für Legacy-"obf:"-Werte. "enc:v1:"-Werte werden im SQLite-Load-Effekt
+  // asynchron entschlüsselt und setzen den State dann korrekt.
   const [nextcloudPass, setNextcloudPass] = useState(
-    () => deobfuscate(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "")
+    () => deobfuscateLegacySync(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "")
   );
 
   const sqliteReady = useRef(false);
@@ -119,7 +121,14 @@ export function useSettings() {
         if (sqlNcEnabled !== null) setNextcloudEnabled(!!sqlNcEnabled);
         if (sqlNcUrl) setNextcloudUrl(sqlNcUrl);
         if (sqlNcUser) setNextcloudUser(sqlNcUser);
-        if (sqlNcPass) setNextcloudPass(deobfuscate(sqlNcPass));
+        if (sqlNcPass) {
+          try {
+            const plain = await deobfuscate(sqlNcPass);
+            if (!cancelled && plain) setNextcloudPass(plain);
+          } catch (err) {
+            console.error("[useSettings] Nextcloud-Pass konnte nicht entschlüsselt werden:", err);
+          }
+        }
       } catch (err) {
         console.error("[useSettings] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
         sqliteReady.current = false;
@@ -217,8 +226,18 @@ export function useSettings() {
   }, [nextcloudUser, sqliteWrite]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_PASS, obfuscate(nextcloudPass));
-    sqliteWrite("nextcloud_pass", obfuscate(nextcloudPass));
+    let cancelled = false;
+    (async () => {
+      try {
+        const encrypted = await obfuscate(nextcloudPass);
+        if (cancelled) return;
+        localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_PASS, encrypted);
+        sqliteWrite("nextcloud_pass", encrypted);
+      } catch (err) {
+        console.error("[useSettings] Nextcloud-Pass konnte nicht verschlüsselt werden:", err);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [nextcloudPass, sqliteWrite]);
 
   // ─── Return (API identisch zum Original) ───

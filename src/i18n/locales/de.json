@@ -1,0 +1,39 @@
+{
+  "common": {
+    "back": "Zurück",
+    "close": "Schließen",
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
+    "save": "Speichern",
+    "loading": "Lädt..."
+  },
+  "app": {
+    "subtitle": "Mobile Zeiterfassung"
+  },
+  "dashboard": {
+    "prevMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "selectMonth": "Monat wählen"
+  },
+  "header": {
+    "settings": "Einstellungen öffnen",
+    "report": "Bericht öffnen",
+    "backToOverview": "Zurück zur Übersicht"
+  },
+  "timer": {
+    "start": "Neuen Eintrag hinzufügen oder Timer starten",
+    "stop": "Timer stoppen",
+    "pause": "Timer pausieren",
+    "resume": "Timer fortsetzen"
+  },
+  "skeleton": {
+    "default": "Lädt...",
+    "settings": "Lade Einstellungen...",
+    "entryForm": "Lade Eingabeformular...",
+    "onboarding": "Einrichtung wird geladen..."
+  },
+  "backup": {
+    "integrityMismatch": "Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",
+    "integrityUnverified": "Backup ohne Prüfsumme (Legacy-Format)"
+  }
+}

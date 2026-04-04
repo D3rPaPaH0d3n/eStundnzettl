@@ -117,10 +117,13 @@ const Settings = ({
 
     try {
       const json = await readJsonFile(file);
-      const analysis = analyzeBackupData(json);
+      const analysis = await analyzeBackupData(json);
       if (!analysis.valid) {
         toast.error("Ungültiges Backup-Format");
         return;
+      }
+      if (analysis.integrity === "mismatch") {
+        toast("⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert", { duration: 6000 });
       }
       if (analysis.hasSettings) {
         setPendingImport(analysis);

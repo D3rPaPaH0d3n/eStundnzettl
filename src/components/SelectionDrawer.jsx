@@ -38,6 +38,9 @@ const SelectionDrawer = ({ isOpen, onClose, title, options, value, onChange }) =
             dragListener={false}
             dragControls={dragControls}
             onDragEnd={(_, info) => { if (info.offset.y > 100) onClose(); }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title || "Auswählen"}
             className="fixed bottom-0 left-0 right-0 z-[101] bg-white dark:bg-zinc-900 rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] pb-safe md:max-w-md md:mx-auto md:rounded-3xl md:bottom-4 md:border md:border-zinc-200 dark:md:border-zinc-700"
           >
             <div 
@@ -48,7 +51,7 @@ const SelectionDrawer = ({ isOpen, onClose, title, options, value, onChange }) =
             </div>
 
             <div className="flex justify-between items-center px-5 pb-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
-              <button onClick={onClose} className="p-3 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X size={24} /></button>
+              <button type="button" aria-label="Schließen" onClick={onClose} className="p-3 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X size={24} /></button>
               <span className="font-bold text-zinc-800 dark:text-white uppercase tracking-wide text-base">{title || "Auswählen"}</span>
               <div className="w-12" />
             </div>

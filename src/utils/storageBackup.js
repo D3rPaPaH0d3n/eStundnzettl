@@ -18,6 +18,78 @@ import { bulkReplaceAttachments, bulkReplaceLabelSuggestions } from "../db/repos
 
 const BACKUP_FOLDER = 'eStundnzettl';
 
+// ─── Backup-Integrität (SHA-256 Checksum) ──────────────────
+
+const BACKUP_FORMAT_VERSION = 2;
+
+/**
+ * Liefert einen stabilen, kanonischen JSON-String für die Checksum-Berechnung.
+ * Objekt-Keys werden sortiert, das Feld `checksum` wird ausgeschlossen.
+ */
+function canonicalJsonStringify(value) {
+  if (value === null || value === undefined) return JSON.stringify(value);
+  if (typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    return "[" + value.map((v) => canonicalJsonStringify(v)).join(",") + "]";
+  }
+  const keys = Object.keys(value).filter((k) => k !== "checksum").sort();
+  return "{" + keys.map((k) => JSON.stringify(k) + ":" + canonicalJsonStringify(value[k])).join(",") + "}";
+}
+
+async function sha256Hex(text) {
+  const enc = new TextEncoder().encode(text);
+  const buf = await globalThis.crypto.subtle.digest("SHA-256", enc);
+  const bytes = new Uint8Array(buf);
+  let hex = "";
+  for (let i = 0; i < bytes.length; i++) {
+    hex += bytes[i].toString(16).padStart(2, "0");
+  }
+  return hex;
+}
+
+/**
+ * Berechnet die SHA-256-Checksum eines Backup-Payloads (ohne das `checksum`-Feld).
+ */
+export async function computeBackupChecksum(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  try {
+    return await sha256Hex(canonicalJsonStringify(payload));
+  } catch (err) {
+    console.error("[computeBackupChecksum] SHA-256 fehlgeschlagen:", err);
+    return null;
+  }
+}
+
+/**
+ * Fügt einem Backup-Payload die Felder `formatVersion` und `checksum` hinzu.
+ * Mutiert das Objekt und gibt es zur Verkettung zurück.
+ */
+export async function attachBackupChecksum(payload) {
+  if (!payload || typeof payload !== "object") return payload;
+  payload.formatVersion = BACKUP_FORMAT_VERSION;
+  const checksum = await computeBackupChecksum(payload);
+  if (checksum) payload.checksum = checksum;
+  return payload;
+}
+
+/**
+ * Verifiziert die Integrität eines gespeicherten Backup-Payloads.
+ * Rückgabe:
+ *  - "verified":   Checksum vorhanden und korrekt
+ *  - "mismatch":   Checksum vorhanden, aber inkorrekt (möglicher Tampering)
+ *  - "unverified": Kein Checksum-Feld (Legacy-Backup)
+ */
+export async function verifyBackupIntegrity(payload) {
+  if (!payload || typeof payload !== "object") return "unverified";
+  if (typeof payload.checksum !== "string" || payload.checksum.length === 0) {
+    return "unverified";
+  }
+  const expected = payload.checksum;
+  const actual = await computeBackupChecksum(payload);
+  if (!actual) return "unverified";
+  return actual === expected ? "verified" : "mismatch";
+}
+
 // ─── Dual-Write Helper ──────────────────────────────────────
 
 async function dualWrite(lsKey, sqlKey, value) {
@@ -254,8 +326,9 @@ const normalizeTimestamp = (value) => {
   return value?.backupDate || value?.exportedAt || value?.lastModified || value?.timestamp || new Date().toISOString();
 };
 
-// 1. ANALYSE - Schaut in die Daten, OHNE zu speichern
-export const analyzeBackupData = (data) => {
+// 1. ANALYSE - Schaut in die Daten, OHNE zu speichern.
+// Async, weil die Integritätsprüfung via SHA-256 (Web Crypto) asynchron ist.
+export const analyzeBackupData = async (data) => {
   if (!data) return { valid: false, isValid: false };
 
   const entries = normalizeEntries(data);
@@ -266,6 +339,14 @@ export const analyzeBackupData = (data) => {
 
   const hasUsefulData = entries.length > 0 || !!settings || workCodes.length > 0 || attachments.length > 0 || attachmentLabels.length > 0;
   if (!hasUsefulData) return { valid: false, isValid: false };
+
+  // Integrität prüfen (nicht blockierend — Mismatch ist eine Warnung, kein Fehler)
+  let integrity = "unverified";
+  try {
+    integrity = await verifyBackupIntegrity(data);
+  } catch (err) {
+    console.warn("[analyzeBackupData] Integritätsprüfung fehlgeschlagen:", err);
+  }
 
   const analysisResult = {
     valid: true,
@@ -278,7 +359,8 @@ export const analyzeBackupData = (data) => {
     workCodes,
     attachments,
     attachmentLabels,
-    timestamp: normalizeTimestamp(data)
+    timestamp: normalizeTimestamp(data),
+    integrity, // "verified" | "unverified" | "mismatch"
   };
 
   return {
@@ -380,6 +462,7 @@ export const triggerManualBackup = async () => {
       note: "eStundnzettl Manueller Backup",
       version: "v6"
     };
+    await attachBackupChecksum(payload);
 
     // null = nicht aktiv, true = erfolgreich, false = fehlgeschlagen
     let gdriveOk = cloudActive ? false : null;
@@ -413,7 +496,7 @@ export const triggerManualBackup = async () => {
       try {
         const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
         const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
-        const ncPass = deobfuscate(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "");
+        const ncPass = await deobfuscate(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "");
         if (ncUrl && ncUser && ncPass) {
           await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
           nextcloudOk = true;

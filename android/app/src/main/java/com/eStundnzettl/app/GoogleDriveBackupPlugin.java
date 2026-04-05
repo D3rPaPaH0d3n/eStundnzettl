@@ -22,15 +22,19 @@ import com.google.android.gms.auth.api.identity.AuthorizationResult;
 import com.google.android.gms.auth.api.identity.ClearTokenRequest;
 import com.google.android.gms.auth.api.identity.Identity;
 import com.google.android.gms.auth.api.identity.RevokeAccessRequest;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.Scope;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 @CapacitorPlugin(name = "GoogleDriveBackup")
 public class GoogleDriveBackupPlugin extends Plugin {
     private static final String TAG = "GoogleDriveBackup";
     private static final String DEFAULT_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+    private static final String EMAIL_SCOPE = "email";
     private static final String PREFS_NAME = "google_drive_backup";
     private static final String KEY_CONNECTED = "connected";
     private static final String KEY_SCOPE = "scope";
@@ -62,7 +66,7 @@ public class GoogleDriveBackupPlugin extends Plugin {
         lastGrantedScope = requestedScope;
 
         AuthorizationRequest request = AuthorizationRequest.builder()
-            .setRequestedScopes(Collections.singletonList(new Scope(requestedScope)))
+            .setRequestedScopes(buildScopeList(requestedScope))
             .build();
 
         authorizationClient.authorize(request)
@@ -147,11 +151,7 @@ public class GoogleDriveBackupPlugin extends Plugin {
         }
 
         lastAccessToken = accessToken;
-
-        if (result.toGoogleSignInAccount() != null && result.toGoogleSignInAccount().getAccount() != null) {
-            Account account = result.toGoogleSignInAccount().getAccount();
-            lastAccountEmail = account.name;
-        }
+        lastAccountEmail = extractEmail(result);
         persistAuthMetadata(true);
 
         JSObject response = new JSObject();
@@ -212,7 +212,7 @@ public class GoogleDriveBackupPlugin extends Plugin {
         lastGrantedScope = requestedScope;
 
         AuthorizationRequest request = AuthorizationRequest.builder()
-            .setRequestedScopes(Collections.singletonList(new Scope(requestedScope)))
+            .setRequestedScopes(buildScopeList(requestedScope))
             .build();
 
         authorizationClient.authorize(request)
@@ -257,11 +257,7 @@ public class GoogleDriveBackupPlugin extends Plugin {
         }
 
         lastAccessToken = accessToken;
-
-        if (result.toGoogleSignInAccount() != null && result.toGoogleSignInAccount().getAccount() != null) {
-            Account account = result.toGoogleSignInAccount().getAccount();
-            lastAccountEmail = account.name;
-        }
+        lastAccountEmail = extractEmail(result);
 
         persistAuthMetadata(true);
 
@@ -291,6 +287,30 @@ public class GoogleDriveBackupPlugin extends Plugin {
 
     private boolean isPersistedConnectionAvailable() {
         return authPrefs != null && authPrefs.getBoolean(KEY_CONNECTED, false);
+    }
+
+    private List<Scope> buildScopeList(String driveScope) {
+        return Arrays.asList(new Scope(driveScope), new Scope(EMAIL_SCOPE));
+    }
+
+    private String extractEmail(AuthorizationResult result) {
+        try {
+            GoogleSignInAccount signInAccount = result != null ? result.toGoogleSignInAccount() : null;
+            if (signInAccount == null) {
+                return lastAccountEmail;
+            }
+            String email = signInAccount.getEmail();
+            if (email != null && !email.isEmpty()) {
+                return email;
+            }
+            Account account = signInAccount.getAccount();
+            if (account != null && account.name != null && !account.name.isEmpty()) {
+                return account.name;
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "extractEmail failed", e);
+        }
+        return lastAccountEmail;
     }
 
     private void persistAuthMetadata(boolean connected) {

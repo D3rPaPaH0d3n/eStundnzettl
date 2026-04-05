@@ -1,6 +1,22 @@
 export const CHANGELOG_DATA = [
 
   {
+    version: "3.2.1",
+    date: "05.04.2026",
+    title: "Flexiblere Sonderzeiten ⏱️",
+    sections: [
+      {
+        iconName: "Clock",
+        title: "Krank · Urlaub · Zeitausgleich",
+        items: [
+          "Bei Krank-, Urlaubs- und ZA-Einträgen gibt es jetzt unter dem Info-Hinweis einen Umschalter zwischen \"Automatisch\" und \"Manuell\". Automatisch bleibt der Standard — die tägliche Sollzeit aus deinem Arbeitsmodell wird wie gewohnt gutgeschrieben. Im Manuell-Modus kannst du Start- und Endzeit wie bei einem normalen Eintrag eintragen, wenn du z.B. nur einen halben Tag krank warst oder unterschiedliche Stunden brauchst.",
+          "Die automatische Sollzeit-Berechnung bleibt unangetastet — wer nichts ändert, bekommt exakt das gewohnte Verhalten."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "3.2.0",
     date: "05.04.2026",
     title: "Struktur & Vertrauen 🧱",

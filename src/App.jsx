@@ -507,6 +507,7 @@ export default function App() {
               }>
                 <PrintReport
                   entries={entriesWithHolidays}
+                  allEntries={entries}
                   monthDate={currentDate}
                   employeeName={userData?.name || ""}
                   onClose={() => setView("dashboard")}

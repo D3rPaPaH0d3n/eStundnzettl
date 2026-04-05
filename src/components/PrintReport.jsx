@@ -17,7 +17,7 @@ import { usePeriodStats } from "../hooks/usePeriodStats";
 import ExportModal from "./ExportModal";
 import ReportDocument from "./ReportDocument";
 
-const PrintReport = ({ entries, monthDate, employeeName, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile }) => {
+const PrintReport = ({ entries, allEntries, monthDate, employeeName, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile }) => {
   const [filterMode, setFilterMode] = useState(() => {
     const today = new Date();
     if (monthDate.getMonth() === today.getMonth() && monthDate.getFullYear() === today.getFullYear()) {
@@ -118,7 +118,7 @@ const PrintReport = ({ entries, monthDate, employeeName, onClose, onMonthChange,
     }
   }, [filterMode, monthDate, filteredEntries]);
 
-  const stats = usePeriodStats(entries, userData, periodStart, periodEnd);
+  const stats = usePeriodStats(entries, userData, periodStart, periodEnd, allEntries);
   // -----------------
 
   const handlePdfAction = async (actionType) => {

@@ -96,7 +96,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
     [viewMonth, viewYear]
   );
 
-  const stats = usePeriodStats(entriesWithHolidays, userData, periodStart, periodEnd);
+  const stats = usePeriodStats(entriesWithHolidays, userData, periodStart, periodEnd, allEntries);
   const overtime = stats.totalSaldo;
   const progressPercent = Math.min(
     100,

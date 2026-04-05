@@ -104,7 +104,10 @@ export async function renderMonthlyReportPdfBlob({
   const monthEntries = filterEntriesForMonth(entries, year, month);
   const periodStart = new Date(year, month - 1, 1);
   const periodEnd = new Date(year, month, 0);
-  const stats = calculatePeriodStats(monthEntries, userData, periodStart, periodEnd);
+  // `entries` ist hier die komplette Liste aus useAutoPdfArchive → wir
+  // reichen sie als allEntries weiter, damit Mehrarbeit/Ueberstunden an
+  // Monatsuebergaengen aus der VOLLEN Woche berechnet werden.
+  const stats = calculatePeriodStats(monthEntries, userData, periodStart, periodEnd, entries);
   const monthDate = new Date(year, month - 1, 1);
 
   const host = createOffscreenContainer();

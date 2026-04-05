@@ -137,7 +137,8 @@ export const calculatePeriodStats = (
   entries,
   userData,
   periodStart,
-  periodEnd
+  periodEnd,
+  allEntries
 ) => {
   const stats = {
     work: 0,
@@ -163,12 +164,8 @@ export const calculatePeriodStats = (
     String(periodEnd.getDate()).padStart(2, "0"),
   ].join("-");
 
-  const relevantEntries = [];
-  const weeklyMap = {};
-
   entries.forEach((e) => {
     if (e.date < startStr || e.date > endStr) return;
-    relevantEntries.push(e);
 
     if (e.type === "work") {
       if (e.code === WORK_CODE.DRIVE) stats.drive += e.netDuration;
@@ -178,12 +175,6 @@ export const calculatePeriodStats = (
     if (e.type === "sick") stats.sick += e.netDuration;
     if (e.type === "public_holiday") stats.holiday += e.netDuration;
     if (e.type === "time_comp") stats.timeComp += e.netDuration;
-
-    if (!(e.type === "work" && e.code === WORK_CODE.DRIVE)) {
-      const weekNum = getWeekNumber(new Date(e.date));
-      if (!weeklyMap[weekNum]) weeklyMap[weekNum] = { target: 0, actual: 0 };
-      weeklyMap[weekNum].actual += e.netDuration;
-    }
   });
 
   stats.totalIst =
@@ -204,27 +195,98 @@ export const calculatePeriodStats = (
     const target = getTargetMinutesForDate(dateStr, userData?.workDays);
     stats.totalTarget += target;
 
-    const weekNum = getWeekNumber(new Date(loopDate));
-    if (!weeklyMap[weekNum]) weeklyMap[weekNum] = { target: 0, actual: 0 };
-    weeklyMap[weekNum].target += target;
-
     loopDate.setDate(loopDate.getDate() + 1);
   }
 
   stats.totalSaldo = stats.totalIst - stats.totalTarget;
 
-  Object.values(weeklyMap).forEach((week) => {
-    const diff = week.actual - week.target;
-    const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
-      diff,
-      week.target
-    );
-    stats.overtimeSplit.mehrarbeit += mehrarbeit;
-    stats.overtimeSplit.ueberstunden += ueberstunden;
-  });
+  // ───── Mehrarbeit / Überstunden per voller ISO-Woche ─────
+  //
+  // Die Wochensumme wird IMMER über die komplette Woche (Mo–So) berechnet,
+  // damit sie nicht davon abhängt, wie die Periode in die Woche hineinschneidet.
+  // Zuordnung nach ISO-Regel: Eine Woche zählt zu dem Zeitraum, in dem ihr
+  // Donnerstag liegt. Dadurch wird jede Woche genau einmal aggregiert
+  // (keine Doppelzählung bei Monatsübergängen, keine Lücken).
+  //
+  // Für in-Periode liegende Tage werden die gefilterten `entries` verwendet
+  // (inkl. evtl. synthetisch ergänzter Feiertage), für out-of-period Tage
+  // die optionalen `allEntries` (Roh-Liste aus useEntries). Fällt
+  // `allEntries` weg (z.B. Unit-Tests, calculateWeekStats), gilt der
+  // historische Single-Source-Modus.
+  const periodDayStart = new Date(periodStart);
+  periodDayStart.setHours(0, 0, 0, 0);
+  const periodDayEnd = new Date(periodEnd);
+  periodDayEnd.setHours(0, 0, 0, 0);
+
+  const boundarySource = allEntries || entries;
+
+  const seenWeeks = new Set();
+  const weekCursor = new Date(periodDayStart);
+  while (weekCursor <= periodDayEnd) {
+    const monday = getISOWeekMonday(weekCursor);
+    const mondayKey = toLocalDateStr(monday);
+
+    if (!seenWeeks.has(mondayKey)) {
+      seenWeeks.add(mondayKey);
+
+      const thursday = new Date(monday);
+      thursday.setDate(monday.getDate() + 3);
+      const thursdayInPeriod =
+        thursday >= periodDayStart && thursday <= periodDayEnd;
+
+      if (thursdayInPeriod) {
+        let weekTarget = 0;
+        let weekActual = 0;
+
+        for (let i = 0; i < 7; i++) {
+          const dayDate = new Date(monday);
+          dayDate.setDate(monday.getDate() + i);
+          const dayStr = toLocalDateStr(dayDate);
+
+          weekTarget += getTargetMinutesForDate(dayStr, userData?.workDays);
+
+          const inPeriod = dayStr >= startStr && dayStr <= endStr;
+          const source = inPeriod ? entries : boundarySource;
+
+          source.forEach((e) => {
+            if (e.date !== dayStr) return;
+            if (e.type === "work" && e.code === WORK_CODE.DRIVE) return;
+            weekActual += e.netDuration || 0;
+          });
+        }
+
+        const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
+          weekActual - weekTarget,
+          weekTarget
+        );
+        stats.overtimeSplit.mehrarbeit += mehrarbeit;
+        stats.overtimeSplit.ueberstunden += ueberstunden;
+      }
+    }
+
+    weekCursor.setDate(weekCursor.getDate() + 1);
+  }
 
   return stats;
 };
+
+// Interner Helper: Montag der ISO-Woche eines Datums (lokale Zeitzone).
+const getISOWeekMonday = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay(); // 0 = Sonntag, 1..6 = Mo..Sa
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+};
+
+// Interner Helper: YYYY-MM-DD fuer lokale Zeitzone.
+const toLocalDateStr = (d) =>
+  [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0"),
+  ].join("-");
 
 export const getWeekRangeInMonth = (dateInWeek, viewDate) => {
   const d = new Date(dateInWeek);

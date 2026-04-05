@@ -92,7 +92,7 @@ async function runForMonth({ entries, userData, workCodes, year, month, targets 
     results.push(await uploadNextcloudArchive(filename, base64));
   }
   if (targets.gdrive) {
-    results.push(await uploadGDriveArchive(filename, blob));
+    results.push(await uploadGDriveArchive(filename, base64, blob));
   }
 
   const anyOk = results.some((r) => r.ok);

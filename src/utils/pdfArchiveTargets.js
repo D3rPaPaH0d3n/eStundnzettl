@@ -18,7 +18,16 @@ import { logger } from "./logger";
 const log = logger.scope("PdfArchive");
 
 /**
- * Schreibt das PDF in den lokalen Ordner Documents/eStundnzettl/Archiv/.
+ * Schreibt das PDF in einen lokalen, ohne App zugaenglichen Ordner.
+ *
+ * Android Scoped Storage (ab 10/11) ist bei manchen Geraetekonfigurationen
+ * (Secondary User Profiles, Work Profiles, Samsung Secure Folder) besonders
+ * restriktiv — ein direkter Schreibzugriff auf `Documents/Unterordner/` kann
+ * mit `EACCES` scheitern. Daher probieren wir eine **dreistufige Fallback-
+ * Kette** und geben im Return-Objekt via `note` zurueck, welcher Pfad
+ * tatsaechlich verwendet wurde, damit die UI dem Nutzer die richtige Stelle
+ * anzeigen kann.
+ *
  * Web-Fallback: Download via Blob-URL.
  */
 export async function writeLocalArchive(filename, base64, blob) {
@@ -36,6 +45,8 @@ export async function writeLocalArchive(filename, base64, blob) {
     return { ok: true, target: "local-web" };
   }
 
+  // Stufe 1: Documents/eStundnzettl/Archiv/ (idealer Pfad, im Dateimanager
+  // unter "Dokumente" sichtbar)
   try {
     await Filesystem.writeFile({
       path: `eStundnzettl/Archiv/${filename}`,
@@ -43,10 +54,52 @@ export async function writeLocalArchive(filename, base64, blob) {
       directory: Directory.Documents,
       recursive: true,
     });
-    return { ok: true, target: "local" };
-  } catch (err) {
-    log.warn("Lokales PDF-Archiv fehlgeschlagen:", err);
-    return { ok: false, error: String(err?.message || err), target: "local" };
+    return { ok: true, target: "local", note: "Dokumente/eStundnzettl/Archiv/" };
+  } catch (err1) {
+    log.warn("Stufe 1 (Documents/eStundnzettl/Archiv) fehlgeschlagen:", err1);
+  }
+
+  // Stufe 2: Documents/ flach (MediaStore handhabt direkte Documents-Ablage
+  // zuverlaessiger als verschachtelte Pfade auf manchen Geraetekonfigurationen)
+  try {
+    await Filesystem.writeFile({
+      path: filename,
+      data: base64,
+      directory: Directory.Documents,
+    });
+    return {
+      ok: true,
+      target: "local",
+      note: "Dokumente/ (flach, ohne Unterordner)",
+    };
+  } catch (err2) {
+    log.warn("Stufe 2 (Documents/ flach) fehlgeschlagen:", err2);
+  }
+
+  // Stufe 3: App-externer privater Storage
+  // (/storage/emulated/<user>/Android/data/com.estundnzettl.app/files/Archiv/)
+  // — schreibt immer ohne Permissions. Auf Android 11+ im Standard-"Files"-App
+  // versteckt, aber mit Drittanbieter-File-Managern (Solid Explorer, MiXplorer,
+  // Cx, Total Commander) sowie per USB/adb sichtbar.
+  try {
+    await Filesystem.writeFile({
+      path: `Archiv/${filename}`,
+      data: base64,
+      directory: Directory.External,
+      recursive: true,
+    });
+    return {
+      ok: true,
+      target: "local",
+      note: "Android/data/com.estundnzettl.app/files/Archiv/ (app-privat)",
+    };
+  } catch (err3) {
+    log.warn("Stufe 3 (External/Archiv) fehlgeschlagen:", err3);
+    return {
+      ok: false,
+      error: `Alle drei Lokal-Pfade scheiterten. Letzter Fehler: ${String(err3?.message || err3)}`,
+      target: "local",
+    };
   }
 }
 
@@ -87,12 +140,12 @@ export async function uploadNextcloudArchive(filename, base64) {
  * (`googleDriveBackup.js`) nicht beruehrt — eigener Scope (drive.file),
  * eigener Session-Token-Cache, eigener localStorage-Auth-State.
  */
-export async function uploadGDriveArchive(filename, blob) {
-  if (!blob) {
-    return { ok: false, error: "Kein Blob fuer GDrive-Upload", target: "gdrive" };
+export async function uploadGDriveArchive(filename, base64, blob) {
+  if (!base64) {
+    return { ok: false, error: "Kein base64-Inhalt fuer GDrive-Upload", target: "gdrive" };
   }
   try {
-    await uploadPdfArchiveFile(filename, blob);
+    await uploadPdfArchiveFile(filename, base64, blob);
     return { ok: true, target: "gdrive" };
   } catch (err) {
     log.warn("GDrive PDF-Archiv fehlgeschlagen:", err);

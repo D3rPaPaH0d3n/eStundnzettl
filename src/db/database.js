@@ -9,10 +9,19 @@
 
 import { CapacitorSQLite } from "@capacitor-community/sqlite";
 import { DB_NAME } from "./schema";
-import { runMigrations, getLatestSchemaVersion } from "./migrations";
+import { runMigrations } from "./migrations";
 import { logger } from "../utils/logger";
 
-const SCHEMA_VERSION = getLatestSchemaVersion();
+// ACHTUNG: Dieser Wert wird an CapacitorSQLite.createConnection() übergeben
+// und vom Plugin als "erwartete DB-Version" interpretiert. Ein Bump erfordert
+// zwingend einen via `addUpgradeStatement()` registrierten Plugin-Upgrade.
+// Unsere App-Migrationen (runMigrations/schema_version-Tabelle) laufen dagegen
+// in JS-Land und sind komplett unabhängig von diesem Wert. Solange Migrationen
+// nur idempotente Non-Schema-Statements (CREATE INDEX IF NOT EXISTS etc.)
+// ausführen, bleibt dieser Wert auf 1 festgenagelt. Bei echten Schema-Changes
+// (neue Tables/Columns) muss hier erhöht UND addUpgradeStatement() registriert
+// werden.
+const SCHEMA_VERSION = 1;
 
 let _ready = null; // Promise<boolean> — true = SQLite verfügbar, false = Fallback
 let _dbOpen = false;

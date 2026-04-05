@@ -86,7 +86,13 @@ const getNativeStatus = async () => {
   }
 
   try {
-    const result = await GoogleDriveBackupPlugin.getStatus();
+    // WICHTIG: Scope MUSS explizit uebergeben werden, sonst nimmt der native
+    // Plugin seinen persistierten lastGrantedScope-Default. Wenn kurz vorher
+    // das PDF-Archiv-Modul (googleDrivePdfArchive.js) mit scope: drive.file
+    // aufgerufen wurde, steht der Default auf drive.file — ohne explizites
+    // Scope wuerde dieser Call dann ein drive.file-Token zurueckliefern und
+    // das JSON-Backup wuerde "NEED_REMOTE_CONSENT" im Auth-Log triggern.
+    const result = await GoogleDriveBackupPlugin.getStatus({ scope: AUTH_SCOPE });
     const accountEmail = result?.accountEmail || stored?.accountEmail || null;
     return {
       available: true,
@@ -162,6 +168,13 @@ const disconnectGoogleDrive = async () => {
 
   if (await nativeAvailable()) {
     try {
+      // Scope vor disconnect() explizit auf drive.appdata setzen, damit der
+      // Plugin-interne Revoke-Flow den RICHTIGEN Scope revoked — und nicht
+      // einen durch das PDF-Archiv-Modul polluted drive.file. getStatus()
+      // mit explizitem Scope setzt den nativen lastGrantedScope zurueck,
+      // bevor disconnect() ihn fuer den Revoke-Call nutzt. Analog zum Pattern
+      // in disconnectGoogleDrivePdf (googleDrivePdfArchive.js).
+      await GoogleDriveBackupPlugin.getStatus({ scope: AUTH_SCOPE });
       await GoogleDriveBackupPlugin.disconnect();
     } catch {
       // local state already cleared

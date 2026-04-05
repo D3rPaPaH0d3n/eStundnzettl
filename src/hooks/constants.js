@@ -49,10 +49,20 @@ export const STORAGE_KEYS = {
   NEXTCLOUD_URL: "estundnzettl_nextcloud_url",
   NEXTCLOUD_USER: "estundnzettl_nextcloud_user",
   NEXTCLOUD_PASS: "estundnzettl_nextcloud_pass",
-  
+
+  // Automatisches PDF-Archiv (monatlich wachsendes PDF, taeglicher Startup-Check)
+  PDF_ARCHIVE_ENABLED: "estundnzettl_pdf_archive_enabled",
+  PDF_ARCHIVE_LOCAL: "estundnzettl_pdf_archive_local",
+  PDF_ARCHIVE_NEXTCLOUD: "estundnzettl_pdf_archive_nextcloud",
+  PDF_ARCHIVE_LAST_RUN: "estundnzettl_pdf_archive_last_run",
+  PDF_ARCHIVE_LAST_MONTH: "estundnzettl_pdf_archive_last_month",
+  PDF_ARCHIVE_LAST_HASH: "estundnzettl_pdf_archive_last_hash",
+  PDF_ARCHIVE_FAIL_COUNT: "estundnzettl_pdf_archive_fail_count",
+  PDF_ARCHIVE_LAST_ERROR: "estundnzettl_pdf_archive_last_error",
+
   // @Deprecated - Wir nutzen jetzt CLOUD_SYNC_ENABLED für Präzision
-  // AUTO_BACKUP: "estundnzettl_auto_backup", 
-  // CLOUD_SYNC: "estundnzettl_cloud_sync", 
+  // AUTO_BACKUP: "estundnzettl_auto_backup",
+  // CLOUD_SYNC: "estundnzettl_cloud_sync",
 };
 
 // -------------------------------------------------------

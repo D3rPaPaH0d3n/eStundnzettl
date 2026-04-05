@@ -405,6 +405,130 @@ export async function ensureFolder(url, user, pass) {
   }
 }
 
+/**
+ * Stellt sicher, dass ein beliebiger Ordner-Pfad unterhalb des DAV-User-Roots
+ * existiert. Legt fehlende Segmente per MKCOL an. Parallel zum bestehenden
+ * `ensureFolder` (der hart auf BACKUP_FOLDER zielt) — unabhaengiger Cache-Key.
+ *
+ * @param {string} url  Nextcloud Server URL
+ * @param {string} user Benutzername
+ * @param {string} pass App-Password
+ * @param {string[]} segments z.B. ['eStundnzettl', 'Archiv']
+ */
+async function ensureFolderPath(url, user, pass, segments) {
+  const davUser = await getDavUser(url, user, pass);
+  const base = davPath(url, davUser);
+  let acc = "";
+  for (const seg of segments) {
+    if (!seg) continue;
+    acc += "/" + encodeURIComponent(seg);
+    const cacheKey = `${getFolderCacheKey(url, user)}::${acc}`;
+    if (verifiedFolderCache.has(cacheKey)) continue;
+    const folderUrl = `${base}${acc}/`;
+    try {
+      const res = await nativeHttp(folderUrl, "MKCOL", user, pass);
+      if (res.status === 201 || res.status === 405 || res.status === 409) {
+        verifiedFolderCache.set(cacheKey, true);
+        continue;
+      }
+      if (res.status === 401) throw new Error("Nicht autorisiert (401)");
+      throw new Error(`MKCOL ${res.status} auf ${folderUrl}`);
+    } catch (err) {
+      if (err.message.includes("401")) throw err;
+      if (err.message.includes("drosselt gerade Anfragen")) {
+        return { ok: false, reason: "rate_limited" };
+      }
+      throw err;
+    }
+  }
+  return { ok: true };
+}
+
+/**
+ * Native HTTP PUT mit binaerem Body (base64). Nutzt dieselbe Plugin-Route
+ * wie `nativeHttp`, uebergibt aber `bodyBase64` statt `body`, sodass der
+ * Android-Teil die Bytes 1:1 durchleitet (siehe NextcloudLoginFlowPlugin.java).
+ * Web-Fallback: fetch() mit decodierten Bytes.
+ */
+async function nativeHttpBinary(url, user, pass, bodyBase64, contentType) {
+  const remaining = getRateLimitRemaining(url, user);
+  if (remaining > 0) {
+    throw new Error(formatRateLimitMessage(remaining));
+  }
+
+  if (Capacitor.getPlatform() === 'android') {
+    const result = await NextcloudLoginFlow.httpRequest({
+      url,
+      method: "PUT",
+      username: user,
+      password: pass,
+      bodyBase64,
+      contentType: contentType || "application/octet-stream",
+    });
+    if (!result.ok) {
+      const errMsg = result.error?.message || `Native HTTP fehlgeschlagen: ${result.error?.code}`;
+      throw new Error(errMsg);
+    }
+    if (result.status === 429) {
+      setRateLimited(url, user);
+      throw new Error(formatRateLimitMessage(DEFAULT_RATE_LIMIT_MS));
+    }
+    clearRateLimited(url, user);
+    return { status: result.status, body: result.body || "" };
+  }
+
+  // Web-Fallback: base64 → Uint8Array
+  const binStr = atob(bodyBase64);
+  const bytes = new Uint8Array(binStr.length);
+  for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+  const headers = { ...authHeaders(user, pass), "Content-Type": contentType || "application/octet-stream" };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+  let res;
+  try {
+    res = await fetch(url, { method: "PUT", headers, body: bytes, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+  if (res.status === 429) {
+    setRateLimited(url, user);
+    throw new Error(formatRateLimitMessage(DEFAULT_RATE_LIMIT_MS));
+  }
+  clearRateLimited(url, user);
+  return { status: res.status, body: await res.text() };
+}
+
+/**
+ * Laedt beliebige binaere Daten (z.B. PDF) unter einen relativen Pfad im
+ * Nextcloud hoch. Legt fehlende Ordner unterwegs an. Parallel zur bestehenden
+ * `uploadBackup`-Funktion; beruehrt diese nicht.
+ *
+ * @param {string} url        Nextcloud Server URL
+ * @param {string} user       Benutzername
+ * @param {string} pass       App-Password
+ * @param {string[]} folders  Ordner-Segmente unterhalb des DAV-Root, z.B. ['eStundnzettl', 'Archiv']
+ * @param {string} filename   Dateiname inkl. Endung, z.B. 'Stundenzettel_2026-04_Max.pdf'
+ * @param {string} base64     Base64-codierter Datei-Inhalt (ohne data:-Prefix)
+ * @param {string} mimeType   Content-Type, z.B. 'application/pdf'
+ */
+export async function uploadBinaryToPath(url, user, pass, folders, filename, base64, mimeType) {
+  const folderResult = await ensureFolderPath(url, user, pass, folders);
+  if (folderResult?.reason === "rate_limited") {
+    throw new Error(formatRateLimitMessage(getRateLimitRemaining(url, user) || DEFAULT_RATE_LIMIT_MS));
+  }
+
+  const davUser = await getDavUser(url, user, pass);
+  const folderPath = folders.map(encodeURIComponent).join("/");
+  const targetUrl = `${davPath(url, davUser)}/${folderPath}/${encodeURIComponent(filename)}`;
+
+  const res = await nativeHttpBinary(targetUrl, user, pass, base64, mimeType || "application/octet-stream");
+  if (res.status === 201 || res.status === 204) {
+    return true;
+  }
+  if (res.status === 401) throw new Error("Nicht autorisiert (401)");
+  throw new Error(`Upload ${res.status} auf ${targetUrl} body=${(res.body || "").substring(0, 200)}`);
+}
+
 export async function uploadBackup(url, user, pass, jsonData) {
   const content = typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData, null, 2);
   const davUser = await getDavUser(url, user, pass);

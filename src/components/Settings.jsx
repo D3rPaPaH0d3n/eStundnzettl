@@ -4,6 +4,7 @@ import ProfileSettings from "./Settings/ProfileSettings";
 import DataSettings from "./Settings/DataSettings";
 import ThemeSettings from "./Settings/ThemeSettings";
 import BackupSettings from "./Settings/BackupSettings";
+import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
 import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import toast from "react-hot-toast";
@@ -38,6 +39,10 @@ const Settings = ({
   setNextcloudUrl,
   setNextcloudUser,
   setNextcloudPass,
+  // PDF-Archiv
+  pdfArchiveLastRun,
+  pdfArchiveLastError,
+  pdfArchivePerformRun,
 }) => {
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -236,6 +241,16 @@ const Settings = ({
         setNextcloudUser={setNextcloudUser}
         setNextcloudPass={setNextcloudPass}
       />
+
+      {/* 4b. PDF-Archiv (monatlich wachsendes PDF) */}
+      {pdfArchivePerformRun && (
+        <PdfArchiveSettings
+          nextcloudEnabled={nextcloudEnabled}
+          performRun={pdfArchivePerformRun}
+          lastRun={pdfArchiveLastRun}
+          lastError={pdfArchiveLastError}
+        />
+      )}
 
       {/* 5. App Info & Danger Zone */}
       <AppInfoSettings

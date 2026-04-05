@@ -26,7 +26,7 @@ import {
   buildArchiveFilename,
 } from "../utils/pdfArchive";
 import { blobToBase64 } from "../utils";
-import { writeLocalArchive, uploadNextcloudArchive } from "../utils/pdfArchiveTargets";
+import { writeLocalArchive, uploadNextcloudArchive, uploadGDriveArchive } from "../utils/pdfArchiveTargets";
 
 const log = logger.scope("PdfArchive");
 
@@ -91,6 +91,9 @@ async function runForMonth({ entries, userData, workCodes, year, month, targets 
   if (targets.nextcloud) {
     results.push(await uploadNextcloudArchive(filename, base64));
   }
+  if (targets.gdrive) {
+    results.push(await uploadGDriveArchive(filename, blob));
+  }
 
   const anyOk = results.some((r) => r.ok);
   const errors = results.filter((r) => !r.ok);
@@ -122,8 +125,9 @@ export function useAutoPdfArchive(entries, userData, workCodes) {
     const targets = {
       local: localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_LOCAL) === "true",
       nextcloud: localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD) === "true",
+      gdrive: localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_GDRIVE) === "true",
     };
-    if (!targets.local && !targets.nextcloud) return null;
+    if (!targets.local && !targets.nextcloud && !targets.gdrive) return null;
     return targets;
   };
 

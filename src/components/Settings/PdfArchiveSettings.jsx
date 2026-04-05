@@ -1,11 +1,16 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { FileText, CheckCircle2, AlertTriangle, Loader, HardDrive, Server } from "lucide-react";
+import { FileText, CheckCircle2, AlertTriangle, Loader, HardDrive, Server, Cloud } from "lucide-react";
 import toast from "react-hot-toast";
 import { Card } from "../../utils";
 import { STORAGE_KEYS } from "../../hooks/constants";
 import { isSQLiteActive } from "../../db/storageMode";
 import { getSetting, setSetting } from "../../db/repositories/settingsRepo";
 import { logger } from "../../utils/logger";
+import {
+  connectGoogleDrivePdf,
+  disconnectGoogleDrivePdf,
+  getGoogleDrivePdfStatus,
+} from "../../utils/googleDrivePdfArchive";
 
 const log = logger.scope("PdfArchiveSettings");
 
@@ -36,6 +41,10 @@ const PdfArchiveSettings = ({ nextcloudEnabled, performRun, lastRun, lastError }
   const [enabled, setEnabled] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_ENABLED));
   const [localTarget, setLocalTarget] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_LOCAL));
   const [nextcloudTarget, setNextcloudTarget] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD));
+  const [gdriveTarget, setGdriveTarget] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_GDRIVE));
+  const [gdriveConnected, setGdriveConnected] = useState(false);
+  const [gdriveEmail, setGdriveEmail] = useState("");
+  const [gdriveBusy, setGdriveBusy] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
 
   // SQLite nachladen (analog zum bestehenden Muster)
@@ -44,17 +53,35 @@ const PdfArchiveSettings = ({ nextcloudEnabled, performRun, lastRun, lastError }
     let cancelled = false;
     (async () => {
       try {
-        const [en, loc, nc] = await Promise.all([
+        const [en, loc, nc, gd] = await Promise.all([
           getSetting("pdf_archive_enabled"),
           getSetting("pdf_archive_local"),
           getSetting("pdf_archive_nextcloud"),
+          getSetting("pdf_archive_gdrive"),
         ]);
         if (cancelled) return;
         if (en != null) setEnabled(String(en) === "true");
         if (loc != null) setLocalTarget(String(loc) === "true");
         if (nc != null) setNextcloudTarget(String(nc) === "true");
+        if (gd != null) setGdriveTarget(String(gd) === "true");
       } catch (e) {
         log.warn("SQLite-Read PDF archive settings fehlgeschlagen:", e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // GDrive-Archiv-Status laden (separat vom JSON-Backup-GDrive-Status)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await getGoogleDrivePdfStatus();
+        if (cancelled) return;
+        setGdriveConnected(!!(status?.connected && status?.hasToken));
+        setGdriveEmail(status?.accountEmail || "");
+      } catch (e) {
+        log.warn("GDrive-PDF-Archiv Status laden fehlgeschlagen:", e);
       }
     })();
     return () => { cancelled = true; };
@@ -87,12 +114,60 @@ const PdfArchiveSettings = ({ nextcloudEnabled, performRun, lastRun, lastError }
     await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD, "pdf_archive_nextcloud", String(next));
   }, [nextcloudTarget, nextcloudEnabled]);
 
+  const handleGdriveConnect = useCallback(async () => {
+    setGdriveBusy(true);
+    try {
+      const result = await connectGoogleDrivePdf();
+      setGdriveConnected(true);
+      setGdriveEmail(result?.email || "");
+      toast.success("Google Drive (PDF-Archiv) verbunden");
+    } catch (err) {
+      const msg = String(err?.message || err);
+      if (msg.includes("CANCELLED")) {
+        toast("Verbindung abgebrochen", { icon: "ℹ️" });
+      } else {
+        toast.error(`Verbindung fehlgeschlagen: ${msg}`);
+      }
+    } finally {
+      setGdriveBusy(false);
+    }
+  }, []);
+
+  const handleGdriveDisconnect = useCallback(async () => {
+    setGdriveBusy(true);
+    try {
+      await disconnectGoogleDrivePdf();
+      setGdriveConnected(false);
+      setGdriveEmail("");
+      // Wenn der User trennt, deaktiviere auch den Ziel-Toggle
+      if (gdriveTarget) {
+        setGdriveTarget(false);
+        await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_GDRIVE, "pdf_archive_gdrive", "false");
+      }
+      toast.success("Google Drive (PDF-Archiv) getrennt");
+    } catch (err) {
+      toast.error(`Trennen fehlgeschlagen: ${err?.message || err}`);
+    } finally {
+      setGdriveBusy(false);
+    }
+  }, [gdriveTarget]);
+
+  const toggleGdrive = useCallback(async () => {
+    if (!gdriveConnected) {
+      toast.error("Bitte zuerst mit Google Drive verbinden.");
+      return;
+    }
+    const next = !gdriveTarget;
+    setGdriveTarget(next);
+    await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_GDRIVE, "pdf_archive_gdrive", String(next));
+  }, [gdriveTarget, gdriveConnected]);
+
   const handleRunNow = useCallback(async () => {
     if (!enabled) {
       toast.error("PDF-Archiv ist deaktiviert.");
       return;
     }
-    if (!localTarget && !nextcloudTarget) {
+    if (!localTarget && !nextcloudTarget && !gdriveTarget) {
       toast.error("Bitte mindestens ein Ziel auswaehlen.");
       return;
     }
@@ -118,7 +193,7 @@ const PdfArchiveSettings = ({ nextcloudEnabled, performRun, lastRun, lastError }
     } finally {
       setIsRunning(false);
     }
-  }, [enabled, localTarget, nextcloudTarget, performRun]);
+  }, [enabled, localTarget, nextcloudTarget, gdriveTarget, performRun]);
 
   return (
     <Card className="p-4">
@@ -197,22 +272,61 @@ const PdfArchiveSettings = ({ nextcloudEnabled, performRun, lastRun, lastError }
             </label>
           </div>
 
-          {/* Google Drive — Platzhalter fuer Iteration 2 */}
-          <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
+          {/* Google Drive (drive.file, sichtbarer Ordner eStundnzettl Archiv) */}
+          <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-400">
-                <FileText size={18} />
+              <div className={`p-2 rounded-full ${gdriveTarget && gdriveConnected ? "bg-green-100 text-green-600" : "bg-zinc-200 text-zinc-400"}`}>
+                <Cloud size={18} />
               </div>
               <div>
-                <span className="block font-bold text-sm text-zinc-500 dark:text-zinc-400">
-                  Google Drive
-                </span>
-                <span className="block text-xs text-zinc-400">
-                  Folgt in einem separaten Update (isoliert getestet)
+                <div className="flex items-center gap-2">
+                  <span className="block font-bold text-sm text-zinc-800 dark:text-white">
+                    Google Drive
+                  </span>
+                  {gdriveConnected && (
+                    <span className="flex items-center px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full">
+                      Verbunden
+                    </span>
+                  )}
+                </div>
+                <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                  {gdriveConnected
+                    ? (gdriveEmail
+                        ? `Ordner eStundnzettl Archiv · ${gdriveEmail}`
+                        : "Ordner eStundnzettl Archiv")
+                    : "Separater Zugriff vom JSON-Backup (drive.file-Scope)"}
                 </span>
               </div>
             </div>
-            <span className="text-[10px] font-bold text-zinc-400 uppercase">bald</span>
+            {gdriveConnected ? (
+              <div className="flex items-center gap-2">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={gdriveTarget}
+                    onChange={toggleGdrive}
+                  />
+                  <div className="w-11 h-6 bg-zinc-200 dark:bg-zinc-600 peer-checked:bg-indigo-500 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" />
+                </label>
+                <button
+                  onClick={handleGdriveDisconnect}
+                  disabled={gdriveBusy}
+                  className="px-2 py-1 text-[10px] font-bold rounded border border-red-200 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800 disabled:opacity-50"
+                >
+                  {gdriveBusy ? <Loader size={10} className="animate-spin" /> : "Trennen"}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGdriveConnect}
+                disabled={gdriveBusy}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-600 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {gdriveBusy ? <Loader size={12} className="animate-spin" /> : <Cloud size={12} />}
+                Verbinden
+              </button>
+            )}
           </div>
 
           {/* Info-Zeile */}

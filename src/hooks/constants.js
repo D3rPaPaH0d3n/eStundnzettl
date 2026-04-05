@@ -54,6 +54,7 @@ export const STORAGE_KEYS = {
   PDF_ARCHIVE_ENABLED: "estundnzettl_pdf_archive_enabled",
   PDF_ARCHIVE_LOCAL: "estundnzettl_pdf_archive_local",
   PDF_ARCHIVE_NEXTCLOUD: "estundnzettl_pdf_archive_nextcloud",
+  PDF_ARCHIVE_GDRIVE: "estundnzettl_pdf_archive_gdrive",
   PDF_ARCHIVE_LAST_RUN: "estundnzettl_pdf_archive_last_run",
   PDF_ARCHIVE_LAST_MONTH: "estundnzettl_pdf_archive_last_month",
   PDF_ARCHIVE_LAST_HASH: "estundnzettl_pdf_archive_last_hash",

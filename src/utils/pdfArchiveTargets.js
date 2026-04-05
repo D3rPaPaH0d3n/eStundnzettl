@@ -10,6 +10,7 @@
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
 import { uploadBinaryToPath } from "./nextcloudClient";
+import { uploadPdfArchiveFile } from "./googleDrivePdfArchive";
 import { deobfuscate } from "./obfuscate";
 import { STORAGE_KEYS } from "../hooks/constants";
 import { logger } from "./logger";
@@ -76,5 +77,25 @@ export async function uploadNextcloudArchive(filename, base64) {
   } catch (err) {
     log.warn("Nextcloud PDF-Archiv fehlgeschlagen:", err);
     return { ok: false, error: String(err?.message || err), target: "nextcloud" };
+  }
+}
+
+/**
+ * Laedt das PDF in den sichtbaren Google-Drive-Ordner `eStundnzettl Archiv`
+ * hoch. Nutzt eine komplett eigene Auth-/Token-Pipeline
+ * (`googleDrivePdfArchive.js`), die den bestehenden JSON-Backup-Flow
+ * (`googleDriveBackup.js`) nicht beruehrt — eigener Scope (drive.file),
+ * eigener Session-Token-Cache, eigener localStorage-Auth-State.
+ */
+export async function uploadGDriveArchive(filename, blob) {
+  if (!blob) {
+    return { ok: false, error: "Kein Blob fuer GDrive-Upload", target: "gdrive" };
+  }
+  try {
+    await uploadPdfArchiveFile(filename, blob);
+    return { ok: true, target: "gdrive" };
+  } catch (err) {
+    log.warn("GDrive PDF-Archiv fehlgeschlagen:", err);
+    return { ok: false, error: String(err?.message || err), target: "gdrive" };
   }
 }

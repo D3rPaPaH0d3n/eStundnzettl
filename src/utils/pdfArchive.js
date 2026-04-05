@@ -337,35 +337,37 @@ async function getPdfMake() {
 /**
  * Erzeugt das Monats-PDF als Blob. Reine Funktion — kein DOM, kein React.
  *
- * Hard-Timeout von 30 s, damit ein potentiell hangender getBlob-Callback
- * (z.B. durch fehlende VFS-Fonts) nicht die UI dauerhaft blockiert.
+ * WICHTIG: pdfmake 0.3.x hat die API von Callback auf Promise umgestellt
+ * (CHANGELOG: "All methods return promise instead of using callback"). Der
+ * vorherige Callback-Stil `.getBlob((blob) => ...)` wird in 0.3.x still
+ * verworfen → der Callback feuert nie → der Aufrufer hing 30 s. Daher
+ * hier die aktuelle Promise-API verwenden.
+ *
+ * Safety-Timeout via Promise.race: wenn die pdfmake-Promise-Chain wider
+ * Erwarten haengen sollte, bekommt der Aufrufer nach 30 s eine klare
+ * Fehlermeldung statt eines dauerhaft blockierten UI-Zustands.
  */
 export async function generateMonthlyPdfBlob({ year, month, entries, userData, workCodes }) {
   if (!year || !month) throw new Error("generateMonthlyPdfBlob: year/month fehlen");
   const pdfMake = await getPdfMake();
   const docDefinition = buildDocDefinition({ year, month, entries, userData, workCodes });
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        reject(new Error("PDF-Generierung Timeout (30s) — vermutlich fehlen VFS-Fonts"));
-      }
-    }, 30000);
-    try {
-      pdfMake.createPdf(docDefinition).getBlob((blob) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve(blob);
-      });
-    } catch (err) {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      reject(err);
-    }
+
+  // pdfmake 0.3.x: .getBlob() gibt direkt ein Promise<Blob> zurueck.
+  const blobPromise = pdfMake.createPdf(docDefinition).getBlob();
+
+  let timeoutHandle;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutHandle = setTimeout(
+      () => reject(new Error("PDF-Generierung Timeout (30s)")),
+      30000,
+    );
   });
+
+  try {
+    return await Promise.race([blobPromise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
 }
 
 // Re-exports fuer Tests

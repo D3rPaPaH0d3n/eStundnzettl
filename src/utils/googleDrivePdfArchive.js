@@ -362,32 +362,46 @@ async function findFileIdInFolder(fileName, folderId) {
  * Laedt ein PDF in den `eStundnzettl Archiv`-Ordner hoch. Existiert bereits
  * eine Datei mit gleichem Namen → Update (PATCH); sonst → neu erstellen (POST).
  *
- * @param {string} filename   z.B. 'Stundenzettel_2026-04_Max.pdf'
- * @param {Blob}   blob       PDF-Blob (aus pdfmake.createPdf().getBlob())
+ * Body-Konstruktion: Wir bauen den multipart/related-Body als **reinen String**
+ * mit base64-codiertem Binary-Teil — byte-identisches Muster wie im bewaehrten
+ * JSON-Backup (`googleDriveBackup.js:253-266`, `createMultipartBody`), das seit
+ * Monaten stabil laeuft. Ein Versuch mit `new Blob([str, str, blob, str])`
+ * fuehrte auf Android-WebView zu "400 Invalid multipart request with 0 mime
+ * parts" — vermutlich weil der Blob-Serializer die Content-Type-Header-Absicht
+ * nicht zuverlaessig umsetzt und/oder der leading-dash-Boundary Parser-Quirks
+ * ausloest. Der String-Ansatz umgeht beide Probleme.
+ *
+ * @param {string} filename  z.B. 'Stundenzettel_2026-04_Max.pdf'
+ * @param {string} base64    base64-kodierter PDF-Inhalt (ohne data:-Prefix)
+ * @param {Blob}   [_blob]   Ignoriert — bleibt fuer API-Kompatibilitaet
  */
-export async function uploadPdfArchiveFile(filename, blob) {
+export async function uploadPdfArchiveFile(filename, base64, _blob) {
+  if (!base64 || typeof base64 !== 'string') {
+    throw new Error('uploadPdfArchiveFile: base64 fehlt oder ist kein String');
+  }
+
   const folderId = await findOrCreateArchiveFolder();
   const existingId = await findFileIdInFolder(filename, folderId);
 
-  const boundary = `-------pdf_archive_${Date.now()}`;
   const metadata = existingId
     ? { name: filename, mimeType: 'application/pdf' }
     : { name: filename, mimeType: 'application/pdf', parents: [folderId] };
 
-  // Multipart/related Body aus Text-Parts + binaerem Blob zusammensetzen.
-  // new Blob([...]) akzeptiert eine Mischung aus Strings und Blobs und
-  // behaelt die Binaerdaten byte-genau bei.
-  const bodyBlob = new Blob(
-    [
-      `--${boundary}\r\n`,
-      'Content-Type: application/json; charset=UTF-8\r\n\r\n',
-      JSON.stringify(metadata),
-      `\r\n--${boundary}\r\n`,
-      'Content-Type: application/pdf\r\n\r\n',
-      blob,
-      `\r\n--${boundary}--`,
-    ],
-  );
+  // Alphanumerischer Boundary ohne Bindestriche — strictere Parser (wie der von
+  // Google Drive) mögen keine führenden Dashes im Boundary-Wert.
+  const boundary = 'estd_pdf_archive_boundary';
+  const delimiter = `\r\n--${boundary}\r\n`;
+  const closeDelimiter = `\r\n--${boundary}--`;
+
+  const body =
+    delimiter +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    JSON.stringify(metadata) +
+    delimiter +
+    'Content-Type: application/pdf\r\n' +
+    'Content-Transfer-Encoding: base64\r\n\r\n' +
+    base64 +
+    closeDelimiter;
 
   const url = existingId
     ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart`
@@ -398,7 +412,7 @@ export async function uploadPdfArchiveFile(filename, blob) {
     headers: {
       'Content-Type': `multipart/related; boundary=${boundary}`,
     },
-    body: bodyBlob,
+    body,
   });
 
   if (!response.ok) {

@@ -1,6 +1,30 @@
 export const CHANGELOG_DATA = [
 
   {
+    version: "3.3.0",
+    date: "05.04.2026",
+    title: "Dein Monats-PDF landet von selbst im Archiv 📁",
+    sections: [
+      {
+        iconName: "FileText",
+        title: "Automatisches PDF-Archiv",
+        items: [
+          "Die App legt dir ab jetzt jeden Monat automatisch ein sauberes PDF deines Stundenzettels an — einmal pro Tag, ganz ohne dein Zutun. So hast du auch Jahre später einen ordentlichen, durchsuchbaren Monatsbericht parat, selbst wenn die App dann gar nicht mehr installiert sein sollte.",
+          "In den Einstellungen kannst du aussuchen, wohin das Archiv gehen soll: lokal auf dein Gerät in den Dokumente-Ordner, in deine Nextcloud oder zu Google Drive in einen eigenen Ordner \"eStundnzettl Archiv\". Jedes Ziel lässt sich einzeln ein- und ausschalten, und mit \"Jetzt ausführen\" kannst du jederzeit selbst einen Lauf starten.",
+          "Beim Monatswechsel wird der alte Monat als finaler Bericht stehengelassen und ein neuer begonnen. Und solange sich an deinen Einträgen nichts geändert hat, passiert auch nichts — kein unnötiger Upload, kein zusätzlicher Datenverbrauch."
+        ]
+      },
+      {
+        iconName: "ShieldCheck",
+        title: "Drive-Verbindung gschmeidiger",
+        items: [
+          "Die Google-Drive-Verbindung vom bestehenden JSON-Backup und vom neuen PDF-Archiv laufen jetzt sauber nebeneinander. Die gelbe Warnung \"Drive-Verbindung prüfen\", die bei manchen nach dem Verbinden des PDF-Archivs kurz auftauchen konnte, ist damit auch weg."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "3.2.1",
     date: "05.04.2026",
     title: "Flexiblere Sonderzeiten ⏱️",

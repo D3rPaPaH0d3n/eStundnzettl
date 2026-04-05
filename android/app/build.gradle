@@ -22,6 +22,13 @@ android {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Native Debug-Symbole ins AAB einbetten, damit die Play Console
+            // Stacktraces aus Capacitor-Plugins (SQLite, ...) bei Abstürzen/ANRs
+            // in lesbare Funktionsnamen auflösen kann. Entfernt die Warnung
+            // "Dieses App Bundle enthält nativen Code..." beim Upload.
+            ndk {
+                debugSymbolLevel 'FULL'
+            }
         }
     }
 

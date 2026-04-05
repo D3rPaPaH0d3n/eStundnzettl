@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { X, Loader, Download, ChevronDown, FileText, ChevronLeft, ChevronRight, Check, MessageSquarePlus } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
@@ -8,38 +8,16 @@ import { useAttachmentShare } from "../hooks/useAttachmentShare";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { logger } from "../utils/logger";
-import { 
-  formatTime, 
-  formatSignedTime, 
-  blobToBase64
-} from "../utils";
+import { blobToBase64 } from "../utils";
 import {
   getWeekNumber,
   getWeekRangeInMonth,
-  buildDayBalanceMetaMap,
 } from "../utils/timeCalculations";
-import { WORK_CODE } from "../hooks/constants";
-import { usePeriodStats } from "../hooks/usePeriodStats"; 
+import { usePeriodStats } from "../hooks/usePeriodStats";
 import ExportModal from "./ExportModal";
+import ReportDocument from "./ReportDocument";
 
-// COLORS (Zinc & Emerald Theme)
-const PRINT_STYLES = {
-  textBlack: '#000000',
-  textDark: '#27272a',    // Zinc-800
-  textMedium: '#52525b',  // Zinc-600
-  textLight: '#a1a1aa',   // Zinc-400
-  bgWhite: '#ffffff',
-  bgGray: '#fafafa',      // Zinc-50
-  bgZebra: '#f4f4f5',     // Zinc-100
-  bgBlueLight: '#eff6ff', 
-  textBlue: '#1e40af',
-  textRed: '#b91c1c',
-  textGreen: '#15803d',
-  borderDark: '#27272a',  // Zinc-800
-  borderLight: '#e4e4e7', // Zinc-200
-};
-
-const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile }) => {
+const PrintReport = ({ entries, monthDate, employeeName, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile }) => {
   const [filterMode, setFilterMode] = useState(() => {
     const today = new Date();
     if (monthDate.getMonth() === today.getMonth() && monthDate.getFullYear() === today.getFullYear()) {
@@ -55,7 +33,6 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false); 
 
-  const reportRef = useRef(null);
   const { shareReportBundle } = useAttachmentShare({
     readAttachmentFile: async (file) => {
       if (file.storagePath && file.mimeType === "application/pdf" && file.label === "Stundenzettel") {
@@ -143,25 +120,6 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
 
   const stats = usePeriodStats(entries, userData, periodStart, periodEnd);
   // -----------------
-
-  const attachmentsByEntryId = useMemo(() => {
-    const map = new Map();
-    attachments.forEach((attachment) => {
-      const list = map.get(attachment.entryId) || [];
-      list.push(attachment);
-      map.set(attachment.entryId, list);
-    });
-    return map;
-  }, [attachments]);
-
-  const workCodeLabelMap = useMemo(() => {
-    return new Map(workCodes.map((code) => [code.id, code.label]));
-  }, [workCodes]);
-
-  const dayMetaMap = useMemo(
-    () => buildDayBalanceMetaMap(filteredEntries, userData),
-    [filteredEntries, userData]
-  );
 
   const handlePdfAction = async (actionType) => {
     try {
@@ -309,154 +267,16 @@ const PrintReport = ({ entries, monthDate, employeeName, userPhoto, onClose, onM
 
       <div className="flex-1 bg-zinc-800/50 relative overflow-hidden flex flex-col items-center justify-start py-8 overflow-y-auto touch-pan-y">
         <div className="origin-top transition-transform duration-200 shadow-2xl bg-white" style={{ transform: `scale(${scale})`, width: '210mm', minHeight: '297mm', marginBottom: '5rem' }}>
-          <div id="report-to-print" ref={reportRef} style={{ width: '100%', backgroundColor: 'white', padding: '5mm', color: PRINT_STYLES.textBlack, fontFamily: 'Arial, sans-serif' }}>
-            <div style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, paddingBottom: '0.75rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-              <div>
-                <h1 style={{ fontSize: '1.6rem', fontWeight: 'bold', textTransform: 'uppercase', color: PRINT_STYLES.textDark, margin: 0 }}>Stundenzettel</h1>
-                {/* CHANGE: Conditional Rendering für Firmennamen */}
-                {userData.company && (
-                    <p style={{ fontSize: '0.9rem', fontWeight: 'bold', color: PRINT_STYLES.textMedium, marginTop: '0.25rem', margin: 0 }}>{userData.company}</p>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontWeight: '500', fontSize: '0.9rem', margin: 0 }}>{employeeName}</p>
-                  <p style={{ fontSize: '0.8rem', color: PRINT_STYLES.textMedium, margin: 0 }}>
-                    {monthDate.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
-                    {filterMode !== "month" && ` (KW ${filterMode})`}
-                  </p>
-                </div>
-                {userPhoto && ( <img src={userPhoto} alt="Mitarbeiter" style={{ width: '55px', height: '55px', borderRadius: '50%', objectFit: 'cover', border: `1px solid ${PRINT_STYLES.borderLight}`, display: 'block' }} /> )}
-              </div>
-            </div>
-
-            <table style={{ width: '100%', fontSize: '0.85rem', textAlign: 'left', marginBottom: '1rem', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-              <thead>
-                <tr style={{ borderBottom: `2px solid ${PRINT_STYLES.borderDark}`, color: PRINT_STYLES.textMedium, textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                  <th style={{ padding: '0.4rem 0', width: '5rem' }}>Datum</th>
-                  <th style={{ padding: '0.4rem 0', width: '6rem' }}>Zeit</th>
-                  <th style={{ padding: '0.4rem 0' }}>Projekt</th>
-                  <th style={{ padding: '0.4rem 0', width: '5.5rem' }}>Code</th>
-                  <th style={{ padding: '0.4rem 0', width: '3.5rem', textAlign: 'right' }}>Std.</th>
-                  <th style={{ padding: '0.4rem 0', width: '3.5rem', textAlign: 'right' }}>Saldo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEntries.map((e, idx) => { 
-                  const d = new Date(e.date);
-                  const wd = d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2);
-                  const ds = d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
-                  const meta = dayMetaMap[e.id] || {};
-                  const prevEntry = filteredEntries[idx - 1];
-                  const nextEntry = filteredEntries[idx + 1];
-                  const isSameDay = prevEntry && prevEntry.date === e.date;
-                  const isLastOfDay = !nextEntry || nextEntry.date !== e.date; 
-
-                  let rowBg = 'transparent';
-                  if (e.type === "public_holiday") rowBg = PRINT_STYLES.bgBlueLight;
-                  else if (meta.isEvenDay) rowBg = PRINT_STYLES.bgZebra;
-
-                  let projectText = e.project;
-                  const codeText = workCodeLabelMap.get(e.code) || "";
-                  let durationDisplay = formatTime(e.netDuration);
-                  let timeColor = PRINT_STYLES.textDark;
-                  
-                  let timeCellContent = null;
-                  if (e.type === "work") {
-                    if (e.code === WORK_CODE.DRIVE) { durationDisplay = "-"; timeColor = PRINT_STYLES.textLight; }
-                    const pauseText = e.pause > 0 ? `Pause: ${e.pause}m` : "KEINE PAUSE";
-                    const pauseColor = e.pause > 0 ? PRINT_STYLES.textMedium : PRINT_STYLES.textLight;
-                    timeCellContent = ( <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}> <span style={{ fontWeight: 'bold', color: PRINT_STYLES.textDark, lineHeight: 1.2, whiteSpace: 'nowrap' }}>{e.start} – {e.end}</span> <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', marginTop: '2px', color: pauseColor }}>{pauseText}</span> </div> );
-                  } else if (e.type === "public_holiday") {
-                    timeCellContent = <span style={{ fontWeight: 'bold', color: PRINT_STYLES.textDark }}>Feiertag</span>;
-                    projectText = e.project || "Gesetzlicher Feiertag";
-                    durationDisplay = formatTime(e.netDuration);
-                    timeColor = PRINT_STYLES.textBlue;
-                  } else if (e.type === "time_comp") {
-                    timeCellContent = <span style={{ color: PRINT_STYLES.textLight }}>-</span>;
-                    projectText = "Zeitausgleich";
-                    timeColor = '#7e22ce'; 
-                  } else {
-                    timeCellContent = <span style={{ color: PRINT_STYLES.textLight }}>-</span>;
-                    projectText = e.type === "vacation" ? "Urlaub" : "Krank";
-                  }
-
-                  const borderStyle = isLastOfDay ? `1px solid ${PRINT_STYLES.borderLight}` : 'none';
-                  const entryAttachments = attachmentsByEntryId.get(e.id) || [];
-
-                  return (
-                    <tr key={e.id} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', backgroundColor: rowBg, borderBottom: borderStyle }}>
-                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
-                        {!isSameDay && ( <> <span style={{ display: 'inline-block', width: '2rem', fontWeight: 'bold' }}>{wd}</span> <span style={{ color: PRINT_STYLES.textMedium }}>{ds}</span> </> )}
-                      </td>
-                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top' }}>{timeCellContent}</td>
-                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top', whiteSpace: 'normal', wordWrap: 'break-word', paddingRight: '0.5rem' }}>
-                        <span style={{ fontWeight: '500', color: e.type === "public_holiday" ? PRINT_STYLES.textBlue : e.type === "time_comp" ? '#7e22ce' : PRINT_STYLES.textMedium }}>{projectText}</span>
-                        {entryAttachments.length > 0 && (
-                          <div style={{ marginTop: '4px', fontSize: '0.68rem', color: PRINT_STYLES.textLight, lineHeight: 1.35 }}>
-                            <span style={{ fontWeight: 'bold' }}>Dokumente:</span> {entryAttachments.map((attachment) => attachment.label).join(', ')}
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ padding: '0.5rem 0', verticalAlign: 'top', fontSize: '0.75rem', color: PRINT_STYLES.textMedium, whiteSpace: 'normal', wordWrap: 'break-word' }}>{codeText}</td>
-                      <td style={{ padding: '0.5rem 0', verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold', color: timeColor }}>{durationDisplay}</td>
-                      <td style={{ padding: '0.5rem 0', verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold', fontSize: '0.75rem' }}>
-                        {meta.showBalance && ( <span style={{ color: meta.balance >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}> {formatSignedTime(meta.balance)} </span> )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            <div style={{ marginTop: '0.5rem', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-              <div style={{ backgroundColor: PRINT_STYLES.bgGray, padding: '0.75rem', borderRadius: '0.5rem', border: `1px solid ${PRINT_STYLES.borderLight}` }}>
-                <h3 style={{ fontWeight: 'bold', fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: '0.3rem', borderBottom: `1px solid ${PRINT_STYLES.borderLight}`, paddingBottom: '0.1rem', color: PRINT_STYLES.textMedium }}>Zusammenfassung</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 2rem' }}>
-                    <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem' }}>
-                        <span>Arbeit (inkl. Anreise):</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.work)}</span>
-                        </div>
-                        {stats.holiday > 0 && ( <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textBlue }}> <span>Feiertage:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.holiday)}</span> </div> )}
-                        {stats.vacation > 0 && ( <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textBlue }}> <span>Urlaub:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.vacation)}</span> </div> )}
-                        {stats.timeComp > 0 && ( <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: '#7e22ce' }}> <span>Zeitausgleich:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.timeComp)}</span> </div> )}
-                        {stats.sick > 0 && ( <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textRed }}> <span>Krankenstand:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.sick)}</span> </div> )}
-                    </div>
-                    <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', borderBottom: `1px dashed ${PRINT_STYLES.borderLight}`, paddingBottom: '2px' }}>
-                            <span>Gesamt (IST):</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.totalIst)}</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.1rem', color: PRINT_STYLES.textMedium }}>
-                            <span>Sollzeit (SOLL):</span><span>{formatTime(stats.totalTarget)}</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginTop: '0.3rem', fontWeight: 'bold' }}>
-                            <span>Saldo:</span>
-                            <span style={{ color: stats.totalSaldo >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}>
-                                {formatSignedTime(stats.totalSaldo)}
-                            </span>
-                        </div>
-                        
-                        {(stats.overtimeSplit.mehrarbeit > 0 || stats.overtimeSplit.ueberstunden > 0) && (
-                            <div style={{ marginTop: '0.4rem', paddingTop: '0.2rem', borderTop: `1px dashed ${PRINT_STYLES.borderLight}` }}>
-                                {stats.overtimeSplit.mehrarbeit > 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: PRINT_STYLES.textBlue }}>
-                                        <span>Mehrarbeit:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.overtimeSplit.mehrarbeit)}</span>
-                                    </div>
-                                )}
-                                {stats.overtimeSplit.ueberstunden > 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#7e22ce' }}>
-                                        <span>Überstunden:</span><span style={{ fontWeight: 'bold' }}>{formatTime(stats.overtimeSplit.ueberstunden)}</span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                {stats.drive > 0 && ( <div style={{ borderTop: `1px solid ${PRINT_STYLES.borderLight}`, marginTop: '0.3rem', paddingTop: '0.2rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: PRINT_STYLES.textLight, fontStyle: 'italic' }}> <span>Fahrtzeit (unbezahlt):</span><span>{formatTime(stats.drive)}</span> </div> )}
-              </div>
-            </div>
-            {customNote && ( <div style={{ marginTop: '1.5rem', pageBreakInside: 'avoid', breakInside: 'avoid', borderTop: `2px dashed ${PRINT_STYLES.borderLight}`, paddingTop: '1rem' }}> <h3 style={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', color: PRINT_STYLES.textMedium, marginBottom: '0.5rem' }}>Anmerkungen / Notiz:</h3> <p style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap', lineHeight: '1.4', color: PRINT_STYLES.textDark }}>{customNote}</p> </div> )}
-          </div>
+          <ReportDocument
+            entries={filteredEntries}
+            userData={userData}
+            monthDate={monthDate}
+            filterMode={filterMode}
+            stats={stats}
+            workCodes={workCodes}
+            attachments={attachments}
+            customNote={customNote}
+          />
         </div>
       </div>
       <AnimatePresence> 

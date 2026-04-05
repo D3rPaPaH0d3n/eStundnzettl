@@ -509,7 +509,6 @@ export default function App() {
                   entries={entriesWithHolidays}
                   monthDate={currentDate}
                   employeeName={userData?.name || ""}
-                  userPhoto={userData?.photo || null}
                   onClose={() => setView("dashboard")}
                 onMonthChange={setCurrentDate}
                 userData={userData}

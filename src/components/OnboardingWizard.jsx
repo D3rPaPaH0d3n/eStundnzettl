@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { ShieldCheck, ChevronRight, Check, Upload, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, ServerCog, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, ChevronRight, Check, Upload, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, ServerCog, CheckCircle2, FileText, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import WelcomeStep from "./Onboarding/steps/WelcomeStep";
 import ProfileStep from "./Onboarding/steps/ProfileStep";
@@ -542,12 +542,33 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
                    <ShieldCheck size={32} />
                  </div>
                  <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">
-                    {isRestoreFlow ? "Daten laden" : "Backup & Sicherheit"}
+                    {isRestoreFlow ? "Backup wiederherstellen" : "Sicher ist sicher"}
                  </h2>
                  <p className="text-zinc-500 dark:text-zinc-400">
-                    {isRestoreFlow ? "Wo liegt dein Backup?" : "Sichere deine Daten."}
+                    {isRestoreFlow ? "Wo liegt dein Backup?" : "Willst du deine Daten zusätzlich sichern?"}
                  </p>
                </div>
+
+               {!isRestoreFlow && (
+                 <div className="space-y-2">
+                   <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40">
+                     <Info size={14} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                     <p className="text-xs text-amber-900 dark:text-amber-100 leading-relaxed">
+                       <span className="font-bold">Komplett optional.</span> Du kannst
+                       diesen Schritt einfach überspringen — die App funktioniert auch ohne
+                       Backup. Einstellen kannst du das jederzeit später.
+                     </p>
+                   </div>
+                   <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
+                     <FileText size={14} className="text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+                     <p className="text-xs text-emerald-900 dark:text-emerald-100 leading-relaxed">
+                       <span className="font-bold">Bonus:</span> Wenn du ein Backup aktivierst,
+                       legt die App <span className="font-bold">automatisch jeden Monat</span> einen
+                       fertigen PDF-Stundenzettel dazu — zum Abgeben oder Archivieren.
+                     </p>
+                   </div>
+                 </div>
+               )}
 
                <div className="space-y-4">
                  
@@ -568,8 +589,8 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
                                   <CloudLightning size={20}/>
                              </div>
                              <div className="text-left">
-                                <div className="font-bold text-zinc-800 dark:text-white">Google Drive Backup</div>
-                                <div className="text-xs text-zinc-500">Tägliche Sicherung in der Cloud</div>
+                                <div className="font-bold text-zinc-800 dark:text-white">Google Drive</div>
+                                <div className="text-xs text-zinc-500">Tägliches Backup + Monats-PDF in deine Cloud</div>
                              </div>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
@@ -593,8 +614,8 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
                                   <FolderInput size={20}/>
                              </div>
                              <div className="text-left">
-                                <div className="font-bold text-zinc-800 dark:text-white">Lokales Auto-Backup</div>
-                                <div className="text-xs text-zinc-500">Täglich in Dokumente/eStundnzettl</div>
+                                <div className="font-bold text-zinc-800 dark:text-white">Am Handy speichern</div>
+                                <div className="text-xs text-zinc-500">Backup + PDF in einen Ordner deiner Wahl</div>
                              </div>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
@@ -618,13 +639,13 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
                                   <ServerCog size={20}/>
                              </div>
                              <div className="text-left">
-                                <div className="font-bold text-zinc-800 dark:text-white">Nextcloud Backup</div>
+                                <div className="font-bold text-zinc-800 dark:text-white">Nextcloud</div>
                                 <div className="text-xs text-zinc-500">
-                                  {ncSetupConnected 
+                                  {ncSetupConnected
                                     ? <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
                                         <CheckCircle2 size={12} /> Verbunden als {ncCredentials?.loginName || ncCredentials?.userId}
                                       </span>
-                                    : "Automatische Sicherung auf deiner Cloud"}
+                                    : "Auf deiner eigenen Cloud — volle Datenhoheit"}
                                 </div>
                              </div>
                           </div>
@@ -634,6 +655,12 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
                             {ncSetupConnected && <Check size={14} strokeWidth={3} />}
                           </div>
                       </div>
+
+                      {!formData.autoBackup && !formData.localBackupEnabled && !ncSetupConnected && (
+                        <p className="text-center text-xs text-zinc-400 dark:text-zinc-500 italic pt-1">
+                          Nix dabei? Kein Problem — tipp einfach auf „Weiter“.
+                        </p>
+                      )}
 
                       {/* Nextcloud Setup Expanded */}
                       {ncSetupActive && !ncSetupConnected && (
@@ -803,11 +830,11 @@ const OnboardingWizard = ({ onComplete, setUserData, importEntries, importWorkCo
             </button>
 
             {!isRestoreFlow && (
-              <button 
+              <button
                 onClick={nextStep}
                 className="px-6 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl flex items-center gap-2 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-lg shadow-zinc-900/10"
               >
-                Weiter <ChevronRight size={18} />
+                {step === 3 ? "Passt" : "Weiter"} <ChevronRight size={18} />
               </button>
             )}
           </div>

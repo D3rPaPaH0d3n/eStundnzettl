@@ -44,6 +44,9 @@ const AttachmentManager = React.lazy(() => import("./components/AttachmentManage
 const EntryForm = React.lazy(() => import("./components/EntryForm"));
 const OnboardingWizard = React.lazy(() => import("./components/OnboardingWizard"));
 const ExportModal = React.lazy(() => import("./components/ExportModal"));
+const AppTour = React.lazy(() => import("./components/AppTour"));
+
+const TOUR_SEEN_KEY = "estundnzettl_tour_seen";
 import SkeletonScreen from "./components/SkeletonScreen";
 
 // ANIMATION CONFIG — zentrale Presets aus utils/motionPresets.js
@@ -151,6 +154,7 @@ export default function App() {
   const [view, setView] = useState("dashboard");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const [attachmentEntry, setAttachmentEntry] = useState(null);
 
   // Stabile Callbacks, damit React.memo auf Dashboard & Co. greift.
@@ -241,6 +245,31 @@ export default function App() {
     }
   }, [userData]);
 
+  // Wrapper: Onboarding-Finish → ggf. interaktive Tour starten, wenn
+  // der User die noch nie gesehen hat. Die eigentliche Finish-Logik
+  // aus useAppActions bleibt unberührt.
+  const handleOnboardingFinishWithTour = useCallback(() => {
+    handleOnboardingFinish();
+    try {
+      const seen = localStorage.getItem(TOUR_SEEN_KEY) === "1";
+      if (!seen) {
+        // Kurze Verzögerung, damit das Dashboard zuerst sichtbar wird
+        setTimeout(() => setShowTour(true), 350);
+      }
+    } catch {
+      /* localStorage nicht verfügbar — Tour einfach skippen */
+    }
+  }, [handleOnboardingFinish]);
+
+  const handleTourClose = useCallback(() => {
+    setShowTour(false);
+    try {
+      localStorage.setItem(TOUR_SEEN_KEY, "1");
+    } catch {
+      /* noop */
+    }
+  }, []);
+
   // --- AUTO-CHECKOUT LISTENER ---
   useEffect(() => {
     if (autoCheckoutData) {
@@ -305,7 +334,7 @@ export default function App() {
       {showOnboarding && (
         <Suspense fallback={<SkeletonScreen label="Einrichtung wird geladen..." />}>
           <OnboardingWizard
-            onComplete={handleOnboardingFinish}
+            onComplete={handleOnboardingFinishWithTour}
             setUserData={setUserData}
             importEntries={importEntries}
             importWorkCodes={loadWorkCodes}
@@ -493,6 +522,12 @@ export default function App() {
           )}
         </AnimatePresence>
       </div>
+
+      {showTour && !showOnboarding && (
+        <Suspense fallback={null}>
+          <AppTour onClose={handleTourClose} />
+        </Suspense>
+      )}
 
       {!showOnboarding && (
         <>

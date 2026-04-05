@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { User, Camera, Upload, Building2 } from "lucide-react";
+import { User, Camera, Upload, Building2, Lock } from "lucide-react";
 
 /**
  * Onboarding-Schritt 1: Profildaten des Users.
@@ -22,8 +22,16 @@ const ProfileStep = ({ formData, setFormData, photoInputRef, onPhotoUpload }) =>
         <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-600">
           <User size={32} />
         </div>
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Dein Profil</h2>
-        <p className="text-zinc-500 dark:text-zinc-400">Wer nutzt die App?</p>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Sag uns wer du bist</h2>
+        <p className="text-zinc-500 dark:text-zinc-400">Damit dein Stundenzettel auch deinen Namen trägt.</p>
+      </div>
+
+      <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
+        <Lock size={14} className="text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">
+          <span className="font-bold">Keine Sorge:</span> Dein Name, das Foto und alle
+          weiteren Daten bleiben ausschließlich auf deinem Handy. Es geht nix raus, außer du willst's so.
+        </p>
       </div>
 
       <div className="space-y-4">

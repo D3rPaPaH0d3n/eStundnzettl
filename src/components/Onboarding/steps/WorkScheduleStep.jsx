@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Briefcase, Check } from "lucide-react";
+import { Briefcase, Check, Info } from "lucide-react";
 import { WORK_MODELS } from "../../../hooks/constants";
 
 /**
@@ -33,8 +33,16 @@ const WorkScheduleStep = ({
         <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600">
           <Briefcase size={32} />
         </div>
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Arbeitszeit</h2>
-        <p className="text-zinc-500 dark:text-zinc-400">Wähle dein Modell.</p>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Wie viel arbeitest du?</h2>
+        <p className="text-zinc-500 dark:text-zinc-400">Damit wir Soll, Ist & Überstunden richtig rechnen.</p>
+      </div>
+
+      <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40">
+        <Info size={14} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+          Wähl einfach das Modell, das am besten passt. Kannst du später in den
+          Einstellungen jederzeit ändern — auch tageweise individuell.
+        </p>
       </div>
 
       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
@@ -109,9 +117,9 @@ const WorkScheduleStep = ({
           <div className="text-2xl">⏱️</div>
           <div>
             <div className="font-bold text-sm text-zinc-800 dark:text-white">
-              Minütige Zeiteingabe
+              Minutengenau erfassen
             </div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400"> statt in 15-Min-Schritten</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">Sonst in praktischen 15-Min-Schritten</div>
           </div>
         </div>
         <button

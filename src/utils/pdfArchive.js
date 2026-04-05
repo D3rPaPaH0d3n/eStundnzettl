@@ -286,36 +286,83 @@ function buildDocDefinition({ year, month, entries, userData, workCodes }) {
 
 let pdfMakeInstance = null;
 
+/**
+ * vfs_fonts laedt je nach pdfmake-Version unterschiedlich:
+ *
+ * - pdfmake 0.2.x: `module.exports = { pdfMake: { vfs: {...} } }`
+ *   → Registrierung via `pdfMake.vfs = vfs`
+ *
+ * - pdfmake 0.3.x (aktuell in package.json): `module.exports = vfs` direkt
+ *   (flaches Objekt mit Font-Dateinamen als Keys). Bevorzugte Registrierung
+ *   ueber die neue API `pdfMake.addVirtualFileSystem(vfs)`; als Fallback
+ *   funktioniert `pdfMake.vfs = vfs` weiterhin.
+ */
 async function getPdfMake() {
   if (pdfMakeInstance) return pdfMakeInstance;
   const pdfMakeModule = await import("pdfmake/build/pdfmake");
   const pdfFontsModule = await import("pdfmake/build/vfs_fonts");
   const pdfMake = pdfMakeModule.default || pdfMakeModule;
-  // vfs_fonts legt sein vfs je nach Build-Variante unter verschiedenen Pfaden ab.
-  const vfs =
+
+  // 1) 0.2.x verschachteltes Format
+  let vfs =
     pdfFontsModule?.default?.pdfMake?.vfs ??
     pdfFontsModule?.pdfMake?.vfs ??
-    pdfFontsModule?.default?.vfs ??
-    pdfFontsModule?.vfs ??
     null;
-  if (vfs) {
-    pdfMake.vfs = vfs;
+
+  // 2) 0.3.x flaches Format: module.exports IS the vfs object.
+  //    Heuristik: hat Font-Dateinamen als Keys (z.B. "Roboto-Regular.ttf").
+  if (!vfs) {
+    const candidate = pdfFontsModule?.default ?? pdfFontsModule;
+    if (candidate && typeof candidate === "object") {
+      const keys = Object.keys(candidate);
+      const looksLikeVfs = keys.some((k) => /\.(ttf|otf|woff2?)$/i.test(k));
+      if (looksLikeVfs) {
+        vfs = candidate;
+      }
+    }
   }
+
+  if (vfs) {
+    if (typeof pdfMake.addVirtualFileSystem === "function") {
+      pdfMake.addVirtualFileSystem(vfs);
+    } else {
+      pdfMake.vfs = vfs;
+    }
+  }
+
   pdfMakeInstance = pdfMake;
   return pdfMake;
 }
 
 /**
  * Erzeugt das Monats-PDF als Blob. Reine Funktion — kein DOM, kein React.
+ *
+ * Hard-Timeout von 30 s, damit ein potentiell hangender getBlob-Callback
+ * (z.B. durch fehlende VFS-Fonts) nicht die UI dauerhaft blockiert.
  */
 export async function generateMonthlyPdfBlob({ year, month, entries, userData, workCodes }) {
   if (!year || !month) throw new Error("generateMonthlyPdfBlob: year/month fehlen");
   const pdfMake = await getPdfMake();
   const docDefinition = buildDocDefinition({ year, month, entries, userData, workCodes });
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        reject(new Error("PDF-Generierung Timeout (30s) — vermutlich fehlen VFS-Fonts"));
+      }
+    }, 30000);
     try {
-      pdfMake.createPdf(docDefinition).getBlob((blob) => resolve(blob));
+      pdfMake.createPdf(docDefinition).getBlob((blob) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(blob);
+      });
     } catch (err) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       reject(err);
     }
   });

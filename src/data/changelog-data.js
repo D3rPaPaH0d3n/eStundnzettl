@@ -1,6 +1,40 @@
 export const CHANGELOG_DATA = [
 
   {
+    version: "3.4.0",
+    date: "05.04.2026",
+    title: "Freundlicher Start & sauberer Stundenzettel 🎉",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "Sparkles",
+        title: "Neuer Willkommensflow & interaktive App-Tour",
+        items: [
+          "Der Einrichtungs-Assistent wurde von Grund auf überarbeitet — freundlicher im Ton, klarer in den Erklärungen. Du siehst jetzt gleich auf der ersten Seite, wofür eStundnzettl steht: alles am Handy, offline nutzbar, deine Daten bleiben bei dir. Jeder Schritt erklärt kurz und ehrlich, was passiert und warum.",
+          "Der Backup-Schritt ist jetzt transparent als komplett optional ausgezeichnet. Und du erfährst dort auch gleich den netten Nebeneffekt: sobald du ein Backup aktivierst, legt die App dir jeden Monat automatisch einen fertigen PDF-Stundenzettel dazu.",
+          "Frisch nach dem Setup bekommst du eine kurze interaktive App-Tour, die dir in 7 Schritten zeigt, wo was sitzt: Dashboard, Live-Timer (inkl. Lang-Drücken + nach oben wischen), manueller Eintrag, Bericht und Einstellungen. Kleine pulsierende Marker weisen exakt auf die echten Buttons."
+        ]
+      },
+      {
+        iconName: "FileText",
+        title: "Automatisches PDF sieht jetzt wie dein geteilter Bericht aus",
+        items: [
+          "Das automatisch archivierte Monats-PDF hatte bisher ein schlichtes, tabellarisches Layout — ganz anders als der schöne Stundenzettel, den du aus dem Bericht teilen kannst. Ab jetzt verwenden beide Pfade exakt dieselbe Vorlage: Firma, Foto, Zebra-Streifen, Zusammenfassungs-Box. Dein Archiv-PDF zeigt also 1:1 dasselbe Design wie der geteilte Bericht.",
+          "Als Nebeneffekt wird die App-Installation auch spürbar kleiner — wir konnten eine große interne PDF-Bibliothek ersatzlos streichen."
+        ]
+      },
+      {
+        iconName: "Bug",
+        title: "Korrektur: Mehrarbeit an Monatsübergängen",
+        items: [
+          "Bei Wochen, die über einen Monatswechsel hinausgehen (z.B. KW 14 mit Montag noch im März und Mittwoch schon im April), konnte die App zu viel Mehrarbeit anzeigen — sowohl im Dashboard als auch im PDF. Der Fehler lag darin, dass die Woche am Monatsrand abgeschnitten wurde und Plus-Stunden aus der Monats-Hälfte gegen ein halbiertes Soll verglichen wurden.",
+          "Mehrarbeit und Überstunden werden jetzt immer über die volle Woche (Mo–So) berechnet. Zur Zuordnung gilt die ISO-Regel: Eine Woche zählt zu dem Monat, in dem ihr Donnerstag liegt. Damit wird jede Woche genau einmal korrekt gezählt — kein Doppelzählen, keine Lücken."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "3.3.0",
     date: "05.04.2026",
     title: "Dein Monats-PDF landet von selbst im Archiv 📁",

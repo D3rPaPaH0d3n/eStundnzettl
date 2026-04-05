@@ -22,6 +22,7 @@ import LiveTimerOverlay from "./components/LiveTimerOverlay";
 import { useEntries } from "./hooks/useEntries";
 import { useSettings } from "./hooks/useSettings";
 import { useAutoBackup } from "./hooks/useAutoBackup";
+import { useAutoPdfArchive } from "./hooks/useAutoPdfArchive";
 import { useLiveTimer } from "./hooks/useLiveTimer";
 import { useExport } from "./hooks/useExport";
 import { useFormState } from "./hooks/useFormState";
@@ -115,6 +116,10 @@ export default function App() {
 
   // --- AUTO BACKUP ---
   useAutoBackup(entries, userData, autoBackup);
+
+  // --- AUTO PDF ARCHIVE (monatlich wachsendes PDF, taeglicher Startup-Check) ---
+  const { lastRun: pdfArchiveLastRun, lastError: pdfArchiveLastError, performRun: pdfArchivePerformRun } =
+    useAutoPdfArchive(entries, userData, workCodes);
 
   // --- ATTACHMENTS ---
   const {
@@ -452,6 +457,10 @@ export default function App() {
                   setNextcloudUrl={setNextcloudUrl}
                   setNextcloudUser={setNextcloudUser}
                   setNextcloudPass={setNextcloudPass}
+                  // PDF-Archiv (useAutoPdfArchive)
+                  pdfArchiveLastRun={pdfArchiveLastRun}
+                  pdfArchiveLastError={pdfArchiveLastError}
+                  pdfArchivePerformRun={pdfArchivePerformRun}
                 />
               </Suspense>
             </motion.div>

@@ -100,6 +100,7 @@ public class NextcloudLoginFlowPlugin extends Plugin {
         String urlStr = call.getString("url");
         String method = call.getString("method", "GET");
         String body = call.getString("body");
+        String bodyBase64 = call.getString("bodyBase64");
         String username = call.getString("username");
         String password = call.getString("password");
         String reqContentType = call.getString("contentType");
@@ -160,6 +161,13 @@ public class NextcloudLoginFlowPlugin extends Plugin {
                 } else if ("PROPFIND".equals(upperMethod)) {
                     // PROPFIND with empty body
                     requestBody = RequestBody.create(new byte[0], null);
+                } else if (bodyBase64 != null) {
+                    // PUT, POST, etc. with binary body (base64-encoded)
+                    MediaType mediaType = reqContentType != null
+                        ? MediaType.parse(reqContentType)
+                        : null;
+                    byte[] rawBytes = android.util.Base64.decode(bodyBase64, android.util.Base64.DEFAULT);
+                    requestBody = RequestBody.create(rawBytes, mediaType);
                 } else if (body != null) {
                     // PUT, POST, etc. with actual body
                     MediaType mediaType = reqContentType != null

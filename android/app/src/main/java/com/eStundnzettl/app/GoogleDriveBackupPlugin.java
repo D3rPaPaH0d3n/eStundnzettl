@@ -26,9 +26,18 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.Scope;
 
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 @CapacitorPlugin(name = "GoogleDriveBackup")
 public class GoogleDriveBackupPlugin extends Plugin {
@@ -39,6 +48,13 @@ public class GoogleDriveBackupPlugin extends Plugin {
     private static final String KEY_CONNECTED = "connected";
     private static final String KEY_SCOPE = "scope";
     private static final String KEY_ACCOUNT_EMAIL = "account_email";
+
+    private static final String USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
+    private static final OkHttpClient httpClient = new OkHttpClient();
+
+    private interface EmailCallback {
+        void onResult(String email);
+    }
 
     private AuthorizationClient authorizationClient;
     private SharedPreferences authPrefs;
@@ -151,19 +167,28 @@ public class GoogleDriveBackupPlugin extends Plugin {
         }
 
         lastAccessToken = accessToken;
-        lastAccountEmail = extractEmail(result);
-        persistAuthMetadata(true);
-
-        JSObject response = new JSObject();
-        response.put("accessToken", accessToken);
-        response.put("scope", lastGrantedScope != null ? lastGrantedScope : DEFAULT_SCOPE);
-        response.put("connected", true);
-        response.put("hasToken", true);
-        response.put("source", "authorization-client");
-        if (lastAccountEmail != null) {
-            response.put("accountEmail", lastAccountEmail);
+        String localEmail = extractEmail(result);
+        if (localEmail != null && !localEmail.isEmpty()) {
+            lastAccountEmail = localEmail;
         }
-        call.resolve(response);
+
+        fetchUserEmailAsync(accessToken, fetchedEmail -> {
+            if (fetchedEmail != null && !fetchedEmail.isEmpty()) {
+                lastAccountEmail = fetchedEmail;
+            }
+            persistAuthMetadata(true);
+
+            JSObject response = new JSObject();
+            response.put("accessToken", accessToken);
+            response.put("scope", lastGrantedScope != null ? lastGrantedScope : DEFAULT_SCOPE);
+            response.put("connected", true);
+            response.put("hasToken", true);
+            response.put("source", "authorization-client");
+            if (lastAccountEmail != null && !lastAccountEmail.isEmpty()) {
+                response.put("accountEmail", lastAccountEmail);
+            }
+            call.resolve(response);
+        });
     }
 
     @PluginMethod
@@ -257,18 +282,26 @@ public class GoogleDriveBackupPlugin extends Plugin {
         }
 
         lastAccessToken = accessToken;
-        lastAccountEmail = extractEmail(result);
-
-        persistAuthMetadata(true);
-
-        if (requireToken) {
-            JSObject response = buildStatusResponse(true, true, false);
-            response.put("accessToken", accessToken);
-            call.resolve(response);
-            return;
+        String localEmail = extractEmail(result);
+        if (localEmail != null && !localEmail.isEmpty()) {
+            lastAccountEmail = localEmail;
         }
 
-        call.resolve(buildStatusResponse(true, true, false));
+        fetchUserEmailAsync(accessToken, fetchedEmail -> {
+            if (fetchedEmail != null && !fetchedEmail.isEmpty()) {
+                lastAccountEmail = fetchedEmail;
+            }
+            persistAuthMetadata(true);
+
+            if (requireToken) {
+                JSObject response = buildStatusResponse(true, true, false);
+                response.put("accessToken", accessToken);
+                call.resolve(response);
+                return;
+            }
+
+            call.resolve(buildStatusResponse(true, true, false));
+        });
     }
 
     private JSObject buildStatusResponse(boolean hasToken, boolean connected, boolean reauthRequired) {
@@ -291,6 +324,48 @@ public class GoogleDriveBackupPlugin extends Plugin {
 
     private List<Scope> buildScopeList(String driveScope) {
         return Arrays.asList(new Scope(driveScope), new Scope(EMAIL_SCOPE));
+    }
+
+    private void fetchUserEmailAsync(String accessToken, EmailCallback callback) {
+        if (accessToken == null || accessToken.isEmpty()) {
+            callback.onResult(null);
+            return;
+        }
+        try {
+            Request request = new Request.Builder()
+                .url(USERINFO_URL)
+                .header("Authorization", "Bearer " + accessToken)
+                .build();
+
+            httpClient.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.w(TAG, "userinfo fetch failed", e);
+                    callback.onResult(null);
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) {
+                    try (Response r = response) {
+                        if (!r.isSuccessful() || r.body() == null) {
+                            Log.w(TAG, "userinfo fetch HTTP " + r.code());
+                            callback.onResult(null);
+                            return;
+                        }
+                        String body = r.body().string();
+                        JSONObject json = new JSONObject(body);
+                        String email = json.optString("email", null);
+                        callback.onResult(email);
+                    } catch (Exception e) {
+                        Log.w(TAG, "userinfo parse failed", e);
+                        callback.onResult(null);
+                    }
+                }
+            });
+        } catch (Exception e) {
+            Log.w(TAG, "userinfo request setup failed", e);
+            callback.onResult(null);
+        }
     }
 
     private String extractEmail(AuthorizationResult result) {

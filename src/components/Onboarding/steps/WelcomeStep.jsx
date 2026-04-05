@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { ShieldCheck, Play, RefreshCw, FlaskConical, Smartphone, WifiOff, Lock } from "lucide-react";
+import { Play, RefreshCw, FlaskConical, Smartphone, WifiOff, Lock } from "lucide-react";
+import AppLogo from "../../../assets/logo.png";
 
 /**
  * Onboarding-Schritt 0: Willkommen.
@@ -20,14 +21,12 @@ const WelcomeStep = ({ onStartNew, onStartRestore, onDemoMode }) => {
       className="space-y-6 flex flex-col items-center justify-center py-4"
     >
       <div className="text-center space-y-3">
-        <div className="w-20 h-20 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/20 relative">
+        <div className="w-24 h-24 rounded-3xl overflow-hidden mx-auto shadow-xl shadow-emerald-500/20 ring-1 ring-black/5 dark:ring-white/10 bg-white dark:bg-zinc-800">
           <img
-            src="/icon.png"
-            alt="Logo"
-            className="w-12 h-12 brightness-0 invert"
-            onError={(e) => (e.target.style.display = "none")}
+            src={AppLogo}
+            alt="eStundnzettl Logo"
+            className="w-full h-full object-contain"
           />
-          <ShieldCheck size={40} className="text-white absolute" style={{ opacity: 0.2 }} />
         </div>
         <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
           Servus! 👋

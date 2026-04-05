@@ -160,6 +160,7 @@ const LiveTimerOverlay = ({
 
       <motion.button
         type="button"
+        data-tour="fab"
         aria-label={timerState.isRunning ? t("timer.stop") : t("timer.start")}
         whileTap={{ scale: 0.92 }}
         onClick={timerState.isRunning ? onStop : undefined}

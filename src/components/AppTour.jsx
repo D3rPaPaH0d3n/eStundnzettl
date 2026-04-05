@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
@@ -10,23 +10,24 @@ import {
   Check,
   ArrowLeft,
   ArrowRight,
+  ArrowUp,
   X,
+  Hand,
 } from "lucide-react";
 
 /**
  * AppTour
  *
  * Kurze, interaktive Einweisung in die Haupt-App. Wird einmalig nach dem
- * Onboarding angezeigt (oder manuell aus den Einstellungen/Hilfe
- * triggerbar). Ziel: Neue User lernen die wichtigsten Buttons (FAB-Timer,
- * "+"-Eintrag, Bericht, Einstellungen) in wenigen Schritten kennen, ohne
- * dass die App-Logik selbst verändert wird.
+ * Onboarding angezeigt. Ziel: Neue User lernen die wichtigsten Bedien-
+ * elemente (Live-Timer FAB mit Long-Press+Swipe, Bericht, Einstellungen)
+ * in wenigen Schritten kennen, ohne dass die App-Logik selbst verändert
+ * wird.
  *
- * Design: Halbtransparenter Backdrop + schwebende Karte. Ein kleiner
- * "Pointer"-Marker weist auf die tatsächliche Position des zugehörigen
- * Buttons in der App (oben rechts Header, unten rechts FAB, ...). So
- * bleibt die Einweisung robust gegenüber Layout-Änderungen — wir heben
- * keine DOM-Nodes mit Refs hervor, sondern benutzen feste Screen-Zonen.
+ * Pointer-Positionierung: Wir suchen die realen DOM-Buttons über stabile
+ * `data-tour="..."`-Attribute und messen deren Bounding-Box. Dadurch
+ * sitzen die pulsierenden Marker immer exakt auf dem jeweiligen Button —
+ * unabhängig von Safe-Area, Theme oder Gerätegröße.
  */
 
 const steps = [
@@ -35,32 +36,33 @@ const steps = [
     icon: Sparkles,
     color: "emerald",
     title: "Kurze Tour gefällig?",
-    body: "Servus! Lass uns in 6 kleinen Schritten durchgehen, wo du was findest. Du kannst die Tour jederzeit überspringen.",
-    pointer: null,
+    body: "Servus! Lass uns in ein paar kleinen Schritten durchgehen, wo du was findest. Du kannst jederzeit auf das X tippen und überspringen.",
+    target: null,
   },
   {
     id: "dashboard",
     icon: BarChart3,
     color: "emerald",
     title: "Deine Übersicht",
-    body: "Hier siehst du auf einen Blick: Ist-Stunden, Soll-Stunden und deine Überstunden für den gewählten Monat. Wochen kannst du antippen zum Aufklappen.",
-    pointer: { pos: "center", label: "Dashboard" },
+    body: "Hier siehst du auf einen Blick: Ist-Stunden, Soll-Stunden und deine Überstunden für den gewählten Monat. Wochen kannst du antippen zum Auf- und Zuklappen.",
+    target: null,
   },
   {
-    id: "timer",
-    icon: Play,
-    color: "emerald",
-    title: "Der grüne Start-Knopf",
-    body: "Rechts unten findest du den Live-Timer. Tippen = Start. Nochmal tippen = Stopp, und dein Eintrag wird automatisch angelegt. Einfacher geht's nicht.",
-    pointer: { pos: "bottom-right", label: "Play" },
-  },
-  {
-    id: "add",
+    id: "fab-tap",
     icon: Plus,
-    color: "blue",
+    color: "emerald",
     title: "Manueller Eintrag",
-    body: "Vergessen zu starten? Kein Problem. Mit dem „+“ links daneben trägst du Zeiten jederzeit manuell nach — auch für vergangene Tage.",
-    pointer: { pos: "bottom-left-fab", label: "Plus" },
+    body: "Der grüne Knopf rechts unten ist dein Hauptwerkzeug. Ein kurzes Tippen öffnet sofort das Formular für einen neuen Eintrag — perfekt zum Nachtragen.",
+    target: '[data-tour="fab"]',
+  },
+  {
+    id: "fab-timer",
+    icon: ArrowUp,
+    color: "emerald",
+    title: "Live-Timer starten",
+    body: "Derselbe Knopf startet den Live-Timer: einfach lang draufdrücken, bis er grün wird, und dann nach oben wischen. Nochmal tippen stoppt den Timer und legt den Eintrag automatisch an.",
+    target: '[data-tour="fab"]',
+    hint: "Lang drücken + hochwischen",
   },
   {
     id: "report",
@@ -68,15 +70,15 @@ const steps = [
     color: "emerald",
     title: "Stundenzettel als PDF",
     body: "Oben rechts der grüne Button: dein fertiger Stundenzettel zum Anschauen, Teilen oder Ausdrucken. Mit Unterschrift, Notizen und deinem Logo.",
-    pointer: { pos: "top-right", label: "Bericht" },
+    target: '[data-tour="report"]',
   },
   {
     id: "settings",
     icon: SettingsIcon,
     color: "zinc",
     title: "Einstellungen & mehr",
-    body: "Das Zahnrad oben ist deine Schaltzentrale: Profil, Arbeitszeit, eigene Tätigkeits-Codes, Backup, Theme und die Hilfe. Alles lässt sich jederzeit ändern.",
-    pointer: { pos: "top-right-2", label: "Einstellungen" },
+    body: "Das Zahnrad ist deine Schaltzentrale: Profil, Arbeitszeit, eigene Tätigkeits-Codes, Backup, Theme und die Hilfe. Alles lässt sich jederzeit ändern.",
+    target: '[data-tour="settings"]',
   },
   {
     id: "done",
@@ -84,7 +86,7 @@ const steps = [
     color: "emerald",
     title: "Das war's schon!",
     body: "Du kennst jetzt alle wichtigen Ecken. Falls du was nochmal nachlesen willst: Einstellungen → Hilfe. Viel Spaß mit dem eStundnzettl!",
-    pointer: null,
+    target: null,
   },
 ];
 
@@ -110,59 +112,48 @@ const colorMap = {
 };
 
 /**
- * Pointer: kleiner, pulsierender Marker an einer fixen Screen-Position.
- * Ziel-Koordinaten orientieren sich am Header (oben) und FAB (unten).
+ * Misst das Ziel-Element per querySelector und liefert Bounding-Box.
+ * Liefert null, wenn kein Ziel gesetzt oder nicht gefunden.
  */
-const Pointer = ({ pos, color }) => {
-  if (!pos) return null;
-  const style = {};
-  const safeTop = "calc(env(safe-area-inset-top) + 1rem)";
-  switch (pos) {
-    case "top-right":
-      // Bericht-Button (emerald, ganz rechts im Header)
-      style.top = `calc(${safeTop} + 0.4rem)`;
-      style.right = "1rem";
-      break;
-    case "top-right-2":
-      // Settings-Button (zinc, knapp links vom Bericht)
-      style.top = `calc(${safeTop} + 0.4rem)`;
-      style.right = "3.6rem";
-      break;
-    case "bottom-right":
-      // Live-Timer FAB
-      style.bottom = "1.5rem";
-      style.right = "1.25rem";
-      break;
-    case "bottom-left-fab":
-      // Plus-Button (neben FAB)
-      style.bottom = "1.5rem";
-      style.right = "5.5rem";
-      break;
-    case "center":
-      style.top = "50%";
-      style.left = "50%";
-      style.transform = "translate(-50%, -50%)";
-      break;
-    default:
-      break;
-  }
-  const ring = colorMap[color]?.ring || "ring-emerald-400";
-  return (
-    <motion.div
-      key={pos}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      className="fixed z-[310] pointer-events-none"
-      style={style}
-    >
-      <span className={`relative flex h-12 w-12`}>
-        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${ring} opacity-60 ring-4`}></span>
-        <span className={`relative inline-flex rounded-full h-12 w-12 ring-4 ${ring}`}></span>
-      </span>
-    </motion.div>
-  );
+const useTargetRect = (selector) => {
+  const [rect, setRect] = useState(null);
+
+  const measure = useCallback(() => {
+    if (!selector) {
+      setRect(null);
+      return;
+    }
+    const el = document.querySelector(selector);
+    if (!el) {
+      setRect(null);
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+  }, [selector]);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure]);
+
+  useEffect(() => {
+    if (!selector) return;
+    // Re-measure auf Resize, Orientierungswechsel und Scroll.
+    const handler = () => measure();
+    window.addEventListener("resize", handler);
+    window.addEventListener("orientationchange", handler);
+    window.addEventListener("scroll", handler, true);
+    // Kleine Verzögerung, damit Layout nach Transitions steht.
+    const t = setTimeout(measure, 80);
+    return () => {
+      window.removeEventListener("resize", handler);
+      window.removeEventListener("orientationchange", handler);
+      window.removeEventListener("scroll", handler, true);
+      clearTimeout(t);
+    };
+  }, [selector, measure]);
+
+  return rect;
 };
 
 const AppTour = ({ onClose }) => {
@@ -173,15 +164,7 @@ const AppTour = ({ onClose }) => {
   const isLast = index === steps.length - 1;
   const isFirst = index === 0;
 
-  // Card-Position: oben, wenn der Pointer unten ist — sonst unten.
-  // Welcome/Done (ohne Pointer) → zentriert.
-  const cardAnchor = (() => {
-    const p = step.pointer?.pos;
-    if (!p) return "center";
-    if (p === "bottom-right" || p === "bottom-left-fab") return "top";
-    if (p === "top-right" || p === "top-right-2") return "bottom";
-    return "bottom";
-  })();
+  const rect = useTargetRect(step.target);
 
   useEffect(() => {
     // Sanfte Sperre: verhindert Scroll im Hintergrund während der Tour.
@@ -204,6 +187,28 @@ const AppTour = ({ onClose }) => {
     if (!isFirst) setIndex((i) => i - 1);
   };
 
+  // Pointer-Box berechnen: um den Button herum mit etwas Luft.
+  const pointerPadding = 10;
+  const pointerStyle = rect
+    ? {
+        position: "fixed",
+        top: rect.top - pointerPadding,
+        left: rect.left - pointerPadding,
+        width: rect.width + pointerPadding * 2,
+        height: rect.height + pointerPadding * 2,
+        borderRadius: "9999px",
+        pointerEvents: "none",
+      }
+    : null;
+
+  // Karte so positionieren, dass sie das Target nicht überdeckt.
+  // Wenn Target in der oberen Bildschirmhälfte → Karte unten, sonst oben.
+  const cardAnchor = (() => {
+    if (!rect) return "center";
+    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+    return rect.top + rect.height / 2 < vh / 2 ? "bottom" : "top";
+  })();
+
   const cardPositionClass =
     cardAnchor === "top"
       ? "top-[calc(env(safe-area-inset-top)+5.5rem)]"
@@ -222,9 +227,26 @@ const AppTour = ({ onClose }) => {
         onClick={handleNext}
       />
 
-      {/* Pointer */}
+      {/* Pointer — pulsiert exakt über dem echten Button */}
       <AnimatePresence mode="wait">
-        {step.pointer && <Pointer pos={step.pointer.pos} color={step.color} />}
+        {pointerStyle && (
+          <motion.div
+            key={step.id}
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.6, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            className="z-[310]"
+            style={pointerStyle}
+          >
+            <span
+              className={`absolute inset-0 rounded-full ring-4 ${colors.ring} animate-ping opacity-60`}
+            />
+            <span
+              className={`absolute inset-0 rounded-full ring-4 ${colors.ring}`}
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Karte */}
@@ -277,6 +299,14 @@ const AppTour = ({ onClose }) => {
                 <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed mt-1">
                   {step.body}
                 </p>
+                {step.hint && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50">
+                    <Hand size={12} className="text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                      {step.hint}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

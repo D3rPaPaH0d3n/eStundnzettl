@@ -57,7 +57,16 @@ async function init() {
     const executeFn = (sql) =>
       CapacitorSQLite.execute({ database: DB_NAME, statements: sql });
     const queryFn = async (sql) => {
-      const res = await CapacitorSQLite.query({ database: DB_NAME, statement: sql });
+      // ACHTUNG: @capacitor-community/sqlite verlangt `values` als Pflichtfeld,
+      // auch wenn das Statement parameterlos ist. Fehlt es, wirft der Plugin
+      // "Query: Must provide an Array of Strings" — und da runMigrations() den
+      // ersten SELECT gegen schema_version hier feuert, scheitert die komplette
+      // DB-Init. Keine DB, keine Entries, keine Backups (siehe Welle-3-Postmortem).
+      const res = await CapacitorSQLite.query({
+        database: DB_NAME,
+        statement: sql,
+        values: [],
+      });
       return res?.values || [];
     };
     const result = await runMigrations(executeFn, queryFn);

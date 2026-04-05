@@ -67,6 +67,7 @@ function makeForm(overrides = {}) {
     project: "",
     code: "work",
     editingEntry: null,
+    specialManualMode: false,
     setEntryType: vi.fn(),
     setFormDate: vi.fn(),
     setStartTime: vi.fn(),
@@ -76,6 +77,7 @@ function makeForm(overrides = {}) {
     setCode: vi.fn(),
     setEditingEntry: vi.fn(),
     setIsLiveEntry: vi.fn(),
+    setSpecialManualMode: vi.fn(),
     ...overrides,
   };
 }
@@ -245,6 +247,80 @@ describe("useEntryActions", () => {
     expect(saved.end).toBe("16:30");
     expect(saved.netDuration).toBeGreaterThan(0);
     expect(dualWriteSync).toHaveBeenCalledWith(expect.any(String), "last_code", "custom-1");
+  });
+
+  it("handleSaveEntry: Krank im Auto-Modus → netDuration aus Sollzeit, start/end null", () => {
+    const addEntry = vi.fn();
+    const form = makeForm({ entryType: "sick", specialManualMode: false });
+    const { result } = mount({ form, addEntry });
+    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() }));
+    expect(addEntry).toHaveBeenCalledOnce();
+    const saved = addEntry.mock.calls[0][0];
+    expect(saved.type).toBe("sick");
+    expect(saved.start).toBeNull();
+    expect(saved.end).toBeNull();
+    expect(saved.project).toBe("Krank");
+    // Samstag 2026-04-04 → USER.workDays[6] = 0, daher 0 Minuten
+    expect(saved.netDuration).toBe(0);
+  });
+
+  it("handleSaveEntry: Urlaub im Manual-Modus → netDuration aus Start/Ende, Zeiten persistiert", () => {
+    const addEntry = vi.fn();
+    const form = makeForm({
+      entryType: "vacation",
+      startTime: "08:00",
+      endTime: "12:00",
+      specialManualMode: true,
+    });
+    const { result } = mount({ form, addEntry });
+    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() }));
+    expect(addEntry).toHaveBeenCalledOnce();
+    const saved = addEntry.mock.calls[0][0];
+    expect(saved.type).toBe("vacation");
+    expect(saved.start).toBe("08:00");
+    expect(saved.end).toBe("12:00");
+    expect(saved.project).toBe("Urlaub");
+    expect(saved.netDuration).toBe(240);
+  });
+
+  it("handleSaveEntry: Manual-Special blockiert bei Überschneidung mit bestehendem Work-Eintrag", () => {
+    const addEntry = vi.fn();
+    const entries = [
+      { id: 1, type: "work", date: "2026-04-04", start: "09:00", end: "11:00", code: "work" },
+    ];
+    const form = makeForm({
+      entryType: "sick",
+      startTime: "08:00",
+      endTime: "12:00",
+      specialManualMode: true,
+    });
+    const { result } = mount({ form, entries, addEntry });
+    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() }));
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.stringContaining("Zeitüberschneidung"),
+      expect.any(Object)
+    );
+    expect(addEntry).not.toHaveBeenCalled();
+  });
+
+  it("startEdit: Manual-Special-Eintrag setzt specialManualMode=true", () => {
+    const form = makeForm();
+    const { result } = mount({ form });
+    act(() =>
+      result.current.startEdit({
+        id: 77,
+        type: "sick",
+        date: "2026-04-04",
+        start: "08:00",
+        end: "12:00",
+        pause: 0,
+        project: "Krank",
+        code: null,
+      })
+    );
+    expect(form.setSpecialManualMode).toHaveBeenCalledWith(true);
+    expect(form.setStartTime).toHaveBeenCalledWith("08:00");
+    expect(form.setEndTime).toHaveBeenCalledWith("12:00");
   });
 
   it("handleSaveEntry: editingEntry → updateEntry statt addEntry", () => {

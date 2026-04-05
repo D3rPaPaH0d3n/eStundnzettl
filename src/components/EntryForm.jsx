@@ -67,8 +67,14 @@ const EntryForm = ({
   allEntries = [],
   isEditing = false,
   isLiveEntry = false,
-  userData 
+  userData,
+  specialManualMode = false,
+  setSpecialManualMode = () => {},
 }) => {
+  const isSpecialType =
+    entryType === "vacation" || entryType === "sick" || entryType === "time_comp";
+  const showTimeInputs =
+    entryType === "work" || entryType === "drive" || (isSpecialType && specialManualMode);
   
   // Work Codes aus dem Hook laden
   const { workCodes, hasAnyCodes, addCode } = useWorkCodes();
@@ -235,10 +241,30 @@ const EntryForm = ({
             </div>
           )}
             
-          {(entryType === "vacation" || entryType === "sick" || entryType === "time_comp") && (
-            <div className={`border rounded-lg p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 ${entryType === "sick" ? "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800 text-red-800 dark:text-red-300" : entryType === "vacation" ? "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-300" : "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800 text-purple-800 dark:text-purple-300"}`}>
-              {entryType === "time_comp" ? <Hourglass size={18} className="mt-0.5" /> : <Info size={18} className="mt-0.5" />}
-              <div className="text-sm"><span className="font-bold block mb-1">Automatische Berechnung</span>Für {entryType === "vacation" ? "Urlaubstage" : entryType === "sick" ? "Krankenstand" : "Zeitausgleich"} wird automatisch die tägliche Sollzeit gutgeschrieben.</div>
+          {isSpecialType && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+              {!specialManualMode && (
+                <div className={`border rounded-lg p-3 flex items-start gap-3 ${entryType === "sick" ? "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800 text-red-800 dark:text-red-300" : entryType === "vacation" ? "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-300" : "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800 text-purple-800 dark:text-purple-300"}`}>
+                  {entryType === "time_comp" ? <Hourglass size={18} className="mt-0.5" /> : <Info size={18} className="mt-0.5" />}
+                  <div className="text-sm"><span className="font-bold block mb-1">Automatische Berechnung</span>Für {entryType === "vacation" ? "Urlaubstage" : entryType === "sick" ? "Krankenstand" : "Zeitausgleich"} wird automatisch die tägliche Sollzeit gutgeschrieben.</div>
+                </div>
+              )}
+              <div className="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setSpecialManualMode(false)}
+                  className={`py-2 rounded-lg text-xs font-bold transition-all ${!specialManualMode ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}
+                >
+                  Automatisch
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSpecialManualMode(true)}
+                  className={`py-2 rounded-lg text-xs font-bold transition-all ${specialManualMode ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}
+                >
+                  Manuell
+                </button>
+              </div>
             </div>
           )}
 
@@ -267,7 +293,7 @@ const EntryForm = ({
             </div>
           </div>
 
-          {(entryType === "work" || entryType === "drive") && (
+          {showTimeInputs && (
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -358,42 +384,44 @@ const EntryForm = ({
                 </div>
               )}
 
-              <div className="space-y-1 relative">
-                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{entryType === "drive" || code === WORK_CODE.ARRIVAL ? "Strecke / Notiz" : "Projekt"}</label>
-                <input 
-                  type="text" 
-                  value={project} 
-                  onChange={handleProjectChange} 
-                  onFocus={() => { if(project) handleProjectChange({target: {value: project}}) }}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  className="w-full p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg outline-none dark:text-white focus:border-emerald-500 transition-colors" 
-                  placeholder="..." 
-                />
-                
-                <AnimatePresence>
-                  {showSuggestions && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="relative z-50 mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl overflow-hidden overflow-y-auto"
-                    >
-                      <div className="bg-zinc-50 dark:bg-zinc-900/50 px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase border-b border-zinc-100 dark:border-zinc-700 flex items-center gap-1">
-                        <History size={10} /> Bekannte Projekte
-                      </div>
-                      {suggestions.map((s, idx) => (
-                        <div 
-                          key={idx}
-                          onMouseDown={() => selectSuggestion(s)}
-                          className="px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer border-b border-zinc-50 dark:border-zinc-700 last:border-0"
-                        >
-                          {s}
+              {(entryType === "work" || entryType === "drive") && (
+                <div className="space-y-1 relative">
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{entryType === "drive" || code === WORK_CODE.ARRIVAL ? "Strecke / Notiz" : "Projekt"}</label>
+                  <input
+                    type="text"
+                    value={project}
+                    onChange={handleProjectChange}
+                    onFocus={() => { if(project) handleProjectChange({target: {value: project}}) }}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    className="w-full p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg outline-none dark:text-white focus:border-emerald-500 transition-colors"
+                    placeholder="..."
+                  />
+
+                  <AnimatePresence>
+                    {showSuggestions && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="relative z-50 mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl overflow-hidden overflow-y-auto"
+                      >
+                        <div className="bg-zinc-50 dark:bg-zinc-900/50 px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase border-b border-zinc-100 dark:border-zinc-700 flex items-center gap-1">
+                          <History size={10} /> Bekannte Projekte
                         </div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                        {suggestions.map((s, idx) => (
+                          <div
+                            key={idx}
+                            onMouseDown={() => selectSuggestion(s)}
+                            className="px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer border-b border-zinc-50 dark:border-zinc-700 last:border-0"
+                          >
+                            {s}
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
             </>
           )}
 

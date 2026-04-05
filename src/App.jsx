@@ -422,6 +422,8 @@ export default function App() {
                   isEditing={!!form.editingEntry}
                   isLiveEntry={form.isLiveEntry}
                   userData={userData}
+                  specialManualMode={form.specialManualMode}
+                  setSpecialManualMode={form.setSpecialManualMode}
                 />
               </Suspense>
             </motion.div>

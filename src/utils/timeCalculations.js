@@ -62,14 +62,25 @@ export const calculateEntryNetDuration = ({
   formDate,
   userData,
   code,
+  specialManualMode = false,
 }) => {
   const isDrive = entryType === "drive" || code === WORK_CODE.DRIVE;
+  const isSpecial =
+    entryType === "vacation" || entryType === "sick" || entryType === "time_comp";
 
   if (entryType === "work" || isDrive) {
     const startMinutes = parseTime(startTime);
     const endMinutes = parseTime(endTime);
     const usedPause = isDrive ? 0 : pauseDuration;
     return Math.max(0, endMinutes - startMinutes - usedPause);
+  }
+
+  // Krank/Urlaub/ZA im Manual-Modus: Stunden werden direkt aus Start/Ende
+  // berechnet, genau wie bei einem normalen Eintrag (ohne Pause-Abzug).
+  if (isSpecial && specialManualMode && startTime && endTime) {
+    const startMinutes = parseTime(startTime);
+    const endMinutes = parseTime(endTime);
+    return Math.max(0, endMinutes - startMinutes);
   }
 
   return Math.max(

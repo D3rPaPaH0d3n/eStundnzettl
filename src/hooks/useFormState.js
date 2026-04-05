@@ -27,6 +27,10 @@ export function useFormState({ getDefaultCode }) {
   const [code, setCode] = useState(WORK_CODE.DEFAULT);
   const [editingEntry, setEditingEntry] = useState(null);
   const [isLiveEntry, setIsLiveEntry] = useState(false);
+  // Nur relevant für Krank/Urlaub/ZA: wenn true, gibt der Nutzer Start/Ende
+  // wie bei einem normalen Eintrag manuell an, statt die automatische
+  // Sollzeit-Gutschrift zu verwenden.
+  const [specialManualMode, setSpecialManualMode] = useState(false);
 
   // --- Reset to defaults (for new entry) ---
   const resetForm = () => {
@@ -39,20 +43,30 @@ export function useFormState({ getDefaultCode }) {
     setCode(getDefaultCode());
     setEditingEntry(null);
     setIsLiveEntry(false);
+    setSpecialManualMode(false);
   };
 
   // --- Populate from existing entry (edit mode) ---
   const startEdit = (entry) => {
     const isDrive = entry.type === "work" && entry.code === WORK_CODE.DRIVE;
+    const isSpecial =
+      entry.type === "vacation" || entry.type === "sick" || entry.type === "time_comp";
+    const specialManual = isSpecial && !!entry.start && !!entry.end;
     setEditingEntry(entry);
     setEntryType(isDrive ? "drive" : entry.type);
     setFormDate(entry.date);
+    setSpecialManualMode(specialManual);
     if (entry.type === "work") {
       setStartTime(entry.start || DEFAULTS.startTime);
       setEndTime(entry.end || DEFAULTS.endTime);
       setPauseDuration(isDrive ? 0 : entry.pause ?? 0);
       setCode(entry.code ?? getDefaultCode());
       setProject(entry.project || "");
+    } else if (specialManual) {
+      setStartTime(entry.start);
+      setEndTime(entry.end);
+      setPauseDuration(0);
+      setProject("");
     } else {
       setPauseDuration(0);
       setProject("");
@@ -71,6 +85,7 @@ export function useFormState({ getDefaultCode }) {
     code, setCode,
     editingEntry, setEditingEntry,
     isLiveEntry, setIsLiveEntry,
+    specialManualMode, setSpecialManualMode,
     // Actions
     resetForm,
     startEdit,

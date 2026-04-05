@@ -53,6 +53,7 @@ export function useEntryActions({
     form.setProject("");
     form.setCode(getDefaultCode());
     form.setIsLiveEntry(false);
+    form.setSpecialManualMode?.(false);
     setView("add");
   }, [form, getDefaultCode, getDefaultTimesForDate, setView]);
 
@@ -60,14 +61,23 @@ export function useEntryActions({
     (entry) => {
       form.setEditingEntry(entry);
       const isDrive = entry.type === "work" && entry.code === WORK_CODE.DRIVE;
+      const isSpecial =
+        entry.type === "vacation" || entry.type === "sick" || entry.type === "time_comp";
+      const specialManual = isSpecial && !!entry.start && !!entry.end;
       form.setEntryType(isDrive ? "drive" : entry.type);
       form.setFormDate(entry.date);
+      form.setSpecialManualMode?.(specialManual);
       if (entry.type === "work") {
         form.setStartTime(entry.start || "06:00");
         form.setEndTime(entry.end || "16:30");
         form.setPauseDuration(isDrive ? 0 : entry.pause ?? 0);
         form.setCode(entry.code ?? getDefaultCode());
         form.setProject(entry.project || "");
+      } else if (specialManual) {
+        form.setStartTime(entry.start);
+        form.setEndTime(entry.end);
+        form.setPauseDuration(0);
+        form.setProject("");
       } else {
         form.setPauseDuration(0);
         form.setProject("");
@@ -82,10 +92,16 @@ export function useEntryActions({
     (e) => {
       e.preventDefault();
       const isDrive = form.entryType === "drive";
+      const isSpecial =
+        form.entryType === "vacation" ||
+        form.entryType === "sick" ||
+        form.entryType === "time_comp";
+      const isManualSpecial = isSpecial && !!form.specialManualMode;
+      const hasTimeInputs = form.entryType === "work" || isDrive || isManualSpecial;
       let net = 0;
       let label = "";
 
-      if (form.entryType === "work" || isDrive) {
+      if (hasTimeInputs) {
         const s = parseTime(form.startTime);
         const en = parseTime(form.endTime);
         if (en <= s) {
@@ -108,7 +124,6 @@ export function useEntryActions({
           return;
         }
 
-        const usedCode = isDrive ? WORK_CODE.DRIVE : form.code;
         net = calculateEntryNetDuration({
           entryType: form.entryType,
           startTime: form.startTime,
@@ -117,9 +132,21 @@ export function useEntryActions({
           formDate: form.formDate,
           userData,
           code: form.code,
+          specialManualMode: isManualSpecial,
         });
-        label =
-          workCodes.find((c) => c.id === usedCode)?.label || (isDrive ? "Fahrzeit" : "Arbeit");
+
+        if (isManualSpecial) {
+          label =
+            form.entryType === "vacation"
+              ? "Urlaub"
+              : form.entryType === "sick"
+              ? "Krank"
+              : "Zeitausgleich";
+        } else {
+          const usedCode = isDrive ? WORK_CODE.DRIVE : form.code;
+          label =
+            workCodes.find((c) => c.id === usedCode)?.label || (isDrive ? "Fahrzeit" : "Arbeit");
+        }
       } else {
         net = calculateEntryNetDuration({
           entryType: form.entryType,
@@ -142,13 +169,16 @@ export function useEntryActions({
       const storedType = isDrive ? "work" : form.entryType;
       const usedCode = isDrive ? WORK_CODE.DRIVE : form.code;
       const usedPause = storedType === "work" ? (isDrive ? 0 : form.pauseDuration) : 0;
+      // Im Manual-Modus für Krank/Urlaub/ZA persistieren wir Start/Ende,
+      // damit der Edit-Pfad sie wieder erkennen kann.
+      const persistTimes = storedType === "work" || isManualSpecial;
 
       const newEntry = {
         id: form.editingEntry ? form.editingEntry.id : generateEntryId(),
         type: storedType,
         date: form.formDate,
-        start: storedType === "work" ? form.startTime : null,
-        end: storedType === "work" ? form.endTime : null,
+        start: persistTimes ? form.startTime : null,
+        end: persistTimes ? form.endTime : null,
         pause: usedPause,
         project: storedType === "work" ? form.project : label,
         code: storedType === "work" ? usedCode : null,
@@ -171,6 +201,7 @@ export function useEntryActions({
       form.setEditingEntry(null);
       form.setProject("");
       form.setEntryType("work");
+      form.setSpecialManualMode?.(false);
       setView("dashboard");
     },
     [form, entries, workCodes, userData, addEntry, updateEntry, setView]

@@ -11,6 +11,8 @@ from googleapiclient.errors import HttpError
 
 PACKAGE = "com.estundnzettl.app"
 AAB_PATH = "android/app/build/outputs/bundle/release/app-release.aab"
+# Track: 'internal' (default), 'beta' (Open Testing), 'alpha' (Closed Testing), 'production'
+TRACK = os.environ.get("PLAY_TRACK", "internal")
 
 with open("android/app/build.gradle") as f:
     content = f.read()
@@ -36,7 +38,7 @@ print(f"Bundle uploaded: versionCode {vc}")
 
 try:
     track = service.edits().tracks().get(
-        packageName=PACKAGE, editId=edit_id, track="internal"
+        packageName=PACKAGE, editId=edit_id, track=TRACK
     ).execute()
     releases = track.get("releases", [])
 except HttpError:
@@ -45,12 +47,12 @@ except HttpError:
 new_releases = [{
     "versionCodes": [str(vc)],
     "status": "completed",
-    "name": f"v{vc} - GitHub Actions Auto-Deploy"
+    "name": f"v{vc} - GitHub Actions Auto-Deploy ({TRACK})"
 }]
 service.edits().tracks().update(
-    packageName=PACKAGE, editId=edit_id, track="internal",
+    packageName=PACKAGE, editId=edit_id, track=TRACK,
     body={"releases": new_releases}
 ).execute()
 
 commit = service.edits().commit(packageName=PACKAGE, editId=edit_id).execute()
-print(f"✅ Deployed versionCode {vc} to Internal Testing!")
+print(f"✅ Deployed versionCode {vc} to track '{TRACK}'!")

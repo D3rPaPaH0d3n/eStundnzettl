@@ -221,6 +221,10 @@ export function useAutoPdfArchive(entries, userData, workCodes) {
   // Startup-Check (einmalig beim Mount, verzoegert damit DB-/Settings-Loads
   // abgeschlossen sind)
   useEffect(() => {
+    // Selbstheilung: falls ein frueherer Lauf durch einen Hang (z.B. alte
+    // Buggy-Version der PDF-Generierung) den Running-Flag blockiert hat,
+    // hier explizit zuruecksetzen. Kostet nichts, schuetzt vor stuck state.
+    isRunning.current = false;
     const timer = setTimeout(() => {
       performRun({ source: "startup" });
     }, 3000);

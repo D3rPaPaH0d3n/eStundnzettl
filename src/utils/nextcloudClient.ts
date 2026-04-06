@@ -189,25 +189,25 @@ export async function pollLoginResult(pollEndpoint: string, token: string): Prom
       appPassword: data.appPassword,
     };
   } catch (error) {
-    return buildError('NETWORK_ERROR', error?.message || 'Netzwerkfehler bei der Verbindung zu Nextcloud', undefined, true);
+    return buildError('NETWORK_ERROR', (error as any)?.message || 'Netzwerkfehler bei der Verbindung zu Nextcloud', undefined, true);
   }
 }
 
 const BACKUP_FOLDER = "eStundnzettl";
 const BACKUP_FILENAME = "estundnzettl_backup.json";
 const DIRECT_ROOT_UPLOAD = false;
-const verifiedFolderCache = new Map();
-const resolvedDavUserCache = new Map();
+const verifiedFolderCache = new Map<string, boolean>();
+const resolvedDavUserCache = new Map<string, string>();
 const NEXTCLOUD_RATE_LIMIT_KEY = "estundnzettl_nextcloud_rate_limit_until";
 const DEFAULT_RATE_LIMIT_MS = 30000;
 
 /** URL normalisieren: trailing slash entfernen */
-function normalizeUrl(url) {
+function normalizeUrl(url: string): string {
   return url.replace(/\/+$/, "");
 }
 
 /** Basic Auth Header erzeugen */
-function authHeaders(user, pass) {
+function authHeaders(user: string, pass: string): Record<string, string> {
   return {
     Authorization: "Basic " + btoa(user + ":" + pass),
   };

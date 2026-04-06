@@ -169,7 +169,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
 
     if (file.size > MAX_IMPORT_SIZE) {
       toast.error("Datei zu groß (max. 10 MB)");
-      event.target.value = "";
+      (event.target as HTMLInputElement).value = "";
       return;
     }
 
@@ -204,10 +204,10 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
         if (d.user && typeof d.user === "object") setUserData(d.user);
         if (d.workCodes && Array.isArray(d.workCodes) && importWorkCodes) importWorkCodes(d.workCodes);
         toast.success("Daten erfolgreich importiert!");
-      } catch (err) {
+      } catch (err: any) {
         toast.error(`Fehler: ${err.message || "Datei ungültig."}`);
       } finally {
-        event.target.value = "";
+        (event.target as HTMLInputElement).value = "";
       }
     };
     reader.readAsText(file);

@@ -69,6 +69,11 @@ jobs:
           fetch-depth: 0  # Brauchen wir für git log (Changelog) und Tags
           ref: ${{ github.ref }}  # Explizit Branch auschecken (nicht detached HEAD)
 
+      - name: Pull latest changes
+        run: |
+          git pull origin "${{ github.ref_name }}" --ff-only
+          echo "📌 HEAD ist jetzt: $(git log --oneline -1)"
+
       # ── 2. Node.js Setup + Dependencies ──────────────────────────────
       - name: Set up Node.js
         uses: actions/setup-node@v4

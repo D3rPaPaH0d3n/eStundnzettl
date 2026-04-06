@@ -4,7 +4,7 @@
 #
 # WANN LÄUFT DAS?
 #   - Bei jedem Push auf "main" (außer der Commit enthält [skip ci])
-#   - Oder manuell über GitHub Actions → "Run workflow"
+#   - Oder manuell über GitHub Actions → "Run workflow" (beliebiger Branch)
 #
 # WAS PASSIERT? (in dieser Reihenfolge)
 #   1. Code auschecken
@@ -226,10 +226,11 @@ jobs:
           git add android/app/build.gradle package.json
 
           # Nur committen wenn es Änderungen gibt
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
           if ! git diff --staged --quiet; then
             git commit -m "chore: release metadata for v$NEW_NAME [skip ci]"
-            git push origin main
-            echo "✅ Release-Metadaten für v$NEW_NAME committed und gepusht"
+            git push origin "$CURRENT_BRANCH"
+            echo "✅ Release-Metadaten für v$NEW_NAME committed und gepusht (Branch: $CURRENT_BRANCH)"
           else
             echo "ℹ️ Keine Änderungen zu committen"
           fi

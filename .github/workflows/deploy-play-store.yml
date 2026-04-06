@@ -88,6 +88,9 @@ jobs:
       # versionName: Semver String — package.json ist Single Point of Truth!
       #              build.gradle wird aus package.json gespiegelt, NICHT andersrum.
       #              Vite liest die Version aus package.json via __APP_VERSION__.
+      #
+      # WICHTIG: Der höchste versionCode wird direkt aus der Play Console
+      # abgefragt, damit es nie zu Duplikaten kommt — egal von welchem Branch.
       - name: Read current version
         id: read_version
         run: |
@@ -95,7 +98,46 @@ jobs:
           NAME=$(node -p "require('./package.json').version")
           echo "code=$CODE" >> $GITHUB_OUTPUT
           echo "name=$NAME" >> $GITHUB_OUTPUT
-          echo "📌 Aktuelle Version: $NAME (versionCode $CODE)"
+          echo "📌 Lokale Version: $NAME (versionCode $CODE)"
+
+      - name: Query highest versionCode from Play Console
+        id: play_version
+        env:
+          PLAY_DEPLOY_KEY_BASE64: ${{ secrets.PLAY_DEPLOY_KEY_BASE64 }}
+        run: |
+          echo "$PLAY_DEPLOY_KEY_BASE64" | base64 -d > /tmp/play-key.json
+          pip install google-auth google-api-python-client -q
+
+          HIGHEST=$(python3 << 'PYEOF'
+          from google.oauth2 import service_account
+          from googleapiclient.discovery import build
+
+          creds = service_account.Credentials.from_service_account_file(
+              '/tmp/play-key.json',
+              scopes=['https://www.googleapis.com/auth/androidpublisher']
+          )
+          service = build('androidpublisher', 'v3', credentials=creds)
+          pkg = 'com.estundnzettl.app'
+
+          edit = service.edits().insert(body={}, packageName=pkg).execute()
+          highest = 0
+          for track_name in ['internal', 'alpha', 'beta', 'production']:
+              try:
+                  track = service.edits().tracks().get(
+                      packageName=pkg, editId=edit['id'], track=track_name
+                  ).execute()
+                  for rel in track.get('releases', []):
+                      for code in rel.get('versionCodes', []):
+                          highest = max(highest, int(code))
+              except Exception:
+                  pass
+          service.edits().delete(packageName=pkg, editId=edit['id']).execute()
+          print(highest)
+          PYEOF
+          )
+
+          echo "highest=$HIGHEST" >> $GITHUB_OUTPUT
+          echo "🔍 Höchster versionCode im Play Store: $HIGHEST"
 
       - name: Prepare release version
         id: bump
@@ -108,7 +150,17 @@ jobs:
 
           OLD_CODE=${{ steps.read_version.outputs.code }}
           OLD_NAME=${{ steps.read_version.outputs.name }}
-          NEW_CODE=$((OLD_CODE + 1))
+          PLAY_HIGHEST=${{ steps.play_version.outputs.highest }}
+
+          # Nimm den höheren Wert: lokal oder Play Store
+          if [ "$PLAY_HIGHEST" -gt "$OLD_CODE" ]; then
+            BASE_CODE=$PLAY_HIGHEST
+            echo "⚠️ Play Store hat höheren versionCode ($PLAY_HIGHEST) als lokal ($OLD_CODE) — verwende Play Store als Basis"
+          else
+            BASE_CODE=$OLD_CODE
+          fi
+
+          NEW_CODE=$((BASE_CODE + 1))
           NEW_NAME="$OLD_NAME"
 
           if [ "$BUMP_TYPE" != "none" ]; then

@@ -8,7 +8,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist', 'android', '**/*.backup', 'coverage']),
   {
-    files: ['**/*.{js,jsx}'],
+    files: ['**/*.{js,jsx,ts,tsx}'],
     extends: [
       js.configs.recommended,
       react.configs.flat.recommended,
@@ -54,7 +54,7 @@ export default defineConfig([
   },
   // Tests dürfen Vitest-Globals nutzen und entspanntere Regeln
   {
-    files: ['**/__tests__/**/*.{js,jsx}', '**/*.test.{js,jsx}'],
+    files: ['**/__tests__/**/*.{js,jsx,ts,tsx}', '**/*.test.{js,jsx,ts,tsx}'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
     },

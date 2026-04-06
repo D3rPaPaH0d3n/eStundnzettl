@@ -89,6 +89,7 @@ const Dashboard: React.FC<Props> = ({
   };
 
   const monthlyOvertimeSplit = stats.overtimeSplit || { mehrarbeit: 0, ueberstunden: 0 };
+  const simpleMode = !!userData?.simpleMode;
 
   // FIX 1: Sortierung der Wochen nach Datum (Startdatum der Einträge), nicht nach KW-Nummer.
   const workCodeLabelMap = useMemo<Map<number, string>>(
@@ -166,7 +167,8 @@ const Dashboard: React.FC<Props> = ({
               <p className="text-2xl font-bold text-zinc-900 dark:text-white leading-none">{formatTime(stats.totalIst)}</p>
             </div>
             
-            {/* SOLL & SALDO RECHTS */}
+            {/* SOLL & SALDO RECHTS (nur im Vollmodus) */}
+            {!simpleMode && (
             <div className="flex gap-6 text-right">
                 <div>
                     <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider mb-0.5">SOLL</p>
@@ -179,12 +181,15 @@ const Dashboard: React.FC<Props> = ({
                     </p>
                 </div>
             </div>
+            )}
           </div>
-          
-          {/* PROGRESS BAR */}
+
+          {/* PROGRESS BAR (nur im Vollmodus) */}
+          {!simpleMode && (
           <div className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2.5 overflow-hidden">
             <motion.div initial={{ width: 0 }} animate={{ width: `${progressPercent}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className={`h-full rounded-full ${overtime >= 0 ? "bg-emerald-500" : "bg-orange-500"}`} />
           </div>
+          )}
 
           {/* FOOTER INFO */}
           <div className="flex flex-wrap justify-between items-center text-xs pt-1">
@@ -194,6 +199,7 @@ const Dashboard: React.FC<Props> = ({
                )}
              </div>
 
+             {!simpleMode && (
              <div className="text-right flex items-center gap-3 ml-auto">
                     {stats.normalstunden != null && stats.normalstunden > 0 && (
                         <span className="text-zinc-600 dark:text-zinc-300 font-medium">
@@ -211,6 +217,7 @@ const Dashboard: React.FC<Props> = ({
                         </span>
                     )}
              </div>
+             )}
           </div>
         </div>
       </Card>
@@ -272,11 +279,11 @@ const Dashboard: React.FC<Props> = ({
                         
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <div className="text-sm flex gap-3">
-                                <span className={totalHoursColorClass}>{formatTime(workMinutes)}</span>
-                                <span className={balanceColorClass}> {diff >= 0 ? "+" : "-"}{formatTime(Math.abs(diff))} </span>
+                                <span className={simpleMode ? "text-zinc-700 dark:text-zinc-300 font-bold" : totalHoursColorClass}>{formatTime(workMinutes)}</span>
+                                {!simpleMode && <span className={balanceColorClass}> {diff >= 0 ? "+" : "-"}{formatTime(Math.abs(diff))} </span>}
                             </div>
 
-                            {diff > 0 && (mehrarbeit > 0 || ueberstunden > 0) && (
+                            {!simpleMode && diff > 0 && (mehrarbeit > 0 || ueberstunden > 0) && (
                                 <div className="text-[10px] flex items-center gap-2 opacity-80">
                                     {mehrarbeit > 0 && (
                                         <span className="text-blue-600 dark:text-blue-400 font-medium">

@@ -488,6 +488,8 @@ const ReportDocument: React.FC<Props> = ({
                 <span>Gesamt (IST):</span>
                 <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.totalIst)}</span>
               </div>
+              {!userData?.simpleMode && (
+              <>
               {safeStats.normalstunden > 0 && (
                 <div
                   style={{
@@ -564,6 +566,8 @@ const ReportDocument: React.FC<Props> = ({
                     </div>
                   )}
                 </div>
+              )}
+              </>
               )}
             </div>
           </div>

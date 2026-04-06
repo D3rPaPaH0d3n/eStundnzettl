@@ -43,6 +43,7 @@ export interface UserData {
   position: string;
   photo: string | null;
   workDays: number[];       // 7 elements, index 0=Sunday, values in minutes
+  simpleMode?: boolean;     // nur Aufzeichnung, keine Soll/Ist-Berechnung
 }
 
 // ─── Timer State ─────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Briefcase, Check, Info } from "lucide-react";
+import { Briefcase, Check, Info, ClipboardList, Calculator } from "lucide-react";
 import { WORK_MODELS } from "../../../hooks/constants";
 
 import type { WorkModel } from "../../../types";
@@ -8,6 +8,7 @@ import type { WorkModel } from "../../../types";
 /**
  * Onboarding-Schritt 2: Arbeitszeit-Modell auswählen.
  *
+ * - Mode-Auswahl: "Nur Aufzeichnung" (simpleMode) oder "Soll/Ist-Berechnung"
  * - Liste der vordefinierten Modelle (38,5 h, 40 h, 4-Tage-Woche ...)
  * - Falls der User ein eigenes Modell einstellt (isCustomModelActive),
  *   erscheinen Slider für die Tages-Arbeitszeiten (So ... Sa).
@@ -23,6 +24,7 @@ interface OnboardingFormData {
   autoBackup: boolean;
   localBackupEnabled: boolean;
   minuteInput: boolean;
+  simpleMode?: boolean;
 }
 
 interface Props {
@@ -34,6 +36,7 @@ interface Props {
   totalWeeklyMinutes: number;
   minToHours: (m: number) => string;
   onMinuteInputToggle: () => void;
+  onSimpleModeToggle: () => void;
 }
 
 const WorkScheduleStep: React.FC<Props> = ({
@@ -45,7 +48,10 @@ const WorkScheduleStep: React.FC<Props> = ({
   totalWeeklyMinutes,
   minToHours,
   onMinuteInputToggle,
+  onSimpleModeToggle,
 }) => {
+  const simpleMode = !!formData.simpleMode;
+
   return (
     <motion.div
       key="step2"
@@ -58,17 +64,58 @@ const WorkScheduleStep: React.FC<Props> = ({
         <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600">
           <Briefcase size={32} />
         </div>
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Wie viel arbeitest du?</h2>
-        <p className="text-zinc-500 dark:text-zinc-400">Damit wir Soll, Ist & Überstunden richtig rechnen.</p>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Wie willst du erfassen?</h2>
+        <p className="text-zinc-500 dark:text-zinc-400">Wähle den Modus, der am besten zu dir passt.</p>
       </div>
 
-      <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40">
-        <Info size={14} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-        <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-          Wähl einfach das Modell, das am besten passt. Kannst du später in den
-          Einstellungen jederzeit ändern — auch tageweise individuell.
-        </p>
+      {/* Mode-Auswahl */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={() => { if (!simpleMode) return; onSimpleModeToggle(); }}
+          className={`p-4 rounded-xl border-2 text-center transition-all ${
+            !simpleMode
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+              : "border-zinc-200 dark:border-zinc-700 hover:border-blue-300"
+          }`}
+        >
+          <Calculator size={24} className="mx-auto mb-2 text-blue-600" />
+          <div className="font-bold text-sm text-zinc-800 dark:text-white">Soll/Ist</div>
+          <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">Mit Überstunden & Saldo</div>
+        </button>
+        <button
+          type="button"
+          onClick={() => { if (simpleMode) return; onSimpleModeToggle(); }}
+          className={`p-4 rounded-xl border-2 text-center transition-all ${
+            simpleMode
+              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+              : "border-zinc-200 dark:border-zinc-700 hover:border-emerald-300"
+          }`}
+        >
+          <ClipboardList size={24} className="mx-auto mb-2 text-emerald-600" />
+          <div className="font-bold text-sm text-zinc-800 dark:text-white">Einfach</div>
+          <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">Nur Stunden aufzeichnen</div>
+        </button>
       </div>
+
+      {simpleMode && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
+          <Info size={14} className="text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">
+            Deine Stunden werden wochen- und monatsweise summiert — ohne Soll, Saldo oder Überstunden. Du kannst den Modus später in den Einstellungen ändern.
+          </p>
+        </div>
+      )}
+
+      {!simpleMode && (
+        <>
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40">
+            <Info size={14} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+              Wähl einfach das Modell, das am besten passt. Kannst du später in den
+              Einstellungen jederzeit ändern — auch tageweise individuell.
+            </p>
+          </div>
 
       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
         {WORK_MODELS.map((model) => (
@@ -135,6 +182,8 @@ const WorkScheduleStep: React.FC<Props> = ({
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* Minütige Zeiteingabe Toggle */}
       <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">

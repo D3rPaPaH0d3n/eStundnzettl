@@ -37,6 +37,7 @@ interface MonthStats {
   totalIst: number;
   totalTarget: number;
   drive: number;
+  normalstunden?: number;
   overtimeSplit?: OvertimeSplit;
 }
 
@@ -193,21 +194,23 @@ const Dashboard: React.FC<Props> = ({
                )}
              </div>
 
-             {(monthlyOvertimeSplit.mehrarbeit > 0 || monthlyOvertimeSplit.ueberstunden > 0) && (
-                <div className="text-right flex items-center gap-3 ml-auto">
+             <div className="text-right flex items-center gap-3 ml-auto">
+                    {stats.normalstunden != null && stats.normalstunden > 0 && (
+                        <span className="text-zinc-600 dark:text-zinc-300 font-medium">
+                            {formatTime(stats.normalstunden)} <span className="text-zinc-400 dark:text-zinc-500 font-normal text-[10px]">Normal</span>
+                        </span>
+                    )}
                     {monthlyOvertimeSplit.mehrarbeit > 0 && (
                         <span className="text-blue-600 dark:text-blue-400 font-medium">
                             {formatTime(monthlyOvertimeSplit.mehrarbeit)} <span className="text-zinc-400 dark:text-zinc-500 font-normal text-[10px]">MA</span>
                         </span>
                     )}
-                    
                     {monthlyOvertimeSplit.ueberstunden > 0 && (
                         <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                             {formatTime(monthlyOvertimeSplit.ueberstunden)} <span className="text-zinc-400 dark:text-zinc-500 font-normal text-[10px]">ÜS</span>
                         </span>
                     )}
-                </div>
-             )}
+             </div>
           </div>
         </div>
       </Card>

@@ -41,6 +41,7 @@ interface ReportStats {
   totalIst: number;
   totalTarget: number;
   totalSaldo: number;
+  normalstunden: number;
   overtimeSplit: OvertimeSplit;
 }
 
@@ -110,7 +111,7 @@ const ReportDocument: React.FC<Props> = ({
   // Fallback-Stats, damit die Komponente auch ohne usePeriodStats laeuft.
   const safeStats = stats || {
     work: 0, drive: 0, vacation: 0, sick: 0, holiday: 0, timeComp: 0,
-    totalIst: 0, totalTarget: 0, totalSaldo: 0,
+    totalIst: 0, totalTarget: 0, totalSaldo: 0, normalstunden: 0,
     overtimeSplit: { mehrarbeit: 0, ueberstunden: 0 },
   };
 
@@ -487,6 +488,20 @@ const ReportDocument: React.FC<Props> = ({
                 <span>Gesamt (IST):</span>
                 <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.totalIst)}</span>
               </div>
+              {safeStats.normalstunden > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.8rem",
+                    marginBottom: "0.1rem",
+                    color: PRINT_STYLES.textMedium,
+                  }}
+                >
+                  <span>Normalstunden:</span>
+                  <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.normalstunden)}</span>
+                </div>
+              )}
               <div
                 style={{
                   display: "flex",

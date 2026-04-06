@@ -24,6 +24,7 @@ interface PeriodStatsResult {
   totalIst: number;
   totalTarget: number;
   totalSaldo: number;
+  normalstunden: number;
   overtimeSplit: OvertimeSplit;
 }
 
@@ -90,6 +91,23 @@ export const calculateOvertimeSplit = (balanceMinutes: number, targetMinutes: nu
   const ueberstunden = Math.max(0, balanceMinutes - mehrarbeit);
 
   return { mehrarbeit, ueberstunden };
+};
+
+/**
+ * Berechnet die effektive Krankzeit für einen gemischten Tag
+ * (Arbeit + Krank am selben Tag).
+ *
+ * Regel: Krankzeit füllt nur bis zur Tages-Sollzeit auf.
+ * Wenn bereits genug gearbeitet wurde → Krankzeit = 0.
+ */
+export const adjustSickDuration = (
+  sickNetDuration: number,
+  workMinutesOnDay: number,
+  dayTarget: number
+): number => {
+  if (dayTarget <= 0) return 0;
+  if (workMinutesOnDay >= dayTarget) return 0;
+  return Math.min(sickNetDuration, Math.max(0, dayTarget - workMinutesOnDay));
 };
 
 export const calculateEntryNetDuration = ({
@@ -188,6 +206,7 @@ export const calculatePeriodStats = (
     totalIst: 0,
     totalTarget: 0,
     totalSaldo: 0,
+    normalstunden: 0,
     overtimeSplit: { mehrarbeit: 0, ueberstunden: 0 },
   };
 
@@ -202,21 +221,37 @@ export const calculatePeriodStats = (
     String(periodEnd.getDate()).padStart(2, "0"),
   ].join("-");
 
+  // ─── Tagesbasierte Maps aufbauen ─────────────────────────────
+  const dayWorkMap: Record<string, number> = {};
+  const daySickRawMap: Record<string, number> = {};
+  const dayOtherMap: Record<string, number> = {};
+
   entries.forEach((e) => {
     if (e.date < startStr || e.date > endStr) return;
-
+    const dur = e.netDuration || 0;
     if (e.type === "work") {
-      if (e.code === WORK_CODE.DRIVE) stats.drive += e.netDuration;
-      else stats.work += e.netDuration;
+      if (e.code === WORK_CODE.DRIVE) {
+        stats.drive += dur;
+      } else {
+        stats.work += dur;
+        dayWorkMap[e.date] = (dayWorkMap[e.date] || 0) + dur;
+      }
+    } else if (e.type === "sick") {
+      daySickRawMap[e.date] = (daySickRawMap[e.date] || 0) + dur;
+    } else if (e.type === "vacation") {
+      stats.vacation += dur;
+      dayOtherMap[e.date] = (dayOtherMap[e.date] || 0) + dur;
+    } else if (e.type === "public_holiday") {
+      stats.holiday += dur;
+      dayOtherMap[e.date] = (dayOtherMap[e.date] || 0) + dur;
+    } else if (e.type === "time_comp") {
+      stats.timeComp += dur;
+      dayOtherMap[e.date] = (dayOtherMap[e.date] || 0) + dur;
     }
-    if (e.type === "vacation") stats.vacation += e.netDuration;
-    if (e.type === "sick") stats.sick += e.netDuration;
-    if (e.type === "public_holiday") stats.holiday += e.netDuration;
-    if (e.type === "time_comp") stats.timeComp += e.netDuration;
   });
 
-  stats.totalIst =
-    stats.work + stats.vacation + stats.sick + stats.holiday + stats.timeComp;
+  // ─── Tagesschleife: Target, Krank-Korrektur, Normalstunden, dayActualMap ─
+  const dayActualMap: Record<string, number> = {};
 
   const loopDate = new Date(periodStart);
   loopDate.setHours(0, 0, 0, 0);
@@ -233,9 +268,34 @@ export const calculatePeriodStats = (
     const target = getTargetMinutesForDate(dateStr, userData?.workDays);
     stats.totalTarget += target;
 
+    const dayWork = dayWorkMap[dateStr] || 0;
+    const daySickRaw = daySickRawMap[dateStr] || 0;
+    const dayOther = dayOtherMap[dateStr] || 0;
+
+    // Gemischter Tag: Krankzeit nur bis Sollzeit auffüllen
+    const adjustedSick = (daySickRaw > 0 && dayWork > 0)
+      ? adjustSickDuration(daySickRaw, dayWork, target)
+      : daySickRaw;
+
+    const dayActual = dayWork + adjustedSick + dayOther;
+    dayActualMap[dateStr] = dayActual;
+    stats.normalstunden += Math.min(dayActual, target);
+
     loopDate.setDate(loopDate.getDate() + 1);
   }
 
+  // ─── Korrigierte Sick-Gesamtsumme (nach Krank-Korrektur) ────
+  stats.sick = 0;
+  for (const dateStr of Object.keys(daySickRawMap)) {
+    const dayWork = dayWorkMap[dateStr] || 0;
+    const target = getTargetMinutesForDate(dateStr, userData?.workDays);
+    stats.sick += (dayWork > 0)
+      ? adjustSickDuration(daySickRawMap[dateStr], dayWork, target)
+      : daySickRawMap[dateStr];
+  }
+
+  stats.totalIst =
+    stats.work + stats.vacation + stats.sick + stats.holiday + stats.timeComp;
   stats.totalSaldo = stats.totalIst - stats.totalTarget;
 
   // ───── Mehrarbeit / Überstunden per ISO-Woche (Donnerstag-Regel) ─────
@@ -284,20 +344,23 @@ export const calculatePeriodStats = (
         const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
         weekTarget += dayTarget;
 
-        // Zähle Arbeitstage (Target > 0) für proportionale Aufteilung
         if (dayTarget > 0) {
           workDaysTotal++;
           if (dayStr >= startStr && dayStr <= endStr) workDaysInPeriod++;
         }
 
         const inPeriod = dayStr >= startStr && dayStr <= endStr;
-        const source = inPeriod ? entries : boundarySource;
-
-        source.forEach((e) => {
-          if (e.date !== dayStr) return;
-          if (e.type === "work" && e.code === WORK_CODE.DRIVE) return;
-          weekActual += e.netDuration || 0;
-        });
+        if (inPeriod) {
+          // In-Period: vorberechnete dayActualMap nutzen (inkl. Krank-Korrektur)
+          weekActual += dayActualMap[dayStr] || 0;
+        } else {
+          // Out-of-Period: aus boundarySource summieren
+          boundarySource.forEach((e) => {
+            if (e.date !== dayStr) return;
+            if (e.type === "work" && e.code === WORK_CODE.DRIVE) return;
+            weekActual += e.netDuration || 0;
+          });
+        }
       }
 
       // Nur wenn mindestens ein Arbeitstag dieser Woche im Zeitraum liegt
@@ -327,13 +390,7 @@ export const calculatePeriodStats = (
             const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
             if (dayTarget === 0) continue;
 
-            let dayActual = 0;
-            entries.forEach((e) => {
-              if (e.date !== dayStr) return;
-              if (e.type === "work" && e.code === WORK_CODE.DRIVE) return;
-              dayActual += e.netDuration || 0;
-            });
-
+            const dayActual = dayActualMap[dayStr] || 0;
             if (dayActual > dayTarget) {
               stats.overtimeSplit.ueberstunden += (dayActual - dayTarget);
             }

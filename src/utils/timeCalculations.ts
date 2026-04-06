@@ -238,16 +238,19 @@ export const calculatePeriodStats = (
 
   stats.totalSaldo = stats.totalIst - stats.totalTarget;
 
-  // ───── Mehrarbeit / Überstunden per voller ISO-Woche ─────
+  // ───── Mehrarbeit / Überstunden per ISO-Woche (Donnerstag-Regel) ─────
   //
   // Rechtliche Grundlage (Österreich, AZG):
   //   - Mehrarbeit = Stunden zwischen Vertragssoll (z.B. 38,5h) und 40h/Woche
   //   - Überstunden = Stunden über 40h/Woche
-  //   - Berechnung erfolgt IMMER pro voller ISO-Woche (Mo–So)
+  //   - Berechnung erfolgt pro voller ISO-Woche (Mo–So)
   //
-  // Zuordnung: Eine Woche zählt zu dem Monat, in dem ihr Donnerstag liegt
-  // (ISO-Regel). Bei Monatsübergang wird die volle Woche berechnet, aber
-  // das Ergebnis proportional nach Arbeitstagen im Monat aufgeteilt.
+  // Zuordnung (Donnerstag-Regel):
+  //   - Eine Woche gehört zu dem Monat, in dem ihr Donnerstag liegt.
+  //   - Liegt der Donnerstag im Monat → volle Woche MA/ÜS (kein Split).
+  //   - Liegt der Donnerstag NICHT im Monat → nur die Rand-Tage dieses
+  //     Monats werden auf tägliche ÜS geprüft (IST > SOLL → ÜS).
+  //     Keine Mehrarbeit für Rand-Tage (wöchentliche Schwelle unerreichbar).
   //
   // Für in-Periode liegende Tage werden die gefilterten `entries` verwendet
   // (inkl. evtl. synthetisch ergänzter Feiertage), für out-of-period Tage
@@ -299,18 +302,43 @@ export const calculatePeriodStats = (
 
       // Nur wenn mindestens ein Arbeitstag dieser Woche im Zeitraum liegt
       if (workDaysInPeriod > 0) {
-        // Volle Woche berechnen (rechtlich korrekt: 40h-Grenze gilt pro Woche)
-        const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
-          weekActual - weekTarget,
-          weekTarget
-        );
+        // Donnerstag der Woche bestimmen (Monday + 3 Tage)
+        const thursday = new Date(monday);
+        thursday.setDate(monday.getDate() + 3);
+        const thursdayStr = toLocalDateStr(thursday);
+        const thursdayInPeriod = thursdayStr >= startStr && thursdayStr <= endStr;
 
-        // Proportional nach Arbeitstagen im Zeitraum aufteilen.
-        // Liegt die komplette Woche im Zeitraum → ratio = 1 (100%).
-        // Bei Monatsübergang → nur der faire Anteil des Monats.
-        const ratio = workDaysTotal > 0 ? workDaysInPeriod / workDaysTotal : 1;
-        stats.overtimeSplit.mehrarbeit += Math.round(mehrarbeit * ratio);
-        stats.overtimeSplit.ueberstunden += Math.round(ueberstunden * ratio);
+        if (thursdayInPeriod) {
+          // ── DONNERSTAG IM MONAT: volle Woche, kein proportionaler Split ──
+          const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
+            weekActual - weekTarget,
+            weekTarget
+          );
+          stats.overtimeSplit.mehrarbeit += mehrarbeit;
+          stats.overtimeSplit.ueberstunden += ueberstunden;
+        } else {
+          // ── RAND-TAGE: Woche gehört anderem Monat → nur tägliche ÜS ──
+          for (let i = 0; i < 7; i++) {
+            const dayDate = new Date(monday);
+            dayDate.setDate(monday.getDate() + i);
+            const dayStr = toLocalDateStr(dayDate);
+            if (dayStr < startStr || dayStr > endStr) continue;
+
+            const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
+            if (dayTarget === 0) continue;
+
+            let dayActual = 0;
+            entries.forEach((e) => {
+              if (e.date !== dayStr) return;
+              if (e.type === "work" && e.code === WORK_CODE.DRIVE) return;
+              dayActual += e.netDuration || 0;
+            });
+
+            if (dayActual > dayTarget) {
+              stats.overtimeSplit.ueberstunden += (dayActual - dayTarget);
+            }
+          }
+        }
       }
     }
 

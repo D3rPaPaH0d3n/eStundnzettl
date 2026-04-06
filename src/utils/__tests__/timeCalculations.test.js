@@ -182,11 +182,9 @@ describe("calculatePeriodStats", () => {
     expect(stats.drive).toBe(60);
   });
 
-  it("teilt MA/ÜS proportional bei Monatsübergang auf (April-Anteil)", () => {
-    // Szenario: KW14 geht Mo 30.3. – So 5.4.
-    // Mo/Di (März) je 7h = 420 min, Mi/Do (April) je 10h = 600 min, Fr 5h = 300 min.
-    // Volle Woche: Soll 2310, Ist 2340, Diff = 30 → 30 min MA.
-    // April hat 3 von 5 Arbeitstagen → April bekommt 30 * 3/5 = 18 min MA.
+  it("Donnerstag-Regel: April bekommt volle Woche MA/ÜS (Do im April)", () => {
+    // KW14: Mo 30.3. – So 5.4. Donnerstag = 02.04 → liegt in April.
+    // Volle Woche: Soll 2310, Ist 2340, Diff = 30 → 30 min MA komplett an April.
     const userData = { workDays: null };
     const allEntries = [
       { id: 1, date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 420 },
@@ -203,13 +201,13 @@ describe("calculatePeriodStats", () => {
       new Date(2026, 3, 30),
       allEntries
     );
-    expect(stats.overtimeSplit.mehrarbeit).toBe(18);
+    expect(stats.overtimeSplit.mehrarbeit).toBe(30);
     expect(stats.overtimeSplit.ueberstunden).toBe(0);
   });
 
-  it("teilt MA/ÜS proportional bei Monatsübergang auf (März-Anteil)", () => {
-    // Gleiche KW14 wie oben, aber aus März-Sicht.
-    // März hat 2 von 5 Arbeitstagen → März bekommt 30 * 2/5 = 12 min MA.
+  it("Rand-Tage ohne täglichen Überschuss → keine MA, keine ÜS", () => {
+    // KW14: Do=02.04 liegt NICHT in März → Rand-Tage.
+    // Mo 30.03 (IST=420, SOLL=510) und Di 31.03 (IST=420, SOLL=510): IST < SOLL.
     const userData = { workDays: null };
     const allEntries = [
       { id: 1, date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 420 },
@@ -226,9 +224,31 @@ describe("calculatePeriodStats", () => {
       new Date(2026, 2, 31),
       allEntries
     );
-    // März bekommt seinen fairen Anteil: 30 * 2/5 = 12 min MA.
-    expect(stats.overtimeSplit.mehrarbeit).toBe(12);
+    expect(stats.overtimeSplit.mehrarbeit).toBe(0);
     expect(stats.overtimeSplit.ueberstunden).toBe(0);
+  });
+
+  it("Rand-Tage mit täglichem Überschuss → tägliche ÜS, keine MA", () => {
+    // KW14: Mo 30.03 (IST=600, SOLL=510 → 90 ÜS), Di 31.03 (IST=540, SOLL=510 → 30 ÜS).
+    // Do=02.04 liegt in April → März = Rand-Tage → 0 MA, 120 min ÜS.
+    const userData = { workDays: null };
+    const allEntries = [
+      { id: 1, date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
+      { id: 2, date: "2026-03-31", type: "work", code: WORK_CODE.OFFICE, netDuration: 540 },
+      { id: 3, date: "2026-04-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: 4, date: "2026-04-02", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: 5, date: "2026-04-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 270 },
+    ];
+    const marchEntries = allEntries.filter((e) => e.date.startsWith("2026-03"));
+    const stats = calculatePeriodStats(
+      marchEntries,
+      userData,
+      new Date(2026, 2, 1),
+      new Date(2026, 2, 31),
+      allEntries
+    );
+    expect(stats.overtimeSplit.mehrarbeit).toBe(0);
+    expect(stats.overtimeSplit.ueberstunden).toBe(120);
   });
 
   it("split Plus-Saldo korrekt in Mehrarbeit und Überstunden", () => {

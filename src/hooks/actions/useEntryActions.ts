@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import type { Entry, UserData, WorkCode } from '../../types';
 import { toLocalDateString } from "../../utils";
-import { parseTime, calculateEntryNetDuration } from "../../utils/timeCalculations";
+import { parseTime, calculateEntryNetDuration, getTargetMinutesForDate } from "../../utils/timeCalculations";
 import { generateEntryId } from "../../utils/entryId";
 import { dualWriteSync } from "../../utils/dualWrite";
 import { STORAGE_KEYS, WORK_CODE } from "../constants";
@@ -177,6 +177,20 @@ export function useEntryActions({
             : "Zeitausgleich";
       }
       if (net < 0) net = 0;
+
+      // Gemischter Krank-Tag: netDuration nur bis Rest-Sollzeit
+      if (form.entryType === "sick" && !isManualSpecial) {
+        const existingWork = entries
+          .filter((ex) => ex.date === form.formDate && ex.type === "work"
+                  && ex.code !== WORK_CODE.DRIVE
+                  && (!form.editingEntry || ex.id !== form.editingEntry.id))
+          .reduce((sum, ex) => sum + (ex.netDuration || 0), 0);
+
+        if (existingWork > 0) {
+          const dayTarget = getTargetMinutesForDate(form.formDate, userData?.workDays);
+          net = Math.max(0, dayTarget - existingWork);
+        }
+      }
 
       const storedType = isDrive ? "work" : form.entryType;
       const usedCode = isDrive ? WORK_CODE.DRIVE : form.code;

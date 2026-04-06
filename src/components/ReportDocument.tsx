@@ -108,6 +108,7 @@ const ReportDocument: React.FC<Props> = ({
     [entries, userData]
   );
 
+
   // Fallback-Stats, damit die Komponente auch ohne usePeriodStats laeuft.
   const safeStats = stats || {
     work: 0, drive: 0, vacation: 0, sick: 0, holiday: 0, timeComp: 0,
@@ -488,6 +489,8 @@ const ReportDocument: React.FC<Props> = ({
                 <span>Gesamt (IST):</span>
                 <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.totalIst)}</span>
               </div>
+              {!userData?.simpleMode && (
+              <>
               {safeStats.normalstunden > 0 && (
                 <div
                   style={{
@@ -564,6 +567,8 @@ const ReportDocument: React.FC<Props> = ({
                     </div>
                   )}
                 </div>
+              )}
+              </>
               )}
             </div>
           </div>

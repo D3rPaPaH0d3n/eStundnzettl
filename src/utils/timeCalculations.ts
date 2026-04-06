@@ -145,11 +145,38 @@ export const calculateEntryNetDuration = ({
   );
 };
 
+/**
+ * SINGLE SOURCE OF TRUTH für Krank-Korrektur.
+ *
+ * Gibt eine Kopie der Entry-Liste zurück, in der Sick-Entries bei
+ * gemischten Tagen (Arbeit + Krank) korrigierte netDuration-Werte haben.
+ * Alle Downstream-Funktionen (calculatePeriodStats, buildDayBalanceMetaMap,
+ * calculateDisplayedDayMinutes, Dashboard, ReportDocument) verwenden diese
+ * korrigierten Entries — keine zusätzliche Sonderlogik nötig.
+ */
+export const applyEffectiveDurations = (entries: Entry[], userData: UserData | null): Entry[] => {
+  // Arbeitszeit pro Tag summieren (exkl. Fahrzeit)
+  const dayWorkMap: Record<string, number> = {};
+  entries.forEach((e) => {
+    if (e.type === "work" && e.code !== WORK_CODE.DRIVE) {
+      dayWorkMap[e.date] = (dayWorkMap[e.date] || 0) + (e.netDuration || 0);
+    }
+  });
+
+  return entries.map((e) => {
+    if (e.type !== "sick") return e;
+    const dayWork = dayWorkMap[e.date] || 0;
+    if (dayWork <= 0) return e;
+    const target = getTargetMinutesForDate(e.date, userData?.workDays);
+    const adjusted = adjustSickDuration(e.netDuration || 0, dayWork, target);
+    if (adjusted === (e.netDuration || 0)) return e;
+    return { ...e, netDuration: adjusted };
+  });
+};
+
 export const calculateDisplayedDayMinutes = (entries: Entry[]): number => {
   return entries.reduce((acc, entry) => {
-    if (entry.type === "work" && entry.code === WORK_CODE.DRIVE) {
-      return acc;
-    }
+    if (entry.type === "work" && entry.code === WORK_CODE.DRIVE) return acc;
     return acc + (entry.netDuration || 0);
   }, 0);
 };
@@ -221,38 +248,29 @@ export const calculatePeriodStats = (
     String(periodEnd.getDate()).padStart(2, "0"),
   ].join("-");
 
-  // ─── Tagesbasierte Maps aufbauen ─────────────────────────────
-  const dayWorkMap: Record<string, number> = {};
-  const daySickRawMap: Record<string, number> = {};
-  const dayOtherMap: Record<string, number> = {};
+  // ─── Entry-Aggregation (Entries haben bereits korrigierte netDuration
+  //     via applyEffectiveDurations — keine Krank-Sonderlogik nötig) ────
+  const dayActualMap: Record<string, number> = {};
 
   entries.forEach((e) => {
     if (e.date < startStr || e.date > endStr) return;
     const dur = e.netDuration || 0;
     if (e.type === "work") {
-      if (e.code === WORK_CODE.DRIVE) {
-        stats.drive += dur;
-      } else {
-        stats.work += dur;
-        dayWorkMap[e.date] = (dayWorkMap[e.date] || 0) + dur;
-      }
-    } else if (e.type === "sick") {
-      daySickRawMap[e.date] = (daySickRawMap[e.date] || 0) + dur;
-    } else if (e.type === "vacation") {
-      stats.vacation += dur;
-      dayOtherMap[e.date] = (dayOtherMap[e.date] || 0) + dur;
-    } else if (e.type === "public_holiday") {
-      stats.holiday += dur;
-      dayOtherMap[e.date] = (dayOtherMap[e.date] || 0) + dur;
-    } else if (e.type === "time_comp") {
-      stats.timeComp += dur;
-      dayOtherMap[e.date] = (dayOtherMap[e.date] || 0) + dur;
+      if (e.code === WORK_CODE.DRIVE) stats.drive += dur;
+      else stats.work += dur;
+    }
+    if (e.type === "vacation") stats.vacation += dur;
+    if (e.type === "sick") stats.sick += dur;
+    if (e.type === "public_holiday") stats.holiday += dur;
+    if (e.type === "time_comp") stats.timeComp += dur;
+
+    // dayActualMap für Wochen-Berechnung (exkl. Fahrzeit)
+    if (!(e.type === "work" && e.code === WORK_CODE.DRIVE)) {
+      dayActualMap[e.date] = (dayActualMap[e.date] || 0) + dur;
     }
   });
 
-  // ─── Tagesschleife: Target, Krank-Korrektur, Normalstunden, dayActualMap ─
-  const dayActualMap: Record<string, number> = {};
-
+  // ─── Tagesschleife: Target + Normalstunden ────────────────────
   const loopDate = new Date(periodStart);
   loopDate.setHours(0, 0, 0, 0);
   const loopEnd = new Date(periodEnd);
@@ -268,30 +286,10 @@ export const calculatePeriodStats = (
     const target = getTargetMinutesForDate(dateStr, userData?.workDays);
     stats.totalTarget += target;
 
-    const dayWork = dayWorkMap[dateStr] || 0;
-    const daySickRaw = daySickRawMap[dateStr] || 0;
-    const dayOther = dayOtherMap[dateStr] || 0;
-
-    // Gemischter Tag: Krankzeit nur bis Sollzeit auffüllen
-    const adjustedSick = (daySickRaw > 0 && dayWork > 0)
-      ? adjustSickDuration(daySickRaw, dayWork, target)
-      : daySickRaw;
-
-    const dayActual = dayWork + adjustedSick + dayOther;
-    dayActualMap[dateStr] = dayActual;
+    const dayActual = dayActualMap[dateStr] || 0;
     stats.normalstunden += Math.min(dayActual, target);
 
     loopDate.setDate(loopDate.getDate() + 1);
-  }
-
-  // ─── Korrigierte Sick-Gesamtsumme (nach Krank-Korrektur) ────
-  stats.sick = 0;
-  for (const dateStr of Object.keys(daySickRawMap)) {
-    const dayWork = dayWorkMap[dateStr] || 0;
-    const target = getTargetMinutesForDate(dateStr, userData?.workDays);
-    stats.sick += (dayWork > 0)
-      ? adjustSickDuration(daySickRawMap[dateStr], dayWork, target)
-      : daySickRawMap[dateStr];
   }
 
   stats.totalIst =

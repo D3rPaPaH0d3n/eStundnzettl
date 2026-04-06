@@ -42,6 +42,7 @@ interface FormData {
   autoBackup: boolean;
   localBackupEnabled: boolean;
   minuteInput: boolean;
+  simpleMode?: boolean;
 }
 
 interface NcCredentials {
@@ -284,6 +285,17 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     setFormData(p => ({...p, minuteInput: !p.minuteInput}));
   };
 
+  const handleSimpleModeToggle = () => {
+    setFormData(p => {
+      const newSimple = !p.simpleMode;
+      return {
+        ...p,
+        simpleMode: newSimple,
+        workDays: newSimple ? [0, 0, 0, 0, 0, 0, 0] : WORK_MODELS[0].days,
+      };
+    });
+  };
+
   // --- FINISH (BUGFIX: Persistenz korrigiert) ---
   const finishSetup = async () => {
     const userDataToSave = {
@@ -293,6 +305,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       position: formData.role,
       photo: formData.photo,
       workDays: formData.workDays,
+      simpleMode: formData.simpleMode || false,
       minuteInput: formData.minuteInput,
       settings: {
         autoBackup: formData.autoBackup,
@@ -559,6 +572,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                 totalWeeklyMinutes={totalWeeklyMinutes}
                 minToHours={minToHours}
                 onMinuteInputToggle={handleMinuteInputToggle}
+                onSimpleModeToggle={handleSimpleModeToggle}
               />
             )}
 

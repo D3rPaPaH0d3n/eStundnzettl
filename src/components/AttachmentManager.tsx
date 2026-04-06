@@ -18,7 +18,7 @@ interface Props {
   onClose: () => void;
   entry: Entry | null;
   attachments?: Attachment[];
-  addAttachment: (data: { entryId: number | string; file: File; label: string }) => Promise<void>;
+  addAttachment: (data: { entryId: number | string; file: File; label: string }) => Promise<any>;
   removeAttachment: (attachmentId: string) => Promise<void>;
   getLabelSuggestions: (input: string) => string[];
   formatFileSize: (bytes: number) => string;

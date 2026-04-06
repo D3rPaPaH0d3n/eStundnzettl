@@ -14,7 +14,7 @@ import {
 
 const log = logger.scope("PdfArchiveSettings");
 
-async function dualWrite(lsKey, sqlKey, value) {
+async function dualWrite(lsKey: string, sqlKey: string, value: string) {
   const prev = localStorage.getItem(lsKey);
   localStorage.setItem(lsKey, String(value));
   if (isSQLiteActive()) {
@@ -28,16 +28,23 @@ async function dualWrite(lsKey, sqlKey, value) {
   }
 }
 
-const readBool = (key) => localStorage.getItem(key) === "true";
+const readBool = (key: string) => localStorage.getItem(key) === "true";
 
-const formatLastRun = (dateStr) => {
+const formatLastRun = (dateStr: string | null | undefined) => {
   if (!dateStr) return "Noch nicht ausgefuehrt";
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 };
 
-const PdfArchiveSettings = ({ nextcloudEnabled, performRun, lastRun, lastError }) => {
+interface Props {
+  nextcloudEnabled: boolean;
+  performRun: (opts: any) => Promise<any>;
+  lastRun?: string | null;
+  lastError?: string | null;
+}
+
+const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, lastRun, lastError }) => {
   const [enabled, setEnabled] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_ENABLED));
   const [localTarget, setLocalTarget] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_LOCAL));
   const [nextcloudTarget, setNextcloudTarget] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD));

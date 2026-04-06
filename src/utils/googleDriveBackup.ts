@@ -323,7 +323,7 @@ const listBackupFiles = async (): Promise<Record<string, unknown>[]> => {
   return data?.files || [];
 };
 
-const findLatestBackupFile = async () => {
+const findLatestBackupFile = async (): Promise<Record<string, unknown> | null> => {
   const candidates = [BACKUP_CONFIG.FILENAME, BACKUP_CONFIG.LEGACY_FILENAME];
 
   for (const fileName of candidates) {
@@ -342,7 +342,7 @@ const findLatestBackupFile = async () => {
   return null;
 };
 
-const downloadBackupFileContent = async (fileId) => {
+const downloadBackupFileContent = async (fileId: string): Promise<unknown> => {
   const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
   const response = await authFetch(url, { method: 'GET' });
   if (!response.ok) {

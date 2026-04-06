@@ -45,18 +45,18 @@ const sanitizeFileName = (name: string = "dokument"): string => {
   return safe || "dokument";
 };
 
-const getExtension = (fileName = "") => {
+const getExtension = (fileName: string = ""): string => {
   const parts = fileName.split(".");
   return parts.length > 1 ? parts.pop().toLowerCase() : "bin";
 };
 
-const ensureNative = () => {
+const ensureNative = (): void => {
   if (!Capacitor.isNativePlatform()) {
     throw new Error("Dokumente werden aktuell nur in der Android-App unterstützt.");
   }
 };
 
-const fileToBase64 = (file) =>
+const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -82,8 +82,8 @@ const fileToBase64 = (file) =>
  */
 export function useAttachments() {
   // Sofort aus localStorage laden (schnelle UI, kein async-Warten)
-  const [attachments, setAttachments] = useState(() => readJson(STORAGE_KEYS.ATTACHMENTS, []));
-  const [labelSuggestions, setLabelSuggestions] = useState(() => readJson(STORAGE_KEYS.ATTACHMENT_LABELS, []));
+  const [attachments, setAttachments] = useState<Attachment[]>(() => readJson<Attachment[]>(STORAGE_KEYS.ATTACHMENTS, []));
+  const [labelSuggestions, setLabelSuggestions] = useState<string[]>(() => readJson<string[]>(STORAGE_KEYS.ATTACHMENT_LABELS, []));
 
   // ─── SQLite nachladen beim Start ───────────────────────────
   useEffect(() => {

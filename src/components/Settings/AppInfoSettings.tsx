@@ -10,7 +10,14 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
 import { APP_VERSION } from "../../hooks/constants";
 
-const AppInfoSettings = ({
+interface Props {
+  onCheckUpdate?: () => void;
+  onDeleteAll?: () => void;
+  onShowHelp?: () => void;
+  onShowChangelog?: () => void;
+}
+
+const AppInfoSettings: React.FC<Props> = ({
   onCheckUpdate,
   onDeleteAll,
   onShowHelp,

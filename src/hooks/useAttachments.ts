@@ -131,7 +131,7 @@ export function useAttachments() {
 
   // ─── Label-Suggestion Update (SQLite + State) ─────────────
 
-  const updateSuggestions = useCallback((label) => {
+  const updateSuggestions = useCallback((label: string) => {
     const trimmed = (label || "").trim();
     if (!trimmed) return;
 
@@ -152,7 +152,7 @@ export function useAttachments() {
 
   // ─── Add Attachment ───────────────────────────────────────
 
-  const addAttachment = useCallback(async ({ entryId, file, label }) => {
+  const addAttachment = useCallback(async ({ entryId, file, label }: { entryId: number | string; file: File; label: string }) => {
     ensureNative();
 
     if (!entryId) throw new Error("Eintrag fehlt.");
@@ -208,8 +208,8 @@ export function useAttachments() {
 
   // ─── Remove Attachment ────────────────────────────────────
 
-  const removeAttachment = useCallback(async (attachmentId) => {
-    let removed = null;
+  const removeAttachment = useCallback(async (attachmentId: string) => {
+    let removed: Attachment | null = null;
 
     setAttachments((prev) => {
       removed = prev.find((item) => item.id === attachmentId) || null;
@@ -238,7 +238,7 @@ export function useAttachments() {
 
   // ─── Remove all Attachments for an Entry ──────────────────
 
-  const removeAttachmentsForEntry = useCallback(async (entryId) => {
+  const removeAttachmentsForEntry = useCallback(async (entryId: number | string) => {
     const matching = attachments.filter((item) => item.entryId === entryId);
 
     // SQLite: Bulk-Delete per entryId (effizienter als einzeln)
@@ -255,18 +255,18 @@ export function useAttachments() {
 
   // ─── Read Helpers (unverändert) ───────────────────────────
 
-  const getAttachmentsForEntry = useCallback((entryId) => {
+  const getAttachmentsForEntry = useCallback((entryId: number | string) => {
     return attachments
       .filter((item) => item.entryId === entryId)
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   }, [attachments]);
 
-  const getAttachmentsForEntries = useCallback((entryIds) => {
+  const getAttachmentsForEntries = useCallback((entryIds: (number | string)[]) => {
     const idSet = new Set(entryIds);
     return attachments.filter((item) => idSet.has(item.entryId));
   }, [attachments]);
 
-  const getLabelSuggestions = useCallback((query = "") => {
+  const getLabelSuggestions = useCallback((query: string = "") => {
     const trimmed = query.trim().toLowerCase();
     if (!trimmed) return labelSuggestions.slice(0, 6);
     return labelSuggestions
@@ -274,7 +274,7 @@ export function useAttachments() {
       .slice(0, 6);
   }, [labelSuggestions]);
 
-  const readAttachmentFile = useCallback(async (attachment) => {
+  const readAttachmentFile = useCallback(async (attachment: Attachment) => {
     ensureNative();
     const result = await Filesystem.readFile({
       path: attachment.storagePath,
@@ -283,7 +283,7 @@ export function useAttachments() {
     return result.data;
   }, []);
 
-  const formatFileSize = useCallback((bytes) => {
+  const formatFileSize = useCallback((bytes: number) => {
     if (!bytes) return "0 KB";
     if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;

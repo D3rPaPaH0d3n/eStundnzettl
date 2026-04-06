@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, MutableRefObject } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import toast from "react-hot-toast";
+import type { Entry, UserData, WorkCode, Attachment, BackupPayload } from '../types';
 import { exportToSelectedFolder, attachBackupChecksum, verifyBackupIntegrity } from "../utils/storageBackup";
 import { toLocalDateString } from "../utils";
 import { filterValidEntries } from "../schemas/entry";
@@ -19,7 +20,18 @@ import { logger } from "../utils/logger";
  * @param {Function} importWorkCodes — callback to import work codes
  * @returns {Object} export state + handlers
  */
-export function useExport({ entries, userData, workCodes, attachments = [], importEntries, setUserData, importWorkCodes, exportPayloadRef }) {
+interface UseExportProps {
+  entries: Entry[];
+  userData: UserData;
+  workCodes: WorkCode[];
+  attachments?: Attachment[];
+  importEntries: (entries: Entry[]) => void;
+  setUserData: (data: UserData) => void;
+  importWorkCodes?: (codes: WorkCode[]) => void;
+  exportPayloadRef: MutableRefObject<BackupPayload | null>;
+}
+
+export function useExport({ entries, userData, workCodes, attachments = [], importEntries, setUserData, importWorkCodes, exportPayloadRef }: UseExportProps) {
   const [showExportModal, setShowExportModal] = useState(false);
 
   const buildPayload = async () => {
@@ -151,8 +163,8 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
   // --- Import from JSON file ---
   const MAX_IMPORT_SIZE = 10 * 1024 * 1024; // 10 MB
 
-  const handleImport = (event) => {
-    const file = event.target.files?.[0];
+  const handleImport = (event: Event) => {
+    const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
 
     if (file.size > MAX_IMPORT_SIZE) {
@@ -162,9 +174,9 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
     }
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = async (e: ProgressEvent<FileReader>) => {
       try {
-        const d = JSON.parse(e.target.result);
+        const d = JSON.parse(e.target?.result as string);
         if (d && typeof d !== "object") throw new Error("Ungültiges Format");
 
         // Integritäts-Check: Mismatch = mögliche Manipulation, nur Warnung

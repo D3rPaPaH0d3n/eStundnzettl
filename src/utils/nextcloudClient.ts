@@ -8,7 +8,18 @@ import { NextcloudLoginFlow } from '../plugins/NextcloudLoginFlowPlugin';
  * Web bleibt beim fetch-Fallback.
  */
 
-function buildError(code, message, httpStatus, retriable = false) {
+interface NcResult {
+  ok: boolean;
+  error?: { code: string; message: string; httpStatus?: number; retriable: boolean };
+  [key: string]: unknown;
+}
+
+interface NativeHttpResult {
+  status: number;
+  body: string;
+}
+
+function buildError(code: string, message: string, httpStatus?: number, retriable: boolean = false): NcResult {
   return {
     ok: false,
     error: {
@@ -20,7 +31,7 @@ function buildError(code, message, httpStatus, retriable = false) {
   };
 }
 
-function normalizeServerUrl(serverUrl) {
+function normalizeServerUrl(serverUrl: string): NcResult {
   const input = String(serverUrl || '').trim();
   if (!input) {
     return buildError('INVALID_URL', 'Server-URL fehlt');
@@ -43,7 +54,7 @@ function normalizeServerUrl(serverUrl) {
   }
 }
 
-function validatePollInput(pollEndpoint, token) {
+function validatePollInput(pollEndpoint: string, token: string): NcResult {
   if (!pollEndpoint || typeof pollEndpoint !== 'string') {
     return buildError('INVALID_POLL_ENDPOINT', 'Poll-Endpunkt fehlt');
   }
@@ -63,7 +74,7 @@ function validatePollInput(pollEndpoint, token) {
   return { ok: true };
 }
 
-async function parseJsonResponse(response, fallbackMessage) {
+async function parseJsonResponse(response: Response, fallbackMessage: string): Promise<NcResult> {
   const httpStatus = response.status;
   const rawText = await response.text();
   const contentType = response.headers.get('content-type') || '';
@@ -72,7 +83,7 @@ async function parseJsonResponse(response, fallbackMessage) {
     return buildError('INVALID_CONTENT_TYPE', 'Server liefert HTML statt JSON', httpStatus);
   }
 
-  let data;
+  let data: unknown;
   try {
     data = rawText ? JSON.parse(rawText) : null;
   } catch {
@@ -82,7 +93,7 @@ async function parseJsonResponse(response, fallbackMessage) {
   return { ok: true, data, rawText, httpStatus };
 }
 
-export async function initiateLoginFlow(serverUrl) {
+export async function initiateLoginFlow(serverUrl: string): Promise<NcResult> {
   const normalized = normalizeServerUrl(serverUrl);
   if (!normalized.ok) return normalized;
 
@@ -90,12 +101,12 @@ export async function initiateLoginFlow(serverUrl) {
     try {
       return await NextcloudLoginFlow.startLoginFlow({ serverUrl: normalized.value });
     } catch (error) {
-      return buildError('PLUGIN_ERROR', error?.message || 'Native Android-Integration fehlgeschlagen', undefined, true);
+      return buildError('PLUGIN_ERROR', (error as any)?.message || 'Native Android-Integration fehlgeschlagen', undefined, true);
     }
   }
 
   try {
-    const response = await fetch(`${normalized.value}/index.php/login/v2`, {
+    const response = await fetch(`${(normalized as any).value}/index.php/login/v2`, {
       method: 'POST',
       headers: { Accept: 'application/json' },
     });
@@ -125,11 +136,11 @@ export async function initiateLoginFlow(serverUrl) {
       token: data.poll.token,
     };
   } catch (error) {
-    return buildError('NETWORK_ERROR', error?.message || 'Netzwerkfehler bei der Verbindung zu Nextcloud', undefined, true);
+    return buildError('NETWORK_ERROR', (error as any)?.message || 'Netzwerkfehler bei der Verbindung zu Nextcloud', undefined, true);
   }
 }
 
-export async function pollLoginResult(pollEndpoint, token) {
+export async function pollLoginResult(pollEndpoint: string, token: string): Promise<NcResult> {
   const validation = validatePollInput(pollEndpoint, token);
   if (!validation.ok) return validation;
 
@@ -137,7 +148,7 @@ export async function pollLoginResult(pollEndpoint, token) {
     try {
       return await NextcloudLoginFlow.pollLoginFlow({ pollEndpoint, token });
     } catch (error) {
-      return buildError('PLUGIN_ERROR', error?.message || 'Native Android-Integration fehlgeschlagen', undefined, true);
+      return buildError('PLUGIN_ERROR', (error as any)?.message || 'Native Android-Integration fehlgeschlagen', undefined, true);
     }
   }
 

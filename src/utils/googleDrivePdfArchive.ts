@@ -30,19 +30,19 @@ const FOLDER_ID_STORAGE_KEY = 'google_pdf_archive_folder_id';
 const ARCHIVE_FOLDER_NAME = 'eStundnzettl Archiv';
 const SESSION_TOKEN_MAX_AGE_MS = 45 * 60 * 1000;
 
-const GoogleDriveBackupPlugin = registerPlugin('GoogleDriveBackup');
+const GoogleDriveBackupPlugin: any = registerPlugin('GoogleDriveBackup');
 
 // ─────── Modul-lokaler Token-Cache (isoliert!) ───────
 
-let sessionAccessTokenPdf = null;
-let sessionTokenSavedAtPdf = 0;
+let sessionAccessTokenPdf: string | null = null;
+let sessionTokenSavedAtPdf: number = 0;
 
-const cacheSessionTokenPdf = (token) => {
+const cacheSessionTokenPdf = (token: string | null): void => {
   sessionAccessTokenPdf = token || null;
   sessionTokenSavedAtPdf = token ? Date.now() : 0;
 };
 
-const getCachedSessionTokenPdf = () => {
+const getCachedSessionTokenPdf = (): string | null => {
   if (!sessionAccessTokenPdf) return null;
   if (Date.now() - sessionTokenSavedAtPdf > SESSION_TOKEN_MAX_AGE_MS) {
     cacheSessionTokenPdf(null);
@@ -53,7 +53,7 @@ const getCachedSessionTokenPdf = () => {
 
 // ─────── Persistenter Auth-State (separater localStorage-Key) ───────
 
-const getStoredAuthPdf = () => {
+const getStoredAuthPdf = (): Record<string, unknown> | null => {
   try {
     const raw = localStorage.getItem(TOKEN_STORAGE_KEY_PDF);
     return raw ? JSON.parse(raw) : null;
@@ -62,7 +62,7 @@ const getStoredAuthPdf = () => {
   }
 };
 
-const saveStoredAuthPdf = (auth) => {
+const saveStoredAuthPdf = (auth: Record<string, unknown> | null): void => {
   localStorage.setItem(
     TOKEN_STORAGE_KEY_PDF,
     JSON.stringify({
@@ -76,7 +76,7 @@ const saveStoredAuthPdf = (auth) => {
   );
 };
 
-const clearStoredAuthPdf = () => {
+const clearStoredAuthPdf = (): void => {
   localStorage.removeItem(TOKEN_STORAGE_KEY_PDF);
   localStorage.removeItem(FOLDER_ID_STORAGE_KEY);
   cacheSessionTokenPdf(null);
@@ -84,7 +84,7 @@ const clearStoredAuthPdf = () => {
 
 // ─────── Plugin-Verfuegbarkeit ───────
 
-const nativeAvailable = async () => {
+const nativeAvailable = async (): Promise<boolean> => {
   try {
     return typeof GoogleDriveBackupPlugin?.getStatus === 'function';
   } catch {
@@ -92,8 +92,8 @@ const nativeAvailable = async () => {
   }
 };
 
-const parseNativeError = (error, fallback = 'GOOGLE_DRIVE_PDF_ERROR') => {
-  const message = String(error?.message || error || fallback);
+const parseNativeError = (error: unknown, fallback: string = 'GOOGLE_DRIVE_PDF_ERROR'): string => {
+  const message = String((error as any)?.message || error || fallback);
   if (message.includes('not implemented') || message.includes('UNAVAILABLE')) {
     return 'GOOGLE_DRIVE_NATIVE_UNAVAILABLE';
   }
@@ -111,7 +111,7 @@ const parseNativeError = (error, fallback = 'GOOGLE_DRIVE_PDF_ERROR') => {
  * wird Google den drive.file-Scope in der Regel **inkrementell** ohne erneuten
  * Consent hinzufuegen. Andernfalls erscheint ein Consent-Dialog.
  */
-export async function connectGoogleDrivePdf() {
+export async function connectGoogleDrivePdf(): Promise<Record<string, unknown>> {
   if (!(await nativeAvailable())) {
     throw new Error('GOOGLE_DRIVE_NATIVE_UNAVAILABLE');
   }
@@ -148,7 +148,7 @@ export async function connectGoogleDrivePdf() {
  * einen Status-Call mit drive.file machen, damit das Plugin seinen
  * `lastGrantedScope` auf drive.file setzt. Erst dann `disconnect()` aufrufen.
  */
-export async function disconnectGoogleDrivePdf() {
+export async function disconnectGoogleDrivePdf(): Promise<void> {
   clearStoredAuthPdf();
 
   if (!(await nativeAvailable())) return;
@@ -168,7 +168,7 @@ export async function disconnectGoogleDrivePdf() {
  * Holt einen gueltigen drive.file-Token, entweder aus dem Session-Cache oder
  * per silent refresh ueber den Plugin. Immer mit explizitem scope.
  */
-export async function getValidGoogleTokenPdf() {
+export async function getValidGoogleTokenPdf(): Promise<{ accessToken: string }> {
   const cached = getCachedSessionTokenPdf();
   if (cached) return { accessToken: cached };
 
@@ -210,7 +210,7 @@ export async function getValidGoogleTokenPdf() {
  * Status-Info fuer die Settings-UI. Kombiniert persistenten State und
  * plugin-seitigen Status, aber wieder: IMMER mit explizitem scope.
  */
-export async function getGoogleDrivePdfStatus() {
+export async function getGoogleDrivePdfStatus(): Promise<Record<string, unknown>> {
   const stored = getStoredAuthPdf();
   if (!(await nativeAvailable())) {
     return {
@@ -247,8 +247,8 @@ export async function getGoogleDrivePdfStatus() {
 
 // ─────── authFetch mit eigenem Retry-Pfad ───────
 
-async function authFetchPdf(url, options = {}) {
-  const execute = async (accessToken) =>
+async function authFetchPdf(url: string, options: RequestInit = {}): Promise<Response> {
+  const execute = async (accessToken: string): Promise<Response> =>
     fetch(url, {
       ...options,
       headers: {
@@ -285,7 +285,7 @@ async function authFetchPdf(url, options = {}) {
  * Ordner bei einem frueheren Lauf bereits erstellt haben. Wenn der Nutzer ihn
  * manuell loescht, liefert die Suche nichts → wir erstellen einen neuen.
  */
-async function findOrCreateArchiveFolder() {
+async function findOrCreateArchiveFolder(): Promise<string> {
   // Cache-Hit: ID aus localStorage
   const cached = localStorage.getItem(FOLDER_ID_STORAGE_KEY);
   if (cached) {
@@ -349,7 +349,7 @@ async function findOrCreateArchiveFolder() {
 /**
  * Findet die Datei-ID im Archiv-Ordner nach Dateiname (fuer Update statt Create).
  */
-async function findFileIdInFolder(fileName, folderId) {
+async function findFileIdInFolder(fileName: string, folderId: string): Promise<string | null> {
   const query = `name = '${fileName.replace(/'/g, "\\'")}' and '${folderId}' in parents and trashed = false`;
   const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&pageSize=1`;
   const res = await authFetchPdf(url, { method: 'GET' });
@@ -375,7 +375,7 @@ async function findFileIdInFolder(fileName, folderId) {
  * @param {string} base64    base64-kodierter PDF-Inhalt (ohne data:-Prefix)
  * @param {Blob}   [_blob]   Ignoriert — bleibt fuer API-Kompatibilitaet
  */
-export async function uploadPdfArchiveFile(filename, base64, _blob) {
+export async function uploadPdfArchiveFile(filename: string, base64: string, _blob?: Blob): Promise<unknown> {
   if (!base64 || typeof base64 !== 'string') {
     throw new Error('uploadPdfArchiveFile: base64 fehlt oder ist kein String');
   }

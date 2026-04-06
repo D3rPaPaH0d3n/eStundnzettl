@@ -6,6 +6,7 @@ import {
   getWeekNumber,
   calculateOvertimeSplit,
   adjustSickDuration,
+  applyEffectiveDurations,
   calculateEntryNetDuration,
   calculateDisplayedDayMinutes,
   calculatePeriodStats,
@@ -386,14 +387,15 @@ describe("adjustSickDuration", () => {
   });
 });
 
-describe("calculatePeriodStats — gemischte Krank-Tage", () => {
+describe("applyEffectiveDurations + calculatePeriodStats — gemischte Krank-Tage", () => {
   it("Arbeit + Krank am selben Tag → keine Doppelzählung", () => {
-    const entries = [
+    const raw = [
       { date: "2024-01-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 300 },
       { date: "2024-01-01", type: "sick", code: null, netDuration: 510 },
     ];
+    const corrected = applyEffectiveDurations(raw, { workDays: null });
     const stats = calculatePeriodStats(
-      entries,
+      corrected,
       { workDays: null },
       new Date(2024, 0, 1),
       new Date(2024, 0, 1)
@@ -407,12 +409,13 @@ describe("calculatePeriodStats — gemischte Krank-Tage", () => {
   });
 
   it("Arbeit >= Soll + Krank → Krankzeit = 0", () => {
-    const entries = [
+    const raw = [
       { date: "2024-01-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
       { date: "2024-01-01", type: "sick", code: null, netDuration: 510 },
     ];
+    const corrected = applyEffectiveDurations(raw, { workDays: null });
     const stats = calculatePeriodStats(
-      entries,
+      corrected,
       { workDays: null },
       new Date(2024, 0, 1),
       new Date(2024, 0, 1)
@@ -423,11 +426,12 @@ describe("calculatePeriodStats — gemischte Krank-Tage", () => {
   });
 
   it("voller Kranktag ohne Arbeit → unverändert", () => {
-    const entries = [
+    const raw = [
       { date: "2024-01-01", type: "sick", code: null, netDuration: 510 },
     ];
+    const corrected = applyEffectiveDurations(raw, { workDays: null });
     const stats = calculatePeriodStats(
-      entries,
+      corrected,
       { workDays: null },
       new Date(2024, 0, 1),
       new Date(2024, 0, 1)

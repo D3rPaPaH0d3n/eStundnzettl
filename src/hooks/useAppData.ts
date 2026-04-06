@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { Entry, UserData } from '../types';
 import { getHolidayData, toLocalDateString } from "../utils";
-import { getWeekNumber, getTargetMinutesForDate } from "../utils/timeCalculations";
+import { getWeekNumber, getTargetMinutesForDate, applyEffectiveDurations } from "../utils/timeCalculations";
 import { usePeriodStats } from "./usePeriodStats";
 
 /**
@@ -42,9 +42,14 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
       });
     }
 
-    return [...realEntries, ...holidayEntries].sort(
+    const merged = [...realEntries, ...holidayEntries].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
+
+    // SINGLE SOURCE OF TRUTH: Krank-Korrektur einmal anwenden.
+    // Alle Downstream-Funktionen (Stats, Dashboard, PDF) arbeiten mit
+    // den korrigierten netDuration-Werten.
+    return applyEffectiveDurations(merged, userData);
   }, [entries, viewMonth, viewYear, userData]);
 
   // Wochen-Nummern die in diesem Monat vorkommen (für Übergangswochen)
@@ -98,7 +103,13 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
     [viewMonth, viewYear]
   );
 
-  const stats = usePeriodStats(entriesWithHolidays, userData, periodStart, periodEnd, allEntries);
+  // allEntries ebenfalls korrigieren (für Boundary-Wochen)
+  const correctedAllEntries = useMemo(
+    () => allEntries ? applyEffectiveDurations(allEntries, userData) : undefined,
+    [allEntries, userData]
+  );
+
+  const stats = usePeriodStats(entriesWithHolidays, userData, periodStart, periodEnd, correctedAllEntries);
   const overtime = stats.totalSaldo;
   const progressPercent = Math.min(
     100,

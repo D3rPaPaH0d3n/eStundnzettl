@@ -23,7 +23,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import html2pdf from "html2pdf.js";
 import ReportDocument from "../components/ReportDocument";
-import { calculatePeriodStats } from "./timeCalculations";
+import { calculatePeriodStats, applyEffectiveDurations } from "./timeCalculations";
 import { logger } from "./logger";
 import type { Entry, UserData, WorkCode, Attachment } from '../types';
 
@@ -110,13 +110,14 @@ export async function renderMonthlyReportPdfBlob({
     throw new Error("renderMonthlyReportPdfBlob: year/month fehlen");
   }
 
-  const monthEntries = filterEntriesForMonth(entries, year, month);
+  // Krank-Korrektur einmal anwenden (Single Source of Truth)
+  const correctedEntries = applyEffectiveDurations(entries, userData);
+  const monthEntries = filterEntriesForMonth(correctedEntries, year, month);
   const periodStart = new Date(year, month - 1, 1);
   const periodEnd = new Date(year, month, 0);
-  // `entries` ist hier die komplette Liste aus useAutoPdfArchive → wir
-  // reichen sie als allEntries weiter, damit Mehrarbeit/Ueberstunden an
-  // Monatsuebergaengen aus der VOLLEN Woche berechnet werden.
-  const stats = calculatePeriodStats(monthEntries, userData, periodStart, periodEnd, entries);
+  // `correctedEntries` ist die komplette Liste → als allEntries weiter,
+  // damit Mehrarbeit/Ueberstunden an Monatsuebergaengen aus der VOLLEN Woche berechnet werden.
+  const stats = calculatePeriodStats(monthEntries, userData, periodStart, periodEnd, correctedEntries);
   const monthDate = new Date(year, month - 1, 1);
 
   const host = createOffscreenContainer();

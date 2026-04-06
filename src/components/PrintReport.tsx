@@ -12,6 +12,7 @@ import { blobToBase64 } from "../utils";
 import {
   getWeekNumber,
   getWeekRangeInMonth,
+  applyEffectiveDurations,
 } from "../utils/timeCalculations";
 import { usePeriodStats } from "../hooks/usePeriodStats";
 import ExportModal from "./ExportModal";
@@ -32,7 +33,9 @@ interface Props {
   readAttachmentFile: (file: Attachment) => Promise<string>;
 }
 
-const PrintReport: React.FC<Props> = ({ entries, allEntries, monthDate, employeeName, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile }) => {
+const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, monthDate, employeeName, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile }) => {
+  // Krank-Korrektur auf allEntries anwenden (entries sind bereits korrigiert via useAppData)
+  const allEntries = useMemo(() => applyEffectiveDurations(rawAllEntries, userData), [rawAllEntries, userData]);
   const [filterMode, setFilterMode] = useState<number | "month">(() => {
     const today = new Date();
     if (monthDate.getMonth() === today.getMonth() && monthDate.getFullYear() === today.getFullYear()) {

@@ -9,7 +9,12 @@ import { Check, Play, Sparkles } from "lucide-react";
  * abschließt und in die Haupt-App wechselt. Im Anschluss startet die
  * interaktive Kurz-Einweisung (AppTour) in App.jsx.
  */
-const SummaryStep = ({ hasRestoreData, onFinish }) => {
+interface Props {
+  hasRestoreData: boolean;
+  onFinish: () => void;
+}
+
+const SummaryStep: React.FC<Props> = ({ hasRestoreData, onFinish }) => {
   return (
     <motion.div
       key="step4"

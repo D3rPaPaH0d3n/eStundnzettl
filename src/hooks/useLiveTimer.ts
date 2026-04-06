@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import type { TimerState, AutoCheckoutData } from '../types';
 import { STORAGE_KEYS } from "./constants";
 
 // Hilfsfunktion: Runden auf 15 Minuten
-const roundToNearest15Minutes = (dateStrOrObj) => {
+const roundToNearest15Minutes = (dateStrOrObj: string | Date | null): Date | null => {
   if (!dateStrOrObj) return null;
   const date = new Date(dateStrOrObj);
   const minutes = date.getMinutes();
@@ -22,7 +23,7 @@ const roundToNearest15Minutes = (dateStrOrObj) => {
 };
 
 export const useLiveTimer = () => {
-  const [timerState, setTimerState] = useState(() => {
+  const [timerState, setTimerState] = useState<TimerState>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.LIVE_TIMER);
     return saved ? JSON.parse(saved) : { 
       isRunning: false, 
@@ -33,7 +34,7 @@ export const useLiveTimer = () => {
     };
   });
 
-  const [autoCheckoutData, setAutoCheckoutData] = useState(null);
+  const [autoCheckoutData, setAutoCheckoutData] = useState<AutoCheckoutData | null>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.LIVE_TIMER, JSON.stringify(timerState));

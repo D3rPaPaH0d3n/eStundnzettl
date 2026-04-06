@@ -48,7 +48,7 @@ export function useFormState({ getDefaultCode }: { getDefaultCode: () => number 
   };
 
   // --- Populate from existing entry (edit mode) ---
-  const startEdit = (entry) => {
+  const startEdit = (entry: Entry) => {
     const isDrive = entry.type === "work" && entry.code === WORK_CODE.DRIVE;
     const isSpecial =
       entry.type === "vacation" || entry.type === "sick" || entry.type === "time_comp";

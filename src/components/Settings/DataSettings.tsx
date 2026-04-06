@@ -13,7 +13,20 @@ import { bulkInsertEntries } from "../../db/repositories/entriesRepo";
 import { bulkReplaceWorkCodes } from "../../db/repositories/workCodesRepo";
 import { logger } from "../../utils/logger";
 
-const DataSettings = ({
+import type { Entry, UserData, WorkCode, WorkModel } from "../../types";
+
+interface Props {
+  userData: UserData & { workModelId?: string; minuteInput?: boolean };
+  setUserData: (data: any) => void;
+  setShowWorkCodeManager: (show: boolean) => void;
+  isLocked: boolean;
+  onToggleLock: () => void;
+  onOpenDayPicker: (index: number) => void;
+  importEntries?: (entries: Entry[]) => void;
+  importWorkCodes?: (codes: WorkCode[]) => void;
+}
+
+const DataSettings: React.FC<Props> = ({
   userData,
   setUserData,
   setShowWorkCodeManager,
@@ -39,7 +52,7 @@ const DataSettings = ({
     setIsWorkModelExpanded(true);
   }, []);
 
-  const minToHours = (m) =>
+  const minToHours = (m: number) =>
     m === 0 ? "" : Number(m / 60).toFixed(2).replace(".", ",");
 
   const toggleWorkModelExpanded = () => {
@@ -52,7 +65,7 @@ const DataSettings = ({
     setShowPresetWarning(true);
   };
 
-  const handlePresetSelect = (model) => {
+  const handlePresetSelect = (model: WorkModel & { days?: number[] }) => {
     const newUserData = { ...userData, workModelId: model.id };
     if (model.id !== "custom" && model.days) {
       newUserData.workDays = [...model.days];

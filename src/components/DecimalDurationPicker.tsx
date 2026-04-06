@@ -81,7 +81,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   const decimals = getDecimals(); 
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>, type: string) => {
-    const scrollTop = e.target.scrollTop;
+    const scrollTop = (e.target as HTMLDivElement).scrollTop;
     const index = Math.round(scrollTop / ITEM_HEIGHT);
     
     if (type === 'hour') {

@@ -3,13 +3,13 @@ import { BACKUP_CONFIG } from '../hooks/constants';
 
 const TOKEN_STORAGE_KEY = 'google_auth_state';
 const AUTH_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
-const GoogleDriveBackupPlugin = registerPlugin('GoogleDriveBackup');
+const GoogleDriveBackupPlugin: any = registerPlugin('GoogleDriveBackup');
 const SESSION_TOKEN_MAX_AGE_MS = 45 * 60 * 1000;
 
-let sessionAccessToken = null;
-let sessionTokenSavedAt = 0;
+let sessionAccessToken: string | null = null;
+let sessionTokenSavedAt: number = 0;
 
-const getStoredAuth = () => {
+const getStoredAuth = (): Record<string, unknown> | null => {
   try {
     const raw = localStorage.getItem(TOKEN_STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -18,7 +18,7 @@ const getStoredAuth = () => {
   }
 };
 
-const saveStoredAuth = (auth) => {
+const saveStoredAuth = (auth: Record<string, unknown> | null): void => {
   localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({
     scope: AUTH_SCOPE,
     savedAt: Date.now(),
@@ -30,18 +30,18 @@ const saveStoredAuth = (auth) => {
   }));
 };
 
-const clearStoredAuth = () => {
+const clearStoredAuth = (): void => {
   localStorage.removeItem(TOKEN_STORAGE_KEY);
   sessionAccessToken = null;
   sessionTokenSavedAt = 0;
 };
 
-const cacheSessionToken = (accessToken) => {
+const cacheSessionToken = (accessToken: string | null): void => {
   sessionAccessToken = accessToken || null;
   sessionTokenSavedAt = accessToken ? Date.now() : 0;
 };
 
-const getCachedSessionToken = () => {
+const getCachedSessionToken = (): string | null => {
   if (!sessionAccessToken) return null;
   if (Date.now() - sessionTokenSavedAt > SESSION_TOKEN_MAX_AGE_MS) {
     cacheSessionToken(null);
@@ -50,8 +50,8 @@ const getCachedSessionToken = () => {
   return sessionAccessToken;
 };
 
-const parseNativeError = (error, fallback = 'GOOGLE_DRIVE_NATIVE_ERROR') => {
-  const message = String(error?.message || error || fallback);
+const parseNativeError = (error: unknown, fallback: string = 'GOOGLE_DRIVE_NATIVE_ERROR'): string => {
+  const message = String((error as any)?.message || error || fallback);
   if (message.includes('not implemented') || message.includes('UNAVAILABLE')) {
     return 'GOOGLE_DRIVE_NATIVE_UNAVAILABLE';
   }
@@ -61,7 +61,7 @@ const parseNativeError = (error, fallback = 'GOOGLE_DRIVE_NATIVE_ERROR') => {
   return message;
 };
 
-const nativeAvailable = async () => {
+const nativeAvailable = async (): Promise<boolean> => {
   try {
     return typeof GoogleDriveBackupPlugin?.getStatus === 'function';
   } catch {
@@ -69,7 +69,7 @@ const nativeAvailable = async () => {
   }
 };
 
-const getNativeStatus = async () => {
+const getNativeStatus = async (): Promise<Record<string, unknown>> => {
   const stored = getStoredAuth();
 
   if (!(await nativeAvailable())) {
@@ -120,14 +120,14 @@ const getNativeStatus = async () => {
   }
 };
 
-const ensureGoogleAuthInitialized = async () => {
+const ensureGoogleAuthInitialized = async (): Promise<boolean> => {
   if (!(await nativeAvailable())) {
     throw new Error('GOOGLE_DRIVE_NATIVE_UNAVAILABLE');
   }
   return true;
 };
 
-const connectGoogleDrive = async () => {
+const connectGoogleDrive = async (): Promise<Record<string, unknown>> => {
   await ensureGoogleAuthInitialized();
 
   try {

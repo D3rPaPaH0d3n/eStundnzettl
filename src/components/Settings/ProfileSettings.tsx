@@ -5,13 +5,20 @@ import { Card } from "../../utils";
 import toast from "react-hot-toast";
 import { logger } from "../../utils/logger";
 
-const ProfileSettings = ({ userData, setUserData }) => {
-  const fileInputRef = useRef(null);
+import type { UserData } from "../../types";
+
+interface Props {
+  userData: UserData & { company?: string };
+  setUserData: (data: any) => void;
+}
+
+const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessingImg, setIsProcessingImg] = useState(false);
 
   const safeUserData = userData || {};
 
-  const processImage = (file) => {
+  const processImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -41,7 +48,7 @@ const ProfileSettings = ({ userData, setUserData }) => {
     });
   };
 
-  const handlePhotoUpload = async (e) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsProcessingImg(true);
@@ -59,7 +66,7 @@ const ProfileSettings = ({ userData, setUserData }) => {
     }
   };
 
-  const removePhoto = (e) => {
+  const removePhoto = (e: React.MouseEvent) => {
     e.stopPropagation();
     Haptics.impact({ style: ImpactStyle.Medium });
     const newData = { ...userData };

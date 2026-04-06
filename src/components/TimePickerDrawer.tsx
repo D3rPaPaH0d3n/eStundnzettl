@@ -11,25 +11,32 @@ const MIN_VELOCITY = 0.3; // Stopp-Schwelle
 
 // ─── Touch-basierte Wheel-Spalte ───────────────────────────────
 
-const WheelColumn = ({ items, selected, onSelect, align }) => {
+interface WheelColumnProps {
+  items: number[];
+  selected: number;
+  onSelect: (value: number) => void;
+  align: "left" | "right";
+}
+
+const WheelColumn = ({ items, selected, onSelect, align }: WheelColumnProps) => {
   const offsetRef = useRef(0);       // aktueller Y-Offset in px
   const velocityRef = useRef(0);
   const lastYRef = useRef(0);
   const lastTimeRef = useRef(0);
-  const animRef = useRef(null);
+  const animRef = useRef<number | null>(null);
   const touchActiveRef = useRef(false);
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState(0);
-  const prevSelectedRef = useRef(null);
+  const prevSelectedRef = useRef<number | null>(null);
 
   const maxOffset = 0;
   const minOffset = -(items.length - 1) * ITEM_H;
 
-  const clamp = (v) => Math.max(minOffset, Math.min(maxOffset, v));
-  const getIndex = (off) => Math.round(-off / ITEM_H);
+  const clamp = (v: number) => Math.max(minOffset, Math.min(maxOffset, v));
+  const getIndex = (off: number) => Math.round(-off / ITEM_H);
 
   // Snap to nearest item with spring animation
-  const snapTo = useCallback((targetOffset, immediate = false) => {
+  const snapTo = useCallback((targetOffset: number, immediate = false) => {
     if (animRef.current) cancelAnimationFrame(animRef.current);
     const target = clamp(Math.round(targetOffset / ITEM_H) * ITEM_H);
 
@@ -102,7 +109,7 @@ const WheelColumn = ({ items, selected, onSelect, align }) => {
   // Cleanup
   useEffect(() => () => { if (animRef.current) cancelAnimationFrame(animRef.current); }, []);
 
-  const onTouchStart = (e) => {
+  const onTouchStart = (e: React.TouchEvent) => {
     if (animRef.current) cancelAnimationFrame(animRef.current);
     touchActiveRef.current = true;
     const y = e.touches[0].clientY;
@@ -111,7 +118,7 @@ const WheelColumn = ({ items, selected, onSelect, align }) => {
     velocityRef.current = 0;
   };
 
-  const onTouchMove = (e) => {
+  const onTouchMove = (e: React.TouchEvent) => {
     if (!touchActiveRef.current) return;
     e.preventDefault();
     const y = e.touches[0].clientY;
@@ -136,7 +143,7 @@ const WheelColumn = ({ items, selected, onSelect, align }) => {
     }
   };
 
-  const handleClick = (val) => {
+  const handleClick = (val: number) => {
     const idx = items.indexOf(val);
     if (idx >= 0) snapTo(-idx * ITEM_H);
   };
@@ -195,10 +202,19 @@ const WheelColumn = ({ items, selected, onSelect, align }) => {
 
 // ─── Haupt-Komponente ──────────────────────────────────────────
 
-const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInterval = 15 }) => {
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  value: string | null;
+  onChange: (time: string) => void;
+  title?: string;
+  minuteInterval?: number;
+}
+
+const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInterval = 15 }: Props) => {
   const dragControls = useDragControls();
-  const selectedHourRef = useRef(6);
-  const selectedMinuteRef = useRef(0);
+  const selectedHourRef = useRef<number>(6);
+  const selectedMinuteRef = useRef<number>(0);
 
   const minutes = useMemo(
     () => (minuteInterval === 1 ? Array.from({ length: 60 }, (_, i) => i) : [0, 15, 30, 45]),
@@ -212,7 +228,7 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
   useEffect(() => { selectedHourRef.current = selectedHour; }, [selectedHour]);
   useEffect(() => { selectedMinuteRef.current = selectedMinute; }, [selectedMinute]);
 
-  const emitTime = useCallback((h, m) => {
+  const emitTime = useCallback((h: number, m: number) => {
     onChange(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
   }, [onChange]);
 
@@ -239,13 +255,13 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
     };
   }, [isOpen]);
 
-  const onSelectHour = useCallback((h) => {
+  const onSelectHour = useCallback((h: number) => {
     setSelectedHour(h);
     selectedHourRef.current = h;
     emitTime(h, selectedMinuteRef.current);
   }, [emitTime]);
 
-  const onSelectMinute = useCallback((m) => {
+  const onSelectMinute = useCallback((m: number) => {
     setSelectedMinute(m);
     selectedMinuteRef.current = m;
     emitTime(selectedHourRef.current, m);

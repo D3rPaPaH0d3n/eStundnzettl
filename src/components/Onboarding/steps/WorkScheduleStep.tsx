@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { Briefcase, Check, Info } from "lucide-react";
 import { WORK_MODELS } from "../../../hooks/constants";
 
+import type { WorkModel } from "../../../types";
+
 /**
  * Onboarding-Schritt 2: Arbeitszeit-Modell auswählen.
  *
@@ -11,7 +13,30 @@ import { WORK_MODELS } from "../../../hooks/constants";
  *   erscheinen Slider für die Tages-Arbeitszeiten (So ... Sa).
  * - Zusätzlich der "Minütige Zeiteingabe"-Toggle.
  */
-const WorkScheduleStep = ({
+
+interface OnboardingFormData {
+  name: string;
+  company: string;
+  role: string;
+  photo: string | null;
+  workDays: number[];
+  autoBackup: boolean;
+  localBackupEnabled: boolean;
+  minuteInput: boolean;
+}
+
+interface Props {
+  formData: OnboardingFormData;
+  onModelSelect: (model: WorkModel) => void;
+  onCustomDayChange: (dayIndex: number, value: string) => void;
+  isSelected: (days: number[] | undefined) => boolean;
+  isCustomModelActive: boolean;
+  totalWeeklyMinutes: number;
+  minToHours: (m: number) => string;
+  onMinuteInputToggle: () => void;
+}
+
+const WorkScheduleStep: React.FC<Props> = ({
   formData,
   onModelSelect,
   onCustomDayChange,

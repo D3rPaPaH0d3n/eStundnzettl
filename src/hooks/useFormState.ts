@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { Entry, EntryType } from '../types';
 import { WORK_CODE } from "./constants";
 import { toLocalDateString } from "../utils";
 
@@ -17,20 +18,20 @@ const DEFAULTS = {
  * @param {Function} getDefaultCode — returns the last-used or first available work code
  * @returns {Object} form fields + setters + action helpers
  */
-export function useFormState({ getDefaultCode }) {
-  const [formDate, setFormDate] = useState(toLocalDateString(new Date()));
-  const [entryType, setEntryType] = useState(DEFAULTS.entryType);
-  const [startTime, setStartTime] = useState(DEFAULTS.startTime);
-  const [endTime, setEndTime] = useState(DEFAULTS.endTime);
-  const [pauseDuration, setPauseDuration] = useState(DEFAULTS.pauseDuration);
-  const [project, setProject] = useState(DEFAULTS.project);
-  const [code, setCode] = useState(WORK_CODE.DEFAULT);
-  const [editingEntry, setEditingEntry] = useState(null);
-  const [isLiveEntry, setIsLiveEntry] = useState(false);
+export function useFormState({ getDefaultCode }: { getDefaultCode: () => number }) {
+  const [formDate, setFormDate] = useState<string>(toLocalDateString(new Date()));
+  const [entryType, setEntryType] = useState<string>(DEFAULTS.entryType);
+  const [startTime, setStartTime] = useState<string>(DEFAULTS.startTime);
+  const [endTime, setEndTime] = useState<string>(DEFAULTS.endTime);
+  const [pauseDuration, setPauseDuration] = useState<number>(DEFAULTS.pauseDuration);
+  const [project, setProject] = useState<string>(DEFAULTS.project);
+  const [code, setCode] = useState<number>(WORK_CODE.DEFAULT);
+  const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
+  const [isLiveEntry, setIsLiveEntry] = useState<boolean>(false);
   // Nur relevant für Krank/Urlaub/ZA: wenn true, gibt der Nutzer Start/Ende
   // wie bei einem normalen Eintrag manuell an, statt die automatische
   // Sollzeit-Gutschrift zu verwenden.
-  const [specialManualMode, setSpecialManualMode] = useState(false);
+  const [specialManualMode, setSpecialManualMode] = useState<boolean>(false);
 
   // --- Reset to defaults (for new entry) ---
   const resetForm = () => {

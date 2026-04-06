@@ -185,7 +185,7 @@ export const useWorkCodes = () => {
   // Codes importieren (aus Backup)
   // -------------------------------------------------------
   const loadWorkCodes = useCallback(
-    (codes) => {
+    (codes: WorkCode[]) => {
       if (!Array.isArray(codes)) return false;
       saveWorkCodes(codes);
       return true;
@@ -197,7 +197,7 @@ export const useWorkCodes = () => {
   // Preset zu bestehenden Codes hinzufügen (merged)
   // -------------------------------------------------------
   const mergePreset = useCallback(
-    (presetId) => {
+    (presetId: string) => {
       const preset = WORK_CODE_PRESETS[presetId];
       if (!preset) {
         logger.error(`Preset "${presetId}" nicht gefunden!`);

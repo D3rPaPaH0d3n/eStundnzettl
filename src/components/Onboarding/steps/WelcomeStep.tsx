@@ -11,7 +11,14 @@ import AppLogo from "../../../assets/logo.png";
  *  - Backup laden        → Restore-Flow direkt bei Schritt 3
  *  - Demo-Daten testen   → lädt Demo-Daten und schließt den Wizard sofort
  */
-const WelcomeStep = ({ onStartNew, onStartRestore, onDemoMode }) => {
+
+interface Props {
+  onStartNew: () => void;
+  onStartRestore: () => void;
+  onDemoMode: () => void;
+}
+
+const WelcomeStep: React.FC<Props> = ({ onStartNew, onStartRestore, onDemoMode }) => {
   return (
     <motion.div
       key="step0"

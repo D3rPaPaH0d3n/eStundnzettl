@@ -9,7 +9,26 @@ import { User, Camera, Upload, Building2, Lock } from "lucide-react";
  * als Data-URL in formData.photo abgelegt; die Kompression übernimmt
  * das umgebende System via FileReader.
  */
-const ProfileStep = ({ formData, setFormData, photoInputRef, onPhotoUpload }) => {
+
+interface OnboardingFormData {
+  name: string;
+  company: string;
+  role: string;
+  photo: string | null;
+  workDays: number[];
+  autoBackup: boolean;
+  localBackupEnabled: boolean;
+  minuteInput: boolean;
+}
+
+interface Props {
+  formData: OnboardingFormData;
+  setFormData: (data: OnboardingFormData) => void;
+  photoInputRef: React.RefObject<HTMLInputElement>;
+  onPhotoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, onPhotoUpload }) => {
   return (
     <motion.div
       key="step1"

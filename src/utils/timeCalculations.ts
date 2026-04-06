@@ -258,7 +258,7 @@ export const calculatePeriodStats = (
 
   const boundarySource = allEntries || entries;
 
-  const seenWeeks = new Set();
+  const seenWeeks = new Set<string>();
   const weekCursor = new Date(periodDayStart);
   while (weekCursor <= periodDayEnd) {
     const monday = getISOWeekMonday(weekCursor);
@@ -309,7 +309,7 @@ export const calculatePeriodStats = (
 };
 
 // Interner Helper: Montag der ISO-Woche eines Datums (lokale Zeitzone).
-const getISOWeekMonday = (date) => {
+const getISOWeekMonday = (date: Date): Date => {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   const day = d.getDay(); // 0 = Sonntag, 1..6 = Mo..Sa
@@ -319,14 +319,14 @@ const getISOWeekMonday = (date) => {
 };
 
 // Interner Helper: YYYY-MM-DD fuer lokale Zeitzone.
-const toLocalDateStr = (d) =>
+const toLocalDateStr = (d: Date): string =>
   [
     d.getFullYear(),
     String(d.getMonth() + 1).padStart(2, "0"),
     String(d.getDate()).padStart(2, "0"),
   ].join("-");
 
-export const getWeekRangeInMonth = (dateInWeek, viewDate) => {
+export const getWeekRangeInMonth = (dateInWeek: Date, viewDate?: Date): { start: Date; end: Date } => {
   const d = new Date(dateInWeek);
   const day = d.getDay() || 7;
 
@@ -355,7 +355,7 @@ export const getWeekRangeInMonth = (dateInWeek, viewDate) => {
  * unabhängig vom angezeigten Monat.
  * So sind Saldo und MA/ÜS-Split korrekt auf 40h-Basis.
  */
-export const calculateWeekStats = (weekEntries, userData) => {
+export const calculateWeekStats = (weekEntries: Entry[], userData: UserData | null): PeriodStatsResult => {
   const dateRef = weekEntries.length > 0 ? new Date(weekEntries[0].date) : new Date();
   // Volle Woche ohne Monats-Clipping (kein viewDate)
   const { start, end } = getWeekRangeInMonth(dateRef);

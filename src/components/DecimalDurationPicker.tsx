@@ -19,7 +19,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   
   const ITEM_HEIGHT = 64; 
 
-  const getInitialValues = (mins) => {
+  const getInitialValues = (mins: number | null | undefined): { h: number; d: number } => {
     if (mins === undefined || mins === null) return { h: 8, d: 0 };
     
     const h = Math.floor(mins / 60);
@@ -58,7 +58,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
     }
   }, [isOpen, initialMinutes]);
 
-  const scrollToValue = (ref, val) => {
+  const scrollToValue = (ref: React.RefObject<HTMLDivElement | null>, val: number) => {
     if (ref.current) {
       const el = ref.current.querySelector(`[data-value="${val}"]`);
       if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -68,7 +68,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   const hours = Array.from({ length: 25 }, (_, i) => i);
   
   // Dezimalwerte basierend auf minuteInterval
-  const getDecimals = () => {
+  const getDecimals = (): number[] => {
     if (minuteInterval === 1) {
       // 1-Minuten-Schritte: 0 bis 59 Minuten als Dezimalbruch
       return Array.from({ length: 60 }, (_, i) => i / 60);
@@ -80,7 +80,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   
   const decimals = getDecimals(); 
 
-  const handleScroll = (e, type) => {
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>, type: string) => {
     const scrollTop = e.target.scrollTop;
     const index = Math.round(scrollTop / ITEM_HEIGHT);
     
@@ -105,7 +105,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
     onClose();
   };
 
-  const formatDecimal = (d) => {
+  const formatDecimal = (d: number): string => {
     if (minuteInterval === 1) {
       // 1-Minuten-Schritte: Minuten als zweistellige Zahl
       const minutes = Math.round(d * 60);

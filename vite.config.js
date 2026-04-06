@@ -19,6 +19,13 @@ export default defineConfig({
     react(),
     tailwindcss(), 
   ],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.js',
+    include: ['src/**/__tests__/**/*.test.{js,jsx,ts,tsx}', 'src/**/*.test.{js,jsx,ts,tsx}'],
+    exclude: ['**/node_modules/**', '**/.git/**'],
+  },
   build: {
     // PRODUCTION: Terser für Minifizierung + Console-Entfernung
     minify: 'terser',

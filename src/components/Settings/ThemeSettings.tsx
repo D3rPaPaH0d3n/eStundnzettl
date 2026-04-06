@@ -1,0 +1,50 @@
+import React from "react";
+import { Sun } from "lucide-react";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { Card } from "../../utils";
+
+interface ThemeSettingsProps {
+  theme: string;
+  setTheme: (theme: string) => void;
+}
+
+const ThemeSettings: React.FC<ThemeSettingsProps> = ({ theme, setTheme }) => {
+  const handleThemeChange = (newTheme: string) => {
+    Haptics.impact({ style: ImpactStyle.Light });
+    setTheme(newTheme);
+  };
+
+  return (
+    <Card className="p-5 space-y-3">
+      <h3 className="font-bold text-zinc-700 dark:text-white flex items-center gap-2">
+        <Sun size={18} className="text-emerald-400" />
+        <span>Design / Theme</span>
+      </h3>
+      <div className="grid grid-cols-3 gap-2">
+        {["light", "dark", "system"].map((mode) => (
+          <button
+            key={mode}
+            onClick={() => handleThemeChange(mode)}
+            className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors capitalize 
+              ${
+                theme === mode
+                  ? "border-emerald-500 bg-emerald-50 dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400"
+                  : "border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
+              }`}
+          >
+            {mode === "system" ? "Auto" : mode === "light" ? "Hell" : "Dunkel"}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-zinc-500">
+        {theme === "system" 
+          ? "Folgt der Systemeinstellung" 
+          : theme === "light" 
+            ? "Immer helles Design" 
+            : "Immer dunkles Design"}
+      </p>
+    </Card>
+  );
+};
+
+export default ThemeSettings;

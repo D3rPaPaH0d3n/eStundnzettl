@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { Entry, UserData } from '../types';
 import { getHolidayData, toLocalDateString } from "../utils";
 import { getWeekNumber, getTargetMinutesForDate } from "../utils/timeCalculations";
 import { usePeriodStats } from "./usePeriodStats";
@@ -7,7 +8,7 @@ import { usePeriodStats } from "./usePeriodStats";
  * Zentralisiert alle abgeleiteten/rechene Daten aus App.jsx
  * Logik bleibt gleich, aber mit weniger Rechenarbeit pro Render.
  */
-export function useAppData({ entries, userData, viewMonth, viewYear, allEntries }) {
+export function useAppData({ entries, userData, viewMonth, viewYear, allEntries }: { entries: Entry[]; userData: UserData; viewMonth: number; viewYear: number; allEntries?: Entry[] }) {
   const todayTarget = useMemo(() => {
     const todayStr = toLocalDateString(new Date());
     return getTargetMinutesForDate(todayStr, userData?.workDays);
@@ -104,7 +105,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
   );
 
   const lastWorkEntry = useMemo(() => {
-    let latestEntry = null;
+    let latestEntry: Entry | null = null;
 
     entries.forEach((entry) => {
       if (entry.type !== "work") return;

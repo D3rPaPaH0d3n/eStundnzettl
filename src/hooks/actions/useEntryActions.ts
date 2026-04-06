@@ -1,6 +1,7 @@
-import { useCallback } from "react";
+import React, { useCallback } from "react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import type { Entry, UserData, WorkCode } from '../../types';
 import { toLocalDateString } from "../../utils";
 import { parseTime, calculateEntryNetDuration } from "../../utils/timeCalculations";
 import { generateEntryId } from "../../utils/entryId";
@@ -14,6 +15,17 @@ import { STORAGE_KEYS, WORK_CODE } from "../constants";
  * Ermittlung von netDuration und storedType bleibt hier zentralisiert,
  * genauso wie die "last code"-Persistenz über dualWriteSync.
  */
+interface UseEntryActionsProps {
+  form: any;
+  entries: Entry[];
+  userData: UserData;
+  workCodes: WorkCode[];
+  addEntry: (entry: Entry) => void;
+  updateEntry: (entry: Entry) => void;
+  getDefaultCode: () => number;
+  setView: (view: string) => void;
+}
+
 export function useEntryActions({
   form,
   entries,
@@ -23,9 +35,9 @@ export function useEntryActions({
   updateEntry,
   getDefaultCode,
   setView,
-}) {
+}: UseEntryActionsProps) {
   const getDefaultTimesForDate = useCallback(
-    (date) => {
+    (date: string) => {
       const dayEntries = entries
         .filter((entry) => entry.date === date && entry.type === "work" && entry.end)
         .sort((a, b) => (a.end || "").localeCompare(b.end || ""));
@@ -58,7 +70,7 @@ export function useEntryActions({
   }, [form, getDefaultCode, getDefaultTimesForDate, setView]);
 
   const startEdit = useCallback(
-    (entry) => {
+    (entry: Entry) => {
       form.setEditingEntry(entry);
       const isDrive = entry.type === "work" && entry.code === WORK_CODE.DRIVE;
       const isSpecial =
@@ -89,7 +101,7 @@ export function useEntryActions({
   );
 
   const handleSaveEntry = useCallback(
-    (e) => {
+    (e: React.FormEvent) => {
       e.preventDefault();
       const isDrive = form.entryType === "drive";
       const isSpecial =

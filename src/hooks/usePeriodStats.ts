@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { Entry, UserData } from '../types';
 import { calculatePeriodStats } from "../utils/timeCalculations";
 
 /**
@@ -11,7 +12,7 @@ import { calculatePeriodStats } from "../utils/timeCalculations";
  *                   Mehrarbeit/Ueberstunden aus der VOLLEN Woche
  *                   berechnet werden.
  */
-export function usePeriodStats(entries, userData, periodStart, periodEnd, allEntries) {
+export function usePeriodStats(entries: Entry[], userData: UserData, periodStart: Date, periodEnd: Date, allEntries?: Entry[]) {
   return useMemo(() => {
     // Sicherstellen, dass Dates gültig sind, sonst Fallback auf heute
     const start = periodStart instanceof Date ? periodStart : new Date();

@@ -9,11 +9,34 @@
  * Gesamt-API an App.jsx ist identisch zum vorherigen Stand.
  */
 
+import type { Entry, UserData, WorkCode, DeleteTarget } from '../types';
 import { useTimerActions } from "./actions/useTimerActions";
 import { useEntryActions } from "./actions/useEntryActions";
 import { useDeleteActions } from "./actions/useDeleteActions";
 import { useOnboardingActions } from "./actions/useOnboardingActions";
 import { useMiscActions } from "./actions/useMiscActions";
+
+interface UseAppActionsProps {
+  form: any;
+  entries: Entry[];
+  userData: UserData;
+  workCodes: WorkCode[];
+  removeAttachmentsForEntry: (entryId: number | string) => Promise<void>;
+  getDefaultCode: () => number;
+  addEntry: (entry: Entry) => Promise<void>;
+  updateEntry: (entry: Entry) => Promise<void>;
+  deleteEntry: (id: number | string) => Promise<void>;
+  deleteAllEntries: () => Promise<void>;
+  importEntries: (entries: Entry[]) => Promise<void>;
+  startTimer: () => void;
+  stopTimer: () => { start: Date; end: Date; pause: number };
+  setUserData: (data: UserData) => void;
+  setAutoBackup: (enabled: boolean) => void;
+  setView: (view: string) => void;
+  setCurrentDate: (fn: (prev: Date) => Date) => void;
+  setDeleteTarget: (target: DeleteTarget | null) => void;
+  setShowOnboarding: (show: boolean) => void;
+}
 
 export function useAppActions({
   // Form-State (von useFormState)
@@ -46,7 +69,7 @@ export function useAppActions({
   // Lokale State-Setter in App.jsx
   setDeleteTarget,
   setShowOnboarding,
-}) {
+}: UseAppActionsProps) {
   const { handleStartLive, handleStopLive } = useTimerActions({
     form,
     startTimer,

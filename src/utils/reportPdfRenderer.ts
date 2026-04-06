@@ -25,6 +25,7 @@ import html2pdf from "html2pdf.js";
 import ReportDocument from "../components/ReportDocument";
 import { calculatePeriodStats } from "./timeCalculations";
 import { logger } from "./logger";
+import type { Entry, UserData, WorkCode, Attachment } from '../types';
 
 const log = logger.scope("ReportPdfRenderer");
 
@@ -32,7 +33,7 @@ const A4_WIDTH_PX = 794; // 210mm bei 96dpi — identisch zur Vorschau
 const WAIT_FOR_IMAGES_TIMEOUT_MS = 4000;
 
 /** Sortiert und filtert Eintraege fuer den angegebenen Kalendermonat. */
-function filterEntriesForMonth(entries, year, month) {
+function filterEntriesForMonth(entries: Entry[], year: number, month: number): Entry[] {
   const prefix = `${year}-${String(month).padStart(2, "0")}`;
   return (entries || [])
     .filter((e) => typeof e.date === "string" && e.date.startsWith(prefix))
@@ -47,7 +48,7 @@ function filterEntriesForMonth(entries, year, month) {
  * ihn absolut weit ausserhalb des Viewports statt `display:none`, damit
  * html2canvas die Elemente sehen und ausmessen kann.
  */
-function createOffscreenContainer() {
+function createOffscreenContainer(): HTMLDivElement {
   const host = document.createElement("div");
   host.setAttribute("data-role", "report-pdf-host");
   Object.assign(host.style, {
@@ -66,12 +67,12 @@ function createOffscreenContainer() {
 }
 
 /** Wartet, bis alle `<img>`-Elemente im Container fertig geladen (oder fehlgeschlagen) sind. */
-function waitForImages(root) {
+function waitForImages(root: HTMLElement): Promise<unknown> {
   const imgs = Array.from(root.querySelectorAll("img"));
   if (imgs.length === 0) return Promise.resolve();
   const promises = imgs.map((img) => {
     if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       const done = () => resolve();
       img.addEventListener("load", done, { once: true });
       img.addEventListener("error", done, { once: true });
@@ -96,7 +97,15 @@ export async function renderMonthlyReportPdfBlob({
   workCodes,
   attachments = [],
   customNote = "",
-}) {
+}: {
+  year: number;
+  month: number;
+  entries: Entry[];
+  userData: UserData | null;
+  workCodes: WorkCode[];
+  attachments?: Attachment[];
+  customNote?: string;
+}): Promise<Blob> {
   if (!year || !month) {
     throw new Error("renderMonthlyReportPdfBlob: year/month fehlen");
   }
@@ -114,7 +123,7 @@ export async function renderMonthlyReportPdfBlob({
   const root = createRoot(host);
 
   try {
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       root.render(
         React.createElement(ReportDocument, {
           entries: monthEntries,

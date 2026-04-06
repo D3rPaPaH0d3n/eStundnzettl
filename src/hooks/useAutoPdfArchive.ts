@@ -15,6 +15,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { App } from "@capacitor/app";
+import type { Entry, UserData, WorkCode } from '../types';
 import { STORAGE_KEYS } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
 import { setSetting } from "../db/repositories/settingsRepo";
@@ -30,16 +31,16 @@ import { writeLocalArchive, uploadNextcloudArchive, uploadGDriveArchive } from "
 
 const log = logger.scope("PdfArchive");
 
-const todayStr = () => {
+const todayStr = (): string => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-const monthStr = (date = new Date()) =>
+const monthStr = (date: Date = new Date()): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
 /** Dual-Write: localStorage + (wenn verfuegbar) SQLite. */
-async function dualWrite(lsKey, sqlKey, value) {
+async function dualWrite(lsKey: string, sqlKey: string, value: string | number | boolean): Promise<void> {
   const prev = localStorage.getItem(lsKey);
   localStorage.setItem(lsKey, String(value));
   if (isSQLiteActive()) {
@@ -54,7 +55,7 @@ async function dualWrite(lsKey, sqlKey, value) {
 }
 
 /** Prueft, ob der letzte Lauf vor heute 00:00 liegt. */
-function isDueToday() {
+function isDueToday(): boolean {
   const last = localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_LAST_RUN) || "";
   return last !== todayStr();
 }
@@ -64,7 +65,13 @@ function isDueToday() {
  * Gibt das Ergebnis zurueck ({ skipped, ok, errors }), damit der
  * manuelle Trigger Toasts anzeigen kann.
  */
-async function runForMonth({ entries, userData, workCodes, year, month, targets }) {
+interface PdfArchiveTargets {
+  local: boolean;
+  nextcloud: boolean;
+  gdrive: boolean;
+}
+
+async function runForMonth({ entries, userData, workCodes, year, month, targets }: { entries: Entry[]; userData: UserData; workCodes: WorkCode[]; year: number; month: number; targets: PdfArchiveTargets }) {
   const filename = buildArchiveFilename({ year, month, userData });
   const newHash = hashMonthContent({ entries, userData, year, month });
   const lastHashKey = `${STORAGE_KEYS.PDF_ARCHIVE_LAST_HASH}_${year}-${String(month).padStart(2, "0")}`;
@@ -105,9 +112,9 @@ async function runForMonth({ entries, userData, workCodes, year, month, targets 
   return { skipped: false, filename, results, anyOk, errors };
 }
 
-export function useAutoPdfArchive(entries, userData, workCodes) {
-  const latestDataRef = useRef({ entries, userData, workCodes });
-  const isRunning = useRef(false);
+export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCodes: WorkCode[]) {
+  const latestDataRef = useRef<{ entries: Entry[]; userData: UserData; workCodes: WorkCode[] }>({ entries, userData, workCodes });
+  const isRunning = useRef<boolean>(false);
   const [lastRun, setLastRun] = useState(
     () => localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_LAST_RUN) || ""
   );
@@ -119,7 +126,7 @@ export function useAutoPdfArchive(entries, userData, workCodes) {
     latestDataRef.current = { entries, userData, workCodes };
   }, [entries, userData, workCodes]);
 
-  const getActiveTargets = () => {
+  const getActiveTargets = (): PdfArchiveTargets | null => {
     const masterOn = localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_ENABLED) === "true";
     if (!masterOn) return null;
     const targets = {

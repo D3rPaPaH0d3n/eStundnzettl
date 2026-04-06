@@ -15,6 +15,13 @@ import { deobfuscate } from "./obfuscate";
 import { STORAGE_KEYS } from "../hooks/constants";
 import { logger } from "./logger";
 
+interface ArchiveResult {
+  ok: boolean;
+  error?: string;
+  target?: string;
+  note?: string;
+}
+
 const log = logger.scope("PdfArchive");
 
 /**
@@ -30,7 +37,7 @@ const log = logger.scope("PdfArchive");
  *
  * Web-Fallback: Download via Blob-URL.
  */
-export async function writeLocalArchive(filename, base64, blob) {
+export async function writeLocalArchive(filename: string, base64: string, blob?: Blob | null): Promise<ArchiveResult> {
   if (!Capacitor.isNativePlatform()) {
     // Web: schlichter Download als Fallback
     if (!blob) return { ok: false, error: "Kein Blob fuer Web-Download" };
@@ -97,7 +104,7 @@ export async function writeLocalArchive(filename, base64, blob) {
     log.warn("Stufe 3 (External/Archiv) fehlgeschlagen:", err3);
     return {
       ok: false,
-      error: `Alle drei Lokal-Pfade scheiterten. Letzter Fehler: ${String(err3?.message || err3)}`,
+      error: `Alle drei Lokal-Pfade scheiterten. Letzter Fehler: ${String((err3 as any)?.message || err3)}`,
       target: "local",
     };
   }
@@ -108,7 +115,7 @@ export async function writeLocalArchive(filename, base64, blob) {
  * Liest die Nextcloud-Credentials aus dem bestehenden Settings-Store
  * (gleicher Pfad wie `useAutoBackup`).
  */
-export async function uploadNextcloudArchive(filename, base64) {
+export async function uploadNextcloudArchive(filename: string, base64: string): Promise<ArchiveResult> {
   const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
   const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
   const ncPassRaw = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "";
@@ -129,7 +136,7 @@ export async function uploadNextcloudArchive(filename, base64) {
     return { ok: true, target: "nextcloud" };
   } catch (err) {
     log.warn("Nextcloud PDF-Archiv fehlgeschlagen:", err);
-    return { ok: false, error: String(err?.message || err), target: "nextcloud" };
+    return { ok: false, error: String((err as any)?.message || err), target: "nextcloud" };
   }
 }
 
@@ -140,7 +147,7 @@ export async function uploadNextcloudArchive(filename, base64) {
  * (`googleDriveBackup.js`) nicht beruehrt — eigener Scope (drive.file),
  * eigener Session-Token-Cache, eigener localStorage-Auth-State.
  */
-export async function uploadGDriveArchive(filename, base64, blob) {
+export async function uploadGDriveArchive(filename: string, base64: string, blob?: Blob | null): Promise<ArchiveResult> {
   if (!base64) {
     return { ok: false, error: "Kein base64-Inhalt fuer GDrive-Upload", target: "gdrive" };
   }
@@ -149,6 +156,6 @@ export async function uploadGDriveArchive(filename, base64, blob) {
     return { ok: true, target: "gdrive" };
   } catch (err) {
     log.warn("GDrive PDF-Archiv fehlgeschlagen:", err);
-    return { ok: false, error: String(err?.message || err), target: "gdrive" };
+    return { ok: false, error: String((err as any)?.message || err), target: "gdrive" };
   }
 }

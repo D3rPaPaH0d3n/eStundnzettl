@@ -10,7 +10,15 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
  *   Daten vor und wechselt in die "add"-View. Der User kann dort noch
  *   Code/Projekt editieren, bevor er speichert.
  */
-export function useTimerActions({ form, startTimer, stopTimer, getDefaultCode, setView }) {
+interface UseTimerActionsProps {
+  form: any;
+  startTimer: () => void;
+  stopTimer: () => { start: Date; end: Date; pause: number };
+  getDefaultCode: () => number;
+  setView: (view: string) => void;
+}
+
+export function useTimerActions({ form, startTimer, stopTimer, getDefaultCode, setView }: UseTimerActionsProps) {
   const handleStartLive = useCallback(() => {
     Haptics.impact({ style: ImpactStyle.Heavy });
     startTimer();
@@ -26,7 +34,7 @@ export function useTimerActions({ form, startTimer, stopTimer, getDefaultCode, s
     const dd = String(result.start.getDate()).padStart(2, "0");
     const dateStr = `${yyyy}-${mm}-${dd}`;
 
-    const toLocalHHMM = (dateObj) => {
+    const toLocalHHMM = (dateObj: Date): string => {
       const h = String(dateObj.getHours()).padStart(2, "0");
       const m = String(dateObj.getMinutes()).padStart(2, "0");
       return `${h}:${m}`;

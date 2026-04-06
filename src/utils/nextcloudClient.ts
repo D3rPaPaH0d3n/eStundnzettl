@@ -214,23 +214,23 @@ function authHeaders(user: string, pass: string): Record<string, string> {
 }
 
 /** WebDAV-Basispfad für Dateien */
-function davPath(url, user) {
+function davPath(url: string, user: string): string {
   return `${normalizeUrl(url)}/remote.php/dav/files/${encodeURIComponent(user)}`;
 }
 
-function getFolderCacheKey(url, user) {
+function getFolderCacheKey(url: string, user: string): string {
   return `${normalizeUrl(url)}|${String(user || "").trim()}`;
 }
 
-function getDavUserCacheKey(url, user) {
+function getDavUserCacheKey(url: string, user: string): string {
   return `${normalizeUrl(url)}|${String(user || "").trim()}`;
 }
 
-function getRateLimitCacheKey(url, user) {
+function getRateLimitCacheKey(url: string, user: string): string {
   return `${normalizeUrl(url)}|${String(user || "").trim()}`;
 }
 
-function readRateLimitState() {
+function readRateLimitState(): Record<string, number> {
   try {
     const raw = localStorage.getItem(NEXTCLOUD_RATE_LIMIT_KEY);
     return raw ? JSON.parse(raw) : {};
@@ -239,17 +239,17 @@ function readRateLimitState() {
   }
 }
 
-function writeRateLimitState(state) {
+function writeRateLimitState(state: Record<string, number>): void {
   localStorage.setItem(NEXTCLOUD_RATE_LIMIT_KEY, JSON.stringify(state));
 }
 
-function setRateLimited(url, user, waitMs = DEFAULT_RATE_LIMIT_MS) {
+function setRateLimited(url: string, user: string, waitMs: number = DEFAULT_RATE_LIMIT_MS): void {
   const state = readRateLimitState();
   state[getRateLimitCacheKey(url, user)] = Date.now() + waitMs;
   writeRateLimitState(state);
 }
 
-function clearRateLimited(url, user) {
+function clearRateLimited(url: string, user: string): void {
   const state = readRateLimitState();
   const key = getRateLimitCacheKey(url, user);
   if (state[key]) {
@@ -258,7 +258,7 @@ function clearRateLimited(url, user) {
   }
 }
 
-function getRateLimitRemaining(url, user) {
+function getRateLimitRemaining(url: string, user: string): number {
   const state = readRateLimitState();
   const until = Number(state[getRateLimitCacheKey(url, user)] || 0);
   if (!until) return 0;
@@ -271,7 +271,7 @@ function getRateLimitRemaining(url, user) {
   return remaining;
 }
 
-function formatRateLimitMessage(remainingMs) {
+function formatRateLimitMessage(remainingMs: number): string {
   const seconds = Math.max(1, Math.ceil(remainingMs / 1000));
   return `Nextcloud drosselt gerade Anfragen. Bitte ${seconds}s warten und dann erneut versuchen.`;
 }
@@ -282,7 +282,7 @@ function formatRateLimitMessage(remainingMs) {
  * (z.B. E-Mail vs. uid, Display-Name vs. uid).
  * Gibt die echte uid zurück, oder den loginName als Fallback.
  */
-export async function resolveUserId(serverUrl, loginName, appPassword) {
+export async function resolveUserId(serverUrl: string, loginName: string, appPassword: string): Promise<string> {
   try {
     const url = `${normalizeUrl(serverUrl)}/ocs/v1.php/cloud/user?format=json`;
     const res = await nativeHttp(url, "GET", loginName, appPassword);
@@ -299,7 +299,7 @@ export async function resolveUserId(serverUrl, loginName, appPassword) {
   }
 }
 
-async function getDavUser(serverUrl, authUser, appPassword) {
+async function getDavUser(serverUrl: string, authUser: string, appPassword: string): Promise<string> {
   const cacheKey = getDavUserCacheKey(serverUrl, authUser);
   if (resolvedDavUserCache.has(cacheKey)) {
     return resolvedDavUserCache.get(cacheKey);
@@ -310,7 +310,7 @@ async function getDavUser(serverUrl, authUser, appPassword) {
   return davUser || authUser;
 }
 
-export function getNextcloudErrorMessage(result, fallback = 'Nextcloud Login fehlgeschlagen') {
+export function getNextcloudErrorMessage(result: NcResult | null, fallback: string = 'Nextcloud Login fehlgeschlagen'): string {
   return result?.error?.message || fallback;
 }
 
@@ -318,7 +318,7 @@ export function getNextcloudErrorMessage(result, fallback = 'Nextcloud Login feh
  * Native HTTP-Request über das Capacitor Plugin (umgeht CORS auf Android).
  * Fällt auf fetch() zurück wenn nicht auf Android.
  */
-async function nativeHttp(url, method, user, pass, body, contentType) {
+async function nativeHttp(url: string, method: string, user: string, pass: string, body?: string, contentType?: string): Promise<NativeHttpResult> {
   const remaining = getRateLimitRemaining(url, user);
   if (remaining > 0) {
     throw new Error(formatRateLimitMessage(remaining));
@@ -346,12 +346,12 @@ async function nativeHttp(url, method, user, pass, body, contentType) {
   }
 
   // Web-Fallback
-  const headers = { ...authHeaders(user, pass) };
+  const headers: Record<string, string> = { ...authHeaders(user, pass) };
   if (contentType) headers["Content-Type"] = contentType;
   if (method === "PROPFIND") headers["Depth"] = "0";
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
-  let res;
+  let res: Response;
   try {
     res = await fetch(url, { method, headers, body: body || undefined, signal: controller.signal });
   } finally {
@@ -369,7 +369,7 @@ async function nativeHttp(url, method, user, pass, body, contentType) {
  * Verbindung testen via PROPFIND auf den User-Root.
  * @returns {Promise<{ok: boolean, error?: string}>}
  */
-export async function testConnection(url, user, pass) {
+export async function testConnection(url: string, user: string, pass: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const davUser = await getDavUser(url, user, pass);
     const res = await nativeHttp(`${davPath(url, davUser)}/`, "PROPFIND", user, pass);
@@ -380,14 +380,14 @@ export async function testConnection(url, user, pass) {
     if (res.status === 404) { return { ok: false, error: "Server nicht gefunden (404)" }; }
     return { ok: false, error: `Unerwarteter Status: ${res.status}` };
   } catch (e) {
-    return { ok: false, error: `Verbindung fehlgeschlagen: ${e.message}` };
+    return { ok: false, error: `Verbindung fehlgeschlagen: ${(e as Error).message}` };
   }
 }
 
 /**
  * Backup-Ordner anlegen (MKCOL, ignoriert 405 = existiert bereits).
  */
-export async function ensureFolder(url, user, pass) {
+export async function ensureFolder(url: string, user: string, pass: string): Promise<{ ok: boolean; reason?: string }> {
   const cacheKey = getFolderCacheKey(url, user);
   if (verifiedFolderCache.has(cacheKey)) {
     return { ok: true };
@@ -426,7 +426,7 @@ export async function ensureFolder(url, user, pass) {
  * @param {string} pass App-Password
  * @param {string[]} segments z.B. ['eStundnzettl', 'Archiv']
  */
-async function ensureFolderPath(url, user, pass, segments) {
+async function ensureFolderPath(url: string, user: string, pass: string, segments: string[]): Promise<{ ok: boolean; reason?: string }> {
   const davUser = await getDavUser(url, user, pass);
   const base = davPath(url, davUser);
   let acc = "";
@@ -461,7 +461,7 @@ async function ensureFolderPath(url, user, pass, segments) {
  * Android-Teil die Bytes 1:1 durchleitet (siehe NextcloudLoginFlowPlugin.java).
  * Web-Fallback: fetch() mit decodierten Bytes.
  */
-async function nativeHttpBinary(url, user, pass, bodyBase64, contentType) {
+async function nativeHttpBinary(url: string, user: string, pass: string, bodyBase64: string, contentType?: string): Promise<NativeHttpResult> {
   const remaining = getRateLimitRemaining(url, user);
   if (remaining > 0) {
     throw new Error(formatRateLimitMessage(remaining));
@@ -492,10 +492,10 @@ async function nativeHttpBinary(url, user, pass, bodyBase64, contentType) {
   const binStr = atob(bodyBase64);
   const bytes = new Uint8Array(binStr.length);
   for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
-  const headers = { ...authHeaders(user, pass), "Content-Type": contentType || "application/octet-stream" };
+  const headers: Record<string, string> = { ...authHeaders(user, pass), "Content-Type": contentType || "application/octet-stream" };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60000);
-  let res;
+  let res: Response;
   try {
     res = await fetch(url, { method: "PUT", headers, body: bytes, signal: controller.signal });
   } finally {
@@ -522,7 +522,7 @@ async function nativeHttpBinary(url, user, pass, bodyBase64, contentType) {
  * @param {string} base64     Base64-codierter Datei-Inhalt (ohne data:-Prefix)
  * @param {string} mimeType   Content-Type, z.B. 'application/pdf'
  */
-export async function uploadBinaryToPath(url, user, pass, folders, filename, base64, mimeType) {
+export async function uploadBinaryToPath(url: string, user: string, pass: string, folders: string[], filename: string, base64: string, mimeType?: string): Promise<boolean> {
   const folderResult = await ensureFolderPath(url, user, pass, folders);
   if (folderResult?.reason === "rate_limited") {
     throw new Error(formatRateLimitMessage(getRateLimitRemaining(url, user) || DEFAULT_RATE_LIMIT_MS));
@@ -540,7 +540,7 @@ export async function uploadBinaryToPath(url, user, pass, folders, filename, bas
   throw new Error(`Upload ${res.status} auf ${targetUrl} body=${(res.body || "").substring(0, 200)}`);
 }
 
-export async function uploadBackup(url, user, pass, jsonData) {
+export async function uploadBackup(url: string, user: string, pass: string, jsonData: unknown): Promise<boolean> {
   const content = typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData, null, 2);
   const davUser = await getDavUser(url, user, pass);
 
@@ -567,7 +567,7 @@ export async function uploadBackup(url, user, pass, jsonData) {
   throw new Error(`Upload ${res.status} auf ${targetUrl} body=${(res.body || "").substring(0, 200)}`);
 }
 
-export async function downloadBackup(url, user, pass) {
+export async function downloadBackup(url: string, user: string, pass: string): Promise<unknown> {
   const davUser = await getDavUser(url, user, pass);
   const res = await nativeHttp(
     `${davPath(url, davUser)}/${BACKUP_FOLDER}/${BACKUP_FILENAME}`,
@@ -583,7 +583,7 @@ export async function downloadBackup(url, user, pass) {
   }
 }
 
-export async function findBackup(url, user, pass) {
+export async function findBackup(url: string, user: string, pass: string): Promise<boolean> {
   try {
     const davUser = await getDavUser(url, user, pass);
     const res = await nativeHttp(

@@ -3,16 +3,22 @@ import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { MultiShare } from "../plugins/MultiSharePlugin";
 import toast from "react-hot-toast";
+import type { Attachment } from '../types';
 
-const sanitizeFileName = (fileName = "datei") => fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+const sanitizeFileName = (fileName: string = "datei"): string => fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
 
-const ensureNativePath = (uri = "") => (uri.startsWith("file://") ? uri.replace("file://", "") : uri);
+const ensureNativePath = (uri: string = ""): string => (uri.startsWith("file://") ? uri.replace("file://", "") : uri);
 
 /**
  * useAttachmentShare — teilt PDF + Anhänge in EINEM nativen Android-Share-Intent.
  */
-export function useAttachmentShare({ readAttachmentFile }) {
-  const copyAttachmentToCache = useCallback(async (attachment) => {
+interface PdfFile {
+  storagePath: string;
+  mimeType?: string;
+}
+
+export function useAttachmentShare({ readAttachmentFile }: { readAttachmentFile: (attachment: Attachment) => Promise<string> }) {
+  const copyAttachmentToCache = useCallback(async (attachment: Attachment) => {
     const base64Data = await readAttachmentFile(attachment);
     const safeName = sanitizeFileName(attachment.fileName || attachment.label || `anhang_${attachment.id || Date.now()}`);
     const cachePath = `shares/${attachment.id || Date.now()}_${safeName}`;
@@ -32,7 +38,7 @@ export function useAttachmentShare({ readAttachmentFile }) {
     return ensureNativePath(uriResult.uri);
   }, [readAttachmentFile]);
 
-  const shareReportBundle = useCallback(async ({ pdfFile, attachments = [] }) => {
+  const shareReportBundle = useCallback(async ({ pdfFile, attachments = [] }: { pdfFile: PdfFile; attachments?: Attachment[] }) => {
     if (!Capacitor.isNativePlatform()) {
       throw new Error("Multi-Share wird nur in der Android-App unterstützt.");
     }

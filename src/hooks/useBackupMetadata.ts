@@ -14,8 +14,8 @@ import {
 } from "../db/repositories/backupMetadataRepo";
 
 export function useBackupMetadata() {
-  const [lastBackup, setLastBackup] = useState(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [lastBackup, setLastBackup] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   // ─── Initial Load ───
   useEffect(() => {
@@ -52,7 +52,7 @@ export function useBackupMetadata() {
   }, []);
 
   // ─── Update Last Backup ───
-  const updateLastBackup = useCallback(async (timestamp = new Date().toISOString()) => {
+  const updateLastBackup = useCallback(async (timestamp: string = new Date().toISOString()) => {
     setLastBackup(timestamp);
 
     // SQLite

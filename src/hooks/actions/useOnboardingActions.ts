@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import toast from "react-hot-toast";
 import { Haptics, NotificationType } from "@capacitor/haptics";
+import type { UserData, Entry } from '../../types';
 import { STORAGE_KEYS } from "../constants";
 import { isSQLiteActive } from "../../db/storageMode";
 import { getSetting } from "../../db/repositories/settingsRepo";
@@ -16,13 +17,21 @@ import { getAllWorkCodes } from "../../db/repositories/workCodesRepo";
  *  - Work Codes (werden bereits durch den useWorkCodes-Hook geladen,
  *    hier nur der Lesevorgang zur Konsistenzsicherung)
  */
+interface UseOnboardingActionsProps {
+  setUserData: (data: UserData) => void;
+  setAutoBackup: (enabled: boolean) => void;
+  importEntries: (entries: Entry[]) => void;
+  setShowOnboarding: (show: boolean) => void;
+  setView: (view: string) => void;
+}
+
 export function useOnboardingActions({
   setUserData,
   setAutoBackup,
   importEntries,
   setShowOnboarding,
   setView,
-}) {
+}: UseOnboardingActionsProps) {
   const handleOnboardingFinish = useCallback(async () => {
     if (isSQLiteActive()) {
       try {
@@ -59,7 +68,7 @@ export function useOnboardingActions({
 
 // ─── Interne Helpers ───────────────────────────────────────
 
-function loadFromLocalStorage({ setUserData, setAutoBackup, importEntries }) {
+function loadFromLocalStorage({ setUserData, setAutoBackup, importEntries }: { setUserData: (data: UserData) => void; setAutoBackup: (enabled: boolean) => void; importEntries: (entries: Entry[]) => void }) {
   const storedUserStr = localStorage.getItem(STORAGE_KEYS.USER);
   if (storedUserStr) {
     try {

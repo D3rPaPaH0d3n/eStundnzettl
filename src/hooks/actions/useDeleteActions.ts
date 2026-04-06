@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import toast from "react-hot-toast";
+import type { Entry, UserData, DeleteTarget } from '../../types';
 import { dualRemoveSync } from "../../utils/dualWrite";
 import { STORAGE_KEYS, WORK_MODELS } from "../constants";
 
@@ -10,6 +11,16 @@ import { STORAGE_KEYS, WORK_MODELS } from "../constants";
  * Verzeichnis geschrieben, damit sich der User noch retten kann, falls
  * das aus Versehen passiert.
  */
+interface UseDeleteActionsProps {
+  entries: Entry[];
+  userData: UserData;
+  deleteEntry: (id: number | string) => void;
+  deleteAllEntries: () => void;
+  removeAttachmentsForEntry: ((entryId: number | string) => Promise<void>) | null;
+  setUserData: (data: UserData) => void;
+  setDeleteTarget: (target: DeleteTarget | null) => void;
+}
+
 export function useDeleteActions({
   entries,
   userData,
@@ -18,9 +29,9 @@ export function useDeleteActions({
   removeAttachmentsForEntry,
   setUserData,
   setDeleteTarget,
-}) {
+}: UseDeleteActionsProps) {
   const executeDelete = useCallback(
-    async (deleteTarget) => {
+    async (deleteTarget: DeleteTarget | null) => {
       if (deleteTarget?.type === "single") {
         if (removeAttachmentsForEntry) {
           await removeAttachmentsForEntry(deleteTarget.id);

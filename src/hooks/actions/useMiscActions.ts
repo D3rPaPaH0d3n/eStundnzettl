@@ -8,9 +8,9 @@ import { PLAY_STORE } from "../constants";
  *  - changeMonth: Monats-Navigation im Dashboard
  *  - handleManualUpdateCheck: öffnet den Play Store für ein manuelles Update
  */
-export function useMiscActions({ setCurrentDate }) {
+export function useMiscActions({ setCurrentDate }: { setCurrentDate: (fn: (prev: Date) => Date) => void }) {
   const changeMonth = useCallback(
-    (delta) => {
+    (delta: number) => {
       setCurrentDate((prev) => {
         const d = new Date(prev);
         d.setMonth(d.getMonth() + delta);

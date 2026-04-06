@@ -14,13 +14,14 @@
 
 import { renderMonthlyReportPdfBlob } from "./reportPdfRenderer";
 import { WORK_CODE } from "../hooks/constants";
+import type { Entry, UserData, WorkCode, Attachment } from '../types';
 
 // ───────────── Helpers ─────────────
 
-const pad2 = (n) => String(n).padStart(2, "0");
+const pad2 = (n: number): string => String(n).padStart(2, "0");
 
 /** Filtert alle Entries auf den angegebenen Kalendermonat (YYYY-MM-Prefix). */
-export function filterEntriesForMonth(entries, year, month) {
+export function filterEntriesForMonth(entries: Entry[], year: number, month: number): Entry[] {
   const prefix = `${year}-${pad2(month)}`;
   return (entries || [])
     .filter((e) => typeof e.date === "string" && e.date.startsWith(prefix))
@@ -37,7 +38,7 @@ export function filterEntriesForMonth(entries, year, month) {
  * Gleicher Algorithmus wie in useAutoBackup (djb2), damit das Muster
  * konsistent bleibt.
  */
-export function hashMonthContent({ entries, userData, year, month }) {
+export function hashMonthContent({ entries, userData, year, month }: { entries: Entry[]; userData: UserData | null; year: number; month: number }): string {
   const relevant = {
     ym: `${year}-${pad2(month)}`,
     name: userData?.name || "",
@@ -64,7 +65,7 @@ export function hashMonthContent({ entries, userData, year, month }) {
 }
 
 /** Baut den filename: Stundenzettel_YYYY-MM_Name.pdf (slug-safe). */
-export function buildArchiveFilename({ year, month, userData }) {
+export function buildArchiveFilename({ year, month, userData }: { year: number; month: number; userData: UserData | null }): string {
   const rawName = (userData?.name || "Stundenzettel").trim();
   const clean = rawName
     .replace(/\s+/g, "_")
@@ -83,7 +84,7 @@ export function buildArchiveFilename({ year, month, userData }) {
  * haengen sollte, bekommt der Aufrufer nach 30 s eine klare
  * Fehlermeldung statt eines dauerhaft blockierten UI-Zustands.
  */
-export async function generateMonthlyPdfBlob({ year, month, entries, userData, workCodes, attachments }) {
+export async function generateMonthlyPdfBlob({ year, month, entries, userData, workCodes, attachments }: { year: number; month: number; entries: Entry[]; userData: UserData | null; workCodes: WorkCode[]; attachments?: Attachment[] }): Promise<Blob> {
   if (!year || !month) throw new Error("generateMonthlyPdfBlob: year/month fehlen");
 
   const blobPromise = renderMonthlyReportPdfBlob({
@@ -95,8 +96,8 @@ export async function generateMonthlyPdfBlob({ year, month, entries, userData, w
     attachments,
   });
 
-  let timeoutHandle;
-  const timeoutPromise = new Promise((_, reject) => {
+  let timeoutHandle: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutHandle = setTimeout(
       () => reject(new Error("PDF-Generierung Timeout (30s)")),
       30000,

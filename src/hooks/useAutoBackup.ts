@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { App } from "@capacitor/app";
 import toast from "react-hot-toast";
+import type { Entry, UserData } from '../types';
 import { uploadOrUpdateFile, getValidToken } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
 import { uploadBackup as ncUploadBackup } from "../utils/nextcloudClient";
@@ -13,12 +14,12 @@ import { logger } from "../utils/logger";
 // ─── Dual-Write Helpers (SQLite + localStorage) ─────────────
 
 /** Liest aus localStorage (sync, für Init-State). SQLite wird async nachgeladen. */
-function readLSInt(key, fallback = 0) {
+function readLSInt(key: string, fallback: number = 0): number {
   return parseInt(localStorage.getItem(key) || String(fallback), 10);
 }
 
 /** Dual-Write: localStorage + SQLite (mit Rollback bei Fehler). */
-async function dualWrite(lsKey, sqlKey, value) {
+async function dualWrite(lsKey: string, sqlKey: string, value: string | number | boolean): Promise<void> {
   const prev = localStorage.getItem(lsKey);
   localStorage.setItem(lsKey, String(value));
   if (isSQLiteActive()) {
@@ -34,11 +35,11 @@ async function dualWrite(lsKey, sqlKey, value) {
 
 // ─── Hook ────────────────────────────────────────────────────
 
-export function useAutoBackup(entries, userData, isEnabled) {
-  const latestDataRef = useRef({ entries, userData });
-  const lastHash = useRef("");
-  const debounceTimer = useRef(null);
-  const isUploading = useRef(false);
+export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: boolean) {
+  const latestDataRef = useRef<{ entries: Entry[]; userData: UserData }>({ entries, userData });
+  const lastHash = useRef<string>("");
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isUploading = useRef<boolean>(false);
   const [backupFailCount, setBackupFailCount] = useState(
     () => readLSInt(STORAGE_KEYS.BACKUP_FAIL_COUNT)
   );
@@ -62,7 +63,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
     latestDataRef.current = { entries, userData };
   }, [entries, userData]);
 
-  const createHash = (data) => {
+  const createHash = (data: { entries: Entry[]; userData: UserData }): string => {
     const str = JSON.stringify(data.userData) + JSON.stringify(data.entries);
     let hash = 5381;
     for (let i = 0; i < str.length; i++) {
@@ -76,15 +77,15 @@ export function useAutoBackup(entries, userData, isEnabled) {
     await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", "");
   };
 
-  const registerNextcloudFailure = async (error) => {
+  const registerNextcloudFailure = async (error: unknown) => {
     const current = readLSInt(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT);
     const newCount = current + 1;
-    const message = String(error?.message || error || "Nextcloud-Backup fehlgeschlagen");
+    const message = String((error as any)?.message || error || "Nextcloud-Backup fehlgeschlagen");
     await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT, "nextcloud_backup_fail_count", String(newCount));
     await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", message);
   };
 
-  const performBackup = async (source) => {
+  const performBackup = async (source: string) => {
     const { entries, userData } = latestDataRef.current;
 
     const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
@@ -173,7 +174,7 @@ export function useAutoBackup(entries, userData, isEnabled) {
     }
   };
 
-  const listenerHandle = useRef(null);
+  const listenerHandle = useRef<{ remove: () => void } | null>(null);
 
   // Listener nur einmal registrieren (Mount/Unmount)
   useEffect(() => {

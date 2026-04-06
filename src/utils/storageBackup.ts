@@ -27,17 +27,18 @@ const BACKUP_FORMAT_VERSION = 2;
  * Liefert einen stabilen, kanonischen JSON-String für die Checksum-Berechnung.
  * Objekt-Keys werden sortiert, das Feld `checksum` wird ausgeschlossen.
  */
-function canonicalJsonStringify(value) {
+function canonicalJsonStringify(value: unknown): string {
   if (value === null || value === undefined) return JSON.stringify(value);
   if (typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) {
-    return "[" + value.map((v) => canonicalJsonStringify(v)).join(",") + "]";
+    return "[" + value.map((v: unknown) => canonicalJsonStringify(v)).join(",") + "]";
   }
-  const keys = Object.keys(value).filter((k) => k !== "checksum").sort();
-  return "{" + keys.map((k) => JSON.stringify(k) + ":" + canonicalJsonStringify(value[k])).join(",") + "}";
+  const obj = value as Record<string, unknown>;
+  const keys = Object.keys(obj).filter((k) => k !== "checksum").sort();
+  return "{" + keys.map((k) => JSON.stringify(k) + ":" + canonicalJsonStringify(obj[k])).join(",") + "}";
 }
 
-async function sha256Hex(text) {
+async function sha256Hex(text: string): Promise<string> {
   const enc = new TextEncoder().encode(text);
   const buf = await globalThis.crypto.subtle.digest("SHA-256", enc);
   const bytes = new Uint8Array(buf);
@@ -51,7 +52,7 @@ async function sha256Hex(text) {
 /**
  * Berechnet die SHA-256-Checksum eines Backup-Payloads (ohne das `checksum`-Feld).
  */
-export async function computeBackupChecksum(payload) {
+export async function computeBackupChecksum(payload: Record<string, unknown> | null): Promise<string | null> {
   if (!payload || typeof payload !== "object") return null;
   try {
     return await sha256Hex(canonicalJsonStringify(payload));
@@ -65,7 +66,7 @@ export async function computeBackupChecksum(payload) {
  * Fügt einem Backup-Payload die Felder `formatVersion` und `checksum` hinzu.
  * Mutiert das Objekt und gibt es zur Verkettung zurück.
  */
-export async function attachBackupChecksum(payload) {
+export async function attachBackupChecksum(payload: Record<string, unknown> | null): Promise<Record<string, unknown> | null> {
   if (!payload || typeof payload !== "object") return payload;
   payload.formatVersion = BACKUP_FORMAT_VERSION;
   const checksum = await computeBackupChecksum(payload);
@@ -80,7 +81,7 @@ export async function attachBackupChecksum(payload) {
  *  - "mismatch":   Checksum vorhanden, aber inkorrekt (möglicher Tampering)
  *  - "unverified": Kein Checksum-Feld (Legacy-Backup)
  */
-export async function verifyBackupIntegrity(payload) {
+export async function verifyBackupIntegrity(payload: Record<string, unknown> | null): Promise<"verified" | "mismatch" | "unverified"> {
   if (!payload || typeof payload !== "object") return "unverified";
   if (typeof payload.checksum !== "string" || payload.checksum.length === 0) {
     return "unverified";
@@ -93,7 +94,7 @@ export async function verifyBackupIntegrity(payload) {
 
 // ─── Dual-Write Helper ──────────────────────────────────────
 
-async function dualWrite(lsKey, sqlKey, value) {
+async function dualWrite(lsKey: string, sqlKey: string, value: unknown): Promise<void> {
   localStorage.setItem(lsKey, String(value));
   if (isSQLiteActive()) {
     try { await setSetting(sqlKey, value); } catch (e) {
@@ -102,7 +103,7 @@ async function dualWrite(lsKey, sqlKey, value) {
   }
 }
 
-async function dualRemove(lsKey, sqlKey) {
+async function dualRemove(lsKey: string, sqlKey: string): Promise<void> {
   localStorage.removeItem(lsKey);
   if (isSQLiteActive()) {
     try { await deleteSetting(sqlKey); } catch (e) {
@@ -112,7 +113,7 @@ async function dualRemove(lsKey, sqlKey) {
 }
 
 // Ordner erstellen falls nicht vorhanden (für Documents - manueller Export)
-const ensureBackupFolder = async () => {
+const ensureBackupFolder = async (): Promise<void> => {
   try {
     await Filesystem.mkdir({
       path: BACKUP_FOLDER,
@@ -125,7 +126,7 @@ const ensureBackupFolder = async () => {
 };
 
 // Ordner erstellen für internen Speicher (Auto-Backup)
-const ensureInternalBackupFolder = async () => {
+const ensureInternalBackupFolder = async (): Promise<void> => {
   try {
     await Filesystem.mkdir({
       path: BACKUP_FOLDER,
@@ -142,7 +143,7 @@ const ensureInternalBackupFolder = async () => {
 // =========================================================
 
 // 1. Backup-Ordner "aktivieren" (erstellt den Ordner)
-export const selectBackupFolder = async () => {
+export const selectBackupFolder = async (): Promise<boolean> => {
   try {
     await ensureInternalBackupFolder();
     // Dual-Write: BACKUP_TARGET
@@ -155,12 +156,12 @@ export const selectBackupFolder = async () => {
 };
 
 // 2. Zugriff prüfen (synchron, aus localStorage — schnell für UI)
-export const hasBackupTarget = () => {
+export const hasBackupTarget = (): boolean => {
   return localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET) === 'documents';
 };
 
 // 3. Backup schreiben (AUTO-BACKUP - intern, keine Permission-Probleme)
-export const writeBackupFile = async (fileName, dataObj) => {
+export const writeBackupFile = async (fileName: string, dataObj: unknown): Promise<boolean> => {
   await ensureInternalBackupFolder();
   
   const content = typeof dataObj === 'string' 
@@ -181,12 +182,12 @@ export const writeBackupFile = async (fileName, dataObj) => {
 };
 
 // 4. Zugriff entfernen
-export const clearBackupTarget = async () => {
+export const clearBackupTarget = async (): Promise<void> => {
   await dualRemove(STORAGE_KEYS.BACKUP_TARGET, "backup_target");
 };
 
 // 5. Einmaliger Export (JSON) - in Documents für User sichtbar
-export const exportToSelectedFolder = async (fileName, dataObj) => {
+export const exportToSelectedFolder = async (fileName: string, dataObj: unknown): Promise<boolean> => {
   try {
     await ensureBackupFolder();
     const content = JSON.stringify(dataObj, null, 2);
@@ -217,7 +218,7 @@ export const exportToSelectedFolder = async (fileName, dataObj) => {
 };
 
 // 6. PDF Export (Base64)
-export const exportPdfToFolder = async (fileName, base64Data) => {
+export const exportPdfToFolder = async (fileName: string, base64Data: string): Promise<boolean> => {
   try {
     await ensureBackupFolder();
     const filePath = `${BACKUP_FOLDER}/${fileName}`;
@@ -247,7 +248,7 @@ export const exportPdfToFolder = async (fileName, base64Data) => {
 };
 
 // 7. Backup aus internem Ordner lesen (für Import im Wizard)
-export const readBackupFromFolder = async () => {
+export const readBackupFromFolder = async (): Promise<unknown> => {
   try {
     const result = await Filesystem.readFile({
       path: `${BACKUP_FOLDER}/estundnzettl_backup.json`,
@@ -255,7 +256,7 @@ export const readBackupFromFolder = async () => {
       encoding: Encoding.UTF8
     });
     
-    return JSON.parse(result.data);
+    return JSON.parse(result.data as string);
   } catch (err) {
     logger.warn("Kein internes Backup gefunden:", err);
     return null;
@@ -267,12 +268,12 @@ export const readBackupFromFolder = async () => {
 // =========================================================
 
 // Hilfsfunktion zum Einlesen einer JSON-Datei (für lokalen Import)
-export const readJsonFile = (file) => {
+export const readJsonFile = (file: File): Promise<unknown> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (e: ProgressEvent<FileReader>) => {
       try {
-        const json = JSON.parse(e.target.result);
+        const json = JSON.parse(e.target!.result as string);
         resolve(json);
       } catch (err) {
         reject(err);
@@ -283,16 +284,17 @@ export const readJsonFile = (file) => {
   });
 };
 
-const isValidEntry = (entry) => {
+const isValidEntry = (entry: unknown): boolean => {
   if (!entry || typeof entry !== "object") return false;
-  if (entry.id === undefined || entry.id === null) return false;
-  if (!entry.date || typeof entry.date !== "string") return false;
-  if (!entry.type || typeof entry.type !== "string") return false;
+  const e = entry as Record<string, unknown>;
+  if (e.id === undefined || e.id === null) return false;
+  if (!e.date || typeof e.date !== "string") return false;
+  if (!e.type || typeof e.type !== "string") return false;
   return true;
 };
 
-const normalizeEntries = (value) => {
-  let raw = [];
+const normalizeEntries = (value: any): any[] => {
+  let raw: any[] = [];
   if (Array.isArray(value)) raw = value;
   else if (Array.isArray(value?.entries)) raw = value.entries;
   else if (Array.isArray(value?.data?.entries)) raw = value.data.entries;
@@ -300,36 +302,36 @@ const normalizeEntries = (value) => {
   return raw.filter(isValidEntry);
 };
 
-const normalizeSettings = (value) => {
+const normalizeSettings = (value: any): Record<string, unknown> | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   return value.user || value.settings || value.profile || value.userData || value.employee || null;
 };
 
-const normalizeWorkCodes = (value) => {
+const normalizeWorkCodes = (value: any): any[] => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
   const raw = value.workCodes || value.codes || value.workcodes || [];
   return Array.isArray(raw) ? raw : [];
 };
 
-const normalizeAttachments = (value) => {
+const normalizeAttachments = (value: any): any[] => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
   const raw = value.attachments || value.files || [];
   return Array.isArray(raw) ? raw : [];
 };
 
-const normalizeAttachmentLabels = (value) => {
+const normalizeAttachmentLabels = (value: any): string[] => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
   const raw = value.attachmentLabels || value.labels || value.attachment_labels || [];
   return Array.isArray(raw) ? raw : [];
 };
 
-const normalizeTimestamp = (value) => {
+const normalizeTimestamp = (value: any): string => {
   return value?.backupDate || value?.exportedAt || value?.lastModified || value?.timestamp || new Date().toISOString();
 };
 
 // 1. ANALYSE - Schaut in die Daten, OHNE zu speichern.
 // Async, weil die Integritätsprüfung via SHA-256 (Web Crypto) asynchron ist.
-export const analyzeBackupData = async (data) => {
+export const analyzeBackupData = async (data: any): Promise<Record<string, unknown>> => {
   if (!data) return { valid: false, isValid: false };
 
   const entries = normalizeEntries(data);
@@ -342,7 +344,7 @@ export const analyzeBackupData = async (data) => {
   if (!hasUsefulData) return { valid: false, isValid: false };
 
   // Integrität prüfen (nicht blockierend — Mismatch ist eine Warnung, kein Fehler)
-  let integrity = "unverified";
+  let integrity: string = "unverified";
   try {
     integrity = await verifyBackupIntegrity(data);
   } catch (err) {
@@ -372,7 +374,7 @@ export const analyzeBackupData = async (data) => {
 };
 
 // 2. ANWENDEN - Speichert die Daten basierend auf der Entscheidung
-export const applyBackup = async (analyzedData, mode = 'ALL') => {
+export const applyBackup = async (analyzedData: any, mode: string = 'ALL'): Promise<boolean> => {
   if (!analyzedData || !analyzedData.valid) return false;
 
   try {
@@ -422,11 +424,11 @@ export const applyBackup = async (analyzedData, mode = 'ALL') => {
 };
 
 // 6. MANUELLER BACKUP (für "Jetzt sichern"-Button)
-export const triggerManualBackup = async () => {
+export const triggerManualBackup = async (): Promise<Record<string, unknown>> => {
   try {
     // Daten aus SQLite laden (Source of Truth), localStorage nur als Fallback
-    let userData = null;
-    let entries = [];
+    let userData: unknown = null;
+    let entries: any[] = [];
 
     if (isSQLiteActive()) {
       try {
@@ -456,7 +458,7 @@ export const triggerManualBackup = async () => {
       return { success: false, message: "Keine Daten zum Sichern" };
     }
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       user: userData,
       entries,
       lastModified: new Date().toISOString(),
@@ -466,10 +468,10 @@ export const triggerManualBackup = async () => {
     await attachBackupChecksum(payload);
 
     // null = nicht aktiv, true = erfolgreich, false = fehlgeschlagen
-    let gdriveOk = cloudActive ? false : null;
-    let localOk = localActive ? false : null;
-    let nextcloudOk = ncActive ? false : null;
-    let nextcloudError = null;
+    let gdriveOk: boolean | null = cloudActive ? false : null;
+    let localOk: boolean | null = localActive ? false : null;
+    let nextcloudOk: boolean | null = ncActive ? false : null;
+    let nextcloudError: string | null = null;
 
     if (cloudActive) {
       try {
@@ -507,7 +509,7 @@ export const triggerManualBackup = async () => {
           nextcloudError = "Nextcloud-Anmeldedaten unvollständig";
         }
       } catch (e) {
-        nextcloudError = e?.message || "Nextcloud-Upload fehlgeschlagen";
+        nextcloudError = (e as any)?.message || "Nextcloud-Upload fehlgeschlagen";
       }
     }
 

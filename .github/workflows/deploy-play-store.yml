@@ -112,7 +112,9 @@ jobs:
           NEW_NAME="$OLD_NAME"
 
           if [ "$BUMP_TYPE" != "none" ]; then
-            IFS='.' read -r major minor patch <<< "$OLD_NAME"
+            # Strip pre-release suffix (e.g. "-beta.0") before parsing
+            BASE_VERSION="${OLD_NAME%%-*}"
+            IFS='.' read -r major minor patch <<< "$BASE_VERSION"
             case "$BUMP_TYPE" in
               major) new_major=$((major + 1)); new_minor=0; new_patch=0 ;;
               minor) new_major=$major; new_minor=$((minor + 1)); new_patch=0 ;;

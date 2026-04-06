@@ -275,13 +275,23 @@ export const calculatePeriodStats = (
       if (thursdayInPeriod) {
         let weekTarget = 0;
         let weekActual = 0;
+        let workDaysInPeriod = 0;
+        let workDaysTotal = 0;
 
         for (let i = 0; i < 7; i++) {
           const dayDate = new Date(monday);
           dayDate.setDate(monday.getDate() + i);
           const dayStr = toLocalDateStr(dayDate);
 
-          weekTarget += getTargetMinutesForDate(dayStr, userData?.workDays);
+          const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
+          weekTarget += dayTarget;
+
+          // Zähle Arbeitstage (Target > 0) für proportionale Aufteilung
+          if (dayTarget > 0) {
+            workDaysTotal++;
+            const inPeriod = dayStr >= startStr && dayStr <= endStr;
+            if (inPeriod) workDaysInPeriod++;
+          }
 
           const inPeriod = dayStr >= startStr && dayStr <= endStr;
           const source = inPeriod ? entries : boundarySource;
@@ -293,12 +303,23 @@ export const calculatePeriodStats = (
           });
         }
 
+        // Volle Woche berechnen (rechtlich korrekt: 40h-Grenze gilt pro Woche)
         const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
           weekActual - weekTarget,
           weekTarget
         );
-        stats.overtimeSplit.mehrarbeit += mehrarbeit;
-        stats.overtimeSplit.ueberstunden += ueberstunden;
+
+        // Proportional nach Arbeitstagen im Monat aufteilen
+        // Liegt die komplette Woche im Zeitraum, wird 100% zugerechnet.
+        // Bei Monatsübergang nur der faire Anteil.
+        if (workDaysTotal > 0 && workDaysInPeriod < workDaysTotal) {
+          const ratio = workDaysInPeriod / workDaysTotal;
+          stats.overtimeSplit.mehrarbeit += Math.round(mehrarbeit * ratio);
+          stats.overtimeSplit.ueberstunden += Math.round(ueberstunden * ratio);
+        } else {
+          stats.overtimeSplit.mehrarbeit += mehrarbeit;
+          stats.overtimeSplit.ueberstunden += ueberstunden;
+        }
       }
     }
 

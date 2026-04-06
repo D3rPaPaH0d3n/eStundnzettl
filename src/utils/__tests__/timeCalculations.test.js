@@ -206,8 +206,9 @@ describe("calculatePeriodStats", () => {
       allEntries
     );
     // Donnerstag der KW14 ist 2.4.2026 → liegt in April → Woche zählt zu April.
-    // Volle-Woche-Rechnung: 420+420+600+600+300 = 2340, Soll 2310 → Diff 30.
-    expect(stats.overtimeSplit.mehrarbeit).toBe(30);
+    // Volle-Woche-Rechnung: 420+420+600+600+300 = 2340, Soll 2310 → Diff 30 MA.
+    // Proportionale Aufteilung: 3 von 5 Arbeitstagen liegen im April → 30 * 3/5 = 18.
+    expect(stats.overtimeSplit.mehrarbeit).toBe(18);
     expect(stats.overtimeSplit.ueberstunden).toBe(0);
   });
 

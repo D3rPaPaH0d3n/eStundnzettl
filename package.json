@@ -1,7 +1,7 @@
 {
   "name": "eStundnzettl",
   "private": true,
-  "version": "7.0.2-beta.0",
+  "version": "3.0.3-beta.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

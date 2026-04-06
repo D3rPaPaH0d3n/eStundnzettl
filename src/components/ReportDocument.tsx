@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { formatTime, formatSignedTime } from "../utils";
-import { buildDayBalanceMetaMap } from "../utils/timeCalculations";
+import { buildDayBalanceMetaMap, getEffectiveDuration } from "../utils/timeCalculations";
 import { WORK_CODE } from "../hooks/constants";
 
 import type { Entry, UserData, WorkCode, Attachment } from "../types";
@@ -107,6 +107,15 @@ const ReportDocument: React.FC<Props> = ({
     () => buildDayBalanceMetaMap(entries, userData),
     [entries, userData]
   );
+
+  const entriesByDate = useMemo(() => {
+    const map: Record<string, Entry[]> = {};
+    entries.forEach((e) => {
+      if (!map[e.date]) map[e.date] = [];
+      map[e.date].push(e);
+    });
+    return map;
+  }, [entries]);
 
   // Fallback-Stats, damit die Komponente auch ohne usePeriodStats laeuft.
   const safeStats = stats || {
@@ -231,7 +240,8 @@ const ReportDocument: React.FC<Props> = ({
 
             let projectText = e.project;
             const codeText = workCodeLabelMap.get(e.code!) || "";
-            let durationDisplay = formatTime(e.netDuration);
+            const dayEntries = entriesByDate[e.date] || [];
+            let durationDisplay = formatTime(getEffectiveDuration(e, dayEntries, userData || null));
             let timeColor = PRINT_STYLES.textDark;
 
             let timeCellContent = null;
@@ -269,7 +279,7 @@ const ReportDocument: React.FC<Props> = ({
             } else if (e.type === "public_holiday") {
               timeCellContent = <span style={{ fontWeight: "bold", color: PRINT_STYLES.textDark }}>Feiertag</span>;
               projectText = e.project || "Gesetzlicher Feiertag";
-              durationDisplay = formatTime(e.netDuration);
+              durationDisplay = formatTime(getEffectiveDuration(e, dayEntries, userData || null));
               timeColor = PRINT_STYLES.textBlue;
             } else if (e.type === "time_comp") {
               timeCellContent = <span style={{ color: PRINT_STYLES.textLight }}>-</span>;

@@ -21,16 +21,16 @@
 
 // ─── Easing & Duration Tokens ─────────────────────────────
 
-export const EASING: Record<string, string> = {
+export const EASING = {
   /** Standard-Page-Transition (leicht federnd via "anticipate"). */
-  page: "anticipate",
+  page: "anticipate" as const,
   /** Standard-In-Out für Modals/Drawer. */
-  modal: "easeInOut",
+  modal: "easeInOut" as const,
   /** Listen-Einträge / Subtile Dekoration. */
-  gentle: "easeOut",
+  gentle: "easeOut" as const,
 };
 
-export const DURATION: Record<string, number> = {
+export const DURATION = {
   quick: 0.2,
   base: 0.3,
   slow: 0.5,
@@ -47,7 +47,7 @@ export const pageVariants = {
 };
 
 export const pageTransition = {
-  type: "tween",
+  type: "tween" as const,
   ease: EASING.page,
   duration: DURATION.base,
 };
@@ -60,7 +60,7 @@ export const reportVariants = {
 };
 
 export const reportTransition = {
-  type: "spring",
+  type: "spring" as const,
   damping: 25,
   stiffness: 200,
 };

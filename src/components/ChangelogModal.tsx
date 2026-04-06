@@ -119,7 +119,7 @@ const ChangelogModal = ({ isOpen, onClose }: Props) => {
 
   const renderBugfixGroup = (group: ChangelogVersion, _isFirst: boolean) => {
     const isVersionOpen = !!openVersions[group.version];
-    const count = group.groupedVersions.length;
+    const count = group.groupedVersions!.length;
 
     return (
       <div key={group.version} className="mb-2">
@@ -157,7 +157,7 @@ const ChangelogModal = ({ isOpen, onClose }: Props) => {
               className="overflow-hidden"
             >
               <div className="pl-8 pt-3 space-y-4">
-                {group.groupedVersions.map((groupedVersion, index) => (
+                {group.groupedVersions!.map((groupedVersion, index) => (
                   <div key={groupedVersion.version} className={index > 0 ? "pt-2" : ""}>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">

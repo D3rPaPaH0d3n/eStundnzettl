@@ -152,7 +152,7 @@ export async function uploadGDriveArchive(filename: string, base64: string, blob
     return { ok: false, error: "Kein base64-Inhalt fuer GDrive-Upload", target: "gdrive" };
   }
   try {
-    await uploadPdfArchiveFile(filename, base64, blob);
+    await uploadPdfArchiveFile(filename, base64, blob ?? undefined);
     return { ok: true, target: "gdrive" };
   } catch (err) {
     log.warn("GDrive PDF-Archiv fehlgeschlagen:", err);

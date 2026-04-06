@@ -31,6 +31,8 @@ export const toLocalDateString = (date: Date): string => {
 interface CardProps {
   children: React.ReactNode;
   className?: string;
+  title?: string;
+  icon?: React.ReactNode;
 }
 
 export const Card = ({ children, className = "" }: CardProps) => (

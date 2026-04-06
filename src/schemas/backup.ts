@@ -38,7 +38,7 @@ export const backupPayloadSchema = z
     lastModified: z.string().optional(),
 
     // Payload
-    user: z.record(z.any()).nullable().optional(),
+    user: z.record(z.string(), z.any()).nullable().optional(),
     entries: z.array(entrySchema).optional().default([]),
     workCodes: z.array(workCodeSchema).optional().default([]),
     attachments: z.array(attachmentMetaSchema).optional().default([]),
@@ -46,6 +46,6 @@ export const backupPayloadSchema = z
   })
   .passthrough();
 
-export function parseBackupPayloadSafe(value: unknown): z.SafeParseReturnType<z.input<typeof backupPayloadSchema>, z.infer<typeof backupPayloadSchema>> {
+export function parseBackupPayloadSafe(value: unknown) {
   return backupPayloadSchema.safeParse(value);
 }

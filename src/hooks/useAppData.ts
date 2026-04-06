@@ -34,15 +34,16 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
 
       holidayEntries.push({
         id: `auto-holiday-${dateStr}`,
-        type: "public_holiday",
+        type: "public_holiday" as const,
         date: dateStr,
         project: holidayMap[dateStr] || "Gesetzlicher Feiertag",
+        pause: 0,
         netDuration: targetMin,
       });
     }
 
     return [...realEntries, ...holidayEntries].sort(
-      (a, b) => new Date(b.date) - new Date(a.date)
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
   }, [entries, viewMonth, viewYear, userData]);
 
@@ -82,10 +83,10 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
 
     const groupedEntries = Array.from(map.entries());
     groupedEntries.forEach(([, list]) =>
-      list.sort((a, b) => new Date(b.date) - new Date(a.date))
+      list.sort((a: Entry, b: Entry) => new Date(b.date).getTime() - new Date(a.date).getTime())
     );
 
-    return groupedEntries.sort((a, b) => b[0] - a[0]);
+    return groupedEntries.sort((a: [number, Entry[]], b: [number, Entry[]]) => b[0] - a[0]);
   }, [entriesWithHolidays, allEntries, weekNumbersInMonth]);
 
   const periodStart = useMemo(
@@ -127,7 +128,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
   const uniqueProjects = useMemo(() => {
     const projects = entries
       .filter((entry) => entry.type === "work" && entry.project?.trim())
-      .map((entry) => entry.project.trim());
+      .map((entry) => entry.project!.trim());
 
     return [...new Set(projects)].sort();
   }, [entries]);

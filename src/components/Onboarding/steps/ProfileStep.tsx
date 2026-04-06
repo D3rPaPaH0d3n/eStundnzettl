@@ -24,7 +24,7 @@ interface OnboardingFormData {
 interface Props {
   formData: OnboardingFormData;
   setFormData: (data: OnboardingFormData) => void;
-  photoInputRef: React.RefObject<HTMLInputElement>;
+  photoInputRef: React.RefObject<HTMLInputElement | null>;
   onPhotoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 

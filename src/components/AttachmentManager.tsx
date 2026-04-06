@@ -89,7 +89,7 @@ const AttachmentManager = ({
       toast.success("Dokument hinzugefügt");
       resetForm();
     } catch (error) {
-      toast.error(error.message || "Dokument konnte nicht gespeichert werden.");
+      toast.error((error as Error).message || "Dokument konnte nicht gespeichert werden.");
     } finally {
       setIsSaving(false);
     }

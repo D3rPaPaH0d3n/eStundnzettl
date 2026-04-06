@@ -13,7 +13,7 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 interface UseTimerActionsProps {
   form: any;
   startTimer: () => void;
-  stopTimer: () => { start: Date; end: Date; pause: number };
+  stopTimer: () => { start: Date | null; end: Date | null; pause: number };
   getDefaultCode: () => number;
   setView: (view: string) => void;
 }
@@ -28,6 +28,7 @@ export function useTimerActions({ form, startTimer, stopTimer, getDefaultCode, s
   const handleStopLive = useCallback(() => {
     Haptics.impact({ style: ImpactStyle.Heavy });
     const result = stopTimer();
+    if (!result.start || !result.end) return;
 
     const yyyy = result.start.getFullYear();
     const mm = String(result.start.getMonth() + 1).padStart(2, "0");

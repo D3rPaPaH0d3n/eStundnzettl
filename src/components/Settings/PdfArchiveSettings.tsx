@@ -86,7 +86,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
         const status = await getGoogleDrivePdfStatus();
         if (cancelled) return;
         setGdriveConnected(!!(status?.connected && status?.hasToken));
-        setGdriveEmail(status?.accountEmail || "");
+        setGdriveEmail((status?.accountEmail as string) || "");
       } catch (e) {
         log.warn("GDrive-PDF-Archiv Status laden fehlgeschlagen:", e);
       }
@@ -126,10 +126,10 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
     try {
       const result = await connectGoogleDrivePdf();
       setGdriveConnected(true);
-      setGdriveEmail(result?.email || "");
+      setGdriveEmail((result as { email?: string })?.email || "");
       toast.success("Google Drive (PDF-Archiv) verbunden");
-    } catch (err) {
-      const msg = String(err?.message || err);
+    } catch (err: unknown) {
+      const msg = String((err as Error)?.message || err);
       if (msg.includes("CANCELLED")) {
         toast("Verbindung abgebrochen", { icon: "ℹ️" });
       } else {
@@ -153,7 +153,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
       }
       toast.success("Google Drive (PDF-Archiv) getrennt");
     } catch (err) {
-      toast.error(`Trennen fehlgeschlagen: ${err?.message || err}`);
+      toast.error(`Trennen fehlgeschlagen: ${(err as Error)?.message || err}`);
     } finally {
       setGdriveBusy(false);
     }
@@ -196,7 +196,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
         toast.error(`Nicht ausgefuehrt: ${res?.reason || res?.error || "unbekannt"}`, { id: toastId });
       }
     } catch (err) {
-      toast.error(`Fehler: ${err?.message || err}`, { id: toastId });
+      toast.error(`Fehler: ${(err as Error)?.message || err}`, { id: toastId });
     } finally {
       setIsRunning(false);
     }

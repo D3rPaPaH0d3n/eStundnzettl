@@ -212,13 +212,13 @@ const AppTour = ({ onClose }: Props) => {
   const pointerPadding = 10;
   const pointerStyle = rect
     ? {
-        position: "fixed",
+        position: "fixed" as const,
         top: rect.top - pointerPadding,
         left: rect.left - pointerPadding,
         width: rect.width + pointerPadding * 2,
         height: rect.height + pointerPadding * 2,
         borderRadius: "9999px",
-        pointerEvents: "none",
+        pointerEvents: "none" as const,
       }
     : null;
 

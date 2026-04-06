@@ -86,7 +86,7 @@ export interface BackupPayload {
   version?: string;
   note?: string;
   lastModified?: string;
-  user?: Record<string, unknown> | null;
+  user?: UserData | Record<string, unknown> | null;
   entries: Entry[];
   workCodes: WorkCode[];
   attachments: Attachment[];

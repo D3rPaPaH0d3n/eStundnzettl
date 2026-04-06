@@ -134,11 +134,11 @@ export async function renderMonthlyReportPdfBlob({
           workCodes,
           attachments,
           customNote,
-        })
+        } as any)
       );
       // requestAnimationFrame * 2 stellt sicher, dass React committed
       // und das Layout vom Browser berechnet wurde.
-      requestAnimationFrame(() => requestAnimationFrame(resolve));
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 
     await waitForImages(host);
@@ -162,7 +162,7 @@ export async function renderMonthlyReportPdfBlob({
       pagebreak: { mode: "css" },
     };
 
-    const blob = await html2pdf().set(opt).from(element).output("blob");
+    const blob = await html2pdf().set(opt as any).from(element as HTMLElement).output("blob");
     return blob;
   } catch (err) {
     log.error("renderMonthlyReportPdfBlob failed:", err);

@@ -91,7 +91,7 @@ export function useEntries() {
     } catch (err) {
       logger.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
       if (previous) {
-        setEntries((prev) => prev.map((e) => (e.id === updatedEntry.id ? previous : e)));
+        setEntries((prev) => prev.map((e) => (e.id === updatedEntry.id ? previous! : e)));
       }
       toast.error("Eintrag konnte nicht aktualisiert werden");
     }
@@ -108,7 +108,7 @@ export function useEntries() {
     } catch (err) {
       logger.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
       if (removed) {
-        setEntries((prev) => [removed, ...prev]);
+        setEntries((prev) => [removed!, ...prev]);
       }
       toast.error("Eintrag konnte nicht gelöscht werden");
     }

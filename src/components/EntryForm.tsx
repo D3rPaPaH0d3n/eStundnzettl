@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 import DatePicker, { registerLocale, CalendarContainer } from "react-datepicker";
+// @ts-ignore
 import "react-datepicker/dist/react-datepicker.css";
 import { de } from "date-fns/locale";
 import TimePickerDrawer from "./TimePickerDrawer";
@@ -232,7 +233,7 @@ const EntryForm: React.FC<Props> = ({
         title="Tätigkeit wählen"
         options={workCodes.filter((c) => c.id !== WORK_CODE.ARRIVAL && c.id !== WORK_CODE.DRIVE)}
         value={code}
-        onChange={setCode}
+        onChange={(id: string | number) => setCode(id as number)}
       />
 
       <Card>
@@ -315,7 +316,7 @@ const EntryForm: React.FC<Props> = ({
               <div className="flex-1">
                 <DatePicker
                   selected={new Date(formDate)}
-                  onChange={(date) => setFormDate(toLocalDateString(date))}
+                  onChange={(date: Date | null) => setFormDate(toLocalDateString(date!))}
                   onMonthChange={(date) => setViewYear(date.getFullYear())}
                   onYearChange={(date) => setViewYear(date.getFullYear())}
                   dateFormat="eee, dd.MM.yyyy" 
@@ -323,9 +324,9 @@ const EntryForm: React.FC<Props> = ({
                   withPortal
                   calendarContainer={CalendarContainerAnimation}
                   customInput={<CustomInput icon={CalIcon} />}
-                  dayClassName={(date) => {
+                  dayClassName={(date: Date) => {
                     const dateStr = toLocalDateString(date);
-                    return holidayData[dateStr] ? "!text-red-600 !font-bold" : undefined;
+                    return holidayData[dateStr] ? "!text-red-600 !font-bold" : "";
                   }}
                 />
               </div>
@@ -431,7 +432,7 @@ const EntryForm: React.FC<Props> = ({
                     type="text"
                     value={project}
                     onChange={handleProjectChange}
-                    onFocus={() => { if(project) handleProjectChange({target: {value: project}}) }}
+                    onFocus={() => { if(project) handleProjectChange({target: {value: project}} as React.ChangeEvent<HTMLInputElement>) }}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     className="w-full p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg outline-none dark:text-white focus:border-emerald-500 transition-colors"
                     placeholder="..."

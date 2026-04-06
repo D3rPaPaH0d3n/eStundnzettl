@@ -59,7 +59,7 @@ export const useLiveTimer = () => {
         const pauseMinutes = Math.round((timerState.accumulatedPause || 0) / 1000 / 60);
 
         // Berechne wie viele Tage übersprungen wurden
-        const daysDiff = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+        const daysDiff = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
         setAutoCheckoutData({
           start: startDate,
@@ -103,8 +103,8 @@ export const useLiveTimer = () => {
   const resumeTimer = () => {
     if (!timerState.isPaused) return;
     const now = new Date();
-    const pauseStart = new Date(timerState.pauseStartTime);
-    const pauseDiffMs = now - pauseStart;
+    const pauseStart = new Date(timerState.pauseStartTime!);
+    const pauseDiffMs = now.getTime() - pauseStart.getTime();
 
     setTimerState(prev => ({
       ...prev,
@@ -119,7 +119,7 @@ export const useLiveTimer = () => {
     
     let finalAccumulatedPauseMs = timerState.accumulatedPause || 0;
     if (timerState.isPaused && timerState.pauseStartTime) {
-        finalAccumulatedPauseMs += (now - new Date(timerState.pauseStartTime));
+        finalAccumulatedPauseMs += (now.getTime() - new Date(timerState.pauseStartTime).getTime());
     }
     const pauseMinutes = Math.round(finalAccumulatedPauseMs / 1000 / 60);
 

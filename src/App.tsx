@@ -138,7 +138,7 @@ export default function App() {
   } = useAttachments();
 
   // --- EXPORT / IMPORT ---
-  const exportPayloadRef = useRef(null);
+  const exportPayloadRef = useRef<import('./types').BackupPayload | null>(null);
   const { showExportModal, setShowExportModal, exportData, handleExportToFolder, handleExportShare, handleImport } = useExport({
     entries,
     userData,
@@ -283,7 +283,7 @@ export default function App() {
 
       form.setEntryType("work");
 
-      const toLocalHHMM = (dateObj) => {
+      const toLocalHHMM = (dateObj: Date) => {
         const h = String(dateObj.getHours()).padStart(2, '0');
         const m = String(dateObj.getMinutes()).padStart(2, '0');
         return `${h}:${m}`;
@@ -324,7 +324,7 @@ export default function App() {
       if (view !== "dashboard") { setView("dashboard"); form.setEditingEntry(null); }
       else CapacitorApp.exitApp();
     });
-    return () => handler.remove();
+    return () => { handler.then(h => h.remove()); };
   }, [view]);
 
   // --- RENDER ---
@@ -380,7 +380,7 @@ export default function App() {
         </Suspense>
       )}
 
-      <input type="file" className="hidden" ref={fileInputRef} accept="application/json" onChange={handleImport} />
+      <input type="file" className="hidden" ref={fileInputRef} accept="application/json" onChange={handleImport as unknown as React.ChangeEventHandler<HTMLInputElement>} />
 
       {!showOnboarding && (
         <header className="fixed top-0 left-0 right-0 bg-zinc-900 text-white p-4 pb-6 shadow-xl z-50 w-full transition-all" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
@@ -414,13 +414,12 @@ export default function App() {
                 currentDate={currentDate}
                 onSetCurrentDate={setCurrentDate}
                 changeMonth={changeMonth}
-                stats={stats}
+                stats={stats as any}
                 overtime={overtime}
                 progressPercent={progressPercent}
                 groupedByWeek={groupedByWeek}
                 viewMonth={viewMonth}
                 viewYear={viewYear}
-                onStartNewEntry={startNewEntry}
                 onEditEntry={startEdit}
                 onDeleteEntry={handleRequestDeleteEntry}
                 onManageAttachments={setAttachmentEntry}
@@ -478,6 +477,8 @@ export default function App() {
                   onImport={() => fileInputRef.current?.click()}
                   onDeleteAll={handleRequestDeleteAll}
                   onCheckUpdate={handleManualUpdateCheck}
+                  importEntries={importEntries}
+                  importWorkCodes={loadWorkCodes}
                   // Nextcloud State
                   nextcloudEnabled={nextcloudEnabled}
                   nextcloudUrl={nextcloudUrl}
@@ -516,7 +517,7 @@ export default function App() {
                 userData={userData}
                 workCodes={workCodes}
                 attachments={attachments}
-                readAttachmentFile={readAttachmentFile}
+                readAttachmentFile={readAttachmentFile as (file: import('./types').Attachment) => Promise<string>}
               />
               </Suspense>
             </motion.div>

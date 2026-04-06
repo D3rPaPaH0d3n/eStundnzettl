@@ -47,7 +47,7 @@ const sanitizeFileName = (name: string = "dokument"): string => {
 
 const getExtension = (fileName: string = ""): string => {
   const parts = fileName.split(".");
-  return parts.length > 1 ? parts.pop().toLowerCase() : "bin";
+  return parts.length > 1 ? parts.pop()!.toLowerCase() : "bin";
 };
 
 const ensureNative = (): void => {
@@ -223,11 +223,11 @@ export function useAttachments() {
       });
     }
 
-    if (removed?.storagePath) {
+    if (removed && (removed as Attachment).storagePath) {
       try {
         ensureNative();
         await Filesystem.deleteFile({
-          path: removed.storagePath,
+          path: (removed as Attachment).storagePath,
           directory: Directory.Data,
         });
       } catch {
@@ -258,7 +258,7 @@ export function useAttachments() {
   const getAttachmentsForEntry = useCallback((entryId: number | string) => {
     return attachments
       .filter((item) => item.entryId === entryId)
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }, [attachments]);
 
   const getAttachmentsForEntries = useCallback((entryIds: (number | string)[]) => {

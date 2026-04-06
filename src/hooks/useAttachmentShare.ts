@@ -76,8 +76,8 @@ export function useAttachmentShare({ readAttachmentFile }: { readAttachmentFile:
       });
 
       toast.success(`${files.length} Datei${files.length > 1 ? "en" : ""} zum Teilen bereit`);
-    } catch (error) {
-      if (error?.message?.includes("canceled") || error?.message?.includes("cancelled")) {
+    } catch (error: unknown) {
+      if ((error as Error)?.message?.includes("canceled") || (error as Error)?.message?.includes("cancelled")) {
         return;
       }
       throw error;

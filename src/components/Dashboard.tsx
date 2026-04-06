@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 import DatePicker, { registerLocale } from "react-datepicker";
+// @ts-ignore
 import "react-datepicker/dist/react-datepicker.css";
 import { de } from "date-fns/locale";
 
@@ -98,7 +99,7 @@ const Dashboard: React.FC<Props> = ({
     () => [...groupedByWeek].sort((a, b) => {
       const dateA = new Date(a[1][0].date);
       const dateB = new Date(b[1][0].date);
-      return dateB - dateA;
+      return dateB.getTime() - dateA.getTime();
     }),
     [groupedByWeek]
   );
@@ -136,7 +137,7 @@ const Dashboard: React.FC<Props> = ({
             <div className="flex justify-center">
                 <DatePicker 
                     selected={currentDate} 
-                    onChange={(date) => { const d = new Date(date); d.setDate(1); onSetCurrentDate(d); }} 
+                    onChange={(date: Date | null) => { const d = new Date(date!); d.setDate(1); onSetCurrentDate(d); }} 
                     dateFormat="MMMM yyyy" 
                     showMonthYearPicker 
                     locale="de" 
@@ -257,7 +258,7 @@ const Dashboard: React.FC<Props> = ({
                 if (!daysMap.has(e.date)) daysMap.set(e.date, []); 
                 daysMap.get(e.date).push(e); 
             });
-            const sortedDays = Array.from(daysMap.entries()).sort((a, b) => new Date(b[0]) - new Date(a[0]));
+            const sortedDays = Array.from(daysMap.entries()).sort((a: [string, Entry[]], b: [string, Entry[]]) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
 
             return (
               <div key={week} className="mb-3">

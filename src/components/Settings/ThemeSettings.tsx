@@ -26,7 +26,7 @@ const ThemeSettings: React.FC<Props> = ({ theme, setTheme }) => {
         {["light", "dark", "system"].map((mode) => (
           <button
             key={mode}
-            onClick={() => handleThemeChange(mode)}
+            onClick={() => handleThemeChange(mode as Theme)}
             className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors capitalize 
               ${
                 theme === mode

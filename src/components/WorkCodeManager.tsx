@@ -62,7 +62,7 @@ export const WorkCodeManager = ({ isOpen, onClose }: Props) => {
   };
 
   const handleSaveEdit = () => {
-    if (updateCode(editingId, editingLabel)) {
+    if (updateCode(editingId!, editingLabel)) {
       setEditingId(null);
       setEditingLabel('');
     }

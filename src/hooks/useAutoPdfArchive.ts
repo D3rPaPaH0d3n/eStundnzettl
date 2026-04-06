@@ -216,7 +216,7 @@ export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCode
       return { ok: true, results, anyRealUpload, anyFailure };
     } catch (err) {
       log.error("performRun failed:", err);
-      const msg = String(err?.message || err);
+      const msg = String((err as Error)?.message || err);
       await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_LAST_ERROR, "pdf_archive_last_error", msg);
       setLastError(msg);
       return { ok: false, error: msg };
@@ -240,7 +240,7 @@ export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCode
 
   // Resume-Check (App-Wechsel von Background → Foreground)
   useEffect(() => {
-    let handle = null;
+    let handle: { remove: () => void } | null = null;
     (async () => {
       handle = await App.addListener("appStateChange", ({ isActive }) => {
         if (isActive) {

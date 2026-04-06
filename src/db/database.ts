@@ -129,7 +129,7 @@ export async function closeDb(): Promise<void> {
  */
 export async function execute(sql: string): Promise<any> {
   const db = await getDb();
-  return CapacitorSQLite.execute({ database: db, statements: sql });
+  return CapacitorSQLite.execute({ database: db!, statements: sql });
 }
 
 /**
@@ -137,7 +137,7 @@ export async function execute(sql: string): Promise<any> {
  */
 export async function run(sql: string, values: any[] = []): Promise<any> {
   const db = await getDb();
-  return CapacitorSQLite.run({ database: db, statement: sql, values });
+  return CapacitorSQLite.run({ database: db!, statement: sql, values });
 }
 
 /**
@@ -148,7 +148,7 @@ export async function run(sql: string, values: any[] = []): Promise<any> {
 export async function executeSet(set: Array<{ statement: string; values: any[] }>, transaction: boolean = true): Promise<any> {
   if (!set || set.length === 0) return;
   const db = await getDb();
-  return CapacitorSQLite.executeSet({ database: db, set, transaction });
+  return CapacitorSQLite.executeSet({ database: db!, set, transaction });
 }
 
 /**
@@ -156,6 +156,6 @@ export async function executeSet(set: Array<{ statement: string; values: any[] }
  */
 export async function query(sql: string, values: any[] = []): Promise<any[]> {
   const db = await getDb();
-  const result = await CapacitorSQLite.query({ database: db, statement: sql, values });
+  const result = await CapacitorSQLite.query({ database: db!, statement: sql, values });
   return result.values || [];
 }

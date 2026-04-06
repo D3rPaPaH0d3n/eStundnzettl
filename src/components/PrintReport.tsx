@@ -55,7 +55,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries, monthDate, employee
           path: file.storagePath,
           directory: Directory.Cache,
         });
-        return result.data;
+        return result.data as string;
       }
       return readAttachmentFile(file);
     },
@@ -100,7 +100,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries, monthDate, employee
     const list = filterMode === "month" ? [...entries] : entries.filter((e) => getWeekNumber(new Date(e.date)) === Number(filterMode));
     list.sort((a, b) => {
       const da = new Date(a.date); const db = new Date(b.date);
-      if (da.getTime() !== db.getTime()) return da - db;
+      if (da.getTime() !== db.getTime()) return da.getTime() - db.getTime();
       return (a.start || "").localeCompare(b.start || "");
     });
     return list;
@@ -164,13 +164,13 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries, monthDate, employee
       const opt = {
         margin: 5, 
         filename,
-        image: { type: "jpeg", quality: 0.98 },
+        image: { type: "jpeg" as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, windowWidth: 794, scrollY: 0, backgroundColor: "#ffffff" }, 
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak: { mode: 'css' } 
       };
 
-      const worker = html2pdf().set(opt).from(element);
+      const worker = html2pdf().set(opt as any).from(element);
 
       if (!Capacitor.isNativePlatform()) {
         await worker.save();
@@ -181,7 +181,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries, monthDate, employee
         const base64 = await blobToBase64(pdfBlob);
 
         if (actionType === 'share') {
-          await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache, encoding: Encoding.BASE64, recursive: true });
+          await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache, recursive: true });
           const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache }); 
 
           if (reportAttachments.length === 0) {
@@ -190,10 +190,8 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries, monthDate, employee
           } else {
             await shareReportBundle({
               pdfFile: {
-                fileName: filename,
-                mimeType: "application/pdf",
                 storagePath: filename,
-                label: "Stundenzettel",
+                mimeType: "application/pdf",
               },
               attachments: reportAttachments,
             });
@@ -208,11 +206,11 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries, monthDate, employee
       setIsGenerating(false);
       
     } catch (err) {
-      if (err.message && (err.message.includes("canceled") || err.message.includes("cancelled"))) { 
-        setIsGenerating(false); setScale(1); return; 
+      if ((err as Error).message && ((err as Error).message.includes("canceled") || (err as Error).message.includes("cancelled"))) {
+        setIsGenerating(false); setScale(1); return;
       }
       logger.error(err);
-      toast.error("Fehler: " + err.message);
+      toast.error("Fehler: " + (err as Error).message);
       setIsGenerating(false);
       setScale(1); 
     }

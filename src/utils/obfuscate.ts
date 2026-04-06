@@ -87,7 +87,7 @@ async function loadOrCreateMasterKey(): Promise<CryptoKey> {
       if (raw.length === 32) {
         return await crypto.subtle.importKey(
           "raw",
-          raw,
+          raw as BufferSource,
           { name: "AES-GCM" },
           false,
           ["encrypt", "decrypt"]
@@ -159,7 +159,7 @@ export async function obfuscate(val: string | null | undefined): Promise<string>
       await crypto.subtle.encrypt(
         { name: "AES-GCM", iv },
         key,
-        utf8Encode(str)
+        utf8Encode(str) as BufferSource
       )
     );
     return `${ENC_PREFIX}${bytesToBase64(iv)}:${bytesToBase64(ct)}`;
@@ -195,7 +195,7 @@ export async function deobfuscate(val: string | null | undefined): Promise<strin
       const crypto = getCrypto();
       const key = await getMasterKey();
       const pt = new Uint8Array(
-        await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct)
+        await (crypto.subtle.decrypt as any)({ name: "AES-GCM", iv }, key, ct)
       );
       return utf8Decode(pt);
     } catch (err) {

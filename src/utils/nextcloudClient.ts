@@ -99,7 +99,7 @@ export async function initiateLoginFlow(serverUrl: string): Promise<NcResult> {
 
   if (Capacitor.getPlatform() === 'android') {
     try {
-      return await NextcloudLoginFlow.startLoginFlow({ serverUrl: normalized.value });
+      return await NextcloudLoginFlow.startLoginFlow({ url: normalized.value as string }) as unknown as NcResult;
     } catch (error) {
       return buildError('PLUGIN_ERROR', (error as any)?.message || 'Native Android-Integration fehlgeschlagen', undefined, true);
     }
@@ -124,9 +124,9 @@ export async function initiateLoginFlow(serverUrl: string): Promise<NcResult> {
     const parsed = await parseJsonResponse(response, 'Server liefert ungültiges JSON');
     if (!parsed.ok) return parsed;
 
-    const data = parsed.data;
+    const data = parsed.data as any;
     if (!data?.login || !data?.poll?.endpoint || !data?.poll?.token) {
-      return buildError('INVALID_RESPONSE', 'Antwort vom Server ist unvollständig', parsed.httpStatus);
+      return buildError('INVALID_RESPONSE', 'Antwort vom Server ist unvollständig', parsed.httpStatus as number | undefined);
     }
 
     return {
@@ -146,7 +146,7 @@ export async function pollLoginResult(pollEndpoint: string, token: string): Prom
 
   if (Capacitor.getPlatform() === 'android') {
     try {
-      return await NextcloudLoginFlow.pollLoginFlow({ pollEndpoint, token });
+      return await NextcloudLoginFlow.pollLoginFlow({ pollEndpoint, token }) as unknown as NcResult;
     } catch (error) {
       return buildError('PLUGIN_ERROR', (error as any)?.message || 'Native Android-Integration fehlgeschlagen', undefined, true);
     }
@@ -176,9 +176,9 @@ export async function pollLoginResult(pollEndpoint: string, token: string): Prom
     const parsed = await parseJsonResponse(response, 'Server liefert ungültiges JSON');
     if (!parsed.ok) return parsed;
 
-    const data = parsed.data;
+    const data = parsed.data as any;
     if (!data?.server || !data?.loginName || !data?.appPassword) {
-      return buildError('INVALID_RESPONSE', 'Antwort vom Server ist unvollständig', parsed.httpStatus);
+      return buildError('INVALID_RESPONSE', 'Antwort vom Server ist unvollständig', parsed.httpStatus as number | undefined);
     }
 
     return {
@@ -302,7 +302,7 @@ export async function resolveUserId(serverUrl: string, loginName: string, appPas
 async function getDavUser(serverUrl: string, authUser: string, appPassword: string): Promise<string> {
   const cacheKey = getDavUserCacheKey(serverUrl, authUser);
   if (resolvedDavUserCache.has(cacheKey)) {
-    return resolvedDavUserCache.get(cacheKey);
+    return resolvedDavUserCache.get(cacheKey)!;
   }
 
   const davUser = await resolveUserId(serverUrl, authUser, appPassword);
@@ -408,11 +408,11 @@ export async function ensureFolder(url: string, user: string, pass: string): Pro
     }
     throw new Error(`MKCOL ${res.status} auf ${folderUrl} body=${(res.body || "").substring(0, 500)}`);
   } catch (err) {
-    if (err.message.includes("401")) throw err;
-    if (err.message.includes("drosselt gerade Anfragen")) {
+    if ((err as Error).message.includes("401")) throw err;
+    if ((err as Error).message.includes("drosselt gerade Anfragen")) {
       return { ok: false, reason: "rate_limited" };
     }
-    throw new Error(`Ordner erstellen fehlgeschlagen: ${err.message}`);
+    throw new Error(`Ordner erstellen fehlgeschlagen: ${(err as Error).message}`);
   }
 }
 
@@ -445,8 +445,8 @@ async function ensureFolderPath(url: string, user: string, pass: string, segment
       if (res.status === 401) throw new Error("Nicht autorisiert (401)");
       throw new Error(`MKCOL ${res.status} auf ${folderUrl}`);
     } catch (err) {
-      if (err.message.includes("401")) throw err;
-      if (err.message.includes("drosselt gerade Anfragen")) {
+      if ((err as Error).message.includes("401")) throw err;
+      if ((err as Error).message.includes("drosselt gerade Anfragen")) {
         return { ok: false, reason: "rate_limited" };
       }
       throw err;

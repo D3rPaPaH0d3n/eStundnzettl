@@ -24,7 +24,7 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
       reader.readAsDataURL(file);
       reader.onload = (event) => {
         const img = new Image();
-        img.src = event.target.result;
+        img.src = event.target!.result as string;
         img.onload = () => {
           const MAX_WIDTH = 1024;
           const MAX_HEIGHT = 1024;
@@ -38,7 +38,7 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
           const canvas = document.createElement("canvas");
           canvas.width = width;
           canvas.height = height;
-          const ctx = canvas.getContext("2d");
+          const ctx = canvas.getContext("2d")!;
           ctx.drawImage(img, 0, 0, width, height);
           resolve(canvas.toDataURL("image/jpeg", 0.9));
         };
@@ -69,8 +69,7 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
   const removePhoto = (e: React.MouseEvent) => {
     e.stopPropagation();
     Haptics.impact({ style: ImpactStyle.Medium });
-    const newData = { ...userData };
-    delete newData.photo;
+    const newData = { ...userData, photo: null };
     setUserData(newData);
     toast.success("Bild entfernt");
   };

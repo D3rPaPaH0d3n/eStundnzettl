@@ -40,6 +40,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
       entries,
       workCodes,
       attachments,
+      attachmentLabels: [],
       exportedAt: new Date().toISOString(),
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     };
@@ -62,8 +63,8 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
           await navigator.share({ files: [file], title: "eStundnzettl Backup", text: "Backup meiner Stunden" });
           toast.success("📤 Export erfolgreich!", { id: toastId });
           return;
-        } catch (shareError) {
-          if (shareError.name === "AbortError") {
+        } catch (shareError: unknown) {
+          if ((shareError as DOMException).name === "AbortError") {
             toast.dismiss(toastId);
             return;
           }
@@ -80,7 +81,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
       URL.revokeObjectURL(url);
       toast.success("💾 Download gestartet!", { id: toastId });
     } catch (e) {
-      toast.error(`❌ Export Fehler: ${e.message}`, { id: toastId, duration: 5000 });
+      toast.error(`❌ Export Fehler: ${(e as Error).message}`, { id: toastId, duration: 5000 });
     }
   };
 
@@ -152,10 +153,10 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
       toast.success("📤 Export bereitgestellt!", { id: toastId });
     } catch (e) {
       logger.error("Share error:", e);
-      if (e.message?.includes("canceled") || e.message?.includes("cancelled")) {
+      if ((e as Error).message?.includes("canceled") || (e as Error).message?.includes("cancelled")) {
         toast.dismiss(toastId);
       } else {
-        toast.error(`❌ Export Fehler: ${e.message}`, { id: toastId, duration: 5000 });
+        toast.error(`❌ Export Fehler: ${(e as Error).message}`, { id: toastId, duration: 5000 });
       }
     }
   };

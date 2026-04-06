@@ -35,7 +35,7 @@ export function useOnboardingActions({
   const handleOnboardingFinish = useCallback(async () => {
     if (isSQLiteActive()) {
       try {
-        const userDataFromSQLite = await getSetting("user");
+        const userDataFromSQLite = await getSetting("user") as (UserData & { settings?: { autoBackup?: boolean } }) | null;
         if (userDataFromSQLite) {
           setUserData(userDataFromSQLite);
           if (userDataFromSQLite.settings?.autoBackup !== undefined) {

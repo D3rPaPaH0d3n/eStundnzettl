@@ -112,20 +112,21 @@ export function useSettings() {
         if (cancelled) return;
 
         if (sqlUser && typeof sqlUser === "object") {
-          if (!Array.isArray(sqlUser.workDays) || sqlUser.workDays.length !== 7) {
-            sqlUser.workDays = [...WORK_MODELS[0].days];
+          const u = sqlUser as Record<string, unknown>;
+          if (!Array.isArray(u.workDays) || (u.workDays as unknown[]).length !== 7) {
+            (u as Record<string, unknown>).workDays = [...WORK_MODELS[0].days];
           }
-          setUserData(sqlUser);
+          setUserData(u as unknown as UserData);
         }
-        if (sqlTheme) setTheme(sqlTheme);
+        if (sqlTheme) setTheme(sqlTheme as Theme);
         if (sqlCloud !== null) setCloudSyncEnabled(!!sqlCloud);
         if (sqlLocal !== null) setLocalBackupEnabled(!!sqlLocal);
         if (sqlNcEnabled !== null) setNextcloudEnabled(!!sqlNcEnabled);
-        if (sqlNcUrl) setNextcloudUrl(sqlNcUrl);
-        if (sqlNcUser) setNextcloudUser(sqlNcUser);
+        if (sqlNcUrl) setNextcloudUrl(sqlNcUrl as string);
+        if (sqlNcUser) setNextcloudUser(sqlNcUser as string);
         if (sqlNcPass) {
           try {
-            const plain = await deobfuscate(sqlNcPass);
+            const plain = await deobfuscate(sqlNcPass as string);
             if (!cancelled && plain) setNextcloudPass(plain);
           } catch (err) {
             logger.error("[useSettings] Nextcloud-Pass konnte nicht entschlüsselt werden:", err);

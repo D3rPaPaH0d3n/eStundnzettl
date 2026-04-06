@@ -43,7 +43,7 @@ export function hashMonthContent({ entries, userData, year, month }: { entries: 
     ym: `${year}-${pad2(month)}`,
     name: userData?.name || "",
     workDays: userData?.workDays || null,
-    workModel: userData?.workModel || null,
+    workModel: (userData as any)?.workModel || null,
     entries: filterEntriesForMonth(entries, year, month).map((e) => ({
       id: e.id,
       t: e.type,
@@ -96,7 +96,7 @@ export async function generateMonthlyPdfBlob({ year, month, entries, userData, w
     attachments,
   });
 
-  let timeoutHandle: ReturnType<typeof setTimeout>;
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutHandle = setTimeout(
       () => reject(new Error("PDF-Generierung Timeout (30s)")),

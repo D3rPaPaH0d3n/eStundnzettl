@@ -160,19 +160,20 @@ const BackupSettings: React.FC<Props> = ({
     if (saved) setLastBackupDate(saved);
 
     Promise.resolve(getGoogleAuthStatus())
-      .then((googleStatus) => {
+      .then((googleStatus: any) => {
         setIsTokenValid(isGoogleConnectionReady(googleStatus));
+        const storedAuth = getStoredGoogleAuth?.() as any;
         const accountLabel =
           googleStatus?.userInfo?.email ||
           googleStatus?.accountEmail ||
-          getStoredGoogleAuth?.()?.userInfo?.email ||
-          getStoredGoogleAuth?.()?.accountEmail ||
+          storedAuth?.userInfo?.email ||
+          storedAuth?.accountEmail ||
           "";
         setGoogleAccountLabel(accountLabel);
       })
       .catch(() => {
         setIsTokenValid(false);
-        const storedAuth = getStoredGoogleAuth?.();
+        const storedAuth = getStoredGoogleAuth?.() as any;
         setGoogleAccountLabel(storedAuth?.userInfo?.email || storedAuth?.accountEmail || "");
       });
 
@@ -192,7 +193,7 @@ const BackupSettings: React.FC<Props> = ({
             getSetting("nextcloud_backup_fail_count"),
             getSetting("nextcloud_backup_last_error"),
           ]);
-          if (sqlLastBackup) setLastBackupDate(sqlLastBackup);
+          if (sqlLastBackup) setLastBackupDate(sqlLastBackup as string);
           if (sqlFailCount !== null) {
             setBackupFailCount(parseInt(String(sqlFailCount), 10) || 0);
           }
@@ -206,13 +207,14 @@ const BackupSettings: React.FC<Props> = ({
             const enabled = !!sqlCloudEnabled;
             setIsCloudConnected(enabled);
           }
-          const refreshedStatus = await getGoogleAuthStatus();
+          const refreshedStatus = await getGoogleAuthStatus() as any;
           setIsTokenValid(isGoogleConnectionReady(refreshedStatus));
+          const storedAuth2 = getStoredGoogleAuth?.() as any;
           setGoogleAccountLabel(
             refreshedStatus?.userInfo?.email ||
             refreshedStatus?.accountEmail ||
-            getStoredGoogleAuth?.()?.userInfo?.email ||
-            getStoredGoogleAuth?.()?.accountEmail ||
+            storedAuth2?.userInfo?.email ||
+            storedAuth2?.accountEmail ||
             ""
           );
         } catch { /* keep localStorage values */ }
@@ -327,13 +329,13 @@ const BackupSettings: React.FC<Props> = ({
       
       if (attempts > maxAttempts) {
         log.debug('Polling timeout');
-        clearInterval(ncPollInterval.current);
+        clearInterval(ncPollInterval.current!);
         ncPollInterval.current = null;
         setNcConnecting(false);
         toast.error("Zeitüberschreitung — bitte erneut versuchen");
         return;
       }
-      
+
       try {
         const result = await pollLoginResult(pollEndpoint, token);
         if (!result.ok) {
@@ -347,18 +349,18 @@ const BackupSettings: React.FC<Props> = ({
 
         if (result.status === 'complete') {
           log.debug('Login complete!');
-          clearInterval(ncPollInterval.current);
+          clearInterval(ncPollInterval.current!);
           ncPollInterval.current = null;
-          
-          const serverUrl = result.server.replace(/\/+$/, '');
-          await handleLoginSuccess(serverUrl, result.loginName, result.appPassword);
+
+          const serverUrl = (result.server as string).replace(/\/+$/, '');
+          await handleLoginSuccess(serverUrl, result.loginName as string, result.appPassword as string);
         }
       } catch (error) {
         log.error('Polling error:', error);
-        clearInterval(ncPollInterval.current);
+        clearInterval(ncPollInterval.current!);
         ncPollInterval.current = null;
         setNcConnecting(false);
-        toast.error(error?.message || "Nextcloud Login fehlgeschlagen");
+        toast.error((error as Error)?.message || "Nextcloud Login fehlgeschlagen");
       }
     }, 3000);
   };
@@ -428,20 +430,20 @@ const BackupSettings: React.FC<Props> = ({
         throw new Error(getNextcloudErrorMessage(startResult));
       }
 
-      const { loginUrl, token, pollEndpoint } = startResult;
+      const { loginUrl, token, pollEndpoint } = startResult as any;
       log.debug(`Login URL: ${loginUrl}, Poll endpoint: ${pollEndpoint}`);
 
       // Open browser
-      await Browser.open({ url: loginUrl });
+      await Browser.open({ url: loginUrl as string });
       log.debug('Browser opened');
 
       // Start polling
-      startPolling(pollEndpoint, token);
-      
+      startPolling(pollEndpoint as string, token as string);
+
     } catch (err) {
       log.error('Login flow error:', err);
       setNcConnecting(false);
-      const message = err?.message || 'Unbekannter Fehler';
+      const message = (err as Error)?.message || 'Unbekannter Fehler';
       toast.error(`Nextcloud Login fehlgeschlagen: ${message}`);
     }
   };
@@ -522,12 +524,12 @@ const BackupSettings: React.FC<Props> = ({
     } else {
       try {
         await initGoogleAuth().catch(() => {});
-        const user = await signInGoogle();
-        if (user && user.authentication.accessToken) {
+        const user = await signInGoogle() as any;
+        if (user && user.authentication?.accessToken) {
           localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
           setIsCloudConnected(true);
           setIsTokenValid(true);
-          const refreshedStatus = await getGoogleAuthStatus().catch(() => null);
+          const refreshedStatus = await getGoogleAuthStatus().catch(() => null) as any;
           setGoogleAccountLabel(
             refreshedStatus?.userInfo?.email ||
             refreshedStatus?.accountEmail ||
@@ -541,7 +543,7 @@ const BackupSettings: React.FC<Props> = ({
       } catch (error) {
         log.error(error);
         setIsTokenValid(false);
-        const message = String(error?.message || error || "");
+        const message = String((error as Error)?.message || error || "");
         if (message.includes("GOOGLE_DRIVE_AUTH_CANCELLED")) {
           toast.error("Google-Anmeldung abgebrochen");
         } else if (message.includes("GOOGLE_DRIVE_NATIVE_UNAVAILABLE")) {
@@ -604,7 +606,7 @@ const BackupSettings: React.FC<Props> = ({
         if (failed.length > 0) {
           toast.error(`Fehlgeschlagen: ${failed.join(", ")}`);
           // Debug: Zeige detaillierte Fehlermeldung in Alert (scrollbar)
-          const details = [];
+          const details: string[] = [];
           if (result.nextcloud === false && result.nextcloudError) {
             details.push(`Nextcloud: ${result.nextcloudError}`);
           }
@@ -613,7 +615,7 @@ const BackupSettings: React.FC<Props> = ({
           }
         }
       } else {
-        toast.error(result?.message || "Backup fehlgeschlagen");
+        toast.error((result as any)?.message || "Backup fehlgeschlagen");
       }
     } catch (error) {
       log.error(error);

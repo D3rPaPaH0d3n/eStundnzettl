@@ -285,7 +285,7 @@ const DataSettings: React.FC<Props> = ({
           </div>
           <button
             onClick={() =>
-              setUserData((p) => ({ ...p, minuteInput: !p?.minuteInput }))
+              setUserData((p: any) => ({ ...p, minuteInput: !p?.minuteInput }))
             }
             className={`relative w-12 h-7 rounded-full transition-colors duration-200 shrink-0 ${
               userData?.minuteInput

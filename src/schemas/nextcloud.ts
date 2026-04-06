@@ -37,10 +37,10 @@ export const nextcloudUrlOnlySchema = z.object({
     }),
 });
 
-export function validateNextcloudConfig(value: unknown): z.SafeParseReturnType<z.input<typeof nextcloudConfigSchema>, z.infer<typeof nextcloudConfigSchema>> {
+export function validateNextcloudConfig(value: unknown) {
   return nextcloudConfigSchema.safeParse(value);
 }
 
-export function validateNextcloudUrl(value: unknown): z.SafeParseReturnType<z.input<typeof nextcloudUrlOnlySchema>, z.infer<typeof nextcloudUrlOnlySchema>> {
+export function validateNextcloudUrl(value: unknown) {
   return nextcloudUrlOnlySchema.safeParse(value);
 }

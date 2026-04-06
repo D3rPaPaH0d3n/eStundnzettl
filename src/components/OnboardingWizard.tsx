@@ -141,11 +141,11 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
   // --- HANDLER ---
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, photo: reader.result }));
+        setFormData(prev => ({ ...prev, photo: reader.result as string | null }));
       };
       reader.readAsDataURL(file);
     }
@@ -228,14 +228,16 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         throw new Error(getNextcloudErrorMessage(startResult));
       }
 
-      const { loginUrl, token, pollEndpoint } = startResult;
+      const loginUrl = startResult.loginUrl as string;
+      const token = startResult.token as string;
+      const pollEndpoint = startResult.pollEndpoint as string;
       await Browser.open({ url: loginUrl });
 
       let attempts = 0;
       ncSetupPollRef.current = setInterval(async () => {
         attempts++;
         if (attempts > 100) {
-          clearInterval(ncSetupPollRef.current);
+          clearInterval(ncSetupPollRef.current!);
           ncSetupPollRef.current = null;
           setNcSetupConnecting(false);
           toast.error("Zeitüberschreitung — bitte erneut versuchen");
@@ -250,31 +252,31 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
           if (result.status === 'pending') return;
 
           if (result.status === 'complete') {
-            clearInterval(ncSetupPollRef.current);
+            if (ncSetupPollRef.current) clearInterval(ncSetupPollRef.current);
             ncSetupPollRef.current = null;
             try { await Browser.close(); } catch { /* browser already closed */ }
 
-            const userId = await resolveUserId(result.server, result.loginName, result.appPassword);
+            const userId = await resolveUserId(result.server as string, result.loginName as string, result.appPassword as string);
             setNcCredentials({
-              server: result.server.replace(/\/+$/, ''),
+              server: (result.server as string).replace(/\/+$/, ''),
               userId,
-              loginName: result.loginName,
-              appPassword: result.appPassword,
+              loginName: result.loginName as string,
+              appPassword: result.appPassword as string,
             });
             setNcSetupConnected(true);
             setNcSetupConnecting(false);
             toast.success("Nextcloud verbunden!");
           }
         } catch (error) {
-          clearInterval(ncSetupPollRef.current);
+          if (ncSetupPollRef.current) clearInterval(ncSetupPollRef.current);
           ncSetupPollRef.current = null;
           setNcSetupConnecting(false);
-          toast.error(error?.message || "Nextcloud Login fehlgeschlagen");
+          toast.error((error as Error)?.message || "Nextcloud Login fehlgeschlagen");
         }
       }, 3000);
     } catch (error) {
       setNcSetupConnecting(false);
-      toast.error(error?.message || "Server nicht erreichbar");
+      toast.error((error as Error)?.message || "Server nicht erreichbar");
     }
   };
 
@@ -347,14 +349,14 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       const user = await signInGoogle();
       if (!user) throw new Error("Anmeldung fehlgeschlagen");
 
-      const token = user.authentication?.accessToken;
+      const token = (user as any).authentication?.accessToken;
       if (!token) throw new Error("Kein Zugriffstoken erhalten");
 
       // Nutzt jetzt automatisch die neue Logik aus googleDrive.js (inkl. Legacy Fallback)
-      const file = await findLatestBackup(token);
+      const file = await findLatestBackup();
       if (!file) throw new Error("Kein Backup gefunden.");
 
-      const content = await downloadFileContent(token, file.id);
+      const content = await downloadFileContent(token as string, file.id as string);
       if (!content) throw new Error("Backup leer.");
 
       const { isValid, data } = await analyzeBackupData(content);
@@ -367,7 +369,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       }
     } catch (err) {
       log.error(err);
-      toast.error(err.message || "Fehler beim Laden");
+      toast.error((err as Error).message || "Fehler beim Laden");
     } finally {
       setLoading(false);
     }
@@ -397,14 +399,14 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
   };
 
   const handleLocalFileRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     try {
       setLoading(true);
       const content = await readJsonFile(file);
       const { isValid, data } = await analyzeBackupData(content);
       if (isValid) {
-        if (data.integrity === "mismatch") {
+        if ((data as any).integrity === "mismatch") {
           toast("⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert", { duration: 6000 });
         }
         setRestoreData(data);
@@ -417,7 +419,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       toast.error("Datei konnte nicht gelesen werden.");
     } finally {
       setLoading(false);
-      e.target.value = null;
+      e.target.value = "";
     }
   };
 
@@ -433,14 +435,16 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         throw new Error(getNextcloudErrorMessage(startResult));
       }
 
-      const { loginUrl, token, pollEndpoint } = startResult;
+      const loginUrl = startResult.loginUrl as string;
+      const token = startResult.token as string;
+      const pollEndpoint = startResult.pollEndpoint as string;
       await Browser.open({ url: loginUrl });
 
       let attempts = 0;
       ncRestorePollRef.current = setInterval(async () => {
         attempts++;
         if (attempts > 100) {
-          clearInterval(ncRestorePollRef.current);
+          if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
           setNcRestoreConnecting(false);
           toast.error("Zeitüberschreitung — bitte erneut versuchen");
           return;
@@ -456,13 +460,13 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
           }
 
           if (result.status === 'complete') {
-            clearInterval(ncRestorePollRef.current);
+            if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
             try { await Browser.close(); } catch { /* browser already closed */ }
             setNcRestoreConnecting(false);
             setLoading(true);
             try {
-              const userId = await resolveUserId(result.server, result.loginName, result.appPassword);
-              const content = await ncDownloadBackup(result.server, userId, result.appPassword);
+              const userId = await resolveUserId(result.server as string, result.loginName as string, result.appPassword as string);
+              const content = await ncDownloadBackup(result.server as string, userId, result.appPassword as string);
               if (!content) {
                 toast.error("Kein Backup auf Nextcloud gefunden");
                 setLoading(false);
@@ -478,20 +482,20 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                 toast.error("Ungültiges Backup-Format");
               }
             } catch (err) {
-              toast.error(err.message || "Fehler beim Laden");
+              toast.error((err as Error).message || "Fehler beim Laden");
             } finally {
               setLoading(false);
             }
           }
         } catch (error) {
-          clearInterval(ncRestorePollRef.current);
+          if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
           setNcRestoreConnecting(false);
-          toast.error(error?.message || "Nextcloud Login fehlgeschlagen");
+          toast.error((error as Error)?.message || "Nextcloud Login fehlgeschlagen");
         }
       }, 3000);
     } catch (error) {
       setNcRestoreConnecting(false);
-      toast.error(error?.message || "Server nicht erreichbar oder Login Flow v2 nicht unterstützt");
+      toast.error((error as Error)?.message || "Server nicht erreichbar oder Login Flow v2 nicht unterstützt");
     }
   };
 
@@ -539,7 +543,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
               <ProfileStep
                 formData={formData}
                 setFormData={setFormData}
-                photoInputRef={photoInputRef}
+                photoInputRef={photoInputRef as React.RefObject<HTMLInputElement>}
                 onPhotoUpload={handlePhotoUpload}
               />
             )}
@@ -872,9 +876,9 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
       </div>
       
-      <ImportConflictModal 
-        isOpen={showConflictModal}
-        onClose={() => setShowConflictModal(false)}
+      <ImportConflictModal
+        analysisData={showConflictModal ? restoreData : null}
+        onCancel={() => setShowConflictModal(false)}
         onConfirm={() => {
             setShowConflictModal(false);
             setStep(4);

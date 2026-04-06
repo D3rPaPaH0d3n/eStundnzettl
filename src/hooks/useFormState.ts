@@ -64,8 +64,8 @@ export function useFormState({ getDefaultCode }: { getDefaultCode: () => number 
       setCode(entry.code ?? getDefaultCode());
       setProject(entry.project || "");
     } else if (specialManual) {
-      setStartTime(entry.start);
-      setEndTime(entry.end);
+      setStartTime(entry.start || "");
+      setEndTime(entry.end || "");
       setPauseDuration(0);
       setProject("");
     } else {

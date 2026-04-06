@@ -29,7 +29,7 @@ interface UseAppActionsProps {
   deleteAllEntries: () => Promise<void>;
   importEntries: (entries: Entry[]) => Promise<void>;
   startTimer: () => void;
-  stopTimer: () => { start: Date; end: Date; pause: number };
+  stopTimer: () => { start: Date | null; end: Date | null; pause: number };
   setUserData: (data: UserData) => void;
   setAutoBackup: (enabled: boolean) => void;
   setView: (view: string) => void;

@@ -172,7 +172,7 @@ const Settings: React.FC<Props> = ({
     } catch {
       toast.error("Fehler beim Lesen der Datei");
     }
-    e.target.value = null;
+    (e.target as HTMLInputElement).value = "";
   };
 
   const handleConfirmImport = async (mode: string) => {
@@ -248,8 +248,6 @@ const Settings: React.FC<Props> = ({
         isLocked={isLocked}
         onToggleLock={toggleLock}
         onOpenDayPicker={openDayPicker}
-        entries={entries}
-        lastBackup={lastBackup}
         importEntries={importEntries}
         importWorkCodes={importWorkCodes}
       />
@@ -262,7 +260,7 @@ const Settings: React.FC<Props> = ({
         autoBackup={autoBackup}
         setAutoBackup={setAutoBackup}
         onExport={onExport}
-        onFileImport={handleFileImport}
+        onFileImport={handleFileImport as any}
         // Nextcloud State
         nextcloudEnabled={nextcloudEnabled}
         nextcloudUrl={nextcloudUrl}

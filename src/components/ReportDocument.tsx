@@ -229,7 +229,7 @@ const ReportDocument: React.FC<Props> = ({
             else if (meta.isEvenDay) rowBg = PRINT_STYLES.bgZebra;
 
             let projectText = e.project;
-            const codeText = workCodeLabelMap.get(e.code) || "";
+            const codeText = workCodeLabelMap.get(e.code!) || "";
             let durationDisplay = formatTime(e.netDuration);
             let timeColor = PRINT_STYLES.textDark;
 

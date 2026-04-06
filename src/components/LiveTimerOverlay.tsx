@@ -40,15 +40,15 @@ const LiveTimerOverlay = ({
 
     const update = () => {
       const now = new Date();
-      const start = new Date(timerState.startTime);
+      const start = new Date(timerState.startTime!);
 
       let currentPause = 0;
       if (timerState.isPaused && timerState.pauseStartTime) {
-        currentPause = now - new Date(timerState.pauseStartTime);
+        currentPause = now.getTime() - new Date(timerState.pauseStartTime).getTime();
       }
 
       const totalPauseMs = (timerState.accumulatedPause || 0) + currentPause;
-      const workedMs = now - start - totalPauseMs;
+      const workedMs = now.getTime() - start.getTime() - totalPauseMs;
       const workedMinutes = workedMs / 1000 / 60;
       const roundedWorkedMinutes = Math.max(0, Math.floor(workedMinutes));
       const h = Math.floor(roundedWorkedMinutes / 60);

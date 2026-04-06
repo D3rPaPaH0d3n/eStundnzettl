@@ -34,9 +34,9 @@ export function useDeleteActions({
     async (deleteTarget: DeleteTarget | null) => {
       if (deleteTarget?.type === "single") {
         if (removeAttachmentsForEntry) {
-          await removeAttachmentsForEntry(deleteTarget.id);
+          await removeAttachmentsForEntry(deleteTarget.id!);
         }
-        deleteEntry(deleteTarget.id);
+        deleteEntry(deleteTarget.id!);
         toast.success("🗑️ Eintrag gelöscht");
       } else if (deleteTarget?.type === "all") {
         // Sicherheits-Backup vor dem Löschen: JSON im Cache speichern

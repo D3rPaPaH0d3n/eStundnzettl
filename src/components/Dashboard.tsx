@@ -9,6 +9,7 @@ import {
   getWeekNumber,
   calculateWeekStats,
   calculateDisplayedDayMinutes,
+  getEffectiveDuration,
 } from "../utils/timeCalculations";
 import { WORK_CODE } from "../hooks/constants";
 import { motion, AnimatePresence } from "framer-motion";
@@ -310,7 +311,7 @@ const Dashboard: React.FC<Props> = ({
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="overflow-hidden"> 
                       <div className="mt-2 space-y-3"> 
                         {sortedDays.map(([dateStr, dayEntries]) => { 
-                            const daySum = calculateDisplayedDayMinutes(dayEntries); 
+                            const daySum = calculateDisplayedDayMinutes(dayEntries, userData); 
                             const d = new Date(dateStr); 
                             const sortedEntries = [...dayEntries].sort((a, b) => (a.start || "").localeCompare(b.start || "")); 
                             
@@ -350,11 +351,11 @@ const Dashboard: React.FC<Props> = ({
                                                   <div className="text-xs text-zinc-500 dark:text-zinc-400 leading-tight">{codeLabel}</div> 
                                                 </div> 
                                                 <div className="flex items-center gap-2 pl-2 border-l border-zinc-100 dark:border-zinc-700 ml-1"> 
-                                                  <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span> 
-                                                </div> 
-                                              </div> 
-                                            ); 
-                                          } 
+                                                  <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 whitespace-nowrap">{formatTime(getEffectiveDuration(entry, dayEntries, userData))}</span>
+                                                </div>
+                                              </div>
+                                            );
+                                          }
 
                                           const attachmentCount = attachmentCountByEntryId.get(entry.id) || 0;
 
@@ -381,7 +382,7 @@ const Dashboard: React.FC<Props> = ({
                                                       </button>
                                                     </div>
                                                   </div> 
-                                                  <div className="flex items-center gap-2 pl-2 border-l border-zinc-100 dark:border-zinc-700 ml-1"> <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span> </div> 
+                                                  <div className="flex items-center gap-2 pl-2 border-l border-zinc-100 dark:border-zinc-700 ml-1"> <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 whitespace-nowrap">{formatTime(getEffectiveDuration(entry, dayEntries, userData))}</span> </div> 
                                                 </div> 
                                               </motion.div> 
                                             </div> 

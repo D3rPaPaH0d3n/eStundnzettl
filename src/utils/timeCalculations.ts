@@ -145,27 +145,78 @@ export const calculateEntryNetDuration = ({
   );
 };
 
-export const calculateDisplayedDayMinutes = (entries: Entry[]): number => {
-  return entries.reduce((acc, entry) => {
-    if (entry.type === "work" && entry.code === WORK_CODE.DRIVE) {
-      return acc;
-    }
-    return acc + (entry.netDuration || 0);
+/**
+ * Berechnet die effektive Dauer eines Sick-Eintrags im Tageskontext.
+ * Wenn am selben Tag bereits gearbeitet wurde, füllt Krank nur bis Sollzeit auf.
+ */
+export const getEffectiveSickDuration = (
+  sickEntry: Entry,
+  allDayEntries: Entry[],
+  userData: UserData | null
+): number => {
+  const dayWork = allDayEntries.reduce((sum, e) => {
+    if (e.type === "work" && e.code !== WORK_CODE.DRIVE) return sum + (e.netDuration || 0);
+    return sum;
   }, 0);
+  if (dayWork <= 0) return sickEntry.netDuration || 0;
+  const target = getTargetMinutesForDate(sickEntry.date, userData?.workDays);
+  return adjustSickDuration(sickEntry.netDuration || 0, dayWork, target);
+};
+
+/**
+ * Berechnet die effektive netDuration eines Entries im Tageskontext.
+ * Berücksichtigt die Krank-Korrektur bei gemischten Tagen (Arbeit + Krank).
+ */
+export const getEffectiveDuration = (
+  entry: Entry,
+  allDayEntries: Entry[],
+  userData: UserData | null
+): number => {
+  if (entry.type === "sick") return getEffectiveSickDuration(entry, allDayEntries, userData);
+  return entry.netDuration || 0;
+};
+
+export const calculateDisplayedDayMinutes = (entries: Entry[], userData?: UserData | null): number => {
+  // Krank-Korrektur pro Tag anwenden
+  const byDate: Record<string, Entry[]> = {};
+  entries.forEach((e) => {
+    if (!byDate[e.date]) byDate[e.date] = [];
+    byDate[e.date].push(e);
+  });
+
+  let total = 0;
+  for (const dateStr of Object.keys(byDate)) {
+    const dayEntries = byDate[dateStr];
+    dayEntries.forEach((entry) => {
+      if (entry.type === "work" && entry.code === WORK_CODE.DRIVE) return;
+      total += getEffectiveDuration(entry, dayEntries, userData || null);
+    });
+  }
+  return total;
 };
 
 export const buildDayBalanceMetaMap = (entries: Entry[], userData: UserData | null): Record<string | number, DayBalanceMeta> => {
   const map: Record<string | number, DayBalanceMeta> = {};
+
+  // Entries pro Tag gruppieren
+  const byDate: Record<string, Entry[]> = {};
+  entries.forEach((entry) => {
+    if (!byDate[entry.date]) byDate[entry.date] = [];
+    byDate[entry.date].push(entry);
+  });
+
+  // Tages-Totals mit Krank-Korrektur berechnen
   const dayTotals: Record<string, number> = {};
+  for (const dateStr of Object.keys(byDate)) {
+    dayTotals[dateStr] = 0;
+    byDate[dateStr].forEach((entry) => {
+      if (entry.type === "work" && entry.code === WORK_CODE.DRIVE) return;
+      dayTotals[dateStr] += getEffectiveDuration(entry, byDate[dateStr], userData);
+    });
+  }
+
   let currentDateStr = "";
   let dayIndex = 0;
-
-  entries.forEach((entry) => {
-    dayTotals[entry.date] = (dayTotals[entry.date] || 0);
-    if (!(entry.type === "work" && entry.code === WORK_CODE.DRIVE)) {
-      dayTotals[entry.date] += entry.netDuration || 0;
-    }
-  });
 
   entries.forEach((entry, idx) => {
     if (entry.date !== currentDateStr) {

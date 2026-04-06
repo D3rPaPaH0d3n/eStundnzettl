@@ -3,8 +3,15 @@ import { Sun } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
 
-const ThemeSettings = ({ theme, setTheme }) => {
-  const handleThemeChange = (newTheme) => {
+import type { Theme } from "../../types";
+
+interface Props {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+}
+
+const ThemeSettings: React.FC<Props> = ({ theme, setTheme }) => {
+  const handleThemeChange = (newTheme: Theme) => {
     Haptics.impact({ style: ImpactStyle.Light });
     setTheme(newTheme);
   };

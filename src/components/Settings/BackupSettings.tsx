@@ -35,10 +35,26 @@ import { logger } from "../../utils/logger";
 
 const log = logger.scope("Nextcloud");
 
-const isGoogleConnectionReady = (status) => !!(status?.hasToken || (status?.connected && !status?.reauthRequired));
+const isGoogleConnectionReady = (status: any) => !!(status?.hasToken || (status?.connected && !status?.reauthRequired));
 const connectionBadgeClassName = "flex items-center px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full";
 
-const BackupSettings = ({
+interface Props {
+  autoBackup: boolean;
+  setAutoBackup: (enabled: boolean) => void;
+  onExport: () => void;
+  onFileImport: (file: File) => Promise<void>;
+  // Nextcloud State from useSettings
+  nextcloudEnabled: boolean;
+  nextcloudUrl: string;
+  nextcloudUser: string;
+  nextcloudPass: string;
+  setNextcloudEnabled: (enabled: boolean) => void;
+  setNextcloudUrl: (url: string) => void;
+  setNextcloudUser: (user: string) => void;
+  setNextcloudPass: (pass: string) => void;
+}
+
+const BackupSettings: React.FC<Props> = ({
   autoBackup,
   setAutoBackup,
   onExport,
@@ -53,10 +69,10 @@ const BackupSettings = ({
   setNextcloudUser,
   setNextcloudPass,
 }) => {
-  const importInputRef = useRef(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [hasBackupFolder, setHasBackupFolder] = useState(false);
-  const [lastBackupDate, setLastBackupDate] = useState(null);
+  const [lastBackupDate, setLastBackupDate] = useState<string | null>(null);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isTokenValid, setIsTokenValid] = useState(true);
   const [backupFailCount, setBackupFailCount] = useState(0);
@@ -66,18 +82,18 @@ const BackupSettings = ({
 
   // Nextcloud UI State (local UI state, persisted via props)
   const [ncExpanded, setNcExpanded] = useState(false);
-  const [, setNcStatus] = useState(null); // null | "ok" | "error"
+  const [, setNcStatus] = useState<string | null>(null); // null | "ok" | "error"
   const [ncConnecting, setNcConnecting] = useState(false);
   const [ncLoginName, setNcLoginName] = useState(nextcloudUser || "");
   
   // Refs for lifecycle management
-  const ncPollInterval = useRef(null);
-  const browserFinishedListener = useRef(null);
-  const appStateListener = useRef(null);
+  const ncPollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const browserFinishedListener = useRef<any>(null);
+  const appStateListener = useRef<any>(null);
   const appIsActive = useRef(true);
-  const loginAttemptId = useRef(null);
+  const loginAttemptId = useRef<string | null>(null);
 
-  const formatLastBackup = (isoString) => {
+  const formatLastBackup = (isoString: string) => {
     if (!isoString) return null;
     const diff = Date.now() - new Date(isoString).getTime();
     const mins = Math.floor(diff / 60000);
@@ -293,7 +309,7 @@ const BackupSettings = ({
     }
   };
 
-  const startPolling = (pollEndpoint, token) => {
+  const startPolling = (pollEndpoint: string, token: string) => {
     log.debug(`Starting polling for attempt ${loginAttemptId.current}`);
     
     let attempts = 0;
@@ -347,7 +363,7 @@ const BackupSettings = ({
     }, 3000);
   };
 
-  const handleLoginSuccess = async (serverUrl, loginName, appPassword) => {
+  const handleLoginSuccess = async (serverUrl: string, loginName: string, appPassword: string) => {
     
     try {
       // Für Auth immer den echten Login-Namen speichern.
@@ -607,7 +623,7 @@ const BackupSettings = ({
     }
   };
 
-  const handleFileImportInternal = async (e) => {
+  const handleFileImportInternal = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     await onFileImport(file);

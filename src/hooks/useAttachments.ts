@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
+import type { Attachment } from '../types';
 import { STORAGE_KEYS } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
 import { logger } from "../utils/logger";
@@ -24,7 +25,7 @@ const ALLOWED_MIME_TYPES = [
 
 // ─── localStorage Helpers (Dual-Write / Fallback) ────────────
 
-const readJson = (key, fallback) => {
+const readJson = <T>(key: string, fallback: T): T => {
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
@@ -33,13 +34,13 @@ const readJson = (key, fallback) => {
   }
 };
 
-const persistJson = (key, value) => {
+const persistJson = (key: string, value: unknown): void => {
   localStorage.setItem(key, JSON.stringify(value));
 };
 
 // ─── File Helpers ────────────────────────────────────────────
 
-const sanitizeFileName = (name = "dokument") => {
+const sanitizeFileName = (name: string = "dokument"): string => {
   const safe = name.replace(/[^a-zA-Z0-9._-]/g, "_");
   return safe || "dokument";
 };

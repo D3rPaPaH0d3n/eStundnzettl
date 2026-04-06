@@ -163,7 +163,7 @@ const connectGoogleDrive = async (): Promise<Record<string, unknown>> => {
   }
 };
 
-const disconnectGoogleDrive = async () => {
+const disconnectGoogleDrive = async (): Promise<void> => {
   clearStoredAuth();
 
   if (await nativeAvailable()) {
@@ -182,7 +182,7 @@ const disconnectGoogleDrive = async () => {
   }
 };
 
-const getValidGoogleToken = async () => {
+const getValidGoogleToken = async (): Promise<{ accessToken: string }> => {
   const cachedToken = getCachedSessionToken();
   if (cachedToken) {
     return { accessToken: cachedToken };
@@ -229,8 +229,8 @@ const getValidGoogleToken = async () => {
   }
 };
 
-const authFetch = async (url, options = {}) => {
-  const executeFetch = async (accessToken) => fetch(url, {
+const authFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  const executeFetch = async (accessToken: string): Promise<Response> => fetch(url, {
     ...options,
     headers: {
       ...(options.headers || {}),
@@ -263,7 +263,7 @@ const authFetch = async (url, options = {}) => {
   return response;
 };
 
-const createMultipartBody = (metadata, jsonContent, boundary) => {
+const createMultipartBody = (metadata: Record<string, unknown>, jsonContent: unknown, boundary: string): string => {
   const delimiter = `\r\n--${boundary}\r\n`;
   const closeDelimiter = `\r\n--${boundary}--`;
 
@@ -278,7 +278,7 @@ const createMultipartBody = (metadata, jsonContent, boundary) => {
   );
 };
 
-const findFileIdByName = async (fileName) => {
+const findFileIdByName = async (fileName: string): Promise<string | null> => {
   const query = `name = '${fileName}' and 'appDataFolder' in parents and trashed = false`;
   const url = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(query)}&fields=files(id,name,modifiedTime)`;
   const response = await authFetch(url, { method: 'GET' });
@@ -286,7 +286,7 @@ const findFileIdByName = async (fileName) => {
   return data?.files?.[0]?.id || null;
 };
 
-const uploadBackupFile = async (fileName, jsonContent) => {
+const uploadBackupFile = async (fileName: string, jsonContent: unknown): Promise<unknown> => {
   const boundary = 'foo_bar_baz';
   const existingFileId = await findFileIdByName(fileName);
   const metadata = existingFileId
@@ -312,7 +312,7 @@ const uploadBackupFile = async (fileName, jsonContent) => {
   return response.json();
 };
 
-const listBackupFiles = async () => {
+const listBackupFiles = async (): Promise<Record<string, unknown>[]> => {
   const query = `trashed = false and 'appDataFolder' in parents`;
   const url = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(query)}&orderBy=modifiedTime desc&fields=files(id,name,createdTime,modifiedTime)`;
   const response = await authFetch(url, { method: 'GET' });

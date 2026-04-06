@@ -182,12 +182,11 @@ describe("calculatePeriodStats", () => {
     expect(stats.drive).toBe(60);
   });
 
-  it("zählt Mehrarbeit aus einer Wochenübergangs-Woche nur einmal (Donnerstag-Regel)", () => {
-    // Szenario Bug-Report April 2026: Woche KW14 geht Mo 30.3. – So 5.4.
-    // Der User hat Mo/Di (März-Teil) wenig gearbeitet (je 7h = 420 min,
-    // 90 min unter Soll) und Mi/Do/Fr (April-Teil) viel (je 10h = 600 min
-    // Mi/Do, Fr 5h = 300 min). Volle Woche: Soll 2310, Ist 420+420+600+600+300 = 2340,
-    // Diff = 30 → Mehrarbeit sollte nur 30 min sein, nicht 210.
+  it("teilt MA/ÜS proportional bei Monatsübergang auf (April-Anteil)", () => {
+    // Szenario: KW14 geht Mo 30.3. – So 5.4.
+    // Mo/Di (März) je 7h = 420 min, Mi/Do (April) je 10h = 600 min, Fr 5h = 300 min.
+    // Volle Woche: Soll 2310, Ist 2340, Diff = 30 → 30 min MA.
+    // April hat 3 von 5 Arbeitstagen → April bekommt 30 * 3/5 = 18 min MA.
     const userData = { workDays: null };
     const allEntries = [
       { id: 1, date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 420 },
@@ -196,7 +195,6 @@ describe("calculatePeriodStats", () => {
       { id: 4, date: "2026-04-02", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
       { id: 5, date: "2026-04-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 300 },
     ];
-    // Monats-Ansicht April: nur die April-Entries sind "in period"
     const aprilEntries = allEntries.filter((e) => e.date.startsWith("2026-04"));
     const stats = calculatePeriodStats(
       aprilEntries,
@@ -205,20 +203,17 @@ describe("calculatePeriodStats", () => {
       new Date(2026, 3, 30),
       allEntries
     );
-    // Donnerstag der KW14 ist 2.4.2026 → liegt in April → Woche zählt zu April.
-    // Volle-Woche-Rechnung: 420+420+600+600+300 = 2340, Soll 2310 → Diff 30 MA.
-    // Proportionale Aufteilung: 3 von 5 Arbeitstagen liegen im April → 30 * 3/5 = 18.
     expect(stats.overtimeSplit.mehrarbeit).toBe(18);
     expect(stats.overtimeSplit.ueberstunden).toBe(0);
   });
 
-  it("zählt Mehrarbeit einer Wochenübergangs-Woche NICHT beim Nachbarmonat, wenn der Donnerstag nicht drin liegt", () => {
-    // Wenn der User im März-Monat schaut und der Donnerstag der Woche in April liegt,
-    // soll die Woche beim März nicht mitgezählt werden (sie gehört zu April).
+  it("teilt MA/ÜS proportional bei Monatsübergang auf (März-Anteil)", () => {
+    // Gleiche KW14 wie oben, aber aus März-Sicht.
+    // März hat 2 von 5 Arbeitstagen → März bekommt 30 * 2/5 = 12 min MA.
     const userData = { workDays: null };
     const allEntries = [
-      { id: 1, date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
-      { id: 2, date: "2026-03-31", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
+      { id: 1, date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 420 },
+      { id: 2, date: "2026-03-31", type: "work", code: WORK_CODE.OFFICE, netDuration: 420 },
       { id: 3, date: "2026-04-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
       { id: 4, date: "2026-04-02", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
       { id: 5, date: "2026-04-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 300 },
@@ -231,9 +226,8 @@ describe("calculatePeriodStats", () => {
       new Date(2026, 2, 31),
       allEntries
     );
-    // Donnerstag der KW14 liegt in April → Woche zählt NICHT zu März.
-    // KW13 (23.–29.3.) hat keine Einträge → keine Mehrarbeit.
-    expect(stats.overtimeSplit.mehrarbeit).toBe(0);
+    // März bekommt seinen fairen Anteil: 30 * 2/5 = 12 min MA.
+    expect(stats.overtimeSplit.mehrarbeit).toBe(12);
     expect(stats.overtimeSplit.ueberstunden).toBe(0);
   });
 

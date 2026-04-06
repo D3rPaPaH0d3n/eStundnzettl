@@ -240,17 +240,18 @@ export const calculatePeriodStats = (
 
   // ───── Mehrarbeit / Überstunden per voller ISO-Woche ─────
   //
-  // Die Wochensumme wird IMMER über die komplette Woche (Mo–So) berechnet,
-  // damit sie nicht davon abhängt, wie die Periode in die Woche hineinschneidet.
-  // Zuordnung nach ISO-Regel: Eine Woche zählt zu dem Zeitraum, in dem ihr
-  // Donnerstag liegt. Dadurch wird jede Woche genau einmal aggregiert
-  // (keine Doppelzählung bei Monatsübergängen, keine Lücken).
+  // Rechtliche Grundlage (Österreich, AZG):
+  //   - Mehrarbeit = Stunden zwischen Vertragssoll (z.B. 38,5h) und 40h/Woche
+  //   - Überstunden = Stunden über 40h/Woche
+  //   - Berechnung erfolgt IMMER pro voller ISO-Woche (Mo–So)
+  //
+  // Zuordnung: Eine Woche zählt zu dem Monat, in dem ihr Donnerstag liegt
+  // (ISO-Regel). Bei Monatsübergang wird die volle Woche berechnet, aber
+  // das Ergebnis proportional nach Arbeitstagen im Monat aufgeteilt.
   //
   // Für in-Periode liegende Tage werden die gefilterten `entries` verwendet
   // (inkl. evtl. synthetisch ergänzter Feiertage), für out-of-period Tage
-  // die optionalen `allEntries` (Roh-Liste aus useEntries). Fällt
-  // `allEntries` weg (z.B. Unit-Tests, calculateWeekStats), gilt der
-  // historische Single-Source-Modus.
+  // die optionalen `allEntries` (Roh-Liste aus useEntries).
   const periodDayStart = new Date(periodStart);
   periodDayStart.setHours(0, 0, 0, 0);
   const periodDayEnd = new Date(periodEnd);
@@ -267,59 +268,49 @@ export const calculatePeriodStats = (
     if (!seenWeeks.has(mondayKey)) {
       seenWeeks.add(mondayKey);
 
-      const thursday = new Date(monday);
-      thursday.setDate(monday.getDate() + 3);
-      const thursdayInPeriod =
-        thursday >= periodDayStart && thursday <= periodDayEnd;
+      let weekTarget = 0;
+      let weekActual = 0;
+      let workDaysInPeriod = 0;
+      let workDaysTotal = 0;
 
-      if (thursdayInPeriod) {
-        let weekTarget = 0;
-        let weekActual = 0;
-        let workDaysInPeriod = 0;
-        let workDaysTotal = 0;
+      for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(monday);
+        dayDate.setDate(monday.getDate() + i);
+        const dayStr = toLocalDateStr(dayDate);
 
-        for (let i = 0; i < 7; i++) {
-          const dayDate = new Date(monday);
-          dayDate.setDate(monday.getDate() + i);
-          const dayStr = toLocalDateStr(dayDate);
+        const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
+        weekTarget += dayTarget;
 
-          const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
-          weekTarget += dayTarget;
-
-          // Zähle Arbeitstage (Target > 0) für proportionale Aufteilung
-          if (dayTarget > 0) {
-            workDaysTotal++;
-            const inPeriod = dayStr >= startStr && dayStr <= endStr;
-            if (inPeriod) workDaysInPeriod++;
-          }
-
-          const inPeriod = dayStr >= startStr && dayStr <= endStr;
-          const source = inPeriod ? entries : boundarySource;
-
-          source.forEach((e) => {
-            if (e.date !== dayStr) return;
-            if (e.type === "work" && e.code === WORK_CODE.DRIVE) return;
-            weekActual += e.netDuration || 0;
-          });
+        // Zähle Arbeitstage (Target > 0) für proportionale Aufteilung
+        if (dayTarget > 0) {
+          workDaysTotal++;
+          if (dayStr >= startStr && dayStr <= endStr) workDaysInPeriod++;
         }
 
+        const inPeriod = dayStr >= startStr && dayStr <= endStr;
+        const source = inPeriod ? entries : boundarySource;
+
+        source.forEach((e) => {
+          if (e.date !== dayStr) return;
+          if (e.type === "work" && e.code === WORK_CODE.DRIVE) return;
+          weekActual += e.netDuration || 0;
+        });
+      }
+
+      // Nur wenn mindestens ein Arbeitstag dieser Woche im Zeitraum liegt
+      if (workDaysInPeriod > 0) {
         // Volle Woche berechnen (rechtlich korrekt: 40h-Grenze gilt pro Woche)
         const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
           weekActual - weekTarget,
           weekTarget
         );
 
-        // Proportional nach Arbeitstagen im Monat aufteilen
-        // Liegt die komplette Woche im Zeitraum, wird 100% zugerechnet.
-        // Bei Monatsübergang nur der faire Anteil.
-        if (workDaysTotal > 0 && workDaysInPeriod < workDaysTotal) {
-          const ratio = workDaysInPeriod / workDaysTotal;
-          stats.overtimeSplit.mehrarbeit += Math.round(mehrarbeit * ratio);
-          stats.overtimeSplit.ueberstunden += Math.round(ueberstunden * ratio);
-        } else {
-          stats.overtimeSplit.mehrarbeit += mehrarbeit;
-          stats.overtimeSplit.ueberstunden += ueberstunden;
-        }
+        // Proportional nach Arbeitstagen im Zeitraum aufteilen.
+        // Liegt die komplette Woche im Zeitraum → ratio = 1 (100%).
+        // Bei Monatsübergang → nur der faire Anteil des Monats.
+        const ratio = workDaysTotal > 0 ? workDaysInPeriod / workDaysTotal : 1;
+        stats.overtimeSplit.mehrarbeit += Math.round(mehrarbeit * ratio);
+        stats.overtimeSplit.ueberstunden += Math.round(ueberstunden * ratio);
       }
     }
 

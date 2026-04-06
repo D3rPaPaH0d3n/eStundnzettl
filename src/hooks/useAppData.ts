@@ -61,6 +61,12 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
     return weeks;
   }, [entriesWithHolidays]);
 
+  // allEntries ebenfalls korrigieren (für Boundary-Wochen und Stats)
+  const correctedAllEntries = useMemo(
+    () => allEntries ? applyEffectiveDurations(allEntries, userData) : undefined,
+    [allEntries, userData]
+  );
+
   // Für Übergangswochen: Entries aus Nachbarmonaten ergänzen,
   // damit calculateWeekStats die volle Woche (Mo-So) berechnen kann.
   const groupedByWeek = useMemo(() => {
@@ -73,11 +79,11 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
       map.get(week).push(entry);
     });
 
-    // 2. Für jede Woche im Monat: fehlende Tage aus allEntries ergänzen
-    if (allEntries && allEntries.length > 0) {
+    // 2. Für jede Woche im Monat: fehlende Tage aus correctedAllEntries ergänzen
+    if (correctedAllEntries && correctedAllEntries.length > 0) {
       const monthEntryIds = new Set(entriesWithHolidays.map((e) => e.id));
 
-      allEntries.forEach((entry) => {
+      correctedAllEntries.forEach((entry) => {
         if (monthEntryIds.has(entry.id)) return; // Schon enthalten
         const week = getWeekNumber(new Date(entry.date));
         if (!weekNumbersInMonth.has(week)) return; // Woche nicht in diesem Monat
@@ -92,7 +98,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
     );
 
     return groupedEntries.sort((a: [number, Entry[]], b: [number, Entry[]]) => b[0] - a[0]);
-  }, [entriesWithHolidays, allEntries, weekNumbersInMonth]);
+  }, [entriesWithHolidays, correctedAllEntries, weekNumbersInMonth]);
 
   const periodStart = useMemo(
     () => new Date(viewYear, viewMonth, 1),
@@ -101,12 +107,6 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
   const periodEnd = useMemo(
     () => new Date(viewYear, viewMonth + 1, 0),
     [viewMonth, viewYear]
-  );
-
-  // allEntries ebenfalls korrigieren (für Boundary-Wochen)
-  const correctedAllEntries = useMemo(
-    () => allEntries ? applyEffectiveDurations(allEntries, userData) : undefined,
-    [allEntries, userData]
   );
 
   const stats = usePeriodStats(entriesWithHolidays, userData, periodStart, periodEnd, correctedAllEntries);

@@ -245,10 +245,11 @@ const Dashboard: React.FC<Props> = ({
             const visibleEntries = weekEntries.filter((e) => e.date >= clippedStartStr && e.date <= clippedEndStr);
 
             // Volle Woche im Monat → volle Wochenberechnung (40h-Basis).
-            // Boundary-Woche → nur die Monatstage berechnen (tägliche ÜS, keine MA).
+            // Boundary-Woche → IST/Soll nur für Monatstage, aber weekEntries
+            // als allEntries mitgeben, damit die volle Woche für MA/ÜS verfügbar ist.
             const isBoundaryWeek = monday < monthStart || sunday > monthEnd;
             const weekStats = isBoundaryWeek
-              ? calculatePeriodStats(visibleEntries, userData, clippedMonday, clippedSunday)
+              ? calculatePeriodStats(visibleEntries, userData, clippedMonday, clippedSunday, weekEntries)
               : calculateWeekStats(weekEntries, userData);
 
             const workMinutes = weekStats.totalIst;

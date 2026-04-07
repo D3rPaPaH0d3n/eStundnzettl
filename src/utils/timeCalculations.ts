@@ -346,30 +346,28 @@ export const calculatePeriodStats = (
         stats.overtimeSplit.mehrarbeit += mehrarbeit;
         stats.overtimeSplit.ueberstunden += ueberstunden;
       } else {
-        // ── GEBROCHENE WOCHE: Summe der Rand-Tage, MA/ÜS mit vollem Wochen-Target ──
+        // ── GEBROCHENE WOCHE ──
+        // MA/ÜS nur wenn das kumulative IST der Rand-Tage die vollen
+        // Wochen-Schwellen überschreitet (Wochen-Soll → MA, 40h → ÜS).
+        // Mit z.B. nur Mo+Di (19h) kommt man nicht über 38,5h → keine MA.
         let partialActual = 0;
-        let partialTarget = 0;
         let fullWeekTarget = 0;
         for (let i = 0; i < 7; i++) {
           const dayDate = new Date(monday);
           dayDate.setDate(monday.getDate() + i);
           const dayStr = toLocalDateStr(dayDate);
-          const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
-          fullWeekTarget += dayTarget;
-          if (dayStr < startStr || dayStr > endStr) continue;
-          partialActual += dayActualMap[dayStr] || 0;
-          partialTarget += dayTarget;
+          fullWeekTarget += getTargetMinutesForDate(dayStr, userData?.workDays);
+          if (dayStr >= startStr && dayStr <= endStr) {
+            partialActual += dayActualMap[dayStr] || 0;
+          }
         }
-        const partialBalance = partialActual - partialTarget;
-        if (partialBalance > 0) {
-          // MA-Puffer basiert auf vollem Wochen-Target (z.B. 2400-2310 = 90min)
-          const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
-            partialBalance,
-            fullWeekTarget
-          );
-          stats.overtimeSplit.mehrarbeit += mehrarbeit;
-          stats.overtimeSplit.ueberstunden += ueberstunden;
-        }
+        // Erst ab Wochen-Soll zählt MA, erst ab 40h zählt ÜS
+        const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
+          partialActual - fullWeekTarget,
+          fullWeekTarget
+        );
+        stats.overtimeSplit.mehrarbeit += mehrarbeit;
+        stats.overtimeSplit.ueberstunden += ueberstunden;
       }
     }
 

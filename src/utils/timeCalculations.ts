@@ -301,11 +301,13 @@ export const calculatePeriodStats = (
   //   - Berechnung erfolgt pro voller ISO-Woche (Mo–So)
   //
   // Volle Woche (alle 7 Tage im Zeitraum):
-  //   → MA/ÜS-Split auf 40h-Basis
+  //   → MA/ÜS-Split auf 40h-Basis (voller Wochen-Target)
   //
   // Gebrochene Woche (Monatsgrenze):
-  //   → Nur tägliche ÜS (Ist > Soll pro Tag), keine MA
-  //   → Tage werden rein dem Monat zugerechnet, in dem sie liegen
+  //   → Summe der Rand-Tage bilden (Ist und Soll)
+  //   → Falls Ist > Soll: MA/ÜS-Split mit vollem Wochen-Target
+  //     (damit der MA-Puffer von z.B. 90min korrekt greift)
+  //   → Jeder Tag gehört zum Monat, in dem er liegt
   const seenWeeks = new Set<string>();
   const weekCursor = new Date(periodStart);
   weekCursor.setHours(0, 0, 0, 0);
@@ -344,20 +346,29 @@ export const calculatePeriodStats = (
         stats.overtimeSplit.mehrarbeit += mehrarbeit;
         stats.overtimeSplit.ueberstunden += ueberstunden;
       } else {
-        // ── GEBROCHENE WOCHE: nur tägliche ÜS, keine MA ──
+        // ── GEBROCHENE WOCHE: Summe der Rand-Tage, MA/ÜS mit vollem Wochen-Target ──
+        let partialActual = 0;
+        let partialTarget = 0;
+        let fullWeekTarget = 0;
         for (let i = 0; i < 7; i++) {
           const dayDate = new Date(monday);
           dayDate.setDate(monday.getDate() + i);
           const dayStr = toLocalDateStr(dayDate);
-          if (dayStr < startStr || dayStr > endStr) continue;
-
           const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
-          if (dayTarget === 0) continue;
-
-          const dayActual = dayActualMap[dayStr] || 0;
-          if (dayActual > dayTarget) {
-            stats.overtimeSplit.ueberstunden += (dayActual - dayTarget);
-          }
+          fullWeekTarget += dayTarget;
+          if (dayStr < startStr || dayStr > endStr) continue;
+          partialActual += dayActualMap[dayStr] || 0;
+          partialTarget += dayTarget;
+        }
+        const partialBalance = partialActual - partialTarget;
+        if (partialBalance > 0) {
+          // MA-Puffer basiert auf vollem Wochen-Target (z.B. 2400-2310 = 90min)
+          const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
+            partialBalance,
+            fullWeekTarget
+          );
+          stats.overtimeSplit.mehrarbeit += mehrarbeit;
+          stats.overtimeSplit.ueberstunden += ueberstunden;
         }
       }
     }

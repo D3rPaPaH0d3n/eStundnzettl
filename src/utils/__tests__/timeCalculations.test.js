@@ -272,11 +272,11 @@ describe("calculatePeriodStats", () => {
     );
     expect(stats.overtimeSplit.mehrarbeit).toBe(90);
     expect(stats.overtimeSplit.ueberstunden).toBe(30);
-    // Normalstunden: pro Tag min(ist, soll) → Mo-Do min(540,510)=510, Fr min(270,270)=270
-    expect(stats.normalstunden).toBe(510 * 4 + 270);
+    // Normalstunden = IST - MA - ÜS → 2430 - 90 - 30 = 2310
+    expect(stats.normalstunden).toBe(2430 - 90 - 30);
   });
 
-  it("normalstunden: min(dayIst, daySoll) pro Tag, gemischt", () => {
+  it("normalstunden = IST - MA - ÜS, gemischte Woche", () => {
     const entries = [
       { date: "2024-01-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 }, // Mo: >510
       { date: "2024-01-02", type: "work", code: WORK_CODE.OFFICE, netDuration: 400 }, // Di: <510
@@ -288,8 +288,9 @@ describe("calculatePeriodStats", () => {
       new Date(2024, 0, 1),
       new Date(2024, 0, 7)
     );
-    // Mo: min(600,510)=510, Di: min(400,510)=400, Sa: min(300,0)=0
-    expect(stats.normalstunden).toBe(910);
+    // IST = 600+400+300 = 1300, Saldo = 1300-2310 = -1010 → MA=0, ÜS=0
+    // Normalstunden = IST - 0 - 0 = 1300
+    expect(stats.normalstunden).toBe(1300);
   });
 
   it("März 2026: 4 volle Wochen → max 360min MA (kein MA aus Rand-Tagen)", () => {

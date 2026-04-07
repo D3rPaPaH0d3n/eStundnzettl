@@ -270,7 +270,7 @@ export const calculatePeriodStats = (
     }
   });
 
-  // ─── Tagesschleife: Target + Normalstunden ────────────────────
+  // ─── Tagesschleife: Target ────────────────────
   const loopDate = new Date(periodStart);
   loopDate.setHours(0, 0, 0, 0);
   const loopEnd = new Date(periodEnd);
@@ -285,9 +285,6 @@ export const calculatePeriodStats = (
 
     const target = getTargetMinutesForDate(dateStr, userData?.workDays);
     stats.totalTarget += target;
-
-    const dayActual = dayActualMap[dateStr] || 0;
-    stats.normalstunden += Math.min(dayActual, target);
 
     loopDate.setDate(loopDate.getDate() + 1);
   }
@@ -399,6 +396,13 @@ export const calculatePeriodStats = (
 
     weekCursor.setDate(weekCursor.getDate() + 1);
   }
+
+  // Normalstunden = IST minus Überstunden-Anteile, damit
+  // Normal + MA + ÜS = IST immer aufgeht.
+  stats.normalstunden = Math.max(
+    0,
+    stats.totalIst - stats.overtimeSplit.mehrarbeit - stats.overtimeSplit.ueberstunden
+  );
 
   return stats;
 };

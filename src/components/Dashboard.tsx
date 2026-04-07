@@ -231,22 +231,32 @@ const Dashboard: React.FC<Props> = ({
           </div>
         ) : (
           sortedWeeks.map(([week, weekEntries]) => {
-            
+
             // Wochen-Stats immer für die VOLLE Woche (Mo-So) berechnen,
             // damit Saldo und MA/ÜS korrekt auf 40h-Basis sind.
             const weekStats = calculateWeekStats(weekEntries, userData);
-            
+
             // Werte für die Anzeige extrahieren
             // totalIst enthält alle Arbeitszeiten + Urlaub/Krank/Feiertag (aber ohne Code 19 Fahrtzeit)
-            const workMinutes = weekStats.totalIst; 
+            const workMinutes = weekStats.totalIst;
             const diff = weekStats.totalSaldo;
             const { mehrarbeit, ueberstunden } = weekStats.overtimeSplit;
-            
+
             // Dynamisches Wochen-Ziel berechnen (basierend auf den Tagen in dieser Woche)
-            const anyDate = new Date(weekEntries[0].date); 
-            const currentDay = anyDate.getDay() || 7; 
-            const monday = new Date(anyDate); monday.setDate(anyDate.getDate() - (currentDay - 1)); 
+            const anyDate = new Date(weekEntries[0].date);
+            const currentDay = anyDate.getDay() || 7;
+            const monday = new Date(anyDate); monday.setDate(anyDate.getDate() - (currentDay - 1));
             const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+
+            // Boundary-Wochen auf den angezeigten Monat clippen:
+            // Datumsbereich und sichtbare Einträge beschränken.
+            const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            const clippedMonday = monday < monthStart ? monthStart : monday;
+            const clippedSunday = sunday > monthEnd ? monthEnd : sunday;
+            const clippedStartStr = [clippedMonday.getFullYear(), String(clippedMonday.getMonth() + 1).padStart(2, "0"), String(clippedMonday.getDate()).padStart(2, "0")].join("-");
+            const clippedEndStr = [clippedSunday.getFullYear(), String(clippedSunday.getMonth() + 1).padStart(2, "0"), String(clippedSunday.getDate()).padStart(2, "0")].join("-");
+            const visibleEntries = weekEntries.filter((e) => e.date >= clippedStartStr && e.date <= clippedEndStr);
             
             const expanded = expandedWeeks[week];
             const balanceColorClass = diff < 0
@@ -262,11 +272,11 @@ const Dashboard: React.FC<Props> = ({
                         ? "text-blue-600 dark:text-blue-400 font-bold"
                         : "text-zinc-700 dark:text-zinc-300 font-bold"));
 
-            // Einträge nach Datum sortieren
-            const daysMap = new Map(); 
-            weekEntries.forEach((e) => { 
-                if (!daysMap.has(e.date)) daysMap.set(e.date, []); 
-                daysMap.get(e.date).push(e); 
+            // Einträge nach Datum sortieren (nur sichtbare Tage des Monats)
+            const daysMap = new Map();
+            visibleEntries.forEach((e) => {
+                if (!daysMap.has(e.date)) daysMap.set(e.date, []);
+                daysMap.get(e.date).push(e);
             });
             const sortedDays = Array.from(daysMap.entries()).sort((a: [string, Entry[]], b: [string, Entry[]]) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
 
@@ -275,7 +285,7 @@ const Dashboard: React.FC<Props> = ({
                 <button className="w-full flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl px-3 py-2 transition-colors" onClick={() => toggleWeek(week)}>
                     <div className="flex flex-col text-left">
                         <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Kalenderwoche</span>
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200"> KW {week}{" "} <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">({monday.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} – {sunday.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })})</span> </span>
+                        <span className="font-bold text-zinc-800 dark:text-zinc-200"> KW {week}{" "} <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">({clippedMonday.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} – {clippedSunday.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })})</span> </span>
                         
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <div className="text-sm flex gap-3">

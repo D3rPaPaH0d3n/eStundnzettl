@@ -3,15 +3,22 @@ export const CHANGELOG_DATA = [
   {
     version: "3.5.0",
     date: "07.04.2026",
-    title: "Gebrochene Wochen jetzt korrekt berechnet",
+    title: "Nur Aufzeichnung & bessere Monatsübergänge",
     sections: [
+      {
+        iconName: "Sliders",
+        title: "Neues Arbeitszeitmodell: Nur Aufzeichnung",
+        items: [
+          "Du kannst die App jetzt auch als reines Zeiterfassungs-Tool nutzen — ohne Soll/Ist-Berechnung, ohne Überstunden, ohne Mehrarbeit. Einfach nur aufschreiben, wann du gearbeitet hast.",
+          "Die Option findest du sowohl im Einrichtungs-Assistenten als auch nachträglich in den Einstellungen unter deinem Profil. Ein Schalter genügt — alles andere blendet sich automatisch aus."
+        ]
+      },
       {
         iconName: "Bug",
         title: "Korrektur: MA/ÜS bei Monatsübergängen",
         items: [
           "Bei Wochen, die über einen Monatswechsel hinausgehen (z.B. KW 14 mit Mo–Di im März und Mi–Fr im April), wurde bisher die Mehrarbeit (MA) falsch berechnet. Die App hat die Plus-Stunden der Randtage gegen das tägliche Soll verglichen und daraus direkt MA abgeleitet — obwohl du mit nur 2–3 Tagen gar nicht über die 38,5h-Wochengrenze kommen kannst.",
-          "Jetzt gilt: Mehrarbeit entsteht erst, wenn das IST der sichtbaren Tage das volle Wochen-Soll (z.B. 38,5h) übersteigt. Solange du darunter bleibst, werden nur die täglichen Überstunden (IST > Tages-Soll) gezählt — ohne MA. Das gilt symmetrisch für Monatsanfang und Monatsende.",
-          "Die Donnerstagsregel wurde entfernt: Jeder Tag gehört nun zum Monat, in dem er liegt. Gebrochene Wochen werden auf beiden Seiten des Monatsübergangs identisch berechnet."
+          "Jetzt gilt: Mehrarbeit entsteht erst, wenn das IST der sichtbaren Tage das volle Wochen-Soll (z.B. 38,5h) übersteigt. Solange du darunter bleibst, werden nur die täglichen Überstunden (IST > Tages-Soll) gezählt — ohne MA. Das gilt symmetrisch für Monatsanfang und Monatsende."
         ]
       }
     ]

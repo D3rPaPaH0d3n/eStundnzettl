@@ -3,12 +3,15 @@ import globals from 'globals'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from '@typescript-eslint/eslint-plugin'
+import tsparser from '@typescript-eslint/parser'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   globalIgnores(['dist', 'android', '**/*.backup', 'coverage']),
+  // JavaScript files – keep original parser
   {
-    files: ['**/*.{js,jsx,ts,tsx}'],
+    files: ['**/*.{js,jsx}'],
     extends: [
       js.configs.recommended,
       react.configs.flat.recommended,
@@ -30,29 +33,71 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' }],
-      // Härtere Hook-Regeln: jede Verletzung ist ein Fehler, nicht nur eine Warnung.
       'react-hooks/rules-of-hooks': 'error',
-      // Diese drei sind Hinweise der React-Team-Rules, die eine Refactor-Runde
-      // brauchen; wir behalten sie als warn, damit sie im Dev-Log sichtbar
-      // bleiben, aber die Lint-Pipeline nicht blockieren.
       'react-hooks/exhaustive-deps': 'warn',
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
       'react-hooks/immutability': 'warn',
-      // Sicherheits-/Qualitäts-Basics
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-var': 'error',
       'prefer-const': 'warn',
-      // React: der neue JSX-Transform braucht kein React-Import in Scope
       'react/react-in-jsx-scope': 'off',
-      // prop-types sind überzogen für dieses Projekt (keine Typen-Infrastruktur)
       'react/prop-types': 'off',
-      // Minor: erlaubt <div>{text}</div> ohne Entitäten-Escaping-Pflicht
       'react/no-unescaped-entities': 'off',
     },
   },
-  // Tests dürfen Vitest-Globals nutzen und entspanntere Regeln
+  // TypeScript files – use @typescript-eslint parser
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      js.configs.recommended,
+      react.configs.flat.recommended,
+      react.configs.flat['jsx-runtime'],
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    settings: {
+      react: { version: 'detect' },
+    },
+    languageOptions: {
+      parser: tsparser,
+      ecmaVersion: 2020,
+      globals: { ...globals.browser, ...globals.node },
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+        project: './tsconfig.json',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint,
+    },
+    rules: {
+      // Disable base rules that conflict with TS versions
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'warn',
+      // React hooks
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/immutability': 'warn',
+      // Security & quality
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-var': 'error',
+      'prefer-const': 'warn',
+      // React
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'react/no-unescaped-entities': 'off',
+    },
+  },
+  // Tests – relaxed rules
   {
     files: ['**/__tests__/**/*.{js,jsx,ts,tsx}', '**/*.test.{js,jsx,ts,tsx}'],
     languageOptions: {
@@ -60,6 +105,8 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 ])

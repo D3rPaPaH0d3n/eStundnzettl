@@ -14,7 +14,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * still zurückkommt.
  */
 
-const pluginCalls = {
+interface PluginCallRecord {
+  statement?: string;
+  values?: unknown[];
+  database?: string;
+  [key: string]: unknown;
+}
+
+const pluginCalls: Record<string, PluginCallRecord[]> = {
   query: [],
   execute: [],
   createConnection: [],
@@ -24,30 +31,30 @@ const pluginCalls = {
 };
 
 const STRICT_PLUGIN_MOCK = {
-  checkConnectionsConsistency: vi.fn(async (opts) => {
+  checkConnectionsConsistency: vi.fn(async (opts: PluginCallRecord) => {
     pluginCalls.checkConnectionsConsistency.push(opts);
     return { result: true };
   }),
-  createConnection: vi.fn(async (opts) => {
+  createConnection: vi.fn(async (opts: PluginCallRecord) => {
     pluginCalls.createConnection.push(opts);
     return {};
   }),
-  open: vi.fn(async (opts) => {
+  open: vi.fn(async (opts: PluginCallRecord) => {
     pluginCalls.open.push(opts);
     return {};
   }),
-  close: vi.fn(async (opts) => {
+  close: vi.fn(async (opts: PluginCallRecord) => {
     pluginCalls.close.push(opts);
     return {};
   }),
-  execute: vi.fn(async (opts) => {
+  execute: vi.fn(async (opts: PluginCallRecord) => {
     pluginCalls.execute.push(opts);
     // CREATE TABLE / CREATE INDEX → no-op
     return { changes: { changes: 0 } };
   }),
   run: vi.fn(async () => ({ changes: { changes: 0 } })),
   executeSet: vi.fn(async () => ({ changes: { changes: 0 } })),
-  query: vi.fn(async (opts) => {
+  query: vi.fn(async (opts: PluginCallRecord) => {
     pluginCalls.query.push(opts);
 
     // HIER ist der Plugin-Contract fest verdrahtet: wenn `values` fehlt oder
@@ -112,7 +119,7 @@ describe("database.js — Plugin-Contract-Regression (Welle 3 Postmortem)", () =
       /SELECT\s+version\s+FROM\s+schema_version/i.test(c.statement || "")
     );
     expect(schemaVersionSelect).toBeDefined();
-    expect(Array.isArray(schemaVersionSelect.values)).toBe(true);
+    expect(Array.isArray(schemaVersionSelect!.values)).toBe(true);
   });
 
   it("wirft die erwartete Plugin-Fehlermeldung, wenn values tatsächlich vergessen wird (Sanity-Check des Mocks)", async () => {

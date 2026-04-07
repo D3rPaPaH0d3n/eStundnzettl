@@ -397,6 +397,20 @@ export const calculatePeriodStats = (
     weekCursor.setDate(weekCursor.getDate() + 1);
   }
 
+  // ── Defizit-Wochen verrechnen ──────────────────────────────────
+  // Wochen mit negativem Saldo (z.B. KW13 -1h30m) tragen 0 zu MA/ÜS bei,
+  // aber ihr Defizit muss von den gesammelten ÜS (dann MA) abgezogen werden,
+  // damit MA + ÜS = max(0, Saldo) gilt.
+  const maxOvertime = Math.max(0, stats.totalSaldo);
+  const totalOvertimeSum = stats.overtimeSplit.mehrarbeit + stats.overtimeSplit.ueberstunden;
+  if (totalOvertimeSum > maxOvertime) {
+    const excess = totalOvertimeSum - maxOvertime;
+    // Zuerst ÜS reduzieren, dann MA
+    const uesReduction = Math.min(excess, stats.overtimeSplit.ueberstunden);
+    stats.overtimeSplit.ueberstunden -= uesReduction;
+    stats.overtimeSplit.mehrarbeit -= (excess - uesReduction);
+  }
+
   // Normalstunden = IST minus Überstunden-Anteile, damit
   // Normal + MA + ÜS = IST immer aufgeht.
   stats.normalstunden = Math.max(

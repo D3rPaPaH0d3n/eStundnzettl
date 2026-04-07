@@ -197,11 +197,12 @@ describe("calculatePeriodStats", () => {
       { id: 5, date: "2026-04-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 300 },
     ];
     const aprilEntries = allEntries.filter((e) => e.date.startsWith("2026-04"));
+    // Periode auf die KW14-Tage im April begrenzen, damit Saldo positiv ist
     const stats = calculatePeriodStats(
       aprilEntries,
       userData,
       new Date(2026, 3, 1),
-      new Date(2026, 3, 30),
+      new Date(2026, 3, 5),
       allEntries
     );
     expect(stats.overtimeSplit.mehrarbeit).toBe(30);
@@ -243,10 +244,11 @@ describe("calculatePeriodStats", () => {
       { id: 5, date: "2026-04-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 270 },
     ];
     const marchEntries = allEntries.filter((e) => e.date.startsWith("2026-03"));
+    // Periode auf die Rand-Tage begrenzen, damit Saldo positiv ist
     const stats = calculatePeriodStats(
       marchEntries,
       userData,
-      new Date(2026, 2, 1),
+      new Date(2026, 2, 30),
       new Date(2026, 2, 31),
       allEntries
     );
@@ -343,7 +345,6 @@ describe("calculatePeriodStats", () => {
   it("Monatsbeginn mitten in der Woche: Rand-Tage korrekt (keine MA)", () => {
     // April 2026 beginnt am Mittwoch (01.04).
     // KW14: Mo 30.03 – So 05.04, Do 02.04 = im April → volle Woche gehört April
-    // KW14: nur Mi 01.04 - So 05.04 im April, aber Do im April → volle Woche
     const userData = { workDays: null };
     const allEntries = [
       { id: 1, date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
@@ -353,16 +354,20 @@ describe("calculatePeriodStats", () => {
       { id: 5, date: "2026-04-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 300 },
     ];
     const aprilEntries = allEntries.filter((e) => e.date.startsWith("2026-04"));
+    // Periode auf die KW14-Tage im April begrenzen, damit Saldo positiv ist
     const stats = calculatePeriodStats(
       aprilEntries,
       userData,
       new Date(2026, 3, 1),
-      new Date(2026, 3, 30),
+      new Date(2026, 3, 5),
       allEntries
     );
     // KW14: Do 02.04 in April → volle Woche. Ist=2700, Soll=2310, Diff=390
     // MA = min(390, 90) = 90, ÜS = 300
+    // Deficit-Korrektur: Saldo der Periode = 1500-1290 = 210
+    // MA+ÜS=390 > 210 → ÜS wird auf 120 reduziert, MA bleibt 90
     expect(stats.overtimeSplit.mehrarbeit).toBe(90);
+    expect(stats.overtimeSplit.ueberstunden).toBe(120);
   });
 });
 

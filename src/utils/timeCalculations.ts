@@ -346,29 +346,43 @@ export const calculatePeriodStats = (
         stats.overtimeSplit.mehrarbeit += mehrarbeit;
         stats.overtimeSplit.ueberstunden += ueberstunden;
       } else {
-        // ── GEBROCHENE WOCHE: Summe der Rand-Tage, MA/ÜS mit vollem Wochen-Target ──
+        // ── GEBROCHENE WOCHE ──
+        // IST gegen volles Wochen-Soll prüfen:
+        //   < Wochen-Soll → nur tägliche ÜS (Ist > Soll pro Tag), keine MA
+        //   ≥ Wochen-Soll → MA/ÜS-Split auf Wochen-Basis
         let partialActual = 0;
-        let partialTarget = 0;
         let fullWeekTarget = 0;
         for (let i = 0; i < 7; i++) {
           const dayDate = new Date(monday);
           dayDate.setDate(monday.getDate() + i);
           const dayStr = toLocalDateStr(dayDate);
-          const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
-          fullWeekTarget += dayTarget;
-          if (dayStr < startStr || dayStr > endStr) continue;
-          partialActual += dayActualMap[dayStr] || 0;
-          partialTarget += dayTarget;
+          fullWeekTarget += getTargetMinutesForDate(dayStr, userData?.workDays);
+          if (dayStr >= startStr && dayStr <= endStr) {
+            partialActual += dayActualMap[dayStr] || 0;
+          }
         }
-        const partialBalance = partialActual - partialTarget;
-        if (partialBalance > 0) {
-          // MA-Puffer basiert auf vollem Wochen-Target (z.B. 2400-2310 = 90min)
+
+        if (partialActual > fullWeekTarget) {
+          // Über Wochen-Soll: MA/ÜS-Split
           const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
-            partialBalance,
+            partialActual - fullWeekTarget,
             fullWeekTarget
           );
           stats.overtimeSplit.mehrarbeit += mehrarbeit;
           stats.overtimeSplit.ueberstunden += ueberstunden;
+        } else {
+          // Unter Wochen-Soll: nur tägliche ÜS
+          for (let i = 0; i < 7; i++) {
+            const dayDate = new Date(monday);
+            dayDate.setDate(monday.getDate() + i);
+            const dayStr = toLocalDateStr(dayDate);
+            if (dayStr < startStr || dayStr > endStr) continue;
+            const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
+            const dayActual = dayActualMap[dayStr] || 0;
+            if (dayActual > dayTarget) {
+              stats.overtimeSplit.ueberstunden += (dayActual - dayTarget);
+            }
+          }
         }
       }
     }

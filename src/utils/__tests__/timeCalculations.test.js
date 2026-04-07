@@ -185,15 +185,13 @@ describe("calculatePeriodStats", () => {
     expect(stats.drive).toBe(60);
   });
 
-  it("Gebrochene Woche am Monatsende: MA-Puffer greift", () => {
-    // KW14: Mo 30.03 + Di 31.03 im März, Mi-So im April → gebrochene Woche
-    // Partial: IST=600+540=1140, SOLL=510+510=1020, Saldo=+120
-    // Voller Wochen-Target=2310, MA-Puffer=2400-2310=90
-    // MA=min(120,90)=90, ÜS=120-90=30
+  it("Gebrochene Woche unter Wochen-Soll: nur tägliche ÜS, keine MA", () => {
+    // KW14: Mo 30.03 + Di 31.03 im März (IST=1230=20h30m < 2310=38h30m)
+    // Unter Wochen-Soll → tägliche ÜS: Mo (600-510=90) + Di (630-510=120) = 210
     const userData = { workDays: null };
     const marchEntries = [
       { date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
-      { date: "2026-03-31", type: "work", code: WORK_CODE.OFFICE, netDuration: 540 },
+      { date: "2026-03-31", type: "work", code: WORK_CODE.OFFICE, netDuration: 630 },
     ];
     const stats = calculatePeriodStats(
       marchEntries,
@@ -201,15 +199,13 @@ describe("calculatePeriodStats", () => {
       new Date(2026, 2, 30),
       new Date(2026, 2, 31)
     );
-    expect(stats.overtimeSplit.mehrarbeit).toBe(90);
-    expect(stats.overtimeSplit.ueberstunden).toBe(30);
+    expect(stats.overtimeSplit.mehrarbeit).toBe(0);
+    expect(stats.overtimeSplit.ueberstunden).toBe(210);
   });
 
-  it("Gebrochene Woche am Monatsanfang: MA-Puffer greift", () => {
-    // KW14: Mi 01.04 - Fr 03.04 im April, Mo+Di im März → gebrochene Woche
-    // Partial: IST=600+600+300=1500, SOLL=510+510+270=1290, Saldo=+210
-    // Voller Wochen-Target=2310, MA-Puffer=90
-    // MA=min(210,90)=90, ÜS=210-90=120
+  it("Gebrochene Woche unter Wochen-Soll am Monatsanfang: nur tägliche ÜS", () => {
+    // KW14: Mi-Fr im April (IST=1500=25h < 2310=38h30m)
+    // Tägliche ÜS: Mi (600-510=90) + Do (600-510=90) + Fr (300-270=30) = 210
     const userData = { workDays: null };
     const aprilEntries = [
       { date: "2026-04-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
@@ -222,12 +218,32 @@ describe("calculatePeriodStats", () => {
       new Date(2026, 3, 1),
       new Date(2026, 3, 5)
     );
-    expect(stats.overtimeSplit.mehrarbeit).toBe(90);
-    expect(stats.overtimeSplit.ueberstunden).toBe(120);
+    expect(stats.overtimeSplit.mehrarbeit).toBe(0);
+    expect(stats.overtimeSplit.ueberstunden).toBe(210);
   });
 
-  it("Gebrochene Woche ohne Überschuss → keine MA/ÜS", () => {
-    // Rand-Tage mit IST < SOLL → weder MA noch ÜS
+  it("Gebrochene Woche über Wochen-Soll: MA/ÜS-Split greift", () => {
+    // 5 Tage gebrochene Woche, IST=2440 > Wochen-Soll 2310
+    // calculateOvertimeSplit(130, 2310): Puffer=90, MA=90, ÜS=40
+    const userData = { workDays: null };
+    const entries = [
+      { date: "2025-07-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { date: "2025-07-02", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { date: "2025-07-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { date: "2025-07-04", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { date: "2025-07-05", type: "work", code: WORK_CODE.OFFICE, netDuration: 400 },
+    ];
+    const stats = calculatePeriodStats(
+      entries,
+      userData,
+      new Date(2025, 6, 1),
+      new Date(2025, 6, 5)
+    );
+    expect(stats.overtimeSplit.mehrarbeit).toBe(90);
+    expect(stats.overtimeSplit.ueberstunden).toBe(40);
+  });
+
+  it("Gebrochene Woche ohne täglichen Überschuss → keine MA/ÜS", () => {
     const userData = { workDays: null };
     const entries = [
       { date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 420 },
@@ -323,11 +339,11 @@ describe("calculatePeriodStats", () => {
       new Date(2026, 2, 31)
     );
     // 4 volle Wochen × 90min MA = 360min
-    // + KW14 gebrochen: Partial Saldo=180, MA-Puffer=90 → MA=90
-    expect(stats.overtimeSplit.mehrarbeit).toBe(360 + 90);
+    // KW14 gebrochen: IST=1200 < Wochen-Soll 2310 → 0 MA
+    expect(stats.overtimeSplit.mehrarbeit).toBe(360);
     // 4 volle Wochen × 270min ÜS = 1080
-    // + KW14 gebrochen: 180-90=90 ÜS
-    expect(stats.overtimeSplit.ueberstunden).toBe(1080 + 90);
+    // + KW14 tägliche ÜS: Mo (600-510=90) + Di (600-510=90) = 180
+    expect(stats.overtimeSplit.ueberstunden).toBe(1080 + 180);
   });
 });
 

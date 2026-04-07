@@ -185,9 +185,11 @@ describe("calculatePeriodStats", () => {
     expect(stats.drive).toBe(60);
   });
 
-  it("Gebrochene Woche: unter Wochen-Soll → keine MA/ÜS", () => {
-    // KW14: Mo 30.03 + Di 31.03 im März (19h IST)
-    // 19h < 38,5h Wochen-Soll → keine MA, keine ÜS
+  it("Gebrochene Woche am Monatsende: MA-Puffer greift", () => {
+    // KW14: Mo 30.03 + Di 31.03 im März, Mi-So im April → gebrochene Woche
+    // Partial: IST=600+540=1140, SOLL=510+510=1020, Saldo=+120
+    // Voller Wochen-Target=2310, MA-Puffer=2400-2310=90
+    // MA=min(120,90)=90, ÜS=120-90=30
     const userData = { workDays: null };
     const marchEntries = [
       { date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
@@ -199,49 +201,33 @@ describe("calculatePeriodStats", () => {
       new Date(2026, 2, 30),
       new Date(2026, 2, 31)
     );
-    expect(stats.overtimeSplit.mehrarbeit).toBe(0);
-    expect(stats.overtimeSplit.ueberstunden).toBe(0);
+    expect(stats.overtimeSplit.mehrarbeit).toBe(90);
+    expect(stats.overtimeSplit.ueberstunden).toBe(30);
   });
 
-  it("Gebrochene Woche: über Wochen-Soll → MA greift", () => {
-    // 5 Tage in gebrochener Woche, IST=2400 (40h), Wochen-Soll=2310 (38,5h)
-    // Saldo gegen Wochen-Soll: +90 → MA=90, ÜS=0
+  it("Gebrochene Woche am Monatsanfang: MA-Puffer greift", () => {
+    // KW14: Mi 01.04 - Fr 03.04 im April, Mo+Di im März → gebrochene Woche
+    // Partial: IST=600+600+300=1500, SOLL=510+510+270=1290, Saldo=+210
+    // Voller Wochen-Target=2310, MA-Puffer=90
+    // MA=min(210,90)=90, ÜS=210-90=120
     const userData = { workDays: null };
-    const entries = [
-      { date: "2026-04-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
-      { date: "2026-04-02", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
-      { date: "2026-04-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 360 },
-      // Mo+Di aus Vormonat nicht im Zeitraum, aber Wochen-Soll bleibt 2310
-      // IST nur für April-Tage: 510+510+360 = 1380 → 1380 < 2310 → 0/0
+    const aprilEntries = [
+      { date: "2026-04-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
+      { date: "2026-04-02", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
+      { date: "2026-04-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 300 },
     ];
-    // Für diesen Test brauchen wir genug IST: Nehmen wir eine volle Woche
-    // die zufällig am Monatsanfang liegt (alle 5 Arbeitstage im April)
-    // Nutzen wir KW15: Mo 06.04 - Fr 10.04 (volle Woche? Nein, So 12.04 im April)
-    // Besser: Simulieren mit Monat der am Montag beginnt
-    // Jan 2024: Mo 01.01 - So 07.01 = KW1. Aber 01.01 = Feiertag...
-    // Nehmen wir Juli 2025: Di 01.07 - So gehört zu KW27 (Mo 30.06)
-    // → gebrochene Woche mit Di-So im Juli
-    const entries2 = [
-      { date: "2025-07-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 }, // Di
-      { date: "2025-07-02", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 }, // Mi
-      { date: "2025-07-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 }, // Do
-      { date: "2025-07-04", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 }, // Fr
-      { date: "2025-07-05", type: "work", code: WORK_CODE.OFFICE, netDuration: 400 }, // Sa (extra)
-    ];
-    // IST=2440, Wochen-Soll=2310, Diff=+130, Puffer=90
-    // MA=90, ÜS=40
-    const stats2 = calculatePeriodStats(
-      entries2,
+    const stats = calculatePeriodStats(
+      aprilEntries,
       userData,
-      new Date(2025, 6, 1),
-      new Date(2025, 6, 5)
+      new Date(2026, 3, 1),
+      new Date(2026, 3, 5)
     );
-    expect(stats2.overtimeSplit.mehrarbeit).toBe(90);
-    expect(stats2.overtimeSplit.ueberstunden).toBe(40);
+    expect(stats.overtimeSplit.mehrarbeit).toBe(90);
+    expect(stats.overtimeSplit.ueberstunden).toBe(120);
   });
 
-  it("Gebrochene Woche: unter Tages-Soll → keine MA/ÜS", () => {
-    // Rand-Tage mit IST < Tages-SOLL → weit unter Wochen-Soll
+  it("Gebrochene Woche ohne Überschuss → keine MA/ÜS", () => {
+    // Rand-Tage mit IST < SOLL → weder MA noch ÜS
     const userData = { workDays: null };
     const entries = [
       { date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 420 },
@@ -337,11 +323,11 @@ describe("calculatePeriodStats", () => {
       new Date(2026, 2, 31)
     );
     // 4 volle Wochen × 90min MA = 360min
-    // KW14 gebrochen: IST=1200 (2×600) < Wochen-Soll 2310 → 0 MA
-    expect(stats.overtimeSplit.mehrarbeit).toBe(360);
+    // + KW14 gebrochen: Partial Saldo=180, MA-Puffer=90 → MA=90
+    expect(stats.overtimeSplit.mehrarbeit).toBe(360 + 90);
     // 4 volle Wochen × 270min ÜS = 1080
-    // KW14 gebrochen: IST < Wochen-Soll → 0 ÜS
-    expect(stats.overtimeSplit.ueberstunden).toBe(1080);
+    // + KW14 gebrochen: 180-90=90 ÜS
+    expect(stats.overtimeSplit.ueberstunden).toBe(1080 + 90);
   });
 });
 

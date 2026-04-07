@@ -8,6 +8,7 @@ import {
 import {
   getWeekNumber,
   calculateWeekStats,
+  calculatePeriodStats,
   calculateDisplayedDayMinutes,
 } from "../utils/timeCalculations";
 import { WORK_CODE } from "../hooks/constants";
@@ -201,11 +202,6 @@ const Dashboard: React.FC<Props> = ({
 
              {!simpleMode && (
              <div className="text-right flex items-center gap-3 ml-auto">
-                    {stats.normalstunden != null && stats.normalstunden > 0 && (
-                        <span className="text-zinc-600 dark:text-zinc-300 font-medium">
-                            {formatTime(stats.normalstunden)} <span className="text-zinc-400 dark:text-zinc-500 font-normal text-[10px]">Normal</span>
-                        </span>
-                    )}
                     {monthlyOvertimeSplit.mehrarbeit > 0 && (
                         <span className="text-blue-600 dark:text-blue-400 font-medium">
                             {formatTime(monthlyOvertimeSplit.mehrarbeit)} <span className="text-zinc-400 dark:text-zinc-500 font-normal text-[10px]">MA</span>
@@ -232,16 +228,6 @@ const Dashboard: React.FC<Props> = ({
         ) : (
           sortedWeeks.map(([week, weekEntries]) => {
 
-            // Wochen-Stats immer für die VOLLE Woche (Mo-So) berechnen,
-            // damit Saldo und MA/ÜS korrekt auf 40h-Basis sind.
-            const weekStats = calculateWeekStats(weekEntries, userData);
-
-            // Werte für die Anzeige extrahieren
-            // totalIst enthält alle Arbeitszeiten + Urlaub/Krank/Feiertag (aber ohne Code 19 Fahrtzeit)
-            const workMinutes = weekStats.totalIst;
-            const diff = weekStats.totalSaldo;
-            const { mehrarbeit, ueberstunden } = weekStats.overtimeSplit;
-
             // Dynamisches Wochen-Ziel berechnen (basierend auf den Tagen in dieser Woche)
             const anyDate = new Date(weekEntries[0].date);
             const currentDay = anyDate.getDay() || 7;
@@ -249,7 +235,7 @@ const Dashboard: React.FC<Props> = ({
             const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
 
             // Boundary-Wochen auf den angezeigten Monat clippen:
-            // Datumsbereich und sichtbare Einträge beschränken.
+            // Datumsbereich, sichtbare Einträge und Stats beschränken.
             const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
             const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
             const clippedMonday = monday < monthStart ? monthStart : monday;
@@ -257,6 +243,17 @@ const Dashboard: React.FC<Props> = ({
             const clippedStartStr = [clippedMonday.getFullYear(), String(clippedMonday.getMonth() + 1).padStart(2, "0"), String(clippedMonday.getDate()).padStart(2, "0")].join("-");
             const clippedEndStr = [clippedSunday.getFullYear(), String(clippedSunday.getMonth() + 1).padStart(2, "0"), String(clippedSunday.getDate()).padStart(2, "0")].join("-");
             const visibleEntries = weekEntries.filter((e) => e.date >= clippedStartStr && e.date <= clippedEndStr);
+
+            // Volle Woche im Monat → volle Wochenberechnung (40h-Basis).
+            // Boundary-Woche → nur die Monatstage berechnen (tägliche ÜS, keine MA).
+            const isBoundaryWeek = monday < monthStart || sunday > monthEnd;
+            const weekStats = isBoundaryWeek
+              ? calculatePeriodStats(visibleEntries, userData, clippedMonday, clippedSunday)
+              : calculateWeekStats(weekEntries, userData);
+
+            const workMinutes = weekStats.totalIst;
+            const diff = weekStats.totalSaldo;
+            const { mehrarbeit, ueberstunden } = weekStats.overtimeSplit;
             
             const expanded = expandedWeeks[week];
             const balanceColorClass = diff < 0

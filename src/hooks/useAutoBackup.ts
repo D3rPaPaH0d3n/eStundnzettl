@@ -10,6 +10,7 @@ import { deobfuscate } from "../utils/obfuscate";
 import { isSQLiteActive } from "../db/storageMode";
 import { getSetting, setSetting } from "../db/repositories/settingsRepo";
 import { logger } from "../utils/logger";
+import { getErrorMessage } from "../utils/errorUtils";
 
 // ─── Dual-Write Helpers (SQLite + localStorage) ─────────────
 
@@ -80,7 +81,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
   const registerNextcloudFailure = async (error: unknown) => {
     const current = readLSInt(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT);
     const newCount = current + 1;
-    const message = String((error as any)?.message || error || "Nextcloud-Backup fehlgeschlagen");
+    const message = getErrorMessage(error, "Nextcloud-Backup fehlgeschlagen");
     await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT, "nextcloud_backup_fail_count", String(newCount));
     await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", message);
   };

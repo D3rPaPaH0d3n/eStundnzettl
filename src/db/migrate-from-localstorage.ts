@@ -73,7 +73,7 @@ export async function migrateEntriesToSQLite(): Promise<MigrationResult> {
     return { migrated: 0, skipped: true };
   }
 
-  let entries: any[] = [];
+  let entries: unknown[] = [];
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.ENTRIES);
     if (stored && stored !== "undefined") {
@@ -175,7 +175,7 @@ export async function migrateWorkCodesToSQLite(): Promise<MigrationResult> {
     return { migrated: 0, skipped: true };
   }
 
-  let codes: any[] = [];
+  let codes: unknown[] = [];
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.WORK_CODES);
     if (stored && stored !== "undefined") {
@@ -219,7 +219,7 @@ export async function migrateAttachmentsToSQLite(): Promise<AttachmentMigrationR
   }
 
   // Attachments lesen
-  let attachments: any[] = [];
+  let attachments: unknown[] = [];
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.ATTACHMENTS);
     if (stored && stored !== "undefined") {

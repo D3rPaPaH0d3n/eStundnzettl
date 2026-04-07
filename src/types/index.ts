@@ -146,6 +146,103 @@ export interface DeleteTarget {
   id?: number | string;
 }
 
+// ─── Form State (return type of useFormState) ───────────────
+
+export interface FormState {
+  formDate: string;
+  setFormDate: (d: string) => void;
+  entryType: string;
+  setEntryType: (t: string) => void;
+  startTime: string;
+  setStartTime: (t: string) => void;
+  endTime: string;
+  setEndTime: (t: string) => void;
+  pauseDuration: number;
+  setPauseDuration: (n: number | ((p: number) => number)) => void;
+  project: string;
+  setProject: (p: string) => void;
+  code: number;
+  setCode: (c: number) => void;
+  editingEntry: Entry | null;
+  setEditingEntry: (e: Entry | null) => void;
+  isLiveEntry: boolean;
+  setIsLiveEntry: (b: boolean) => void;
+  specialManualMode: boolean;
+  setSpecialManualMode: (b: boolean) => void;
+  resetForm: () => void;
+  startEdit: (entry: Entry) => void;
+}
+
+// ─── Google Auth ─────────────────────────────────────────────
+
+export interface GoogleAuthStatus {
+  hasToken?: boolean;
+  connected?: boolean;
+  reauthRequired?: boolean;
+  email?: string;
+}
+
+export interface GoogleSignInResult {
+  authentication?: {
+    accessToken?: string;
+  };
+  email?: string;
+}
+
+// ─── Backup Analysis ────────────────────────────────────────
+
+export interface BackupAnalysisResult {
+  integrity: "ok" | "mismatch" | "missing";
+  entries: Entry[];
+  workCodes: WorkCode[];
+  attachments: Attachment[];
+  attachmentLabels: string[];
+  settings: Record<string, unknown> | null;
+  timestamp: string | null;
+  newEntries: number;
+  updatedEntries: number;
+  unchangedEntries: number;
+  newCodes: number;
+  newAttachments: number;
+  conflicts: Entry[];
+}
+
+// ─── PDF Archive ────────────────────────────────────────────
+
+export interface PdfArchiveRunOptions {
+  month?: number;
+  year?: number;
+  force?: boolean;
+}
+
+// ─── html2pdf Options ───────────────────────────────────────
+
+export interface Html2PdfOptions {
+  margin?: number | number[];
+  filename?: string;
+  image?: { type: string; quality: number };
+  html2canvas?: {
+    scale?: number;
+    useCORS?: boolean;
+    logging?: boolean;
+    windowWidth?: number;
+    windowHeight?: number;
+    [key: string]: unknown;
+  };
+  jsPDF?: {
+    unit?: string;
+    format?: string;
+    orientation?: string;
+    compress?: boolean;
+    [key: string]: unknown;
+  };
+  pagebreak?: { mode?: string | string[] };
+}
+
+// ─── SQL Types ──────────────────────────────────────────────
+
+export type SqlValue = string | number | boolean | null;
+
 // ─── Globals ─────────────────────────────────────────────────
 
 declare global {

@@ -10,7 +10,7 @@ import type { UserData } from "../../types";
 
 interface Props {
   userData: UserData & { company?: string };
-  setUserData: (data: any) => void;
+  setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
 }
 
 const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {

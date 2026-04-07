@@ -21,6 +21,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { de } from "date-fns/locale";
 
 import type { Entry, UserData, WorkCode, Attachment } from "../types";
+import type { PeriodStatsResult } from "../utils/timeCalculations";
 
 registerLocale("de", de);
 
@@ -29,24 +30,11 @@ interface CustomMonthInputProps {
   onClick?: () => void;
 }
 
-interface OvertimeSplit {
-  mehrarbeit: number;
-  ueberstunden: number;
-}
-
-interface MonthStats {
-  totalIst: number;
-  totalTarget: number;
-  drive: number;
-  normalstunden?: number;
-  overtimeSplit?: OvertimeSplit;
-}
-
 interface Props {
   currentDate: Date;
   onSetCurrentDate: (date: Date) => void;
   changeMonth: (delta: number) => void;
-  stats: MonthStats;
+  stats: PeriodStatsResult;
   overtime: number;
   progressPercent: number;
   groupedByWeek: [number, Entry[]][];

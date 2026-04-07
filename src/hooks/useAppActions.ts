@@ -9,7 +9,7 @@
  * Gesamt-API an App.jsx ist identisch zum vorherigen Stand.
  */
 
-import type { Entry, UserData, WorkCode, DeleteTarget } from '../types';
+import type { Entry, UserData, WorkCode, DeleteTarget, FormState } from '../types';
 import { useTimerActions } from "./actions/useTimerActions";
 import { useEntryActions } from "./actions/useEntryActions";
 import { useDeleteActions } from "./actions/useDeleteActions";
@@ -17,7 +17,7 @@ import { useOnboardingActions } from "./actions/useOnboardingActions";
 import { useMiscActions } from "./actions/useMiscActions";
 
 interface UseAppActionsProps {
-  form: any;
+  form: FormState;
   entries: Entry[];
   userData: UserData;
   workCodes: WorkCode[];

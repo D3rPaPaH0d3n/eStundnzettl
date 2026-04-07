@@ -9,7 +9,8 @@ import AppInfoSettings from "./Settings/AppInfoSettings";
 import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import toast from "react-hot-toast";
 
-import type { Entry, UserData, Theme, WorkCode } from "../types";
+import type { Entry, UserData, Theme, WorkCode, PdfArchiveRunOptions } from "../types";
+import { getErrorMessage } from "../utils/errorUtils";
 
 const ChangelogModal = React.lazy(() => import("./ChangelogModal"));
 const HelpModal = React.lazy(() => import("./HelpModal"));
@@ -19,7 +20,7 @@ const DecimalDurationPicker = React.lazy(() => import("./DecimalDurationPicker")
 
 interface Props {
   userData: UserData & { workModelId?: string };
-  setUserData: (data: any) => void;
+  setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
   autoBackup: boolean;
@@ -29,7 +30,7 @@ interface Props {
   importEntries: (entries: Entry[]) => void;
   importWorkCodes: (codes: WorkCode[]) => void;
   onExport: () => void;
-  onImport: (data: any) => void;
+  onImport: (data: unknown) => void;
   onDeleteAll: () => void;
   onCheckUpdate: () => void;
   // Nextcloud State
@@ -44,7 +45,7 @@ interface Props {
   // PDF-Archiv
   pdfArchiveLastRun?: string | null;
   pdfArchiveLastError?: string | null;
-  pdfArchivePerformRun?: (opts: any) => Promise<any>;
+  pdfArchivePerformRun?: (opts: PdfArchiveRunOptions) => Promise<Record<string, unknown>>;
 }
 
 const Settings: React.FC<Props> = ({
@@ -80,7 +81,7 @@ const Settings: React.FC<Props> = ({
   const [showHelp, setShowHelp] = useState(false);
   const [showWorkCodeManager, setShowWorkCodeManager] = useState(false);
 
-  const [pendingImport, setPendingImport] = useState<any>(null);
+  const [pendingImport, setPendingImport] = useState<Record<string, unknown> | null>(null);
 
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [pickerTargetIndex, setPickerTargetIndex] = useState<number | null>(null);
@@ -145,6 +146,29 @@ const Settings: React.FC<Props> = ({
     Haptics.impact({ style: ImpactStyle.Medium });
     if (!newState) {
       toast.success("Bearbeitung freigegeben");
+    }
+  };
+
+  const handleFileImportFromFile = async (file: File) => {
+    try {
+      const json = await readJsonFile(file);
+      const analysis = await analyzeBackupData(json);
+      if (!analysis.valid) {
+        toast.error("Ungültiges Backup-Format");
+        return;
+      }
+      if (analysis.integrity === "mismatch") {
+        toast("⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert", { duration: 6000 });
+      }
+      if (analysis.hasSettings) {
+        setPendingImport(analysis);
+      } else {
+        await applyBackup(analysis, "ALL");
+        toast.success(`${analysis.entryCount} Einträge importiert!`);
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch {
+      toast.error("Fehler beim Lesen der Datei");
     }
   };
 
@@ -260,7 +284,7 @@ const Settings: React.FC<Props> = ({
         autoBackup={autoBackup}
         setAutoBackup={setAutoBackup}
         onExport={onExport}
-        onFileImport={handleFileImport as any}
+        onFileImport={handleFileImportFromFile}
         // Nextcloud State
         nextcloudEnabled={nextcloudEnabled}
         nextcloudUrl={nextcloudUrl}

@@ -14,7 +14,7 @@ interface DayBalanceMeta {
   totalMinutes: number;
 }
 
-interface PeriodStatsResult {
+export interface PeriodStatsResult {
   work: number;
   drive: number;
   holiday: number;

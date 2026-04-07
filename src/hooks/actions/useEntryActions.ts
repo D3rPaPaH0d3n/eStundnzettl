@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import type { Entry, UserData, WorkCode } from '../../types';
+import type { Entry, UserData, WorkCode, FormState } from '../../types';
 import { toLocalDateString } from "../../utils";
 import { parseTime, calculateEntryNetDuration, getTargetMinutesForDate } from "../../utils/timeCalculations";
 import { generateEntryId } from "../../utils/entryId";
@@ -16,7 +16,7 @@ import { STORAGE_KEYS, WORK_CODE } from "../constants";
  * genauso wie die "last code"-Persistenz über dualWriteSync.
  */
 interface UseEntryActionsProps {
-  form: any;
+  form: FormState;
   entries: Entry[];
   userData: UserData;
   workCodes: WorkCode[];

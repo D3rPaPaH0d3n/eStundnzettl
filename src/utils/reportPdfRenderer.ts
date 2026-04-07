@@ -25,7 +25,7 @@ import html2pdf from "html2pdf.js";
 import ReportDocument from "../components/ReportDocument";
 import { calculatePeriodStats, applyEffectiveDurations } from "./timeCalculations";
 import { logger } from "./logger";
-import type { Entry, UserData, WorkCode, Attachment } from '../types';
+import type { Entry, UserData, WorkCode, Attachment, Html2PdfOptions } from '../types';
 
 const log = logger.scope("ReportPdfRenderer");
 
@@ -135,7 +135,7 @@ export async function renderMonthlyReportPdfBlob({
           workCodes,
           attachments,
           customNote,
-        } as any)
+        } as Record<string, unknown>)
       );
       // requestAnimationFrame * 2 stellt sicher, dass React committed
       // und das Layout vom Browser berechnet wurde.
@@ -149,7 +149,7 @@ export async function renderMonthlyReportPdfBlob({
       throw new Error("ReportDocument-Container nicht gefunden");
     }
 
-    const opt = {
+    const opt: Html2PdfOptions = {
       margin: 5,
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
@@ -163,7 +163,7 @@ export async function renderMonthlyReportPdfBlob({
       pagebreak: { mode: "css" },
     };
 
-    const blob = await html2pdf().set(opt as any).from(element as HTMLElement).output("blob");
+    const blob = await html2pdf().set(opt).from(element as HTMLElement).output("blob");
     return blob;
   } catch (err) {
     log.error("renderMonthlyReportPdfBlob failed:", err);

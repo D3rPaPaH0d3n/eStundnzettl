@@ -195,7 +195,7 @@ export async function deobfuscate(val: string | null | undefined): Promise<strin
       const crypto = getCrypto();
       const key = await getMasterKey();
       const pt = new Uint8Array(
-        await (crypto.subtle.decrypt as any)({ name: "AES-GCM", iv }, key, ct)
+        await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv as BufferSource }, key, ct as BufferSource)
       );
       return utf8Decode(pt);
     } catch (err) {

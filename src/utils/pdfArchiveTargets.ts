@@ -14,6 +14,7 @@ import { uploadPdfArchiveFile } from "./googleDrivePdfArchive";
 import { deobfuscate } from "./obfuscate";
 import { STORAGE_KEYS } from "../hooks/constants";
 import { logger } from "./logger";
+import { getErrorMessage } from "./errorUtils";
 
 interface ArchiveResult {
   ok: boolean;
@@ -104,7 +105,7 @@ export async function writeLocalArchive(filename: string, base64: string, blob?:
     log.warn("Stufe 3 (External/Archiv) fehlgeschlagen:", err3);
     return {
       ok: false,
-      error: `Alle drei Lokal-Pfade scheiterten. Letzter Fehler: ${String((err3 as any)?.message || err3)}`,
+      error: `Alle drei Lokal-Pfade scheiterten. Letzter Fehler: ${getErrorMessage(err3)}`,
       target: "local",
     };
   }
@@ -136,7 +137,7 @@ export async function uploadNextcloudArchive(filename: string, base64: string): 
     return { ok: true, target: "nextcloud" };
   } catch (err) {
     log.warn("Nextcloud PDF-Archiv fehlgeschlagen:", err);
-    return { ok: false, error: String((err as any)?.message || err), target: "nextcloud" };
+    return { ok: false, error: getErrorMessage(err), target: "nextcloud" };
   }
 }
 
@@ -156,6 +157,6 @@ export async function uploadGDriveArchive(filename: string, base64: string, blob
     return { ok: true, target: "gdrive" };
   } catch (err) {
     log.warn("GDrive PDF-Archiv fehlgeschlagen:", err);
-    return { ok: false, error: String((err as any)?.message || err), target: "gdrive" };
+    return { ok: false, error: getErrorMessage(err), target: "gdrive" };
   }
 }

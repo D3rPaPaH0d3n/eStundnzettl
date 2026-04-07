@@ -17,7 +17,7 @@ import type { Entry, UserData, WorkCode, WorkModel } from "../../types";
 
 interface Props {
   userData: UserData & { workModelId?: string; minuteInput?: boolean };
-  setUserData: (data: any) => void;
+  setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
   setShowWorkCodeManager: (show: boolean) => void;
   isLocked: boolean;
   onToggleLock: () => void;
@@ -285,7 +285,7 @@ const DataSettings: React.FC<Props> = ({
           </div>
           <button
             onClick={() =>
-              setUserData((p: any) => ({ ...p, minuteInput: !p?.minuteInput }))
+              setUserData((p: UserData) => ({ ...p, minuteInput: !p?.minuteInput }))
             }
             className={`relative w-12 h-7 rounded-full transition-colors duration-200 shrink-0 ${
               userData?.minuteInput

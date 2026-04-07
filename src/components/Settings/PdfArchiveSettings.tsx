@@ -6,6 +6,7 @@ import { STORAGE_KEYS } from "../../hooks/constants";
 import { isSQLiteActive } from "../../db/storageMode";
 import { getSetting, setSetting } from "../../db/repositories/settingsRepo";
 import { logger } from "../../utils/logger";
+import type { PdfArchiveRunOptions } from "../../types";
 import {
   connectGoogleDrivePdf,
   disconnectGoogleDrivePdf,
@@ -39,7 +40,7 @@ const formatLastRun = (dateStr: string | null | undefined) => {
 
 interface Props {
   nextcloudEnabled: boolean;
-  performRun: (opts: any) => Promise<any>;
+  performRun: (opts: PdfArchiveRunOptions) => Promise<Record<string, unknown>>;
   lastRun?: string | null;
   lastError?: string | null;
 }

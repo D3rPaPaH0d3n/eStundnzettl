@@ -8,6 +8,7 @@ import { exportToSelectedFolder, attachBackupChecksum, verifyBackupIntegrity } f
 import { toLocalDateString } from "../utils";
 import { filterValidEntries } from "../schemas/entry";
 import { logger } from "../utils/logger";
+import { getErrorMessage } from "../utils/errorUtils";
 
 /**
  * useExport — encapsulates all export/import logic
@@ -205,8 +206,8 @@ export function useExport({ entries, userData, workCodes, attachments = [], impo
         if (d.user && typeof d.user === "object") setUserData(d.user);
         if (d.workCodes && Array.isArray(d.workCodes) && importWorkCodes) importWorkCodes(d.workCodes);
         toast.success("Daten erfolgreich importiert!");
-      } catch (err: any) {
-        toast.error(`Fehler: ${err.message || "Datei ungültig."}`);
+      } catch (err: unknown) {
+        toast.error(`Fehler: ${getErrorMessage(err, "Datei ungültig.")}`);
       } finally {
         (event.target as HTMLInputElement).value = "";
       }

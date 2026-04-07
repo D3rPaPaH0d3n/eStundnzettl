@@ -43,7 +43,7 @@ export function hashMonthContent({ entries, userData, year, month }: { entries: 
     ym: `${year}-${pad2(month)}`,
     name: userData?.name || "",
     workDays: userData?.workDays || null,
-    workModel: (userData as any)?.workModel || null,
+    workModel: (userData as UserData & { workModel?: unknown })?.workModel || null,
     entries: filterEntriesForMonth(entries, year, month).map((e) => ({
       id: e.id,
       t: e.type,

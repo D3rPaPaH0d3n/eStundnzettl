@@ -32,10 +32,12 @@ import {
 import { testConnection as ncTestConnection, initiateLoginFlow, pollLoginResult, ensureFolder as ncEnsureFolder, getNextcloudErrorMessage } from "../../utils/nextcloudClient";
 import toast from "react-hot-toast";
 import { logger } from "../../utils/logger";
+import { getErrorMessage } from "../../utils/errorUtils";
+import type { GoogleAuthStatus, GoogleSignInResult } from "../../types";
 
 const log = logger.scope("Nextcloud");
 
-const isGoogleConnectionReady = (status: any) => !!(status?.hasToken || (status?.connected && !status?.reauthRequired));
+const isGoogleConnectionReady = (status: GoogleAuthStatus | null) => !!(status?.hasToken || (status?.connected && !status?.reauthRequired));
 const connectionBadgeClassName = "flex items-center px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full";
 
 interface Props {
@@ -88,8 +90,8 @@ const BackupSettings: React.FC<Props> = ({
   
   // Refs for lifecycle management
   const ncPollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
-  const browserFinishedListener = useRef<any>(null);
-  const appStateListener = useRef<any>(null);
+  const browserFinishedListener = useRef<{ remove: () => void } | null>(null);
+  const appStateListener = useRef<{ remove: () => void } | null>(null);
   const appIsActive = useRef(true);
   const loginAttemptId = useRef<string | null>(null);
 
@@ -160,21 +162,19 @@ const BackupSettings: React.FC<Props> = ({
     if (saved) setLastBackupDate(saved);
 
     Promise.resolve(getGoogleAuthStatus())
-      .then((googleStatus: any) => {
+      .then((googleStatus: GoogleAuthStatus) => {
         setIsTokenValid(isGoogleConnectionReady(googleStatus));
-        const storedAuth = getStoredGoogleAuth?.() as any;
+        const storedAuth = getStoredGoogleAuth?.() as GoogleAuthStatus | null;
         const accountLabel =
-          googleStatus?.userInfo?.email ||
-          googleStatus?.accountEmail ||
-          storedAuth?.userInfo?.email ||
-          storedAuth?.accountEmail ||
+          googleStatus?.email ||
+          storedAuth?.email ||
           "";
         setGoogleAccountLabel(accountLabel);
       })
       .catch(() => {
         setIsTokenValid(false);
-        const storedAuth = getStoredGoogleAuth?.() as any;
-        setGoogleAccountLabel(storedAuth?.userInfo?.email || storedAuth?.accountEmail || "");
+        const storedAuth = getStoredGoogleAuth?.() as GoogleAuthStatus | null;
+        setGoogleAccountLabel(storedAuth?.email || "");
       });
 
     const failCount = parseInt(localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT) || "0", 10);
@@ -207,14 +207,12 @@ const BackupSettings: React.FC<Props> = ({
             const enabled = !!sqlCloudEnabled;
             setIsCloudConnected(enabled);
           }
-          const refreshedStatus = await getGoogleAuthStatus() as any;
+          const refreshedStatus = await getGoogleAuthStatus() as GoogleAuthStatus;
           setIsTokenValid(isGoogleConnectionReady(refreshedStatus));
-          const storedAuth2 = getStoredGoogleAuth?.() as any;
+          const storedAuth2 = getStoredGoogleAuth?.() as GoogleAuthStatus | null;
           setGoogleAccountLabel(
-            refreshedStatus?.userInfo?.email ||
-            refreshedStatus?.accountEmail ||
-            storedAuth2?.userInfo?.email ||
-            storedAuth2?.accountEmail ||
+            refreshedStatus?.email ||
+            storedAuth2?.email ||
             ""
           );
         } catch { /* keep localStorage values */ }
@@ -430,15 +428,17 @@ const BackupSettings: React.FC<Props> = ({
         throw new Error(getNextcloudErrorMessage(startResult));
       }
 
-      const { loginUrl, token, pollEndpoint } = startResult as any;
+      const loginUrl = startResult.loginUrl as string;
+      const token = startResult.token as string;
+      const pollEndpoint = startResult.pollEndpoint as string;
       log.debug(`Login URL: ${loginUrl}, Poll endpoint: ${pollEndpoint}`);
 
       // Open browser
-      await Browser.open({ url: loginUrl as string });
+      await Browser.open({ url: loginUrl });
       log.debug('Browser opened');
 
       // Start polling
-      startPolling(pollEndpoint as string, token as string);
+      startPolling(pollEndpoint, token);
 
     } catch (err) {
       log.error('Login flow error:', err);
@@ -524,17 +524,15 @@ const BackupSettings: React.FC<Props> = ({
     } else {
       try {
         await initGoogleAuth().catch(() => {});
-        const user = await signInGoogle() as any;
+        const user = await signInGoogle() as GoogleSignInResult;
         if (user && user.authentication?.accessToken) {
           localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
           setIsCloudConnected(true);
           setIsTokenValid(true);
-          const refreshedStatus = await getGoogleAuthStatus().catch(() => null) as any;
+          const refreshedStatus = await getGoogleAuthStatus().catch(() => null) as GoogleAuthStatus | null;
           setGoogleAccountLabel(
-            refreshedStatus?.userInfo?.email ||
-            refreshedStatus?.accountEmail ||
+            refreshedStatus?.email ||
             user.email ||
-            user.givenName ||
             ""
           );
           if (!autoBackup) setAutoBackup(true);
@@ -615,7 +613,7 @@ const BackupSettings: React.FC<Props> = ({
           }
         }
       } else {
-        toast.error((result as any)?.message || "Backup fehlgeschlagen");
+        toast.error(getErrorMessage(result, "Backup fehlgeschlagen"));
       }
     } catch (error) {
       log.error(error);

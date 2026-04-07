@@ -10,6 +10,8 @@ import { getAllEntries, bulkInsertEntries } from "../db/repositories/entriesRepo
 import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
 import { bulkReplaceAttachments, bulkReplaceLabelSuggestions } from "../db/repositories/attachmentsRepo";
 import { logger } from "./logger";
+import { getErrorMessage } from "./errorUtils";
+import type { BackupAnalysisResult } from "../types";
 
 // =========================================================
 // BACKUP ORDNER
@@ -293,45 +295,51 @@ const isValidEntry = (entry: unknown): boolean => {
   return true;
 };
 
-const normalizeEntries = (value: any): any[] => {
-  let raw: any[] = [];
+const normalizeEntries = (value: unknown): unknown[] => {
+  const v = value as Record<string, unknown> | undefined;
+  let raw: unknown[] = [];
   if (Array.isArray(value)) raw = value;
-  else if (Array.isArray(value?.entries)) raw = value.entries;
-  else if (Array.isArray(value?.data?.entries)) raw = value.data.entries;
-  else if (Array.isArray(value?.items)) raw = value.items;
+  else if (Array.isArray(v?.entries)) raw = v.entries as unknown[];
+  else if (v?.data && typeof v.data === "object" && Array.isArray((v.data as Record<string, unknown>)?.entries)) raw = (v.data as Record<string, unknown>).entries as unknown[];
+  else if (Array.isArray(v?.items)) raw = v.items as unknown[];
   return raw.filter(isValidEntry);
 };
 
-const normalizeSettings = (value: any): Record<string, unknown> | null => {
+const normalizeSettings = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  return value.user || value.settings || value.profile || value.userData || value.employee || null;
+  const v = value as Record<string, unknown>;
+  return (v.user || v.settings || v.profile || v.userData || v.employee || null) as Record<string, unknown> | null;
 };
 
-const normalizeWorkCodes = (value: any): any[] => {
+const normalizeWorkCodes = (value: unknown): unknown[] => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
-  const raw = value.workCodes || value.codes || value.workcodes || [];
+  const v = value as Record<string, unknown>;
+  const raw = v.workCodes || v.codes || v.workcodes || [];
   return Array.isArray(raw) ? raw : [];
 };
 
-const normalizeAttachments = (value: any): any[] => {
+const normalizeAttachments = (value: unknown): unknown[] => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
-  const raw = value.attachments || value.files || [];
+  const v = value as Record<string, unknown>;
+  const raw = v.attachments || v.files || [];
   return Array.isArray(raw) ? raw : [];
 };
 
-const normalizeAttachmentLabels = (value: any): string[] => {
+const normalizeAttachmentLabels = (value: unknown): string[] => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
-  const raw = value.attachmentLabels || value.labels || value.attachment_labels || [];
+  const v = value as Record<string, unknown>;
+  const raw = v.attachmentLabels || v.labels || v.attachment_labels || [];
   return Array.isArray(raw) ? raw : [];
 };
 
-const normalizeTimestamp = (value: any): string => {
-  return value?.backupDate || value?.exportedAt || value?.lastModified || value?.timestamp || new Date().toISOString();
+const normalizeTimestamp = (value: unknown): string => {
+  const v = value as Record<string, unknown> | undefined;
+  return (v?.backupDate || v?.exportedAt || v?.lastModified || v?.timestamp || new Date().toISOString()) as string;
 };
 
 // 1. ANALYSE - Schaut in die Daten, OHNE zu speichern.
 // Async, weil die Integritätsprüfung via SHA-256 (Web Crypto) asynchron ist.
-export const analyzeBackupData = async (data: any): Promise<Record<string, unknown>> => {
+export const analyzeBackupData = async (data: unknown): Promise<Record<string, unknown>> => {
   if (!data) return { valid: false, isValid: false };
 
   const entries = normalizeEntries(data);
@@ -374,7 +382,7 @@ export const analyzeBackupData = async (data: any): Promise<Record<string, unkno
 };
 
 // 2. ANWENDEN - Speichert die Daten basierend auf der Entscheidung
-export const applyBackup = async (analyzedData: any, mode: string = 'ALL'): Promise<boolean> => {
+export const applyBackup = async (analyzedData: BackupAnalysisResult & Record<string, unknown>, mode: string = 'ALL'): Promise<boolean> => {
   if (!analyzedData || !analyzedData.valid) return false;
 
   try {
@@ -428,7 +436,7 @@ export const triggerManualBackup = async (): Promise<Record<string, unknown>> =>
   try {
     // Daten aus SQLite laden (Source of Truth), localStorage nur als Fallback
     let userData: unknown = null;
-    let entries: any[] = [];
+    let entries: unknown[] = [];
 
     if (isSQLiteActive()) {
       try {
@@ -509,7 +517,7 @@ export const triggerManualBackup = async (): Promise<Record<string, unknown>> =>
           nextcloudError = "Nextcloud-Anmeldedaten unvollständig";
         }
       } catch (e) {
-        nextcloudError = (e as any)?.message || "Nextcloud-Upload fehlgeschlagen";
+        nextcloudError = getErrorMessage(e, "Nextcloud-Upload fehlgeschlagen");
       }
     }
 

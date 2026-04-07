@@ -414,7 +414,7 @@ export default function App() {
                 currentDate={currentDate}
                 onSetCurrentDate={setCurrentDate}
                 changeMonth={changeMonth}
-                stats={stats as any}
+                stats={stats}
                 overtime={overtime}
                 progressPercent={progressPercent}
                 groupedByWeek={groupedByWeek}

@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import type { FormState } from '../../types';
 
 /**
  * Live-Timer Start/Stop Handler.
@@ -11,7 +12,7 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
  *   Code/Projekt editieren, bevor er speichert.
  */
 interface UseTimerActionsProps {
-  form: any;
+  form: FormState;
   startTimer: () => void;
   stopTimer: () => { start: Date | null; end: Date | null; pause: number };
   getDefaultCode: () => number;

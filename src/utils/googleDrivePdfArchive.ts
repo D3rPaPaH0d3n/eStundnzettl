@@ -21,6 +21,7 @@
  */
 
 import { registerPlugin } from '@capacitor/core';
+import { getErrorMessage } from './errorUtils';
 
 // ─────── Konstanten (alle eigen, keine Ueberlappung mit googleDriveBackup.js) ───────
 
@@ -30,7 +31,7 @@ const FOLDER_ID_STORAGE_KEY = 'google_pdf_archive_folder_id';
 const ARCHIVE_FOLDER_NAME = 'eStundnzettl Archiv';
 const SESSION_TOKEN_MAX_AGE_MS = 45 * 60 * 1000;
 
-const GoogleDriveBackupPlugin: any = registerPlugin('GoogleDriveBackup');
+const GoogleDriveBackupPlugin = registerPlugin<Record<string, (...args: unknown[]) => Promise<Record<string, unknown>>>>('GoogleDriveBackup');
 
 // ─────── Modul-lokaler Token-Cache (isoliert!) ───────
 
@@ -93,7 +94,7 @@ const nativeAvailable = async (): Promise<boolean> => {
 };
 
 const parseNativeError = (error: unknown, fallback: string = 'GOOGLE_DRIVE_PDF_ERROR'): string => {
-  const message = String((error as any)?.message || error || fallback);
+  const message = getErrorMessage(error, fallback);
   if (message.includes('not implemented') || message.includes('UNAVAILABLE')) {
     return 'GOOGLE_DRIVE_NATIVE_UNAVAILABLE';
   }

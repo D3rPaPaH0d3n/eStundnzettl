@@ -19,13 +19,13 @@ import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
 import { bulkInsertEntries } from "../db/repositories/entriesRepo";
 import { logger } from "../utils/logger";
 
-import type { Entry, UserData, WorkCode, Theme, WorkModel } from "../types";
+import type { Entry, UserData, WorkCode, Theme, WorkModel, GoogleSignInResult, BackupAnalysisResult } from "../types";
 
 const log = logger.scope("Onboarding");
 
 interface Props {
   onComplete: () => void;
-  setUserData: (data: any) => void;
+  setUserData: (data: UserData | Record<string, unknown>) => void;
   importEntries: (entries: Entry[]) => void;
   importWorkCodes: (codes: WorkCode[]) => void;
   setCloudSyncEnabled: (enabled: boolean) => void;
@@ -68,7 +68,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     minuteInput: false,
   });
   
-  const [restoreData, setRestoreData] = useState<any>(null);
+  const [restoreData, setRestoreData] = useState<Record<string, unknown> | null>(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
   
   const [showNcRestore, setShowNcRestore] = useState(false);
@@ -362,7 +362,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       const user = await signInGoogle();
       if (!user) throw new Error("Anmeldung fehlgeschlagen");
 
-      const token = (user as any).authentication?.accessToken;
+      const token = (user as GoogleSignInResult).authentication?.accessToken;
       if (!token) throw new Error("Kein Zugriffstoken erhalten");
 
       // Nutzt jetzt automatisch die neue Logik aus googleDrive.js (inkl. Legacy Fallback)
@@ -419,7 +419,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       const content = await readJsonFile(file);
       const { isValid, data } = await analyzeBackupData(content);
       if (isValid) {
-        if ((data as any).integrity === "mismatch") {
+        if ((data as BackupAnalysisResult).integrity === "mismatch") {
           toast("⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert", { duration: 6000 });
         }
         setRestoreData(data);

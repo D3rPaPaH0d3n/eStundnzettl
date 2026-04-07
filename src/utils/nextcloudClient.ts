@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { NextcloudLoginFlow } from '../plugins/NextcloudLoginFlowPlugin';
+import { getErrorMessage } from './errorUtils';
 
 /**
  * nextcloudClient.js — WebDAV-Client für Nextcloud Backup
@@ -101,12 +102,12 @@ export async function initiateLoginFlow(serverUrl: string): Promise<NcResult> {
     try {
       return await NextcloudLoginFlow.startLoginFlow({ url: normalized.value as string }) as unknown as NcResult;
     } catch (error) {
-      return buildError('PLUGIN_ERROR', (error as any)?.message || 'Native Android-Integration fehlgeschlagen', undefined, true);
+      return buildError('PLUGIN_ERROR', getErrorMessage(error, 'Native Android-Integration fehlgeschlagen'), undefined, true);
     }
   }
 
   try {
-    const response = await fetch(`${(normalized as any).value}/index.php/login/v2`, {
+    const response = await fetch(`${normalized.value as string}/index.php/login/v2`, {
       method: 'POST',
       headers: { Accept: 'application/json' },
     });
@@ -124,19 +125,20 @@ export async function initiateLoginFlow(serverUrl: string): Promise<NcResult> {
     const parsed = await parseJsonResponse(response, 'Server liefert ungültiges JSON');
     if (!parsed.ok) return parsed;
 
-    const data = parsed.data as any;
-    if (!data?.login || !data?.poll?.endpoint || !data?.poll?.token) {
+    const data = parsed.data as Record<string, unknown> | undefined;
+    const poll = data?.poll as Record<string, unknown> | undefined;
+    if (!data?.login || !poll?.endpoint || !poll?.token) {
       return buildError('INVALID_RESPONSE', 'Antwort vom Server ist unvollständig', parsed.httpStatus as number | undefined);
     }
 
     return {
       ok: true,
       loginUrl: data.login,
-      pollEndpoint: data.poll.endpoint,
-      token: data.poll.token,
+      pollEndpoint: poll.endpoint,
+      token: poll.token,
     };
   } catch (error) {
-    return buildError('NETWORK_ERROR', (error as any)?.message || 'Netzwerkfehler bei der Verbindung zu Nextcloud', undefined, true);
+    return buildError('NETWORK_ERROR', getErrorMessage(error, 'Netzwerkfehler bei der Verbindung zu Nextcloud'), undefined, true);
   }
 }
 
@@ -148,7 +150,7 @@ export async function pollLoginResult(pollEndpoint: string, token: string): Prom
     try {
       return await NextcloudLoginFlow.pollLoginFlow({ pollEndpoint, token }) as unknown as NcResult;
     } catch (error) {
-      return buildError('PLUGIN_ERROR', (error as any)?.message || 'Native Android-Integration fehlgeschlagen', undefined, true);
+      return buildError('PLUGIN_ERROR', getErrorMessage(error, 'Native Android-Integration fehlgeschlagen'), undefined, true);
     }
   }
 
@@ -176,7 +178,7 @@ export async function pollLoginResult(pollEndpoint: string, token: string): Prom
     const parsed = await parseJsonResponse(response, 'Server liefert ungültiges JSON');
     if (!parsed.ok) return parsed;
 
-    const data = parsed.data as any;
+    const data = parsed.data as Record<string, unknown> | undefined;
     if (!data?.server || !data?.loginName || !data?.appPassword) {
       return buildError('INVALID_RESPONSE', 'Antwort vom Server ist unvollständig', parsed.httpStatus as number | undefined);
     }
@@ -189,7 +191,7 @@ export async function pollLoginResult(pollEndpoint: string, token: string): Prom
       appPassword: data.appPassword,
     };
   } catch (error) {
-    return buildError('NETWORK_ERROR', (error as any)?.message || 'Netzwerkfehler bei der Verbindung zu Nextcloud', undefined, true);
+    return buildError('NETWORK_ERROR', getErrorMessage(error, 'Netzwerkfehler bei der Verbindung zu Nextcloud'), undefined, true);
   }
 }
 

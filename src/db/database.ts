@@ -11,6 +11,7 @@ import { CapacitorSQLite } from "@capacitor-community/sqlite";
 import { DB_NAME } from "./schema";
 import { runMigrations } from "./migrations";
 import { logger } from "../utils/logger";
+import type { SqlValue } from "../types";
 
 // ACHTUNG: Dieser Wert wird an CapacitorSQLite.createConnection() übergeben
 // und vom Plugin als "erwartete DB-Version" interpretiert. Ein Bump erfordert
@@ -54,7 +55,7 @@ async function init(): Promise<boolean> {
     _dbOpen = true;
 
     // Schema über Migrations-Framework aktualisieren (idempotent + versioniert)
-    const executeFn = (sql: string): Promise<any> =>
+    const executeFn = (sql: string): Promise<{ changes?: { changes: number } }> =>
       CapacitorSQLite.execute({ database: DB_NAME, statements: sql });
     const queryFn = async (sql: string): Promise<Record<string, unknown>[]> => {
       // ACHTUNG: @capacitor-community/sqlite verlangt `values` als Pflichtfeld,
@@ -127,7 +128,7 @@ export async function closeDb(): Promise<void> {
 /**
  * Raw execute — führt beliebiges SQL aus (DDL, multi-statement).
  */
-export async function execute(sql: string): Promise<any> {
+export async function execute(sql: string): Promise<{ changes?: { changes: number } }> {
   const db = await getDb();
   return CapacitorSQLite.execute({ database: db!, statements: sql });
 }
@@ -135,7 +136,7 @@ export async function execute(sql: string): Promise<any> {
 /**
  * Raw run — einzelnes Statement mit Parametern (INSERT/UPDATE/DELETE).
  */
-export async function run(sql: string, values: any[] = []): Promise<any> {
+export async function run(sql: string, values: SqlValue[] = []): Promise<{ changes?: { changes: number; lastId?: number } }> {
   const db = await getDb();
   return CapacitorSQLite.run({ database: db!, statement: sql, values });
 }
@@ -145,7 +146,7 @@ export async function run(sql: string, values: any[] = []): Promise<any> {
  * @param {Array<{statement: string, values: Array}>} set
  * @param {boolean} [transaction=true] — in Transaktion wrappen
  */
-export async function executeSet(set: Array<{ statement: string; values: any[] }>, transaction: boolean = true): Promise<any> {
+export async function executeSet(set: Array<{ statement: string; values: SqlValue[] }>, transaction: boolean = true): Promise<{ changes?: { changes: number } } | void> {
   if (!set || set.length === 0) return;
   const db = await getDb();
   return CapacitorSQLite.executeSet({ database: db!, set, transaction });
@@ -154,7 +155,7 @@ export async function executeSet(set: Array<{ statement: string; values: any[] }
 /**
  * Raw query — SELECT mit Parametern.
  */
-export async function query(sql: string, values: any[] = []): Promise<any[]> {
+export async function query(sql: string, values: SqlValue[] = []): Promise<Record<string, unknown>[]> {
   const db = await getDb();
   const result = await CapacitorSQLite.query({ database: db!, statement: sql, values });
   return result.values || [];

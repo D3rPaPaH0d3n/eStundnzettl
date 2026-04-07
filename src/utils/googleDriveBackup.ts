@@ -1,9 +1,10 @@
 import { registerPlugin } from '@capacitor/core';
 import { BACKUP_CONFIG } from '../hooks/constants';
+import { getErrorMessage } from './errorUtils';
 
 const TOKEN_STORAGE_KEY = 'google_auth_state';
 const AUTH_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
-const GoogleDriveBackupPlugin: any = registerPlugin('GoogleDriveBackup');
+const GoogleDriveBackupPlugin = registerPlugin<Record<string, (...args: unknown[]) => Promise<Record<string, unknown>>>>('GoogleDriveBackup');
 const SESSION_TOKEN_MAX_AGE_MS = 45 * 60 * 1000;
 
 let sessionAccessToken: string | null = null;
@@ -51,7 +52,7 @@ const getCachedSessionToken = (): string | null => {
 };
 
 const parseNativeError = (error: unknown, fallback: string = 'GOOGLE_DRIVE_NATIVE_ERROR'): string => {
-  const message = String((error as any)?.message || error || fallback);
+  const message = getErrorMessage(error, fallback);
   if (message.includes('not implemented') || message.includes('UNAVAILABLE')) {
     return 'GOOGLE_DRIVE_NATIVE_UNAVAILABLE';
   }

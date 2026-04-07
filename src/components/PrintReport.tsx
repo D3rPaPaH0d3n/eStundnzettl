@@ -18,7 +18,7 @@ import { usePeriodStats } from "../hooks/usePeriodStats";
 import ExportModal from "./ExportModal";
 import ReportDocument from "./ReportDocument";
 
-import type { Entry, UserData, WorkCode, Attachment } from "../types";
+import type { Entry, UserData, WorkCode, Attachment, Html2PdfOptions } from "../types";
 
 interface Props {
   entries: Entry[];
@@ -173,7 +173,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
         pagebreak: { mode: 'css' } 
       };
 
-      const worker = html2pdf().set(opt as any).from(element);
+      const worker = html2pdf().set(opt as Html2PdfOptions).from(element);
 
       if (!Capacitor.isNativePlatform()) {
         await worker.save();

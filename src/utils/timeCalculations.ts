@@ -293,32 +293,25 @@ export const calculatePeriodStats = (
     stats.work + stats.vacation + stats.sick + stats.holiday + stats.timeComp;
   stats.totalSaldo = stats.totalIst - stats.totalTarget;
 
-  // ───── Mehrarbeit / Überstunden per ISO-Woche (Donnerstag-Regel) ─────
+  // ───── Mehrarbeit / Überstunden per ISO-Woche ─────────────────
   //
   // Rechtliche Grundlage (Österreich, AZG):
   //   - Mehrarbeit = Stunden zwischen Vertragssoll (z.B. 38,5h) und 40h/Woche
   //   - Überstunden = Stunden über 40h/Woche
   //   - Berechnung erfolgt pro voller ISO-Woche (Mo–So)
   //
-  // Zuordnung (Donnerstag-Regel):
-  //   - Eine Woche gehört zu dem Monat, in dem ihr Donnerstag liegt.
-  //   - Liegt der Donnerstag im Monat → volle Woche MA/ÜS (kein Split).
-  //   - Liegt der Donnerstag NICHT im Monat → nur die Rand-Tage dieses
-  //     Monats werden auf tägliche ÜS geprüft (IST > SOLL → ÜS).
-  //     Keine Mehrarbeit für Rand-Tage (wöchentliche Schwelle unerreichbar).
+  // Volle Woche (alle 7 Tage im Zeitraum):
+  //   → MA/ÜS-Split auf 40h-Basis
   //
-  // Für in-Periode liegende Tage werden die gefilterten `entries` verwendet
-  // (inkl. evtl. synthetisch ergänzter Feiertage), für out-of-period Tage
-  // die optionalen `allEntries` (Roh-Liste aus useEntries).
-  const periodDayStart = new Date(periodStart);
-  periodDayStart.setHours(0, 0, 0, 0);
+  // Gebrochene Woche (Monatsgrenze):
+  //   → Nur tägliche ÜS (Ist > Soll pro Tag), keine MA
+  //   → Tage werden rein dem Monat zugerechnet, in dem sie liegen
+  const seenWeeks = new Set<string>();
+  const weekCursor = new Date(periodStart);
+  weekCursor.setHours(0, 0, 0, 0);
   const periodDayEnd = new Date(periodEnd);
   periodDayEnd.setHours(0, 0, 0, 0);
 
-  const boundarySource = allEntries || entries;
-
-  const seenWeeks = new Set<string>();
-  const weekCursor = new Date(periodDayStart);
   while (weekCursor <= periodDayEnd) {
     const monday = getISOWeekMonday(weekCursor);
     const mondayKey = toLocalDateStr(monday);
@@ -326,69 +319,44 @@ export const calculatePeriodStats = (
     if (!seenWeeks.has(mondayKey)) {
       seenWeeks.add(mondayKey);
 
-      let weekTarget = 0;
-      let weekActual = 0;
-      let workDaysInPeriod = 0;
-      let workDaysTotal = 0;
+      // Prüfen ob alle 7 Tage der Woche im Zeitraum liegen
+      const sundayOfWeek = new Date(monday);
+      sundayOfWeek.setDate(monday.getDate() + 6);
+      const mondayStr = toLocalDateStr(monday);
+      const sundayStr = toLocalDateStr(sundayOfWeek);
+      const isFullWeek = mondayStr >= startStr && sundayStr <= endStr;
 
-      for (let i = 0; i < 7; i++) {
-        const dayDate = new Date(monday);
-        dayDate.setDate(monday.getDate() + i);
-        const dayStr = toLocalDateStr(dayDate);
-
-        const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
-        weekTarget += dayTarget;
-
-        if (dayTarget > 0) {
-          workDaysTotal++;
-          if (dayStr >= startStr && dayStr <= endStr) workDaysInPeriod++;
-        }
-
-        const inPeriod = dayStr >= startStr && dayStr <= endStr;
-        if (inPeriod) {
-          // In-Period: vorberechnete dayActualMap nutzen (inkl. Krank-Korrektur)
+      if (isFullWeek) {
+        // ── VOLLE WOCHE: MA/ÜS auf 40h-Basis ──
+        let weekTarget = 0;
+        let weekActual = 0;
+        for (let i = 0; i < 7; i++) {
+          const dayDate = new Date(monday);
+          dayDate.setDate(monday.getDate() + i);
+          const dayStr = toLocalDateStr(dayDate);
+          weekTarget += getTargetMinutesForDate(dayStr, userData?.workDays);
           weekActual += dayActualMap[dayStr] || 0;
-        } else {
-          // Out-of-Period: aus boundarySource summieren
-          boundarySource.forEach((e) => {
-            if (e.date !== dayStr) return;
-            if (e.type === "work" && e.code === WORK_CODE.DRIVE) return;
-            weekActual += e.netDuration || 0;
-          });
         }
-      }
+        const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
+          weekActual - weekTarget,
+          weekTarget
+        );
+        stats.overtimeSplit.mehrarbeit += mehrarbeit;
+        stats.overtimeSplit.ueberstunden += ueberstunden;
+      } else {
+        // ── GEBROCHENE WOCHE: nur tägliche ÜS, keine MA ──
+        for (let i = 0; i < 7; i++) {
+          const dayDate = new Date(monday);
+          dayDate.setDate(monday.getDate() + i);
+          const dayStr = toLocalDateStr(dayDate);
+          if (dayStr < startStr || dayStr > endStr) continue;
 
-      // Nur wenn mindestens ein Arbeitstag dieser Woche im Zeitraum liegt
-      if (workDaysInPeriod > 0) {
-        // Donnerstag der Woche bestimmen (Monday + 3 Tage)
-        const thursday = new Date(monday);
-        thursday.setDate(monday.getDate() + 3);
-        const thursdayStr = toLocalDateStr(thursday);
-        const thursdayInPeriod = thursdayStr >= startStr && thursdayStr <= endStr;
+          const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
+          if (dayTarget === 0) continue;
 
-        if (thursdayInPeriod) {
-          // ── DONNERSTAG IM MONAT: volle Woche, kein proportionaler Split ──
-          const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
-            weekActual - weekTarget,
-            weekTarget
-          );
-          stats.overtimeSplit.mehrarbeit += mehrarbeit;
-          stats.overtimeSplit.ueberstunden += ueberstunden;
-        } else {
-          // ── RAND-TAGE: Woche gehört anderem Monat → nur tägliche ÜS ──
-          for (let i = 0; i < 7; i++) {
-            const dayDate = new Date(monday);
-            dayDate.setDate(monday.getDate() + i);
-            const dayStr = toLocalDateStr(dayDate);
-            if (dayStr < startStr || dayStr > endStr) continue;
-
-            const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
-            if (dayTarget === 0) continue;
-
-            const dayActual = dayActualMap[dayStr] || 0;
-            if (dayActual > dayTarget) {
-              stats.overtimeSplit.ueberstunden += (dayActual - dayTarget);
-            }
+          const dayActual = dayActualMap[dayStr] || 0;
+          if (dayActual > dayTarget) {
+            stats.overtimeSplit.ueberstunden += (dayActual - dayTarget);
           }
         }
       }

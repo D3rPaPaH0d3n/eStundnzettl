@@ -11,6 +11,7 @@ import {
   calculateDisplayedDayMinutes,
   calculatePeriodStats,
 } from "../timeCalculations";
+import type { Entry, UserData } from "../../types";
 import { WORK_CODE } from "../../hooks/constants";
 
 describe("parseTime", () => {
@@ -95,6 +96,8 @@ describe("calculateEntryNetDuration", () => {
       startTime: "08:00",
       endTime: "17:00",
       pauseDuration: 30,
+      formDate: "2026-04-04",
+      userData: null,
       code: WORK_CODE.OFFICE,
     });
     expect(mins).toBe(8 * 60 + 30);
@@ -106,6 +109,8 @@ describe("calculateEntryNetDuration", () => {
       startTime: "08:00",
       endTime: "10:00",
       pauseDuration: 60,
+      formDate: "2026-04-04",
+      userData: null,
       code: WORK_CODE.DRIVE,
     });
     expect(mins).toBe(120);
@@ -117,6 +122,8 @@ describe("calculateEntryNetDuration", () => {
       startTime: "10:00",
       endTime: "09:00",
       pauseDuration: 0,
+      formDate: "2026-04-04",
+      userData: null,
       code: WORK_CODE.OFFICE,
     });
     expect(mins).toBe(0);
@@ -142,14 +149,14 @@ describe("calculateDisplayedDayMinutes", () => {
       { type: "work", code: WORK_CODE.OFFICE, netDuration: 480 },
       { type: "work", code: WORK_CODE.DRIVE, netDuration: 60 },
       { type: "vacation", code: 0, netDuration: 510 },
-    ];
+    ] as unknown as Entry[];
     expect(calculateDisplayedDayMinutes(entries)).toBe(480 + 510);
   });
 });
 
 describe("calculatePeriodStats", () => {
   it("aggregiert Ist/Soll/Saldo für eine Woche korrekt", () => {
-    const userData = { workDays: null };
+    const userData = { workDays: null } as unknown as UserData;
     // Mo-Fr 2024-01-01..05 alle voll gearbeitet
     const entries = [
       { date: "2024-01-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
@@ -157,7 +164,7 @@ describe("calculatePeriodStats", () => {
       { date: "2024-01-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
       { date: "2024-01-04", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
       { date: "2024-01-05", type: "work", code: WORK_CODE.OFFICE, netDuration: 270 },
-    ];
+    ] as unknown as Entry[];
     const stats = calculatePeriodStats(
       entries,
       userData,
@@ -174,10 +181,10 @@ describe("calculatePeriodStats", () => {
     const entries = [
       { date: "2024-01-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 480 },
       { date: "2024-01-01", type: "work", code: WORK_CODE.DRIVE, netDuration: 60 },
-    ];
+    ] as unknown as Entry[];
     const stats = calculatePeriodStats(
       entries,
-      { workDays: null },
+      { workDays: null } as unknown as UserData,
       new Date(2024, 0, 1),
       new Date(2024, 0, 1)
     );
@@ -188,11 +195,11 @@ describe("calculatePeriodStats", () => {
   it("Gebrochene Woche unter Wochen-Soll: nur tägliche ÜS, keine MA", () => {
     // KW14: Mo 30.03 + Di 31.03 im März (IST=1230=20h30m < 2310=38h30m)
     // Unter Wochen-Soll → tägliche ÜS: Mo (600-510=90) + Di (630-510=120) = 210
-    const userData = { workDays: null };
+    const userData = { workDays: null } as unknown as UserData;
     const marchEntries = [
       { date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
       { date: "2026-03-31", type: "work", code: WORK_CODE.OFFICE, netDuration: 630 },
-    ];
+    ] as unknown as Entry[];
     const stats = calculatePeriodStats(
       marchEntries,
       userData,
@@ -206,12 +213,12 @@ describe("calculatePeriodStats", () => {
   it("Gebrochene Woche unter Wochen-Soll am Monatsanfang: nur tägliche ÜS", () => {
     // KW14: Mi-Fr im April (IST=1500=25h < 2310=38h30m)
     // Tägliche ÜS: Mi (600-510=90) + Do (600-510=90) + Fr (300-270=30) = 210
-    const userData = { workDays: null };
+    const userData = { workDays: null } as unknown as UserData;
     const aprilEntries = [
       { date: "2026-04-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
       { date: "2026-04-02", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
       { date: "2026-04-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 300 },
-    ];
+    ] as unknown as Entry[];
     const stats = calculatePeriodStats(
       aprilEntries,
       userData,
@@ -225,14 +232,14 @@ describe("calculatePeriodStats", () => {
   it("Gebrochene Woche über Wochen-Soll: MA/ÜS-Split greift", () => {
     // 5 Tage gebrochene Woche, IST=2440 > Wochen-Soll 2310
     // calculateOvertimeSplit(130, 2310): Puffer=90, MA=90, ÜS=40
-    const userData = { workDays: null };
+    const userData = { workDays: null } as unknown as UserData;
     const entries = [
       { date: "2025-07-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
       { date: "2025-07-02", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
       { date: "2025-07-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
       { date: "2025-07-04", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
       { date: "2025-07-05", type: "work", code: WORK_CODE.OFFICE, netDuration: 400 },
-    ];
+    ] as unknown as Entry[];
     const stats = calculatePeriodStats(
       entries,
       userData,
@@ -244,11 +251,11 @@ describe("calculatePeriodStats", () => {
   });
 
   it("Gebrochene Woche ohne täglichen Überschuss → keine MA/ÜS", () => {
-    const userData = { workDays: null };
+    const userData = { workDays: null } as unknown as UserData;
     const entries = [
       { date: "2026-03-30", type: "work", code: WORK_CODE.OFFICE, netDuration: 420 },
       { date: "2026-03-31", type: "work", code: WORK_CODE.OFFICE, netDuration: 420 },
-    ];
+    ] as unknown as Entry[];
     const stats = calculatePeriodStats(
       entries,
       userData,
@@ -268,10 +275,10 @@ describe("calculatePeriodStats", () => {
       { date: "2024-01-03", type: "work", code: WORK_CODE.OFFICE, netDuration: 540 },
       { date: "2024-01-04", type: "work", code: WORK_CODE.OFFICE, netDuration: 540 },
       { date: "2024-01-05", type: "work", code: WORK_CODE.OFFICE, netDuration: 270 },
-    ];
+    ] as unknown as Entry[];
     const stats = calculatePeriodStats(
       entries,
-      { workDays: null },
+      { workDays: null } as unknown as UserData,
       new Date(2024, 0, 1),
       new Date(2024, 0, 7)
     );
@@ -286,10 +293,10 @@ describe("calculatePeriodStats", () => {
       { date: "2024-01-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 }, // Mo: >510
       { date: "2024-01-02", type: "work", code: WORK_CODE.OFFICE, netDuration: 400 }, // Di: <510
       { date: "2024-01-06", type: "work", code: WORK_CODE.OFFICE, netDuration: 300 }, // Sa: soll=0
-    ];
+    ] as unknown as Entry[];
     const stats = calculatePeriodStats(
       entries,
-      { workDays: null },
+      { workDays: null } as unknown as UserData,
       new Date(2024, 0, 1),
       new Date(2024, 0, 7)
     );
@@ -302,8 +309,8 @@ describe("calculatePeriodStats", () => {
     // KW10-13 jeweils Mo-Do 10h (600), Fr 4.5h (270) → Woche 44.5h IST
     // Soll 38.5h, Diff 6h, MA 1.5h, ÜS 4.5h pro volle Woche
     // KW14 gebrochene Woche: Mo 30.03 + Di 31.03 je 10h (600) → tägliche ÜS
-    const userData = { workDays: null };
-    const makeWeek = (mondayDate) => {
+    const userData = { workDays: null } as unknown as UserData;
+    const makeWeek = (mondayDate: string) => {
       const [y, m, d] = mondayDate.split("-").map(Number);
       const entries = [];
       for (let i = 0; i < 5; i++) {
@@ -333,7 +340,7 @@ describe("calculatePeriodStats", () => {
     ];
     const marchEntries = allEntries.filter((e) => e.date.startsWith("2026-03"));
     const stats = calculatePeriodStats(
-      marchEntries,
+      marchEntries as unknown as Entry[],
       userData,
       new Date(2026, 2, 1),
       new Date(2026, 2, 31)
@@ -374,11 +381,11 @@ describe("applyEffectiveDurations + calculatePeriodStats — gemischte Krank-Tag
     const raw = [
       { date: "2024-01-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 300 },
       { date: "2024-01-01", type: "sick", code: null, netDuration: 510 },
-    ];
-    const corrected = applyEffectiveDurations(raw, { workDays: null });
+    ] as unknown as Entry[];
+    const corrected = applyEffectiveDurations(raw, { workDays: null } as unknown as UserData);
     const stats = calculatePeriodStats(
       corrected,
-      { workDays: null },
+      { workDays: null } as unknown as UserData,
       new Date(2024, 0, 1),
       new Date(2024, 0, 1)
     );
@@ -394,11 +401,11 @@ describe("applyEffectiveDurations + calculatePeriodStats — gemischte Krank-Tag
     const raw = [
       { date: "2024-01-01", type: "work", code: WORK_CODE.OFFICE, netDuration: 600 },
       { date: "2024-01-01", type: "sick", code: null, netDuration: 510 },
-    ];
-    const corrected = applyEffectiveDurations(raw, { workDays: null });
+    ] as unknown as Entry[];
+    const corrected = applyEffectiveDurations(raw, { workDays: null } as unknown as UserData);
     const stats = calculatePeriodStats(
       corrected,
-      { workDays: null },
+      { workDays: null } as unknown as UserData,
       new Date(2024, 0, 1),
       new Date(2024, 0, 1)
     );
@@ -410,11 +417,11 @@ describe("applyEffectiveDurations + calculatePeriodStats — gemischte Krank-Tag
   it("voller Kranktag ohne Arbeit → unverändert", () => {
     const raw = [
       { date: "2024-01-01", type: "sick", code: null, netDuration: 510 },
-    ];
-    const corrected = applyEffectiveDurations(raw, { workDays: null });
+    ] as unknown as Entry[];
+    const corrected = applyEffectiveDurations(raw, { workDays: null } as unknown as UserData);
     const stats = calculatePeriodStats(
       corrected,
-      { workDays: null },
+      { workDays: null } as unknown as UserData,
       new Date(2024, 0, 1),
       new Date(2024, 0, 1)
     );

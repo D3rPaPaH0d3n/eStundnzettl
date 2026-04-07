@@ -4,8 +4,8 @@ const runMock = vi.fn();
 const queryMock = vi.fn();
 
 vi.mock("../../database", () => ({
-  run: (...args) => runMock(...args),
-  query: (...args) => queryMock(...args),
+  run: (...args: unknown[]) => runMock(...args),
+  query: (...args: unknown[]) => queryMock(...args),
 }));
 
 import {
@@ -54,7 +54,7 @@ describe("insertBackupMetadata", () => {
 
   it("nutzt Default type=manual wenn fehlt", async () => {
     runMock.mockResolvedValue(undefined);
-    await insertBackupMetadata({});
+    await insertBackupMetadata({ type: "manual" });
     expect(runMock.mock.calls[0][1][0]).toBe("manual");
   });
 

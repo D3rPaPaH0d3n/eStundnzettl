@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { FormEvent } from "react";
 import { renderHook, act } from "@testing-library/react";
+import type { Entry, FormState, UserData, WorkCode } from "../../../types";
 
 // ─── Module-Mocks ───────────────────────────────────────────
 // Alle nativen Capacitor-Plugins und externen Side-Effects werden hier
@@ -57,7 +59,7 @@ import { dualWriteSync, dualRemoveSync } from "../../../utils/dualWrite";
 
 // ─── Helpers ────────────────────────────────────────────────
 
-function makeForm(overrides = {}) {
+function makeForm(overrides: Record<string, unknown> = {}): FormState {
   return {
     entryType: "work",
     formDate: "2026-04-04",
@@ -65,9 +67,10 @@ function makeForm(overrides = {}) {
     endTime: "16:00",
     pauseDuration: 30,
     project: "",
-    code: "work",
+    code: 0,
     editingEntry: null,
     specialManualMode: false,
+    isLiveEntry: false,
     setEntryType: vi.fn(),
     setFormDate: vi.fn(),
     setStartTime: vi.fn(),
@@ -78,16 +81,17 @@ function makeForm(overrides = {}) {
     setEditingEntry: vi.fn(),
     setIsLiveEntry: vi.fn(),
     setSpecialManualMode: vi.fn(),
+    resetForm: vi.fn(),
+    startEdit: vi.fn(),
     ...overrides,
-  };
+  } as FormState;
 }
 
-const USER = {
+const USER: UserData = {
   name: "Max",
   position: "Dev",
   photo: null,
   workDays: [8, 8, 8, 8, 8, 0, 0],
-  weeklyHours: 40,
 };
 
 // ─── useTimerActions ────────────────────────────────────────
@@ -102,7 +106,7 @@ describe("useTimerActions", () => {
         form: makeForm(),
         startTimer,
         stopTimer: vi.fn(),
-        getDefaultCode: () => "work",
+        getDefaultCode: () => 0,
         setView: vi.fn(),
       })
     );
@@ -123,7 +127,7 @@ describe("useTimerActions", () => {
         form,
         startTimer: vi.fn(),
         stopTimer,
-        getDefaultCode: () => "work",
+        getDefaultCode: () => 0,
         setView,
       })
     );
@@ -145,7 +149,14 @@ describe("useTimerActions", () => {
 describe("useEntryActions", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  function mount({ form, entries = [], workCodes = [], addEntry, updateEntry, setView } = {}) {
+  function mount({ form, entries = [], workCodes = [], addEntry, updateEntry, setView }: {
+    form?: FormState;
+    entries?: Entry[];
+    workCodes?: WorkCode[];
+    addEntry?: (entry: Entry) => void;
+    updateEntry?: (entry: Entry) => void;
+    setView?: (view: string) => void;
+  } = {}) {
     return renderHook(() =>
       useEntryActions({
         form: form ?? makeForm(),
@@ -154,12 +165,12 @@ describe("useEntryActions", () => {
         workCodes: workCodes.length
           ? workCodes
           : [
-              { id: "work", label: "Arbeit" },
-              { id: "drive", label: "Fahrzeit" },
+              { id: 70, label: "Arbeit" },
+              { id: 19, label: "Fahrzeit" },
             ],
         addEntry: addEntry ?? vi.fn(),
         updateEntry: updateEntry ?? vi.fn(),
-        getDefaultCode: () => "work",
+        getDefaultCode: () => 0,
         setView: setView ?? vi.fn(),
       })
     );
@@ -177,7 +188,7 @@ describe("useEntryActions", () => {
     const entries = [
       { id: 1, type: "work", date: "2026-04-04", start: "08:00", end: "12:00" },
       { id: 2, type: "work", date: "2026-04-04", start: "13:00", end: "17:30" },
-    ];
+    ] as unknown as Entry[];
     const { result } = mount({ entries });
     expect(result.current.getDefaultTimesForDate("2026-04-04")).toEqual({
       startTime: "17:30",
@@ -196,9 +207,10 @@ describe("useEntryActions", () => {
         start: "07:00",
         end: "15:00",
         pause: 45,
-        code: "work",
+        code: 70,
         project: "Projekt X",
-      })
+        netDuration: 405,
+      } as Entry)
     );
     expect(form.setEditingEntry).toHaveBeenCalledWith(expect.objectContaining({ id: 42 }));
     expect(form.setStartTime).toHaveBeenCalledWith("07:00");
@@ -211,7 +223,7 @@ describe("useEntryActions", () => {
     const addEntry = vi.fn();
     const form = makeForm({ startTime: "10:00", endTime: "09:00" });
     const { result } = mount({ form, addEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() }));
+    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("Endzeit"));
     expect(addEntry).not.toHaveBeenCalled();
   });
@@ -219,11 +231,11 @@ describe("useEntryActions", () => {
   it("handleSaveEntry: erkennt Zeitüberschneidung und blockiert Speichern", () => {
     const addEntry = vi.fn();
     const entries = [
-      { id: 1, type: "work", date: "2026-04-04", start: "08:00", end: "12:00", code: "work" },
-    ];
+      { id: 1, type: "work", date: "2026-04-04", start: "08:00", end: "12:00", code: 70 },
+    ] as unknown as Entry[];
     const form = makeForm({ startTime: "10:00", endTime: "14:00" });
     const { result } = mount({ form, entries, addEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() }));
+    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
     expect(toast.error).toHaveBeenCalledWith(
       expect.stringContaining("Zeitüberschneidung"),
       expect.any(Object)
@@ -233,27 +245,27 @@ describe("useEntryActions", () => {
 
   it("handleSaveEntry: gültiger Work-Entry → addEntry + dualWriteSync(last_code)", () => {
     const addEntry = vi.fn();
-    const form = makeForm({ startTime: "08:00", endTime: "16:30", code: "custom-1" });
+    const form = makeForm({ startTime: "08:00", endTime: "16:30", code: 42 });
     const { result } = mount({
       form,
       addEntry,
-      workCodes: [{ id: "custom-1", label: "Custom" }],
+      workCodes: [{ id: 42, label: "Custom" }],
     });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() }));
+    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
     expect(addEntry).toHaveBeenCalledOnce();
     const saved = addEntry.mock.calls[0][0];
     expect(saved.type).toBe("work");
     expect(saved.start).toBe("08:00");
     expect(saved.end).toBe("16:30");
     expect(saved.netDuration).toBeGreaterThan(0);
-    expect(dualWriteSync).toHaveBeenCalledWith(expect.any(String), "last_code", "custom-1");
+    expect(dualWriteSync).toHaveBeenCalledWith(expect.any(String), "last_code", 42);
   });
 
   it("handleSaveEntry: Krank im Auto-Modus → netDuration aus Sollzeit, start/end null", () => {
     const addEntry = vi.fn();
     const form = makeForm({ entryType: "sick", specialManualMode: false });
     const { result } = mount({ form, addEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() }));
+    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
     expect(addEntry).toHaveBeenCalledOnce();
     const saved = addEntry.mock.calls[0][0];
     expect(saved.type).toBe("sick");
@@ -273,7 +285,7 @@ describe("useEntryActions", () => {
       specialManualMode: true,
     });
     const { result } = mount({ form, addEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() }));
+    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
     expect(addEntry).toHaveBeenCalledOnce();
     const saved = addEntry.mock.calls[0][0];
     expect(saved.type).toBe("vacation");
@@ -286,8 +298,8 @@ describe("useEntryActions", () => {
   it("handleSaveEntry: Manual-Special blockiert bei Überschneidung mit bestehendem Work-Eintrag", () => {
     const addEntry = vi.fn();
     const entries = [
-      { id: 1, type: "work", date: "2026-04-04", start: "09:00", end: "11:00", code: "work" },
-    ];
+      { id: 1, type: "work", date: "2026-04-04", start: "09:00", end: "11:00", code: 70 },
+    ] as unknown as Entry[];
     const form = makeForm({
       entryType: "sick",
       startTime: "08:00",
@@ -295,7 +307,7 @@ describe("useEntryActions", () => {
       specialManualMode: true,
     });
     const { result } = mount({ form, entries, addEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() }));
+    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
     expect(toast.error).toHaveBeenCalledWith(
       expect.stringContaining("Zeitüberschneidung"),
       expect.any(Object)
@@ -316,7 +328,8 @@ describe("useEntryActions", () => {
         pause: 0,
         project: "Krank",
         code: null,
-      })
+        netDuration: 240,
+      } as Entry)
     );
     expect(form.setSpecialManualMode).toHaveBeenCalledWith(true);
     expect(form.setStartTime).toHaveBeenCalledWith("08:00");
@@ -329,10 +342,10 @@ describe("useEntryActions", () => {
     const form = makeForm({
       startTime: "08:00",
       endTime: "16:30",
-      editingEntry: { id: 99, type: "work" },
+      editingEntry: { id: 99, type: "work" } as unknown as Entry,
     });
     const { result } = mount({ form, addEntry, updateEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() }));
+    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
     expect(updateEntry).toHaveBeenCalledOnce();
     expect(updateEntry.mock.calls[0][0].id).toBe(99);
     expect(addEntry).not.toHaveBeenCalled();
@@ -344,10 +357,10 @@ describe("useEntryActions", () => {
 describe("useDeleteActions", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  function mount(overrides = {}) {
+  function mount(overrides: Record<string, unknown> = {}) {
     return renderHook(() =>
       useDeleteActions({
-        entries: [{ id: 1, type: "work", date: "2026-04-04" }],
+        entries: [{ id: 1, type: "work", date: "2026-04-04" }] as unknown as Entry[],
         userData: USER,
         deleteEntry: vi.fn(),
         deleteAllEntries: vi.fn(),
@@ -394,7 +407,7 @@ describe("useDeleteActions", () => {
 
   it("type='all' bleibt funktionsfähig, wenn Filesystem.writeFile fehlschlägt", async () => {
     const { Filesystem } = await import("@capacitor/filesystem");
-    Filesystem.writeFile.mockRejectedValueOnce(new Error("boom"));
+    (Filesystem.writeFile as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("boom"));
     const deleteAllEntries = vi.fn();
     const { result } = mount({ deleteAllEntries });
 

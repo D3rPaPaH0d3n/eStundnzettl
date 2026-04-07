@@ -10,8 +10,8 @@ vi.mock("../../db/storageMode", () => ({
   isSQLiteActive: () => sqliteActive,
 }));
 vi.mock("../../db/repositories/settingsRepo", () => ({
-  setSetting: (...args) => setSettingMock(...args),
-  deleteSetting: (...args) => deleteSettingMock(...args),
+  setSetting: (...args: unknown[]) => setSettingMock(...args),
+  deleteSetting: (...args: unknown[]) => deleteSettingMock(...args),
 }));
 
 import { dualWriteSync, dualRemoveSync } from "../dualWrite";

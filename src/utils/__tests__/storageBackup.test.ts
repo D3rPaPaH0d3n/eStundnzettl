@@ -62,7 +62,7 @@ describe("computeBackupChecksum", () => {
 
 describe("attachBackupChecksum", () => {
   it("fügt checksum + formatVersion hinzu", async () => {
-    const payload = { entries: [{ id: 1 }] };
+    const payload: Record<string, unknown> = { entries: [{ id: 1 }] };
     await attachBackupChecksum(payload);
     expect(payload.formatVersion).toBe(2);
     expect(typeof payload.checksum).toBe("string");
@@ -76,20 +76,20 @@ describe("verifyBackupIntegrity", () => {
   });
 
   it("liefert 'verified' für ein unversehrtes Payload", async () => {
-    const payload = { entries: [{ id: 1 }] };
+    const payload: Record<string, unknown> = { entries: [{ id: 1 }] };
     await attachBackupChecksum(payload);
     expect(await verifyBackupIntegrity(payload)).toBe("verified");
   });
 
   it("liefert 'mismatch' nach Manipulation der Daten", async () => {
-    const payload = { entries: [{ id: 1 }] };
+    const payload: Record<string, unknown> = { entries: [{ id: 1 }] };
     await attachBackupChecksum(payload);
-    payload.entries.push({ id: 2 }); // Tampering nach Checksum-Berechnung
+    (payload.entries as Array<{ id: number }>).push({ id: 2 }); // Tampering nach Checksum-Berechnung
     expect(await verifyBackupIntegrity(payload)).toBe("mismatch");
   });
 
   it("liefert 'mismatch' bei manipuliertem checksum-String", async () => {
-    const payload = { entries: [{ id: 1 }] };
+    const payload: Record<string, unknown> = { entries: [{ id: 1 }] };
     await attachBackupChecksum(payload);
     payload.checksum = "0".repeat(64);
     expect(await verifyBackupIntegrity(payload)).toBe("mismatch");

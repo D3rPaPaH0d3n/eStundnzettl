@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from "vitest";
 import { logger, reportError } from "../logger";
 
 // Wir ersetzen react-hot-toast, damit reportError-Aufrufe keine Side Effects
@@ -9,7 +9,7 @@ vi.mock("react-hot-toast", () => {
 });
 
 describe("logger", () => {
-  let warnSpy, errorSpy;
+  let warnSpy: MockInstance, errorSpy: MockInstance;
   beforeEach(() => {
     warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -38,7 +38,7 @@ describe("logger", () => {
 });
 
 describe("reportError", () => {
-  let errorSpy;
+  let errorSpy: MockInstance;
   beforeEach(() => {
     errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   });
@@ -60,7 +60,7 @@ describe("reportError", () => {
 
   it("respektiert silent: true (kein Toast)", async () => {
     const toastModule = await import("react-hot-toast");
-    const toastErrorMock = toastModule.default.error;
+    const toastErrorMock = toastModule.default.error as unknown as ReturnType<typeof vi.fn>;
     toastErrorMock.mockClear();
     reportError(new Error("x"), "Message", { silent: true });
     expect(toastErrorMock).not.toHaveBeenCalled();
@@ -68,7 +68,7 @@ describe("reportError", () => {
 
   it("zeigt Toast bei userMessage und silent=false (Default)", async () => {
     const toastModule = await import("react-hot-toast");
-    const toastErrorMock = toastModule.default.error;
+    const toastErrorMock = toastModule.default.error as unknown as ReturnType<typeof vi.fn>;
     toastErrorMock.mockClear();
     reportError(new Error("x"), "User-sichtbare Meldung");
     expect(toastErrorMock).toHaveBeenCalledWith("User-sichtbare Meldung");

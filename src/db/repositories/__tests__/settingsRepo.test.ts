@@ -5,9 +5,9 @@ const queryMock = vi.fn();
 const executeSetMock = vi.fn();
 
 vi.mock("../../database", () => ({
-  run: (...args) => runMock(...args),
-  query: (...args) => queryMock(...args),
-  executeSet: (...args) => executeSetMock(...args),
+  run: (...args: unknown[]) => runMock(...args),
+  query: (...args: unknown[]) => queryMock(...args),
+  executeSet: (...args: unknown[]) => executeSetMock(...args),
 }));
 
 import {
@@ -97,7 +97,7 @@ describe("getAllSettings", () => {
 
 describe("bulkWriteSettings", () => {
   it("macht ein No-Op bei leerem Input", async () => {
-    await bulkWriteSettings(null);
+    await bulkWriteSettings(null as unknown as Record<string, unknown>);
     await bulkWriteSettings({});
     expect(executeSetMock).not.toHaveBeenCalled();
   });

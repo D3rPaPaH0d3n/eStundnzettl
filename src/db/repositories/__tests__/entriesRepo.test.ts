@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Entry } from "../../../types";
 
 const runMock = vi.fn();
 const queryMock = vi.fn();
@@ -6,10 +7,10 @@ const executeMock = vi.fn();
 const executeSetMock = vi.fn();
 
 vi.mock("../../database", () => ({
-  run: (...args) => runMock(...args),
-  query: (...args) => queryMock(...args),
-  execute: (...args) => executeMock(...args),
-  executeSet: (...args) => executeSetMock(...args),
+  run: (...args: unknown[]) => runMock(...args),
+  query: (...args: unknown[]) => queryMock(...args),
+  execute: (...args: unknown[]) => executeMock(...args),
+  executeSet: (...args: unknown[]) => executeSetMock(...args),
 }));
 
 import {
@@ -86,7 +87,7 @@ describe("getEntryById", () => {
 describe("insertEntry", () => {
   it("übergibt alle Felder in der erwarteten Reihenfolge", async () => {
     runMock.mockResolvedValue(undefined);
-    const entry = {
+    const entry: Entry = {
       id: 1,
       type: "work",
       date: "2026-04-04",
@@ -105,7 +106,7 @@ describe("insertEntry", () => {
 
   it("setzt Default-Werte für fehlende Felder", async () => {
     runMock.mockResolvedValue(undefined);
-    await insertEntry({ id: 2, date: "2026-04-04" });
+    await insertEntry({ id: 2, date: "2026-04-04" } as Entry);
     const values = runMock.mock.calls[0][1];
     expect(values[1]).toBe("work"); // type default
     expect(values[3]).toBeNull(); // start
@@ -161,7 +162,7 @@ describe("bulkInsertEntries", () => {
     executeSetMock.mockResolvedValue(undefined);
     await bulkInsertEntries([
       { id: 1, type: "work", date: "2026-04-04", start: "08:00", end: "16:00", pause: 30, netDuration: 450 },
-      { id: 2, type: "vacation", date: "2026-04-05", netDuration: 510 },
+      { id: 2, type: "vacation", date: "2026-04-05", pause: 0, netDuration: 510 },
     ]);
     const [set] = executeSetMock.mock.calls[0];
     expect(set).toHaveLength(3); // 1 DELETE + 2 INSERTs

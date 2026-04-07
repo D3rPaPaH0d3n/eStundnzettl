@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { WorkCode } from "../../../types";
 
 const runMock = vi.fn();
 const queryMock = vi.fn();
@@ -6,10 +7,10 @@ const executeMock = vi.fn();
 const executeSetMock = vi.fn();
 
 vi.mock("../../database", () => ({
-  run: (...args) => runMock(...args),
-  query: (...args) => queryMock(...args),
-  execute: (...args) => executeMock(...args),
-  executeSet: (...args) => executeSetMock(...args),
+  run: (...args: unknown[]) => runMock(...args),
+  query: (...args: unknown[]) => queryMock(...args),
+  execute: (...args: unknown[]) => executeMock(...args),
+  executeSet: (...args: unknown[]) => executeSetMock(...args),
 }));
 
 import {
@@ -108,7 +109,7 @@ describe("bulkReplaceWorkCodes", () => {
 
   it("behandelt null als leeres Array", async () => {
     executeSetMock.mockResolvedValue(undefined);
-    await bulkReplaceWorkCodes(null);
+    await bulkReplaceWorkCodes(null as unknown as WorkCode[]);
     const [set] = executeSetMock.mock.calls[0];
     expect(set).toHaveLength(1);
   });

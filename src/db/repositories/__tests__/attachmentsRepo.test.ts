@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Attachment } from "../../../types";
 
 const runMock = vi.fn();
 const queryMock = vi.fn();
@@ -6,10 +7,10 @@ const executeMock = vi.fn();
 const executeSetMock = vi.fn();
 
 vi.mock("../../database", () => ({
-  run: (...args) => runMock(...args),
-  query: (...args) => queryMock(...args),
-  execute: (...args) => executeMock(...args),
-  executeSet: (...args) => executeSetMock(...args),
+  run: (...args: unknown[]) => runMock(...args),
+  query: (...args: unknown[]) => queryMock(...args),
+  execute: (...args: unknown[]) => executeMock(...args),
+  executeSet: (...args: unknown[]) => executeSetMock(...args),
 }));
 
 import {
@@ -70,7 +71,7 @@ describe("getAttachmentsByEntryId", () => {
 describe("insertAttachment", () => {
   it("füllt Default createdAt wenn nicht angegeben", async () => {
     runMock.mockResolvedValue(undefined);
-    await insertAttachment({ id: "x", entryId: 1 });
+    await insertAttachment({ id: "x", entryId: 1 } as Attachment);
     const values = runMock.mock.calls[0][1];
     expect(values[0]).toBe("x");
     expect(values[1]).toBe(1);
@@ -119,7 +120,7 @@ describe("bulkReplaceAttachments", () => {
   it("wraps DELETE + INSERTs in einer Transaktion", async () => {
     executeSetMock.mockResolvedValue(undefined);
     await bulkReplaceAttachments([
-      { id: "a", entryId: 1, label: "x", fileName: "a.pdf" },
+      { id: "a", entryId: 1, label: "x", fileName: "a.pdf" } as Attachment,
     ]);
     const [set] = executeSetMock.mock.calls[0];
     expect(set).toHaveLength(2);
@@ -128,7 +129,7 @@ describe("bulkReplaceAttachments", () => {
 
   it("behandelt null oder leeres Array korrekt", async () => {
     executeSetMock.mockResolvedValue(undefined);
-    await bulkReplaceAttachments(null);
+    await bulkReplaceAttachments(null as unknown as Attachment[]);
     expect(executeSetMock.mock.calls[0][0]).toHaveLength(1);
   });
 });
@@ -157,7 +158,7 @@ describe("bulkReplaceLabelSuggestions", () => {
 
   it("null → nur DELETE", async () => {
     executeSetMock.mockResolvedValue(undefined);
-    await bulkReplaceLabelSuggestions(null);
+    await bulkReplaceLabelSuggestions(null as unknown as string[]);
     expect(executeSetMock.mock.calls[0][0]).toHaveLength(1);
   });
 });

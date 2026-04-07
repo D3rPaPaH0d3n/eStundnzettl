@@ -101,7 +101,7 @@ describe("parseEntrySafe", () => {
   it("liefert das Objekt bei validem Input", () => {
     const e = parseEntrySafe({ id: 1, type: "work", date: "2026-01-01", start: "08:00", end: "16:00" });
     expect(e).not.toBeNull();
-    expect(e.id).toBe(1);
+    expect(e!.id).toBe(1);
   });
   it("liefert null bei invalidem Input", () => {
     expect(parseEntrySafe(null)).toBeNull();

@@ -10,11 +10,11 @@ import { runMigrations, getLatestSchemaVersion, MIGRATIONS } from "../index";
  *  - CREATE TABLE / CREATE INDEX als No-Op außer zur Tabellen-Registrierung
  */
 function createMockDb() {
-  const tables = new Set();
-  const schemaVersions = []; // { version, applied_at }
-  const log = []; // Aufzeichnung aller SQLs
+  const tables = new Set<string>();
+  const schemaVersions: Array<{ version: number; applied_at: string }> = [];
+  const log: string[] = [];
 
-  const execute = async (sql) => {
+  const execute = async (sql: string) => {
     log.push(sql);
     // CREATE TABLE → Tabellen-Registrierung
     const createMatch = sql.match(/CREATE TABLE IF NOT EXISTS\s+(\w+)/i);
@@ -33,7 +33,7 @@ function createMockDb() {
     }
   };
 
-  const query = async (sql) => {
+  const query = async (sql: string) => {
     log.push(sql);
     if (/SELECT\s+version\s+FROM\s+schema_version/i.test(sql)) {
       return [...schemaVersions].sort((a, b) => a.version - b.version);
@@ -44,7 +44,7 @@ function createMockDb() {
     return [];
   };
 
-  return { execute, query, tables, schemaVersions, log, seedTable: (t) => tables.add(t) };
+  return { execute, query, tables, schemaVersions, log, seedTable: (t: string) => tables.add(t) };
 }
 
 describe("getLatestSchemaVersion", () => {
@@ -60,7 +60,7 @@ describe("getLatestSchemaVersion", () => {
 });
 
 describe("runMigrations — frische DB", () => {
-  let db;
+  let db: ReturnType<typeof createMockDb>;
   beforeEach(() => {
     db = createMockDb();
   });
@@ -83,7 +83,7 @@ describe("runMigrations — frische DB", () => {
 
   it("protokolliert die Anwendung in schema_version", async () => {
     await runMigrations(db.execute, db.query, { logger: {} });
-    expect(db.schemaVersions.some((r) => r.version === 1)).toBe(true);
+    expect(db.schemaVersions.some((r: { version: number }) => r.version === 1)).toBe(true);
   });
 });
 
@@ -114,7 +114,7 @@ describe("Migration 002 — Performance Indices", () => {
   it("ist in der MIGRATIONS-Registry registriert", () => {
     const m = MIGRATIONS.find((x) => x.version === 2);
     expect(m).toBeDefined();
-    expect(m.name).toBe("performance_indices");
+    expect(m!.name).toBe("performance_indices");
   });
 
   it("erhöht getLatestSchemaVersion auf mindestens 2", () => {

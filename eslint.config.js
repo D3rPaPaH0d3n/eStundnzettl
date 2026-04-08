@@ -8,7 +8,7 @@ import tsparser from '@typescript-eslint/parser'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'android', '**/*.backup', 'coverage']),
+  globalIgnores(['dist', 'android', '**/*.backup', 'coverage', 'knip.config.ts']),
   // JavaScript files – keep original parser
   {
     files: ['**/*.{js,jsx}'],

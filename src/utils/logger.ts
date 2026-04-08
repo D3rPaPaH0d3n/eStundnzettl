@@ -6,13 +6,12 @@
  * - In Production werden `debug` und `info` geschluckt, `warn`/`error` bleiben
  *   aktiv (Terser entfernt im Release-Build zusätzlich alle console-Aufrufe,
  *   das hier ist die zweite Verteidigungslinie).
- *
- * Ziel ist, die ~100 verstreuten `console.*`-Aufrufe in der App batchweise
- * hierher umzuziehen und eine einheitliche Stelle für eine spätere
- * Integration eines echten Logging-Backends (Sentry o. ä.) zu haben.
+ * - In Production mit Sentry DSN: `error` → Sentry.captureException,
+ *   `warn` → Sentry.captureMessage (optional).
  */
 
 import toast from "react-hot-toast";
+import * as Sentry from "@sentry/react";
 
 const isDev = (() => {
   try {
@@ -33,24 +32,60 @@ function prefixArgs(scope: string, args: unknown[]): unknown[] {
   return scope ? [`[${scope}]`, ...args] : args;
 }
 
+/**
+ * Initializes Sentry if a DSN is configured and we're in production.
+ * Called once from main.tsx.
+ */
+export function initSentry(): void {
+  const dsn = typeof __SENTRY_DSN__ !== 'undefined' ? __SENTRY_DSN__ : '';
+  if (!dsn || isDev) return;
+
+  Sentry.init({
+    dsn,
+    release: typeof __APP_VERSION__ !== 'undefined' ? `estundnzettl@${__APP_VERSION__}` : undefined,
+    environment: 'production',
+    // Only send 10% of transactions for performance monitoring
+    tracesSampleRate: 0.1,
+    // Don't send session replays
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 0,
+  });
+}
+
+function sendToSentry(level: 'error' | 'warning', args: unknown[]): void {
+  if (isDev) return;
+  try {
+    const firstArg = args[0];
+    if (level === 'error') {
+      if (firstArg instanceof Error) {
+        Sentry.captureException(firstArg);
+      } else {
+        Sentry.captureException(new Error(args.map(String).join(' ')));
+      }
+    } else {
+      Sentry.captureMessage(args.map(String).join(' '), level);
+    }
+  } catch {
+    // Sentry not initialized or failed — silently ignore
+  }
+}
+
 export const logger = {
   debug(...args: unknown[]): void {
     if (!isDev) return;
-     
     console.debug(...args);
   },
   info(...args: unknown[]): void {
     if (!isDev) return;
-     
     console.info(...args);
   },
   warn(...args: unknown[]): void {
-     
     console.warn(...args);
+    sendToSentry('warning', args);
   },
   error(...args: unknown[]): void {
-     
     console.error(...args);
+    sendToSentry('error', args);
   },
   /**
    * Erzeugt einen Logger mit festem Scope-Prefix, z. B. "[BackupSettings] …".
@@ -77,8 +112,10 @@ export const logger = {
 export function reportError(err: unknown, userMessage: string, options: { scope?: string; silent?: boolean } = {}): void {
   const { scope, silent = false } = options;
   const prefix = scope ? `[${scope}]` : "[error]";
-   
+
   console.error(prefix, userMessage || "", err);
+  sendToSentry('error', [prefix, userMessage, err]);
+
   if (!silent && userMessage) {
     try {
       toast.error(userMessage);

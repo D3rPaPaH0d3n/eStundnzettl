@@ -33,6 +33,7 @@
     "@capacitor/share": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
     "@capgo/capacitor-social-login": "^8.3.9",
+    "@sentry/react": "^10.47.0",
     "@tailwindcss/vite": "^4.2.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

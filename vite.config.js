@@ -17,6 +17,7 @@ export default defineConfig({
   // Version aus package.json zur Build-Zeit injizieren (Single Point of Truth)
   define: {
     '__APP_VERSION__': JSON.stringify(pkg.version),
+    '__SENTRY_DSN__': JSON.stringify(process.env.SENTRY_DSN || ''),
   },
   plugins: [
     react(),

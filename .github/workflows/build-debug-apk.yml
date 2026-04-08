@@ -1,0 +1,82 @@
+# ============================================================================
+# Build Debug APK
+# ============================================================================
+#
+# Baut eine Debug-APK und stellt sie als Download bereit.
+# Wird manuell über GitHub Actions → "Run workflow" gestartet.
+#
+# Kein Keystore oder Play Store Zugang nötig — nur Debug-Signatur.
+#
+# ============================================================================
+
+name: Build Debug APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build from'
+        required: true
+        default: 'claude/beta-dev'
+        type: string
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Code auschecken ───────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      # ── 2. Node.js Setup + Dependencies ──────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 3. Tests ────────────────────────────────────────────────────
+      - name: Run unit tests
+        run: npm test
+
+      # ── 4. Frontend bauen ────────────────────────────────────────────
+      - name: Build frontend
+        run: npm run build
+
+      # ── 5. Capacitor Sync ────────────────────────────────────────────
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      # ── 6. Proguard Fix (nach cap sync!) ─────────────────────────────
+      - name: Fix Proguard config
+        run: |
+          find node_modules/@capacitor -name "build.gradle" -exec sed -i 's/proguard-android.txt/proguard-android-optimize.txt/g' {} \;
+          find node_modules/@capgo -name "build.gradle" -exec sed -i 's/proguard-android.txt/proguard-android-optimize.txt/g' {} \; 2>/dev/null || true
+          find node_modules/@capacitor-community -name "build.gradle" -exec sed -i 's/proguard-android.txt/proguard-android-optimize.txt/g' {} \; 2>/dev/null || true
+
+      # ── 7. Java Setup ────────────────────────────────────────────────
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # ── 8. Debug APK bauen ───────────────────────────────────────────
+      - name: Build Debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      # ── 9. APK als Artifact hochladen ────────────────────────────────
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: eStundnzettl-DEV-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30

@@ -1,96 +1,163 @@
 package com.estundnzettl.app.widget;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.util.Log;
 
-import org.json.JSONArray;
+import com.google.mlkit.genai.common.DownloadCallback;
+import com.google.mlkit.genai.common.FeatureStatus;
+import com.google.mlkit.genai.common.GenAiException;
+import com.google.mlkit.genai.prompt.Candidate;
+import com.google.mlkit.genai.prompt.GenerateContentRequest;
+import com.google.mlkit.genai.prompt.GenerateContentResponse;
+import com.google.mlkit.genai.prompt.Generation;
+import com.google.mlkit.genai.prompt.GenerativeModel;
+import com.google.mlkit.genai.prompt.TextPart;
+import com.google.mlkit.genai.prompt.java.GenerativeModelFutures;
+
 import org.json.JSONObject;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-
 /**
- * Parses spoken German time entries using the Gemini REST API.
+ * Parses spoken German time entries using Gemini Nano on-device AI.
  *
- * Uses OkHttp3 (already in the project) to call the Gemini API.
- * API key is stored in SharedPreferences and configured on first use.
+ * Uses ML Kit GenAI Prompt API — runs entirely on-device.
+ * No API key, no internet, no cloud needed.
  *
- * Free tier: ~1500 requests/day, no credit card needed.
- * Get a key at: https://aistudio.google.com/apikey
+ * Requires: Android 8.0+ (API 26+), device with Gemini Nano support.
+ * Falls back to SpeechEntryParser on unsupported devices.
  */
 public class GeminiParser {
 
     private static final String TAG = "GeminiParser";
-    private static final String PREFS_NAME = "gemini_settings";
-    private static final String KEY_API_KEY = "api_key";
-    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-    private static final MediaType JSON_TYPE = MediaType.get("application/json; charset=utf-8");
 
-    private static final OkHttpClient client = new OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
-            .build();
+    private static GenerativeModelFutures sFutures = null;
 
     /**
-     * Checks if a Gemini API key is configured.
+     * Checks if Gemini Nano is available on this device.
+     * Must be called from a background thread (blocks for status check).
      */
     public static boolean isAvailable(Context context) {
-        String key = getApiKey(context);
-        return key != null && !key.isEmpty();
+        try {
+            GenerativeModelFutures futures = getFutures();
+            int status = futures.checkStatus().get(5, TimeUnit.SECONDS);
+            Log.d(TAG, "Gemini Nano status: " + status);
+            return status == FeatureStatus.AVAILABLE || status == FeatureStatus.DOWNLOADABLE;
+        } catch (Exception e) {
+            Log.d(TAG, "Gemini Nano not available: " + e.getMessage());
+            return false;
+        }
     }
 
     /**
-     * Gets the stored API key.
+     * Quick check (no blocking) — just tries to load the class.
      */
-    public static String getApiKey(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        return prefs.getString(KEY_API_KEY, null);
+    public static boolean isSupported() {
+        try {
+            Class.forName("com.google.mlkit.genai.prompt.Generation");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    private static GenerativeModelFutures getFutures() {
+        if (sFutures == null) {
+            GenerativeModel model = Generation.INSTANCE.getClient();
+            sFutures = GenerativeModelFutures.from(model);
+        }
+        return sFutures;
     }
 
     /**
-     * Stores the API key.
+     * Ensures the Gemini Nano model is downloaded and ready.
+     * Call this before parse() to avoid delays.
      */
-    public static void setApiKey(Context context, String apiKey) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .edit()
-                .putString(KEY_API_KEY, apiKey != null ? apiKey.trim() : null)
-                .apply();
+    public static void ensureModelReady(Callback callback) {
+        try {
+            GenerativeModelFutures futures = getFutures();
+            int status = futures.checkStatus().get(5, TimeUnit.SECONDS);
+
+            if (status == FeatureStatus.AVAILABLE) {
+                callback.onReady();
+                return;
+            }
+
+            if (status == FeatureStatus.DOWNLOADABLE || status == FeatureStatus.DOWNLOADING) {
+                Log.i(TAG, "Downloading Gemini Nano model...");
+                futures.download(new DownloadCallback() {
+                    @Override
+                    public void onDownloadCompleted() {
+                        Log.i(TAG, "Model download complete");
+                        callback.onReady();
+                    }
+
+                    @Override
+                    public void onDownloadFailed(GenAiException e) {
+                        Log.w(TAG, "Model download failed", e);
+                        callback.onError("Modell-Download fehlgeschlagen: " + e.getMessage());
+                    }
+
+                    @Override
+                    public void onDownloadStarted(long bytesToDownload) {
+                        Log.i(TAG, "Downloading " + (bytesToDownload / 1024 / 1024) + " MB");
+                    }
+
+                    @Override
+                    public void onDownloadProgress(long totalBytesDownloaded) {
+                        Log.d(TAG, "Downloaded " + (totalBytesDownloaded / 1024 / 1024) + " MB");
+                    }
+                });
+                return;
+            }
+
+            callback.onError("Gemini Nano nicht verfügbar auf diesem Gerät");
+        } catch (Exception e) {
+            callback.onError("Fehler: " + e.getMessage());
+        }
+    }
+
+    public interface Callback {
+        void onReady();
+        void onError(String message);
     }
 
     /**
-     * Parses spoken text using the Gemini API.
+     * Parses spoken text using Gemini Nano on-device.
      * Falls back to SpeechEntryParser on any failure.
      *
-     * IMPORTANT: Call from a background thread — network I/O.
+     * IMPORTANT: Call from a background thread — blocks.
      */
     public static SpeechEntryParser.ParsedEntry parse(
             Context context,
             String spokenText,
             List<SpeechEntryParser.WorkCode> workCodes
     ) {
-        String apiKey = getApiKey(context);
-        if (apiKey == null || apiKey.isEmpty()) {
-            Log.i(TAG, "No API key, falling back to local parser");
-            return SpeechEntryParser.parse(spokenText, workCodes);
-        }
-
         try {
             String prompt = buildPrompt(spokenText, workCodes);
-            String response = callGeminiApi(apiKey, prompt);
+            Log.d(TAG, "Sending prompt (" + prompt.length() + " chars)");
 
-            if (response != null && !response.isEmpty()) {
-                Log.d(TAG, "Gemini response: " + response);
-                return parseJsonResponse(response, spokenText, workCodes);
+            GenerativeModelFutures futures = getFutures();
+
+            GenerateContentRequest request = new GenerateContentRequest.Builder(
+                    new TextPart(prompt)
+            ).build();
+
+            GenerateContentResponse response = futures.generateContent(request)
+                    .get(15, TimeUnit.SECONDS);
+
+            List<Candidate> candidates = response.getCandidates();
+            if (candidates != null && !candidates.isEmpty()) {
+                String text = candidates.get(0).getText();
+                Log.d(TAG, "Gemini response: " + text);
+
+                if (text != null && !text.isEmpty()) {
+                    return parseJsonResponse(text, spokenText, workCodes);
+                }
             }
         } catch (Exception e) {
-            Log.w(TAG, "Gemini API failed: " + e.getMessage());
+            Log.w(TAG, "Gemini parsing failed: " + e.getMessage());
         }
 
         Log.i(TAG, "Falling back to local parser");
@@ -98,50 +165,7 @@ public class GeminiParser {
     }
 
     /**
-     * Calls the Gemini REST API.
-     */
-    private static String callGeminiApi(String apiKey, String prompt) throws Exception {
-        JSONObject textPart = new JSONObject().put("text", prompt);
-        JSONArray parts = new JSONArray().put(textPart);
-        JSONObject content = new JSONObject().put("parts", parts);
-        JSONArray contents = new JSONArray().put(content);
-        JSONObject body = new JSONObject().put("contents", contents);
-
-        Request request = new Request.Builder()
-                .url(API_URL + "?key=" + apiKey)
-                .post(RequestBody.create(body.toString(), JSON_TYPE))
-                .build();
-
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                String errorBody = response.body() != null ? response.body().string() : "no body";
-                Log.w(TAG, "API error " + response.code() + ": " + errorBody);
-                throw new Exception("Gemini API error: " + response.code());
-            }
-
-            String responseBody = response.body() != null ? response.body().string() : null;
-            if (responseBody == null) throw new Exception("Empty response");
-
-            // Extract text from Gemini response
-            JSONObject json = new JSONObject(responseBody);
-            JSONArray candidates = json.optJSONArray("candidates");
-            if (candidates != null && candidates.length() > 0) {
-                JSONObject candidate = candidates.getJSONObject(0);
-                JSONObject contentObj = candidate.optJSONObject("content");
-                if (contentObj != null) {
-                    JSONArray partsArr = contentObj.optJSONArray("parts");
-                    if (partsArr != null && partsArr.length() > 0) {
-                        return partsArr.getJSONObject(0).optString("text", null);
-                    }
-                }
-            }
-
-            return null;
-        }
-    }
-
-    /**
-     * Builds the structured prompt for Gemini.
+     * Builds the structured prompt for Gemini Nano.
      */
     private static String buildPrompt(String spokenText, List<SpeechEntryParser.WorkCode> workCodes) {
         StringBuilder sb = new StringBuilder();
@@ -162,9 +186,9 @@ public class GeminiParser {
         sb.append("\"pause\":MINUTEN,\"project\":\"NAME\",\"codeId\":NUMMER}\n\n");
         sb.append("Regeln:\n");
         sb.append("- type: \"work\", \"vacation\" (Urlaub), \"sick\" (Krank), \"time_comp\" (ZA)\n");
-        sb.append("- start/end: HH:MM 24h-Format. null wenn nicht genannt.\n");
-        sb.append("- pause: Minuten. 0 wenn \"keine/ohne Pause\" oder nicht genannt.\n");
-        sb.append("- codeId: Nummer aus obiger Liste. null wenn nicht erkannt.\n");
+        sb.append("- start/end: HH:MM 24h. null wenn nicht genannt.\n");
+        sb.append("- pause: Minuten. 0 wenn nicht oder \"keine Pause\" genannt.\n");
+        sb.append("- codeId: Nummer aus der Liste. null wenn nicht erkannt.\n");
         sb.append("- project: Projektname. null wenn nicht genannt.\n");
 
         return sb.toString();
@@ -184,11 +208,9 @@ public class GeminiParser {
 
         try {
             String cleaned = jsonText.trim();
-            // Strip markdown code fences
             if (cleaned.startsWith("```")) {
                 cleaned = cleaned.replaceAll("^```[a-z]*\\n?", "").replaceAll("\\n?```$", "").trim();
             }
-            // Find JSON object
             int start = cleaned.indexOf('{');
             int end = cleaned.lastIndexOf('}');
             if (start >= 0 && end > start) {

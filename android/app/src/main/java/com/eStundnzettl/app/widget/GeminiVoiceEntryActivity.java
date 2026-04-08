@@ -60,52 +60,49 @@ public class GeminiVoiceEntryActivity extends Activity {
         super.onCreate(savedInstanceState);
         buildUI();
 
-        // Check for API key first
-        if (!GeminiParser.isAvailable(this)) {
-            showApiKeyDialog();
-            return;
-        }
+        // Check Gemini Nano availability and ensure model is ready
+        titleText.setText("🤖 Gemini Nano wird vorbereitet...");
+        statusText.setText("Prüfe Verfügbarkeit...");
+        statusText.setVisibility(View.VISIBLE);
+        spinner.setVisibility(View.VISIBLE);
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_PERMISSION);
-        } else {
-            startSpeechRecognition();
-        }
-    }
-
-    private void showApiKeyDialog() {
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-        builder.setTitle("Gemini API Key");
-        builder.setMessage("Für die KI-Spracheingabe wird ein kostenloser Gemini API Key benötigt.\n\nKey holen: aistudio.google.com/apikey");
-
-        final android.widget.EditText input = new android.widget.EditText(this);
-        input.setHint("API Key einfügen...");
-        input.setSingleLine(true);
-        builder.setView(input);
-
-        builder.setPositiveButton("Speichern", (dialog, which) -> {
-            String key = input.getText().toString().trim();
-            if (!key.isEmpty()) {
-                GeminiParser.setApiKey(this, key);
-                // Now start speech recognition
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_PERMISSION);
-                } else {
-                    startSpeechRecognition();
-                }
-            } else {
-                Toast.makeText(this, "Kein Key eingegeben", Toast.LENGTH_SHORT).show();
-                finish();
+        new Thread(() -> {
+            boolean supported = GeminiParser.isSupported();
+            if (!supported) {
+                handler.post(() -> {
+                    spinner.setVisibility(View.GONE);
+                    showRetry("Gemini Nano nicht verfügbar auf diesem Gerät.\nVerwende den 📋 Geführt-Modus.");
+                });
+                return;
             }
-        });
 
-        builder.setNegativeButton("Abbrechen", (dialog, which) -> finish());
-        builder.setOnCancelListener(d -> finish());
-        builder.show();
+            handler.post(() -> {
+                GeminiParser.ensureModelReady(new GeminiParser.Callback() {
+                    @Override
+                    public void onReady() {
+                        handler.post(() -> {
+                            spinner.setVisibility(View.GONE);
+                            // Model ready — start speech
+                            if (ContextCompat.checkSelfPermission(GeminiVoiceEntryActivity.this,
+                                    Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                                ActivityCompat.requestPermissions(GeminiVoiceEntryActivity.this,
+                                        new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_PERMISSION);
+                            } else {
+                                startSpeechRecognition();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        handler.post(() -> {
+                            spinner.setVisibility(View.GONE);
+                            showRetry(message + "\nVerwende den 📋 Geführt-Modus.");
+                        });
+                    }
+                });
+            });
+        }).start();
     }
 
     @Override

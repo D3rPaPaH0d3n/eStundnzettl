@@ -60,6 +60,12 @@ public class GeminiVoiceEntryActivity extends Activity {
         super.onCreate(savedInstanceState);
         buildUI();
 
+        // Check for API key first
+        if (!GeminiParser.isAvailable(this)) {
+            showApiKeyDialog();
+            return;
+        }
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -67,6 +73,39 @@ public class GeminiVoiceEntryActivity extends Activity {
         } else {
             startSpeechRecognition();
         }
+    }
+
+    private void showApiKeyDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Gemini API Key");
+        builder.setMessage("Für die KI-Spracheingabe wird ein kostenloser Gemini API Key benötigt.\n\nKey holen: aistudio.google.com/apikey");
+
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setHint("API Key einfügen...");
+        input.setSingleLine(true);
+        builder.setView(input);
+
+        builder.setPositiveButton("Speichern", (dialog, which) -> {
+            String key = input.getText().toString().trim();
+            if (!key.isEmpty()) {
+                GeminiParser.setApiKey(this, key);
+                // Now start speech recognition
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_PERMISSION);
+                } else {
+                    startSpeechRecognition();
+                }
+            } else {
+                Toast.makeText(this, "Kein Key eingegeben", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
+
+        builder.setNegativeButton("Abbrechen", (dialog, which) -> finish());
+        builder.setOnCancelListener(d -> finish());
+        builder.show();
     }
 
     @Override

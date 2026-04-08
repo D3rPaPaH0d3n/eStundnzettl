@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { visualizer } from 'rollup-plugin-visualizer'
 import pkg from './package.json' with { type: 'json' }
 
 // ══════════════════════════════════════════════════════════════
@@ -8,6 +9,8 @@ import pkg from './package.json' with { type: 'json' }
 // ══════════════════════════════════════════════════════════════
 const DEBUG_MODE = false;  // true = Logs behalten, false = Logs entfernen (Release)
 // ══════════════════════════════════════════════════════════════
+
+const ANALYZE = process.env.ANALYZE === 'true';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -17,8 +20,14 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    tailwindcss(), 
-  ],
+    tailwindcss(),
+    ANALYZE && visualizer({
+      open: false,
+      filename: 'stats.html',
+      gzipSize: true,
+      brotliSize: true,
+    }),
+  ].filter(Boolean),
   build: {
     // PRODUCTION: Terser für Minifizierung + Console-Entfernung
     minify: 'terser',

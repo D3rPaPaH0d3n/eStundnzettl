@@ -60,6 +60,13 @@
             android:exported="false"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:excludeFromRecents="true" />
+
+        <!-- Guided step-by-step voice entry wizard (TTS + Speech) -->
+        <activity
+            android:name=".widget.GuidedVoiceEntryActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:excludeFromRecents="true" />
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />

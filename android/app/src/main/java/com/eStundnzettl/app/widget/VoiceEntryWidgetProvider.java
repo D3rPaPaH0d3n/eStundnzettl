@@ -27,8 +27,8 @@ public class VoiceEntryWidgetProvider extends AppWidgetProvider {
     private void updateWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_voice_entry);
 
-        // Mic button → launches VoiceEntryActivity
-        Intent voiceIntent = new Intent(context, VoiceEntryActivity.class);
+        // Mic button → launches Guided Voice Entry (step by step)
+        Intent voiceIntent = new Intent(context, GuidedVoiceEntryActivity.class);
         voiceIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent voicePending = PendingIntent.getActivity(
                 context, appWidgetId, voiceIntent,

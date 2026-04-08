@@ -13,7 +13,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -109,48 +108,11 @@ public class VoiceEntryActivity extends Activity {
             return;
         }
 
-        // Load work codes for fuzzy matching
-        List<SpeechEntryParser.WorkCode> workCodes = dbHelper.loadWorkCodes();
-
-        // Parse the spoken text
-        SpeechEntryParser.ParsedEntry parsed = SpeechEntryParser.parse(text, workCodes);
-        Log.i(TAG, "Parsed: " + parsed.toString());
-
-        // Insert into database
-        boolean success = dbHelper.insertEntry(parsed);
-
-        if (success) {
-            String confirmation = buildConfirmationMessage(parsed);
-            showToast("✅ " + confirmation);
-        } else {
-            showToast("❌ Fehler beim Speichern");
-        }
-    }
-
-    private String buildConfirmationMessage(SpeechEntryParser.ParsedEntry entry) {
-        StringBuilder sb = new StringBuilder();
-
-        switch (entry.type) {
-            case "vacation": sb.append("Urlaub"); break;
-            case "sick": sb.append("Krank"); break;
-            case "time_comp": sb.append("Zeitausgleich"); break;
-            case "public_holiday": sb.append("Feiertag"); break;
-            default: sb.append("Eintrag"); break;
-        }
-
-        if (entry.start != null && entry.end != null) {
-            sb.append(" ").append(entry.start).append("–").append(entry.end);
-        }
-
-        if (entry.pause > 0) {
-            sb.append(" (").append(entry.pause).append("min Pause)");
-        }
-
-        if (entry.project != null) {
-            sb.append(" · ").append(entry.project);
-        }
-
-        return sb.toString();
+        // Open confirmation activity with the recognized text
+        Intent confirmIntent = new Intent(this, VoiceEntryConfirmActivity.class);
+        confirmIntent.putExtra(VoiceEntryConfirmActivity.EXTRA_SPOKEN_TEXT, text);
+        confirmIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(confirmIntent);
     }
 
     private void showToast(String message) {

@@ -53,6 +53,13 @@
             android:exported="false"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:excludeFromRecents="true" />
+
+        <!-- Confirmation dialog for voice entry (shows parsed result, lets user edit) -->
+        <activity
+            android:name=".widget.VoiceEntryConfirmActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true" />
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />

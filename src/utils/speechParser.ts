@@ -332,17 +332,17 @@ export function extractPause(text: string): { minutes: number; consumed: string 
  *   "Projekt Muster Haus"
  */
 export function extractProject(text: string): { project: string | null; consumed: string } {
-  // Pattern: "Projekt XYZ" — capture until next keyword or end
-  const match = text.match(/\bprojekt\s+([^,]+?)(?:\s+(?:und|mit|code|arbeitscode|pause)|$)/i);
+  // Greedy match: capture everything after "Projekt" until a stop-keyword or end
+  const match = text.match(/\bprojekt\s+(.+?)(?:\s+(?:und\s+code|code|arbeitscode|mit\s+\d|pause)|$)/i);
   if (match) {
-    const project = match[1].trim();
+    const project = match[1].trim().replace(/[,.]$/, '').trim();
     if (project) {
       return { project, consumed: match[0] };
     }
   }
 
-  // Fallback: simpler pattern
-  const simpleMatch = text.match(/\bprojekt\s+(\S+)/i);
+  // Fallback: grab the next word(s) after "Projekt"
+  const simpleMatch = text.match(/\bprojekt\s+(\S+(?:\s+\S+)?)/i);
   if (simpleMatch) {
     return { project: simpleMatch[1].trim(), consumed: simpleMatch[0] };
   }
@@ -369,8 +369,8 @@ export function extractWorkCode(
     return { codeId: null, codeLabel: null, consumed: "" };
   }
 
-  // Pattern: "Code XYZ" or "Arbeitscode XYZ"
-  const match = text.match(/\b(?:code|arbeitscode|tätigkeitscode|taetigkeitscode)\s+(.+?)(?:\s+(?:und|mit|projekt|pause)|[,.]|$)/i);
+  // Greedy match: capture everything after "Code" until stop-keyword or end
+  const match = text.match(/\b(?:code|arbeitscode|tätigkeitscode|taetigkeitscode)\s+(.+?)(?:\s+(?:und\s+projekt|projekt|mit\s+\d|pause)|[,.]|$)/i);
   if (!match) return { codeId: null, codeLabel: null, consumed: "" };
 
   const searchText = match[1].trim().toLowerCase();

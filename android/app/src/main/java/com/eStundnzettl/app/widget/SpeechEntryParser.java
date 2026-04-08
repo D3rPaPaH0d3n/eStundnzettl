@@ -258,13 +258,17 @@ public class SpeechEntryParser {
     // ─── Project extraction ─────────────────────────────────
 
     private static String extractProject(String text) {
-        Matcher m = Pattern.compile("\\bprojekt\\s+([^,]+?)(?:\\s+(?:und|mit|code|arbeitscode|pause)|$)",
+        // Greedy match: capture everything after "Projekt" until a stop-keyword or end
+        Matcher m = Pattern.compile(
+                "\\bprojekt\\s+(.+?)(?:\\s+(?:und\\s+code|code|arbeitscode|mit\\s+\\d|pause)|$)",
                 Pattern.CASE_INSENSITIVE).matcher(text);
         if (m.find()) {
-            String project = m.group(1).trim();
+            String project = m.group(1).trim()
+                    .replaceAll("[,.]$", "").trim(); // strip trailing punctuation
             if (!project.isEmpty()) return project;
         }
-        Matcher simple = Pattern.compile("\\bprojekt\\s+(\\S+)", Pattern.CASE_INSENSITIVE).matcher(text);
+        // Fallback: just grab the next word(s) after "Projekt"
+        Matcher simple = Pattern.compile("\\bprojekt\\s+(\\S+(?:\\s+\\S+)?)", Pattern.CASE_INSENSITIVE).matcher(text);
         if (simple.find()) return simple.group(1).trim();
         return null;
     }
@@ -274,11 +278,13 @@ public class SpeechEntryParser {
     private static int[] matchWorkCode(String text, List<WorkCode> codes) {
         if (codes == null || codes.isEmpty()) return new int[]{-1};
 
-        Matcher m = Pattern.compile("\\b(?:code|arbeitscode|tätigkeitscode|taetigkeitscode)\\s+(.+?)(?:\\s+(?:und|mit|projekt|pause)|[,.]|$)",
+        // Greedy match: capture everything after "Code" until stop-keyword or end
+        Matcher m = Pattern.compile(
+                "\\b(?:code|arbeitscode|tätigkeitscode|taetigkeitscode)\\s+(.+?)(?:\\s+(?:und\\s+projekt|projekt|mit\\s+\\d|pause)|[,.]|$)",
                 Pattern.CASE_INSENSITIVE).matcher(text);
         if (!m.find()) return new int[]{-1};
 
-        String search = m.group(1).trim().toLowerCase();
+        String search = m.group(1).trim().replaceAll("[,.]$", "").trim().toLowerCase();
 
         // Numeric ID
         try {

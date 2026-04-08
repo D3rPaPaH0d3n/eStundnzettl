@@ -58,6 +58,16 @@ public class WidgetDatabaseHelper {
      * @return true if the entry was inserted successfully
      */
     public boolean insertEntry(SpeechEntryParser.ParsedEntry entry) {
+        // Validate before insert
+        if ("work".equals(entry.type) && entry.start != null && entry.end != null) {
+            int startMin = parseTimeToMinutes(entry.start);
+            int endMin = parseTimeToMinutes(entry.end);
+            if (endMin <= startMin) {
+                Log.w(TAG, "Rejected: end time (" + entry.end + ") <= start time (" + entry.start + ")");
+                return false;
+            }
+        }
+
         SQLiteDatabase db = openDatabase();
         if (db == null) return false;
 

@@ -63,8 +63,9 @@ dependencies {
     implementation project(':capacitor-cordova-android-plugins')
     implementation "com.google.android.gms:play-services-auth:$playServicesAuthVersion"
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
-    // Gemini Nano on-device AI (optional, only loads on compatible devices)
-    implementation 'com.google.mlkit:genai-prompt:1.0.0-beta2'
+    // Gemini Nano: NO compile-time dependency needed.
+    // GeminiParser uses pure reflection to call ML Kit GenAI at runtime.
+    // This keeps minSdkVersion at 23 while supporting Gemini on compatible devices.
 }
 
 apply from: 'capacitor.build.gradle'

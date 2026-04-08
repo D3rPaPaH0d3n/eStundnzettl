@@ -4,4 +4,14 @@
     <string name="package_name">com.estundnzettl.dev</string>
     <string name="custom_url_scheme">com.estundnzettl.dev</string>
     <string name="server_client_id">618528142382-pes4415amf381rk4bjovlamgh4emhrov.apps.googleusercontent.com</string>
+    <!-- Widget strings -->
+    <string name="widget_name">eStundnzettl Spracheingabe</string>
+    <string name="widget_description">Zeiteinträge per Sprache erstellen</string>
+    <string name="widget_tap_to_speak">Antippen zum Sprechen</string>
+    <string name="widget_mic_description">Mikrofon für Spracheingabe</string>
+    <string name="widget_listening">Ich höre zu…</string>
+    <string name="widget_saved">Eintrag gespeichert</string>
+    <string name="widget_error">Fehler beim Speichern</string>
+    <string name="widget_no_speech">Keine Sprache erkannt</string>
+    <string name="widget_speech_not_available">Spracherkennung nicht verfügbar</string>
 </resources>

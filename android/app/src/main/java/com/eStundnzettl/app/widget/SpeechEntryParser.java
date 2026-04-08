@@ -2,7 +2,6 @@ package com.estundnzettl.app.widget;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -14,25 +13,24 @@ import java.util.regex.Pattern;
  * Parses German speech input into structured time entry data.
  * Java port of src/utils/speechParser.ts for use in Android Widget.
  *
- * Supported inputs:
- *   "6 Uhr bis 16 Uhr 30 mit 30 Minuten Pause, Projekt Test und Code Umbau"
- *   "Urlaub heute"
- *   "Krank"
- *   "Zeitausgleich"
+ * Real-world speech recognition outputs (from testing):
+ *   "7 Uhr bis 15:30 Uhr keine Pause Projektion 4.7 und Code Umbau"
+ *   "Projekt Dion 4.3 Code Umbau 6 Uhr bis 16:30 Uhr und 30 Minuten Pause"
+ *   "Start um 6 Uhr bis 16:30 Uhr 30 Minuten Pause Projekt des dion4.1 und umbaucode"
  */
 public class SpeechEntryParser {
 
     // ─── Result class ───────────────────────────────────────
 
     public static class ParsedEntry {
-        public String type = "work";       // work, vacation, sick, time_comp, public_holiday
-        public String date;                // YYYY-MM-DD
-        public String start;               // HH:MM or null
-        public String end;                 // HH:MM or null
-        public int pause = 0;              // minutes
-        public String project;             // or null
-        public int codeId = -1;            // matched WorkCode ID, -1 = not found
-        public String codeLabel;           // raw label or null
+        public String type = "work";
+        public String date;
+        public String start;
+        public String end;
+        public int pause = 0;
+        public String project;
+        public int codeId = -1;
+        public String codeLabel;
 
         @Override
         public String toString() {
@@ -124,7 +122,7 @@ public class SpeechEntryParser {
             if (hour >= 1 && hour <= 24) return pad(hour - 1) + ":45";
         }
 
-        // "X Uhr Y"
+        // "X Uhr Y" — also handles "X uhr" without minutes
         Matcher uhrM = Pattern.compile("^(.+?)\\s*uhr\\s*(.*)$").matcher(t);
         if (uhrM.matches()) {
             int hour = parseGermanNumber(uhrM.group(1));
@@ -139,7 +137,7 @@ public class SpeechEntryParser {
             }
         }
 
-        // Invalid HH:MM (already tried above)
+        // Invalid HH:MM format
         if (t.matches("^\\d{1,2}:\\d{2}$")) return null;
 
         // Bare number
@@ -174,7 +172,7 @@ public class SpeechEntryParser {
         if (bisIdx == -1) return null;
 
         String before = t.substring(0, bisIdx).trim()
-                .replaceAll("^.*?\\b(von|ab)\\s+", "")
+                .replaceAll("^.*?\\b(von|ab|start\\s+um|start)\\s+", "")
                 .replaceAll("^(gestern|heute|morgen|vorgestern)\\s*", "")
                 .trim();
         String after = t.substring(bisIdx + 3).trim();
@@ -195,6 +193,12 @@ public class SpeechEntryParser {
         Matcher cm = Pattern.compile("^(\\d{1,2}:\\d{2})").matcher(text);
         if (cm.find()) {
             String parsed = parseTimeExpression(cm.group(1));
+            if (parsed != null) return parsed;
+        }
+        // Try "X Uhr Y" — handle "16:30 Uhr" (speech adds "Uhr" after colon time)
+        Matcher colonUhr = Pattern.compile("^(\\d{1,2}:\\d{2})\\s*uhr").matcher(text);
+        if (colonUhr.find()) {
+            String parsed = parseTimeExpression(colonUhr.group(1));
             if (parsed != null) return parsed;
         }
         // Try word combos
@@ -242,71 +246,135 @@ public class SpeechEntryParser {
     private static int extractPause(String text) {
         String t = text.toLowerCase();
 
+        // "X Minuten Pause" / "X min Pause"
         Matcher minM = Pattern.compile("(mit\\s+)?(\\d+)\\s*(minuten?|min)\\s*pause").matcher(t);
         if (minM.find()) return Integer.parseInt(minM.group(2));
 
+        // "X Stunden Pause"
         Matcher hourM = Pattern.compile("(mit\\s+)?(\\d+)\\s*(stunden?|std)\\s*pause").matcher(t);
         if (hourM.find()) return Integer.parseInt(hourM.group(2)) * 60;
 
         if (t.matches(".*(mit\\s+)?(einer?\\s+)?halbe[n]?\\s*stunde\\s*pause.*")) return 30;
         if (t.matches(".*(mit\\s+)?eine[r]?\\s*stunde\\s*pause.*")) return 60;
-        if (t.matches(".*ohne\\s*pause.*")) return 0;
+
+        // "ohne Pause" / "keine Pause" / "kein Pause"
+        if (Pattern.compile("\\b(ohne|keine?n?)\\s*pause\\b").matcher(t).find()) return 0;
 
         return -1; // not specified
     }
 
-    // ─── Project extraction ─────────────────────────────────
+    // ─── Work code matching (MUST run before project!) ──────
 
-    private static String extractProject(String text) {
-        // Greedy match: capture everything after "Projekt" until a stop-keyword or end
+    /**
+     * Extracts work code from text. Tries multiple strategies:
+     * 1. Explicit "Code XYZ" keyword
+     * 2. Words ending in "code" (e.g. "umbaucode" → "umbau")
+     * 3. Direct fuzzy match of any word against code labels
+     *
+     * Returns [codeId, matchEndIndex] where matchEndIndex helps project
+     * extraction avoid consuming code text.
+     */
+    private static Object[] matchWorkCode(String text, List<WorkCode> codes) {
+        if (codes == null || codes.isEmpty()) return new Object[]{-1, "", -1};
+
+        String lowerText = text.toLowerCase();
+
+        // Strategy 1: Explicit "Code XYZ" keyword — greedy, capture to end or stop-keyword
         Matcher m = Pattern.compile(
-                "\\bprojekt\\s+(.+?)(?:\\s+(?:und\\s+code|code|arbeitscode|mit\\s+\\d|pause)|$)",
+                "\\b(?:code|arbeitscode|tätigkeitscode|taetigkeitscode)\\s+(.+?)(?:\\s+(?:\\d+\\s*uhr|\\d+:\\d{2}|und\\s+\\d|und\\s+projekt|projekt|mit\\s+\\d|pause|von\\s+|start|bis\\b)|[,.]\\s|$)",
                 Pattern.CASE_INSENSITIVE).matcher(text);
         if (m.find()) {
-            String project = m.group(1).trim()
-                    .replaceAll("[,.]$", "").trim(); // strip trailing punctuation
-            if (!project.isEmpty()) return project;
+            String search = m.group(1).trim().replaceAll("[,.]$", "").trim();
+            String searchLower = search.toLowerCase();
+
+            // Try numeric ID
+            try {
+                int numId = Integer.parseInt(searchLower);
+                for (WorkCode c : codes) {
+                    if (c.id == numId) return new Object[]{c.id, c.label, m.end()};
+                }
+            } catch (NumberFormatException ignored) {}
+
+            // Label contains search
+            for (WorkCode c : codes) {
+                if (c.label.toLowerCase().contains(searchLower)) return new Object[]{c.id, c.label, m.end()};
+            }
+
+            // Reverse: search matches a word in label
+            for (WorkCode c : codes) {
+                for (String word : c.label.toLowerCase().split("[\\s,-]+")) {
+                    if (word.length() > 2 && (word.equals(searchLower) || word.startsWith(searchLower) || searchLower.startsWith(word)))
+                        return new Object[]{c.id, c.label, m.end()};
+                }
+            }
+
+            return new Object[]{-1, search, m.end()};
         }
-        // Fallback: just grab the next word(s) after "Projekt"
-        Matcher simple = Pattern.compile("\\bprojekt\\s+(\\S+(?:\\s+\\S+)?)", Pattern.CASE_INSENSITIVE).matcher(text);
-        if (simple.find()) return simple.group(1).trim();
-        return null;
+
+        // Strategy 2: Words ending in "code" (e.g. "umbaucode" → try "umbau")
+        Matcher compoundM = Pattern.compile("(\\w+)code\\b", Pattern.CASE_INSENSITIVE).matcher(lowerText);
+        if (compoundM.find()) {
+            String prefix = compoundM.group(1).trim();
+            if (prefix.length() > 1) {
+                for (WorkCode c : codes) {
+                    String cLower = c.label.toLowerCase();
+                    if (cLower.contains(prefix)) return new Object[]{c.id, c.label, compoundM.end()};
+                    for (String word : cLower.split("[\\s,-]+")) {
+                        if (word.length() > 2 && (word.equals(prefix) || word.startsWith(prefix) || prefix.startsWith(word)))
+                            return new Object[]{c.id, c.label, compoundM.end()};
+                    }
+                }
+            }
+        }
+
+        // Strategy 3: Try matching any word in the text against code labels
+        // (for cases where speech recognition drops the "Code" keyword)
+        String[] words = lowerText.split("[\\s,]+");
+        for (WorkCode c : codes) {
+            for (String cWord : c.label.toLowerCase().split("[\\s,-]+")) {
+                if (cWord.length() <= 2) continue; // skip short words like "01", "-"
+                // Skip numeric prefixes from labels like "12 - Umbau"
+                if (cWord.matches("\\d+")) continue;
+                for (String inputWord : words) {
+                    if (inputWord.length() > 2 && inputWord.equals(cWord)) {
+                        return new Object[]{c.id, c.label, -1};
+                    }
+                }
+            }
+        }
+
+        return new Object[]{-1, "", -1};
     }
 
-    // ─── Work code matching ─────────────────────────────────
+    // ─── Project extraction ─────────────────────────────────
 
-    private static int[] matchWorkCode(String text, List<WorkCode> codes) {
-        if (codes == null || codes.isEmpty()) return new int[]{-1};
-
-        // Greedy match: capture everything after "Code" until stop-keyword or end
+    /**
+     * Extracts project name. The codeEndIndex parameter helps avoid
+     * including code-related text in the project name.
+     */
+    private static String extractProject(String text, int codeMatchEnd) {
+        // Also match "Projektion" (speech recognition often outputs this instead of "Projekt")
         Matcher m = Pattern.compile(
-                "\\b(?:code|arbeitscode|tätigkeitscode|taetigkeitscode)\\s+(.+?)(?:\\s+(?:und\\s+projekt|projekt|mit\\s+\\d|pause)|[,.]|$)",
+                "\\b(?:projekt|projektion)\\s+(.+?)(?:\\s+(?:und\\s+(?:code|arbeitscode)|code\\b|arbeitscode|mit\\s+\\d|\\d+\\s*(?:minuten?|min)\\s*pause|pause|\\d+\\s*uhr|\\d+:\\d{2}|von\\s+|start|bis\\b)|[,.]\\s|$)",
                 Pattern.CASE_INSENSITIVE).matcher(text);
-        if (!m.find()) return new int[]{-1};
-
-        String search = m.group(1).trim().replaceAll("[,.]$", "").trim().toLowerCase();
-
-        // Numeric ID
-        try {
-            int numId = Integer.parseInt(search);
-            for (WorkCode c : codes) {
-                if (c.id == numId) return new int[]{c.id};
-            }
-        } catch (NumberFormatException ignored) {}
-
-        // Label contains search
-        for (WorkCode c : codes) {
-            if (c.label.toLowerCase().contains(search)) return new int[]{c.id};
+        if (m.find()) {
+            String project = m.group(1).trim().replaceAll("[,.]$", "").trim();
+            // Remove leading articles that speech recognition adds
+            project = project.replaceAll("^(?:des|der|die|das|dem|den)\\s+", "");
+            // Remove trailing "code" compound words (e.g. "dion4.1 und umbaucode")
+            project = project.replaceAll("\\s+und\\s+\\w*code\\w*$", "").trim();
+            if (!project.isEmpty()) return project;
         }
 
-        // Reverse: search matches a word in label
-        for (WorkCode c : codes) {
-            for (String word : c.label.toLowerCase().split("[\\s,-]+")) {
-                if (word.length() > 2 && word.equals(search)) return new int[]{c.id};
-            }
+        // Fallback: next 1-2 words after "Projekt"
+        Matcher simple = Pattern.compile("\\b(?:projekt|projektion)\\s+(\\S+(?:\\s+\\S+)?)",
+                Pattern.CASE_INSENSITIVE).matcher(text);
+        if (simple.find()) {
+            String project = simple.group(1).trim().replaceAll("[,.]$", "").trim();
+            project = project.replaceAll("^(?:des|der|die|das|dem|den)\\s+", "");
+            return project.isEmpty() ? null : project;
         }
-
-        return new int[]{-1}; // not found
+        return null;
     }
 
     // ─── Date extraction ────────────────────────────────────
@@ -359,18 +427,14 @@ public class SpeechEntryParser {
         int pause = extractPause(input);
         result.pause = pause >= 0 ? pause : 0;
 
-        result.project = extractProject(input);
+        // IMPORTANT: Extract code BEFORE project to avoid project consuming code text
+        Object[] codeResult = matchWorkCode(input, workCodes);
+        result.codeId = (int) codeResult[0];
+        result.codeLabel = codeResult[1] instanceof String && !((String) codeResult[1]).isEmpty()
+                ? (String) codeResult[1] : null;
+        int codeMatchEnd = (int) codeResult[2];
 
-        int[] codeResult = matchWorkCode(input, workCodes);
-        result.codeId = codeResult[0];
-        if (result.codeId > 0 && workCodes != null) {
-            for (WorkCode c : workCodes) {
-                if (c.id == result.codeId) {
-                    result.codeLabel = c.label;
-                    break;
-                }
-            }
-        }
+        result.project = extractProject(input, codeMatchEnd);
 
         return result;
     }

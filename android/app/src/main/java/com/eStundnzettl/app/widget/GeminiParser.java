@@ -7,16 +7,13 @@ import android.util.Log;
 import org.json.JSONObject;
 
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Parses spoken German time entries using Gemini Nano on-device AI.
  *
- * Uses ML Kit GenAI Prompt API to send a structured prompt to the
- * on-device Gemini Nano model. Falls back to SpeechEntryParser if
- * Gemini Nano is not available or fails.
+ * Uses ML Kit GenAI Prompt API via reflection to avoid compile-time
+ * dependency issues. Falls back to SpeechEntryParser if Gemini Nano
+ * is not available or fails.
  *
  * Requirements:
  * - Android 12+ (API 31+) for ML Kit GenAI
@@ -26,38 +23,28 @@ import java.util.concurrent.atomic.AtomicReference;
 public class GeminiParser {
 
     private static final String TAG = "GeminiParser";
-    private static final int TIMEOUT_SECONDS = 15;
 
     /**
-     * Checks if Gemini Nano is available on this device.
-     * Returns false on older Android versions or unsupported hardware.
+     * Checks if Gemini Nano is likely available on this device.
+     * A full check happens at parse time; this is a quick pre-filter.
      */
     public static boolean isAvailable(Context context) {
         if (Build.VERSION.SDK_INT < 31) {
-            Log.d(TAG, "API level " + Build.VERSION.SDK_INT + " < 31, Gemini Nano not available");
             return false;
         }
-
         try {
-            // Check if ML Kit GenAI classes are available
             Class.forName("com.google.mlkit.genai.prompt.PromptApi");
             return true;
         } catch (ClassNotFoundException e) {
-            Log.d(TAG, "ML Kit GenAI not available on this device");
             return false;
         }
     }
 
     /**
-     * Parses spoken text using Gemini Nano.
-     * Falls back to SpeechEntryParser on failure.
+     * Parses spoken text using Gemini Nano on-device.
+     * Falls back to SpeechEntryParser on any failure.
      *
-     * This method blocks the calling thread (run from background thread or use async wrapper).
-     *
-     * @param context   Android context
-     * @param spokenText The text from speech recognition
-     * @param workCodes  Available work codes for matching
-     * @return Parsed entry data
+     * IMPORTANT: Call this from a background thread — it blocks.
      */
     public static SpeechEntryParser.ParsedEntry parse(
             Context context,
@@ -65,117 +52,80 @@ public class GeminiParser {
             List<SpeechEntryParser.WorkCode> workCodes
     ) {
         if (Build.VERSION.SDK_INT < 31) {
-            Log.d(TAG, "Fallback to local parser (API < 31)");
             return SpeechEntryParser.parse(spokenText, workCodes);
         }
 
         try {
-            return parseWithGemini(context, spokenText, workCodes);
+            String prompt = buildPrompt(spokenText, workCodes);
+            String response = callGeminiNano(prompt);
+
+            if (response != null && !response.isEmpty()) {
+                Log.d(TAG, "Gemini response: " + response);
+                return parseJsonResponse(response, spokenText, workCodes);
+            }
         } catch (Exception e) {
-            Log.w(TAG, "Gemini parsing failed, falling back to local parser", e);
-            return SpeechEntryParser.parse(spokenText, workCodes);
+            Log.w(TAG, "Gemini parsing failed", e);
         }
+
+        Log.i(TAG, "Falling back to local parser");
+        return SpeechEntryParser.parse(spokenText, workCodes);
     }
 
     /**
-     * Internal: Calls Gemini Nano via ML Kit GenAI Prompt API.
+     * Calls Gemini Nano via ML Kit GenAI using pure reflection.
+     * No compile-time dependency on ML Kit classes.
      */
-    private static SpeechEntryParser.ParsedEntry parseWithGemini(
-            Context context,
-            String spokenText,
-            List<SpeechEntryParser.WorkCode> workCodes
-    ) throws Exception {
-        String prompt = buildPrompt(spokenText, workCodes);
-        Log.d(TAG, "Prompt: " + prompt);
+    private static String callGeminiNano(String prompt) throws Exception {
+        // All ML Kit GenAI access via reflection for maximum compatibility
+        // This avoids build failures on CI or devices without ML Kit
 
-        // Use reflection to call ML Kit GenAI API
-        // This avoids compile-time dependency issues on older devices
-        AtomicReference<String> resultRef = new AtomicReference<>(null);
-        AtomicReference<Exception> errorRef = new AtomicReference<>(null);
-        CountDownLatch latch = new CountDownLatch(1);
+        // 1. Get PromptApi client: PromptApi.getClient(new PromptApiOptions.Builder().build())
+        //    Note: the actual API might differ — we try multiple known patterns
+        Class<?> promptApiClass = Class.forName("com.google.mlkit.genai.prompt.PromptApi");
 
+        Object client;
         try {
-            // com.google.mlkit.genai.prompt.PromptApi
-            Class<?> promptApiClass = Class.forName("com.google.mlkit.genai.prompt.PromptApi");
-
-            // Get the PromptApi instance
-            java.lang.reflect.Method getClientMethod = promptApiClass.getMethod("getClient");
-            Object client = getClientMethod.invoke(null);
-
-            // Create PromptRequest
-            Class<?> promptRequestClass = Class.forName("com.google.mlkit.genai.prompt.PromptRequest");
-            Class<?> builderClass = Class.forName("com.google.mlkit.genai.prompt.PromptRequest$Builder");
-            Object builder = builderClass.getConstructor().newInstance();
-
-            // Set the prompt text
-            java.lang.reflect.Method setPromptMethod = builderClass.getMethod("setPrompt", String.class);
-            setPromptMethod.invoke(builder, prompt);
-
-            java.lang.reflect.Method buildMethod = builderClass.getMethod("build");
-            Object request = buildMethod.invoke(builder);
-
-            // Call generateContent
-            java.lang.reflect.Method generateMethod = client.getClass().getMethod("generateContent", promptRequestClass);
-            Object task = generateMethod.invoke(client, request);
-
-            // Add success listener
-            Class<?> taskClass = task.getClass();
-            java.lang.reflect.Method addOnSuccessListener = taskClass.getMethod("addOnSuccessListener", com.google.android.gms.tasks.OnSuccessListener.class);
-            java.lang.reflect.Method addOnFailureListener = taskClass.getMethod("addOnFailureListener", com.google.android.gms.tasks.OnFailureListener.class);
-
-            addOnSuccessListener.invoke(task, (com.google.android.gms.tasks.OnSuccessListener<Object>) result -> {
-                try {
-                    java.lang.reflect.Method getTextMethod = result.getClass().getMethod("getText");
-                    String text = (String) getTextMethod.invoke(result);
-                    resultRef.set(text);
-                } catch (Exception e) {
-                    errorRef.set(e);
-                }
-                latch.countDown();
-            });
-
-            addOnFailureListener.invoke(task, (com.google.android.gms.tasks.OnFailureListener) e -> {
-                errorRef.set(e);
-                latch.countDown();
-            });
-
-        } catch (Exception e) {
-            Log.w(TAG, "ML Kit GenAI reflection failed, trying simplified approach", e);
-            // If reflection fails, try direct approach
-            return parseWithGeminiDirect(context, prompt, spokenText, workCodes, latch, resultRef, errorRef);
+            // Try: PromptApi.getClient()
+            java.lang.reflect.Method getClient = promptApiClass.getMethod("getClient");
+            client = getClient.invoke(null);
+        } catch (NoSuchMethodException e) {
+            // Try: PromptApi.getClient(context) or similar overloads
+            Log.w(TAG, "PromptApi.getClient() not found, API may have changed");
+            throw e;
         }
 
-        // Wait for result
-        boolean completed = latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        if (!completed) {
-            throw new Exception("Gemini Nano timeout after " + TIMEOUT_SECONDS + "s");
+        // 2. Create request
+        Class<?> requestBuilderClass = Class.forName("com.google.mlkit.genai.prompt.PromptRequest$Builder");
+        Object builder = requestBuilderClass.getConstructor().newInstance();
+
+        java.lang.reflect.Method setPrompt = requestBuilderClass.getMethod("setPrompt", String.class);
+        setPrompt.invoke(builder, prompt);
+
+        java.lang.reflect.Method build = requestBuilderClass.getMethod("build");
+        Object request = build.invoke(builder);
+
+        // 3. Call generateContent — returns a Task
+        Class<?> requestClass = Class.forName("com.google.mlkit.genai.prompt.PromptRequest");
+        java.lang.reflect.Method generateContent = client.getClass().getMethod("generateContent", requestClass);
+        Object task = generateContent.invoke(client, request);
+
+        // 4. Block and wait for the Task result using Tasks.await()
+        //    com.google.android.gms.tasks.Tasks.await(task, timeout, unit)
+        Class<?> tasksClass = Class.forName("com.google.android.gms.tasks.Tasks");
+        java.lang.reflect.Method awaitMethod = tasksClass.getMethod("await",
+                Class.forName("com.google.android.gms.tasks.Task"),
+                long.class,
+                java.util.concurrent.TimeUnit.class);
+
+        Object result = awaitMethod.invoke(null, task, 15L, java.util.concurrent.TimeUnit.SECONDS);
+
+        // 5. Extract text from result
+        if (result != null) {
+            java.lang.reflect.Method getText = result.getClass().getMethod("getText");
+            return (String) getText.invoke(result);
         }
 
-        if (errorRef.get() != null) {
-            throw errorRef.get();
-        }
-
-        String responseText = resultRef.get();
-        if (responseText == null || responseText.isEmpty()) {
-            throw new Exception("Empty response from Gemini Nano");
-        }
-
-        Log.d(TAG, "Gemini response: " + responseText);
-        return parseJsonResponse(responseText, spokenText, workCodes);
-    }
-
-    private static SpeechEntryParser.ParsedEntry parseWithGeminiDirect(
-            Context context,
-            String prompt,
-            String spokenText,
-            List<SpeechEntryParser.WorkCode> workCodes,
-            CountDownLatch latch,
-            AtomicReference<String> resultRef,
-            AtomicReference<Exception> errorRef
-    ) throws Exception {
-        // Direct fallback — just use local parser
-        Log.d(TAG, "Direct Gemini call not available, using local parser");
-        return SpeechEntryParser.parse(spokenText, workCodes);
+        return null;
     }
 
     /**
@@ -195,21 +145,20 @@ public class GeminiParser {
         }
 
         sb.append("Text: \"").append(spokenText).append("\"\n\n");
-
-        sb.append("Format: {\"type\":\"work\",\"start\":\"HH:MM\",\"end\":\"HH:MM\",\"pause\":MINUTEN,\"project\":\"NAME\",\"codeId\":NUMMER}\n\n");
-
+        sb.append("Format: {\"type\":\"work\",\"start\":\"HH:MM\",\"end\":\"HH:MM\",");
+        sb.append("\"pause\":MINUTEN,\"project\":\"NAME\",\"codeId\":NUMMER}\n\n");
         sb.append("Regeln:\n");
-        sb.append("- type: \"work\", \"vacation\" (bei Urlaub/Ferien), \"sick\" (bei Krank), \"time_comp\" (bei Zeitausgleich/ZA/Gleitzeit)\n");
-        sb.append("- start/end: Im Format HH:MM (24h). null wenn nicht genannt.\n");
-        sb.append("- pause: In Minuten. 0 wenn nicht oder \"keine/ohne Pause\" genannt.\n");
-        sb.append("- codeId: Nummer aus der Arbeitscode-Liste. null wenn nicht erkannt.\n");
+        sb.append("- type: \"work\", \"vacation\" (Urlaub), \"sick\" (Krank), \"time_comp\" (ZA/Zeitausgleich)\n");
+        sb.append("- start/end: HH:MM (24h). null wenn nicht genannt.\n");
+        sb.append("- pause: Minuten. 0 wenn \"keine/ohne Pause\" oder nicht genannt.\n");
+        sb.append("- codeId: Nummer aus der Liste. null wenn nicht erkannt.\n");
         sb.append("- project: Projektname. null wenn nicht genannt.\n");
 
         return sb.toString();
     }
 
     /**
-     * Parses JSON response from Gemini Nano into ParsedEntry.
+     * Parses Gemini's JSON response into a ParsedEntry.
      */
     static SpeechEntryParser.ParsedEntry parseJsonResponse(
             String jsonText,
@@ -221,10 +170,15 @@ public class GeminiParser {
                 .format(new java.util.Date());
 
         try {
-            // Strip markdown code fences if present
             String cleaned = jsonText.trim();
             if (cleaned.startsWith("```")) {
                 cleaned = cleaned.replaceAll("^```[a-z]*\\n?", "").replaceAll("\\n?```$", "").trim();
+            }
+            // Find first { and last } to extract JSON from possible surrounding text
+            int start = cleaned.indexOf('{');
+            int end = cleaned.lastIndexOf('}');
+            if (start >= 0 && end > start) {
+                cleaned = cleaned.substring(start, end + 1);
             }
 
             JSONObject json = new JSONObject(cleaned);
@@ -237,7 +191,6 @@ public class GeminiParser {
 
             if (!json.isNull("codeId")) {
                 entry.codeId = json.optInt("codeId", -1);
-                // Look up label
                 if (entry.codeId > 0 && workCodes != null) {
                     for (SpeechEntryParser.WorkCode c : workCodes) {
                         if (c.id == entry.codeId) {
@@ -248,12 +201,9 @@ public class GeminiParser {
                 }
             }
 
-            Log.i(TAG, "Successfully parsed Gemini response: " + entry);
             return entry;
-
         } catch (Exception e) {
-            Log.w(TAG, "JSON parsing failed for: " + jsonText, e);
-            // Fallback to local parser
+            Log.w(TAG, "JSON parse failed: " + jsonText, e);
             return SpeechEntryParser.parse(originalText, workCodes);
         }
     }

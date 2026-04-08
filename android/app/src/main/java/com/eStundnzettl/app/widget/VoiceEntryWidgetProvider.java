@@ -12,8 +12,12 @@ import com.estundnzettl.app.R;
 /**
  * AppWidgetProvider for the voice entry widget.
  *
- * Displays a compact bar with the app logo and a microphone button.
- * Tapping the mic button launches VoiceEntryActivity for speech recognition.
+ * Shows two buttons:
+ *   🎤 AI (green)  → GeminiVoiceEntryActivity (freitext with Gemini Nano)
+ *   📋 Guided (gray) → GuidedVoiceEntryActivity (step-by-step)
+ *
+ * On devices without Gemini Nano, the 🎤 button falls back to the
+ * local SpeechEntryParser automatically.
  */
 public class VoiceEntryWidgetProvider extends AppWidgetProvider {
 
@@ -27,14 +31,23 @@ public class VoiceEntryWidgetProvider extends AppWidgetProvider {
     private void updateWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_voice_entry);
 
-        // Mic button → launches Guided Voice Entry (step by step)
-        Intent voiceIntent = new Intent(context, GuidedVoiceEntryActivity.class);
-        voiceIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent voicePending = PendingIntent.getActivity(
-                context, appWidgetId, voiceIntent,
+        // 🎤 AI button → Gemini freitext (with local parser fallback)
+        Intent aiIntent = new Intent(context, GeminiVoiceEntryActivity.class);
+        aiIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent aiPending = PendingIntent.getActivity(
+                context, appWidgetId * 10 + 1, aiIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
-        views.setOnClickPendingIntent(R.id.widget_mic_button, voicePending);
+        views.setOnClickPendingIntent(R.id.widget_mic_button, aiPending);
+
+        // 📋 Guided button → step-by-step wizard
+        Intent guidedIntent = new Intent(context, GuidedVoiceEntryActivity.class);
+        guidedIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent guidedPending = PendingIntent.getActivity(
+                context, appWidgetId * 10 + 2, guidedIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent(R.id.widget_guided_button, guidedPending);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }

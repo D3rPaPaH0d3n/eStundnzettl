@@ -67,6 +67,13 @@
             android:exported="false"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:excludeFromRecents="true" />
+
+        <!-- Gemini AI freitext voice entry (on-device AI parsing) -->
+        <activity
+            android:name=".widget.GeminiVoiceEntryActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:excludeFromRecents="true" />
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />

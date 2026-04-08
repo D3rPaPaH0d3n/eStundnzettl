@@ -45,7 +45,26 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Mic button -->
+    <!-- Guided button (step-by-step, always visible) -->
+    <FrameLayout
+        android:id="@+id/widget_guided_button"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:layout_marginEnd="6dp"
+        android:background="@drawable/guided_button_background"
+        android:contentDescription="@string/widget_guided_description"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="📋"
+            android:textSize="18sp" />
+    </FrameLayout>
+
+    <!-- AI mic button (Gemini freitext) -->
     <FrameLayout
         android:id="@+id/widget_mic_button"
         android:layout_width="48dp"

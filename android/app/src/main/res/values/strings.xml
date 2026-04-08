@@ -14,4 +14,6 @@
     <string name="widget_error">Fehler beim Speichern</string>
     <string name="widget_no_speech">Keine Sprache erkannt</string>
     <string name="widget_speech_not_available">Spracherkennung nicht verfügbar</string>
+    <string name="widget_guided_description">Geführte Eingabe (Schritt für Schritt)</string>
+    <string name="widget_ai_description">KI-Eingabe (Freitext mit Gemini)</string>
 </resources>

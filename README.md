@@ -21,31 +21,27 @@
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/onboarding.png" width="160" alt="Willkommen" />
-  &nbsp;
-  <img src="docs/screenshots/arbeitszeitmodell.png" width="160" alt="Arbeitszeitmodell" />
-  &nbsp;
-  <img src="docs/screenshots/dashboard.png" width="160" alt="Monatsübersicht" />
-  &nbsp;
-  <img src="docs/screenshots/dashboard_detail.png" width="160" alt="Wochendetails" />
+  <img src="docs/screenshots/dashboard_detail.png" width="150" alt="Wochendetails" style="transform: rotate(-3deg);" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/onboarding.png" width="170" alt="Willkommen" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/bericht.png" width="150" alt="PDF-Bericht" style="transform: rotate(2deg);" />
 </p>
 
 <p align="center">
-  <sub>Willkommen &nbsp;•&nbsp; Arbeitszeitmodell &nbsp;•&nbsp; Monatsübersicht &nbsp;•&nbsp; Wochendetails</sub>
+  <img src="docs/screenshots/neuer_eintrag.png" width="140" alt="Neuer Eintrag" style="transform: rotate(2deg);" />
+  &nbsp;
+  <img src="docs/screenshots/dashboard.png" width="180" alt="Monatsübersicht" />
+  &nbsp;
+  <img src="docs/screenshots/einstellungen.png" width="140" alt="Einstellungen" style="transform: rotate(-2deg);" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/neuer_eintrag.png" width="160" alt="Neuer Eintrag" />
-  &nbsp;
-  <img src="docs/screenshots/bericht.png" width="160" alt="PDF-Bericht" />
-  &nbsp;
-  <img src="docs/screenshots/einstellungen.png" width="160" alt="Einstellungen" />
-  &nbsp;
-  <img src="docs/screenshots/backup_setup.png" width="160" alt="Backup" />
-</p>
-
-<p align="center">
-  <sub>Neuer Eintrag &nbsp;•&nbsp; PDF-Bericht &nbsp;•&nbsp; Einstellungen &nbsp;•&nbsp; Backup-Setup</sub>
+  <img src="docs/screenshots/arbeitszeitmodell.png" width="150" alt="Arbeitszeitmodell" style="transform: rotate(-2deg);" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/backup_setup.png" width="170" alt="Backup-Setup" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/hilfe.png" width="150" alt="Anleitung & Hilfe" style="transform: rotate(3deg);" />
 </p>
 
 ---

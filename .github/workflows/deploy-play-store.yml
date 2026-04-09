@@ -3,8 +3,8 @@
 # ============================================================================
 #
 # WANN LÄUFT DAS?
-#   - Bei jedem Push auf "main" (außer der Commit enthält [skip ci])
-#   - Oder manuell über GitHub Actions → "Run workflow" (beliebiger Branch)
+#   - NUR MANUELL über GitHub Actions → "Run workflow"
+#   - Kein automatischer Trigger bei Push auf main
 #
 # WAS PASSIERT? (in dieser Reihenfolge)
 #   1. Code auschecken
@@ -37,8 +37,6 @@
 name: Deploy to Play Store (Internal Testing)
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
     inputs:
       version_bump:
@@ -56,8 +54,6 @@ jobs:
   deploy:
     name: Build, Sign & Deploy to Internal Testing
     runs-on: ubuntu-latest
-    # Nicht laufen wenn der Commit [skip ci] enthält (= unser eigener Version-Bump)
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     permissions:
       contents: write
 

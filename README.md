@@ -11,13 +11,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases"><img src="https://img.shields.io/github/v/release/D3rPaPaH0d3n/eStundnzettl?include_prereleases&color=emerald&label=Version" alt="Version" /></a>
-  <img src="https://img.shields.io/github/downloads/D3rPaPaH0d3n/eStundnzettl/total?color=blue&label=Downloads" alt="Downloads" />
-</p>
-
-<p align="center">
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/latest">
-    <img src="https://img.shields.io/badge/Android_App-⬇_APK_herunterladen-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android Download" />
+  <a href="https://play.google.com/store/apps/details?id=com.estundnzettl.app">
+    <img src="https://img.shields.io/badge/Google_Play-Jetzt_laden-3DDC84?style=for-the-badge&logo=google-play&logoColor=white" alt="Google Play" />
   </a>
 </p>
 
@@ -128,22 +123,11 @@ Für Profis, die mehr wollen! Aktiviere den **Hausmasta-Modus** in den Einstellu
 
 ## 📲 Installation
 
-<details>
-<summary><b>🤖 Android (APK)</b></summary>
+1. Öffne den [**Google Play Store**](https://play.google.com/store/apps/details?id=com.estundnzettl.app) auf deinem Android-Gerät
+2. Tippe auf **Installieren**
+3. **Fertig!** 🎉
 
-<br />
-
-**Schritt 1: Herunterladen** ⬇️
-Klick oben auf den grünen Button **"Android App — APK herunterladen"**.
-
-**Schritt 2: Installieren** 📱
-1. Öffne die heruntergeladene Datei (meist im Ordner "Downloads").
-2. Falls eine Warnung kommt: Geh auf **Einstellungen** und erlaube **"Unbekannte Apps installieren"**.
-3. Tippe auf **Installieren**.
-
-**Fertig!** 🎉
-
-</details>
+> 💡 Die App wird über den Play Store automatisch aktualisiert — du hast immer die neueste Version.
 
 ---
 

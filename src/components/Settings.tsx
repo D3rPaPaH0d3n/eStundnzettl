@@ -87,6 +87,7 @@ const Settings: React.FC<Props> = ({
   const [pickerTargetIndex, setPickerTargetIndex] = useState<number | null>(null);
 
   const [isLocked, setIsLocked] = useState(true);
+  const [demoTrigger, setDemoTrigger] = useState(0);
 
   const safeUserData = userData || {};
   const activeModelId = safeUserData.workModelId || "custom";
@@ -278,6 +279,7 @@ const Settings: React.FC<Props> = ({
         importEntries={importEntries}
         importWorkCodes={importWorkCodes}
         expertMode={userData?.expertMode ?? false}
+        demoTrigger={demoTrigger}
       />
 
       {/* 3. Theme Settings */}
@@ -317,6 +319,7 @@ const Settings: React.FC<Props> = ({
         onDeleteAll={onDeleteAll}
         onShowHelp={() => setShowHelp(true)}
         onShowChangelog={() => setShowChangelog(true)}
+        onLoadDemoData={() => setDemoTrigger((n) => n + 1)}
         userData={userData}
         setUserData={setUserData}
       />

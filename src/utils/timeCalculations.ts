@@ -1,5 +1,6 @@
 import { WORK_CODE, HALF_DAYS } from "../hooks/constants";
 import type { Entry, UserData } from '../types';
+import { getAllEntries, updateEntryInDb } from '../db/repositories/entriesRepo';
 
 interface OvertimeSplit {
   mehrarbeit: number;
@@ -412,6 +413,60 @@ export const calculatePeriodStats = (
   );
 
   return stats;
+};
+
+/**
+ * Neuberechnung aller Entries in der DB.
+ * Vergleicht gespeicherte netDuration mit dem berechneten Wert und
+ * aktualisiert nur Einträge mit Abweichung.
+ * @returns {{ total: number, fixed: number }}
+ */
+export const recalculateAllEntries = async (
+  userData: UserData | null
+): Promise<{ total: number; fixed: number }> => {
+  const entries = await getAllEntries();
+  let fixed = 0;
+
+  for (const entry of entries) {
+    const hasTime = entry.start && entry.end;
+    let expected: number;
+
+    if ((entry.type === "work" || entry.type === "drive" || entry.code === WORK_CODE.DRIVE) && hasTime) {
+      expected = calculateEntryNetDuration({
+        entryType: entry.type,
+        startTime: entry.start!,
+        endTime: entry.end!,
+        pauseDuration: entry.pause ?? 0,
+        formDate: entry.date,
+        userData,
+        code: entry.code ?? null,
+      });
+    } else if ((entry.type === "vacation" || entry.type === "sick" || entry.type === "time_comp") && hasTime) {
+      // Special entries with manual start/end
+      expected = calculateEntryNetDuration({
+        entryType: entry.type,
+        startTime: entry.start!,
+        endTime: entry.end!,
+        pauseDuration: 0,
+        formDate: entry.date,
+        userData,
+        code: entry.code ?? null,
+        specialManualMode: true,
+      });
+    } else if (entry.type === "vacation" || entry.type === "sick" || entry.type === "time_comp" || entry.type === "public_holiday") {
+      // Special entries without start/end → target minutes
+      expected = getTargetMinutesForDate(entry.date, userData?.workDays);
+    } else {
+      continue; // unknown type, skip
+    }
+
+    if (expected !== (entry.netDuration ?? 0)) {
+      await updateEntryInDb({ ...entry, netDuration: expected });
+      fixed++;
+    }
+  }
+
+  return { total: entries.length, fixed };
 };
 
 // Interner Helper: Montag der ISO-Woche eines Datums (lokale Zeitzone).

@@ -25,6 +25,7 @@ interface Props {
   importEntries?: (entries: Entry[]) => void;
   importWorkCodes?: (codes: WorkCode[]) => void;
   expertMode?: boolean;
+  demoTrigger?: number;
 }
 
 const DataSettings: React.FC<Props> = ({
@@ -37,6 +38,7 @@ const DataSettings: React.FC<Props> = ({
   importEntries,
   importWorkCodes,
   expertMode = false,
+  demoTrigger = 0,
 }) => {
   const [isWorkModelExpanded, setIsWorkModelExpanded] = useState(true);
   const [showPresetModal, setShowPresetModal] = useState(false);
@@ -53,6 +55,11 @@ const DataSettings: React.FC<Props> = ({
     // Always expand initially so existing users see the content
     setIsWorkModelExpanded(true);
   }, []);
+
+  // External trigger for demo data dialog (from Hausmasta card)
+  useEffect(() => {
+    if (demoTrigger > 0) setShowDemoWarning(true);
+  }, [demoTrigger]);
 
   const minToHours = (m: number) =>
     m === 0 ? "" : Number(m / 60).toFixed(2).replace(".", ",");
@@ -384,17 +391,6 @@ const DataSettings: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Discrete Demo-Daten Button — nur im Hausmasta-Modus */}
-        {expertMode && (
-          <div className="text-center pt-2">
-            <button
-              onClick={handleLoadDemoData}
-              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 font-medium transition-colors"
-            >
-              Demo-Daten laden
-            </button>
-          </div>
-        )}
       </Card>
 
       {/* Modals */}
@@ -433,6 +429,7 @@ Einträge, Einstellungen und Tätigkeitscodes werden durch die Demo-Daten ersetz
         confirmText="Ja, laden"
         confirmColor="red"
       />
+
     </>
   );
 };

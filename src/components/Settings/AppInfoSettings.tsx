@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   RefreshCw,
   BookOpen,
@@ -6,11 +6,16 @@ import {
   AlertTriangle,
   Trash2,
   Wrench,
+  Calculator,
+  FlaskConical,
 } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import toast from "react-hot-toast";
 import { Card } from "../../utils";
 import { APP_VERSION } from "../../hooks/constants";
+import ConfirmModal from "../ConfirmModal";
+import { recalculateAllEntries } from "../../utils/timeCalculations";
+import { logger } from "../../utils/logger";
 import type { UserData } from "../../types";
 
 interface Props {
@@ -18,6 +23,7 @@ interface Props {
   onDeleteAll?: () => void;
   onShowHelp?: () => void;
   onShowChangelog?: () => void;
+  onLoadDemoData?: () => void;
   userData: UserData;
   setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
 }
@@ -27,10 +33,27 @@ const AppInfoSettings: React.FC<Props> = ({
   onDeleteAll,
   onShowHelp,
   onShowChangelog,
+  onLoadDemoData,
   userData,
   setUserData,
 }) => {
   const expertMode = userData?.expertMode ?? false;
+  const [showRecalcWarning, setShowRecalcWarning] = useState(false);
+
+  const handleConfirmRecalculate = async () => {
+    Haptics.impact({ style: ImpactStyle.Medium });
+    try {
+      const { total, fixed } = await recalculateAllEntries(userData);
+      if (fixed > 0) {
+        toast.success(`${fixed} von ${total} Einträgen korrigiert`);
+      } else {
+        toast.success(`Alle ${total} Einträge sind korrekt`);
+      }
+    } catch (err) {
+      logger.error("[AppInfoSettings] Neuberechnung fehlgeschlagen:", err);
+      toast.error("Fehler bei der Neuberechnung");
+    }
+  };
 
   const toggleExpertMode = () => {
     Haptics.impact({ style: ImpactStyle.Medium });
@@ -104,6 +127,25 @@ const AppInfoSettings: React.FC<Props> = ({
             <div className="w-11 h-6 bg-zinc-200 dark:bg-zinc-700 peer-checked:bg-amber-500 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" />
           </label>
         </div>
+
+        {expertMode && (
+          <div className="mt-3 pt-3 border-t border-amber-200/50 dark:border-amber-800/30 flex gap-2">
+            <button
+              onClick={() => setShowRecalcWarning(true)}
+              className="flex-1 py-2 px-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <Calculator size={14} />
+              Neu berechnen
+            </button>
+            <button
+              onClick={onLoadDemoData}
+              className="flex-1 py-2 px-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <FlaskConical size={14} />
+              Demo-Daten
+            </button>
+          </div>
+        )}
       </Card>
 
       {/* Danger Zone */}
@@ -145,6 +187,19 @@ const AppInfoSettings: React.FC<Props> = ({
           Ausgetüftelt 💭 von Markus 👨 und mit Herz ❤️, Hirn 🧠 und KI-Agenten 🤖 gebaut!
         </p>
       </div>
+
+      <ConfirmModal
+        isOpen={showRecalcWarning}
+        onClose={() => setShowRecalcWarning(false)}
+        onConfirm={() => {
+          setShowRecalcWarning(false);
+          handleConfirmRecalculate();
+        }}
+        title="Einträge neu berechnen?"
+        message="Alle gespeicherten Arbeitszeit-Einträge werden anhand von Start, Ende und Pause neu berechnet. Dies korrigiert fehlerhafte Werte aus älteren App-Versionen. Korrekte Einträge bleiben unverändert."
+        confirmText="Neu berechnen"
+        confirmColor="emerald"
+      />
     </>
   );
 };

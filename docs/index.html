@@ -3,135 +3,506 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eStundnzettl – Deine App für lokale Zeiterfassung</title>
+    <title>eStundnzettl – Zeiterfassung aus da Steiermark</title>
+    <meta name="description" content="Smarte Arbeitszeiterfassung für Android. Lokal, sicher, steirisch. PDF-Stundenzettel, Google Drive & Nextcloud Backup.">
+    <link rel="icon" href="logo.png" type="image/png">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
         :root {
-            --primary-color: #2e7d32;
-            --text-color: #333;
-            --bg-color: #f4f6f8;
-            --card-bg: #ffffff;
+            --green: #2e7d32;
+            --green-light: #4caf50;
+            --green-dark: #1b5e20;
+            --orange: #f97316;
+            --orange-light: #fdba74;
+            --dark: #0f172a;
+            --dark-card: #1e293b;
+            --gray: #94a3b8;
+            --white: #f8fafc;
         }
+
+        html { scroll-behavior: smooth; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--dark);
+            color: var(--white);
             line-height: 1.6;
-            color: var(--text-color);
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 0;
+            overflow-x: hidden;
         }
 
-        /* Banner Bereich */
-        .header-banner {
-            width: 100%;
-            height: 250px;
-            background: url('banner.png') no-repeat center center;
-            background-size: cover;
+        /* ── Animations ─────────────────────────── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(249,115,22,0.3); }
+            50% { box-shadow: 0 0 40px rgba(249,115,22,0.6); }
+        }
+        @keyframes scroll-hint {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(10px); }
+        }
+
+        .animate-up { animation: fadeInUp 0.8s ease-out both; }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+        .delay-6 { animation-delay: 0.6s; }
+        .delay-7 { animation-delay: 0.7s; }
+
+        /* ── Hero ────────────────────────────────── */
+        .hero {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-        }
-
-        .main-content {
-            display: flex;
-            justify-content: center;
-            padding: 40px 20px;
-        }
-
-        .container {
-            background-color: var(--card-bg);
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            max-width: 700px;
             text-align: center;
-            margin-top: -80px; /* Zieht die Box leicht ins Banner rein für modernen Look */
+            padding: 6rem 1.5rem 4rem;
+            position: relative;
+            overflow: hidden;
         }
 
-        .logo {
-            width: 100px;
-            height: auto;
-            margin-bottom: 20px;
-            border-radius: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            background: white;
-            padding: 5px;
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 20%, rgba(46,125,50,0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 80%, rgba(249,115,22,0.1) 0%, transparent 50%);
+            animation: float 8s ease-in-out infinite;
+            pointer-events: none;
         }
 
-        h1 {
-            margin: 0 0 10px 0;
-            color: var(--primary-color);
-            font-size: 2em;
+        .hero-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            animation: fadeInUp 0.8s ease-out both, float 4s ease-in-out 1s infinite;
+            transition: transform 0.3s;
+        }
+        .hero-logo:hover { transform: scale(1.08); }
+
+        .hero h1 {
+            font-size: clamp(2.2rem, 6vw, 3.8rem);
+            font-weight: 900;
+            margin-top: 1.5rem;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--white), var(--green-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .tagline {
-            font-size: 1.1em;
-            color: #666;
-            margin-bottom: 30px;
+        .hero-tagline {
+            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            color: var(--gray);
+            margin-top: 0.5rem;
             font-weight: 500;
         }
 
-        .features {
-            text-align: left;
-            display: inline-block;
-            margin: 20px 0 30px 0;
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding: 0.5rem 1.2rem;
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
+            border-radius: 100px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+            letter-spacing: 0.02em;
         }
 
-        .features li {
-            margin-bottom: 12px;
-            list-style-type: '✅';
-            padding-left: 10px;
+        .hero-desc {
+            max-width: 520px;
+            margin-top: 1.5rem;
+            color: var(--gray);
+            font-size: 1.05rem;
+            line-height: 1.7;
         }
 
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            font-size: 0.9em;
-            color: #888;
+        .cta-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
-        .privacy-link {
-            display: inline-block;
-            margin-top: 10px;
-            color: var(--primary-color);
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.9rem 2rem;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1rem;
             text-decoration: none;
-            font-weight: bold;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--orange), #ea580c);
+            color: white;
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(249,115,22,0.5);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.08);
+            color: var(--white);
+            border: 1px solid rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-2px);
         }
 
-        .privacy-link:hover {
-            text-decoration: underline;
+        .btn svg { width: 20px; height: 20px; }
+
+        /* ── Section Base ────────────────────────── */
+        section { padding: 3rem 1.5rem; }
+
+        .section-title {
+            text-align: center;
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+        .section-subtitle {
+            text-align: center;
+            color: var(--gray);
+            font-size: 1.05rem;
+            margin-bottom: 3rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* ── Features ────────────────────────────── */
+        .features {
+            background: linear-gradient(180deg, var(--dark) 0%, #0c1222 100%);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 1.4rem;
+            transition: all 0.4s ease;
+            animation: fadeInUp 0.8s ease-out both;
+        }
+        .feature-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(249,115,22,0.3);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .fi-green { background: rgba(46,125,50,0.15); color: var(--green-light); }
+        .fi-orange { background: rgba(249,115,22,0.15); color: var(--orange); }
+        .fi-blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .fi-purple { background: rgba(147,51,234,0.15); color: #a78bfa; }
+        .fi-red { background: rgba(239,68,68,0.15); color: #f87171; }
+        .fi-teal { background: rgba(20,184,166,0.15); color: #2dd4bf; }
+
+        .feature-card h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .feature-card p {
+            color: var(--gray);
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        /* ── Screenshots ─────────────────────────── */
+        .screenshots {
+            background: #0c1222;
+            overflow: hidden;
+        }
+
+        .scroll-container {
+            display: flex;
+            gap: 1.5rem;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            padding: 1rem 2rem 2rem;
+            scrollbar-width: none;
+        }
+        .scroll-container::-webkit-scrollbar { display: none; }
+
+        .scroll-container img {
+            flex-shrink: 0;
+            width: 220px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            scroll-snap-align: center;
+            transition: transform 0.3s;
+        }
+        .scroll-container img:hover {
+            transform: scale(1.04);
+        }
+
+        .scroll-hint {
+            text-align: center;
+            color: var(--gray);
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            animation: scroll-hint 2s ease-in-out infinite;
+        }
+
+        /* ── Stats ────────────────────────────────── */
+        .stats {
+            background: var(--dark);
+        }
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .stat {
+            text-align: center;
+            animation: fadeInUp 0.8s ease-out both;
+        }
+        .stat-number {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--orange), var(--orange-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+
+        /* ── Footer ──────────────────────────────── */
+        footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            background: #080d1a;
+        }
+        footer a {
+            color: var(--orange);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        footer a:hover { text-decoration: underline; }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-made {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+            line-height: 1.8;
+        }
+        .footer-heart { color: #ef4444; }
+        .footer-flag { display: inline-block; }
+
+        /* ── Responsive ──────────────────────────── */
+        @media (max-width: 640px) {
+            .hero { padding: 4rem 1.2rem 2rem; min-height: auto; }
+            .hero-logo { width: 90px; height: 90px; }
+            section { padding: 3rem 1rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .stats-row { gap: 2rem; }
+            .scroll-container img { width: 180px; }
+            .cta-row { flex-direction: column; align-items: center; }
+            .btn { width: 100%; justify-content: center; max-width: 300px; }
         }
     </style>
 </head>
 <body>
 
-    <header class="header-banner">
-        </header>
+<!-- ════════ HERO ════════ -->
+<section class="hero">
+    <img src="logo.png" alt="eStundnzettl Logo" class="hero-logo animate-up">
 
-    <main class="main-content">
-        <div class="container">
-            <img src="logo.png" alt="eStundnzettl Logo" class="logo">
-            
-            <h1>eStundnzettl</h1>
-            <p class="tagline">Sichere Zeiterfassung. Lokal. Einfach.</p>
+    <h1 class="animate-up delay-1">eStundnzettl</h1>
 
-            <p>eStundnzettl ermöglicht Dir eine präzise Arbeitszeiterfassung direkt auf Deinem Smartphone. Deine Daten werden nicht auf fremden Servern gespeichert, sondern bleiben in Deiner Hand.</p>
+    <p class="hero-tagline animate-up delay-2">Zeiterfassung. Lokal. Sicher. Steirisch.</p>
 
-            <div class="features">
-                <ul>
-                    <li><strong> Volle Kontrolle:</strong> Deine Daten bleiben lokal auf Deinem Gerät.</li>
-                    <li><strong> Einfacher Export:</strong> Generiere PDF-Berichte für Deine Unterlagen.</li>
-                    <li><strong> Google Drive Backup:</strong> Sichere Deine Daten optional in Deinem eigenen Cloud-Speicher.</li>
-                </ul>
-            </div>
+    <div class="hero-badge animate-up delay-3">
+        🏔️ Aus da Steiermark — mit Liab gmocht
+    </div>
 
-            <div class="footer">
-                <p>Besuche unsere rechtlichen Informationen:</p>
-                <a href="privacy.html" class="privacy-link">Datenschutzerklärung öffnen</a>
-            </div>
+    <p class="hero-desc animate-up delay-4">
+        Stunden eintragen, Fahrten dokumentieren, Urlaub & Krankenstand erfassen —
+        und am Monatsende an professionellen PDF-Stundenzettel generieren.
+        Ganz ohne Server. Deine Daten bleiben bei dir.
+    </p>
+
+    <div class="cta-row animate-up delay-5">
+        <a href="https://play.google.com/store/apps/details?id=com.estundnzettl.app" class="btn btn-primary" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 0 1 0 1.73l-2.808 1.626L15.206 12l2.492-2.491zM5.864 2.658L16.8 8.99l-2.3 2.3-8.636-8.632z"/></svg>
+            Im Play Store holen
+        </a>
+        <a href="#features" class="btn btn-secondary">
+            Mehr erfahren ↓
+        </a>
+    </div>
+</section>
+
+<!-- ════════ FEATURES ════════ -->
+<section class="features" id="features">
+    <h2 class="section-title">Was kann die App?</h2>
+    <p class="section-subtitle">Alles was du brauchst — nix was du ned brauchst.</p>
+
+    <div class="features-grid">
+        <div class="feature-card delay-1">
+            <div class="feature-icon fi-green">⏱️</div>
+            <h3>Zeiterfassung</h3>
+            <p>Live-Timer oder manuelle Eingabe. Arbeitszeit, Fahrzeit, Pausen — alles sauber erfasst mit flexiblen Tätigkeitscodes.</p>
         </div>
-    </main>
+
+        <div class="feature-card delay-2">
+            <div class="feature-icon fi-orange">📄</div>
+            <h3>PDF-Stundenzettel</h3>
+            <p>Professioneller Monatsbericht per Knopfdruck. Automatisches PDF-Archiv — monatlich, ohne dass du dran denken musst.</p>
+        </div>
+
+        <div class="feature-card delay-3">
+            <div class="feature-icon fi-blue">☁️</div>
+            <h3>3-fach Backup</h3>
+            <p>Google Drive, Nextcloud oder lokal am Gerät. Deine Daten, deine Wahl — automatisch oder manuell gesichert.</p>
+        </div>
+
+        <div class="feature-card delay-4">
+            <div class="feature-icon fi-purple">🇦🇹</div>
+            <h3>Made for Austria</h3>
+            <p>Österreichische Feiertage, Mehrarbeit vs. Überstunden nach AZG, flexible Arbeitszeitmodelle — passt wie a Lederhosn.</p>
+        </div>
+
+        <div class="feature-card delay-5">
+            <div class="feature-icon fi-teal">🔒</div>
+            <h3>Offline & Privat</h3>
+            <p>Kein Tracking, kein Account-Zwang, keine Werbung. SQLite-Datenbank direkt am Gerät. Deine Daten ghean nur di wos an.</p>
+        </div>
+
+        <div class="feature-card delay-6">
+            <div class="feature-icon fi-red">🔧</div>
+            <h3>Hausmasta-Modus</h3>
+            <p>Für die Profis: Erweiterte Einstellungen, benutzerdefinierte Codes, Minuteneingabe, Demo-Daten und Daten-Reparatur.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ════════ SCREENSHOTS ════════ -->
+<section class="screenshots" id="screenshots">
+    <h2 class="section-title">So schaut's aus</h2>
+    <p class="section-subtitle">Dunkel, schnell, übersichtlich.</p>
+
+    <div class="scroll-container">
+        <img src="screenshots/onboarding.png" alt="Onboarding" loading="lazy">
+        <img src="screenshots/dashboard.png" alt="Dashboard" loading="lazy">
+        <img src="screenshots/dashboard_detail.png" alt="Wochen-Detail" loading="lazy">
+        <img src="screenshots/neuer_eintrag.png" alt="Neuer Eintrag" loading="lazy">
+        <img src="screenshots/bericht.png" alt="PDF-Bericht" loading="lazy">
+        <img src="screenshots/arbeitszeitmodell.png" alt="Arbeitszeitmodell" loading="lazy">
+        <img src="screenshots/backup_setup.png" alt="Backup-Setup" loading="lazy">
+        <img src="screenshots/einstellungen.png" alt="Einstellungen" loading="lazy">
+        <img src="screenshots/hilfe.png" alt="Hilfe" loading="lazy">
+    </div>
+    <p class="scroll-hint">← Wischen zum Durchschauen →</p>
+</section>
+
+<!-- ════════ STATS ════════ -->
+<section class="stats">
+    <div class="stats-row">
+        <div class="stat animate-up delay-1">
+            <div class="stat-number">500+</div>
+            <div class="stat-label">Unit Tests</div>
+        </div>
+        <div class="stat animate-up delay-2">
+            <div class="stat-number">3.6</div>
+            <div class="stat-label">Aktuelle Version</div>
+        </div>
+        <div class="stat animate-up delay-3">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Server die deine Daten sehen</div>
+        </div>
+        <div class="stat animate-up delay-4">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">Made in Styria</div>
+        </div>
+    </div>
+</section>
+
+<!-- ════════ FOOTER ════════ -->
+<footer>
+    <div class="footer-links">
+        <a href="privacy.html">Datenschutzerkl&auml;rung</a>
+        <a href="https://play.google.com/store/apps/details?id=com.estundnzettl.app" target="_blank" rel="noopener">Google Play Store</a>
+        <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl" target="_blank" rel="noopener">GitHub</a>
+    </div>
+
+    <p class="footer-made">
+        Ausget&uuml;ftelt <span class="footer-heart">&#10084;</span> von Markus<br>
+        Mit Herz, Hirn und KI-Agenten gebaut<br>
+        <span class="footer-flag">🏔️ Steiermark, &Ouml;sterreich 🇦🇹</span>
+    </p>
+</footer>
 
 </body>
 </html>

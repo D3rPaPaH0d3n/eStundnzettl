@@ -1,6 +1,49 @@
 export const CHANGELOG_DATA = [
 
   {
+    version: "3.6.0",
+    date: "09.04.2026",
+    title: "Hausmasta-Modus & schlankere Settings 🔧",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "Wrench",
+        title: "Hausmasta-Modus — für Profis, die mehr wollen",
+        items: [
+          "Die Einstellungen sind jetzt aufgeräumt und übersichtlich: Nur das Wichtigste ist sichtbar. Wer Nextcloud, Import/Export, PDF-Archiv, Minutenmodus, Tätigkeitscodes oder den Nur-Aufzeichnung-Modus braucht, aktiviert einfach den neuen Hausmasta-Modus ganz unten in den Einstellungen.",
+          "Der Hausmasta-Modus ist rein kosmetisch — er blendet nur zusätzliche Einstellungen ein, ohne bestehende Funktionen zu verändern. Einmal eingerichtet läuft alles wie gewohnt weiter."
+        ]
+      },
+      {
+        iconName: "Layout",
+        title: "Einstellungen neu organisiert",
+        items: [
+          "Die Backup & Export-Karte hat jetzt einen einheitlichen Header im selben Stil wie die PDF-Archiv-Karte.",
+          "Der \"Nur Aufzeichnung\"-Toggle ist von den Benutzerdaten in die Arbeitszeitmodell-Karte gewandert — dort gehört er logisch hin. Wenn er aktiv ist, wird die Modellauswahl automatisch ausgeblendet.",
+          "Kein Überscrolling mehr am Ende der Einstellungen-Seite."
+        ]
+      },
+      {
+        iconName: "Bug",
+        title: "Bugfixes",
+        items: [
+          "PDF-Archiv: Feiertage werden jetzt korrekt in die Soll-Berechnung einbezogen. Bisher wurde das Soll für Feiertage voll berechnet, ohne dass sie als Ist-Stunden gezählt wurden — der Saldo im PDF war dadurch zu negativ.",
+          "Google Drive: Die verbundene E-Mail-Adresse wird nach einem App-Neustart jetzt dauerhaft angezeigt, statt nur \"Google Drive App-Daten\".",
+          "Backup-Import: Importierte Daten erscheinen jetzt sofort in der App, ohne dass ein Neustart nötig ist."
+        ]
+      },
+      {
+        iconName: "BookOpen",
+        title: "Neue Anleitung & Hilfe",
+        items: [
+          "Die Hilfe wurde komplett überarbeitet und an alle aktuellen Features angepasst: Live-Timer, Dokumente anhängen, Backup-Optionen und der Hausmasta-Modus sind jetzt erklärt.",
+          "Neue README auf GitHub mit Screenshots und Play Store Link."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "3.5.0",
     date: "07.04.2026",
     title: "Nur Aufzeichnung & bessere Monatsübergänge",

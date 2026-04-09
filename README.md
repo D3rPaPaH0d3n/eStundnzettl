@@ -21,17 +21,31 @@
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/onboarding.png" width="180" alt="Onboarding" />
-  <img src="docs/screenshots/dashboard.png" width="180" alt="Dashboard" />
-  <img src="docs/screenshots/dashboard_detail.png" width="180" alt="Dashboard Detail" />
-  <img src="docs/screenshots/neuer_eintrag.png" width="180" alt="Neuer Eintrag" />
+  <img src="docs/screenshots/onboarding.png" width="160" alt="Willkommen" />
+  &nbsp;
+  <img src="docs/screenshots/arbeitszeitmodell.png" width="160" alt="Arbeitszeitmodell" />
+  &nbsp;
+  <img src="docs/screenshots/dashboard.png" width="160" alt="Monatsübersicht" />
+  &nbsp;
+  <img src="docs/screenshots/dashboard_detail.png" width="160" alt="Wochendetails" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/bericht.png" width="180" alt="PDF-Bericht" />
-  <img src="docs/screenshots/einstellungen.png" width="180" alt="Einstellungen" />
-  <img src="docs/screenshots/arbeitszeitmodell.png" width="180" alt="Arbeitszeitmodell" />
-  <img src="docs/screenshots/backup_setup.png" width="180" alt="Backup" />
+  <sub>Willkommen &nbsp;•&nbsp; Arbeitszeitmodell &nbsp;•&nbsp; Monatsübersicht &nbsp;•&nbsp; Wochendetails</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/neuer_eintrag.png" width="160" alt="Neuer Eintrag" />
+  &nbsp;
+  <img src="docs/screenshots/bericht.png" width="160" alt="PDF-Bericht" />
+  &nbsp;
+  <img src="docs/screenshots/einstellungen.png" width="160" alt="Einstellungen" />
+  &nbsp;
+  <img src="docs/screenshots/backup_setup.png" width="160" alt="Backup" />
+</p>
+
+<p align="center">
+  <sub>Neuer Eintrag &nbsp;•&nbsp; PDF-Bericht &nbsp;•&nbsp; Einstellungen &nbsp;•&nbsp; Backup-Setup</sub>
 </p>
 
 ---

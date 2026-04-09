@@ -1,6 +1,6 @@
 ﻿{
-  "appId": "com.estundnzettl.dev",
-  "appName": "eStundnzettl DEV",
+  "appId": "com.estundnzettl.app",
+  "appName": "eStundnzettl",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"

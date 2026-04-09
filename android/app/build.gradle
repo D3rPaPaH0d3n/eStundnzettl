@@ -5,7 +5,7 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     defaultConfig {
-        applicationId "com.estundnzettl.dev"
+        applicationId "com.estundnzettl.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 234
@@ -32,17 +32,7 @@ android {
         }
     }
 
-    // --- AUTOMATISCHE UMBENENNUNG DER APK ---
-    applicationVariants.all { variant ->
-        variant.outputs.all {
-            def appName = "eStundnzettl"
-            def version = variant.versionName
-            def buildType = variant.buildType.name
-            
-            // Ergebnis: KoglerZeit_v1.9.0_release.apk
-            outputFileName = "${appName}_v${version}_${buildType}.apk"
-        }
-    }
+
 }
 
 repositories {

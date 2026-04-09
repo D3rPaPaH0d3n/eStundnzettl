@@ -23,7 +23,8 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import html2pdf from "html2pdf.js";
 import ReportDocument from "../components/ReportDocument";
-import { calculatePeriodStats, applyEffectiveDurations } from "./timeCalculations";
+import { calculatePeriodStats, applyEffectiveDurations, getTargetMinutesForDate } from "./timeCalculations";
+import { getHolidayData } from "../utils";
 import { logger } from "./logger";
 import type { Entry, UserData, WorkCode, Attachment, Html2PdfOptions } from '../types';
 
@@ -31,6 +32,36 @@ const log = logger.scope("ReportPdfRenderer");
 
 const A4_WIDTH_PX = 794; // 210mm bei 96dpi — identisch zur Vorschau
 const WAIT_FOR_IMAGES_TIMEOUT_MS = 4000;
+
+/**
+ * Erzeugt synthetische public_holiday-Eintraege fuer alle gesetzlichen
+ * Feiertage eines Monats, die auf einen Arbeitstag fallen.
+ * Identisch zur Logik in useAppData, aber ohne React-Hooks.
+ */
+function generateHolidayEntries(year: number, month: number, userData: UserData | null): Entry[] {
+  const holidayMap = getHolidayData(year);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const holidays: Entry[] = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    if (!holidayMap[dateStr]) continue;
+
+    const targetMin = getTargetMinutesForDate(dateStr, userData?.workDays);
+    if (targetMin <= 0) continue;
+
+    holidays.push({
+      id: `auto-holiday-${dateStr}`,
+      type: "public_holiday" as const,
+      date: dateStr,
+      project: holidayMap[dateStr] || "Gesetzlicher Feiertag",
+      pause: 0,
+      netDuration: targetMin,
+    } as Entry);
+  }
+
+  return holidays;
+}
 
 /** Sortiert und filtert Eintraege fuer den angegebenen Kalendermonat. */
 function filterEntriesForMonth(entries: Entry[], year: number, month: number): Entry[] {
@@ -110,8 +141,12 @@ export async function renderMonthlyReportPdfBlob({
     throw new Error("renderMonthlyReportPdfBlob: year/month fehlen");
   }
 
+  // Feiertage ergaenzen, damit Soll/Ist korrekt berechnet werden
+  const holidayEntries = generateHolidayEntries(year, month, userData);
+  const entriesWithHolidays = [...entries, ...holidayEntries];
+
   // Krank-Korrektur einmal anwenden (Single Source of Truth)
-  const correctedEntries = applyEffectiveDurations(entries, userData);
+  const correctedEntries = applyEffectiveDurations(entriesWithHolidays, userData);
   const monthEntries = filterEntriesForMonth(correctedEntries, year, month);
   const periodStart = new Date(year, month - 1, 1);
   const periodEnd = new Date(year, month, 0);

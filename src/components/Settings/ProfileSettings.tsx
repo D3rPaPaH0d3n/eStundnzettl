@@ -1,10 +1,9 @@
 import React, { useRef, useState } from "react";
-import { User, Camera, Trash2, ClipboardList, Calculator } from "lucide-react";
+import { User, Camera, Trash2 } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
 import toast from "react-hot-toast";
 import { logger } from "../../utils/logger";
-import { WORK_MODELS } from "../../hooks/constants";
 
 import type { UserData } from "../../types";
 
@@ -155,46 +154,6 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
         </div>
       </div>
 
-      {/* Simple-Mode Toggle */}
-      <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">
-        <div className="flex items-center gap-3">
-          {safeUserData.simpleMode
-            ? <ClipboardList size={20} className="text-emerald-500" />
-            : <Calculator size={20} className="text-blue-500" />
-          }
-          <div>
-            <div className="font-bold text-sm text-zinc-800 dark:text-white">
-              Nur Aufzeichnung
-            </div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">
-              {safeUserData.simpleMode ? "Keine Soll/Ist-Berechnung" : "Soll, Saldo & Überstunden aktiv"}
-            </div>
-          </div>
-        </div>
-        <button
-          type="button"
-          aria-label="Erfassungsmodus umschalten"
-          onClick={() => {
-            Haptics.impact({ style: ImpactStyle.Light });
-            const newSimple = !safeUserData.simpleMode;
-            setUserData({
-              ...userData,
-              simpleMode: newSimple,
-              workDays: newSimple ? [0, 0, 0, 0, 0, 0, 0] : (userData.workDays?.some((d: number) => d > 0) ? userData.workDays : WORK_MODELS[0].days),
-            });
-            toast.success(newSimple ? "Nur Aufzeichnung aktiviert" : "Soll/Ist-Berechnung aktiviert");
-          }}
-          className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
-            safeUserData.simpleMode ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-600"
-          }`}
-        >
-          <div
-            className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-              safeUserData.simpleMode ? "translate-x-6" : "translate-x-1"
-            }`}
-          />
-        </button>
-      </div>
     </Card>
   );
 };

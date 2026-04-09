@@ -164,8 +164,9 @@ const Settings: React.FC<Props> = ({
         setPendingImport(analysis);
       } else {
         await applyBackup(analysis, "ALL");
+        importEntries?.(analysis.entries || []);
+        if (analysis.workCodes?.length) importWorkCodes?.(analysis.workCodes);
         toast.success(`${analysis.entryCount} Einträge importiert!`);
-        setTimeout(() => window.location.reload(), 1500);
       }
     } catch {
       toast.error("Fehler beim Lesen der Datei");
@@ -190,8 +191,9 @@ const Settings: React.FC<Props> = ({
         setPendingImport(analysis);
       } else {
         await applyBackup(analysis, "ALL");
+        importEntries?.(analysis.entries || []);
+        if (analysis.workCodes?.length) importWorkCodes?.(analysis.workCodes);
         toast.success(`${analysis.entryCount} Einträge importiert!`);
-        setTimeout(() => window.location.reload(), 1500);
       }
     } catch {
       toast.error("Fehler beim Lesen der Datei");
@@ -202,13 +204,14 @@ const Settings: React.FC<Props> = ({
   const handleConfirmImport = async (mode: string) => {
     if (!pendingImport) return;
     await applyBackup(pendingImport, mode);
+    importEntries?.(pendingImport.entries || []);
+    if (pendingImport.workCodes?.length) importWorkCodes?.(pendingImport.workCodes);
     toast.success("Erfolgreich wiederhergestellt!");
     setPendingImport(null);
-    setTimeout(() => window.location.reload(), 1000);
   };
 
   return (
-    <main className="w-full p-4 space-y-6 pb-20">
+    <main className="w-full p-4 space-y-6 pb-6">
       {/* Modals */}
       {showChangelog && (
         <Suspense fallback={null}>
@@ -274,6 +277,7 @@ const Settings: React.FC<Props> = ({
         onOpenDayPicker={openDayPicker}
         importEntries={importEntries}
         importWorkCodes={importWorkCodes}
+        expertMode={userData?.expertMode ?? false}
       />
 
       {/* 3. Theme Settings */}
@@ -294,10 +298,11 @@ const Settings: React.FC<Props> = ({
         setNextcloudUrl={setNextcloudUrl}
         setNextcloudUser={setNextcloudUser}
         setNextcloudPass={setNextcloudPass}
+        expertMode={userData?.expertMode ?? false}
       />
 
-      {/* 4b. PDF-Archiv (monatlich wachsendes PDF) */}
-      {pdfArchivePerformRun && (
+      {/* 4b. PDF-Archiv (monatlich wachsendes PDF) — nur im Hausmasta-Modus */}
+      {(userData?.expertMode ?? false) && pdfArchivePerformRun && (
         <PdfArchiveSettings
           nextcloudEnabled={nextcloudEnabled}
           performRun={pdfArchivePerformRun}
@@ -312,6 +317,8 @@ const Settings: React.FC<Props> = ({
         onDeleteAll={onDeleteAll}
         onShowHelp={() => setShowHelp(true)}
         onShowChangelog={() => setShowChangelog(true)}
+        userData={userData}
+        setUserData={setUserData}
       />
     </main>
   );

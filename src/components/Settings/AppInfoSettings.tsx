@@ -5,16 +5,21 @@ import {
   History,
   AlertTriangle,
   Trash2,
+  Wrench,
 } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import toast from "react-hot-toast";
 import { Card } from "../../utils";
 import { APP_VERSION } from "../../hooks/constants";
+import type { UserData } from "../../types";
 
 interface Props {
   onCheckUpdate?: () => void;
   onDeleteAll?: () => void;
   onShowHelp?: () => void;
   onShowChangelog?: () => void;
+  userData: UserData;
+  setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
 }
 
 const AppInfoSettings: React.FC<Props> = ({
@@ -22,7 +27,19 @@ const AppInfoSettings: React.FC<Props> = ({
   onDeleteAll,
   onShowHelp,
   onShowChangelog,
+  userData,
+  setUserData,
 }) => {
+  const expertMode = userData?.expertMode ?? false;
+
+  const toggleExpertMode = () => {
+    Haptics.impact({ style: ImpactStyle.Medium });
+    const next = !expertMode;
+    setUserData((prev: UserData) => ({ ...prev, expertMode: next }));
+    toast(next ? "Hausmasta-Modus aktiviert" : "Hausmasta-Modus deaktiviert", {
+      icon: next ? "\uD83D\uDD27" : "\uD83D\uDD12",
+    });
+  };
   return (
     <>
       <Card className="p-5 space-y-3">
@@ -59,6 +76,34 @@ const AppInfoSettings: React.FC<Props> = ({
         >
           <History size={18} /> Änderungsprotokoll
         </button>
+      </Card>
+
+      {/* Hausmasta-Modus Toggle */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-full ${expertMode ? "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300" : "bg-zinc-200 text-zinc-400 dark:bg-zinc-700 dark:text-zinc-500"}`}>
+              <Wrench size={20} />
+            </div>
+            <div>
+              <h2 className="font-bold text-base text-zinc-800 dark:text-white">
+                Hausmasta-Modus
+              </h2>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {expertMode ? "Alle Einstellungen sichtbar" : "Erweiterte Einstellungen ausgeblendet"}
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={expertMode}
+              onChange={toggleExpertMode}
+            />
+            <div className="w-11 h-6 bg-zinc-200 dark:bg-zinc-700 peer-checked:bg-amber-500 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" />
+          </label>
+        </div>
       </Card>
 
       {/* Danger Zone */}

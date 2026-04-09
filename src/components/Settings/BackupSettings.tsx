@@ -54,6 +54,7 @@ interface Props {
   setNextcloudUrl: (url: string) => void;
   setNextcloudUser: (user: string) => void;
   setNextcloudPass: (pass: string) => void;
+  expertMode?: boolean;
 }
 
 const BackupSettings: React.FC<Props> = ({
@@ -70,6 +71,7 @@ const BackupSettings: React.FC<Props> = ({
   setNextcloudUrl,
   setNextcloudUser,
   setNextcloudPass,
+  expertMode = false,
 }) => {
   const importInputRef = useRef<HTMLInputElement>(null);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
@@ -162,19 +164,21 @@ const BackupSettings: React.FC<Props> = ({
     if (saved) setLastBackupDate(saved);
 
     Promise.resolve(getGoogleAuthStatus())
-      .then((googleStatus: GoogleAuthStatus) => {
-        setIsTokenValid(isGoogleConnectionReady(googleStatus));
-        const storedAuth = getStoredGoogleAuth?.() as GoogleAuthStatus | null;
+      .then((googleStatus: Record<string, unknown>) => {
+        setIsTokenValid(isGoogleConnectionReady(googleStatus as GoogleAuthStatus));
+        const storedAuth = getStoredGoogleAuth?.() as Record<string, unknown> | null;
         const accountLabel =
-          googleStatus?.email ||
-          storedAuth?.email ||
+          (googleStatus?.email as string) ||
+          (googleStatus?.accountEmail as string) ||
+          (storedAuth?.email as string) ||
+          (storedAuth?.accountEmail as string) ||
           "";
         setGoogleAccountLabel(accountLabel);
       })
       .catch(() => {
         setIsTokenValid(false);
-        const storedAuth = getStoredGoogleAuth?.() as GoogleAuthStatus | null;
-        setGoogleAccountLabel(storedAuth?.email || "");
+        const storedAuth = getStoredGoogleAuth?.() as Record<string, unknown> | null;
+        setGoogleAccountLabel((storedAuth?.email as string) || (storedAuth?.accountEmail as string) || "");
       });
 
     const failCount = parseInt(localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT) || "0", 10);
@@ -207,12 +211,14 @@ const BackupSettings: React.FC<Props> = ({
             const enabled = !!sqlCloudEnabled;
             setIsCloudConnected(enabled);
           }
-          const refreshedStatus = await getGoogleAuthStatus() as GoogleAuthStatus;
-          setIsTokenValid(isGoogleConnectionReady(refreshedStatus));
-          const storedAuth2 = getStoredGoogleAuth?.() as GoogleAuthStatus | null;
+          const refreshedStatus = await getGoogleAuthStatus() as Record<string, unknown>;
+          setIsTokenValid(isGoogleConnectionReady(refreshedStatus as GoogleAuthStatus));
+          const storedAuth2 = getStoredGoogleAuth?.() as Record<string, unknown> | null;
           setGoogleAccountLabel(
-            refreshedStatus?.email ||
-            storedAuth2?.email ||
+            (refreshedStatus?.email as string) ||
+            (refreshedStatus?.accountEmail as string) ||
+            (storedAuth2?.email as string) ||
+            (storedAuth2?.accountEmail as string) ||
             ""
           );
         } catch { /* keep localStorage values */ }
@@ -635,7 +641,23 @@ const BackupSettings: React.FC<Props> = ({
   // =====================
 
   return (
-    <Card title="Backup & Export" icon={<Upload size={20} />}>
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
+            <Upload size={20} />
+          </div>
+          <div>
+            <h2 className="font-bold text-base text-zinc-800 dark:text-white">
+              Backup &amp; Export
+            </h2>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Sichere deine Daten auf Google Drive, Nextcloud oder lokal
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-3">
         {/* Google Drive */}
         <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl">
@@ -681,7 +703,8 @@ const BackupSettings: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* Nextcloud */}
+        {/* Nextcloud — nur im Hausmasta-Modus */}
+        {expertMode && (<>
         <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl">
           <div className="flex items-center gap-3">
             <div
@@ -781,6 +804,7 @@ const BackupSettings: React.FC<Props> = ({
             )}
           </div>
         )}
+        </>)}
 
         {/* Local Backup */}
         <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl">
@@ -884,30 +908,32 @@ const BackupSettings: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Export/Import Buttons */}
-        <div className="grid grid-cols-2 gap-2 pt-2">
-          <button
-            onClick={onExport}
-            className="w-full py-3 bg-zinc-900 dark:bg-zinc-700 text-white font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-600 flex items-center justify-center gap-2 transition-colors"
-          >
-            <Upload size={18} className="rotate-180" /> Export
-          </button>
+        {/* Export/Import Buttons — nur im Hausmasta-Modus */}
+        {expertMode && (
+          <div className="grid grid-cols-2 gap-2 pt-2">
+            <button
+              onClick={onExport}
+              className="w-full py-3 bg-zinc-900 dark:bg-zinc-700 text-white font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-600 flex items-center justify-center gap-2 transition-colors"
+            >
+              <Upload size={18} className="rotate-180" /> Export
+            </button>
 
-          <button
-            onClick={() => importInputRef.current?.click()}
-            className="w-full py-3 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors"
-          >
-            <Upload size={18} /> Import
-          </button>
+            <button
+              onClick={() => importInputRef.current?.click()}
+              className="w-full py-3 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors"
+            >
+              <Upload size={18} /> Import
+            </button>
 
-          <input
-            type="file"
-            ref={importInputRef}
-            className="hidden"
-            accept="application/json"
-            onChange={handleFileImportInternal}
-          />
-        </div>
+            <input
+              type="file"
+              ref={importInputRef}
+              className="hidden"
+              accept="application/json"
+              onChange={handleFileImportInternal}
+            />
+          </div>
+        )}
       </div>
     </Card>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Settings as SettingsIcon, ListChecks, Calendar, Lock, Unlock, List, ChevronDown, ChevronRight } from "lucide-react";
+import { Settings as SettingsIcon, ListChecks, Calendar, Lock, Unlock, List, ChevronDown, ChevronRight, ClipboardList, Calculator } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
 import { WORK_MODELS, STORAGE_KEYS } from "../../hooks/constants";
@@ -24,6 +24,7 @@ interface Props {
   onOpenDayPicker: (index: number) => void;
   importEntries?: (entries: Entry[]) => void;
   importWorkCodes?: (codes: WorkCode[]) => void;
+  expertMode?: boolean;
 }
 
 const DataSettings: React.FC<Props> = ({
@@ -35,6 +36,7 @@ const DataSettings: React.FC<Props> = ({
   onOpenDayPicker,
   importEntries,
   importWorkCodes,
+  expertMode = false,
 }) => {
   const [isWorkModelExpanded, setIsWorkModelExpanded] = useState(true);
   const [showPresetModal, setShowPresetModal] = useState(false);
@@ -130,10 +132,58 @@ const DataSettings: React.FC<Props> = ({
     toast.success("Demo-Daten geladen!");
   };
 
+  // Card komplett ausblenden wenn simpleMode aktiv und kein Hausmasta-Modus
+  const hasVisibleContent = expertMode || !safeUserData.simpleMode;
+  if (!hasVisibleContent) return null;
+
   return (
     <>
       <Card className="p-5 space-y-4">
-        {/* Collapsible Work Model Section */}
+        {/* Nur Aufzeichnung Toggle — nur im Hausmasta-Modus */}
+        {expertMode && (
+          <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">
+            <div className="flex items-center gap-3">
+              {safeUserData.simpleMode
+                ? <ClipboardList size={20} className="text-emerald-500" />
+                : <Calculator size={20} className="text-blue-500" />
+              }
+              <div>
+                <div className="font-bold text-sm text-zinc-800 dark:text-white">
+                  Nur Aufzeichnung
+                </div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                  {safeUserData.simpleMode ? "Keine Soll/Ist-Berechnung" : "Soll, Saldo & Überstunden aktiv"}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              aria-label="Erfassungsmodus umschalten"
+              onClick={() => {
+                Haptics.impact({ style: ImpactStyle.Light });
+                const newSimple = !safeUserData.simpleMode;
+                setUserData((prev: UserData) => ({
+                  ...prev,
+                  simpleMode: newSimple,
+                  workDays: newSimple ? [0, 0, 0, 0, 0, 0, 0] : (prev.workDays?.some((d: number) => d > 0) ? prev.workDays : WORK_MODELS[0].days),
+                }));
+                toast.success(newSimple ? "Nur Aufzeichnung aktiviert" : "Soll/Ist-Berechnung aktiviert");
+              }}
+              className={`relative w-12 h-7 rounded-full transition-colors duration-200 shrink-0 ${
+                safeUserData.simpleMode ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-600"
+              }`}
+            >
+              <div
+                className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                  safeUserData.simpleMode ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+        )}
+
+        {/* Collapsible Work Model Section — ausgeblendet wenn simpleMode aktiv */}
+        {!safeUserData.simpleMode && (
         <div className="space-y-3">
           {/* Collapsible Header */}
           <div
@@ -266,76 +316,85 @@ const DataSettings: React.FC<Props> = ({
             </div>
           )}
         </div>
+        )}
 
-        {/* Divider */}
-        <div className="border-t border-zinc-100 dark:border-zinc-700" />
+        {/* Divider — nur wenn es Expert-Content darunter gibt */}
+        {expertMode && !safeUserData.simpleMode && (
+          <div className="border-t border-zinc-100 dark:border-zinc-700" />
+        )}
 
-        {/* Minütige Zeiteingabe */}
-        <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-          <div className="flex items-center gap-3">
-            <div className="text-xl">⏱️</div>
-            <div>
-              <div className="font-medium text-zinc-700 dark:text-white">
-                Minütige Zeiteingabe
-              </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                {userData?.minuteInput ? "1-Minuten-Modus" : "15-Minuten-Schritte"}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() =>
-              setUserData((p: UserData) => ({ ...p, minuteInput: !p?.minuteInput }))
-            }
-            className={`relative w-12 h-7 rounded-full transition-colors duration-200 shrink-0 ${
-              userData?.minuteInput
-                ? "bg-emerald-500"
-                : "bg-zinc-300 dark:bg-zinc-600"
-            }`}
-          >
-            <div
-              className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                userData?.minuteInput ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
-          </button>
-        </div>
-
-        {/* Tätigkeitscodes */}
-        <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-          <div className="flex items-center justify-between mb-2">
+        {/* Minütige Zeiteingabe — nur im Hausmasta-Modus */}
+        {expertMode && (
+          <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
             <div className="flex items-center gap-3">
-              <ListChecks size={18} className="text-sky-500" />
+              <div className="text-xl">⏱️</div>
               <div>
                 <div className="font-medium text-zinc-700 dark:text-white">
-                  Tätigkeitscodes
+                  Minütige Zeiteingabe
                 </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Presets für deine Branche laden
+                  {userData?.minuteInput ? "1-Minuten-Modus" : "15-Minuten-Schritte"}
                 </p>
               </div>
             </div>
             <button
-              onClick={() => {
-                Haptics.impact({ style: ImpactStyle.Light });
-                setShowWorkCodeManager(true);
-              }}
-              className="px-4 py-2 bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-300 font-medium rounded-lg hover:bg-sky-200 dark:hover:bg-sky-900/40 transition-colors flex items-center gap-2"
+              onClick={() =>
+                setUserData((p: UserData) => ({ ...p, minuteInput: !p?.minuteInput }))
+              }
+              className={`relative w-12 h-7 rounded-full transition-colors duration-200 shrink-0 ${
+                userData?.minuteInput
+                  ? "bg-emerald-500"
+                  : "bg-zinc-300 dark:bg-zinc-600"
+              }`}
             >
-              <ListChecks size={16} /> Verwalten
+              <div
+                className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                  userData?.minuteInput ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
             </button>
           </div>
-        </div>
+        )}
 
-        {/* Discrete Demo-Daten Button */}
-        <div className="text-center pt-2">
-          <button
-            onClick={handleLoadDemoData}
-            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 font-medium transition-colors"
-          >
-            Demo-Daten laden
-          </button>
-        </div>
+        {/* Tätigkeitscodes — nur im Hausmasta-Modus */}
+        {expertMode && (
+          <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <ListChecks size={18} className="text-sky-500" />
+                <div>
+                  <div className="font-medium text-zinc-700 dark:text-white">
+                    Tätigkeitscodes
+                  </div>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Presets für deine Branche laden
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  Haptics.impact({ style: ImpactStyle.Light });
+                  setShowWorkCodeManager(true);
+                }}
+                className="px-4 py-2 bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-300 font-medium rounded-lg hover:bg-sky-200 dark:hover:bg-sky-900/40 transition-colors flex items-center gap-2"
+              >
+                <ListChecks size={16} /> Verwalten
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Discrete Demo-Daten Button — nur im Hausmasta-Modus */}
+        {expertMode && (
+          <div className="text-center pt-2">
+            <button
+              onClick={handleLoadDemoData}
+              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 font-medium transition-colors"
+            >
+              Demo-Daten laden
+            </button>
+          </div>
+        )}
       </Card>
 
       {/* Modals */}

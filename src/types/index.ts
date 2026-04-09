@@ -44,6 +44,7 @@ export interface UserData {
   photo: string | null;
   workDays: number[];       // 7 elements, index 0=Sunday, values in minutes
   simpleMode?: boolean;     // nur Aufzeichnung, keine Soll/Ist-Berechnung
+  expertMode?: boolean;     // Hausmasta-Modus: erweiterte Einstellungen sichtbar
 }
 
 // ─── Timer State ─────────────────────────────────────────────

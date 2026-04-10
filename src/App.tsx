@@ -47,7 +47,7 @@ export default function App() {
   const form = useFormState({ getDefaultCode });
   const { timerState, autoCheckoutData, clearAutoCheckout, startTimer, pauseTimer, resumeTimer, stopTimer } = useLiveTimer();
 
-  useAutoBackup(entries, userData, autoBackup);
+  const { triggerManualBackup } = useAutoBackup(entries, userData, autoBackup);
   const { lastRun: pdfArchiveLastRun, lastError: pdfArchiveLastError, performRun: pdfArchivePerformRun } =
     useAutoPdfArchive(entries, userData, workCodes);
 
@@ -202,6 +202,7 @@ export default function App() {
         setTheme={setTheme}
         autoBackup={autoBackup}
         setAutoBackup={setAutoBackup}
+        onTriggerManualBackup={triggerManualBackup}
         onExport={exportData}
         onImport={() => fileInputRef.current?.click()}
         onDeleteAll={handleRequestDeleteAll}

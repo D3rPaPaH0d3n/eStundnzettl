@@ -43,8 +43,11 @@ export const STORAGE_KEYS = {
   ATTACHMENTS: "estundnzettl_attachments",
   ATTACHMENT_LABELS: "estundnzettl_attachment_labels",
   BACKUP_FAIL_COUNT: "estundnzettl_backup_fail_count",
+  BACKUP_LAST_ERROR: "estundnzettl_backup_last_error",
+  BACKUP_BACKOFF_UNTIL: "estundnzettl_backup_backoff_until",
   NEXTCLOUD_BACKUP_FAIL_COUNT: "estundnzettl_nextcloud_backup_fail_count",
   NEXTCLOUD_BACKUP_LAST_ERROR: "estundnzettl_nextcloud_backup_last_error",
+  NEXTCLOUD_BACKOFF_UNTIL: "estundnzettl_nextcloud_backoff_until",
 
   // Nextcloud Backup
   NEXTCLOUD_ENABLED: "estundnzettl_nextcloud_enabled",

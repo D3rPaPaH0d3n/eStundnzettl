@@ -25,6 +25,7 @@ interface Props {
   setTheme: (theme: Theme) => void;
   autoBackup: boolean;
   setAutoBackup: (enabled: boolean) => void;
+  onTriggerManualBackup?: () => Promise<void> | void;
   entries?: Entry[];
   lastBackup?: string | null;
   importEntries: (entries: Entry[]) => void;
@@ -55,6 +56,7 @@ const Settings: React.FC<Props> = ({
   setTheme,
   autoBackup,
   setAutoBackup,
+  onTriggerManualBackup,
   entries = [],
   lastBackup = null,
   importEntries,
@@ -291,6 +293,7 @@ const Settings: React.FC<Props> = ({
         setAutoBackup={setAutoBackup}
         onExport={onExport}
         onFileImport={handleFileImportFromFile}
+        onTriggerManualBackup={onTriggerManualBackup}
         // Nextcloud State
         nextcloudEnabled={nextcloudEnabled}
         nextcloudUrl={nextcloudUrl}

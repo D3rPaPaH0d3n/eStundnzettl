@@ -52,6 +52,7 @@ interface ViewRouterProps {
   setTheme: (t: string) => void;
   autoBackup: boolean;
   setAutoBackup: (b: boolean) => void;
+  onTriggerManualBackup: () => Promise<void> | void;
   onExport: () => void;
   onImport: () => void;
   onDeleteAll: () => void;
@@ -99,7 +100,7 @@ export default function ViewRouter(props: ViewRouterProps) {
     userData, workCodes,
     form, handleSaveEntry, setView,
     lastWorkEntry, uniqueProjects, entries,
-    theme, setTheme, autoBackup, setAutoBackup,
+    theme, setTheme, autoBackup, setAutoBackup, onTriggerManualBackup,
     onExport, onImport, onDeleteAll, onCheckUpdate,
     importEntries, loadWorkCodes, setUserData,
     nextcloudEnabled, nextcloudUrl, nextcloudUser, nextcloudPass,
@@ -179,6 +180,7 @@ export default function ViewRouter(props: ViewRouterProps) {
                   setTheme={setTheme}
                   autoBackup={autoBackup}
                   setAutoBackup={setAutoBackup}
+                  onTriggerManualBackup={onTriggerManualBackup}
                   onExport={onExport}
                   onImport={onImport}
                   onDeleteAll={onDeleteAll}

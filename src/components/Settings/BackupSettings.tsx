@@ -55,6 +55,7 @@ interface Props {
   setNextcloudUser: (user: string) => void;
   setNextcloudPass: (pass: string) => void;
   expertMode?: boolean;
+  onTriggerManualBackup?: () => Promise<void> | void;
 }
 
 const BackupSettings: React.FC<Props> = ({
@@ -72,6 +73,7 @@ const BackupSettings: React.FC<Props> = ({
   setNextcloudUser,
   setNextcloudPass,
   expertMode = false,
+  onTriggerManualBackup,
 }) => {
   const importInputRef = useRef<HTMLInputElement>(null);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
@@ -83,6 +85,8 @@ const BackupSettings: React.FC<Props> = ({
   const [googleAccountLabel, setGoogleAccountLabel] = useState("");
   const [nextcloudBackupFailCount, setNextcloudBackupFailCount] = useState(0);
   const [nextcloudBackupLastError, setNextcloudBackupLastError] = useState("");
+  const [backupLastError, setBackupLastError] = useState("");
+  const [isRetryingBackup, setIsRetryingBackup] = useState(false);
 
   // Nextcloud UI State (local UI state, persisted via props)
   const [ncExpanded, setNcExpanded] = useState(false);
@@ -183,6 +187,7 @@ const BackupSettings: React.FC<Props> = ({
 
     const failCount = parseInt(localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT) || "0", 10);
     setBackupFailCount(failCount);
+    setBackupLastError(localStorage.getItem(STORAGE_KEYS.BACKUP_LAST_ERROR) || "");
     setNextcloudBackupFailCount(parseInt(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT) || "0", 10));
     setNextcloudBackupLastError(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR) || "");
 
@@ -850,24 +855,74 @@ const BackupSettings: React.FC<Props> = ({
 
         {/* Warning for failed backups */}
         {isCloudConnected && (!isTokenValid || backupFailCount >= 3) && (
-          <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
-            <AlertTriangle size={18} className="text-amber-500 flex-shrink-0" />
-            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-              {isTokenValid
-                ? "⚠️ Letzte Backups fehlgeschlagen. Bitte Google Drive Verbindung prüfen."
-                : "⚠️ Google Drive muss neu verbunden werden, bevor wieder gesichert werden kann."}
-            </span>
+          <div className="flex flex-col gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
+              <div className="flex flex-col gap-1 min-w-0">
+                <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                  {isTokenValid
+                    ? "⚠️ Letzte Backups fehlgeschlagen. Bitte Google Drive Verbindung prüfen."
+                    : "⚠️ Google Drive muss neu verbunden werden, bevor wieder gesichert werden kann."}
+                </span>
+                {backupLastError && (
+                  <span className="text-[11px] text-amber-600 dark:text-amber-400 break-words">
+                    {backupLastError}
+                  </span>
+                )}
+              </div>
+            </div>
+            {isTokenValid && onTriggerManualBackup && (
+              <button
+                type="button"
+                disabled={isRetryingBackup}
+                onClick={async () => {
+                  setIsRetryingBackup(true);
+                  try {
+                    await onTriggerManualBackup();
+                    // Nach dem Retry Fail-Count/Error aus localStorage neu einlesen
+                    setBackupFailCount(parseInt(localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT) || "0", 10));
+                    setBackupLastError(localStorage.getItem(STORAGE_KEYS.BACKUP_LAST_ERROR) || "");
+                  } finally {
+                    setIsRetryingBackup(false);
+                  }
+                }}
+                className="self-start px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-bold rounded-md transition-colors"
+              >
+                {isRetryingBackup ? "Wird versucht…" : "Jetzt erneut versuchen"}
+              </button>
+            )}
           </div>
         )}
 
         {nextcloudEnabled && nextcloudBackupFailCount > 0 && (
-          <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
-            <AlertTriangle size={18} className="text-amber-500 flex-shrink-0" />
-            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-              {nextcloudBackupLastError
-                ? `Nextcloud-Backup fehlgeschlagen: ${nextcloudBackupLastError}`
-                : "Letzte Nextcloud-Backups sind fehlgeschlagen. Bitte Verbindung prüfen."}
-            </span>
+          <div className="flex flex-col gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
+              <span className="text-xs font-medium text-amber-700 dark:text-amber-300 break-words">
+                {nextcloudBackupLastError
+                  ? `Nextcloud-Backup fehlgeschlagen: ${nextcloudBackupLastError}`
+                  : "Letzte Nextcloud-Backups sind fehlgeschlagen. Bitte Verbindung prüfen."}
+              </span>
+            </div>
+            {onTriggerManualBackup && nextcloudBackupFailCount >= 3 && (
+              <button
+                type="button"
+                disabled={isRetryingBackup}
+                onClick={async () => {
+                  setIsRetryingBackup(true);
+                  try {
+                    await onTriggerManualBackup();
+                    setNextcloudBackupFailCount(parseInt(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT) || "0", 10));
+                    setNextcloudBackupLastError(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR) || "");
+                  } finally {
+                    setIsRetryingBackup(false);
+                  }
+                }}
+                className="self-start px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-bold rounded-md transition-colors"
+              >
+                {isRetryingBackup ? "Wird versucht…" : "Jetzt erneut versuchen"}
+              </button>
+            )}
           </div>
         )}
 

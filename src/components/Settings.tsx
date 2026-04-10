@@ -3,6 +3,7 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import ProfileSettings from "./Settings/ProfileSettings";
 import DataSettings from "./Settings/DataSettings";
 import ThemeSettings from "./Settings/ThemeSettings";
+import LocaleSettings from "./Settings/LocaleSettings";
 import BackupSettings from "./Settings/BackupSettings";
 import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
@@ -84,7 +85,7 @@ const Settings: React.FC<Props> = ({
   pdfArchivePerformRun,
   // Locale
   locale,
-  setLocale: _setLocale, // wird im folgenden Schritt im Locale-Dropdown gebunden
+  setLocale,
 }) => {
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -293,6 +294,9 @@ const Settings: React.FC<Props> = ({
 
       {/* 3. Theme Settings */}
       <ThemeSettings theme={theme} setTheme={setTheme} />
+
+      {/* 3b. Stundenberechnung / Locale */}
+      <LocaleSettings locale={locale} setLocale={setLocale} />
 
       {/* 4. Backup Settings */}
       <BackupSettings

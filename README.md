@@ -186,6 +186,32 @@ Die vollständige Versionshistorie findest du in der App unter **Einstellungen �
 
 ---
 
+## 📄 Lizenz
+
+Der Quellcode dieses Projekts steht unter der **[MIT-Lizenz](./LICENSE)**.
+
+Du darfst den Code verwenden, kopieren, ändern und weiterverbreiten — solange der Copyright-Vermerk `Copyright (c) 2024-2026 Markus Kainer` und der Lizenztext enthalten bleiben. Kurz gesagt: **Wer den Code nutzt, muss mich erwähnen.** ✌️
+
+---
+
+## ™️ Name & Logo
+
+Die MIT-Lizenz deckt **nur den Quellcode** ab. Der Name **"eStundnzettl"**, das App-Logo, das visuelle Erscheinungsbild und die Screenshots sind **nicht** Teil der Open-Source-Lizenz und bleiben geschützt.
+
+👉 Details dazu in der [**TRADEMARK.md**](./TRADEMARK.md).
+
+Kurzversion: Forks bitte gerne — aber unter eigenem Namen und mit eigenem Logo. 🙏
+
+---
+
+## 📬 Kontakt
+
+Fragen, Lizenzanfragen, Markenrechts-Themen oder Bug-Reports?
+
+**[project@kainer.co.at](mailto:project@kainer.co.at)**
+
+---
+
 <p align="center">
   <strong>Ausgetüftelt 💭 von Markus 👨 — und mit Herz ❤️, Hirn 🧠 und KI-Agenten 🤖 gebaut.</strong><br />
   <br />

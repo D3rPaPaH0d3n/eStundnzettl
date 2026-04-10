@@ -3,6 +3,21 @@
   "private": true,
   "version": "4.0.0",
   "type": "module",
+  "description": "Elektronischer Stundenzettel — smarte Zeiterfassung aus der Steiermark (Ionic/Capacitor App).",
+  "license": "MIT",
+  "author": {
+    "name": "Markus Kainer",
+    "email": "project@kainer.co.at",
+    "url": "https://d3rpapah0d3n.github.io/eStundnzettl/"
+  },
+  "homepage": "https://d3rpapah0d3n.github.io/eStundnzettl/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/D3rPaPaH0d3n/eStundnzettl.git"
+  },
+  "bugs": {
+    "url": "https://github.com/D3rPaPaH0d3n/eStundnzettl/issues"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

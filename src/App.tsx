@@ -132,6 +132,7 @@ export default function App() {
             setCloudSyncEnabled={setAutoBackup}
             setLocalBackupEnabled={() => {}}
             setTheme={setTheme}
+            setLocale={setLocale}
           />
         </Suspense>
       )}

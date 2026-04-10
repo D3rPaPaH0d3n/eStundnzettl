@@ -12,6 +12,9 @@ import {
   Globe,
   Code2,
   Coffee,
+  FileText,
+  Scale,
+  Mail,
 } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Browser } from "@capacitor/browser";
@@ -70,6 +73,16 @@ const AppInfoSettings: React.FC<Props> = ({
     } catch (err) {
       logger.error("[AppInfoSettings] Link konnte nicht geöffnet werden:", err);
       toast.error("Link konnte nicht geöffnet werden");
+    }
+  };
+
+  const openMailto = (email: string) => {
+    Haptics.impact({ style: ImpactStyle.Light });
+    try {
+      window.location.href = `mailto:${email}`;
+    } catch (err) {
+      logger.error("[AppInfoSettings] Mail-App konnte nicht geöffnet werden:", err);
+      toast.error("Mail-App konnte nicht geöffnet werden");
     }
   };
 
@@ -144,6 +157,27 @@ const AppInfoSettings: React.FC<Props> = ({
           className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
         >
           <Code2 size={18} /> Quellcode auf GitHub
+        </button>
+
+        <button
+          onClick={() => openExternalLink("https://d3rpapah0d3n.github.io/eStundnzettl/impressum.html")}
+          className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
+        >
+          <FileText size={18} /> Impressum
+        </button>
+
+        <button
+          onClick={() => openExternalLink("https://github.com/D3rPaPaH0d3n/eStundnzettl/blob/main/LICENSE")}
+          className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
+        >
+          <Scale size={18} /> Lizenz & Markenrechte
+        </button>
+
+        <button
+          onClick={() => openMailto("project@kainer.co.at")}
+          className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
+        >
+          <Mail size={18} /> Kontakt
         </button>
 
         <button

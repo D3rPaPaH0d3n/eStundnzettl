@@ -159,26 +159,32 @@ const AppInfoSettings: React.FC<Props> = ({
           <Code2 size={18} /> Quellcode auf GitHub
         </button>
 
-        <button
-          onClick={() => openExternalLink("https://d3rpapah0d3n.github.io/eStundnzettl/impressum.html")}
-          className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
-        >
-          <FileText size={18} /> Impressum
-        </button>
+        {/* Rechtliches & Kontakt — kompakter 3-Spalten-Grid */}
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          <button
+            onClick={() => openExternalLink("https://d3rpapah0d3n.github.io/eStundnzettl/impressum.html")}
+            className="py-2 px-1 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
+          >
+            <FileText size={16} />
+            <span>Impressum</span>
+          </button>
 
-        <button
-          onClick={() => openExternalLink("https://github.com/D3rPaPaH0d3n/eStundnzettl/blob/main/LICENSE")}
-          className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
-        >
-          <Scale size={18} /> Lizenz & Markenrechte
-        </button>
+          <button
+            onClick={() => openExternalLink("https://github.com/D3rPaPaH0d3n/eStundnzettl/blob/main/LICENSE")}
+            className="py-2 px-1 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
+          >
+            <Scale size={16} />
+            <span>Lizenz</span>
+          </button>
 
-        <button
-          onClick={() => openMailto("project@kainer.co.at")}
-          className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
-        >
-          <Mail size={18} /> Kontakt
-        </button>
+          <button
+            onClick={() => openMailto("project@kainer.co.at")}
+            className="py-2 px-1 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
+          >
+            <Mail size={16} />
+            <span>Kontakt</span>
+          </button>
+        </div>
 
         <button
           onClick={() => openExternalLink("https://revolut.me/mkainer/pocket/QAt1Q0Ntsb")}

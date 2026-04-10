@@ -11,6 +11,7 @@ import {
   Shield,
   Globe,
   Code2,
+  Coffee,
 } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Browser } from "@capacitor/browser";
@@ -143,6 +144,13 @@ const AppInfoSettings: React.FC<Props> = ({
           className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
         >
           <Code2 size={18} /> Quellcode auf GitHub
+        </button>
+
+        <button
+          onClick={() => openExternalLink("https://revolut.me/mkainer/pocket/HpwaG0mwAw")}
+          className="w-full py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors border border-amber-200 dark:border-amber-800"
+        >
+          <Coffee size={18} /> A Scherzl spendier'n
         </button>
       </Card>
 

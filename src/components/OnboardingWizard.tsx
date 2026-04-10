@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ShieldCheck, ChevronRight, Check, Upload, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, ServerCog, CheckCircle2, FileText, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import WelcomeStep from "./Onboarding/steps/WelcomeStep";
@@ -579,12 +579,6 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
      return current === target;
   };
 
-  const isCustomModelActive = useMemo(() => {
-      const isStandard = WORK_MODELS.some(m => m.id !== 'custom' && JSON.stringify(m.days) === JSON.stringify(formData.workDays));
-      return !isStandard; 
-  }, [formData.workDays]);
-
-
   return (
     <div className="fixed inset-0 bg-zinc-50 dark:bg-zinc-950 z-50 flex flex-col items-center justify-center p-4">
       
@@ -637,7 +631,6 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                 onModelSelect={handleModelSelect}
                 onCustomDayChange={handleCustomDayChange}
                 isSelected={isSelected}
-                isCustomModelActive={isCustomModelActive}
                 totalWeeklyMinutes={totalWeeklyMinutes}
                 minToHours={minToHours}
                 onMinuteInputToggle={handleMinuteInputToggle}

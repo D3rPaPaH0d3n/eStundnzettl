@@ -6,12 +6,18 @@ import { WORK_MODELS } from "../../../hooks/constants";
 import type { WorkModel } from "../../../types";
 
 /**
- * Onboarding-Schritt 2: Arbeitszeit-Modell auswählen.
+ * Onboarding-Schritt 3: Arbeitszeit einstellen.
  *
  * - Mode-Auswahl: "Nur Aufzeichnung" (simpleMode) oder "Soll/Ist-Berechnung"
- * - Liste der vordefinierten Modelle (38,5 h, 40 h, 4-Tage-Woche ...)
- * - Falls der User ein eigenes Modell einstellt (isCustomModelActive),
- *   erscheinen Slider für die Tages-Arbeitszeiten (So ... Sa).
+ * - Benutzerdefinierte Tages-Slider stehen IMMER an erster Stelle und
+ *   sind der aktive Modus — der User kann seine Stunden sofort selbst
+ *   einstellen. Die Vorbelegung kommt aus `locale.defaultWorkDays`
+ *   (im OnboardingWizard beim Verlassen des Locale-Steps gesetzt).
+ * - Darunter steht eine optionale Liste der vordefinierten Modelle
+ *   (38,5 h, 40 h, 4-Tage-Woche ...), mit denen der User auf Wunsch
+ *   ein Preset als Ausgangswert einspielen kann. Der "Benutzerdefiniert"-
+ *   Eintrag aus WORK_MODELS wird hier ausgeblendet, weil die Slider
+ *   bereits die aktive Custom-Ansicht sind.
  * - Zusätzlich der "Minütige Zeiteingabe"-Toggle.
  */
 
@@ -32,7 +38,6 @@ interface Props {
   onModelSelect: (model: WorkModel) => void;
   onCustomDayChange: (dayIndex: number, value: string) => void;
   isSelected: (days: number[] | undefined) => boolean;
-  isCustomModelActive: boolean;
   totalWeeklyMinutes: number;
   minToHours: (m: number) => string;
   onMinuteInputToggle: () => void;
@@ -44,13 +49,15 @@ const WorkScheduleStep: React.FC<Props> = ({
   onModelSelect,
   onCustomDayChange,
   isSelected,
-  isCustomModelActive,
   totalWeeklyMinutes,
   minToHours,
   onMinuteInputToggle,
   onSimpleModeToggle,
 }) => {
   const simpleMode = !!formData.simpleMode;
+  // Presets für die optionale Liste unterhalb der Slider — ohne den
+  // 'custom'-Entry, denn die Slider SIND bereits die aktive Custom-Ansicht.
+  const selectablePresets = WORK_MODELS.filter((m) => m.id !== "custom");
 
   return (
     <motion.div
@@ -112,77 +119,88 @@ const WorkScheduleStep: React.FC<Props> = ({
           <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40">
             <Info size={14} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-              Wähl einfach das Modell, das am besten passt. Kannst du später in den
-              Einstellungen jederzeit ändern — auch tageweise individuell.
+              Stell deine Stunden pro Tag direkt ein. Unten findest du optionale
+              Presets, die du bei Bedarf übernehmen kannst — später in den
+              Einstellungen ebenfalls jederzeit änderbar.
             </p>
           </div>
 
-      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-        {WORK_MODELS.map((model) => (
-          <button
-            key={model.id}
-            type="button"
-            onClick={() => onModelSelect(model)}
-            className={`w-full p-4 rounded-xl border-2 text-left transition-all relative ${
-              isSelected(model.days)
-                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                : "border-zinc-200 dark:border-zinc-700 hover:border-blue-300"
-            }`}
-          >
-            <div className="font-bold text-zinc-800 dark:text-white">{model.label}</div>
-            <div className="text-sm text-zinc-500 dark:text-zinc-400">{model.description}</div>
-            {isSelected(model.days) && (
-              <div className="absolute top-4 right-4 text-blue-500">
-                <Check size={20} />
-              </div>
-            )}
-          </button>
-        ))}
-
-        {isCustomModelActive && (
-          <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700 space-y-4 animate-in fade-in slide-in-from-top-2">
-            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase mb-3">
-                Tagesstunden anpassen
-              </h3>
-              <div className="space-y-3">
-                {["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"].map((dayName, idx) => (
-                  <div key={idx} className="flex items-center gap-3">
-                    <span
-                      className={`text-xs font-bold w-6 ${
-                        idx === 0 || idx === 6 ? "text-red-400" : "text-zinc-500"
-                      }`}
-                    >
-                      {dayName}
-                    </span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="720"
-                      step="15"
-                      value={formData.workDays[idx]}
-                      onChange={(e) => onCustomDayChange(idx, e.target.value)}
-                      className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                    />
-                    <span className="text-xs font-mono font-bold w-12 text-right">
-                      {minToHours(formData.workDays[idx])}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 flex justify-between items-center">
-                <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
-                  Wochenstunden:
-                </span>
-                <span className="text-lg font-bold text-emerald-500">
-                  {minToHours(totalWeeklyMinutes)}
-                </span>
-              </div>
+          {/* 1. Immer aktiv: benutzerdefinierte Slider */}
+          <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">
+            <h3 className="text-xs font-bold text-zinc-400 uppercase mb-3">
+              Tagesstunden (benutzerdefiniert)
+            </h3>
+            <div className="space-y-3">
+              {["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"].map((dayName, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <span
+                    className={`text-xs font-bold w-6 ${
+                      idx === 0 || idx === 6 ? "text-red-400" : "text-zinc-500"
+                    }`}
+                  >
+                    {dayName}
+                  </span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="720"
+                    step="15"
+                    value={formData.workDays[idx]}
+                    onChange={(e) => onCustomDayChange(idx, e.target.value)}
+                    className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  />
+                  <span className="text-xs font-mono font-bold w-12 text-right">
+                    {minToHours(formData.workDays[idx])}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 flex justify-between items-center">
+              <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
+                Wochenstunden:
+              </span>
+              <span className="text-lg font-bold text-emerald-500">
+                {minToHours(totalWeeklyMinutes)}
+              </span>
             </div>
           </div>
-        )}
-      </div>
-      </>
+
+          {/* 2. Optionale Presets (überschreiben die Slider bei Klick) */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold text-zinc-400 uppercase px-1">
+              Presets (optional übernehmen)
+            </h3>
+            <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+              {selectablePresets.map((model) => {
+                const selected = isSelected(model.days);
+                return (
+                  <button
+                    key={model.id}
+                    type="button"
+                    onClick={() => onModelSelect(model)}
+                    className={`w-full p-3 rounded-xl border-2 text-left transition-all relative ${
+                      selected
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                        : "border-zinc-200 dark:border-zinc-700 hover:border-blue-300"
+                    }`}
+                  >
+                    <div className="font-bold text-sm text-zinc-800 dark:text-white">
+                      {model.label}
+                    </div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                      {model.description}
+                    </div>
+                    {selected && (
+                      <div className="absolute top-3 right-3 text-blue-500">
+                        <Check size={18} />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Minütige Zeiteingabe Toggle */}

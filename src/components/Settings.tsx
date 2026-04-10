@@ -295,8 +295,10 @@ const Settings: React.FC<Props> = ({
       {/* 3. Theme Settings */}
       <ThemeSettings theme={theme} setTheme={setTheme} />
 
-      {/* 3b. Stundenberechnung / Locale */}
-      <LocaleSettings locale={locale} setLocale={setLocale} />
+      {/* 3b. Stundenberechnung / Locale — nur im Hausmasta-Modus */}
+      {(userData?.expertMode ?? false) && (
+        <LocaleSettings locale={locale} setLocale={setLocale} />
+      )}
 
       {/* 4. Backup Settings */}
       <BackupSettings

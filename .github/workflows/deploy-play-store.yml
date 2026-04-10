@@ -66,8 +66,13 @@ jobs:
           ref: ${{ github.ref }}  # Explizit Branch auschecken (nicht detached HEAD)
 
       - name: Pull latest changes
+        id: git_info
         run: |
           git pull origin "${{ github.ref_name }}" --ff-only
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          SUBJECT=$(git log -1 --format='%s')
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "subject=$SUBJECT" >> $GITHUB_OUTPUT
           echo "📌 HEAD ist jetzt: $(git log --oneline -1)"
 
       # ── 2. Node.js Setup + Dependencies ──────────────────────────────
@@ -345,9 +350,9 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            MSG="✅ *eStundnzettl Deploy erfolgreich*%0A%0AVersion: v${{ steps.bump.outputs.new_name }} (Code ${{ steps.bump.outputs.new_code }})%0ATrack: Internal Testing%0AStatus: Hochgeladen und verifiziert%0A%0A⏳ Download in ca. 10-30 Min im Play Store verfügbar."
+            MSG="✅ *eStundnzettl Deploy erfolgreich*%0A%0AVersion: v${{ steps.bump.outputs.new_name }} (Code ${{ steps.bump.outputs.new_code }})%0ACommit: \`${{ steps.git_info.outputs.short_sha }}\` — ${{ steps.git_info.outputs.subject }}%0ATrack: Internal Testing%0AStatus: Hochgeladen und verifiziert%0A%0A⏳ Download in ca. 10-30 Min im Play Store verfügbar."
           else
-            MSG="❌ *eStundnzettl Deploy fehlgeschlagen*%0A%0AVersion: v${{ steps.bump.outputs.new_name || 'unbekannt' }}%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            MSG="❌ *eStundnzettl Deploy fehlgeschlagen*%0A%0AVersion: v${{ steps.bump.outputs.new_name || 'unbekannt' }}%0ACommit: \`${{ steps.git_info.outputs.short_sha || 'unbekannt' }}\`%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \

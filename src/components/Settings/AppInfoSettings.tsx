@@ -8,8 +8,12 @@ import {
   Wrench,
   Calculator,
   FlaskConical,
+  Shield,
+  Globe,
+  Code2,
 } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { Browser } from "@capacitor/browser";
 import toast from "react-hot-toast";
 import { Card } from "../../utils";
 import { APP_VERSION } from "../../hooks/constants";
@@ -52,6 +56,16 @@ const AppInfoSettings: React.FC<Props> = ({
     } catch (err) {
       logger.error("[AppInfoSettings] Neuberechnung fehlgeschlagen:", err);
       toast.error("Fehler bei der Neuberechnung");
+    }
+  };
+
+  const openExternalLink = async (url: string) => {
+    Haptics.impact({ style: ImpactStyle.Light });
+    try {
+      await Browser.open({ url });
+    } catch (err) {
+      logger.error("[AppInfoSettings] Link konnte nicht geöffnet werden:", err);
+      toast.error("Link konnte nicht geöffnet werden");
     }
   };
 
@@ -98,6 +112,34 @@ const AppInfoSettings: React.FC<Props> = ({
           className="w-full py-3 border border-blue-100 dark:border-blue-900 text-blue-600 dark:text-blue-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
         >
           <History size={18} /> Änderungsprotokoll
+        </button>
+      </Card>
+
+      {/* Über — Links zu Datenschutz, Website, GitHub */}
+      <Card className="p-5 space-y-3">
+        <h3 className="font-bold text-zinc-700 dark:text-white">
+          Über
+        </h3>
+
+        <button
+          onClick={() => openExternalLink("https://d3rpapah0d3n.github.io/eStundnzettl/privacy.html")}
+          className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
+        >
+          <Shield size={18} /> Datenschutzerklärung
+        </button>
+
+        <button
+          onClick={() => openExternalLink("https://d3rpapah0d3n.github.io/eStundnzettl/")}
+          className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
+        >
+          <Globe size={18} /> Website
+        </button>
+
+        <button
+          onClick={() => openExternalLink("https://github.com/D3rPaPaH0d3n/eStundnzettl")}
+          className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
+        >
+          <Code2 size={18} /> Quellcode auf GitHub
         </button>
       </Card>
 

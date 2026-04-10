@@ -54,6 +54,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Pull latest changes
+        id: git_info
+        run: |
+          git pull origin "${{ github.ref_name }}" --ff-only
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          SUBJECT=$(git log -1 --format='%s')
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "subject=$SUBJECT" >> $GITHUB_OUTPUT
+          echo "📌 HEAD ist jetzt: $(git log --oneline -1)"
+
       # ── 2. Node.js Setup + Dependencies ──────────────────────────────
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -171,9 +181,9 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            MSG="🧪 *eStundnzettl Beta Deploy erfolgreich*%0A%0AVersion: v${{ steps.bump.outputs.new_name }} (Code ${{ steps.bump.outputs.new_code }})%0ATrack: Open Beta Testing%0A%0A⏳ Beta-Tester bekommen das Update in ca. 1-3h."
+            MSG="🧪 *eStundnzettl Beta Deploy erfolgreich*%0A%0AVersion: v${{ steps.bump.outputs.new_name }} (Code ${{ steps.bump.outputs.new_code }})%0ACommit: \`${{ steps.git_info.outputs.short_sha }}\` — ${{ steps.git_info.outputs.subject }}%0ATrack: Open Beta Testing%0A%0A⏳ Beta-Tester bekommen das Update in ca. 1-3h."
           else
-            MSG="❌ *eStundnzettl Beta Deploy fehlgeschlagen*%0A%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            MSG="❌ *eStundnzettl Beta Deploy fehlgeschlagen*%0A%0ACommit: \`${{ steps.git_info.outputs.short_sha || 'unbekannt' }}\`%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \

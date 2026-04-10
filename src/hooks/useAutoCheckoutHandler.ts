@@ -4,8 +4,25 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import type { AutoCheckoutData, FormState } from "../types";
 
 /**
- * Handles auto-checkout data from useLiveTimer.
- * When autoCheckoutData is set, populates the form and navigates to "add" view.
+ * useAutoCheckoutHandler — Konsument von `useLiveTimer.autoCheckoutData`.
+ *
+ * Wenn der Live-Timer einen Auto-Checkout erzeugt (weil der User die
+ * App über mehrere Tage mit laufendem Timer offen hatte), befüllt
+ * dieser Hook das Eingabe-Formular mit den Timer-Daten und navigiert
+ * zum "add"-View, damit der User die automatisch erfasste Zeit
+ * überprüfen und speichern kann.
+ *
+ * Löst ein Haptic-Feedback (Impact Heavy) als "Achtung — hier gibt's
+ * was zu prüfen"-Signal aus.
+ *
+ * @param autoCheckoutData — aus `useLiveTimer`. Wenn null, passiert
+ *                           nichts. Wenn gesetzt, wird das Formular
+ *                           befüllt.
+ * @param form — FormState aus `useFormState`
+ * @param setView — View-Setter aus `useAppState`
+ * @param clearAutoCheckout — muss nach dem Handling aufgerufen
+ *                             werden, um Endlos-Loop zu vermeiden
+ * @param getDefaultCode — aus `useLastCode`, liefert Default-Code-Id
  */
 export function useAutoCheckoutHandler({
   autoCheckoutData,

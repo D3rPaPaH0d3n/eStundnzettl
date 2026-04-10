@@ -49,6 +49,44 @@ function defaultUserData(): UserData {
 
 // ─── Hook ────────────────────────────────────────────────────
 
+/**
+ * useSettings — Zentrale App-Einstellungen mit Dual-Layer-Persistenz.
+ *
+ * Verwaltet alle persistierten User-Präferenzen in einem Hook:
+ * Profil (userData), Theme, Backup-Targets (Google Drive, lokaler
+ * Ordner, Nextcloud). Jede Änderung wird synchron in localStorage
+ * geschrieben und asynchron zusätzlich in SQLite (`settingsRepo`),
+ * mit Rollback bei SQLite-Fehler.
+ *
+ * ### Nextcloud-Sonderbehandlung
+ * Das Passwort wird vor dem Speichern mit `obfuscate()` (XOR +
+ * Base64) verschleiert — bewusst kein echtes Crypto, weil die App
+ * nur als Local-First-Tool für self-hosted Nextcloud gedacht ist
+ * und Nextcloud ohnehin App-Passwörter verwendet, die serverseitig
+ * widerrufbar sind. Legacy-Werte ohne Obfuskierung werden beim
+ * ersten Load synchron via `deobfuscateLegacySync()` migriert.
+ *
+ * ### Return
+ * Der Return enthält State + Setter für alle Settings. Für
+ * UI-Abwärtskompatibilität wird `cloudSyncEnabled` zusätzlich als
+ * `autoBackup`/`setAutoBackup` gemappt (die alte Settings-Komponente
+ * erwartet diesen Namen).
+ *
+ * - `userData` / `setUserData` — Profil (name, position, photo, workDays)
+ * - `theme` / `setTheme` — "system" | "dark" | "light"
+ * - `autoBackup` / `setAutoBackup` — Alias für cloudSyncEnabled
+ * - `cloudSyncEnabled` / `setCloudSyncEnabled` — Google-Drive-Auto-Sync
+ * - `localBackupEnabled` / `setLocalBackupEnabled` — lokaler Ordner
+ * - `nextcloudEnabled` / `setNextcloudEnabled` — Nextcloud an/aus
+ * - `nextcloudUrl` / `setNextcloudUrl` — WebDAV-URL
+ * - `nextcloudUser` / `setNextcloudUser` — Nextcloud-Username
+ * - `nextcloudPass` / `setNextcloudPass` — Klartext-Passwort (wird
+ *   intern obfuskiert gespeichert, entschlüsselt zurückgegeben)
+ *
+ * @remarks
+ * Dieser Hook wird in `App.tsx` genau einmal instanziiert. Andere
+ * Hooks/Komponenten erhalten die Werte als Props durchgereicht.
+ */
 export function useSettings() {
   // --- Initialer State: immer sofort aus localStorage (kein async-Warten) ---
   const [userData, setUserData] = useState<UserData>(() => loadUserDataFromLS() || defaultUserData());

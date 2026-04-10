@@ -8,10 +8,6 @@ import { exportToSelectedFolder, attachBackupChecksum } from "../utils/storageBa
 import { toLocalDateString } from "../utils";
 import { logger } from "../utils/logger";
 
-/**
- * useExport — kapselt die Export-Logik (Web-Download, Ordner-Export,
- * native Share). Der Import wurde in useImport extrahiert.
- */
 interface UseExportProps {
   entries: Entry[];
   userData: UserData;
@@ -20,6 +16,29 @@ interface UseExportProps {
   exportPayloadRef: MutableRefObject<BackupPayload | null>;
 }
 
+/**
+ * useExport — Kapselt die Export-Logik für Backup-JSON-Dateien.
+ *
+ * Unterstützt drei Export-Wege:
+ * 1. **Web-Download** — Browser blob download (für PWA/Dev)
+ * 2. **Ordner-Export** — Capacitor Filesystem schreibt in einen
+ *    vom User via SAF ausgewählten Ordner (für Android)
+ * 3. **Native Share** — Capacitor Share API öffnet das native
+ *    Share-Sheet mit der temporären Cache-Datei
+ *
+ * Der Payload wird in `buildPayload()` zusammengestellt
+ * (userData + entries + workCodes + attachments + checksum) und
+ * im übergebenen Ref `exportPayloadRef` zwischengespeichert, damit
+ * ExportModal ohne Re-Render darauf zugreifen kann.
+ *
+ * Der Import wurde in {@link useImport} extrahiert.
+ *
+ * @returns
+ * - `showExportModal` / `setShowExportModal` — Modal-Sichtbarkeit
+ * - `exportData()` — trigger für Export-Flow (Web oder Modal öffnen)
+ * - `handleExportToFolder()` — schreibt in SAF-Ordner
+ * - `handleExportShare()` — öffnet natives Share-Sheet
+ */
 export function useExport({ entries, userData, workCodes, attachments = [], exportPayloadRef }: UseExportProps) {
   const [showExportModal, setShowExportModal] = useState(false);
 

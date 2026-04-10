@@ -15,12 +15,25 @@ import { migrateAllToSQLite } from "../db/migrate-from-localstorage";
 import { logger } from "../utils/logger";
 
 /**
- * useEntries — Hook für CRUD auf Entries.
+ * useEntries — CRUD auf Zeiterfassungs-Einträgen.
  *
- * API für Consumer bleibt 100% identisch:
- *   { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries }
+ * Persistenz ist reine SQLite (`entriesRepo`) für die Android-App.
+ * Beim ersten Mount wird eine Legacy-Migration von localStorage
+ * (alte Version v1–v3) ausgeführt (`migrateAllToSQLite`), danach
+ * ist SQLite die einzige Quelle.
  *
- * Intern: SQLite-primär (reine Android-App).
+ * Alle Mutationen sind **optimistic** — der State wird sofort
+ * aktualisiert, und bei einem SQLite-Fehler wird zurückgerollt
+ * und ein Toast gezeigt.
+ *
+ * ### Return
+ * - `entries` — Liste aller Einträge
+ * - `addEntry(entry)` — legt neuen Eintrag an; falls `id` fehlt,
+ *   wird via `entryId.ts` eine generiert
+ * - `updateEntry(entry)` — ersetzt einen Eintrag (match by id)
+ * - `deleteEntry(id)` — entfernt einen Eintrag
+ * - `deleteAllEntries()` — löscht ALLE Einträge (für Reset/Delete-All)
+ * - `importEntries(newEntries)` — Bulk-Import beim JSON-Restore
  */
 export function useEntries() {
   const [entries, setEntries] = useState<Entry[]>([]);

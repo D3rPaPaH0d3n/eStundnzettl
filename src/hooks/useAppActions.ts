@@ -1,12 +1,24 @@
 /**
- * useAppActions — Thin Orchestrator über die themenspezifischen Action-Hooks.
+ * useAppActions — Thin Orchestrator über die themenspezifischen
+ * Action-Hooks in `src/hooks/actions/`.
  *
- * Welle 2: Die bisherige 479-Zeilen-"God-Hook"-Datei ist in fünf fokussierte
- * Sub-Hooks unter `src/hooks/actions/` zerlegt. Dieser Hook bleibt als
- * Orchestrator-Fassade erhalten, sodass App.jsx unverändert bleibt.
+ * Die ursprüngliche 479-Zeilen-"God-Hook"-Datei wurde in fünf
+ * fokussierte Sub-Hooks zerlegt:
+ * - `useTimerActions` — Live-Timer Start/Stop/Cancel
+ * - `useEntryActions` — Save/Edit (neuer Eintrag, Kopie aus Timer)
+ * - `useDeleteActions` — Single/Bulk Delete mit Bestätigung
+ * - `useOnboardingActions` — Wizard-Complete, Demo-Daten laden
+ * - `useMiscActions` — Update-Check, sonstige Callbacks
  *
- * Jeder Sub-Hook bekommt nur die Props, die er wirklich braucht — die
- * Gesamt-API an App.jsx ist identisch zum vorherigen Stand.
+ * Jeder Sub-Hook bekommt nur die Props, die er wirklich braucht.
+ * Die Gesamt-API an `App.tsx` ist identisch zum vorherigen Stand —
+ * dieser Hook ist reine Fassade.
+ *
+ * @returns
+ * Ein flaches Objekt mit allen Action-Callbacks aus den fünf
+ * Sub-Hooks (handleSaveEntry, handleDeleteEntry, handleStartLive,
+ * handleStopLive, handleOnboardingComplete, handleManualUpdateCheck,
+ * …)
  */
 
 import type { Entry, UserData, WorkCode, DeleteTarget, FormState } from '../types';

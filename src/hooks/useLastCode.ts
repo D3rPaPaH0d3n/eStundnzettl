@@ -5,8 +5,24 @@ import { getSetting } from "../db/repositories/settingsRepo";
 import type { WorkCode } from "../types";
 
 /**
- * Manages the "last used work code" persistence.
- * Returns a stable getDefaultCode callback.
+ * useLastCode — Liefert eine stabile `getDefaultCode()`-Callback,
+ * die den zuletzt vom User ausgewählten Work Code zurückgibt.
+ *
+ * Beim Mount wird der letzte Code aus localStorage
+ * (`STORAGE_KEYS.LAST_CODE`) gelesen, bei aktivem SQLite zusätzlich
+ * async aus der Settings-Tabelle (der SQLite-Wert überschreibt den
+ * localStorage-Wert wenn er existiert).
+ *
+ * Reihenfolge der Fallbacks in `getDefaultCode()`:
+ * 1. Der zuletzt verwendete Code (Ref)
+ * 2. Der erste WorkCode in der Liste (falls vorhanden)
+ * 3. `WORK_CODE.DEFAULT` (hardcoded Fallback)
+ *
+ * @param hasAnyCodes — ob der User überhaupt WorkCodes hat
+ * @param workCodes — aktuelle Liste aller WorkCodes (Fallback)
+ *
+ * @returns Stabile Callback-Funktion, die bei jedem Aufruf die
+ *          aktuelle Default-Code-Id zurückgibt.
  */
 export function useLastCode({
   hasAnyCodes,

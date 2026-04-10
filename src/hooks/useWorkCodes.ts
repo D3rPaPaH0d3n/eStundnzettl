@@ -19,9 +19,31 @@ import {
 } from "../db/repositories/workCodesRepo";
 
 /**
- * Hook für CRUD-Operationen auf Tätigkeitscodes
+ * useWorkCodes — Verwaltung der Tätigkeitscodes (Work Codes).
  *
- * @returns {Object} - workCodes, addCode, updateCode, deleteCode, loadPreset, etc.
+ * Work Codes sind vom User definierte Nummer-Label-Paare, die pro
+ * Arbeits-Eintrag ausgewählt werden können (z.B. `19` = "Fahrtzeit",
+ * `190` = "An/Abreise"). Es gibt Presets für bestimmte Branchen
+ * (Kogler Aufzugsbau, Allgemein), aber jeder User kann seine eigenen
+ * Codes anlegen.
+ *
+ * Persistenz: SQLite-primär (`workCodesRepo`) mit localStorage-Fallback
+ * für Init-Speed und Rollback bei SQLite-Fehler.
+ *
+ * ### Return
+ * - `workCodes` — sortierte Liste aller aktiven Codes
+ * - `isLoading` — true während des initialen SQLite-Loads
+ * - `hasAnyCodes` — false bei komplett leerer Liste (Onboarding-Check)
+ * - `addCode(label)` — erzeugt neuen Code mit nächster freier ID
+ * - `updateCode(id, label)` — benennt Code um
+ * - `deleteCode(id)` — entfernt Code (bestehende Entries bleiben,
+ *   zeigen nur keine Label-Zuordnung mehr)
+ * - `availablePresets` — Array aus `WORK_CODE_PRESETS`
+ * - `loadPreset(presetId)` — ersetzt alle Codes durch Preset
+ * - `mergePreset(presetId)` — fügt Preset-Codes zur bestehenden Liste
+ * - `clearAllCodes()` — entfernt alle Codes
+ * - `sortCodes()` — sortiert Codes nach ID (numerisch)
+ * - `loadWorkCodes()` — Re-Load aus DB (nach Import)
  */
 export const useWorkCodes = () => {
   const [workCodes, setWorkCodes] = useState<WorkCode[]>([]);

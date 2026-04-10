@@ -80,6 +80,42 @@ const fileToBase64 = (file: File): Promise<string> =>
  * - SQLite-Daten nachladen wenn verfügbar
  * - Schreiboperationen: SQLite + localStorage (Dual-Write)
  */
+/**
+ * useAttachments — Verwaltet Datei-Anhänge (PDF, Bilder) zu Einträgen.
+ *
+ * Anhänge werden in zwei Schichten gespeichert:
+ * - **Metadata** (id, entryId, label, fileName, mimeType, fileSize) →
+ *   SQLite (`attachmentsRepo`) mit localStorage-Fallback
+ * - **Dateiinhalte** → Capacitor Filesystem unter
+ *   `Directory.Data/attachments/` als Base64
+ *
+ * Das Label wird zusätzlich als "recently used"-Vorschlag gespeichert
+ * (`attachment_labels`), damit beim nächsten Anhang die zuletzt
+ * verwendeten Labels angeboten werden können.
+ *
+ * ### Validierung
+ * - Max. Dateigröße: 10 MB (`MAX_FILE_SIZE`)
+ * - Erlaubte MIME-Types: PDF, JPEG, PNG, WebP
+ *
+ * ### Return
+ * - `attachments` — alle Anhänge der App (sortiert nach createdAt desc)
+ * - `labelSuggestions` — zuletzt verwendete Labels (MRU)
+ * - `attachmentStats` — `{ total, labels }` (memoisiert)
+ * - `addAttachment(entryId, label, file)` — legt neuen Anhang an
+ * - `removeAttachment(attachmentId)` — löscht einen Anhang (inkl. Datei)
+ * - `removeAttachmentsForEntry(entryId)` — löscht alle Anhänge zu einem
+ *   Eintrag (wird beim Entry-Delete automatisch gerufen)
+ * - `getAttachmentsForEntry(entryId)` — Anhänge eines Eintrags
+ * - `getAttachmentsForEntries(entryIds)` — Bulk-Version
+ * - `getLabelSuggestions()` — aktuelle MRU-Labels
+ * - `readAttachmentFile(attachment)` — liefert Base64-Inhalt (für Share
+ *   oder PDF-Report-Bundling)
+ * - `formatFileSize(bytes)` — Helper für UI ("1,2 MB")
+ *
+ * @remarks
+ * Der Hook nimmt keine Props entgegen — er ist die zentrale
+ * Datenquelle für Anhänge und wird einmal in `App.tsx` instanziiert.
+ */
 export function useAttachments() {
   // Sofort aus localStorage laden (schnelle UI, kein async-Warten)
   const [attachments, setAttachments] = useState<Attachment[]>(() => readJson<Attachment[]>(STORAGE_KEYS.ATTACHMENTS, []));

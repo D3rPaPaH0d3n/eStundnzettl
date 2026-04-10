@@ -5,8 +5,34 @@ import { getWeekNumber, getTargetMinutesForDate, applyEffectiveDurations } from 
 import { usePeriodStats } from "./usePeriodStats";
 
 /**
- * Zentralisiert alle abgeleiteten/rechene Daten aus App.jsx
- * Logik bleibt gleich, aber mit weniger Rechenarbeit pro Render.
+ * useAppData — Zentralisierte, memoisierte Ableitungen aus
+ * `entries` + `userData` für den aktuellen Anzeige-Monat.
+ *
+ * Bündelt alle von App/Dashboard/Settings benötigten Rechenergebnisse
+ * an einer Stelle, sodass teure Berechnungen (Holiday-Synthese,
+ * Period-Stats, Überstunden-Split, Projekt-Dedup) pro Render nur
+ * einmal durchlaufen und nicht über mehrere Komponenten verstreut
+ * wiederholt werden.
+ *
+ * @param entries — Einträge des aktuellen Anzeige-Monats
+ * @param userData — User-Profil mit workDays (für Sollzeit-Berechnung)
+ * @param viewMonth — 0-basiert (0 = Januar)
+ * @param viewYear — vollständige Jahreszahl
+ * @param allEntries — optional alle Einträge aller Monate. Wird für
+ *   Wochen an Monatsgrenzen benötigt, um Mehrarbeit/Überstunden aus
+ *   der vollständigen Woche zu berechnen (nicht nur dem sichtbaren
+ *   Teil im Monat).
+ *
+ * @returns
+ * - `entriesWithHolidays` — Einträge + synthetische public_holiday
+ *   Einträge aus `getHolidayData()` (nur vergangene Feiertage)
+ * - `groupedByWeek` — Map-Einträge `[weekNumber, Entry[]]` sortiert
+ * - `stats` — PeriodStatsResult aus `usePeriodStats`
+ * - `overtime` — totalSaldo aus stats (Shortcut)
+ * - `progressPercent` — 0-100 für Progress-Bar
+ * - `todayTarget` — Soll-Minuten für den heutigen Wochentag
+ * - `lastWorkEntry` — letzter Work-Eintrag (für "Wie zuletzt"-Button)
+ * - `uniqueProjects` — sortierte Liste aller Projekt-Namen (Autocomplete)
  */
 export function useAppData({ entries, userData, viewMonth, viewYear, allEntries }: { entries: Entry[]; userData: UserData; viewMonth: number; viewYear: number; allEntries?: Entry[] }) {
   const todayTarget = useMemo(() => {

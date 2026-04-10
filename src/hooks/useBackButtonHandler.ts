@@ -3,8 +3,20 @@ import { App as CapacitorApp } from "@capacitor/app";
 import type { FormState } from "../types";
 
 /**
- * Handles Android hardware back button via Capacitor.
- * Navigates back to dashboard or exits app if already on dashboard.
+ * useBackButtonHandler — Fängt den Android-Hardware-Back-Button via
+ * `@capacitor/app` und implementiert das erwartete Mobile-Navigation-
+ * Verhalten:
+ *
+ * - Aktueller View ≠ "dashboard" → zurück zum Dashboard,
+ *   setzt gleichzeitig editingEntry null (falls der User im
+ *   Edit-Flow war)
+ * - Aktueller View = "dashboard" → App beenden
+ *   (`CapacitorApp.exitApp()`)
+ *
+ * @param view — aktueller View-Key
+ * @param setView — View-Setter aus `useAppState`
+ * @param form — FormState, wird zum Zurücksetzen des
+ *               editingEntry-Flags benötigt
  */
 export function useBackButtonHandler({
   view,

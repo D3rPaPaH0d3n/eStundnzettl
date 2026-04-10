@@ -67,6 +67,47 @@ async function dualWrite(lsKey: string, sqlKey: string, value: string | number |
 
 // ─── Hook ────────────────────────────────────────────────────
 
+/**
+ * useAutoBackup — Automatischer Hintergrund-Sync auf Google Drive,
+ * Nextcloud und/oder lokalen Ordner.
+ *
+ * Wird in `App.tsx` einmal mit den aktuellen `entries` und `userData`
+ * instanziiert. Triggert ein Backup in folgenden Situationen:
+ *
+ * 1. **2 s nach Datenänderung** (debounced)
+ * 2. **Beim App-State-Change auf Background** — über
+ *    `App.addListener("appStateChange")`
+ * 3. **Manuell** über den zurückgegebenen `triggerManualBackup()` —
+ *    ignoriert aktive Backoff-Fenster
+ *
+ * ### Hash-Skip
+ * Wenn sich die serialisierte Payload (userData + entries) seit dem
+ * letzten Erfolg nicht verändert hat, wird der Auto-Save übersprungen.
+ * Background- und Manual-Trigger ignorieren den Hash.
+ *
+ * ### Exponential Backoff
+ * Bei Fehlern wird pro Target ein `backoff_until`-Timestamp gesetzt
+ * (2/4/8/16/30 min). Während der Backoff aktiv ist, wird das
+ * betreffende Target beim nächsten Auto-Trigger übersprungen.
+ * Siehe {@link calculateBackoffDelay}.
+ *
+ * ### Fail-State
+ * `backupFailCount` wird sowohl in localStorage als auch SQLite
+ * persistiert (dual-write). Nach 5 aufeinander folgenden Fehlern
+ * zeigt der Hook einen persistenten Toast. Die UI
+ * (`BackupSettings.tsx`) liest den State separat aus localStorage
+ * und zeigt ab 3 Fehlern einen Retry-Button.
+ *
+ * @param entries — alle Einträge, werden Teil des Backup-Payloads
+ * @param userData — User-Profil, wird Teil des Backup-Payloads
+ * @param isEnabled — Master-Switch (wenn false UND kein Target
+ *                    explizit aktiv ist, wird nichts gemacht)
+ *
+ * @returns
+ * - `backupFailCount` — aktueller Cloud-Fail-Counter (für UI-Warnung)
+ * - `triggerManualBackup()` — manueller Retry, ignoriert aktive
+ *   Backoffs und überschreibt Hash-Skip
+ */
 export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: boolean) {
   const latestDataRef = useRef<{ entries: Entry[]; userData: UserData }>({ entries, userData });
   const lastHash = useRef<string>("");

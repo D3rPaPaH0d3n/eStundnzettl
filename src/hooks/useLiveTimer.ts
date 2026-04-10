@@ -22,6 +22,38 @@ const roundToNearest15Minutes = (dateStrOrObj: string | Date | null): Date | nul
   return date; 
 };
 
+/**
+ * useLiveTimer — Live-Zeiterfassung mit Pause/Resume/Auto-Checkout.
+ *
+ * Verwaltet den Zustand einer laufenden Arbeitszeitmessung (Start/Pause/Stopp)
+ * und persistiert ihn in localStorage unter `STORAGE_KEYS.LIVE_TIMER`, damit
+ * ein App-Restart den Timer nicht vergisst. Start- und End-Zeit werden beim
+ * Abschluss auf die nächste 15-Minuten-Grenze gerundet.
+ *
+ * ### Auto-Checkout
+ * Wird die App über mehrere Tage vergessen (Timer läuft noch), erzeugt
+ * `stopTimer` statt eines normalen Ergebnisses ein `AutoCheckoutData`-Objekt
+ * mit `isAutoCheckout: true`. `useAutoCheckoutHandler` konsumiert das,
+ * befüllt das Formular und navigiert zur Eingabe-Ansicht. Der Verbraucher
+ * muss `clearAutoCheckout()` aufrufen, sobald er die Daten übernommen hat —
+ * sonst loopt der Effekt.
+ *
+ * ### Return
+ * - `timerState` — aktueller Zustand (isRunning, isPaused, startTime,
+ *   pauseStartTime, accumulatedPause)
+ * - `autoCheckoutData` — nicht-null wenn ein Auto-Checkout fällig ist
+ * - `clearAutoCheckout()` — setzt autoCheckoutData auf null
+ * - `startTimer()` — startet einen neuen Timer (Start = jetzt)
+ * - `pauseTimer()` — pausiert einen laufenden Timer
+ * - `resumeTimer()` — setzt einen pausierten Timer fort, akkumuliert Pause
+ * - `stopTimer()` — beendet Timer, gibt { start, end, pause } in Minuten
+ *   zurück oder liefert AutoCheckoutData bei mehreren Tagen Laufzeit
+ * - `cancelTimer()` — verwirft laufenden Timer ohne Rückgabe
+ *
+ * @remarks
+ * Der Hook nimmt bewusst keine Props entgegen — er ist ein reiner
+ * State-Container und kennt weder Einträge noch UserData.
+ */
 export const useLiveTimer = () => {
   const [timerState, setTimerState] = useState<TimerState>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.LIVE_TIMER);

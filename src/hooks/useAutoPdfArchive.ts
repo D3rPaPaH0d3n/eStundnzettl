@@ -1,16 +1,37 @@
 /**
  * useAutoPdfArchive — Automatisches monatliches PDF-Archiv.
  *
- * Strategie:
- * - Beim App-Start (Mount) und bei jedem Resume pruefen, ob heute schon
- *   ein Lauf stattgefunden hat. Falls nein → PDF des aktuellen Monats
- *   (bis heute) generieren und an aktive Ziele verteilen.
- * - Bei Monats-Uebergang: zuerst das vergangene Monat final exportieren,
- *   dann das neue Monat.
- * - Content-Hash-Skip: wenn sich gegenueber dem letzten Lauf nichts
- *   geaendert hat, wird der Generate-/Upload-Pfad komplett uebersprungen.
- * - Zielt NICHT auf Google Drive — das JSON-Backup-Verhalten in
- *   useAutoBackup bleibt komplett unberuehrt.
+ * Generiert periodisch einen PDF-Report des aktuellen Monats und
+ * verteilt ihn an alle konfigurierten Ziele (lokal, Nextcloud,
+ * Google Drive). Im Gegensatz zu `useAutoBackup` (das JSON
+ * synchronisiert) erzeugt dieser Hook eine "fertige" PDF, die auch
+ * ohne App lesbar ist.
+ *
+ * ### Strategie
+ * - **Mount + App-Resume**: prüft ob heute schon ein Lauf
+ *   stattgefunden hat (`PDF_ARCHIVE_LAST_RUN`). Falls nein →
+ *   PDF des aktuellen Monats (bis heute) generieren und verteilen.
+ * - **Monats-Übergang**: zuerst das vergangene Monat final
+ *   exportieren, dann das neue Monat.
+ * - **Content-Hash-Skip**: wenn sich gegenüber dem letzten Lauf
+ *   nichts geändert hat (`PDF_ARCHIVE_LAST_HASH`), wird der
+ *   Generate-/Upload-Pfad komplett übersprungen.
+ * - **Unabhängig von useAutoBackup**: das JSON-Backup-Verhalten
+ *   bleibt komplett unberührt.
+ *
+ * @param entries — alle Einträge (werden pro Lauf auf den
+ *                  jeweiligen Monat gefiltert)
+ * @param userData — User-Profil für Report-Header und Soll-Zeit
+ * @param workCodes — Tätigkeitscodes für die Label-Auflösung im PDF
+ *
+ * @returns
+ * - `lastRun` — ISO-Date des letzten erfolgreichen Laufs ("YYYY-MM-DD")
+ *   oder null
+ * - `lastError` — kurze Fehlermeldung des letzten fehlgeschlagenen
+ *   Laufs oder null
+ * - `performRun(opts?)` — Manueller Trigger mit Optionen
+ *   `{ month?, year?, force? }`. `force: true` ignoriert Hash-Skip
+ *   und "already-today"-Checks.
  */
 
 import { useEffect, useRef, useCallback, useState } from "react";

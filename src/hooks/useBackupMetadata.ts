@@ -1,7 +1,21 @@
 /**
- * useBackupMetadata.js — Hook für Backup-Metadaten mit SQLite-Persistenz
+ * useBackupMetadata — Liefert die Metadaten des letzten Backup-Events
+ * und bietet eine Update-Funktion für neue Events.
  *
- * LAST_BACKUP wird jetzt in SQLite gespeichert statt localStorage.
+ * Im Gegensatz zu `useAutoBackup` (der den Auto-Sync orchestriert)
+ * persistiert dieser Hook nur den "wann war das letzte Backup"-State
+ * — er triggert **kein** Backup selbst. Wird in UI-Komponenten
+ * (BackupSettings, AboutDialog) genutzt, um "Letztes Backup: vor
+ * 3 Stunden"-Anzeigen zu rendern.
+ *
+ * Persistenz: ausschließlich SQLite (`backupMetadataRepo`). Kein
+ * localStorage-Fallback, weil diese Daten rein informativ sind.
+ *
+ * ### Return
+ * - `lastBackup` — ISO-Timestamp des letzten Eintrags oder null
+ * - `updateLastBackup(timestamp?)` — setzt den State und schreibt
+ *   einen neuen History-Eintrag ein (Default: `new Date().toISOString()`)
+ * - `isLoaded` — true nach dem initialen Read (für Skeleton-States)
  */
 
 import { useState, useEffect, useCallback } from "react";

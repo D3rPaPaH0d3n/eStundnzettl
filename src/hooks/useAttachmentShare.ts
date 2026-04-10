@@ -9,14 +9,30 @@ const sanitizeFileName = (fileName: string = "datei"): string => fileName.replac
 
 const ensureNativePath = (uri: string = ""): string => (uri.startsWith("file://") ? uri.replace("file://", "") : uri);
 
-/**
- * useAttachmentShare — teilt PDF + Anhänge in EINEM nativen Android-Share-Intent.
- */
 interface PdfFile {
   storagePath: string;
   mimeType?: string;
 }
 
+/**
+ * useAttachmentShare — Teilt einen PDF-Report zusammen mit den
+ * zugehörigen Datei-Anhängen in EINEM nativen Android-Share-Intent.
+ *
+ * Nutzt den eigenen `MultiShare`-Capacitor-Plugin (siehe
+ * `src/plugins/MultiSharePlugin.ts`), weil `@capacitor/share` nur
+ * einzelne URLs senden kann. Kopiert dafür erst alle Dateien (PDF +
+ * Anhänge) in `Directory.Cache`, sanitisiert die Dateinamen und ruft
+ * dann `MultiShare.shareMultiple` mit den Cache-URIs auf.
+ *
+ * @param readAttachmentFile — Callback der den Base64-Inhalt eines
+ *   Attachments liefert (wird vom Aufrufer durchgereicht, typ. aus
+ *   `useAttachments`)
+ *
+ * @returns
+ * - `shareReportBundle({ pdfFile, attachments })` — teilt PDF +
+ *   Anhänge als Multi-File-Intent. Bei Fehler: Toast und Exception
+ *   wird geschluckt (kein Crash).
+ */
 export function useAttachmentShare({ readAttachmentFile }: { readAttachmentFile: (attachment: Attachment) => Promise<string> }) {
   const copyAttachmentToCache = useCallback(async (attachment: Attachment) => {
     const base64Data = await readAttachmentFile(attachment);

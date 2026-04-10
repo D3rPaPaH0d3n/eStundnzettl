@@ -3,14 +3,29 @@ import type { Entry, UserData } from '../types';
 import { calculatePeriodStats } from "../utils/timeCalculations";
 
 /**
- * Custom Hook zur Berechnung der Zeit-Statistiken für einen Zeitraum.
- * Nutzt 'calculatePeriodStats' aus utils und cached das Ergebnis.
+ * usePeriodStats — Memoisierter Wrapper um `calculatePeriodStats()`.
  *
- * @param allEntries optional — Roh-Liste aller Eintraege (ueber alle
- *                   Monate hinweg). Wird fuer Wochen verwendet, die
- *                   ueber die Periodengrenze hinausragen, damit
- *                   Mehrarbeit/Ueberstunden aus der VOLLEN Woche
- *                   berechnet werden.
+ * Die teure Statistik-Berechnung (Arbeitszeit, Fahrtzeit, Urlaub,
+ * Krank, Feiertage, Soll/Ist/Saldo, Mehrarbeit/Überstunden) wird
+ * nur neu ausgeführt, wenn sich `entries`, `userData`,
+ * `periodStart`, `periodEnd` oder `allEntries` ändern. Beim Rendern
+ * von Dashboard+Report liefert das erhebliche Performance-Vorteile.
+ *
+ * Eingebaute Safety: wenn `periodStart`/`periodEnd` aus irgendeinem
+ * Grund kein `Date` sind, wird auf `new Date()` (heute) gefallen.
+ *
+ * @param entries — Einträge des Zeitraums (bereits gefiltert)
+ * @param userData — User-Profil mit workDays
+ * @param periodStart — Start des Zeitraums (inklusive)
+ * @param periodEnd — Ende des Zeitraums (inklusive)
+ * @param allEntries — optional Roh-Liste aller Einträge über alle
+ *   Monate. Wird für Wochen verwendet, die über die Periodengrenze
+ *   hinausragen, damit Mehrarbeit/Überstunden aus der VOLLEN Woche
+ *   berechnet werden.
+ *
+ * @returns `PeriodStatsResult` mit work, drive, holiday, vacation,
+ * sick, timeComp, totalIst, totalTarget, totalSaldo, normalstunden,
+ * overtimeSplit.
  */
 export function usePeriodStats(entries: Entry[], userData: UserData, periodStart: Date, periodEnd: Date, allEntries?: Entry[]) {
   return useMemo(() => {

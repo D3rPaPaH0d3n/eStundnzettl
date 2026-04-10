@@ -5,8 +5,32 @@ import type { Entry, UserData, DeleteTarget } from "../types";
 const TOUR_SEEN_KEY = "estundnzettl_tour_seen";
 
 /**
- * Manages all top-level UI state for the App component.
- * Extracted from App.tsx to keep the main component focused on composition.
+ * useAppState — Top-Level UI-State für die App-Shell.
+ *
+ * Verwaltet alle UI-Zustände, die sich auf mehrere Views auswirken
+ * (current view, Modal-Targets, Tour/Onboarding-Flags). Wurde aus
+ * `App.tsx` extrahiert, damit die Hauptkomponente sich auf
+ * Komposition konzentrieren kann.
+ *
+ * ### Automatische Flows
+ * - **Splash-Screen Hide** beim Mount
+ * - **Onboarding-Trigger**: Wenn `userData.name` leer ist oder die
+ *   Legacy-Felder fehlen (`workDays`), wird `showOnboarding` auf
+ *   true gesetzt
+ * - **Tour-Flag** wird via `estundnzettl_tour_seen` in localStorage
+ *   persistiert
+ *
+ * @param userData — aktuelles Profil (wird für Onboarding-Check
+ *                   benötigt)
+ *
+ * @returns Ein Objekt mit State + Settern + Helpers:
+ * - View/Date: `view`, `setView`, `currentDate`, `setCurrentDate`,
+ *   `getHeaderTitle()`
+ * - Modal-State: `deleteTarget`, `attachmentEntry` + Setter
+ * - Onboarding/Tour: `showOnboarding`, `showTour`,
+ *   `handleTourStart()`, `handleTourClose()`
+ * - Delete-Flow: `handleRequestDeleteEntry`, `handleRequestDeleteAll`,
+ *   `handleCloseDeleteModal`, `handleCloseAttachmentModal`
  */
 export function useAppState({ userData }: { userData: UserData }) {
   const [currentDate, setCurrentDate] = useState(new Date());

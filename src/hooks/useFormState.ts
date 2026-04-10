@@ -13,10 +13,30 @@ const DEFAULTS = {
 };
 
 /**
- * useFormState — manages all entry form field state
+ * useFormState — State-Container für das Entry-Formular (EntryForm).
  *
- * @param {Function} getDefaultCode — returns the last-used or first available work code
- * @returns {Object} form fields + setters + action helpers
+ * Hält alle Feld-Werte (Datum, Start/Ende, Pause, Projekt, Code,
+ * Eintragstyp) plus ein paar Meta-Flags (editingEntry, isLiveEntry,
+ * specialManualMode) und stellt `resetForm()` zum Zurücksetzen auf
+ * die Defaults bereit.
+ *
+ * Der Hook persistiert **nichts** — er ist ein reiner In-Memory-
+ * State, der beim Submit in ein echtes `Entry` übersetzt wird
+ * (siehe `useEntryActions`). Beim Wechsel auf "add"/"edit" werden
+ * die Felder aus dem zu bearbeitenden Entry bzw. den Defaults
+ * initialisiert.
+ *
+ * ### specialManualMode
+ * Normalerweise bekommen `vacation`/`sick`/`time_comp` die tägliche
+ * Sollzeit automatisch gutgeschrieben. Wenn `specialManualMode`
+ * true ist, gibt der User stattdessen Start/Ende wie bei einem
+ * normalen Arbeitseintrag manuell an.
+ *
+ * @param getDefaultCode — liefert die Default-Code-Id beim Reset
+ *                         (meist aus `useLastCode`)
+ *
+ * @returns Feld-Werte + Setter + `resetForm()`, `setEditingEntry()`,
+ *          `setIsLiveEntry()`, `setSpecialManualMode()`.
  */
 export function useFormState({ getDefaultCode }: { getDefaultCode: () => number }) {
   const [formDate, setFormDate] = useState<string>(toLocalDateString(new Date()));

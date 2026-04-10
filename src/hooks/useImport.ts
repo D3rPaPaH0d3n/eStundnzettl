@@ -4,14 +4,6 @@ import { verifyBackupIntegrity } from "../utils/storageBackup";
 import { filterValidEntries } from "../schemas/entry";
 import { getErrorMessage } from "../utils/errorUtils";
 
-/**
- * useImport — kapselt die JSON-Import-Logik.
- *
- * Wurde aus useExport extrahiert, da der Import loosely coupled ist
- * (eigene Dependencies, eigene Callbacks) und so isoliert getestet und
- * gewartet werden kann. Das Verhalten ist identisch zum vorherigen
- * useExport.handleImport.
- */
 interface UseImportProps {
   importEntries: (entries: Entry[]) => void;
   setUserData: (data: UserData) => void;
@@ -20,6 +12,32 @@ interface UseImportProps {
 
 const MAX_IMPORT_SIZE = 10 * 1024 * 1024; // 10 MB
 
+/**
+ * useImport — Parsed und importiert ein Backup-JSON aus einem
+ * `<input type="file">` Change-Event.
+ *
+ * Wurde aus useExport extrahiert, da der Import loosely coupled ist
+ * (eigene Dependencies: Zod-Schema-Validierung, Checksum-Check) und
+ * so isoliert getestet und gewartet werden kann.
+ *
+ * ### Ablauf
+ * 1. Datei-Größe prüfen (max 10 MB)
+ * 2. JSON.parse
+ * 3. Optional: Checksum-Verify (Toast bei Mismatch oder Legacy)
+ * 4. Entries via {@link filterValidEntries} (Zod) filtern,
+ *    ungültige überspringen + Toast mit Count
+ * 5. `importEntries(valid)` — Bulk-Import in DB
+ * 6. `setUserData(d.user)` falls vorhanden
+ * 7. `importWorkCodes(d.workCodes)` falls vorhanden
+ *
+ * @param importEntries — Callback der Entries ins DB schreibt
+ *                        (meist `useEntries().importEntries`)
+ * @param setUserData — Callback der UserData überschreibt
+ * @param importWorkCodes — optionaler Callback für Work Codes
+ *
+ * @returns
+ * - `handleImport(event)` — Change-Event-Handler für File-Input
+ */
 export function useImport({ importEntries, setUserData, importWorkCodes }: UseImportProps) {
   const handleImport = (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0];

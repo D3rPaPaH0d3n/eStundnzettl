@@ -2,6 +2,7 @@ import React, { useCallback } from "react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import type { Entry, UserData, WorkCode, FormState } from '../../types';
+import type { Locale } from "../../locales/types";
 import { toLocalDateString } from "../../utils";
 import { parseTime, calculateEntryNetDuration, getTargetMinutesForDate } from "../../utils/timeCalculations";
 import { generateEntryId } from "../../utils/entryId";
@@ -24,6 +25,7 @@ interface UseEntryActionsProps {
   updateEntry: (entry: Entry) => void;
   getDefaultCode: () => number;
   setView: (view: string) => void;
+  locale?: Locale;
 }
 
 export function useEntryActions({
@@ -35,6 +37,7 @@ export function useEntryActions({
   updateEntry,
   getDefaultCode,
   setView,
+  locale,
 }: UseEntryActionsProps) {
   const getDefaultTimesForDate = useCallback(
     (date: string) => {
@@ -145,6 +148,7 @@ export function useEntryActions({
           userData,
           code: form.code,
           specialManualMode: isManualSpecial,
+          locale,
         });
 
         if (isManualSpecial) {
@@ -168,6 +172,7 @@ export function useEntryActions({
           formDate: form.formDate,
           userData,
           code: form.code,
+          locale,
         });
         label =
           form.entryType === "vacation"
@@ -187,7 +192,7 @@ export function useEntryActions({
           .reduce((sum, ex) => sum + (ex.netDuration || 0), 0);
 
         if (existingWork > 0) {
-          const dayTarget = getTargetMinutesForDate(form.formDate, userData?.workDays);
+          const dayTarget = getTargetMinutesForDate(form.formDate, userData?.workDays, locale);
           net = Math.max(0, dayTarget - existingWork);
         }
       }

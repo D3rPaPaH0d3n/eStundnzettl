@@ -10,6 +10,7 @@ import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBa
 import toast from "react-hot-toast";
 
 import type { Entry, UserData, Theme, WorkCode, PdfArchiveRunOptions } from "../types";
+import type { Locale, LocaleId } from "../locales/types";
 import { getErrorMessage } from "../utils/errorUtils";
 
 const ChangelogModal = React.lazy(() => import("./ChangelogModal"));
@@ -47,6 +48,9 @@ interface Props {
   pdfArchiveLastRun?: string | null;
   pdfArchiveLastError?: string | null;
   pdfArchivePerformRun?: (opts: PdfArchiveRunOptions) => Promise<Record<string, unknown>>;
+  // Locale (Stundenberechnung)
+  locale?: Locale;
+  setLocale?: (id: LocaleId) => void;
 }
 
 const Settings: React.FC<Props> = ({
@@ -78,6 +82,9 @@ const Settings: React.FC<Props> = ({
   pdfArchiveLastRun,
   pdfArchiveLastError,
   pdfArchivePerformRun,
+  // Locale
+  locale,
+  setLocale: _setLocale, // wird im folgenden Schritt im Locale-Dropdown gebunden
 }) => {
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -325,6 +332,7 @@ const Settings: React.FC<Props> = ({
         onLoadDemoData={() => setDemoTrigger((n) => n + 1)}
         userData={userData}
         setUserData={setUserData}
+        locale={locale}
       />
     </main>
   );

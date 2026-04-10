@@ -20,6 +20,7 @@ import ReportDocument from "./ReportDocument";
 import ConfirmModal from "./ConfirmModal";
 
 import type { Entry, UserData, WorkCode, Attachment, Html2PdfOptions } from "../types";
+import type { Locale } from "../locales/types";
 
 // Schwelle für die Size-Warning: ab ~300 Einträgen kann der PDF-Export
 // auf älteren Android-Geräten OOM auslösen (ReportDocument rendert alles
@@ -39,11 +40,12 @@ interface Props {
   workCodes?: WorkCode[];
   attachments?: Attachment[];
   readAttachmentFile: (file: Attachment) => Promise<string>;
+  locale?: Locale;
 }
 
-const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, monthDate, employeeName, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile }) => {
+const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, monthDate, employeeName, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile, locale }) => {
   // Krank-Korrektur auf allEntries anwenden (entries sind bereits korrigiert via useAppData)
-  const allEntries = useMemo(() => applyEffectiveDurations(rawAllEntries, userData), [rawAllEntries, userData]);
+  const allEntries = useMemo(() => applyEffectiveDurations(rawAllEntries, userData, locale), [rawAllEntries, userData, locale]);
   const [filterMode, setFilterMode] = useState<number | "month">(() => {
     const today = new Date();
     if (monthDate.getMonth() === today.getMonth() && monthDate.getFullYear() === today.getFullYear()) {
@@ -145,7 +147,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
     }
   }, [filterMode, monthDate, filteredEntries]);
 
-  const stats = usePeriodStats(entries, userData, periodStart, periodEnd, allEntries);
+  const stats = usePeriodStats(entries, userData, periodStart, periodEnd, allEntries, locale);
   // -----------------
 
   // Wrapper: bei vielen Einträgen erst Warnung anzeigen, sonst direkt exportieren.

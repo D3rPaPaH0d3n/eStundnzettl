@@ -150,6 +150,23 @@ Für Profis, die mehr wollen! Aktiviere den **Hausmasta-Modus** in den Einstellu
 
 ---
 
+## ☕ A Scherzl spendier'n
+
+Die App is **komplett gratis** und bleibt's a — **kane Werbung, kei Abo, nix**.
+Wennst magst und dir die App wos wert is, freu i mi über a kloane Anerkennung via Revolut. Is koa muas, aber a "Vergelt's Gott" hot no nie gschodt. 😄
+
+<p align="center">
+  <a href="https://revolut.me/mkainer/pocket/HpwaG0mwAw">
+    <img src="https://img.shields.io/badge/Revolut-A_Scherzl_spendier'n-0075EB?style=for-the-badge&logo=revolut&logoColor=white" alt="A Scherzl spendier'n via Revolut" />
+  </a>
+</p>
+
+<p align="center">
+  <em>🏔️ Vergelt's Gott und pfiat di! 🏔️</em>
+</p>
+
+---
+
 ## ⚙️ Tech Stack
 
 | | Technologie |

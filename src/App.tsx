@@ -29,6 +29,7 @@ import SkeletonScreen from "./components/SkeletonScreen";
 const OnboardingWizard = React.lazy(() => import("./components/OnboardingWizard"));
 const ExportModal = React.lazy(() => import("./components/ExportModal"));
 const AttachmentManager = React.lazy(() => import("./components/AttachmentManager"));
+const LocaleMigrationModal = React.lazy(() => import("./components/LocaleMigrationModal"));
 
 // MIGRATION — run once on module import
 import { migrateStorageKeys } from "./utils/migration";
@@ -142,6 +143,18 @@ export default function App() {
         title={deleteTarget?.type === 'all' ? "Alles löschen?" : "Eintrag löschen?"}
         message={deleteTarget?.type === 'all' ? "Möchtest du wirklich alle Einträge unwiderruflich löschen? Auch dein Profil wird zurückgesetzt." : "Möchtest du diesen Eintrag wirklich entfernen?"}
       />
+
+      {/* Locale-Migration für bestehende User: Nur zeigen, wenn noch keine
+          Locale gewählt ist UND bestehende Einträge existieren UND das
+          Onboarding NICHT aktiv ist (neue User setzen die Locale dort). */}
+      {!showOnboarding && localeId === null && entries.length > 0 && (
+        <Suspense fallback={null}>
+          <LocaleMigrationModal
+            isOpen={true}
+            onChoose={(id) => setLocale(id)}
+          />
+        </Suspense>
+      )}
 
       {showExportModal && (
         <Suspense fallback={null}>

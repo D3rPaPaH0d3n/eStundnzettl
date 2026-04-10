@@ -17,8 +17,16 @@ import {
 import { usePeriodStats } from "../hooks/usePeriodStats";
 import ExportModal from "./ExportModal";
 import ReportDocument from "./ReportDocument";
+import ConfirmModal from "./ConfirmModal";
 
 import type { Entry, UserData, WorkCode, Attachment, Html2PdfOptions } from "../types";
+
+// Schwelle für die Size-Warning: ab ~300 Einträgen kann der PDF-Export
+// auf älteren Android-Geräten OOM auslösen (ReportDocument rendert alles
+// in einem DOM-Tree, html2canvas nutzt scale:2). Normaler Monats-Use-Case
+// liegt bei 20–40 Einträgen, daher fällt diese Warnung nur bei extremen
+// Ausreißern (z.B. Jahresexport über alle Einträge).
+const PDF_EXPORT_WARN_THRESHOLD = 300;
 
 interface Props {
   entries: Entry[];
@@ -49,7 +57,8 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [customNote, setCustomNote] = useState("");
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false); 
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [pendingPdfAction, setPendingPdfAction] = useState<string | null>(null);
 
   const { shareReportBundle } = useAttachmentShare({
     readAttachmentFile: async (file) => {
@@ -139,6 +148,16 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
   const stats = usePeriodStats(entries, userData, periodStart, periodEnd, allEntries);
   // -----------------
 
+  // Wrapper: bei vielen Einträgen erst Warnung anzeigen, sonst direkt exportieren.
+  const handlePdfActionRequest = (actionType: string) => {
+    if (filteredEntries.length > PDF_EXPORT_WARN_THRESHOLD) {
+      setShowExportModal(false);
+      setPendingPdfAction(actionType);
+      return;
+    }
+    handlePdfAction(actionType);
+  };
+
   const handlePdfAction = async (actionType: string) => {
     try {
       setShowExportModal(false);
@@ -222,12 +241,26 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
   return (
     <div className="fixed inset-0 bg-zinc-950 z-[200] flex flex-col h-full">
       
-      <ExportModal 
+      <ExportModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
-        onSelectFolder={() => handlePdfAction('folder')}
-        onSelectShare={() => handlePdfAction('share')}
-        isPdf={true} 
+        onSelectFolder={() => handlePdfActionRequest('folder')}
+        onSelectShare={() => handlePdfActionRequest('share')}
+        isPdf={true}
+      />
+
+      <ConfirmModal
+        isOpen={pendingPdfAction !== null}
+        onClose={() => setPendingPdfAction(null)}
+        onConfirm={() => {
+          const action = pendingPdfAction;
+          setPendingPdfAction(null);
+          if (action) handlePdfAction(action);
+        }}
+        title="Großer Export"
+        message={`${filteredEntries.length} Einträge werden exportiert. Auf älteren Geräten kann das zu Speicherproblemen führen. Empfehlung: pro Monat oder einzelne Kalenderwoche exportieren.`}
+        confirmText="Trotzdem exportieren"
+        confirmColor="zinc"
       />
 
       <div className="bg-zinc-900 text-white p-3 shadow-xl z-50 shrink-0" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}>

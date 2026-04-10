@@ -47,7 +47,9 @@ export default function AppHeader({
               {getHeaderTitle(editingEntry)}
             </h1>
             {view === "dashboard" && (
-              <p className="text-xs text-zinc-400 font-medium mt-0.5">Mobile Zeiterfassung</p>
+              <p className="text-xs text-zinc-400 font-medium mt-0.5 italic">
+                <span className="mr-1">⏱️</span>Damit ka Stund verlorn geht
+              </p>
             )}
           </div>
         </div>

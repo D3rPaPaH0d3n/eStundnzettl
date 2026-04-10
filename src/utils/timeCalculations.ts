@@ -1,6 +1,8 @@
-import { WORK_CODE, HALF_DAYS } from "../hooks/constants";
+import { WORK_CODE } from "../hooks/constants";
 import type { Entry, UserData } from '../types';
 import { getAllEntries, updateEntryInDb } from '../db/repositories/entriesRepo';
+import type { Locale } from '../locales/types';
+import { getLocale } from '../locales';
 
 interface OvertimeSplit {
   mehrarbeit: number;
@@ -38,6 +40,7 @@ interface NetDurationParams {
   userData: UserData | null;
   code: number | null;
   specialManualMode?: boolean;
+  locale?: Locale;
 }
 
 export const parseTime = (timeStr: string): number => {
@@ -50,8 +53,22 @@ export const getDayOfWeek = (dateStr: string): number => {
   return new Date(y, m - 1, d).getDay();
 };
 
-export const getTargetMinutesForDate = (dateStr: string, customWorkDays?: number[] | null): number => {
-  const isHalfDay = HALF_DAYS.some((suffix) => dateStr.endsWith(`-${suffix}`));
+/**
+ * Berechnet die Tages-Sollzeit für ein Datum in Minuten.
+ *
+ * Wenn `customWorkDays` gesetzt ist (7-Element-Array), wird der Wert
+ * für den Wochentag genommen. Sonst fällt auf `locale.defaultWorkDays`
+ * zurück (Österreich-Fallback wenn keine Locale übergeben).
+ *
+ * An Halbtagen (siehe `locale.halfDays`) wird das Ergebnis halbiert.
+ */
+export const getTargetMinutesForDate = (
+  dateStr: string,
+  customWorkDays?: number[] | null,
+  locale?: Locale
+): number => {
+  const loc = locale ?? getLocale(undefined);
+  const isHalfDay = loc.halfDays.some((suffix) => dateStr.endsWith(`-${suffix}`));
 
   let dailyTarget = 0;
   const day = getDayOfWeek(dateStr);
@@ -63,9 +80,7 @@ export const getTargetMinutesForDate = (dateStr: string, customWorkDays?: number
   ) {
     dailyTarget = customWorkDays[day];
   } else {
-    if (day >= 1 && day <= 4) dailyTarget = 510;
-    else if (day === 5) dailyTarget = 270;
-    else dailyTarget = 0;
+    dailyTarget = loc.defaultWorkDays[day] ?? 0;
   }
 
   if (isHalfDay && dailyTarget > 0) {
@@ -82,10 +97,33 @@ export const getWeekNumber = (d: Date): number => {
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 };
 
-export const calculateOvertimeSplit = (balanceMinutes: number, targetMinutes: number): OvertimeSplit => {
+/**
+ * Teilt einen positiven Wochensaldo in Mehrarbeit und Überstunden auf.
+ *
+ * - Mehrarbeit: zwischen Vertragssoll (z.B. 38,5h) und Wochenlimit (z.B. 40h)
+ * - Überstunden: über dem Wochenlimit
+ *
+ * Wenn die übergebene Locale den MA/ÜS-Split deaktiviert hat
+ * (`enableOvertimeSplit: false`, z.B. Neutral), wird der komplette
+ * Saldo als Überstunden-Bucket zurückgegeben und Mehrarbeit bleibt 0.
+ * Die Caller können dann über die Locale-Flag selbst entscheiden,
+ * ob sie den Wert unter "Überstunden" oder nur als "Saldo" anzeigen.
+ */
+export const calculateOvertimeSplit = (
+  balanceMinutes: number,
+  targetMinutes: number,
+  locale?: Locale
+): OvertimeSplit => {
   if (balanceMinutes <= 0) return { mehrarbeit: 0, ueberstunden: 0 };
 
-  const WEEKLY_LIMIT_MINUTES = 40 * 60;
+  const loc = locale ?? getLocale(undefined);
+
+  // Neutral-Locale: kein Split, alles in den "ueberstunden"-Bucket
+  if (!loc.enableOvertimeSplit || loc.weeklyLimitMinutes === null) {
+    return { mehrarbeit: 0, ueberstunden: balanceMinutes };
+  }
+
+  const WEEKLY_LIMIT_MINUTES = loc.weeklyLimitMinutes;
   const mehrarbeitBuffer = Math.max(0, WEEKLY_LIMIT_MINUTES - targetMinutes);
 
   const mehrarbeit = Math.min(balanceMinutes, mehrarbeitBuffer);
@@ -100,12 +138,19 @@ export const calculateOvertimeSplit = (balanceMinutes: number, targetMinutes: nu
  *
  * Regel: Krankzeit füllt nur bis zur Tages-Sollzeit auf.
  * Wenn bereits genug gearbeitet wurde → Krankzeit = 0.
+ *
+ * Bei Locales mit `enableSickAdjustment: false` (z.B. Neutral) wird
+ * die Krankdauer unverändert zurückgegeben — dort zählt der User
+ * Krank einfach 1:1.
  */
 export const adjustSickDuration = (
   sickNetDuration: number,
   workMinutesOnDay: number,
-  dayTarget: number
+  dayTarget: number,
+  locale?: Locale
 ): number => {
+  const loc = locale ?? getLocale(undefined);
+  if (!loc.enableSickAdjustment) return sickNetDuration;
   if (dayTarget <= 0) return 0;
   if (workMinutesOnDay >= dayTarget) return 0;
   return Math.min(sickNetDuration, Math.max(0, dayTarget - workMinutesOnDay));
@@ -120,6 +165,7 @@ export const calculateEntryNetDuration = ({
   userData,
   code,
   specialManualMode = false,
+  locale,
 }: NetDurationParams): number => {
   const isDrive = entryType === "drive" || code === WORK_CODE.DRIVE;
   const isSpecial =
@@ -142,7 +188,7 @@ export const calculateEntryNetDuration = ({
 
   return Math.max(
     0,
-    getTargetMinutesForDate(formDate, userData?.workDays)
+    getTargetMinutesForDate(formDate, userData?.workDays, locale)
   );
 };
 
@@ -155,7 +201,16 @@ export const calculateEntryNetDuration = ({
  * calculateDisplayedDayMinutes, Dashboard, ReportDocument) verwenden diese
  * korrigierten Entries — keine zusätzliche Sonderlogik nötig.
  */
-export const applyEffectiveDurations = (entries: Entry[], userData: UserData | null): Entry[] => {
+export const applyEffectiveDurations = (
+  entries: Entry[],
+  userData: UserData | null,
+  locale?: Locale
+): Entry[] => {
+  const loc = locale ?? getLocale(undefined);
+
+  // Bei Locales ohne Sick-Aufrechnung (z.B. Neutral): keine Korrektur
+  if (!loc.enableSickAdjustment) return entries;
+
   // Arbeitszeit pro Tag summieren (exkl. Fahrzeit)
   const dayWorkMap: Record<string, number> = {};
   entries.forEach((e) => {
@@ -168,8 +223,8 @@ export const applyEffectiveDurations = (entries: Entry[], userData: UserData | n
     if (e.type !== "sick") return e;
     const dayWork = dayWorkMap[e.date] || 0;
     if (dayWork <= 0) return e;
-    const target = getTargetMinutesForDate(e.date, userData?.workDays);
-    const adjusted = adjustSickDuration(e.netDuration || 0, dayWork, target);
+    const target = getTargetMinutesForDate(e.date, userData?.workDays, loc);
+    const adjusted = adjustSickDuration(e.netDuration || 0, dayWork, target, loc);
     if (adjusted === (e.netDuration || 0)) return e;
     return { ...e, netDuration: adjusted };
   });
@@ -222,8 +277,10 @@ export const calculatePeriodStats = (
   userData: UserData | null,
   periodStart: Date,
   periodEnd: Date,
-  allEntries?: Entry[]
+  allEntries?: Entry[],
+  locale?: Locale
 ): PeriodStatsResult => {
+  const loc = locale ?? getLocale(undefined);
   const stats = {
     work: 0,
     drive: 0,
@@ -284,7 +341,7 @@ export const calculatePeriodStats = (
       String(loopDate.getDate()).padStart(2, "0"),
     ].join("-");
 
-    const target = getTargetMinutesForDate(dateStr, userData?.workDays);
+    const target = getTargetMinutesForDate(dateStr, userData?.workDays, loc);
     stats.totalTarget += target;
 
     loopDate.setDate(loopDate.getDate() + 1);
@@ -296,7 +353,7 @@ export const calculatePeriodStats = (
 
   // ───── Mehrarbeit / Überstunden per ISO-Woche ─────────────────
   //
-  // Rechtliche Grundlage (Österreich, AZG):
+  // Rechtliche Grundlage (Österreich, AZG / Deutschland analog):
   //   - Mehrarbeit = Stunden zwischen Vertragssoll (z.B. 38,5h) und 40h/Woche
   //   - Überstunden = Stunden über 40h/Woche
   //   - Berechnung erfolgt pro voller ISO-Woche (Mo–So)
@@ -309,6 +366,15 @@ export const calculatePeriodStats = (
   //   → Falls Ist > Soll: MA/ÜS-Split mit vollem Wochen-Target
   //     (damit der MA-Puffer von z.B. 90min korrekt greift)
   //   → Jeder Tag gehört zum Monat, in dem er liegt
+  //
+  // Locale-Abhängigkeit: Bei Locales mit `enableOvertimeSplit: false`
+  // (z.B. Neutral) wird dieser ganze Block übersprungen — der Saldo
+  // wird dann nur als `totalSaldo` angezeigt, ohne MA/ÜS-Aufspaltung.
+  if (!loc.enableOvertimeSplit) {
+    stats.normalstunden = Math.max(0, stats.totalIst);
+    return stats;
+  }
+
   const seenWeeks = new Set<string>();
   const weekCursor = new Date(periodStart);
   weekCursor.setHours(0, 0, 0, 0);
@@ -337,12 +403,13 @@ export const calculatePeriodStats = (
           const dayDate = new Date(monday);
           dayDate.setDate(monday.getDate() + i);
           const dayStr = toLocalDateStr(dayDate);
-          weekTarget += getTargetMinutesForDate(dayStr, userData?.workDays);
+          weekTarget += getTargetMinutesForDate(dayStr, userData?.workDays, loc);
           weekActual += dayActualMap[dayStr] || 0;
         }
         const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
           weekActual - weekTarget,
-          weekTarget
+          weekTarget,
+          loc
         );
         stats.overtimeSplit.mehrarbeit += mehrarbeit;
         stats.overtimeSplit.ueberstunden += ueberstunden;
@@ -357,7 +424,7 @@ export const calculatePeriodStats = (
           const dayDate = new Date(monday);
           dayDate.setDate(monday.getDate() + i);
           const dayStr = toLocalDateStr(dayDate);
-          fullWeekTarget += getTargetMinutesForDate(dayStr, userData?.workDays);
+          fullWeekTarget += getTargetMinutesForDate(dayStr, userData?.workDays, loc);
           if (dayStr >= startStr && dayStr <= endStr) {
             partialActual += dayActualMap[dayStr] || 0;
           }
@@ -367,7 +434,8 @@ export const calculatePeriodStats = (
           // Über Wochen-Soll: MA/ÜS-Split
           const { mehrarbeit, ueberstunden } = calculateOvertimeSplit(
             partialActual - fullWeekTarget,
-            fullWeekTarget
+            fullWeekTarget,
+            loc
           );
           stats.overtimeSplit.mehrarbeit += mehrarbeit;
           stats.overtimeSplit.ueberstunden += ueberstunden;
@@ -378,7 +446,7 @@ export const calculatePeriodStats = (
             dayDate.setDate(monday.getDate() + i);
             const dayStr = toLocalDateStr(dayDate);
             if (dayStr < startStr || dayStr > endStr) continue;
-            const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays);
+            const dayTarget = getTargetMinutesForDate(dayStr, userData?.workDays, loc);
             const dayActual = dayActualMap[dayStr] || 0;
             if (dayActual > dayTarget) {
               stats.overtimeSplit.ueberstunden += (dayActual - dayTarget);
@@ -422,7 +490,8 @@ export const calculatePeriodStats = (
  * @returns {{ total: number, fixed: number }}
  */
 export const recalculateAllEntries = async (
-  userData: UserData | null
+  userData: UserData | null,
+  locale?: Locale
 ): Promise<{ total: number; fixed: number }> => {
   const entries = await getAllEntries();
   let fixed = 0;
@@ -440,6 +509,7 @@ export const recalculateAllEntries = async (
         formDate: entry.date,
         userData,
         code: entry.code ?? null,
+        locale,
       });
     } else if ((entry.type === "vacation" || entry.type === "sick" || entry.type === "time_comp") && hasTime) {
       // Special entries with manual start/end
@@ -452,10 +522,11 @@ export const recalculateAllEntries = async (
         userData,
         code: entry.code ?? null,
         specialManualMode: true,
+        locale,
       });
     } else if (entry.type === "vacation" || entry.type === "sick" || entry.type === "time_comp" || entry.type === "public_holiday") {
       // Special entries without start/end → target minutes
-      expected = getTargetMinutesForDate(entry.date, userData?.workDays);
+      expected = getTargetMinutesForDate(entry.date, userData?.workDays, locale);
     } else {
       continue; // unknown type, skip
     }
@@ -516,9 +587,13 @@ export const getWeekRangeInMonth = (dateInWeek: Date, viewDate?: Date): { start:
  * unabhängig vom angezeigten Monat.
  * So sind Saldo und MA/ÜS-Split korrekt auf 40h-Basis.
  */
-export const calculateWeekStats = (weekEntries: Entry[], userData: UserData | null): PeriodStatsResult => {
+export const calculateWeekStats = (
+  weekEntries: Entry[],
+  userData: UserData | null,
+  locale?: Locale
+): PeriodStatsResult => {
   const dateRef = weekEntries.length > 0 ? new Date(weekEntries[0].date) : new Date();
   // Volle Woche ohne Monats-Clipping (kein viewDate)
   const { start, end } = getWeekRangeInMonth(dateRef);
-  return calculatePeriodStats(weekEntries, userData, start, end);
+  return calculatePeriodStats(weekEntries, userData, start, end, undefined, locale);
 };

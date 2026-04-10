@@ -120,7 +120,7 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 focus:border-emerald-500 outline-none transition-all font-medium text-zinc-800 dark:text-zinc-200"
-              placeholder="z.B. Monteur, Techniker, Büro..."
+              placeholder="z.B. Monteur, Kellner, Pflege, Büro..."
             />
           </div>
         </div>

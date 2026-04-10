@@ -51,7 +51,7 @@ describe("entrySchema — Arbeit", () => {
       start: "08:00",
       end: "17:00",
       pause: 30,
-      project: "Baustelle A",
+      project: "Projekt A",
       code: 70,
       netDuration: 510,
     });

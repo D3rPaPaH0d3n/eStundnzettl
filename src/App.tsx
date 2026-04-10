@@ -1,6 +1,7 @@
-import React, { useRef, useCallback, Suspense } from "react";
+import React, { useRef, useCallback, useMemo, Suspense } from "react";
 import { Toaster } from "react-hot-toast";
 import type { Entry, BackupPayload } from "./types";
+import { getLocale } from "./locales";
 
 import { STORAGE_KEYS, WORK_CODE } from "./hooks/constants";
 import { useWorkCodes } from "./hooks/useWorkCodes";
@@ -28,6 +29,7 @@ import SkeletonScreen from "./components/SkeletonScreen";
 const OnboardingWizard = React.lazy(() => import("./components/OnboardingWizard"));
 const ExportModal = React.lazy(() => import("./components/ExportModal"));
 const AttachmentManager = React.lazy(() => import("./components/AttachmentManager"));
+const LocaleMigrationModal = React.lazy(() => import("./components/LocaleMigrationModal"));
 
 // MIGRATION — run once on module import
 import { migrateStorageKeys } from "./utils/migration";
@@ -39,10 +41,13 @@ export default function App() {
   const {
     userData, setUserData,
     theme, setTheme,
+    locale: localeId, setLocale,
     autoBackup, setAutoBackup,
     nextcloudEnabled, nextcloudUrl, nextcloudUser, nextcloudPass,
     setNextcloudEnabled, setNextcloudUrl, setNextcloudUser, setNextcloudPass,
   } = useSettings();
+  // Locale-Objekt aus gespeicherter LocaleId auflösen (Fallback: AT)
+  const locale = useMemo(() => getLocale(localeId), [localeId]);
   const { workCodes, hasAnyCodes, loadWorkCodes } = useWorkCodes();
   const getDefaultCode = useLastCode({ hasAnyCodes, workCodes });
   const form = useFormState({ getDefaultCode });
@@ -86,7 +91,7 @@ export default function App() {
     entriesWithHolidays, groupedByWeek, stats,
     overtime, progressPercent, todayTarget,
     lastWorkEntry, uniqueProjects,
-  } = useAppData({ entries, userData, viewMonth, viewYear, allEntries: entries });
+  } = useAppData({ entries, userData, viewMonth, viewYear, allEntries: entries, locale });
 
   // --- HANDLERS ---
   const {
@@ -98,6 +103,7 @@ export default function App() {
     addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries,
     startTimer, stopTimer, setUserData, setAutoBackup,
     setView, setCurrentDate, setDeleteTarget, setShowOnboarding,
+    locale,
   });
 
   // --- EFFECTS ---
@@ -126,6 +132,7 @@ export default function App() {
             setCloudSyncEnabled={setAutoBackup}
             setLocalBackupEnabled={() => {}}
             setTheme={setTheme}
+            setLocale={setLocale}
           />
         </Suspense>
       )}
@@ -137,6 +144,18 @@ export default function App() {
         title={deleteTarget?.type === 'all' ? "Alles löschen?" : "Eintrag löschen?"}
         message={deleteTarget?.type === 'all' ? "Möchtest du wirklich alle Einträge unwiderruflich löschen? Auch dein Profil wird zurückgesetzt." : "Möchtest du diesen Eintrag wirklich entfernen?"}
       />
+
+      {/* Locale-Migration für bestehende User: Nur zeigen, wenn noch keine
+          Locale gewählt ist UND bestehende Einträge existieren UND das
+          Onboarding NICHT aktiv ist (neue User setzen die Locale dort). */}
+      {!showOnboarding && localeId === null && entries.length > 0 && (
+        <Suspense fallback={null}>
+          <LocaleMigrationModal
+            isOpen={true}
+            onChoose={(id) => setLocale(id)}
+          />
+        </Suspense>
+      )}
 
       {showExportModal && (
         <Suspense fallback={null}>
@@ -236,6 +255,8 @@ export default function App() {
         todayTarget={todayTarget}
         showTour={showTour}
         handleTourClose={handleTourClose}
+        locale={locale}
+        setLocale={setLocale}
       />
     </div>
   );

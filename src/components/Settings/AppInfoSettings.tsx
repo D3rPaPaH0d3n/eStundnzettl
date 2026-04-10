@@ -21,6 +21,7 @@ import ConfirmModal from "../ConfirmModal";
 import { recalculateAllEntries } from "../../utils/timeCalculations";
 import { logger } from "../../utils/logger";
 import type { UserData } from "../../types";
+import type { Locale } from "../../locales/types";
 
 interface Props {
   onCheckUpdate?: () => void;
@@ -30,6 +31,7 @@ interface Props {
   onLoadDemoData?: () => void;
   userData: UserData;
   setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
+  locale?: Locale;
 }
 
 const AppInfoSettings: React.FC<Props> = ({
@@ -40,6 +42,7 @@ const AppInfoSettings: React.FC<Props> = ({
   onLoadDemoData,
   userData,
   setUserData,
+  locale,
 }) => {
   const expertMode = userData?.expertMode ?? false;
   const [showRecalcWarning, setShowRecalcWarning] = useState(false);
@@ -47,7 +50,7 @@ const AppInfoSettings: React.FC<Props> = ({
   const handleConfirmRecalculate = async () => {
     Haptics.impact({ style: ImpactStyle.Medium });
     try {
-      const { total, fixed } = await recalculateAllEntries(userData);
+      const { total, fixed } = await recalculateAllEntries(userData, locale);
       if (fixed > 0) {
         toast.success(`${fixed} von ${total} Einträgen korrigiert`);
       } else {

@@ -15,6 +15,7 @@ import TimePickerDrawer from "./TimePickerDrawer";
 import SelectionDrawer from "./SelectionDrawer";
 
 import type { Entry, EntryType, UserData } from "../types";
+import type { Locale } from "../locales/types";
 
 registerLocale("de", de);
 
@@ -84,6 +85,7 @@ interface Props {
   userData: UserData & { minuteInput?: boolean };
   specialManualMode?: boolean;
   setSpecialManualMode?: (mode: boolean) => void;
+  locale?: Locale;
 }
 
 const EntryForm: React.FC<Props> = ({
@@ -111,6 +113,7 @@ const EntryForm: React.FC<Props> = ({
   userData,
   specialManualMode = false,
   setSpecialManualMode = () => {},
+  locale,
 }) => {
   const isSpecialType =
     entryType === "vacation" || entryType === "sick" || entryType === "time_comp";
@@ -159,11 +162,11 @@ const EntryForm: React.FC<Props> = ({
 
   const holidayData = useMemo(() => {
       return {
-        ...getHolidayData(viewYear - 1),
-        ...getHolidayData(viewYear),
-        ...getHolidayData(viewYear + 1)
+        ...getHolidayData(viewYear - 1, locale),
+        ...getHolidayData(viewYear, locale),
+        ...getHolidayData(viewYear + 1, locale)
       };
-  }, [viewYear]);
+  }, [viewYear, locale]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();

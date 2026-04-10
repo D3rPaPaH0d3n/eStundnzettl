@@ -184,4 +184,42 @@ describe("useSettings", () => {
     expect(result.current.userData.name).toBe("Test");
     expect(result.current.userData.workDays).toHaveLength(7);
   });
+
+  // ─── Locale ────────────────────────────────────────────────
+
+  it("locale defaults to null when nothing is stored", () => {
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.locale).toBeNull();
+  });
+
+  it("loads locale from localStorage on init", () => {
+    localStorage.setItem("estundnzettl_locale", "de-by");
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.locale).toBe("de-by");
+  });
+
+  it("ignores unknown locale in localStorage", () => {
+    localStorage.setItem("estundnzettl_locale", "xx-yy");
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.locale).toBeNull();
+  });
+
+  it("setLocale updates locale and persists to localStorage", () => {
+    const { result } = renderHook(() => useSettings());
+
+    act(() => result.current.setLocale("neutral"));
+
+    expect(result.current.locale).toBe("neutral");
+    expect(localStorage.getItem("estundnzettl_locale")).toBe("neutral");
+  });
+
+  it("setLocale ignores invalid LocaleIds", () => {
+    const { result } = renderHook(() => useSettings());
+
+    // @ts-expect-error — Testen mit ungültiger ID
+    act(() => result.current.setLocale("xx-yy"));
+
+    expect(result.current.locale).toBeNull();
+    expect(localStorage.getItem("estundnzettl_locale")).toBeNull();
+  });
 });

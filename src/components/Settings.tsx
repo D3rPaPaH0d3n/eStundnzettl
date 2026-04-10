@@ -3,6 +3,7 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import ProfileSettings from "./Settings/ProfileSettings";
 import DataSettings from "./Settings/DataSettings";
 import ThemeSettings from "./Settings/ThemeSettings";
+import LocaleSettings from "./Settings/LocaleSettings";
 import BackupSettings from "./Settings/BackupSettings";
 import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
@@ -10,6 +11,7 @@ import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBa
 import toast from "react-hot-toast";
 
 import type { Entry, UserData, Theme, WorkCode, PdfArchiveRunOptions } from "../types";
+import type { Locale, LocaleId } from "../locales/types";
 import { getErrorMessage } from "../utils/errorUtils";
 
 const ChangelogModal = React.lazy(() => import("./ChangelogModal"));
@@ -47,6 +49,9 @@ interface Props {
   pdfArchiveLastRun?: string | null;
   pdfArchiveLastError?: string | null;
   pdfArchivePerformRun?: (opts: PdfArchiveRunOptions) => Promise<Record<string, unknown>>;
+  // Locale (Stundenberechnung)
+  locale?: Locale;
+  setLocale?: (id: LocaleId) => void;
 }
 
 const Settings: React.FC<Props> = ({
@@ -78,6 +83,9 @@ const Settings: React.FC<Props> = ({
   pdfArchiveLastRun,
   pdfArchiveLastError,
   pdfArchivePerformRun,
+  // Locale
+  locale,
+  setLocale,
 }) => {
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -287,6 +295,11 @@ const Settings: React.FC<Props> = ({
       {/* 3. Theme Settings */}
       <ThemeSettings theme={theme} setTheme={setTheme} />
 
+      {/* 3b. Stundenberechnung / Locale — nur im Hausmasta-Modus */}
+      {(userData?.expertMode ?? false) && (
+        <LocaleSettings locale={locale} setLocale={setLocale} />
+      )}
+
       {/* 4. Backup Settings */}
       <BackupSettings
         autoBackup={autoBackup}
@@ -325,6 +338,7 @@ const Settings: React.FC<Props> = ({
         onLoadDemoData={() => setDemoTrigger((n) => n + 1)}
         userData={userData}
         setUserData={setUserData}
+        locale={locale}
       />
     </main>
   );

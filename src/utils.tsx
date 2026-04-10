@@ -10,6 +10,8 @@ import {
   getWeekRangeInMonth,
   calculateWeekStats,
 } from "./utils/timeCalculations";
+import type { Locale } from "./locales/types";
+import { getLocale } from "./locales";
 
 // -------------------------------------------------------
 // HELPER-FUNKTIONEN
@@ -83,49 +85,18 @@ export { calculateOvertimeSplit, calculatePeriodStats };
 export { getWeekRangeInMonth, calculateWeekStats };
 
 // -------------------------------------------------------
-// FEIERTAGE
+// FEIERTAGE (delegiert an das Locale-System)
 // -------------------------------------------------------
-export const getHolidayData = (year: number): Record<string, string> => {
-  const addDays = (date: Date, days: number): string => {
-    const d = new Date(date);
-    d.setDate(d.getDate() + days);
-    return toLocalDateString(d);
-  };
-
-  const a = year % 19;
-  const b = Math.floor(year / 100);
-  const c = year % 100;
-  const d = Math.floor(b / 4);
-  const e = b % 4;
-  const f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4);
-  const k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31);
-  const day = ((h + l - 7 * m + 114) % 31) + 1;
-
-  const easterDate = new Date(year, month - 1, day);
-
-  const holidays = {
-    [`${year}-01-01`]: "Neujahr",
-    [`${year}-01-06`]: "Heilige Drei Könige",
-    [addDays(easterDate, 1)]: "Ostermontag",
-    [`${year}-05-01`]: "Staatsfeiertag",
-    [addDays(easterDate, 39)]: "Christi Himmelfahrt",
-    [addDays(easterDate, 50)]: "Pfingstmontag",
-    [addDays(easterDate, 60)]: "Fronleichnam",
-    [`${year}-08-15`]: "Mariä Himmelfahrt",
-    [`${year}-10-26`]: "Nationalfeiertag",
-    [`${year}-11-01`]: "Allerheiligen",
-    [`${year}-12-08`]: "Mariä Empfängnis",
-    [`${year}-12-25`]: "Christtag",
-    [`${year}-12-26`]: "Stefanitag",
-  };
-
-  return holidays;
+/**
+ * Liefert die Feiertage eines Jahres für eine Locale.
+ * Ohne Locale-Parameter wird die Default-Locale (Österreich) genutzt,
+ * damit bestehende Aufrufer unverändert funktionieren.
+ */
+export const getHolidayData = (
+  year: number,
+  locale?: Locale
+): Record<string, string> => {
+  return (locale ?? getLocale(undefined)).getHolidays(year);
 };
 
 // -------------------------------------------------------

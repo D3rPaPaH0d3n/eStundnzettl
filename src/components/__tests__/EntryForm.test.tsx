@@ -280,7 +280,7 @@ describe("EntryForm", () => {
         start: "08:00",
         end: "16:30",
         pause: 30,
-        project: "Baustelle A",
+        project: "Projekt A",
         code: 1,
         netDuration: 480,
       },

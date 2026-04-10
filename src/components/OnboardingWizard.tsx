@@ -1,9 +1,11 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ShieldCheck, ChevronRight, Check, Upload, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, ServerCog, CheckCircle2, FileText, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import WelcomeStep from "./Onboarding/steps/WelcomeStep";
 import ProfileStep from "./Onboarding/steps/ProfileStep";
+import LocaleStep from "./Onboarding/steps/LocaleStep";
 import WorkScheduleStep from "./Onboarding/steps/WorkScheduleStep";
+import WorkCodesStep, { type WorkCodePresetId } from "./Onboarding/steps/WorkCodesStep";
 import SummaryStep from "./Onboarding/steps/SummaryStep";
 import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
@@ -11,13 +13,15 @@ import { downloadBackup as ncDownloadBackup, initiateLoginFlow, pollLoginResult,
 import { Browser } from "@capacitor/browser";
 import { analyzeBackupData, applyBackup, readJsonFile, readBackupFromFolder, selectBackupFolder } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
-import { WORK_MODELS } from "../hooks/constants";
+import { WORK_MODELS, WORK_CODE_PRESETS, STORAGE_KEYS } from "../hooks/constants";
 import { DEMO_DATA } from "../utils/demoData";
 import { setSetting } from "../db/repositories/settingsRepo";
 import { obfuscate } from "../utils/obfuscate";
 import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
 import { bulkInsertEntries } from "../db/repositories/entriesRepo";
 import { logger } from "../utils/logger";
+import type { LocaleId } from "../locales/types";
+import { getLocale } from "../locales";
 
 import type { Entry, UserData, WorkCode, Theme, WorkModel, GoogleSignInResult, BackupAnalysisResult } from "../types";
 
@@ -31,6 +35,7 @@ interface Props {
   setCloudSyncEnabled: (enabled: boolean) => void;
   setLocalBackupEnabled: (enabled: boolean) => void;
   setTheme: (theme: Theme) => void;
+  setLocale?: (id: LocaleId) => void;
 }
 
 interface FormData {
@@ -43,6 +48,8 @@ interface FormData {
   localBackupEnabled: boolean;
   minuteInput: boolean;
   simpleMode?: boolean;
+  localeId: LocaleId | null;
+  workCodePresetId: WorkCodePresetId;
 }
 
 interface NcCredentials {
@@ -52,7 +59,7 @@ interface NcCredentials {
   appPassword: string;
 }
 
-const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntries, importWorkCodes, setCloudSyncEnabled, setLocalBackupEnabled, setTheme }) => {
+const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntries, importWorkCodes, setCloudSyncEnabled, setLocalBackupEnabled, setTheme, setLocale }) => {
   const [step, setStep] = useState(0); 
   const [loading, setLoading] = useState(false);
   const [isRestoreFlow, setIsRestoreFlow] = useState(false); 
@@ -66,6 +73,8 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     autoBackup: false,
     localBackupEnabled: false,
     minuteInput: false,
+    localeId: null,
+    workCodePresetId: "allgemein",
   });
   
   const [restoreData, setRestoreData] = useState<Record<string, unknown> | null>(null);
@@ -96,14 +105,21 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
   }, []);
 
   // --- NAVIGATION ---
+  // Step-Reihenfolge für neue User:
+  //   0 Welcome -> 1 Profile -> 2 Locale -> 3 WorkSchedule -> 4 WorkCodes
+  //   -> 5 Backup -> 6 Summary
+  // Restore-Flow überspringt alles außer Welcome(0) -> Backup(5) -> Summary(6).
+  // Für Restore-User wird die Locale nach dem Finish via LocaleMigrationModal
+  // abgefragt (siehe App.tsx), weil sie aus dem Backup restored werden und
+  // Locale dort (noch) nicht enthalten ist.
   const handleStartNew = () => {
     setIsRestoreFlow(false);
-    setStep(1); 
+    setStep(1);
   };
 
   const handleStartRestore = () => {
     setIsRestoreFlow(true);
-    setStep(3); 
+    setStep(5);
   };
 
   const handleDemoMode = async () => {
@@ -129,11 +145,30 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       toast.error("Bitte gib deinen Namen ein.");
       return;
     }
+    if (step === 2 && !formData.localeId) {
+      toast.error("Bitte wähle eine Stundenberechnung.");
+      return;
+    }
+    // Locale-Wahl hat Auswirkung auf Default-WorkDays: beim Verlassen von
+    // Step 2 (Locale) die Default-Stunden auf die Locale-Defaults setzen,
+    // außer der User hat bereits ein Modell gewählt, das vom alten Default
+    // abweicht. Hier halten wir es einfach: wenn die workDays noch auf dem
+    // ursprünglichen WORK_MODELS[0]-Default stehen (38,5h klassisch), dann
+    // vorbelegen.
+    if (step === 2 && formData.localeId) {
+      const locale = getLocale(formData.localeId);
+      const currentIsInitial =
+        JSON.stringify(formData.workDays) === JSON.stringify(WORK_MODELS[0].days);
+      if (currentIsInitial) {
+        setFormData((p) => ({ ...p, workDays: [...locale.defaultWorkDays] }));
+      }
+    }
     setStep(prev => prev + 1);
   };
 
   const prevStep = () => {
-    if (step === 3 && isRestoreFlow) {
+    if (step === 5 && isRestoreFlow) {
+      // Restore-Flow: von Backup direkt zurück zum Welcome
       setStep(0);
     } else {
       setStep(prev => prev - 1);
@@ -339,6 +374,32 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       }
     }
 
+    // Locale persistieren (nur wenn neuer User — Restore bekommt
+    // LocaleMigrationModal nach dem Abschluss angezeigt)
+    if (!isRestoreFlow && formData.localeId) {
+      try {
+        await setSetting("locale", formData.localeId);
+        localStorage.setItem(STORAGE_KEYS.LOCALE, formData.localeId);
+      } catch (err) {
+        log.error("Locale setting save failed:", err);
+      }
+      setLocale?.(formData.localeId);
+    }
+
+    // Work-Code-Preset laden (nur wenn neuer User)
+    if (!isRestoreFlow) {
+      const preset = WORK_CODE_PRESETS[formData.workCodePresetId];
+      if (preset) {
+        try {
+          await bulkReplaceWorkCodes(preset.codes);
+          localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(preset.codes));
+          importWorkCodes?.(preset.codes);
+        } catch (err) {
+          log.error("Work code preset load failed:", err);
+        }
+      }
+    }
+
     // Jetzt State updaten (useSettings wird auch in localStorage schreiben)
     setUserData?.(userDataToSave);
     setCloudSyncEnabled?.(formData.autoBackup);
@@ -376,7 +437,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       if (isValid) {
         setRestoreData(data);
         toast.success("Backup geladen!");
-        setStep(4);
+        setStep(6);
       } else {
         toast.error("Format ungültig.");
       }
@@ -397,7 +458,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
           if (isValid) {
               setRestoreData(data);
               toast.success("Backup geladen!");
-              setStep(4);
+              setStep(6);
           } else {
               toast.error("Ungültiges Backup.");
           }
@@ -424,7 +485,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         }
         setRestoreData(data);
         toast.success("Backup geladen!");
-        setStep(4);
+        setStep(6);
       } else {
         toast.error("Ungültiges Format.");
       }
@@ -490,7 +551,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                 setRestoreData(data);
                 toast.success("Backup von Nextcloud geladen!");
                 setShowNcRestore(false);
-                setStep(4);
+                setStep(6);
               } else {
                 toast.error("Ungültiges Backup-Format");
               }
@@ -518,12 +579,6 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
      return current === target;
   };
 
-  const isCustomModelActive = useMemo(() => {
-      const isStandard = WORK_MODELS.some(m => m.id !== 'custom' && JSON.stringify(m.days) === JSON.stringify(formData.workDays));
-      return !isStandard; 
-  }, [formData.workDays]);
-
-
   return (
     <div className="fixed inset-0 bg-zinc-50 dark:bg-zinc-950 z-50 flex flex-col items-center justify-center p-4">
       
@@ -531,10 +586,10 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         
         {step > 0 && (
           <div className="h-1.5 bg-zinc-100 dark:bg-zinc-700 w-full">
-            <motion.div 
+            <motion.div
               className="h-full bg-emerald-500"
               initial={{ width: 0 }}
-              animate={{ width: `${(step / 4) * 100}%` }}
+              animate={{ width: `${(step / 6) * 100}%` }}
             />
           </div>
         )}
@@ -561,14 +616,21 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
               />
             )}
 
-            {/* SCHRITT 2: ARBEITSZEIT */}
+            {/* SCHRITT 2: LOCALE / STUNDENBERECHNUNG */}
             {step === 2 && (
+              <LocaleStep
+                selectedLocaleId={formData.localeId}
+                onSelect={(id) => setFormData((p) => ({ ...p, localeId: id }))}
+              />
+            )}
+
+            {/* SCHRITT 3: ARBEITSZEIT */}
+            {step === 3 && (
               <WorkScheduleStep
                 formData={formData}
                 onModelSelect={handleModelSelect}
                 onCustomDayChange={handleCustomDayChange}
                 isSelected={isSelected}
-                isCustomModelActive={isCustomModelActive}
                 totalWeeklyMinutes={totalWeeklyMinutes}
                 minToHours={minToHours}
                 onMinuteInputToggle={handleMinuteInputToggle}
@@ -576,8 +638,16 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
               />
             )}
 
-            {/* SCHRITT 3: BACKUP / DATEN */}
-            {step === 3 && (
+            {/* SCHRITT 4: TÄTIGKEITEN (Work Codes) */}
+            {step === 4 && (
+              <WorkCodesStep
+                selectedPresetId={formData.workCodePresetId}
+                onSelect={(id) => setFormData((p) => ({ ...p, workCodePresetId: id }))}
+              />
+            )}
+
+            {/* SCHRITT 5: BACKUP / DATEN */}
+            {step === 5 && (
                <motion.div 
                key="step3"
                initial={{ opacity: 0, x: 20 }}
@@ -858,19 +928,19 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
              </motion.div>
             )}
 
-            {/* SCHRITT 4: FERTIG */}
-            {step === 4 && (
+            {/* SCHRITT 6: FERTIG */}
+            {step === 6 && (
               <SummaryStep hasRestoreData={!!restoreData} onFinish={finishSetup} />
             )}
 
           </AnimatePresence>
         </div>
 
-        {/* Footer Navigation */}
-        {step > 0 && step < 4 && (
+        {/* Footer Navigation (Steps 1..5, nicht auf Welcome & Summary) */}
+        {step > 0 && step < 6 && (
           <div className="p-4 border-t border-zinc-100 dark:border-zinc-700 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800/50 backdrop-blur-sm">
-            
-            <button 
+
+            <button
               onClick={prevStep}
               className="px-4 py-2 font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors flex items-center gap-1"
             >
@@ -882,7 +952,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                 onClick={nextStep}
                 className="px-6 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl flex items-center gap-2 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-lg shadow-zinc-900/10"
               >
-                {step === 3 ? "Passt" : "Weiter"} <ChevronRight size={18} />
+                {step === 5 ? "Passt" : "Weiter"} <ChevronRight size={18} />
               </button>
             )}
           </div>
@@ -895,7 +965,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         onCancel={() => setShowConflictModal(false)}
         onConfirm={() => {
             setShowConflictModal(false);
-            setStep(4);
+            setStep(6);
         }}
       />
 

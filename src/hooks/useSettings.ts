@@ -16,6 +16,8 @@ import type { UserData, Theme } from '../types';
 import { STORAGE_KEYS, WORK_MODELS } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
 import { getSetting, setSetting, deleteSetting } from "../db/repositories/settingsRepo";
+import type { LocaleId } from "../locales/types";
+import { LOCALES } from "../locales";
 
 import { obfuscate, deobfuscate, deobfuscateLegacySync } from "../utils/obfuscate";
 import { logger } from "../utils/logger";
@@ -103,6 +105,15 @@ export function useSettings() {
     () => localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true"
   );
 
+  // Locale (länder-/regions-spezifische Berechnung)
+  // `null` = noch nicht gewählt → LocaleMigrationModal wird für bestehende
+  // User eingeblendet, Onboarding-Wizard setzt ihn für neue User.
+  const [locale, setLocaleState] = useState<LocaleId | null>(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.LOCALE);
+    if (stored && stored in LOCALES) return stored as LocaleId;
+    return null;
+  });
+
   // Nextcloud
   const [nextcloudEnabled, setNextcloudEnabled] = useState(
     () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true"
@@ -136,11 +147,12 @@ export function useSettings() {
         sqliteReady.current = true;
 
         // Settings aus SQLite laden — nur überschreiben wenn vorhanden
-        const [sqlUser, sqlTheme, sqlCloud, sqlLocal, sqlNcEnabled, sqlNcUrl, sqlNcUser, sqlNcPass] = await Promise.all([
+        const [sqlUser, sqlTheme, sqlCloud, sqlLocal, sqlLocale, sqlNcEnabled, sqlNcUrl, sqlNcUser, sqlNcPass] = await Promise.all([
           getSetting("user"),
           getSetting("theme"),
           getSetting("cloud_sync_enabled"),
           getSetting("local_backup_enabled"),
+          getSetting("locale"),
           getSetting("nextcloud_enabled"),
           getSetting("nextcloud_url"),
           getSetting("nextcloud_user"),
@@ -159,6 +171,9 @@ export function useSettings() {
         if (sqlTheme) setTheme(sqlTheme as Theme);
         if (sqlCloud !== null) setCloudSyncEnabled(!!sqlCloud);
         if (sqlLocal !== null) setLocalBackupEnabled(!!sqlLocal);
+        if (typeof sqlLocale === "string" && sqlLocale in LOCALES) {
+          setLocaleState(sqlLocale as LocaleId);
+        }
         if (sqlNcEnabled !== null) setNextcloudEnabled(!!sqlNcEnabled);
         if (sqlNcUrl) setNextcloudUrl(sqlNcUrl as string);
         if (sqlNcUser) setNextcloudUser(sqlNcUser as string);
@@ -246,6 +261,21 @@ export function useSettings() {
     sqliteWrite("local_backup_enabled", localBackupEnabled);
   }, [localBackupEnabled, sqliteWrite]);
 
+  // Locale (null = noch nicht gesetzt; skip initialen null-Write)
+  useEffect(() => {
+    if (locale === null) return;
+    localStorage.setItem(STORAGE_KEYS.LOCALE, locale);
+    sqliteWrite("locale", locale);
+  }, [locale, sqliteWrite]);
+
+  const setLocale = useCallback((id: LocaleId) => {
+    if (!(id in LOCALES)) {
+      logger.error(`[useSettings] Unbekannte LocaleId: ${id}`);
+      return;
+    }
+    setLocaleState(id);
+  }, []);
+
   // Nextcloud
   useEffect(() => {
     if (nextcloudEnabled) {
@@ -281,12 +311,16 @@ export function useSettings() {
     return () => { cancelled = true; };
   }, [nextcloudPass, sqliteWrite]);
 
-  // ─── Return (API identisch zum Original) ───
+  // ─── Return (API identisch zum Original + locale) ───
   return {
     userData,
     setUserData,
     theme,
     setTheme,
+
+    // Locale (länderspezifische Berechnung)
+    locale,
+    setLocale,
 
     // Mapping für UI-Kompatibilität (Settings.jsx erwartet 'autoBackup')
     autoBackup: cloudSyncEnabled,

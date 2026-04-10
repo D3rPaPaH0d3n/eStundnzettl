@@ -28,6 +28,7 @@ export const STORAGE_KEYS = {
   USER: "estundnzettl_user",
   THEME: "estundnzettl_theme",
   WORK_CODES: "estundnzettl_work_codes",
+  LOCALE: "estundnzettl_locale", // LocaleId: "neutral" | "at" | "de-by" | ...
   
   // Backup & Sync Status (Eindeutige Benennung!)
   CLOUD_SYNC_ENABLED: "estundnzettl_cloud_sync_enabled", // Boolean: Ist Google Drive aktiv?

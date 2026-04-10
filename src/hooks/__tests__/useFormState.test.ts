@@ -113,7 +113,7 @@ describe("useFormState", () => {
         end: "15:45",
         pause: 45,
         code: 5,
-        project: "Baustelle A",
+        project: "Projekt A",
         netDuration: 450,
       })
     );
@@ -125,7 +125,7 @@ describe("useFormState", () => {
     expect(result.current.endTime).toBe("15:45");
     expect(result.current.pauseDuration).toBe(45);
     expect(result.current.code).toBe(5);
-    expect(result.current.project).toBe("Baustelle A");
+    expect(result.current.project).toBe("Projekt A");
     expect(result.current.isLiveEntry).toBe(false);
     expect(result.current.specialManualMode).toBe(false);
   });

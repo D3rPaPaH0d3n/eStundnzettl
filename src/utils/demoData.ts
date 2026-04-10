@@ -19,19 +19,19 @@ interface DemoUser {
 const DEMO_USER: DemoUser = {
   name: "Thomas Berger",
   position: "Monteur",
-  company: "Berger Elektrotechnik GmbH",
+  company: "Musterbetrieb",
   workDays: [...WORK_MODELS[0].days], // 38,5h Standard: Mo-Do 8,5h / Fr 4,5h
   workModelId: "38.5-classic",
   photo: null,
 };
 
 const DEMO_WORK_CODES: WorkCode[] = [
-  { id: 1, label: "01 - Montage" },
+  { id: 1, label: "01 - Arbeit" },
   { id: 2, label: "02 - Büro" },
   { id: 3, label: "03 - Besprechung" },
-  { id: 4, label: "04 - Material" },
+  { id: 4, label: "04 - Vorbereitung" },
   { id: 5, label: "05 - Wartung" },
-  { id: 6, label: "06 - Reparatur" },
+  { id: 6, label: "06 - Sonstiges" },
   { id: WORK_CODE.DRIVE, label: "19 - Fahrzeit" },
   { id: WORK_CODE.ARRIVAL, label: "19 - An/Abreise" },
   { id: WORK_CODE.OFFICE, label: "70 - Büro" },
@@ -75,11 +75,11 @@ export const generateDemoEntries = (): Entry[] => {
   let id = 1700000000000;
 
   const projects = [
-    "BV Maier - Neubau",
-    "BV Stadler - Sanierung",
-    "BV Gemeinde Hof",
-    "Lager / Werkstatt",
-    "BV Kirchner - Umbau",
+    "Projekt A",
+    "Projekt B",
+    "Projekt Gemeinde",
+    "Büro / Werkstatt",
+    "Projekt C",
   ];
   const workCodes = [1, 3, 4, 5, 6];
 

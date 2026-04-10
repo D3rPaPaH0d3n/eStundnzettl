@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { Globe, Check } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Globe, Check, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import type { LocaleId } from "../locales/types";
 import { GERMAN_STATE_IDS, GERMAN_STATE_NAMES } from "../locales";
+import SelectionDrawer from "./SelectionDrawer";
 
 /**
  * LocaleMigrationModal — einmalig erscheinendes Popup für bestehende
@@ -26,6 +27,12 @@ type Choice = "at" | "de" | "neutral" | null;
 const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
   const [choice, setChoice] = useState<Choice>("at");
   const [germanState, setGermanState] = useState<string>("by");
+  const [stateDrawerOpen, setStateDrawerOpen] = useState(false);
+
+  const stateOptions = useMemo(
+    () => GERMAN_STATE_IDS.map((s) => ({ id: s, label: GERMAN_STATE_NAMES[s] })),
+    []
+  );
 
   React.useEffect(() => {
     if (isOpen) {
@@ -118,23 +125,22 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
               )}
             </button>
 
-            {/* Bundesland-Dropdown nur wenn DE gewählt */}
+            {/* Bundesland-Picker nur wenn DE gewählt */}
             {choice === "de" && (
               <div className="pl-4 border-l-2 border-blue-300 dark:border-blue-700 ml-2">
                 <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
                   Bundesland
                 </label>
-                <select
-                  value={germanState}
-                  onChange={(e) => setGermanState(e.target.value)}
-                  className="w-full p-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white focus:border-blue-500 outline-none"
+                <button
+                  type="button"
+                  onClick={() => setStateDrawerOpen(true)}
+                  className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white hover:border-blue-500 transition-colors"
                 >
-                  {GERMAN_STATE_IDS.map((s) => (
-                    <option key={s} value={s}>
-                      {GERMAN_STATE_NAMES[s]}
-                    </option>
-                  ))}
-                </select>
+                  <span className="flex-1 text-left">
+                    {GERMAN_STATE_NAMES[germanState as keyof typeof GERMAN_STATE_NAMES]}
+                  </span>
+                  <ChevronDown size={18} className="text-zinc-400 ml-2" />
+                </button>
               </div>
             )}
 
@@ -175,6 +181,15 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
           </button>
         </div>
       </motion.div>
+
+      <SelectionDrawer
+        isOpen={stateDrawerOpen}
+        onClose={() => setStateDrawerOpen(false)}
+        title="Bundesland wählen"
+        options={stateOptions}
+        value={germanState}
+        onChange={(id) => setGermanState(String(id))}
+      />
     </div>
   );
 };

@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Globe, Check, Info } from "lucide-react";
+import { Globe, Check, Info, ChevronDown } from "lucide-react";
 import type { LocaleId } from "../../../locales/types";
 import { GERMAN_STATE_IDS, GERMAN_STATE_NAMES } from "../../../locales";
+import SelectionDrawer from "../../SelectionDrawer";
 
 /**
  * Onboarding-Schritt: Locale / Stundenberechnung auswählen.
@@ -25,6 +26,13 @@ interface Props {
 type TopChoice = "neutral" | "at" | "de";
 
 const LocaleStep: React.FC<Props> = ({ selectedLocaleId, onSelect }) => {
+  const [stateDrawerOpen, setStateDrawerOpen] = useState(false);
+
+  const stateOptions = useMemo(
+    () => GERMAN_STATE_IDS.map((s) => ({ id: s, label: GERMAN_STATE_NAMES[s] })),
+    []
+  );
+
   const topChoice: TopChoice | null = selectedLocaleId
     ? selectedLocaleId === "neutral"
       ? "neutral"
@@ -136,26 +144,34 @@ const LocaleStep: React.FC<Props> = ({ selectedLocaleId, onSelect }) => {
           )}
         </button>
 
-        {/* Bundesland-Dropdown erscheint, wenn Deutschland gewählt */}
+        {/* Bundesland-Picker erscheint, wenn Deutschland gewählt */}
         {topChoice === "de" && (
           <div className="pl-4 border-l-2 border-blue-300 dark:border-blue-700 ml-2">
             <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
               Bundesland
             </label>
-            <select
-              value={currentGermanState}
-              onChange={(e) => onSelect(`de-${e.target.value}` as LocaleId)}
-              className="w-full p-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white focus:border-blue-500 outline-none"
+            <button
+              type="button"
+              onClick={() => setStateDrawerOpen(true)}
+              className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white hover:border-blue-500 transition-colors"
             >
-              {GERMAN_STATE_IDS.map((s) => (
-                <option key={s} value={s}>
-                  {GERMAN_STATE_NAMES[s]}
-                </option>
-              ))}
-            </select>
+              <span className="flex-1 text-left">
+                {GERMAN_STATE_NAMES[currentGermanState]}
+              </span>
+              <ChevronDown size={18} className="text-zinc-400 ml-2" />
+            </button>
           </div>
         )}
       </div>
+
+      <SelectionDrawer
+        isOpen={stateDrawerOpen}
+        onClose={() => setStateDrawerOpen(false)}
+        title="Bundesland wählen"
+        options={stateOptions}
+        value={currentGermanState}
+        onChange={(id) => onSelect(`de-${id}` as LocaleId)}
+      />
     </motion.div>
   );
 };

@@ -1,9 +1,10 @@
-import React from "react";
-import { Globe } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Globe, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 import { Card } from "../../utils";
 import type { Locale, LocaleId } from "../../locales/types";
-import { LOCALES, GERMANY_LOCALE_IDS, GERMAN_STATE_NAMES, type GermanState } from "../../locales";
+import { GERMAN_STATE_IDS, GERMAN_STATE_NAMES, type GermanState } from "../../locales";
+import SelectionDrawer from "../SelectionDrawer";
 
 /**
  * Locale-Auswahl in den Settings: erlaubt dem User, die Stunden-
@@ -19,6 +20,13 @@ interface Props {
 type Group = "neutral" | "at" | "de";
 
 const LocaleSettings: React.FC<Props> = ({ locale, setLocale }) => {
+  const [stateDrawerOpen, setStateDrawerOpen] = useState(false);
+
+  const stateOptions = useMemo(
+    () => GERMAN_STATE_IDS.map((s) => ({ id: s, label: GERMAN_STATE_NAMES[s] })),
+    []
+  );
+
   if (!locale || !setLocale) return null;
 
   const currentGroup: Group =
@@ -46,8 +54,8 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale }) => {
     }
   };
 
-  const handleGermanStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const stateCode = e.target.value as GermanState;
+  const handleGermanStateChange = (id: string | number) => {
+    const stateCode = id as GermanState;
     setLocale(`de-${stateCode}` as LocaleId);
     toast.success(`Bundesland auf ${GERMAN_STATE_NAMES[stateCode]} geändert`);
   };
@@ -107,21 +115,16 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale }) => {
           <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
             Bundesland
           </label>
-          <select
-            value={currentGermanState ?? "by"}
-            onChange={handleGermanStateChange}
-            className="w-full p-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white focus:border-blue-500 outline-none"
+          <button
+            type="button"
+            onClick={() => setStateDrawerOpen(true)}
+            className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white hover:border-blue-500 transition-colors"
           >
-            {GERMANY_LOCALE_IDS.map((id) => {
-              const loc = LOCALES[id];
-              const stateCode = id.slice(3) as GermanState;
-              return (
-                <option key={id} value={stateCode}>
-                  {loc.region}
-                </option>
-              );
-            })}
-          </select>
+            <span className="flex-1 text-left">
+              {GERMAN_STATE_NAMES[currentGermanState ?? "by"]}
+            </span>
+            <ChevronDown size={18} className="text-zinc-400 ml-2" />
+          </button>
         </div>
       )}
 
@@ -130,6 +133,15 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale }) => {
         Berechnungen folgen der neuen Auswahl — vergangene Einträge bleiben
         unverändert.
       </p>
+
+      <SelectionDrawer
+        isOpen={stateDrawerOpen}
+        onClose={() => setStateDrawerOpen(false)}
+        title="Bundesland wählen"
+        options={stateOptions}
+        value={currentGermanState ?? "by"}
+        onChange={handleGermanStateChange}
+      />
     </Card>
   );
 };

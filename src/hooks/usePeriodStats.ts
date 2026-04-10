@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { Entry, UserData } from '../types';
 import { calculatePeriodStats } from "../utils/timeCalculations";
+import type { Locale } from "../locales/types";
 
 /**
  * usePeriodStats — Memoisierter Wrapper um `calculatePeriodStats()`.
@@ -27,12 +28,19 @@ import { calculatePeriodStats } from "../utils/timeCalculations";
  * sick, timeComp, totalIst, totalTarget, totalSaldo, normalstunden,
  * overtimeSplit.
  */
-export function usePeriodStats(entries: Entry[], userData: UserData, periodStart: Date, periodEnd: Date, allEntries?: Entry[]) {
+export function usePeriodStats(
+  entries: Entry[],
+  userData: UserData,
+  periodStart: Date,
+  periodEnd: Date,
+  allEntries?: Entry[],
+  locale?: Locale
+) {
   return useMemo(() => {
     // Sicherstellen, dass Dates gültig sind, sonst Fallback auf heute
     const start = periodStart instanceof Date ? periodStart : new Date();
     const end = periodEnd instanceof Date ? periodEnd : new Date();
 
-    return calculatePeriodStats(entries, userData, start, end, allEntries);
-  }, [entries, userData, periodStart, periodEnd, allEntries]);
+    return calculatePeriodStats(entries, userData, start, end, allEntries, locale);
+  }, [entries, userData, periodStart, periodEnd, allEntries, locale]);
 }

@@ -3,6 +3,7 @@ import type { Entry, UserData } from '../types';
 import { getHolidayData, toLocalDateString } from "../utils";
 import { getWeekNumber, getTargetMinutesForDate, applyEffectiveDurations } from "../utils/timeCalculations";
 import { usePeriodStats } from "./usePeriodStats";
+import type { Locale } from "../locales/types";
 
 /**
  * useAppData — Zentralisierte, memoisierte Ableitungen aus
@@ -34,14 +35,14 @@ import { usePeriodStats } from "./usePeriodStats";
  * - `lastWorkEntry` — letzter Work-Eintrag (für "Wie zuletzt"-Button)
  * - `uniqueProjects` — sortierte Liste aller Projekt-Namen (Autocomplete)
  */
-export function useAppData({ entries, userData, viewMonth, viewYear, allEntries }: { entries: Entry[]; userData: UserData; viewMonth: number; viewYear: number; allEntries?: Entry[] }) {
+export function useAppData({ entries, userData, viewMonth, viewYear, allEntries, locale }: { entries: Entry[]; userData: UserData; viewMonth: number; viewYear: number; allEntries?: Entry[]; locale?: Locale }) {
   const todayTarget = useMemo(() => {
     const todayStr = toLocalDateString(new Date());
-    return getTargetMinutesForDate(todayStr, userData?.workDays);
-  }, [userData]);
+    return getTargetMinutesForDate(todayStr, userData?.workDays, locale);
+  }, [userData, locale]);
 
   const entriesWithHolidays = useMemo(() => {
-    const holidayMap = getHolidayData(viewYear);
+    const holidayMap = getHolidayData(viewYear, locale);
     const todayStr = toLocalDateString(new Date());
     const realEntries = entries.filter((entry) => {
       const date = new Date(entry.date);
@@ -55,7 +56,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
       const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       if (!holidayMap[dateStr] || dateStr > todayStr) continue;
 
-      const targetMin = getTargetMinutesForDate(dateStr, userData?.workDays);
+      const targetMin = getTargetMinutesForDate(dateStr, userData?.workDays, locale);
       if (targetMin <= 0) continue;
 
       holidayEntries.push({
@@ -75,8 +76,8 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
     // SINGLE SOURCE OF TRUTH: Krank-Korrektur einmal anwenden.
     // Alle Downstream-Funktionen (Stats, Dashboard, PDF) arbeiten mit
     // den korrigierten netDuration-Werten.
-    return applyEffectiveDurations(merged, userData);
-  }, [entries, viewMonth, viewYear, userData]);
+    return applyEffectiveDurations(merged, userData, locale);
+  }, [entries, viewMonth, viewYear, userData, locale]);
 
   // Wochen-Nummern die in diesem Monat vorkommen (für Übergangswochen)
   const weekNumbersInMonth = useMemo(() => {
@@ -89,8 +90,8 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
 
   // allEntries ebenfalls korrigieren (für Boundary-Wochen und Stats)
   const correctedAllEntries = useMemo(
-    () => allEntries ? applyEffectiveDurations(allEntries, userData) : undefined,
-    [allEntries, userData]
+    () => allEntries ? applyEffectiveDurations(allEntries, userData, locale) : undefined,
+    [allEntries, userData, locale]
   );
 
   // Für Übergangswochen: Entries aus Nachbarmonaten ergänzen,
@@ -135,7 +136,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries 
     [viewMonth, viewYear]
   );
 
-  const stats = usePeriodStats(entriesWithHolidays, userData, periodStart, periodEnd, correctedAllEntries);
+  const stats = usePeriodStats(entriesWithHolidays, userData, periodStart, periodEnd, correctedAllEntries, locale);
   const overtime = stats.totalSaldo;
   const progressPercent = Math.min(
     100,

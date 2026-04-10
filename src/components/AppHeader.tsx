@@ -48,7 +48,7 @@ export default function AppHeader({
             </h1>
             {view === "dashboard" && (
               <p className="text-xs text-zinc-400 font-medium mt-0.5 italic">
-                <span className="mr-1">⏱️</span>Damit ka Stund verlorn geht
+                Damit ka Stund verlorn geht<span className="ml-1">⏱️</span>
               </p>
             )}
           </div>

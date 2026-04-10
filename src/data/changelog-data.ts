@@ -1,6 +1,50 @@
 export const CHANGELOG_DATA = [
 
   {
+    version: "4.0.0",
+    date: "10.04.2026",
+    title: "Neutraler Kurs — für alle Berufe 🌍",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "Globe",
+        title: "Stundenberechnung: Neutral, Österreich oder Deutschland",
+        items: [
+          "eStundnzettl ist jetzt nicht mehr nur für Österreich! Beim ersten Start wählst du einmal, welche Regeln deine App verwenden soll: Neutral (keine automatischen Feiertage, keine Halbtage, kein Mehrarbeit/Überstunden-Split), Österreich (wie bisher, mit gesetzlichen Feiertagen, 24./31.12. halbiert und Mehrarbeit/Überstunden nach AZG) oder Deutschland mit allen 16 Bundesländern inklusive regionaler Feiertage.",
+          "Bestehende User bekommen beim ersten Start nach dem Update ein einmaliges Popup und können Österreich mit einem Klick wie bisher beibehalten — deine Einträge bleiben unverändert.",
+          "Wechseln geht später jederzeit im Hausmasta-Modus unter \"Stundenberechnung\". Zukünftige Berechnungen folgen der neuen Auswahl, vergangene Einträge bleiben."
+        ]
+      },
+      {
+        iconName: "Sliders",
+        title: "Benutzerdefinierte Stunden stehen jetzt vorne",
+        items: [
+          "Im Einrichtungs-Assistenten sind die Tages-Slider ab sofort der aktive Modus — du stellst deine Stunden direkt selbst ein. Die Vorbelegung kommt automatisch aus deiner gewählten Region (38,5h für Österreich, 40h für Deutschland, 40h für Neutral).",
+          "Die klassischen Presets (38,5h, 40h, 4-Tage-Woche …) findest du jetzt unterhalb der Slider — ein Klick übernimmt sie, wenn du willst.",
+          "Wochentage werden endlich in der richtigen Reihenfolge angezeigt: Montag bis Sonntag, nicht mehr Sonntag bis Samstag."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Neuer Schritt: Tätigkeits-Codes im Wizard",
+        items: [
+          "Neue User können jetzt schon beim ersten Einrichten entscheiden, mit welchen Tätigkeits-Codes sie starten wollen: \"Allgemein\" (5 neutrale Basis-Codes, vorausgewählt), \"Keine Codes\" (du legst selbst an) oder ein Branchen-Preset wie der Kogler-Aufzugsbau-Katalog unter \"Erweiterte Presets\".",
+          "Bestehende User behalten ihre gewohnten Codes — keine Änderung."
+        ]
+      },
+      {
+        iconName: "FileText",
+        title: "Kleine Politur",
+        items: [
+          "Der Spruch unterm App-Namen heißt jetzt stolz \"Damit ka Stund verlorn geht\" statt \"Mobile Zeiterfassung\".",
+          "Demo-Daten und Beispiel-Projekte sind neutraler formuliert, damit sich auch Kellner, Pfleger, Monteure & Co. wiederfinden.",
+          "Interne Aufräumarbeiten: Feiertagsliste wird nicht mehr doppelt gepflegt, sondern kommt aus einer zentralen Stelle pro Region."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "3.6.0",
     date: "09.04.2026",
     title: "Hausmasta-Modus & schlankere Settings 🔧",

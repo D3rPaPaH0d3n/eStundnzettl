@@ -131,29 +131,46 @@ const WorkScheduleStep: React.FC<Props> = ({
               Tagesstunden (benutzerdefiniert)
             </h3>
             <div className="space-y-3">
-              {["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"].map((dayName, idx) => (
-                <div key={idx} className="flex items-center gap-3">
-                  <span
-                    className={`text-xs font-bold w-6 ${
-                      idx === 0 || idx === 6 ? "text-red-400" : "text-zinc-500"
-                    }`}
-                  >
-                    {dayName}
-                  </span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="720"
-                    step="15"
-                    value={formData.workDays[idx]}
-                    onChange={(e) => onCustomDayChange(idx, e.target.value)}
-                    className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                  />
-                  <span className="text-xs font-mono font-bold w-12 text-right">
-                    {minToHours(formData.workDays[idx])}
-                  </span>
-                </div>
-              ))}
+              {/*
+                Anzeige-Reihenfolge Mo..So (ISO-Woche), während das
+                darunterliegende workDays-Array weiter in JS-Date-Reihenfolge
+                [So, Mo, Di, Mi, Do, Fr, Sa] indexiert ist (entspricht
+                Date.getDay() mit 0 = Sonntag). Wir mappen hier nur die UI.
+              */}
+              {[
+                { label: "Mo", idx: 1 },
+                { label: "Di", idx: 2 },
+                { label: "Mi", idx: 3 },
+                { label: "Do", idx: 4 },
+                { label: "Fr", idx: 5 },
+                { label: "Sa", idx: 6 },
+                { label: "So", idx: 0 },
+              ].map(({ label, idx }) => {
+                const isWeekend = idx === 0 || idx === 6;
+                return (
+                  <div key={idx} className="flex items-center gap-3">
+                    <span
+                      className={`text-xs font-bold w-6 ${
+                        isWeekend ? "text-red-400" : "text-zinc-500"
+                      }`}
+                    >
+                      {label}
+                    </span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="720"
+                      step="15"
+                      value={formData.workDays[idx]}
+                      onChange={(e) => onCustomDayChange(idx, e.target.value)}
+                      className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    />
+                    <span className="text-xs font-mono font-bold w-12 text-right">
+                      {minToHours(formData.workDays[idx])}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
             <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 flex justify-between items-center">
               <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">

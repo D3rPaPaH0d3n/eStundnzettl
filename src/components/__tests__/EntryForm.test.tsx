@@ -257,7 +257,7 @@ describe("EntryForm", () => {
     const { container, onSubmit } = renderForm();
     const form = container.querySelector("form");
     expect(form).toBeTruthy();
-    fireEvent.submit(form!);
+    if (form) fireEvent.submit(form);
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 
@@ -294,7 +294,7 @@ describe("EntryForm", () => {
     // Der Start-Button enthält die Zeit-Anzeige "08:00"
     const startButton = getByText("08:00").closest("button");
     expect(startButton).toBeTruthy();
-    fireEvent.click(startButton!);
+    if (startButton) fireEvent.click(startButton);
     expect(queryByTestId("time-picker-drawer")).not.toBeNull();
   });
 });

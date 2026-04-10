@@ -10,6 +10,7 @@ import { useAutoBackup } from "./hooks/useAutoBackup";
 import { useAutoPdfArchive } from "./hooks/useAutoPdfArchive";
 import { useLiveTimer } from "./hooks/useLiveTimer";
 import { useExport } from "./hooks/useExport";
+import { useImport } from "./hooks/useImport";
 import { useFormState } from "./hooks/useFormState";
 import { useAppData } from "./hooks/useAppData";
 import { useAppActions } from "./hooks/useAppActions";
@@ -57,9 +58,11 @@ export default function App() {
   } = useAttachments();
 
   const exportPayloadRef = useRef<BackupPayload | null>(null);
-  const { showExportModal, setShowExportModal, exportData, handleExportToFolder, handleExportShare, handleImport } = useExport({
-    entries, userData, workCodes, attachments,
-    importEntries, setUserData, importWorkCodes: loadWorkCodes, exportPayloadRef,
+  const { showExportModal, setShowExportModal, exportData, handleExportToFolder, handleExportShare } = useExport({
+    entries, userData, workCodes, attachments, exportPayloadRef,
+  });
+  const { handleImport } = useImport({
+    importEntries, setUserData, importWorkCodes: loadWorkCodes,
   });
 
   // --- UI STATE ---

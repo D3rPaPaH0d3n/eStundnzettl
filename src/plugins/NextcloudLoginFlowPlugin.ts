@@ -24,7 +24,7 @@ export interface NextcloudHttpRequestResult {
 }
 
 export interface NextcloudLoginFlowPlugin {
-  startLoginFlow(options: { url: string }): Promise<NextcloudLoginFlowResult & { ok: boolean }>;
+  startLoginFlow(options: { serverUrl: string }): Promise<NextcloudLoginFlowResult & { ok: boolean }>;
   pollLoginFlow(options: { pollEndpoint: string; token: string }): Promise<NextcloudLoginFlowResult & { ok: boolean; status?: string }>;
   httpRequest(options: NextcloudHttpRequestOptions): Promise<NextcloudHttpRequestResult>;
 }

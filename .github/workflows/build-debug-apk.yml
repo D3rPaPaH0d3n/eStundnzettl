@@ -18,7 +18,6 @@ on:
       branch:
         description: 'Branch to build from'
         required: true
-        default: 'claude/beta-dev'
         type: string
 
 jobs:

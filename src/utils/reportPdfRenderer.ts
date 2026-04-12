@@ -183,6 +183,7 @@ export async function renderMonthlyReportPdfBlob({
           customNote,
           locale,
           calculationConfig,
+          allEntries: correctedEntries,
         } as Record<string, unknown>)
       );
       // requestAnimationFrame * 2 stellt sicher, dass React committed

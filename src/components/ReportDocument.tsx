@@ -59,6 +59,8 @@ interface Props {
   domId?: string;
   locale?: Locale;
   calculationConfig?: CalculationConfig | null;
+  /** Alle Einträge des Jahres — für die Urlaubstage-Bilanz im Footer. */
+  allEntries?: Entry[];
 }
 
 // COLORS (Zinc & Emerald Theme) — 1:1 wie bisher in PrintReport
@@ -90,6 +92,7 @@ const ReportDocument: React.FC<Props> = ({
   domId = "report-to-print",
   locale,
   calculationConfig,
+  allEntries = [],
 }) => {
   // Wenn der User keine MA/ÜS-Unterscheidung will, blenden wir die
   // Spalten Mehrarbeit & Überstunden komplett aus und zeigen nur Saldo.
@@ -121,6 +124,22 @@ const ReportDocument: React.FC<Props> = ({
     [entries, userData, locale, calculationConfig]
   );
 
+
+  // Urlaubstage-Bilanz (nur wenn konfiguriert)
+  const vacationBalance = useMemo(() => {
+    const allowance = calculationConfig?.vacationAllowanceDays ?? 0;
+    if (allowance <= 0) return null;
+    const carryover = calculationConfig?.vacationCarryoverDays ?? 0;
+    const year = monthDate.getFullYear();
+    const yearPrefix = `${year}-`;
+    // Alle Urlaubseinträge des Jahres zählen (jeder Eintrag = 1 Tag)
+    const source = allEntries.length > 0 ? allEntries : entries;
+    const usedDays = source.filter(
+      (e) => e.type === "vacation" && typeof e.date === "string" && e.date.startsWith(yearPrefix)
+    ).length;
+    const remaining = allowance + carryover - usedDays;
+    return { allowance, carryover, usedDays, remaining };
+  }, [calculationConfig, monthDate, allEntries, entries]);
 
   // Fallback-Stats, damit die Komponente auch ohne usePeriodStats laeuft.
   const safeStats = stats || {
@@ -600,6 +619,45 @@ const ReportDocument: React.FC<Props> = ({
             >
               <span>Fahrtzeit (unbezahlt):</span>
               <span>{formatTime(safeStats.drive)}</span>
+            </div>
+          )}
+
+          {/* Urlaubstage-Bilanz */}
+          {vacationBalance && (
+            <div
+              style={{
+                borderTop: `1px solid ${PRINT_STYLES.borderLight}`,
+                marginTop: "0.4rem",
+                paddingTop: "0.3rem",
+                fontSize: "0.75rem",
+                color: PRINT_STYLES.textMedium,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.15rem" }}>
+                <span>Urlaubsanspruch:</span>
+                <span style={{ fontWeight: "bold" }}>{vacationBalance.allowance} Tage</span>
+              </div>
+              {vacationBalance.carryover !== 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.15rem" }}>
+                  <span>{vacationBalance.carryover > 0 ? "Übertrag Vorjahr:" : "Bereits verbraucht:"}</span>
+                  <span style={{ fontWeight: "bold" }}>{vacationBalance.carryover > 0 ? `+${vacationBalance.carryover}` : `${vacationBalance.carryover}`} Tage</span>
+                </div>
+              )}
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.15rem" }}>
+                <span>Genommen ({monthDate.getFullYear()}):</span>
+                <span style={{ fontWeight: "bold" }}>{vacationBalance.usedDays} Tage</span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontWeight: "bold",
+                  color: vacationBalance.remaining >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed,
+                }}
+              >
+                <span>Verbleibend:</span>
+                <span>{vacationBalance.remaining} Tage</span>
+              </div>
             </div>
           )}
         </div>

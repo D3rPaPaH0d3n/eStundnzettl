@@ -330,6 +330,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
             customNote={customNote}
             locale={locale}
             calculationConfig={calculationConfig}
+            allEntries={allEntries}
           />
         </div>
       </div>

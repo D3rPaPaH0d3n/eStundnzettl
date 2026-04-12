@@ -1,7 +1,5 @@
-import React, { Suspense, forwardRef, useState, useEffect, useMemo, useCallback } from "react";
+import React, { forwardRef, useState, useEffect, useMemo, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus, ChevronDown } from "lucide-react";
-
-const DecimalDurationPicker = React.lazy(() => import("./DecimalDurationPicker"));
 import { Card, getHolidayData, toLocalDateString } from "../utils";
 import { WORK_CODE } from "../hooks/constants";
 import { useWorkCodes } from "../hooks/useWorkCodes";
@@ -381,21 +379,17 @@ const EntryForm: React.FC<Props> = ({
                       <ChevronDown size={14} />
                     </button>
                   </div>
-                  {showPausePicker && (
-                    <Suspense fallback={null}>
-                      <DecimalDurationPicker
-                        isOpen={showPausePicker}
-                        onClose={() => setShowPausePicker(false)}
-                        initialMinutes={pauseDuration > 0 ? pauseDuration : 30}
-                        onConfirm={(minutes) => {
-                          setPauseDuration(minutes);
-                          setShowPausePicker(false);
-                        }}
-                        title="Pause"
-                        minuteInterval={1}
-                      />
-                    </Suspense>
-                  )}
+                  <TimePickerDrawer
+                    isOpen={showPausePicker}
+                    onClose={() => setShowPausePicker(false)}
+                    title="Pause"
+                    value={`${String(Math.floor((pauseDuration || 30) / 60)).padStart(2, "0")}:${String((pauseDuration || 30) % 60).padStart(2, "0")}`}
+                    onChange={(val) => {
+                      const [h, m] = val.split(":").map(Number);
+                      setPauseDuration(h * 60 + m);
+                    }}
+                    minuteInterval={userData?.minuteInput ? 1 : 15}
+                  />
                 </div>
               )}
 

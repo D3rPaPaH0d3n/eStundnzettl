@@ -106,3 +106,20 @@ jobs:
           path: android/app/build/outputs/apk/**/*.apk
           retention-days: 30
           if-no-files-found: error
+
+      # ── 10. Telegram Notification ────────────────────────────────────
+      - name: Telegram notification
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            MSG="📱 *eStundnzettl DEV Build fertig*%0A%0ABuild: \`${BUILD_ID}\`%0ABranch: ${{ github.event.inputs.branch }}%0A%0A⬇️ [APK herunterladen](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          else
+            MSG="❌ *eStundnzettl DEV Build fehlgeschlagen*%0A%0ABranch: ${{ github.event.inputs.branch }}%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MSG}" \
+            -d "parse_mode=Markdown"

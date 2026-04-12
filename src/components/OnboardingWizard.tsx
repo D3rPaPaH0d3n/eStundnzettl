@@ -147,15 +147,26 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
   const handleDemoMode = async () => {
     const demoEntries = DEMO_DATA.generateEntries();
 
+    // Demo-CalculationConfig: AT-Defaults + 3 Resttage vom Vorjahr
+    const demoLocale = getLocale("at");
+    const demoCalcConfig = getDefaultCalculationConfig(demoLocale, DEMO_DATA.user.workDays);
+    demoCalcConfig.vacationCarryoverDays = 3;
+
     try {
       await setSetting("user", DEMO_DATA.user);
+      await setSetting("locale", "at");
+      await setSetting("calculationConfig", demoCalcConfig);
       await bulkReplaceWorkCodes(DEMO_DATA.workCodes);
       await bulkInsertEntries(demoEntries);
+      localStorage.setItem(STORAGE_KEYS.LOCALE, "at");
+      localStorage.setItem("estundnzettl_calculation_config", JSON.stringify(demoCalcConfig));
     } catch (err) {
       log.error("Demo SQLite write failed:", err);
     }
 
     setUserData?.(DEMO_DATA.user);
+    setLocale?.("at");
+    setCalculationConfig?.(demoCalcConfig);
     importWorkCodes?.(DEMO_DATA.workCodes);
     importEntries?.(demoEntries);
     toast.success("Demo-Daten geladen! Du kannst die App jetzt ausprobieren.");

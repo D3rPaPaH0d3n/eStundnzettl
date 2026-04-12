@@ -446,37 +446,35 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
                 <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
                   Eigenen Feiertag hinzufügen
                 </div>
-                <div className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 space-y-2">
-                  <div className="flex gap-2">
-                    <div className="space-y-1">
-                      <label className="text-xs text-zinc-500 dark:text-zinc-400">Datum</label>
-                      <input
-                        type="text"
-                        placeholder="DD.MM"
-                        value={customHolidayInput.display}
-                        onChange={(e) =>
-                          setCustomHolidayInput((p) => ({ ...p, display: e.target.value }))
-                        }
-                        className="w-24 p-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
-                      />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <label className="text-xs text-zinc-500 dark:text-zinc-400">Bezeichnung</label>
-                      <input
-                        type="text"
-                        placeholder="z. B. Firmenjubiläum"
-                        value={customHolidayInput.name}
-                        onChange={(e) =>
-                          setCustomHolidayInput((p) => ({ ...p, name: e.target.value }))
-                        }
-                        className="w-full p-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
-                      />
-                    </div>
+                <div className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Datum</label>
+                    <input
+                      type="text"
+                      placeholder="DD.MM"
+                      value={customHolidayInput.display}
+                      onChange={(e) =>
+                        setCustomHolidayInput((p) => ({ ...p, display: e.target.value }))
+                      }
+                      className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Bezeichnung</label>
+                    <input
+                      type="text"
+                      placeholder="z. B. Firmenjubiläum"
+                      value={customHolidayInput.name}
+                      onChange={(e) =>
+                        setCustomHolidayInput((p) => ({ ...p, name: e.target.value }))
+                      }
+                      className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                    />
                   </div>
                   <button
                     type="button"
                     onClick={handleAddCustomHoliday}
-                    className="w-full p-2 rounded-lg bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1.5"
+                    className="w-full p-2.5 rounded-lg bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1.5"
                   >
                     <Plus size={14} />
                     Hinzufügen

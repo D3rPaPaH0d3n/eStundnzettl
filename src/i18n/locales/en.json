@@ -14,7 +14,34 @@
   "dashboard": {
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
-    "selectMonth": "Select month"
+    "selectMonth": "Select month",
+    "monthPickerAria": "Select month (currently {{value}})",
+    "actual": "ACTUAL",
+    "target": "TARGET",
+    "balance": "Balance",
+    "driveTime": "Drive time ({{code}})",
+    "overtimeShort": {
+      "extra": "ET",
+      "overtime": "OT"
+    },
+    "recentEntries": "Recent entries (by calendar week)",
+    "noEntries": "No entries yet.",
+    "calendarWeek": "Calendar week",
+    "calendarWeekShort": "CW {{week}}",
+    "total": "Total",
+    "pause": "Break: {{minutes}} min",
+    "noPause": "No break",
+    "documentsLabel": "Documents",
+    "documentsCount_one": "{{count}} document",
+    "documentsCount_other": "{{count}} documents"
+  },
+  "entryTypes": {
+    "holiday": "Holiday",
+    "allDay": "All day",
+    "paidOff": "Paid off",
+    "timeComp": "Time off",
+    "vacation": "Vacation",
+    "sick": "Sick"
   },
   "header": {
     "settings": "Open settings",

@@ -53,7 +53,7 @@ format.*          any format helpers needing translated text
 ## Phase B — Component migration
 
 - [x] B1: AppHeader + ConfirmModal + ExportModal + WorkCodeManager (tiny)
-- [ ] B2: Dashboard.tsx
+- [x] B2: Dashboard.tsx
 - [ ] B3: EntryForm.tsx
 - [ ] B4: ReportDocument.tsx + PrintReport.tsx
 - [ ] B5: ViewRouter + SelectionDrawer + TimePickerDrawer + DecimalDurationPicker
@@ -91,6 +91,26 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B2** (2026-04-12): migrated `Dashboard.tsx`.
+  New keys under `dashboard.*` (actual/target/balance/driveTime with
+  {{code}} interpolation, overtimeShort.extra/overtime, recentEntries,
+  noEntries, calendarWeek/calendarWeekShort, total, pause with
+  {{minutes}} interpolation, noPause, documentsLabel plus
+  plural-aware `documentsCount`). New top-level `entryTypes.*` namespace
+  reused across future components (holiday, allDay, paidOff, timeComp,
+  vacation, sick). Added a `getEntryTypeLabel(type, t)` helper next to
+  the Dashboard component.
+  Date formatting (`toLocaleDateString("de-DE", ...)`) and the
+  `registerLocale("de", de)` / `DatePicker locale="de"` stay for C1.
+
+  IMPORTANT TEST-INFRA: jsdom reports `navigator.language = "en-US"`,
+  which made the new i18n bootstrap pick EN and break DE-string
+  assertions. Added `src/test/setup.ts` which runs
+  `i18n.changeLanguage("de")` once and wired it via
+  `vitest.config.js` → `setupFiles`. The existing F2 strategy is now
+  partly in place; remaining test breakage for future migrations
+  should be minimal.
+  Tests 630/630 green.
 - **Session B1** (2026-04-12): migrated four small components.
   Added namespaces `modals.confirm`, `modals.export`, `workCodes` and the
   `common.delete` / `header.logoAlt` keys. Touched:

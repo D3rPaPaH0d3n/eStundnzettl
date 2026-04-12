@@ -14,7 +14,34 @@
   "dashboard": {
     "prevMonth": "Vorheriger Monat",
     "nextMonth": "Nächster Monat",
-    "selectMonth": "Monat wählen"
+    "selectMonth": "Monat wählen",
+    "monthPickerAria": "Monat wählen (aktuell {{value}})",
+    "actual": "IST",
+    "target": "SOLL",
+    "balance": "Saldo",
+    "driveTime": "Fahrzeit ({{code}})",
+    "overtimeShort": {
+      "extra": "MA",
+      "overtime": "ÜS"
+    },
+    "recentEntries": "Letzte Einträge (nach Kalenderwoche)",
+    "noEntries": "Keine Einträge vorhanden.",
+    "calendarWeek": "Kalenderwoche",
+    "calendarWeekShort": "KW {{week}}",
+    "total": "Gesamt",
+    "pause": "Pause: {{minutes}} Min",
+    "noPause": "Keine Pause",
+    "documentsLabel": "Dokumente",
+    "documentsCount_one": "{{count}} Dokument",
+    "documentsCount_other": "{{count}} Dokumente"
+  },
+  "entryTypes": {
+    "holiday": "Feiertag",
+    "allDay": "Ganztags",
+    "paidOff": "Bezahlt frei",
+    "timeComp": "Zeitausgleich",
+    "vacation": "Urlaub",
+    "sick": "Krank"
   },
   "header": {
     "settings": "Einstellungen öffnen",

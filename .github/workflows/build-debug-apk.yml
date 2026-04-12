@@ -5,6 +5,10 @@
 # Baut eine Debug-APK und stellt sie als Download bereit.
 # Wird manuell über GitHub Actions → "Run workflow" gestartet.
 #
+# WICHTIG: Immer von "main" aus triggern! Der Code-Branch wird als
+# Input ausgewählt. So läuft immer der aktuelle Workflow mit
+# Debug-Badge und paralleler Installation.
+#
 # Kein Keystore oder Play Store Zugang nötig — nur Debug-Signatur.
 # APK wird mit Commit-Hash benannt für eindeutige Identifizierung.
 #
@@ -14,16 +18,23 @@ name: Build Debug APK
 
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build from'
+        required: true
+        type: string
 
 jobs:
   build:
-    name: Build Debug APK
+    name: "Build Debug APK (${{ github.event.inputs.branch }})"
     runs-on: ubuntu-latest
 
     steps:
-      # ── 1. Code auschecken ───────────────────────────────────────────
+      # ── 1. Code auschecken (vom gewählten Branch) ────────────────────
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
 
       # ── 1.5 Build-Kennung generieren ─────────────────────────────────
       - name: Generate build ID
@@ -33,7 +44,80 @@ jobs:
           BUILD_ID="${BUILD_TIME}-${SHORT_SHA}"
           echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
           echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
-          echo "📌 Build: $BUILD_ID"
+          echo "📌 Build: $BUILD_ID (Branch: ${{ github.event.inputs.branch }})"
+
+      # ── 1.6 Debug-Konfiguration injizieren ───────────────────────────
+      # Stellt sicher, dass JEDER Branch mit Debug-Badge + paralleler
+      # Installation gebaut wird, auch wenn der Branch diese Änderungen
+      # noch nicht hat.
+      - name: Inject debug configuration
+        run: |
+          # applicationIdSuffix für parallele Installation
+          if ! grep -q 'applicationIdSuffix ".debug"' android/app/build.gradle; then
+            sed -i 's/buildTypes {/buildTypes {\n        debug {\n            applicationIdSuffix ".debug"\n        }/' android/app/build.gradle
+            echo "✅ applicationIdSuffix '.debug' injected"
+          else
+            echo "ℹ️ applicationIdSuffix already present"
+          fi
+
+          # Debug-Ressourcen (App-Name, Icon-Badge)
+          mkdir -p android/app/src/debug/res/values
+          mkdir -p android/app/src/debug/res/drawable
+          mkdir -p android/app/src/debug/res/mipmap-anydpi-v26
+
+          cat > android/app/src/debug/res/values/strings.xml << 'XMLEOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">eStundnzettl DEV</string>
+              <string name="title_activity_main">eStundnzettl DEV</string>
+          </resources>
+          XMLEOF
+
+          cat > android/app/src/debug/res/values/ic_launcher_background.xml << 'XMLEOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="ic_launcher_background">#FF6D00</color>
+          </resources>
+          XMLEOF
+
+          cat > android/app/src/debug/res/drawable/debug_badge_banner.xml << 'XMLEOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp"
+              android:height="108dp"
+              android:viewportWidth="108"
+              android:viewportHeight="108">
+              <path
+                  android:fillColor="#D32F2F"
+                  android:pathData="M0,90 L108,90 L108,108 L0,108 Z" />
+          </vector>
+          XMLEOF
+
+          cat > android/app/src/debug/res/drawable/ic_launcher_foreground_debug.xml << 'XMLEOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+              <item android:drawable="@mipmap/ic_launcher_foreground" />
+              <item android:drawable="@drawable/debug_badge_banner" />
+          </layer-list>
+          XMLEOF
+
+          cat > android/app/src/debug/res/mipmap-anydpi-v26/ic_launcher.xml << 'XMLEOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background" />
+              <foreground android:drawable="@drawable/ic_launcher_foreground_debug" />
+          </adaptive-icon>
+          XMLEOF
+
+          cat > android/app/src/debug/res/mipmap-anydpi-v26/ic_launcher_round.xml << 'XMLEOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background" />
+              <foreground android:drawable="@drawable/ic_launcher_foreground_debug" />
+          </adaptive-icon>
+          XMLEOF
+
+          echo "✅ Debug resources injected"
 
       # ── 2. Node.js Setup + Dependencies ──────────────────────────────
       - name: Set up Node.js
@@ -109,9 +193,9 @@ jobs:
         run: |
           if [ "${{ job.status }}" = "success" ]; then
             DOWNLOAD_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload.outputs.artifact-id }}"
-            MSG="📱 *eStundnzettl DEV Build fertig*%0A%0ABuild: \`${BUILD_ID}\`%0ABranch: ${{ github.ref_name }}%0A%0A⬇️ [APK herunterladen](${DOWNLOAD_URL})"
+            MSG="📱 *eStundnzettl DEV Build fertig*%0A%0ABuild: \`${BUILD_ID}\`%0ABranch: ${{ github.event.inputs.branch }}%0A%0A⬇️ [APK herunterladen](${DOWNLOAD_URL})"
           else
-            MSG="❌ *eStundnzettl DEV Build fehlgeschlagen*%0A%0ABranch: ${{ github.ref_name }}%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            MSG="❌ *eStundnzettl DEV Build fehlgeschlagen*%0A%0ABranch: ${{ github.event.inputs.branch }}%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \

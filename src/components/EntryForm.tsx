@@ -392,7 +392,7 @@ const EntryForm: React.FC<Props> = ({
                           setShowPausePicker(false);
                         }}
                         title="Pause"
-                        minuteInterval={15}
+                        minuteInterval={1}
                       />
                     </Suspense>
                   )}

@@ -523,20 +523,6 @@ const ReportDocument: React.FC<Props> = ({
               </div>
               {!userData?.simpleMode && (
               <>
-              {safeStats.normalstunden > 0 && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "0.8rem",
-                    marginBottom: "0.1rem",
-                    color: PRINT_STYLES.textMedium,
-                  }}
-                >
-                  <span>Normalstunden:</span>
-                  <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.normalstunden)}</span>
-                </div>
-              )}
               <div
                 style={{
                   display: "flex",

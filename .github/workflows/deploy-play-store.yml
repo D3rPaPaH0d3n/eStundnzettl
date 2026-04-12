@@ -1,24 +1,25 @@
 # ============================================================================
-# Deploy to Play Store (Internal Testing)
+# Deploy to Play Store (Internal Testing ODER Open Beta)
 # ============================================================================
 #
 # WANN LÄUFT DAS?
 #   - NUR MANUELL über GitHub Actions → "Run workflow"
-#   - Kein automatischer Trigger bei Push auf main
+#   - Du wählst per Dropdown: Internal Testing oder Open Beta
 #
 # WAS PASSIERT? (in dieser Reihenfolge)
 #   1. Code auschecken
 #   2. Node.js + Dependencies installieren
-#   3. Version hochzählen (VOR dem Build! → Vite liest aus package.json)
-#   4. Frontend bauen (Vite — injiziert Version via __APP_VERSION__)
-#   5. Capacitor Sync (Web Assets → Android Projekt kopieren)
-#   6. Capacitor Proguard-Bug fixen (MUSS nach cap sync sein!)
-#   7. Java Setup
-#   8. Release AAB bauen (./gradlew bundleRelease)
-#   9. AAB signieren (jarsigner mit Keystore)
-#  10. AAB zum Play Store hochladen (Internal Testing Track)
-#  11. Changelog aus Commits generieren
-#  12. Version-Bump + Changelog committen & pushen mit [skip ci]
+#   3. Tests ausführen
+#   4. Version hochzählen:
+#      - Internal: Play Console abfragen → höchsten versionCode +1, optional Semver-Bump
+#      - Beta: lokales versionCode +1 (kein Commit)
+#   5. Frontend bauen (Vite — injiziert Version via __APP_VERSION__)
+#   6. Capacitor Sync + Proguard-Fix
+#   7. Release AAB bauen + signieren
+#   8. AAB zum Play Store hochladen (gewählter Track)
+#   9. Release-Name + Versionshinweise aus .github/release-meta.json
+#  10. Version-Bump committen (nur Internal)
+#  11. Telegram Notification
 #
 # SECRETS (müssen in GitHub Repo Settings → Secrets gesetzt sein):
 #   - KEYSTORE_BASE64        → Base64-encoded Keystore (.jks)
@@ -26,21 +27,27 @@
 #   - KEYSTORE_ALIAS         → Key Alias (z.B. "estundnzettl")
 #   - PLAY_DEPLOY_KEY_BASE64 → Base64-encoded Google Play Service Account JSON
 #
-# WICHTIG:
-#   - Der Version-Bump Commit enthält [skip ci] → verhindert Endlosschleife
-#   - Proguard-Fix MUSS nach "cap sync" kommen, weil cap sync die
-#     node_modules/@capacitor Files ins Android-Projekt kopiert
-#   - Der Workflow baut KEIN Debug APK — nur die Release AAB für den Play Store
+# RELEASE-METADATEN:
+#   Release-Name und Versionshinweise werden aus .github/release-meta.json
+#   gelesen. Manueller Override via 'release_notes_override' Input möglich.
+#   Format: { "releaseName": "v4.1.0 - Titel", "releaseNotes": "..." }
 #
 # ============================================================================
 
-name: Deploy to Play Store (Internal Testing)
+name: Deploy to Play Store
 
 on:
   workflow_dispatch:
     inputs:
+      track:
+        description: 'Play Store Track'
+        required: true
+        type: choice
+        options:
+          - internal
+          - beta
       version_bump:
-        description: 'Version bump type (nur manuell)'
+        description: 'Version bump (nur bei Internal, bei Beta ignoriert)'
         required: false
         default: 'none'
         type: choice
@@ -49,10 +56,14 @@ on:
           - patch
           - minor
           - major
+      release_notes_override:
+        description: 'Versionshinweise überschreiben (optional, max 500 Zeichen)'
+        required: false
+        default: ''
 
 jobs:
   deploy:
-    name: Build, Sign & Deploy to Internal Testing
+    name: "Build & Deploy to ${{ github.event.inputs.track == 'beta' && 'Open Beta' || 'Internal Testing' }}"
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -62,8 +73,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Brauchen wir für git log (Changelog) und Tags
-          ref: ${{ github.ref }}  # Explizit Branch auschecken (nicht detached HEAD)
+          fetch-depth: 0
+          ref: ${{ github.ref }}
 
       - name: Pull latest changes
         id: git_info
@@ -74,6 +85,7 @@ jobs:
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
           echo "subject=$SUBJECT" >> $GITHUB_OUTPUT
           echo "📌 HEAD ist jetzt: $(git log --oneline -1)"
+          echo "📌 Track: ${{ github.event.inputs.track }}"
 
       # ── 2. Node.js Setup + Dependencies ──────────────────────────────
       - name: Set up Node.js
@@ -85,19 +97,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # ── 2.5 Tests ausführen (Vitest) ────────────────────────────────
-      # Schlägt der Build fehl, wird kein Release gebaut.
       - name: Run unit tests
         run: npm test
 
-      # ── 3. Version hochzählen (VOR dem Build!) ──────────────────────
-      # versionCode: Ganzzahl, wird um +1 erhöht (Play Store braucht immer höher).
-      # versionName: Semver String — package.json ist Single Point of Truth!
-      #              build.gradle wird aus package.json gespiegelt, NICHT andersrum.
-      #              Vite liest die Version aus package.json via __APP_VERSION__.
-      #
-      # WICHTIG: Der höchste versionCode wird direkt aus der Play Console
-      # abgefragt, damit es nie zu Duplikaten kommt — egal von welchem Branch.
+      # ── 3. Version hochzählen ────────────────────────────────────────
       - name: Read current version
         id: read_version
         run: |
@@ -107,7 +110,9 @@ jobs:
           echo "name=$NAME" >> $GITHUB_OUTPUT
           echo "📌 Lokale Version: $NAME (versionCode $CODE)"
 
+      # Play Console abfragen (nur bei Internal — bei Beta reicht lokales +1)
       - name: Query highest versionCode from Play Console
+        if: github.event.inputs.track == 'internal'
         id: play_version
         env:
           PLAY_DEPLOY_KEY_BASE64: ${{ secrets.PLAY_DEPLOY_KEY_BASE64 }}
@@ -149,80 +154,75 @@ jobs:
       - name: Prepare release version
         id: bump
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            BUMP_TYPE=${{ github.event.inputs.version_bump || 'none' }}
-          else
-            BUMP_TYPE=none
-          fi
-
+          TRACK="${{ github.event.inputs.track }}"
           OLD_CODE=${{ steps.read_version.outputs.code }}
           OLD_NAME=${{ steps.read_version.outputs.name }}
-          PLAY_HIGHEST=${{ steps.play_version.outputs.highest }}
 
-          # Nimm den höheren Wert: lokal oder Play Store
-          if [ "$PLAY_HIGHEST" -gt "$OLD_CODE" ]; then
-            BASE_CODE=$PLAY_HIGHEST
-            echo "⚠️ Play Store hat höheren versionCode ($PLAY_HIGHEST) als lokal ($OLD_CODE) — verwende Play Store als Basis"
+          if [ "$TRACK" = "internal" ]; then
+            # Internal: höchsten versionCode aus Play Console verwenden
+            BUMP_TYPE=${{ github.event.inputs.version_bump || 'none' }}
+            PLAY_HIGHEST=${{ steps.play_version.outputs.highest || '0' }}
+
+            if [ "$PLAY_HIGHEST" -gt "$OLD_CODE" ]; then
+              BASE_CODE=$PLAY_HIGHEST
+              echo "⚠️ Play Store hat höheren versionCode ($PLAY_HIGHEST) als lokal ($OLD_CODE)"
+            else
+              BASE_CODE=$OLD_CODE
+            fi
+
+            NEW_CODE=$((BASE_CODE + 1))
+            NEW_NAME="$OLD_NAME"
+
+            if [ "$BUMP_TYPE" != "none" ]; then
+              IFS='.' read -r major minor patch <<< "$OLD_NAME"
+              case "$BUMP_TYPE" in
+                major) new_major=$((major + 1)); new_minor=0; new_patch=0 ;;
+                minor) new_major=$major; new_minor=$((minor + 1)); new_patch=0 ;;
+                patch) new_major=$major; new_minor=$minor; new_patch=$((patch + 1)) ;;
+              esac
+              NEW_NAME="${new_major}.${new_minor}.${new_patch}"
+            fi
+
+            # package.json nur bei echtem Semver-Bump anpassen
+            if [ "$BUMP_TYPE" != "none" ]; then
+              node -e "
+                const fs = require('fs');
+                const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+                pkg.version = '$NEW_NAME';
+                fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');
+              "
+            fi
           else
-            BASE_CODE=$OLD_CODE
+            # Beta: einfach lokales +1, kein Semver-Bump
+            BUMP_TYPE=none
+            NEW_CODE=$((OLD_CODE + 1))
+            NEW_NAME="$OLD_NAME"
           fi
 
-          NEW_CODE=$((BASE_CODE + 1))
-          NEW_NAME="$OLD_NAME"
-
-          if [ "$BUMP_TYPE" != "none" ]; then
-            IFS='.' read -r major minor patch <<< "$OLD_NAME"
-            case "$BUMP_TYPE" in
-              major) new_major=$((major + 1)); new_minor=0; new_patch=0 ;;
-              minor) new_major=$major; new_minor=$((minor + 1)); new_patch=0 ;;
-              patch) new_major=$major; new_minor=$minor; new_patch=$((patch + 1)) ;;
-            esac
-            NEW_NAME="${new_major}.${new_minor}.${new_patch}"
-          fi
-
-          # build.gradle wird aus package.json gespiegelt (Single Point of Truth = package.json).
+          # build.gradle aktualisieren
           sed -i "s/versionCode $OLD_CODE/versionCode $NEW_CODE/" android/app/build.gradle
           sed -i "s/versionName \"[^\"]*\"/versionName \"$NEW_NAME\"/" android/app/build.gradle
-
-          # Nur bei echten Bumps auch package.json anpassen. Bei BUMP_TYPE=none bleibt
-          # package.json unverändert — sonst würden versehentliche Roll-Backs auftreten,
-          # falls build.gradle's versionName einmal nicht mit package.json übereinstimmt.
-          if [ "$BUMP_TYPE" != "none" ]; then
-            node -e "
-              const fs = require('fs');
-              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-              pkg.version = '$NEW_NAME';
-              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');
-            "
-          fi
 
           echo "new_code=$NEW_CODE" >> $GITHUB_OUTPUT
           echo "new_name=$NEW_NAME" >> $GITHUB_OUTPUT
           echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
-          if [ "$BUMP_TYPE" = "none" ]; then
-            echo "🔼 VersionCode: $OLD_CODE → $NEW_CODE | VersionName bleibt bei $NEW_NAME"
-          else
-            echo "🔼 Version: $OLD_NAME ($OLD_CODE) → $NEW_NAME ($NEW_CODE)"
-          fi
+          echo "track=$TRACK" >> $GITHUB_OUTPUT
+          echo "🔼 Version: $OLD_NAME ($OLD_CODE) → $NEW_NAME ($NEW_CODE) [Track: $TRACK]"
 
-      # ── 4. Frontend bauen (Vite) ─────────────────────────────────────
-      # Vite liest die Version aus package.json via __APP_VERSION__ define
+      # ── 4. Frontend bauen ────────────────────────────────────────────
       - name: Build web assets
         run: npm run build
 
-      # ── 5. Capacitor Sync ────────────────────────────────────────────
-      # Kopiert die gebauten Web Assets ins Android-Projekt
+      # ── 5. Capacitor Sync + Proguard-Fix ─────────────────────────────
       - name: Sync Capacitor
         run: npx cap sync android
 
-      # ── 6. Proguard-Fix (Capacitor Bug) ──────────────────────────────
-      # WICHTIG: Muss NACH cap sync kommen!
       - name: Fix Capacitor Proguard reference
         run: |
           find node_modules/@capacitor -name "build.gradle" \
             -exec sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" {} \;
 
-      # ── 7. Java Setup ────────────────────────────────────────────────
+      # ── 6. Java Setup + Build ────────────────────────────────────────
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -232,11 +232,10 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      # ── 8. Release AAB bauen ─────────────────────────────────────────
       - name: Build release AAB
         run: cd android && ./gradlew bundleRelease --no-daemon
 
-      # ── 9. AAB signieren ─────────────────────────────────────────────
+      # ── 7. AAB signieren ─────────────────────────────────────────────
       - name: Decode keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -254,7 +253,7 @@ jobs:
             android/app/build/outputs/bundle/release/app-release.aab \
             "$KEYSTORE_ALIAS"
 
-      # ── 10. Play Store Upload ────────────────────────────────────────
+      # ── 8. Play Store Upload ─────────────────────────────────────────
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -268,35 +267,46 @@ jobs:
           PLAY_DEPLOY_KEY_BASE64: ${{ secrets.PLAY_DEPLOY_KEY_BASE64 }}
         run: echo "$PLAY_DEPLOY_KEY_BASE64" | base64 -d > /tmp/play-key.json
 
-      - name: Upload to Play Console (Internal Testing)
+      - name: "Upload to Play Console (${{ github.event.inputs.track }})"
+        env:
+          PLAY_TRACK: ${{ github.event.inputs.track }}
+          RELEASE_NOTES: ${{ github.event.inputs.release_notes_override }}
         run: python3 .github/workflows/scripts/deploy-play.py
 
-      # ── 11. Version-Bump committen ───────────────────────────────────
-      # WICHTIG: [skip ci] im Commit verhindert, dass dieser Push
-      # den Workflow nochmal auslöst → keine Endlosschleife!
-      - name: Commit and push release metadata
+      # ── 9. Version-Bump committen (nur Internal) ─────────────────────
+      - name: Commit release metadata
+        if: github.event.inputs.track == 'internal'
         run: |
           NEW_NAME=${{ steps.bump.outputs.new_name }}
-
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-
-          # Nur Versions-Dateien committen — Changelog bleibt bewusst manuell gepflegt
           git add android/app/build.gradle package.json
-
-          # Nur committen wenn es Änderungen gibt
           CURRENT_BRANCH="${{ github.ref_name }}"
           if ! git diff --staged --quiet; then
             git commit -m "chore: release metadata for v$NEW_NAME [skip ci]"
             git push origin "$CURRENT_BRANCH"
-            echo "✅ Release-Metadaten für v$NEW_NAME committed und gepusht (Branch: $CURRENT_BRANCH)"
+            echo "✅ Release-Metadaten für v$NEW_NAME committed (Branch: $CURRENT_BRANCH)"
           else
             echo "ℹ️ Keine Änderungen zu committen"
           fi
 
-      # ── 12. Deploy-Verifizierung ─────────────────────────────────────
-      # Prüft ob die neue versionCode wirklich im Internal Testing Track ist
+      - name: Commit versionCode bump (Beta only)
+        if: github.event.inputs.track == 'beta'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add android/app/build.gradle
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: bump versionCode for Beta v${{ steps.bump.outputs.new_name }} (${{ steps.bump.outputs.new_code }}) [skip ci]"
+            git push origin "${{ github.ref_name }}"
+            echo "✅ versionCode-Bump committed"
+          else
+            echo "ℹ️ Keine Änderungen"
+          fi
+
+      # ── 10. Deploy-Verifizierung (nur Internal) ──────────────────────
       - name: Verify Play Store deployment
+        if: github.event.inputs.track == 'internal'
         env:
           PLAY_DEPLOY_KEY_BASE64: ${{ secrets.PLAY_DEPLOY_KEY_BASE64 }}
         run: |
@@ -315,7 +325,6 @@ jobs:
           service = build('androidpublisher', 'v3', credentials=creds)
           pkg = 'com.estundnzettl.app'
 
-          # Maximal 5 Minuten warten
           for attempt in range(10):
               try:
                   edit = service.edits().insert(body={}, packageName=pkg).execute()
@@ -341,18 +350,25 @@ jobs:
           sys.exit(1)
           PYEOF
 
-      # ── 14. Telegram Notification ────────────────────────────────────
-      # Läuft IMMER — auch bei Fehler (if: always())
+      # ── 11. Telegram Notification ────────────────────────────────────
       - name: Telegram notification
         if: always()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
+          TRACK="${{ github.event.inputs.track }}"
+          TRACK_LABEL=$( [ "$TRACK" = "beta" ] && echo "Open Beta" || echo "Internal Testing" )
+
           if [ "${{ job.status }}" = "success" ]; then
-            MSG="✅ *eStundnzettl Deploy erfolgreich*%0A%0AVersion: v${{ steps.bump.outputs.new_name }} (Code ${{ steps.bump.outputs.new_code }})%0ACommit: \`${{ steps.git_info.outputs.short_sha }}\` — ${{ steps.git_info.outputs.subject }}%0ATrack: Internal Testing%0AStatus: Hochgeladen und verifiziert%0A%0A⏳ Download in ca. 10-30 Min im Play Store verfügbar."
+            MSG="✅ *eStundnzettl Deploy erfolgreich*%0A%0AVersion: v${{ steps.bump.outputs.new_name }} (Code ${{ steps.bump.outputs.new_code }})%0ACommit: \`${{ steps.git_info.outputs.short_sha }}\` — ${{ steps.git_info.outputs.subject }}%0ATrack: $TRACK_LABEL%0AStatus: Hochgeladen"
+            if [ "$TRACK" = "beta" ]; then
+              MSG="${MSG}%0A%0A⏳ Beta-Tester bekommen das Update in ca. 1-3h."
+            else
+              MSG="${MSG} und verifiziert%0A%0A⏳ Download in ca. 10-30 Min im Play Store verfügbar."
+            fi
           else
-            MSG="❌ *eStundnzettl Deploy fehlgeschlagen*%0A%0AVersion: v${{ steps.bump.outputs.new_name || 'unbekannt' }}%0ACommit: \`${{ steps.git_info.outputs.short_sha || 'unbekannt' }}\`%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            MSG="❌ *eStundnzettl Deploy fehlgeschlagen*%0A%0AVersion: v${{ steps.bump.outputs.new_name || 'unbekannt' }}%0ATrack: $TRACK_LABEL%0ACommit: \`${{ steps.git_info.outputs.short_sha || 'unbekannt' }}\`%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \

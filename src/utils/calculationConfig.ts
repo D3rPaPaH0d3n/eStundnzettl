@@ -128,7 +128,7 @@ function isSickMode(v: unknown): v is SickOnWorkDayMode {
 }
 
 function isHolidayOnWorkDayMode(v: unknown): v is HolidayOnWorkDayMode {
-  return v === "cap_to_target" || v === "additive";
+  return v === "cap_to_target" || v === "additive" || v === "counts_as_overtime";
 }
 
 function isValidAutoPauseRule(v: unknown): v is AutoPauseRule {

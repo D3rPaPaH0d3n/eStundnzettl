@@ -56,7 +56,7 @@ export interface UserData {
 
 export type OvertimeMode = "none" | "split" | "ueberstunden_only";
 export type SickOnWorkDayMode = "cap_to_target" | "additive" | "ignore";
-export type HolidayOnWorkDayMode = "cap_to_target" | "additive";
+export type HolidayOnWorkDayMode = "cap_to_target" | "additive" | "counts_as_overtime";
 export type HolidaySetMode = "locale_default" | "custom";
 export type HalfDayMode = "locale_default" | "none" | "custom";
 

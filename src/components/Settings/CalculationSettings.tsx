@@ -54,6 +54,7 @@ const SICK_OPTIONS = [
 
 const HOLIDAY_ON_WORK_OPTIONS = [
   { id: "additive", label: "Feiertag zählt zusätzlich" },
+  { id: "counts_as_overtime", label: "Feiertag zählt als Überstunde" },
   { id: "cap_to_target", label: "Füllt bis Tagessoll auf" },
 ];
 
@@ -63,6 +64,22 @@ const formatHours = (minutes: number): string => {
     minimumFractionDigits: 1,
     maximumFractionDigits: 2,
   }) + " h";
+};
+
+const mmddToDisplay = (mmdd: string): string => {
+  const parts = mmdd.split("-");
+  if (parts.length !== 2) return mmdd;
+  return `${parts[1]}.${parts[0]}.`;
+};
+
+const displayToMmdd = (input: string): string | null => {
+  const clean = input.replace(/\.$/, "").trim();
+  const parts = clean.split(".");
+  if (parts.length !== 2) return null;
+  const dd = parts[0].padStart(2, "0");
+  const mm = parts[1].padStart(2, "0");
+  if (!/^\d{2}$/.test(dd) || !/^\d{2}$/.test(mm)) return null;
+  return `${mm}-${dd}`;
 };
 
 const CalculationSettings: React.FC<Props> = ({
@@ -81,6 +98,7 @@ const CalculationSettings: React.FC<Props> = ({
   const [customHalfDayInput, setCustomHalfDayInput] = useState("");
   const [newPauseInput, setNewPauseInput] = useState({ fromHours: "6", pauseMinutes: "30" });
   const [recalcRunning, setRecalcRunning] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const customHolidaysMemo = useMemo(
     () => calculationConfig?.holidaySet.customHolidays ?? {},
@@ -174,10 +192,10 @@ const CalculationSettings: React.FC<Props> = ({
   };
 
   const handleAddCustomHoliday = () => {
-    const mmdd = customHolidayInput.mmdd.trim();
+    const mmdd = displayToMmdd(customHolidayInput.mmdd);
     const name = customHolidayInput.name.trim();
-    if (!/^\d{2}-\d{2}$/.test(mmdd) || name.length === 0) {
-      toast.error("Format: MM-DD + Name");
+    if (!mmdd || name.length === 0) {
+      toast.error("Format: DD.MM + Name");
       return;
     }
     patch({
@@ -190,17 +208,17 @@ const CalculationSettings: React.FC<Props> = ({
     setCustomHolidayInput({ mmdd: "", name: "" });
   };
 
-  const handleAddCustomHalfDay = (mmdd: string) => {
-    const clean = mmdd.trim();
-    if (!/^\d{2}-\d{2}$/.test(clean)) {
-      toast.error("Format: MM-DD");
+  const handleAddCustomHalfDay = (displayInput: string) => {
+    const mmdd = displayToMmdd(displayInput);
+    if (!mmdd) {
+      toast.error("Format: DD.MM");
       return;
     }
-    if (config.halfDayMode.customHalfDays.includes(clean)) return;
+    if (config.halfDayMode.customHalfDays.includes(mmdd)) return;
     patch({
       halfDayMode: {
         mode: "custom",
-        customHalfDays: [...config.halfDayMode.customHalfDays, clean],
+        customHalfDays: [...config.halfDayMode.customHalfDays, mmdd],
       },
     });
     setCustomHalfDayInput("");
@@ -269,7 +287,11 @@ const CalculationSettings: React.FC<Props> = ({
 
   return (
     <Card className="p-4 space-y-4">
-      <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => setIsExpanded((v) => !v)}
+        className="w-full flex items-center gap-3 text-left"
+      >
         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
           <Calculator size={20} />
         </div>
@@ -279,8 +301,19 @@ const CalculationSettings: React.FC<Props> = ({
             Wie Überstunden, Krank und Feiertage gezählt werden
           </p>
         </div>
-      </div>
+        <ChevronDown
+          size={18}
+          className={`text-zinc-400 transition-transform flex-shrink-0 ${isExpanded ? "rotate-180" : ""}`}
+        />
+      </button>
 
+      {!isExpanded && (
+        <div className="text-xs text-zinc-500 dark:text-zinc-400">
+          {overtimeLabel} &middot; Krank: {sickLabel}
+        </div>
+      )}
+
+      {isExpanded && (<>
       {/* Vertragsstunden (Readonly) */}
       <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-700">
         <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
@@ -380,7 +413,7 @@ const CalculationSettings: React.FC<Props> = ({
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-zinc-700 dark:text-zinc-200 truncate">{name}</div>
-                    <div className="text-xs text-zinc-500">{key}</div>
+                    <div className="text-xs text-zinc-500">{mmddToDisplay(key)}</div>
                   </div>
                   <button
                     type="button"
@@ -395,28 +428,36 @@ const CalculationSettings: React.FC<Props> = ({
             </div>
           )}
 
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="MM-DD"
-              value={customHolidayInput.mmdd}
-              onChange={(e) => setCustomHolidayInput((p) => ({ ...p, mmdd: e.target.value }))}
-              className="w-24 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
-            />
-            <input
-              type="text"
-              placeholder="Name"
-              value={customHolidayInput.name}
-              onChange={(e) => setCustomHolidayInput((p) => ({ ...p, name: e.target.value }))}
-              className="flex-1 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
-            />
+          <div className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 space-y-2">
+            <div className="flex gap-2">
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500 dark:text-zinc-400">Datum</label>
+                <input
+                  type="text"
+                  placeholder="DD.MM"
+                  value={customHolidayInput.mmdd}
+                  onChange={(e) => setCustomHolidayInput((p) => ({ ...p, mmdd: e.target.value }))}
+                  className="w-24 p-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                />
+              </div>
+              <div className="flex-1 space-y-1">
+                <label className="text-xs text-zinc-500 dark:text-zinc-400">Bezeichnung</label>
+                <input
+                  type="text"
+                  placeholder="z. B. Firmenjubiläum"
+                  value={customHolidayInput.name}
+                  onChange={(e) => setCustomHolidayInput((p) => ({ ...p, name: e.target.value }))}
+                  className="w-full p-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                />
+              </div>
+            </div>
             <button
               type="button"
               onClick={handleAddCustomHoliday}
-              className="p-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-              aria-label="Feiertag hinzufügen"
+              className="w-full p-2 rounded-lg bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1.5"
             >
-              <Plus size={16} />
+              <Plus size={14} />
+              Hinzufügen
             </button>
           </div>
 
@@ -435,7 +476,7 @@ const CalculationSettings: React.FC<Props> = ({
                     onClick={() => handleRemoveHalfDay(mmdd)}
                     className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1 hover:bg-emerald-200 transition-colors"
                   >
-                    {mmdd}
+                    {mmddToDisplay(mmdd)}
                     <X size={12} />
                   </button>
                 ))}
@@ -445,7 +486,7 @@ const CalculationSettings: React.FC<Props> = ({
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="MM-DD"
+                placeholder="DD.MM"
                 value={customHalfDayInput}
                 onChange={(e) => setCustomHalfDayInput(e.target.value)}
                 className="flex-1 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
@@ -595,6 +636,7 @@ const CalculationSettings: React.FC<Props> = ({
       >
         {recalcRunning ? "Neuberechnung läuft..." : "Alle Einträge neu berechnen"}
       </button>
+      </>)}
 
       <SelectionDrawer
         isOpen={overtimeDrawerOpen}

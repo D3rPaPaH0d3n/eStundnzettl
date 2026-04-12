@@ -250,10 +250,11 @@ export const applyEffectiveDurations = (
   const loc = locale ?? getLocale(undefined);
   const effective = resolveEffectiveRules(loc, config);
 
-  // Bei sickMode "additive" UND holidayOnWorkDayMode "additive": nichts zu tun
+  // Bei sickMode "additive" UND holidayOnWorkDayMode nicht "cap_to_target": nichts zu tun
+  // ("additive" und "counts_as_overtime" brauchen beide keine Duration-Korrektur)
   if (
     effective.sickMode === "additive" &&
-    effective.holidayOnWorkDayMode === "additive"
+    effective.holidayOnWorkDayMode !== "cap_to_target"
   ) {
     return entries;
   }

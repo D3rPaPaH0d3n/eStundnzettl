@@ -3,7 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import toast from "react-hot-toast";
-import type { Entry, UserData, WorkCode, Attachment, BackupPayload } from '../types';
+import type { Entry, UserData, WorkCode, Attachment, BackupPayload, CalculationConfig } from '../types';
 import { exportToSelectedFolder, attachBackupChecksum } from "../utils/storageBackup";
 import { toLocalDateString } from "../utils";
 import { logger } from "../utils/logger";
@@ -14,6 +14,7 @@ interface UseExportProps {
   workCodes: WorkCode[];
   attachments?: Attachment[];
   exportPayloadRef: MutableRefObject<BackupPayload | null>;
+  calculationConfig?: CalculationConfig | null;
 }
 
 /**
@@ -39,16 +40,17 @@ interface UseExportProps {
  * - `handleExportToFolder()` — schreibt in SAF-Ordner
  * - `handleExportShare()` — öffnet natives Share-Sheet
  */
-export function useExport({ entries, userData, workCodes, attachments = [], exportPayloadRef }: UseExportProps) {
+export function useExport({ entries, userData, workCodes, attachments = [], exportPayloadRef, calculationConfig }: UseExportProps) {
   const [showExportModal, setShowExportModal] = useState(false);
 
   const buildPayload = async () => {
-    const payload = {
+    const payload: Record<string, unknown> = {
       user: userData,
       entries,
       workCodes,
       attachments,
       attachmentLabels: [],
+      calculationConfig: calculationConfig ?? null,
       exportedAt: new Date().toISOString(),
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     };

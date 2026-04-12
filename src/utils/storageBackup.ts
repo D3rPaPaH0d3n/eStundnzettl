@@ -337,6 +337,14 @@ const normalizeTimestamp = (value: unknown): string => {
   return (v?.backupDate || v?.exportedAt || v?.lastModified || v?.timestamp || new Date().toISOString()) as string;
 };
 
+const normalizeCalculationConfig = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  const raw = v.calculationConfig;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  return raw as Record<string, unknown>;
+};
+
 // 1. ANALYSE - Schaut in die Daten, OHNE zu speichern.
 // Async, weil die Integritätsprüfung via SHA-256 (Web Crypto) asynchron ist.
 export const analyzeBackupData = async (data: unknown): Promise<Record<string, unknown>> => {
@@ -347,6 +355,7 @@ export const analyzeBackupData = async (data: unknown): Promise<Record<string, u
   const workCodes = normalizeWorkCodes(data);
   const attachments = normalizeAttachments(data);
   const attachmentLabels = normalizeAttachmentLabels(data);
+  const calculationConfig = normalizeCalculationConfig(data);
 
   const hasUsefulData = entries.length > 0 || !!settings || workCodes.length > 0 || attachments.length > 0 || attachmentLabels.length > 0;
   if (!hasUsefulData) return { valid: false, isValid: false };
@@ -365,11 +374,13 @@ export const analyzeBackupData = async (data: unknown): Promise<Record<string, u
     hasSettings: !!settings,
     hasWorkCodes: workCodes.length > 0,
     hasAttachments: attachments.length > 0,
+    hasCalculationConfig: !!calculationConfig,
     entries,
     settings,
     workCodes,
     attachments,
     attachmentLabels,
+    calculationConfig,
     timestamp: normalizeTimestamp(data),
     integrity, // "verified" | "unverified" | "mismatch"
   };
@@ -422,6 +433,17 @@ export const applyBackup = async (analyzedData: BackupAnalysisResult & Record<st
       if (analyzedData.attachmentLabels?.length) {
         await bulkReplaceLabelSuggestions(analyzedData.attachmentLabels);
       }
+
+      // CalculationConfig aus Backup übernehmen (wenn mode=ALL).
+      // Dual-Write: SQLite + localStorage, damit useCalculationConfig beim
+      // nächsten Mount die Werte sofort sieht.
+      const calcConfig = (analyzedData as Record<string, unknown>).calculationConfig;
+      if (mode === 'ALL' && calcConfig && typeof calcConfig === 'object') {
+        await setSetting("calculationConfig", calcConfig);
+        try {
+          localStorage.setItem("estundnzettl_calculation_config", JSON.stringify(calcConfig));
+        } catch { /* ignore */ }
+      }
     }
 
     return true;
@@ -455,6 +477,18 @@ export const triggerManualBackup = async (): Promise<Record<string, unknown>> =>
       try { entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]'); } catch { entries = []; }
     }
 
+    // CalculationConfig für Backup laden (SQLite bevorzugt, localStorage Fallback)
+    let calcConfig: unknown = null;
+    if (isSQLiteActive()) {
+      try { calcConfig = await getSetting("calculationConfig"); } catch { /* ignore */ }
+    }
+    if (!calcConfig) {
+      try {
+        const raw = localStorage.getItem("estundnzettl_calculation_config");
+        if (raw) calcConfig = JSON.parse(raw);
+      } catch { /* corrupt */ }
+    }
+
     // Cloud-Status: Nur das aktivierte Flag ist relevant.
     // Das eigentliche Zugriffstoken wird nativ still erneuert.
     const cloudFlag = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
@@ -469,6 +503,7 @@ export const triggerManualBackup = async (): Promise<Record<string, unknown>> =>
     const payload: Record<string, unknown> = {
       user: userData,
       entries,
+      calculationConfig: calcConfig,
       lastModified: new Date().toISOString(),
       note: "eStundnzettl Manueller Backup",
       version: "v6"

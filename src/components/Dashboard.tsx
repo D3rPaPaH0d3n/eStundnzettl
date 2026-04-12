@@ -20,7 +20,7 @@ import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { de } from "date-fns/locale";
 
-import type { Entry, UserData, WorkCode, Attachment } from "../types";
+import type { Entry, UserData, WorkCode, Attachment, CalculationConfig } from "../types";
 import type { PeriodStatsResult } from "../utils/timeCalculations";
 import type { Locale } from "../locales/types";
 
@@ -48,6 +48,7 @@ interface Props {
   userData: UserData;
   workCodes?: WorkCode[];
   locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
 }
 
 // Stylt den Monatsnamen jetzt etwas größer als Überschrift
@@ -69,6 +70,7 @@ const Dashboard: React.FC<Props> = ({
   stats,
   overtime, progressPercent, groupedByWeek, viewMonth: _viewMonth, viewYear: _viewYear, onEditEntry, onDeleteEntry, onManageAttachments, getAttachmentsForEntry, userData, workCodes = [],
   locale,
+  calculationConfig,
 }) => {
   const [expandedWeeks, setExpandedWeeks] = useState<Record<number, boolean>>(() => {
     const currentWeek = getWeekNumber(new Date());
@@ -239,8 +241,8 @@ const Dashboard: React.FC<Props> = ({
             // Gebrochene Woche → nur tägliche ÜS, keine MA.
             const isBoundaryWeek = monday < monthStart || sunday > monthEnd;
             const weekStats = isBoundaryWeek
-              ? calculatePeriodStats(visibleEntries, userData, clippedMonday, clippedSunday, undefined, locale)
-              : calculateWeekStats(weekEntries, userData, locale);
+              ? calculatePeriodStats(visibleEntries, userData, clippedMonday, clippedSunday, undefined, locale, calculationConfig)
+              : calculateWeekStats(weekEntries, userData, locale, calculationConfig);
 
             const workMinutes = weekStats.totalIst;
             const diff = weekStats.totalSaldo;

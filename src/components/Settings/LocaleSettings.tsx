@@ -3,8 +3,9 @@ import { Globe, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 import { Card } from "../../utils";
 import type { Locale, LocaleId } from "../../locales/types";
-import { GERMAN_STATE_IDS, GERMAN_STATE_NAMES, type GermanState } from "../../locales";
+import { GERMAN_STATE_IDS, GERMAN_STATE_NAMES, type GermanState, getLocale } from "../../locales";
 import SelectionDrawer from "../SelectionDrawer";
+import ConfirmModal from "../ConfirmModal";
 
 /**
  * Locale-Auswahl in den Settings: erlaubt dem User, die Stunden-
@@ -15,12 +16,23 @@ import SelectionDrawer from "../SelectionDrawer";
 interface Props {
   locale?: Locale;
   setLocale?: (id: LocaleId) => void;
+  /** Aktuelle Arbeitstage — wird für den Reset-Default der CalcConfig genutzt. */
+  workDays?: number[];
+  /**
+   * Optionaler Callback, der nach einer bestätigten Locale-Änderung die
+   * `CalculationConfig` auf die neuen Locale-Defaults zurücksetzt.
+   * Wenn der User im Confirm-Dialog "Nein" wählt, bleibt die Config
+   * unverändert (dann wird der Callback nicht aufgerufen).
+   */
+  onAfterLocaleChange?: (newLocale: Locale, workDays: number[]) => void;
 }
 
 type Group = "neutral" | "at" | "de";
 
-const LocaleSettings: React.FC<Props> = ({ locale, setLocale }) => {
+const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterLocaleChange }) => {
   const [stateDrawerOpen, setStateDrawerOpen] = useState(false);
+  const [pendingLocaleId, setPendingLocaleId] = useState<LocaleId | null>(null);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
   const stateOptions = useMemo(
     () => GERMAN_STATE_IDS.map((s) => ({ id: s, label: GERMAN_STATE_NAMES[s] })),
@@ -37,27 +49,62 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale }) => {
       ? (locale.id.slice(3) as GermanState)
       : null;
 
+  // Wenn ein onAfterLocaleChange-Callback vorhanden ist, erst Confirm-
+  // Dialog zeigen. Sonst sofort umschalten (Legacy-Pfad).
+  const initiateLocaleChange = (nextId: LocaleId) => {
+    if (!onAfterLocaleChange) {
+      setLocale(nextId);
+      return true;
+    }
+    setPendingLocaleId(nextId);
+    setConfirmModalOpen(true);
+    return false;
+  };
+
   const handleGroupChange = (group: Group) => {
     if (group === "neutral") {
-      setLocale("neutral");
-      toast.success("Auf Neutral umgestellt");
+      if (initiateLocaleChange("neutral")) toast.success("Auf Neutral umgestellt");
     } else if (group === "at") {
-      setLocale("at");
-      toast.success("Auf Österreich umgestellt");
+      if (initiateLocaleChange("at")) toast.success("Auf Österreich umgestellt");
     } else {
-      // DE: aktuelle Bundesland-Wahl behalten (Default: Bayern)
       const nextId: LocaleId = (currentGermanState
         ? `de-${currentGermanState}`
         : "de-by") as LocaleId;
-      setLocale(nextId);
-      toast.success("Auf Deutschland umgestellt");
+      if (initiateLocaleChange(nextId)) toast.success("Auf Deutschland umgestellt");
     }
   };
 
   const handleGermanStateChange = (id: string | number) => {
     const stateCode = id as GermanState;
-    setLocale(`de-${stateCode}` as LocaleId);
-    toast.success(`Bundesland auf ${GERMAN_STATE_NAMES[stateCode]} geändert`);
+    if (initiateLocaleChange(`de-${stateCode}` as LocaleId)) {
+      toast.success(`Bundesland auf ${GERMAN_STATE_NAMES[stateCode]} geändert`);
+    }
+  };
+
+  const handleConfirmReset = () => {
+    if (!pendingLocaleId || !onAfterLocaleChange || !setLocale) {
+      setConfirmModalOpen(false);
+      setPendingLocaleId(null);
+      return;
+    }
+    setLocale(pendingLocaleId);
+    onAfterLocaleChange(getLocale(pendingLocaleId), workDays ?? []);
+    toast.success("Regeln zurückgesetzt");
+    setConfirmModalOpen(false);
+    setPendingLocaleId(null);
+  };
+
+  const handleKeepConfig = () => {
+    if (!pendingLocaleId || !setLocale) {
+      setConfirmModalOpen(false);
+      setPendingLocaleId(null);
+      return;
+    }
+    // Nur Locale umschalten, Config unverändert lassen
+    setLocale(pendingLocaleId);
+    toast.success("Locale umgestellt, Regeln behalten");
+    setConfirmModalOpen(false);
+    setPendingLocaleId(null);
   };
 
   return (
@@ -141,6 +188,16 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale }) => {
         options={stateOptions}
         value={currentGermanState ?? "by"}
         onChange={handleGermanStateChange}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModalOpen}
+        onClose={handleKeepConfig}
+        onConfirm={handleConfirmReset}
+        title="Regeln zurücksetzen?"
+        message="Möchtest du die Berechnungsregeln (Überstunden, Krank, Feiertage) auf die Defaults der neuen Locale zurücksetzen? Mit 'Abbrechen' bleibt deine aktuelle Konfiguration erhalten."
+        confirmText="Zurücksetzen"
+        confirmColor="emerald"
       />
     </Card>
   );

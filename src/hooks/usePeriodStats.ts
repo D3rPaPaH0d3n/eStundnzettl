@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { Entry, UserData } from '../types';
+import type { Entry, UserData, CalculationConfig } from '../types';
 import { calculatePeriodStats } from "../utils/timeCalculations";
 import type { Locale } from "../locales/types";
 
@@ -34,13 +34,14 @@ export function usePeriodStats(
   periodStart: Date,
   periodEnd: Date,
   allEntries?: Entry[],
-  locale?: Locale
+  locale?: Locale,
+  config?: CalculationConfig | null
 ) {
   return useMemo(() => {
     // Sicherstellen, dass Dates gültig sind, sonst Fallback auf heute
     const start = periodStart instanceof Date ? periodStart : new Date();
     const end = periodEnd instanceof Date ? periodEnd : new Date();
 
-    return calculatePeriodStats(entries, userData, start, end, allEntries, locale);
-  }, [entries, userData, periodStart, periodEnd, allEntries, locale]);
+    return calculatePeriodStats(entries, userData, start, end, allEntries, locale, config);
+  }, [entries, userData, periodStart, periodEnd, allEntries, locale, config]);
 }

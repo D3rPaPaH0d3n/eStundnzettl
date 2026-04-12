@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import type { Entry, UserData, WorkCode, Attachment, FormState, BackupPayload } from "../types";
+import type { Entry, UserData, WorkCode, Attachment, FormState, BackupPayload, CalculationConfig } from "../types";
 import type { PeriodStatsResult } from "../utils/timeCalculations";
 import type { Locale, LocaleId } from "../locales/types";
 import {
@@ -90,6 +90,10 @@ interface ViewRouterProps {
   // Locale
   locale: Locale;
   setLocale: (id: LocaleId) => void;
+  // Calculation Config
+  calculationConfig: CalculationConfig;
+  setCalculationConfig: (next: CalculationConfig | ((prev: CalculationConfig) => CalculationConfig)) => void;
+  resetCalculationConfigToLocale: (newLocale: Locale, workDays: number[]) => void;
 }
 
 const AppTour = React.lazy(() => import("./AppTour"));
@@ -114,6 +118,7 @@ export default function ViewRouter(props: ViewRouterProps) {
     timerState, startNewEntry, handleStartLive, handleStopLive, pauseTimer, resumeTimer, todayTarget,
     showTour, handleTourClose,
     locale, setLocale,
+    calculationConfig, setCalculationConfig, resetCalculationConfigToLocale,
   } = props;
 
   return (
@@ -139,6 +144,7 @@ export default function ViewRouter(props: ViewRouterProps) {
                 userData={userData}
                 workCodes={workCodes}
                 locale={locale}
+                calculationConfig={calculationConfig}
               />
             </motion.div>
           )}
@@ -172,6 +178,7 @@ export default function ViewRouter(props: ViewRouterProps) {
                   specialManualMode={form.specialManualMode}
                   setSpecialManualMode={form.setSpecialManualMode}
                   locale={locale}
+                  calculationConfig={calculationConfig}
                 />
               </Suspense>
             </motion.div>
@@ -207,6 +214,9 @@ export default function ViewRouter(props: ViewRouterProps) {
                   pdfArchivePerformRun={pdfArchivePerformRun}
                   locale={locale}
                   setLocale={setLocale}
+                  calculationConfig={calculationConfig}
+                  setCalculationConfig={setCalculationConfig}
+                  resetCalculationConfigToLocale={resetCalculationConfigToLocale}
                 />
               </Suspense>
             </motion.div>
@@ -234,6 +244,7 @@ export default function ViewRouter(props: ViewRouterProps) {
                   attachments={attachments}
                   readAttachmentFile={readAttachmentFile as (file: Attachment) => Promise<string>}
                   locale={locale}
+                  calculationConfig={calculationConfig}
                 />
               </Suspense>
             </motion.div>

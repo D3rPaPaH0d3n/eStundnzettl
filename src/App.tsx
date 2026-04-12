@@ -7,6 +7,7 @@ import { STORAGE_KEYS, WORK_CODE } from "./hooks/constants";
 import { useWorkCodes } from "./hooks/useWorkCodes";
 import { useEntries } from "./hooks/useEntries";
 import { useSettings } from "./hooks/useSettings";
+import { useCalculationConfig } from "./hooks/useCalculationConfig";
 import { useAutoBackup } from "./hooks/useAutoBackup";
 import { useAutoPdfArchive } from "./hooks/useAutoPdfArchive";
 import { useLiveTimer } from "./hooks/useLiveTimer";
@@ -48,6 +49,12 @@ export default function App() {
   } = useSettings();
   // Locale-Objekt aus gespeicherter LocaleId auflösen (Fallback: AT)
   const locale = useMemo(() => getLocale(localeId), [localeId]);
+  // Per-User Rechenkonfiguration (überschreibt Locale-Defaults)
+  const {
+    calculationConfig,
+    setCalculationConfig,
+    resetCalculationConfigToLocale,
+  } = useCalculationConfig({ locale, localeId, userData });
   const { workCodes, hasAnyCodes, loadWorkCodes } = useWorkCodes();
   const getDefaultCode = useLastCode({ hasAnyCodes, workCodes });
   const form = useFormState({ getDefaultCode });
@@ -64,7 +71,7 @@ export default function App() {
 
   const exportPayloadRef = useRef<BackupPayload | null>(null);
   const { showExportModal, setShowExportModal, exportData, handleExportToFolder, handleExportShare } = useExport({
-    entries, userData, workCodes, attachments, exportPayloadRef,
+    entries, userData, workCodes, attachments, exportPayloadRef, calculationConfig,
   });
   const { handleImport } = useImport({
     importEntries, setUserData, importWorkCodes: loadWorkCodes,
@@ -91,7 +98,7 @@ export default function App() {
     entriesWithHolidays, groupedByWeek, stats,
     overtime, progressPercent, todayTarget,
     lastWorkEntry, uniqueProjects,
-  } = useAppData({ entries, userData, viewMonth, viewYear, allEntries: entries, locale });
+  } = useAppData({ entries, userData, viewMonth, viewYear, allEntries: entries, locale, calculationConfig });
 
   // --- HANDLERS ---
   const {
@@ -104,6 +111,7 @@ export default function App() {
     startTimer, stopTimer, setUserData, setAutoBackup,
     setView, setCurrentDate, setDeleteTarget, setShowOnboarding,
     locale,
+    calculationConfig,
   });
 
   // --- EFFECTS ---
@@ -133,6 +141,7 @@ export default function App() {
             setLocalBackupEnabled={() => {}}
             setTheme={setTheme}
             setLocale={setLocale}
+            setCalculationConfig={setCalculationConfig}
           />
         </Suspense>
       )}
@@ -257,6 +266,9 @@ export default function App() {
         handleTourClose={handleTourClose}
         locale={locale}
         setLocale={setLocale}
+        calculationConfig={calculationConfig}
+        setCalculationConfig={setCalculationConfig}
+        resetCalculationConfigToLocale={resetCalculationConfigToLocale}
       />
     </div>
   );

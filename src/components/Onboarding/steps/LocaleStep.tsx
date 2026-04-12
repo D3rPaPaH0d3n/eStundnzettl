@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Globe, Check, Info, ChevronDown } from "lucide-react";
+import { Globe, Check, Info, ChevronDown, Sliders } from "lucide-react";
 import type { LocaleId } from "../../../locales/types";
 import { GERMAN_STATE_IDS, GERMAN_STATE_NAMES } from "../../../locales";
 import SelectionDrawer from "../../SelectionDrawer";
@@ -21,11 +21,20 @@ import SelectionDrawer from "../../SelectionDrawer";
 interface Props {
   selectedLocaleId: LocaleId | null;
   onSelect: (id: LocaleId) => void;
+  /** Aktuell auf "Eigener Plan" geklickt? Erhöht die visuelle Markierung. */
+  customPlanSelected?: boolean;
+  /** Wird aufgerufen wenn der User "Eigener Plan" wählt. Aktiviert den Baukasten-Schritt. */
+  onSelectCustomPlan?: () => void;
 }
 
-type TopChoice = "neutral" | "at" | "de";
+type TopChoice = "neutral" | "at" | "de" | "custom";
 
-const LocaleStep: React.FC<Props> = ({ selectedLocaleId, onSelect }) => {
+const LocaleStep: React.FC<Props> = ({
+  selectedLocaleId,
+  onSelect,
+  customPlanSelected = false,
+  onSelectCustomPlan,
+}) => {
   const [stateDrawerOpen, setStateDrawerOpen] = useState(false);
 
   const stateOptions = useMemo(
@@ -33,13 +42,15 @@ const LocaleStep: React.FC<Props> = ({ selectedLocaleId, onSelect }) => {
     []
   );
 
-  const topChoice: TopChoice | null = selectedLocaleId
-    ? selectedLocaleId === "neutral"
-      ? "neutral"
-      : selectedLocaleId === "at"
-      ? "at"
-      : "de"
-    : null;
+  const topChoice: TopChoice | null = customPlanSelected
+    ? "custom"
+    : selectedLocaleId
+      ? selectedLocaleId === "neutral"
+        ? "neutral"
+        : selectedLocaleId === "at"
+          ? "at"
+          : "de"
+      : null;
 
   const currentGermanState =
     selectedLocaleId && selectedLocaleId.startsWith("de-")
@@ -161,6 +172,33 @@ const LocaleStep: React.FC<Props> = ({ selectedLocaleId, onSelect }) => {
               <ChevronDown size={18} className="text-zinc-400 ml-2" />
             </button>
           </div>
+        )}
+
+        {/* Eigener Plan — löst den Baukasten-Schritt aus */}
+        {onSelectCustomPlan && (
+          <button
+            type="button"
+            onClick={onSelectCustomPlan}
+            className={`w-full p-4 rounded-xl border-2 text-left transition-all relative ${
+              topChoice === "custom"
+                ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                : "border-zinc-200 dark:border-zinc-700 hover:border-emerald-300"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Sliders size={16} className="text-emerald-600 dark:text-emerald-400" />
+              <div className="font-bold text-zinc-800 dark:text-white">Eigener Plan</div>
+            </div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              Ich bastle mir meine Rechenregeln im nächsten Schritt selbst zusammen
+              (Überstunden, Krank, Feiertage).
+            </div>
+            {topChoice === "custom" && (
+              <div className="absolute top-4 right-4 text-emerald-500">
+                <Check size={18} />
+              </div>
+            )}
+          </button>
         )}
       </div>
 

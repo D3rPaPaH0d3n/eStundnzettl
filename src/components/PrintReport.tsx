@@ -19,7 +19,7 @@ import ExportModal from "./ExportModal";
 import ReportDocument from "./ReportDocument";
 import ConfirmModal from "./ConfirmModal";
 
-import type { Entry, UserData, WorkCode, Attachment, Html2PdfOptions } from "../types";
+import type { Entry, UserData, WorkCode, Attachment, Html2PdfOptions, CalculationConfig } from "../types";
 import type { Locale } from "../locales/types";
 
 // Schwelle für die Size-Warning: ab ~300 Einträgen kann der PDF-Export
@@ -41,11 +41,12 @@ interface Props {
   attachments?: Attachment[];
   readAttachmentFile: (file: Attachment) => Promise<string>;
   locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
 }
 
-const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, monthDate, employeeName, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile, locale }) => {
+const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, monthDate, employeeName, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile, locale, calculationConfig }) => {
   // Krank-Korrektur auf allEntries anwenden (entries sind bereits korrigiert via useAppData)
-  const allEntries = useMemo(() => applyEffectiveDurations(rawAllEntries, userData, locale), [rawAllEntries, userData, locale]);
+  const allEntries = useMemo(() => applyEffectiveDurations(rawAllEntries, userData, locale, calculationConfig), [rawAllEntries, userData, locale, calculationConfig]);
   const [filterMode, setFilterMode] = useState<number | "month">(() => {
     const today = new Date();
     if (monthDate.getMonth() === today.getMonth() && monthDate.getFullYear() === today.getFullYear()) {
@@ -147,7 +148,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
     }
   }, [filterMode, monthDate, filteredEntries]);
 
-  const stats = usePeriodStats(entries, userData, periodStart, periodEnd, allEntries, locale);
+  const stats = usePeriodStats(entries, userData, periodStart, periodEnd, allEntries, locale, calculationConfig);
   // -----------------
 
   // Wrapper: bei vielen Einträgen erst Warnung anzeigen, sonst direkt exportieren.
@@ -327,6 +328,8 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
             workCodes={workCodes}
             attachments={attachments}
             customNote={customNote}
+            locale={locale}
+            calculationConfig={calculationConfig}
           />
         </div>
       </div>

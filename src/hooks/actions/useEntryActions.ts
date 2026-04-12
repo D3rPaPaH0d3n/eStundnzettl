@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import type { Entry, UserData, WorkCode, FormState } from '../../types';
+import type { Entry, UserData, WorkCode, FormState, CalculationConfig } from '../../types';
 import type { Locale } from "../../locales/types";
 import { toLocalDateString } from "../../utils";
 import { parseTime, calculateEntryNetDuration, getTargetMinutesForDate } from "../../utils/timeCalculations";
@@ -26,6 +26,7 @@ interface UseEntryActionsProps {
   getDefaultCode: () => number;
   setView: (view: string) => void;
   locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
 }
 
 export function useEntryActions({
@@ -38,6 +39,7 @@ export function useEntryActions({
   getDefaultCode,
   setView,
   locale,
+  calculationConfig,
 }: UseEntryActionsProps) {
   const getDefaultTimesForDate = useCallback(
     (date: string) => {
@@ -149,6 +151,7 @@ export function useEntryActions({
           code: form.code,
           specialManualMode: isManualSpecial,
           locale,
+          config: calculationConfig,
         });
 
         if (isManualSpecial) {
@@ -173,6 +176,7 @@ export function useEntryActions({
           userData,
           code: form.code,
           locale,
+          config: calculationConfig,
         });
         label =
           form.entryType === "vacation"
@@ -235,7 +239,7 @@ export function useEntryActions({
       form.setSpecialManualMode?.(false);
       setView("dashboard");
     },
-    [form, entries, workCodes, userData, addEntry, updateEntry, setView]
+    [form, entries, workCodes, userData, addEntry, updateEntry, setView, locale, calculationConfig]
   );
 
   return { getDefaultTimesForDate, startNewEntry, startEdit, handleSaveEntry };

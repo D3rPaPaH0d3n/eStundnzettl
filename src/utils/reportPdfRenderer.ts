@@ -26,7 +26,7 @@ import ReportDocument from "../components/ReportDocument";
 import { calculatePeriodStats, applyEffectiveDurations, getTargetMinutesForDate } from "./timeCalculations";
 import { getHolidayData } from "../utils";
 import { logger } from "./logger";
-import type { Entry, UserData, WorkCode, Attachment, Html2PdfOptions } from '../types';
+import type { Entry, UserData, WorkCode, Attachment, Html2PdfOptions, CalculationConfig } from '../types';
 import type { Locale } from "../locales/types";
 
 const log = logger.scope("ReportPdfRenderer");
@@ -43,9 +43,10 @@ function generateHolidayEntries(
   year: number,
   month: number,
   userData: UserData | null,
-  locale?: Locale
+  locale?: Locale,
+  config?: CalculationConfig | null
 ): Entry[] {
-  const holidayMap = getHolidayData(year, locale);
+  const holidayMap = getHolidayData(year, locale, config);
   const daysInMonth = new Date(year, month, 0).getDate();
   const holidays: Entry[] = [];
 
@@ -53,7 +54,7 @@ function generateHolidayEntries(
     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     if (!holidayMap[dateStr]) continue;
 
-    const targetMin = getTargetMinutesForDate(dateStr, userData?.workDays, locale);
+    const targetMin = getTargetMinutesForDate(dateStr, userData?.workDays, locale, config);
     if (targetMin <= 0) continue;
 
     holidays.push({
@@ -135,6 +136,7 @@ export async function renderMonthlyReportPdfBlob({
   attachments = [],
   customNote = "",
   locale,
+  calculationConfig,
 }: {
   year: number;
   month: number;
@@ -144,23 +146,24 @@ export async function renderMonthlyReportPdfBlob({
   attachments?: Attachment[];
   customNote?: string;
   locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
 }): Promise<Blob> {
   if (!year || !month) {
     throw new Error("renderMonthlyReportPdfBlob: year/month fehlen");
   }
 
   // Feiertage ergaenzen, damit Soll/Ist korrekt berechnet werden
-  const holidayEntries = generateHolidayEntries(year, month, userData, locale);
+  const holidayEntries = generateHolidayEntries(year, month, userData, locale, calculationConfig);
   const entriesWithHolidays = [...entries, ...holidayEntries];
 
   // Krank-Korrektur einmal anwenden (Single Source of Truth)
-  const correctedEntries = applyEffectiveDurations(entriesWithHolidays, userData, locale);
+  const correctedEntries = applyEffectiveDurations(entriesWithHolidays, userData, locale, calculationConfig);
   const monthEntries = filterEntriesForMonth(correctedEntries, year, month);
   const periodStart = new Date(year, month - 1, 1);
   const periodEnd = new Date(year, month, 0);
   // `correctedEntries` ist die komplette Liste → als allEntries weiter,
   // damit Mehrarbeit/Ueberstunden an Monatsuebergaengen aus der VOLLEN Woche berechnet werden.
-  const stats = calculatePeriodStats(monthEntries, userData, periodStart, periodEnd, correctedEntries, locale);
+  const stats = calculatePeriodStats(monthEntries, userData, periodStart, periodEnd, correctedEntries, locale, calculationConfig);
   const monthDate = new Date(year, month - 1, 1);
 
   const host = createOffscreenContainer();
@@ -178,6 +181,8 @@ export async function renderMonthlyReportPdfBlob({
           workCodes,
           attachments,
           customNote,
+          locale,
+          calculationConfig,
         } as Record<string, unknown>)
       );
       // requestAnimationFrame * 2 stellt sicher, dass React committed

@@ -6,6 +6,7 @@ import ProfileStep from "./Onboarding/steps/ProfileStep";
 import LocaleStep from "./Onboarding/steps/LocaleStep";
 import WorkScheduleStep from "./Onboarding/steps/WorkScheduleStep";
 import WorkCodesStep, { type WorkCodePresetId } from "./Onboarding/steps/WorkCodesStep";
+import CalculationStep from "./Onboarding/steps/CalculationStep";
 import SummaryStep from "./Onboarding/steps/SummaryStep";
 import toast from "react-hot-toast";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
@@ -22,8 +23,12 @@ import { bulkInsertEntries } from "../db/repositories/entriesRepo";
 import { logger } from "../utils/logger";
 import type { LocaleId } from "../locales/types";
 import { getLocale } from "../locales";
+import {
+  getDefaultCalculationConfig,
+  getBlankCalculationConfig,
+} from "../utils/calculationConfig";
 
-import type { Entry, UserData, WorkCode, Theme, WorkModel, GoogleSignInResult, BackupAnalysisResult } from "../types";
+import type { Entry, UserData, WorkCode, Theme, WorkModel, GoogleSignInResult, BackupAnalysisResult, CalculationConfig } from "../types";
 
 const log = logger.scope("Onboarding");
 
@@ -36,6 +41,8 @@ interface Props {
   setLocalBackupEnabled: (enabled: boolean) => void;
   setTheme: (theme: Theme) => void;
   setLocale?: (id: LocaleId) => void;
+  /** Setzt die `CalculationConfig` am Ende des Wizards (von App.tsx). */
+  setCalculationConfig?: (next: CalculationConfig) => void;
 }
 
 interface FormData {
@@ -50,6 +57,13 @@ interface FormData {
   simpleMode?: boolean;
   localeId: LocaleId | null;
   workCodePresetId: WorkCodePresetId;
+  /** Aktuelle Rechenkonfiguration des Wizards. */
+  calcConfig: CalculationConfig;
+  /**
+   * Nur zur Ablaufsteuerung: true wenn der User in Step 2 "Eigener Plan"
+   * gewählt hat → Step 4 (CalculationStep) wird angezeigt.
+   */
+  customCalc: boolean;
 }
 
 interface NcCredentials {
@@ -59,10 +73,10 @@ interface NcCredentials {
   appPassword: string;
 }
 
-const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntries, importWorkCodes, setCloudSyncEnabled, setLocalBackupEnabled, setTheme, setLocale }) => {
-  const [step, setStep] = useState(0); 
+const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntries, importWorkCodes, setCloudSyncEnabled, setLocalBackupEnabled, setTheme, setLocale, setCalculationConfig }) => {
+  const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [isRestoreFlow, setIsRestoreFlow] = useState(false); 
+  const [isRestoreFlow, setIsRestoreFlow] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -75,6 +89,8 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     minuteInput: false,
     localeId: null,
     workCodePresetId: "allgemein",
+    calcConfig: getDefaultCalculationConfig(getLocale(undefined), WORK_MODELS[0].days),
+    customCalc: false,
   });
   
   const [restoreData, setRestoreData] = useState<Record<string, unknown> | null>(null);
@@ -106,9 +122,15 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
   // --- NAVIGATION ---
   // Step-Reihenfolge für neue User:
-  //   0 Welcome -> 1 Profile -> 2 Locale -> 3 WorkSchedule -> 4 WorkCodes
-  //   -> 5 Backup -> 6 Summary
-  // Restore-Flow überspringt alles außer Welcome(0) -> Backup(5) -> Summary(6).
+  //   0 Welcome -> 1 Profile -> 2 Locale -> 3 WorkSchedule
+  //   -> (nur wenn customCalc) 4 Calculation -> 5 WorkCodes
+  //   -> 6 Backup -> 7 Summary
+  //
+  // Step 4 (Calculation) wird nur angezeigt, wenn der User in Step 2
+  // "Eigener Plan" gewählt hat. Für AT/DE/Neutral-User wird dieser
+  // Step übersprungen — ihre Rechenregeln kommen direkt aus dem Locale.
+  //
+  // Restore-Flow überspringt alles außer Welcome(0) -> Backup(6) -> Summary(7).
   // Für Restore-User wird die Locale nach dem Finish via LocaleMigrationModal
   // abgefragt (siehe App.tsx), weil sie aus dem Backup restored werden und
   // Locale dort (noch) nicht enthalten ist.
@@ -119,7 +141,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
   const handleStartRestore = () => {
     setIsRestoreFlow(true);
-    setStep(5);
+    setStep(6);
   };
 
   const handleDemoMode = async () => {
@@ -163,16 +185,39 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         setFormData((p) => ({ ...p, workDays: [...locale.defaultWorkDays] }));
       }
     }
+    // Beim Verlassen von Step 3 (WorkSchedule): `weeklyTargetMinutes` in
+    // der Config neu berechnen, damit der CalculationStep (falls angezeigt)
+    // den korrekten Wert anzeigt.
+    if (step === 3) {
+      setFormData((p) => ({
+        ...p,
+        calcConfig: {
+          ...p.calcConfig,
+          weeklyTargetMinutes: p.workDays.reduce((acc, n) => acc + (Number.isFinite(n) ? n : 0), 0),
+        },
+      }));
+    }
+    // Step 3 → Step 5 überspringt CalculationStep wenn kein Eigener Plan
+    if (step === 3 && !formData.customCalc) {
+      setStep(5);
+      return;
+    }
     setStep(prev => prev + 1);
   };
 
   const prevStep = () => {
-    if (step === 5 && isRestoreFlow) {
+    if (step === 6 && isRestoreFlow) {
       // Restore-Flow: von Backup direkt zurück zum Welcome
       setStep(0);
-    } else {
-      setStep(prev => prev - 1);
+      return;
     }
+    // Step 5 (WorkCodes) → Step 3 (WorkSchedule) überspringt CalculationStep
+    // wenn kein Eigener Plan
+    if (step === 5 && !formData.customCalc) {
+      setStep(3);
+      return;
+    }
+    setStep(prev => prev - 1);
   };
 
   // --- HANDLER ---
@@ -374,6 +419,19 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       }
     }
 
+    // CalculationConfig persistieren — unabhängig davon ob customCalc
+    // oder Locale-Default-Config. Bestehende User im Restore-Flow
+    // überspringen das (ihre Config kommt aus dem Backup oder der Migration).
+    if (!isRestoreFlow) {
+      try {
+        await setSetting("calculationConfig", formData.calcConfig);
+        localStorage.setItem("estundnzettl_calculation_config", JSON.stringify(formData.calcConfig));
+      } catch (err) {
+        log.error("CalculationConfig save failed:", err);
+      }
+      setCalculationConfig?.(formData.calcConfig);
+    }
+
     // Locale persistieren (nur wenn neuer User — Restore bekommt
     // LocaleMigrationModal nach dem Abschluss angezeigt)
     if (!isRestoreFlow && formData.localeId) {
@@ -437,7 +495,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       if (isValid) {
         setRestoreData(data);
         toast.success("Backup geladen!");
-        setStep(6);
+        setStep(7);
       } else {
         toast.error("Format ungültig.");
       }
@@ -458,7 +516,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
           if (isValid) {
               setRestoreData(data);
               toast.success("Backup geladen!");
-              setStep(6);
+              setStep(7);
           } else {
               toast.error("Ungültiges Backup.");
           }
@@ -485,7 +543,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         }
         setRestoreData(data);
         toast.success("Backup geladen!");
-        setStep(6);
+        setStep(7);
       } else {
         toast.error("Ungültiges Format.");
       }
@@ -551,7 +609,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                 setRestoreData(data);
                 toast.success("Backup von Nextcloud geladen!");
                 setShowNcRestore(false);
-                setStep(6);
+                setStep(7);
               } else {
                 toast.error("Ungültiges Backup-Format");
               }
@@ -589,7 +647,11 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
             <motion.div
               className="h-full bg-emerald-500"
               initial={{ width: 0 }}
-              animate={{ width: `${(step / 6) * 100}%` }}
+              animate={{
+                // Gesamte Schrittzahl hängt davon ab, ob der User einen
+                // Eigenen Plan konfiguriert (→ +1 Step für CalculationStep).
+                width: `${(step / (formData.customCalc ? 7 : 6)) * 100}%`,
+              }}
             />
           </div>
         )}
@@ -620,7 +682,25 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
             {step === 2 && (
               <LocaleStep
                 selectedLocaleId={formData.localeId}
-                onSelect={(id) => setFormData((p) => ({ ...p, localeId: id }))}
+                customPlanSelected={formData.customCalc}
+                onSelect={(id) =>
+                  setFormData((p) => ({
+                    ...p,
+                    localeId: id,
+                    customCalc: false,
+                    calcConfig: getDefaultCalculationConfig(getLocale(id), p.workDays),
+                  }))
+                }
+                onSelectCustomPlan={() =>
+                  setFormData((p) => ({
+                    ...p,
+                    // Unter der Haube Neutral-Locale als Basis, damit
+                    // Feiertage/Halbtage/MA-Split nicht aus AT/DE kommen.
+                    localeId: "neutral",
+                    customCalc: true,
+                    calcConfig: getBlankCalculationConfig(p.workDays),
+                  }))
+                }
               />
             )}
 
@@ -638,16 +718,25 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
               />
             )}
 
-            {/* SCHRITT 4: TÄTIGKEITEN (Work Codes) */}
-            {step === 4 && (
+            {/* SCHRITT 4: RECHENLOGIK-BAUKASTEN (nur bei "Eigener Plan") */}
+            {step === 4 && formData.customCalc && (
+              <CalculationStep
+                config={formData.calcConfig}
+                onChange={(next) => setFormData((p) => ({ ...p, calcConfig: next }))}
+                workDays={formData.workDays}
+              />
+            )}
+
+            {/* SCHRITT 5: TÄTIGKEITEN (Work Codes) */}
+            {step === 5 && (
               <WorkCodesStep
                 selectedPresetId={formData.workCodePresetId}
                 onSelect={(id) => setFormData((p) => ({ ...p, workCodePresetId: id }))}
               />
             )}
 
-            {/* SCHRITT 5: BACKUP / DATEN */}
-            {step === 5 && (
+            {/* SCHRITT 6: BACKUP / DATEN */}
+            {step === 6 && (
                <motion.div 
                key="step3"
                initial={{ opacity: 0, x: 20 }}
@@ -928,16 +1017,16 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
              </motion.div>
             )}
 
-            {/* SCHRITT 6: FERTIG */}
-            {step === 6 && (
+            {/* SCHRITT 7: FERTIG */}
+            {step === 7 && (
               <SummaryStep hasRestoreData={!!restoreData} onFinish={finishSetup} />
             )}
 
           </AnimatePresence>
         </div>
 
-        {/* Footer Navigation (Steps 1..5, nicht auf Welcome & Summary) */}
-        {step > 0 && step < 6 && (
+        {/* Footer Navigation (Steps 1..6, nicht auf Welcome & Summary) */}
+        {step > 0 && step < 7 && (
           <div className="p-4 border-t border-zinc-100 dark:border-zinc-700 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800/50 backdrop-blur-sm">
 
             <button
@@ -952,7 +1041,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                 onClick={nextStep}
                 className="px-6 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl flex items-center gap-2 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-lg shadow-zinc-900/10"
               >
-                {step === 5 ? "Passt" : "Weiter"} <ChevronRight size={18} />
+                {step === 6 ? "Passt" : "Weiter"} <ChevronRight size={18} />
               </button>
             )}
           </div>
@@ -965,7 +1054,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         onCancel={() => setShowConflictModal(false)}
         onConfirm={() => {
             setShowConflictModal(false);
-            setStep(6);
+            setStep(7);
         }}
       />
 

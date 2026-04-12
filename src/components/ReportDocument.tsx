@@ -1,9 +1,11 @@
 import React, { useMemo } from "react";
 import { formatTime, formatSignedTime } from "../utils";
 import { buildDayBalanceMetaMap } from "../utils/timeCalculations";
+import { resolveEffectiveRules } from "../utils/calculationConfig";
 import { WORK_CODE } from "../hooks/constants";
 
-import type { Entry, UserData, WorkCode, Attachment } from "../types";
+import type { Entry, UserData, WorkCode, Attachment, CalculationConfig } from "../types";
+import type { Locale } from "../locales/types";
 
 /**
  * ReportDocument
@@ -55,6 +57,8 @@ interface Props {
   attachments?: Attachment[];
   customNote?: string;
   domId?: string;
+  locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
 }
 
 // COLORS (Zinc & Emerald Theme) — 1:1 wie bisher in PrintReport
@@ -84,7 +88,16 @@ const ReportDocument: React.FC<Props> = ({
   attachments = [],
   customNote = "",
   domId = "report-to-print",
+  locale,
+  calculationConfig,
 }) => {
+  // Wenn der User keine MA/ÜS-Unterscheidung will, blenden wir die
+  // Spalten Mehrarbeit & Überstunden komplett aus und zeigen nur Saldo.
+  const showOvertimeColumns = useMemo(() => {
+    if (!locale) return true; // Abwärtskompatibel: ohne Locale-Info immer anzeigen
+    const rules = resolveEffectiveRules(locale, calculationConfig);
+    return rules.overtimeMode !== "none";
+  }, [locale, calculationConfig]);
   const employeeName = userData?.name || "";
   const userPhoto = userData?.photo || null;
 
@@ -104,8 +117,8 @@ const ReportDocument: React.FC<Props> = ({
   );
 
   const dayMetaMap = useMemo(
-    () => buildDayBalanceMetaMap(entries, userData),
-    [entries, userData]
+    () => buildDayBalanceMetaMap(entries, userData, locale, calculationConfig),
+    [entries, userData, locale, calculationConfig]
   );
 
 
@@ -532,7 +545,7 @@ const ReportDocument: React.FC<Props> = ({
                 </span>
               </div>
 
-              {(safeStats.overtimeSplit.mehrarbeit > 0 || safeStats.overtimeSplit.ueberstunden > 0) && (
+              {showOvertimeColumns && (safeStats.overtimeSplit.mehrarbeit > 0 || safeStats.overtimeSplit.ueberstunden > 0) && (
                 <div
                   style={{
                     marginTop: "0.4rem",

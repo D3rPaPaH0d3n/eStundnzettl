@@ -1,0 +1,638 @@
+import React, { useState, useMemo } from "react";
+import { Sliders, ChevronDown, Plus, X, Calculator, Upload, Calendar } from "lucide-react";
+import toast from "react-hot-toast";
+import { Card } from "../../utils";
+import SelectionDrawer from "../SelectionDrawer";
+import { recalculateAllEntries } from "../../utils/timeCalculations";
+import { getLocale, GERMAN_STATE_IDS, GERMAN_STATE_NAMES } from "../../locales";
+import { logger } from "../../utils/logger";
+import type {
+  CalculationConfig,
+  OvertimeMode,
+  SickOnWorkDayMode,
+  HolidayOnWorkDayMode,
+  AutoPauseRule,
+  UserData,
+} from "../../types";
+import type { Locale } from "../../locales/types";
+
+/**
+ * CalculationSettings — Nachträgliche Bearbeitung der `CalculationConfig`.
+ *
+ * Zeigt die gleichen Stellschrauben wie der Onboarding-CalculationStep,
+ * plus die "Settings-only"-Extras (Auto-Pausen, Urlaubsanspruch).
+ *
+ * Sichtbar für **alle User** (auch AT/DE/Neutral): wer nichts anpasst,
+ * bleibt bei seinen Locale-Defaults. Wer mag, kann auf "Eigener Plan"
+ * umschalten, indem er einfach Knöpfe drückt — der Modus wird nicht
+ * mehr separat getrackt, weil `calculationConfig` allein alles steuert.
+ *
+ * Der "Alle Einträge neu berechnen"-Button am Ende ruft
+ * `recalculateAllEntries(userData, locale, config)` auf.
+ */
+
+interface Props {
+  userData: UserData;
+  locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
+  setCalculationConfig?: (
+    next: CalculationConfig | ((prev: CalculationConfig) => CalculationConfig)
+  ) => void;
+}
+
+const OVERTIME_OPTIONS = [
+  { id: "none", label: "Keine Unterscheidung" },
+  { id: "split", label: "Mehrarbeit & Überstunden trennen" },
+  { id: "ueberstunden_only", label: "Alles ist Überstunden" },
+];
+
+const SICK_OPTIONS = [
+  { id: "cap_to_target", label: "Füllt bis Tagessoll auf" },
+  { id: "additive", label: "Zählt zusätzlich zur Arbeit" },
+  { id: "ignore", label: "Wird ignoriert" },
+];
+
+const HOLIDAY_ON_WORK_OPTIONS = [
+  { id: "additive", label: "Feiertag zählt zusätzlich" },
+  { id: "cap_to_target", label: "Füllt bis Tagessoll auf" },
+];
+
+const formatHours = (minutes: number): string => {
+  if (!Number.isFinite(minutes)) return "0 h";
+  return (minutes / 60).toLocaleString("de-DE", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 2,
+  }) + " h";
+};
+
+const CalculationSettings: React.FC<Props> = ({
+  userData,
+  locale,
+  calculationConfig,
+  setCalculationConfig,
+}) => {
+  const [overtimeDrawerOpen, setOvertimeDrawerOpen] = useState(false);
+  const [sickDrawerOpen, setSickDrawerOpen] = useState(false);
+  const [holidayWorkDrawerOpen, setHolidayWorkDrawerOpen] = useState(false);
+  const [importDrawerOpen, setImportDrawerOpen] = useState(false);
+  const [holidayOpen, setHolidayOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [customHolidayInput, setCustomHolidayInput] = useState({ mmdd: "", name: "" });
+  const [customHalfDayInput, setCustomHalfDayInput] = useState("");
+  const [newPauseInput, setNewPauseInput] = useState({ fromHours: "6", pauseMinutes: "30" });
+  const [recalcRunning, setRecalcRunning] = useState(false);
+
+  const customHolidaysMemo = useMemo(
+    () => calculationConfig?.holidaySet.customHolidays ?? {},
+    [calculationConfig]
+  );
+  const sortedHolidayEntries = useMemo(
+    () => Object.entries(customHolidaysMemo).sort(([a], [b]) => a.localeCompare(b)),
+    [customHolidaysMemo]
+  );
+
+  const importOptions = useMemo(
+    () => [
+      { id: "at", label: "Österreich" },
+      ...GERMAN_STATE_IDS.map((s) => ({
+        id: `de-${s}`,
+        label: `Deutschland – ${GERMAN_STATE_NAMES[s]}`,
+      })),
+    ],
+    []
+  );
+
+  if (!calculationConfig || !setCalculationConfig) return null;
+
+  const config = calculationConfig;
+  const customHolidays = customHolidaysMemo;
+
+  const overtimeLabel =
+    OVERTIME_OPTIONS.find((o) => o.id === config.overtimeMode)?.label ?? "Keine Unterscheidung";
+  const sickLabel =
+    SICK_OPTIONS.find((o) => o.id === config.sickOnWorkDayMode)?.label ?? "Zählt zusätzlich";
+  const holidayWorkLabel =
+    HOLIDAY_ON_WORK_OPTIONS.find((o) => o.id === config.holidayOnWorkDayMode)?.label ??
+    "Feiertag zählt zusätzlich";
+
+  // --- Handlers -----------------------------------------------------------
+  const patch = (partial: Partial<CalculationConfig>) =>
+    setCalculationConfig({ ...config, ...partial });
+
+  const handleOvertimeChange = (id: string | number) => {
+    const mode = id as OvertimeMode;
+    patch({
+      overtimeMode: mode,
+      overtimeThresholdMinutes:
+        mode === "split"
+          ? (config.overtimeThresholdMinutes ?? 2400)
+          : mode === "none"
+            ? null
+            : config.overtimeThresholdMinutes,
+    });
+  };
+
+  const handleThresholdHourInput = (value: string) => {
+    const parsed = parseFloat(value.replace(",", "."));
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    patch({ overtimeThresholdMinutes: Math.round(parsed * 60) });
+  };
+
+  const handleSickChange = (id: string | number) => {
+    patch({ sickOnWorkDayMode: id as SickOnWorkDayMode });
+  };
+
+  const handleHolidayWorkChange = (id: string | number) => {
+    patch({ holidayOnWorkDayMode: id as HolidayOnWorkDayMode });
+  };
+
+  const handleImportHolidays = (id: string | number) => {
+    const localeId = id as string;
+    const loc = getLocale(localeId as never);
+    const year = new Date().getFullYear();
+    const base = loc.getHolidays(year);
+    const next: Record<string, string> = { ...customHolidays };
+    for (const [date, name] of Object.entries(base)) {
+      next[date.slice(5)] = name;
+    }
+    patch({
+      holidaySet: {
+        mode: "custom",
+        disabledHolidayKeys: [],
+        customHolidays: next,
+      },
+    });
+    toast.success(`${Object.keys(base).length} Feiertage importiert`);
+  };
+
+  const handleRemoveCustomHoliday = (key: string) => {
+    const next = { ...customHolidays };
+    delete next[key];
+    patch({
+      holidaySet: { ...config.holidaySet, customHolidays: next },
+    });
+  };
+
+  const handleAddCustomHoliday = () => {
+    const mmdd = customHolidayInput.mmdd.trim();
+    const name = customHolidayInput.name.trim();
+    if (!/^\d{2}-\d{2}$/.test(mmdd) || name.length === 0) {
+      toast.error("Format: MM-DD + Name");
+      return;
+    }
+    patch({
+      holidaySet: {
+        mode: "custom",
+        disabledHolidayKeys: [],
+        customHolidays: { ...customHolidays, [mmdd]: name },
+      },
+    });
+    setCustomHolidayInput({ mmdd: "", name: "" });
+  };
+
+  const handleAddCustomHalfDay = (mmdd: string) => {
+    const clean = mmdd.trim();
+    if (!/^\d{2}-\d{2}$/.test(clean)) {
+      toast.error("Format: MM-DD");
+      return;
+    }
+    if (config.halfDayMode.customHalfDays.includes(clean)) return;
+    patch({
+      halfDayMode: {
+        mode: "custom",
+        customHalfDays: [...config.halfDayMode.customHalfDays, clean],
+      },
+    });
+    setCustomHalfDayInput("");
+  };
+
+  const handleRemoveHalfDay = (mmdd: string) => {
+    const filtered = config.halfDayMode.customHalfDays.filter((d) => d !== mmdd);
+    patch({
+      halfDayMode: {
+        mode: filtered.length === 0 ? "none" : "custom",
+        customHalfDays: filtered,
+      },
+    });
+  };
+
+  const handleAddAutoPause = () => {
+    const fromHours = parseFloat(newPauseInput.fromHours.replace(",", "."));
+    const pauseMinutes = parseInt(newPauseInput.pauseMinutes, 10);
+    if (!Number.isFinite(fromHours) || fromHours <= 0 || !Number.isFinite(pauseMinutes) || pauseMinutes <= 0) {
+      toast.error("Bitte gültige Werte eingeben");
+      return;
+    }
+    const rule: AutoPauseRule = {
+      fromMinutes: Math.round(fromHours * 60),
+      pauseMinutes,
+    };
+    patch({
+      autoPauseRules: [...config.autoPauseRules, rule].sort(
+        (a, b) => a.fromMinutes - b.fromMinutes
+      ),
+    });
+    setNewPauseInput({ fromHours: "6", pauseMinutes: "30" });
+  };
+
+  const handleRemoveAutoPause = (idx: number) => {
+    patch({
+      autoPauseRules: config.autoPauseRules.filter((_, i) => i !== idx),
+    });
+  };
+
+  const handleVacationAllowanceChange = (value: string) => {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) return;
+    patch({ vacationAllowanceDays: parsed });
+  };
+
+  const handleRecalculate = async () => {
+    if (recalcRunning) return;
+    setRecalcRunning(true);
+    const toastId = toast.loading("Neuberechnung läuft...");
+    try {
+      const { total, fixed } = await recalculateAllEntries(userData, locale, config);
+      toast.success(
+        fixed > 0
+          ? `${fixed} von ${total} Einträgen aktualisiert`
+          : `Alle ${total} Einträge sind aktuell`,
+        { id: toastId }
+      );
+    } catch (err) {
+      logger.error("[CalculationSettings] Neuberechnung fehlgeschlagen:", err);
+      toast.error("Neuberechnung fehlgeschlagen", { id: toastId });
+    } finally {
+      setRecalcRunning(false);
+    }
+  };
+
+  return (
+    <Card className="p-4 space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+          <Calculator size={20} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-zinc-800 dark:text-white">Berechnung</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Wie Überstunden, Krank und Feiertage gezählt werden
+          </p>
+        </div>
+      </div>
+
+      {/* Vertragsstunden (Readonly) */}
+      <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-700">
+        <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
+          Vertragsstunden
+        </div>
+        <div className="text-lg font-bold text-zinc-800 dark:text-white">
+          {formatHours(config.weeklyTargetMinutes)} / Woche
+        </div>
+      </div>
+
+      {/* Überstunden-Regel */}
+      <button
+        type="button"
+        onClick={() => setOvertimeDrawerOpen(true)}
+        className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-emerald-300 transition-colors text-left"
+      >
+        <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-0.5">
+          Überstunden-Regel
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="font-bold text-zinc-800 dark:text-white text-sm">{overtimeLabel}</div>
+          <ChevronDown size={16} className="text-zinc-400" />
+        </div>
+      </button>
+
+      {config.overtimeMode === "split" && (
+        <div className="p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10">
+          <label className="block text-xs font-bold text-zinc-600 dark:text-zinc-300 mb-2">
+            Überstunden ab Wochenstunden
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              max={80}
+              step={0.5}
+              defaultValue={((config.overtimeThresholdMinutes ?? 2400) / 60).toString()}
+              onBlur={(e) => handleThresholdHourInput(e.target.value)}
+              className="flex-1 p-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-zinc-800 dark:text-white outline-none"
+            />
+            <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">h / Woche</span>
+          </div>
+        </div>
+      )}
+
+      {/* Krank-Regel */}
+      <button
+        type="button"
+        onClick={() => setSickDrawerOpen(true)}
+        className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-emerald-300 transition-colors text-left"
+      >
+        <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-0.5">
+          Krank am Arbeitstag
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="font-bold text-zinc-800 dark:text-white text-sm">{sickLabel}</div>
+          <ChevronDown size={16} className="text-zinc-400" />
+        </div>
+      </button>
+
+      {/* Feiertage & Halbtage (einklappbar) */}
+      <button
+        type="button"
+        onClick={() => setHolidayOpen((v) => !v)}
+        className="w-full p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 font-bold text-sm flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <Calendar size={14} /> Feiertage &amp; Halbtage
+        </span>
+        <ChevronDown
+          size={16}
+          className={`transition-transform ${holidayOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {holidayOpen && (
+        <div className="space-y-3 pl-2 border-l-2 border-emerald-200 dark:border-emerald-900">
+          <button
+            type="button"
+            onClick={() => setImportDrawerOpen(true)}
+            className="w-full p-2.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-100 transition-colors"
+          >
+            <Upload size={14} />
+            Feiertage aus Vorlage importieren
+          </button>
+
+          {sortedHolidayEntries.length === 0 ? (
+            <div className="text-xs text-zinc-500 italic text-center py-1">
+              Keine Feiertage aktiv.
+            </div>
+          ) : (
+            <div className="space-y-1 max-h-52 overflow-y-auto">
+              {sortedHolidayEntries.map(([key, name]) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 dark:bg-zinc-900/50 text-sm"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-zinc-700 dark:text-zinc-200 truncate">{name}</div>
+                    <div className="text-xs text-zinc-500">{key}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCustomHoliday(key)}
+                    className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
+                    aria-label={`${name} entfernen`}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="MM-DD"
+              value={customHolidayInput.mmdd}
+              onChange={(e) => setCustomHolidayInput((p) => ({ ...p, mmdd: e.target.value }))}
+              className="w-24 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+            />
+            <input
+              type="text"
+              placeholder="Name"
+              value={customHolidayInput.name}
+              onChange={(e) => setCustomHolidayInput((p) => ({ ...p, name: e.target.value }))}
+              className="flex-1 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleAddCustomHoliday}
+              className="p-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+              aria-label="Feiertag hinzufügen"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+
+          {/* Halbtage */}
+          <div className="pt-2 border-t border-zinc-100 dark:border-zinc-700 space-y-2">
+            <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
+              Halbtage
+            </div>
+
+            {config.halfDayMode.customHalfDays.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {config.halfDayMode.customHalfDays.map((mmdd) => (
+                  <button
+                    key={mmdd}
+                    type="button"
+                    onClick={() => handleRemoveHalfDay(mmdd)}
+                    className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1 hover:bg-emerald-200 transition-colors"
+                  >
+                    {mmdd}
+                    <X size={12} />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="MM-DD"
+                value={customHalfDayInput}
+                onChange={(e) => setCustomHalfDayInput(e.target.value)}
+                className="flex-1 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => handleAddCustomHalfDay(customHalfDayInput)}
+                className="p-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+                aria-label="Halbtag hinzufügen"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Feiertag + Arbeit */}
+          <button
+            type="button"
+            onClick={() => setHolidayWorkDrawerOpen(true)}
+            className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-emerald-300 transition-colors text-left"
+          >
+            <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-0.5">
+              Feiertag + Arbeit am selben Tag
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="font-bold text-zinc-800 dark:text-white text-sm">{holidayWorkLabel}</div>
+              <ChevronDown size={16} className="text-zinc-400" />
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Erweitert (Auto-Pausen + Urlaubsanspruch) */}
+      <button
+        type="button"
+        onClick={() => setAdvancedOpen((v) => !v)}
+        className="w-full p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 font-bold text-sm flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <Sliders size={14} /> Erweitert
+        </span>
+        <ChevronDown
+          size={16}
+          className={`transition-transform ${advancedOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {advancedOpen && (
+        <div className="space-y-4 pl-2 border-l-2 border-emerald-200 dark:border-emerald-900">
+          {/* Auto-Pausen */}
+          <div className="space-y-2">
+            <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
+              Automatische Pausen
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Wird nur bei Einträgen ohne manuelle Pause angewendet.
+            </p>
+
+            {config.autoPauseRules.length > 0 ? (
+              <div className="space-y-1">
+                {config.autoPauseRules.map((rule, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 dark:bg-zinc-900/50 text-sm"
+                  >
+                    <div className="font-bold text-zinc-700 dark:text-zinc-200">
+                      ab {formatHours(rule.fromMinutes)} → {rule.pauseMinutes} min Pause
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAutoPause(idx)}
+                      className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
+                      aria-label="Regel entfernen"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-zinc-500 italic">
+                Keine Auto-Pause-Regel hinterlegt.
+              </div>
+            )}
+
+            <div className="flex gap-2 items-center">
+              <span className="text-xs text-zinc-500">ab</span>
+              <input
+                type="number"
+                min={0}
+                step={0.5}
+                value={newPauseInput.fromHours}
+                onChange={(e) =>
+                  setNewPauseInput((p) => ({ ...p, fromHours: e.target.value }))
+                }
+                className="w-16 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+              />
+              <span className="text-xs text-zinc-500">h →</span>
+              <input
+                type="number"
+                min={0}
+                step={5}
+                value={newPauseInput.pauseMinutes}
+                onChange={(e) =>
+                  setNewPauseInput((p) => ({ ...p, pauseMinutes: e.target.value }))
+                }
+                className="w-16 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+              />
+              <span className="text-xs text-zinc-500">min</span>
+              <button
+                type="button"
+                onClick={handleAddAutoPause}
+                className="ml-auto p-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+                aria-label="Pausenregel hinzufügen"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Urlaubsanspruch */}
+          <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-700">
+            <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
+              Urlaubsanspruch pro Jahr
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                max={365}
+                value={config.vacationAllowanceDays}
+                onChange={(e) => handleVacationAllowanceChange(e.target.value)}
+                className="w-24 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+              />
+              <span className="text-sm text-zinc-600 dark:text-zinc-300">Tage</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recalculate-Button */}
+      <button
+        type="button"
+        onClick={handleRecalculate}
+        disabled={recalcRunning}
+        className="w-full p-3 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors disabled:opacity-50"
+      >
+        {recalcRunning ? "Neuberechnung läuft..." : "Alle Einträge neu berechnen"}
+      </button>
+
+      <SelectionDrawer
+        isOpen={overtimeDrawerOpen}
+        onClose={() => setOvertimeDrawerOpen(false)}
+        title="Überstunden-Regel"
+        options={OVERTIME_OPTIONS}
+        value={config.overtimeMode}
+        onChange={handleOvertimeChange}
+      />
+
+      <SelectionDrawer
+        isOpen={sickDrawerOpen}
+        onClose={() => setSickDrawerOpen(false)}
+        title="Krank am Arbeitstag"
+        options={SICK_OPTIONS}
+        value={config.sickOnWorkDayMode}
+        onChange={handleSickChange}
+      />
+
+      <SelectionDrawer
+        isOpen={holidayWorkDrawerOpen}
+        onClose={() => setHolidayWorkDrawerOpen(false)}
+        title="Feiertag + Arbeit"
+        options={HOLIDAY_ON_WORK_OPTIONS}
+        value={config.holidayOnWorkDayMode}
+        onChange={handleHolidayWorkChange}
+      />
+
+      <SelectionDrawer
+        isOpen={importDrawerOpen}
+        onClose={() => setImportDrawerOpen(false)}
+        title="Feiertage importieren"
+        options={importOptions}
+        value=""
+        onChange={handleImportHolidays}
+      />
+    </Card>
+  );
+};
+
+export default CalculationSettings;

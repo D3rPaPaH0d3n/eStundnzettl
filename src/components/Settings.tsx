@@ -4,15 +4,15 @@ import ProfileSettings from "./Settings/ProfileSettings";
 import DataSettings from "./Settings/DataSettings";
 import ThemeSettings from "./Settings/ThemeSettings";
 import LocaleSettings from "./Settings/LocaleSettings";
+import CalculationSettings from "./Settings/CalculationSettings";
 import BackupSettings from "./Settings/BackupSettings";
 import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
 import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import toast from "react-hot-toast";
 
-import type { Entry, UserData, Theme, WorkCode, PdfArchiveRunOptions } from "../types";
+import type { Entry, UserData, Theme, WorkCode, PdfArchiveRunOptions, CalculationConfig } from "../types";
 import type { Locale, LocaleId } from "../locales/types";
-import { getErrorMessage } from "../utils/errorUtils";
 
 const ChangelogModal = React.lazy(() => import("./ChangelogModal"));
 const HelpModal = React.lazy(() => import("./HelpModal"));
@@ -52,6 +52,10 @@ interface Props {
   // Locale (Stundenberechnung)
   locale?: Locale;
   setLocale?: (id: LocaleId) => void;
+  // Rechenkonfiguration
+  calculationConfig?: CalculationConfig | null;
+  setCalculationConfig?: (next: CalculationConfig | ((prev: CalculationConfig) => CalculationConfig)) => void;
+  resetCalculationConfigToLocale?: (newLocale: Locale, workDays: number[]) => void;
 }
 
 const Settings: React.FC<Props> = ({
@@ -62,8 +66,8 @@ const Settings: React.FC<Props> = ({
   autoBackup,
   setAutoBackup,
   onTriggerManualBackup,
-  entries = [],
-  lastBackup = null,
+  entries: _entries = [],
+  lastBackup: _lastBackup = null,
   importEntries,
   importWorkCodes,
   onExport,
@@ -86,6 +90,10 @@ const Settings: React.FC<Props> = ({
   // Locale
   locale,
   setLocale,
+  // Calculation Config
+  calculationConfig,
+  setCalculationConfig,
+  resetCalculationConfigToLocale,
 }) => {
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -184,34 +192,6 @@ const Settings: React.FC<Props> = ({
     }
   };
 
-  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const json = await readJsonFile(file);
-      const analysis = await analyzeBackupData(json);
-      if (!analysis.valid) {
-        toast.error("Ungültiges Backup-Format");
-        return;
-      }
-      if (analysis.integrity === "mismatch") {
-        toast("⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert", { duration: 6000 });
-      }
-      if (analysis.hasSettings) {
-        setPendingImport(analysis);
-      } else {
-        await applyBackup(analysis, "ALL");
-        importEntries?.(analysis.entries || []);
-        if (analysis.workCodes?.length) importWorkCodes?.(analysis.workCodes);
-        toast.success(`${analysis.entryCount} Einträge importiert!`);
-      }
-    } catch {
-      toast.error("Fehler beim Lesen der Datei");
-    }
-    (e.target as HTMLInputElement).value = "";
-  };
-
   const handleConfirmImport = async (mode: string) => {
     if (!pendingImport) return;
     await applyBackup(pendingImport, mode);
@@ -297,8 +277,21 @@ const Settings: React.FC<Props> = ({
 
       {/* 3b. Stundenberechnung / Locale — nur im Hausmasta-Modus */}
       {(userData?.expertMode ?? false) && (
-        <LocaleSettings locale={locale} setLocale={setLocale} />
+        <LocaleSettings
+          locale={locale}
+          setLocale={setLocale}
+          workDays={userData?.workDays}
+          onAfterLocaleChange={resetCalculationConfigToLocale}
+        />
       )}
+
+      {/* 3c. Berechnungsregeln — sichtbar für alle User */}
+      <CalculationSettings
+        userData={userData}
+        locale={locale}
+        calculationConfig={calculationConfig}
+        setCalculationConfig={setCalculationConfig}
+      />
 
       {/* 4. Backup Settings */}
       <BackupSettings
@@ -339,6 +332,7 @@ const Settings: React.FC<Props> = ({
         userData={userData}
         setUserData={setUserData}
         locale={locale}
+        calculationConfig={calculationConfig}
       />
     </main>
   );

@@ -16,6 +16,7 @@ import SelectionDrawer from "./SelectionDrawer";
 
 import type { Entry, EntryType, UserData } from "../types";
 import type { Locale } from "../locales/types";
+import type { CalculationConfig } from "../types";
 
 registerLocale("de", de);
 
@@ -86,6 +87,7 @@ interface Props {
   specialManualMode?: boolean;
   setSpecialManualMode?: (mode: boolean) => void;
   locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
 }
 
 const EntryForm: React.FC<Props> = ({
@@ -114,6 +116,7 @@ const EntryForm: React.FC<Props> = ({
   specialManualMode = false,
   setSpecialManualMode = () => {},
   locale,
+  calculationConfig,
 }) => {
   const isSpecialType =
     entryType === "vacation" || entryType === "sick" || entryType === "time_comp";
@@ -162,11 +165,11 @@ const EntryForm: React.FC<Props> = ({
 
   const holidayData = useMemo(() => {
       return {
-        ...getHolidayData(viewYear - 1, locale),
-        ...getHolidayData(viewYear, locale),
-        ...getHolidayData(viewYear + 1, locale)
+        ...getHolidayData(viewYear - 1, locale, calculationConfig),
+        ...getHolidayData(viewYear, locale, calculationConfig),
+        ...getHolidayData(viewYear + 1, locale, calculationConfig)
       };
-  }, [viewYear, locale]);
+  }, [viewYear, locale, calculationConfig]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();

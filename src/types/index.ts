@@ -47,6 +47,67 @@ export interface UserData {
   expertMode?: boolean;     // Hausmasta-Modus: erweiterte Einstellungen sichtbar
 }
 
+// ─── Calculation Config ──────────────────────────────────────
+//
+// Per-User-Übersteuerung der Rechenregeln. Wird aus den Locale-
+// Defaults initialisiert und kann im Onboarding-Baukasten (für
+// "Eigener Plan"-User) oder im Settings-Tab "Berechnung" angepasst
+// werden. Siehe src/utils/calculationConfig.ts.
+
+export type OvertimeMode = "none" | "split" | "ueberstunden_only";
+export type SickOnWorkDayMode = "cap_to_target" | "additive" | "ignore";
+export type HolidayOnWorkDayMode = "cap_to_target" | "additive";
+export type HolidaySetMode = "locale_default" | "custom";
+export type HalfDayMode = "locale_default" | "none" | "custom";
+
+export interface AutoPauseRule {
+  fromMinutes: number;    // Arbeitszeit-Schwelle in Minuten (z.B. 360 = 6h)
+  pauseMinutes: number;   // abzuziehende Pausendauer in Minuten
+}
+
+export interface CalculationConfig {
+  // --- SIMPLE (Onboarding) ---
+  /** Wochensoll in Minuten, automatische Summe aus workDays (Readonly-Anzeige). */
+  weeklyTargetMinutes: number;
+  /** Wie werden Mehrarbeit und Überstunden unterschieden? */
+  overtimeMode: OvertimeMode;
+  /** Schwelle in Minuten/Woche, ab der Überstunden statt Mehrarbeit gezählt werden. */
+  overtimeThresholdMinutes: number | null;
+  /** Wie wird Krankenstand an einem Tag behandelt, an dem schon gearbeitet wurde? */
+  sickOnWorkDayMode: SickOnWorkDayMode;
+
+  // --- ADVANCED (Onboarding hinter "Erweitert") ---
+  /** Feiertagsauswahl: Locale-Default oder individuelle Liste. */
+  holidaySet: {
+    mode: HolidaySetMode;
+    /** MM-DD-Keys der deaktivierten Feiertage (bei mode="locale_default"). */
+    disabledHolidayKeys: string[];
+    /**
+     * Nur bei mode="custom": frei zusammengestellte Feiertage als
+     * MM-DD → Name. Ersetzt komplett die Locale-Liste. Leeres Objekt
+     * bedeutet "keine Feiertage".
+     */
+    customHolidays?: Record<string, string>;
+  };
+  /** Halbtag-Regelung. */
+  halfDayMode: {
+    mode: HalfDayMode;
+    /** MM-DD-Liste eigener Halbtage (bei mode="custom"). */
+    customHalfDays: string[];
+  };
+  /** Wie wird ein Feiertag + Arbeit am selben Tag behandelt? */
+  holidayOnWorkDayMode: HolidayOnWorkDayMode;
+
+  // --- SETTINGS-ONLY ---
+  /** Automatische Pausenabzüge ab X Arbeitsminuten. Leer = keine Auto-Pause. */
+  autoPauseRules: AutoPauseRule[];
+  /** Jährlicher Urlaubsanspruch in Tagen (reine Datenhaltung, keine Berechnung). */
+  vacationAllowanceDays: number;
+
+  // --- META ---
+  configVersion: 1;
+}
+
 // ─── Timer State ─────────────────────────────────────────────
 
 export interface TimerState {
@@ -93,6 +154,8 @@ export interface BackupPayload {
   workCodes: WorkCode[];
   attachments: Attachment[];
   attachmentLabels: string[];
+  /** Per-User-Rechenkonfiguration (optional, seit v4.1). */
+  calculationConfig?: CalculationConfig | null;
 }
 
 // ─── Nextcloud ───────────────────────────────────────────────

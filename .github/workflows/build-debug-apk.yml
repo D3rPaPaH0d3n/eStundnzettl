@@ -92,6 +92,7 @@ jobs:
 
       # ── 9. APK als Artifact hochladen ────────────────────────────────
       - name: Upload Debug APK
+        id: upload
         uses: actions/upload-artifact@v4
         with:
           name: eStundnzettl-DEV-${{ env.BUILD_ID }}
@@ -107,7 +108,8 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            MSG="📱 *eStundnzettl DEV Build fertig*%0A%0ABuild: \`${BUILD_ID}\`%0ABranch: ${{ github.ref_name }}%0A%0A⬇️ [APK herunterladen](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            DOWNLOAD_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload.outputs.artifact-id }}"
+            MSG="📱 *eStundnzettl DEV Build fertig*%0A%0ABuild: \`${BUILD_ID}\`%0ABranch: ${{ github.ref_name }}%0A%0A⬇️ [APK herunterladen](${DOWNLOAD_URL})"
           else
             MSG="❌ *eStundnzettl DEV Build fehlgeschlagen*%0A%0ABranch: ${{ github.ref_name }}%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi

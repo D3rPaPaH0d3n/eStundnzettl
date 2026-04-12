@@ -52,7 +52,7 @@ format.*          any format helpers needing translated text
 
 ## Phase B — Component migration
 
-- [ ] B1: AppHeader + ConfirmModal + ExportModal + WorkCodeManager (tiny)
+- [x] B1: AppHeader + ConfirmModal + ExportModal + WorkCodeManager (tiny)
 - [ ] B2: Dashboard.tsx
 - [ ] B3: EntryForm.tsx
 - [ ] B4: ReportDocument.tsx + PrintReport.tsx
@@ -91,6 +91,18 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B1** (2026-04-12): migrated four small components.
+  Added namespaces `modals.confirm`, `modals.export`, `workCodes` and the
+  `common.delete` / `header.logoAlt` keys. Touched:
+  `AppHeader.tsx` (aria-labels, subtitle, logo alt),
+  `ConfirmModal.tsx` (cancel button + default confirm text now translated,
+  `confirmText` prop is now truly optional — callers that passed explicit
+  text keep working),
+  `ExportModal.tsx` (header, folder/share options, cancel),
+  `WorkCodeManager.tsx` (title, preset dropdown, empty state, placeholder,
+  delete-all button, both warning modals). Preset names/descriptions in
+  `constants.ts` stay for the dedicated settings session (B12).
+  Tests 630/630 green.
 - **Session A1** (2026-04-12): i18n bootstrap with device-language detection.
   Added `STORAGE_KEYS.LANGUAGE`, exported `detectInitialLanguage` +
   `LANGUAGE_STORAGE_KEY` + `SUPPORTED_LANGUAGES` from `src/i18n/index.ts`,

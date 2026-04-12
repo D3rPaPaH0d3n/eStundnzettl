@@ -1,6 +1,7 @@
 import React from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   isOpen: boolean;
@@ -18,9 +19,11 @@ const ConfirmModal = ({
   onConfirm,
   title,
   message,
-  confirmText = "Löschen",
+  confirmText,
   confirmColor = "red"     // red, emerald (statt blue), zinc (statt slate)
 }: Props) => {
+  const { t } = useTranslation();
+  const resolvedConfirmText = confirmText ?? t("modals.confirm.defaultConfirmText");
   React.useEffect(() => {
     if (isOpen) {
       document.body.classList.add('modal-open');
@@ -77,17 +80,17 @@ const ConfirmModal = ({
 
         {/* CHANGE: bg-slate-50 -> bg-zinc-50, dark:bg-slate-800 -> dark:bg-zinc-800 */}
         <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 flex gap-3">
-          <button 
+          <button
             onClick={onClose}
             className="flex-1 py-3 px-4 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
           >
-            Abbrechen
+            {t("common.cancel")}
           </button>
-          <button 
+          <button
             onClick={onConfirm}
             className={`flex-1 py-3 px-4 rounded-xl font-bold transition-colors shadow-lg ${getColorClass(confirmColor)}`}
           >
-            {confirmText}
+            {resolvedConfirmText}
           </button>
         </div>
       </motion.div>

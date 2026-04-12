@@ -5,6 +5,7 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",
+    "delete": "Delete",
     "loading": "Loading..."
   },
   "app": {
@@ -18,7 +19,8 @@
   "header": {
     "settings": "Open settings",
     "report": "Open report",
-    "backToOverview": "Back to overview"
+    "backToOverview": "Back to overview",
+    "logoAlt": "Logo"
   },
   "timer": {
     "start": "Add new entry or start timer",
@@ -35,5 +37,41 @@
   "backup": {
     "integrityMismatch": "Checksum mismatch — backup may have been tampered with",
     "integrityUnverified": "Backup without checksum (legacy format)"
+  },
+  "modals": {
+    "confirm": {
+      "defaultConfirmText": "Delete"
+    },
+    "export": {
+      "titlePdf": "Save PDF",
+      "titleData": "Export data",
+      "subtitle": "Choose a method",
+      "folderPdf": "Save to Documents",
+      "folderData": "Save to folder",
+      "folderPdfDescription": "Saves the PDF to the 'Documents' folder",
+      "folderDataDescription": "Choose a location (e.g. Downloads)",
+      "share": "Share / Send",
+      "shareDescription": "Via WhatsApp, email or other apps"
+    }
+  },
+  "workCodes": {
+    "title": "Activity codes",
+    "loadPreset": "Load preset",
+    "presetCodesCount": "{{count}} codes",
+    "loading": "Loading...",
+    "empty": "No codes yet.",
+    "emptyHint": "Load a preset or create your own codes.",
+    "newCodePlaceholder": "Add new code…",
+    "deleteAll": "Delete all codes",
+    "presetReplaceWarning": {
+      "title": "Warning!",
+      "message": "Loading a preset replaces all your current codes. Continue?",
+      "confirm": "Yes, replace"
+    },
+    "deleteAllWarning": {
+      "title": "Delete all?",
+      "message": "Do you really want to delete all activity codes? This cannot be undone.",
+      "confirm": "Yes, delete"
+    }
   }
 }

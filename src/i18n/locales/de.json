@@ -5,6 +5,7 @@
     "cancel": "Abbrechen",
     "confirm": "Bestätigen",
     "save": "Speichern",
+    "delete": "Löschen",
     "loading": "Lädt..."
   },
   "app": {
@@ -18,7 +19,8 @@
   "header": {
     "settings": "Einstellungen öffnen",
     "report": "Bericht öffnen",
-    "backToOverview": "Zurück zur Übersicht"
+    "backToOverview": "Zurück zur Übersicht",
+    "logoAlt": "Logo"
   },
   "timer": {
     "start": "Neuen Eintrag hinzufügen oder Timer starten",
@@ -35,5 +37,41 @@
   "backup": {
     "integrityMismatch": "Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",
     "integrityUnverified": "Backup ohne Prüfsumme (Legacy-Format)"
+  },
+  "modals": {
+    "confirm": {
+      "defaultConfirmText": "Löschen"
+    },
+    "export": {
+      "titlePdf": "PDF speichern",
+      "titleData": "Daten exportieren",
+      "subtitle": "Wähle eine Methode",
+      "folderPdf": "In Dokumente speichern",
+      "folderData": "In Ordner speichern",
+      "folderPdfDescription": "Speichert die PDF im Ordner 'Documents'",
+      "folderDataDescription": "Wähle einen Speicherort (z.B. Downloads)",
+      "share": "Teilen / Senden",
+      "shareDescription": "Per WhatsApp, E-Mail oder andere Apps"
+    }
+  },
+  "workCodes": {
+    "title": "Tätigkeitscodes",
+    "loadPreset": "Preset laden",
+    "presetCodesCount": "{{count}} Codes",
+    "loading": "Laden...",
+    "empty": "Keine Codes vorhanden.",
+    "emptyHint": "Lade ein Preset oder erstelle eigene Codes.",
+    "newCodePlaceholder": "Neuen Code hinzufügen...",
+    "deleteAll": "Alle Codes löschen",
+    "presetReplaceWarning": {
+      "title": "Achtung!",
+      "message": "Das Laden eines Presets ersetzt alle deine aktuellen Codes. Fortfahren?",
+      "confirm": "Ja, ersetzen"
+    },
+    "deleteAllWarning": {
+      "title": "Alle löschen?",
+      "message": "Möchtest du wirklich alle Tätigkeitscodes löschen? Dies kann nicht rückgängig gemacht werden.",
+      "confirm": "Ja, löschen"
+    }
   }
 }

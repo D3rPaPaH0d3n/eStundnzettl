@@ -15,6 +15,11 @@ import {
   Building2,
   Sparkles,
   FileText,
+  Calculator,
+  Wrench,
+  BookOpen,
+  Layout,
+  Palmtree,
 } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { CHANGELOG_DATA } from "../data/changelog-data";
@@ -33,6 +38,11 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Building2,
   Sparkles,
   FileText,
+  Calculator,
+  Wrench,
+  BookOpen,
+  Layout,
+  Palmtree,
 };
 
 interface ChangelogSection {

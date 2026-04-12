@@ -1,6 +1,89 @@
 export const CHANGELOG_DATA = [
 
   {
+    version: "4.1.0",
+    date: "12.04.2026",
+    title: "Berechnungslogik-Baukasten & Schweiz 🧰",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "Calculator",
+        title: "Eigener Plan — Rechenregeln selbst bestimmen",
+        items: [
+          "Neue vierte Option beim ersten Start: \"Eigener Plan\". Damit baust du dir deine Zeitberechnung komplett selbst zusammen — Überstunden-Modus, Krank-Regeln, Feiertage, Halbtage, alles individuell einstellbar.",
+          "Wer Österreich, Deutschland oder Schweiz wählt, bekommt die Regeln wie bisher automatisch und überspringt den Baukasten komplett. Kein Extra-Aufwand für Standard-User.",
+          "Neue Überstunden-Modi: \"Keine Unterscheidung\" (nur Saldo), \"Mehrarbeit & Überstunden trennen\" (mit frei wählbarer Schwelle) oder \"Alles ist Überstunden\".",
+          "Krank am Arbeitstag: Drei Modi — \"Füllt bis Tagessoll auf\" (AT/DE), \"Zählt zusätzlich\" oder \"Wird ignoriert\".",
+          "Feiertag + Arbeit am selben Tag: Drei Modi — \"Zählt zusätzlich\", \"Zählt als Überstunde\" oder \"Füllt nur bis Tagessoll auf\"."
+        ]
+      },
+      {
+        iconName: "Globe",
+        title: "Schweiz: 26 Kantone mit Feiertagen",
+        items: [
+          "Die Schweiz ist jetzt als vollwertige Locale verfügbar — mit allen 26 Kantonen und ihren individuellen Feiertagen (katholisch/reformiert, Genfer Jeûne genevois, Glarus Näfelser Fahrt, Berchtoldstag und mehr).",
+          "ArG-Arbeitsregeln: Überstunden ab 45h/Woche, Halbtage am 24. und 31.12., Krank-Cap auf Tagessoll.",
+          "Kantons-Picker im Onboarding und in den Einstellungen — gleiche UX wie der deutsche Bundesland-Picker."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Feiertags-Import: Orthodox & Islamisch",
+        items: [
+          "Im \"Eigener Plan\"-Baukasten kannst du jetzt neben AT/DE/CH auch orthodoxe Feiertage (mit korrektem julianischen Oster-Kalender) und islamische Feiertage (Ramadan, Eid al-Fitr, Eid al-Adha und mehr) importieren.",
+          "Islamische Daten sind für 2024–2035 hinterlegt, darüber hinaus astronomisch approximiert (±1–2 Tage Disclaimer)."
+        ]
+      },
+      {
+        iconName: "Palmtree",
+        title: "Urlaubstage-Tracking",
+        items: [
+          "Urlaubsanspruch wird jetzt automatisch ans Land angepasst: AT = 25 Tage, DE = 20 Tage, CH = 20 Tage.",
+          "Neues Feld \"Resturlaub / Übertrag\" für Tage vom Vorjahr oder bereits verbrauchte Tage bei Ersteinrichtung.",
+          "Der PDF-Report zeigt jetzt eine Urlaubstage-Bilanz im Footer: Anspruch, Übertrag, Genommen und Verbleibend — in Grün wenn positiv, Rot wenn aufgebraucht."
+        ]
+      },
+      {
+        iconName: "Sliders",
+        title: "Settings & UI-Verbesserungen",
+        items: [
+          "Neuer Settings-Bereich \"Berechnung\" — sichtbar für alle User, einklappbar. Dort lassen sich Überstunden-Regel, Krank-Modus, Feiertage, Halbtage, Auto-Pausen und Urlaubsanspruch nachträglich ändern.",
+          "Pausen-Eingabe: Der 30-Min-Button öffnet jetzt einen echten Time-Picker (gleiche Optik wie Start/Ende) mit 15-Minuten-Schritten oder minutengenau im Hausmasta-Modus.",
+          "Feiertage und Halbtage werden in der UI jetzt im deutschen Format DD.MM. angezeigt (intern bleibt MM-DD).",
+          "\"Normalstunden\" aus dem PDF entfernt — war redundant zu IST minus MA/ÜS.",
+          "Locale-Wechsel in den Settings fragt jetzt per Dialog, ob die Berechnungsregeln zurückgesetzt werden sollen."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Stabilität & Abwärtskompatibilität",
+        items: [
+          "Bestehende User bekommen bei der Migration eine CalculationConfig, die exakt dem bisherigen Locale-Verhalten entspricht — keine einzige Zahl ändert sich im Dashboard.",
+          "Backup/Restore enthält jetzt die CalculationConfig. Ältere Backups ohne Config werden beim Import automatisch aus dem Locale abgeleitet.",
+          "Automatisches PDF-Archiv nutzt jetzt ebenfalls die User-Rechenregeln statt AT-Fallback.",
+          "Demo-Modus setzt jetzt AT-Locale und CalculationConfig mit 25 Urlaubstagen + 3 Resttagen.",
+          "48 neue Unit-Tests (insgesamt 630), alle bestehenden Tests unverändert grün."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "4.0.1",
+    date: "11.04.2026",
+    title: "Nextcloud Login Fix",
+    sections: [
+      {
+        iconName: "Bug",
+        title: "Bugfix",
+        items: [
+          "Nextcloud Login URL Key Mismatch behoben (url → serverUrl)."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "4.0.0",
     date: "10.04.2026",
     title: "Neutraler Kurs — für alle Berufe 🌍",

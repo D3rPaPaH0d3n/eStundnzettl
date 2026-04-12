@@ -43,6 +43,54 @@
     "vacation": "Vacation",
     "sick": "Sick"
   },
+  "entryForm": {
+    "copyLastError": "No previous entry found.",
+    "copyLastSuccess": "Data copied!",
+    "quickAddSuccess": "Activity added!",
+    "codePlaceholder": "Please select",
+    "startTime": "Start time",
+    "endTime": "End time",
+    "selectActivity": "Select activity",
+    "entryTypeLabel": "Entry type",
+    "asLast": "Same as last",
+    "types": {
+      "work": "Work",
+      "drive": "Drive",
+      "sick": "Sick",
+      "vacation": "Vacation",
+      "timeCompShort": "TO"
+    },
+    "driveSubtype": {
+      "arrival": "Arrival/Departure",
+      "arrivalBadge": "Paid",
+      "driveTime": "Drive time",
+      "driveTimeBadge": "Unpaid"
+    },
+    "autoCalc": {
+      "title": "Automatic calculation",
+      "vacationType": "Vacation days",
+      "sickType": "Sick leave",
+      "timeCompType": "Time off",
+      "message": "For {{type}}, the daily target time is credited automatically."
+    },
+    "mode": {
+      "auto": "Automatic",
+      "manual": "Manual"
+    },
+    "date": "Date",
+    "start": "Start",
+    "end": "End",
+    "pause": "Break",
+    "noPause": "None",
+    "pauseMinutes": "{{minutes}} min",
+    "activity": "Activity",
+    "newActivity": "New",
+    "quickAddPlaceholder": "e.g. 99 - Other",
+    "distanceOrNote": "Route / Note",
+    "project": "Project",
+    "projectPlaceholder": "…",
+    "knownProjects": "Known projects"
+  },
   "header": {
     "settings": "Open settings",
     "report": "Open report",

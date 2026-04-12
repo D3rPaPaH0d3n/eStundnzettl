@@ -6,6 +6,7 @@ import { useWorkCodes } from "../hooks/useWorkCodes";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { useTranslation } from "react-i18next";
 
 import DatePicker, { registerLocale, CalendarContainer } from "react-datepicker";
 // @ts-ignore
@@ -118,6 +119,7 @@ const EntryForm: React.FC<Props> = ({
   locale,
   calculationConfig,
 }) => {
+  const { t } = useTranslation();
   const isSpecialType =
     entryType === "vacation" || entryType === "sick" || entryType === "time_comp";
   const showTimeInputs =
@@ -180,7 +182,7 @@ const EntryForm: React.FC<Props> = ({
 
   const handleCopyLastEntry = () => {
     if (!lastWorkEntry) {
-      toast.error("Kein vorheriger Eintrag gefunden.");
+      toast.error(t("entryForm.copyLastError"));
       return;
     }
     setStartTime(lastWorkEntry.start || "06:00");
@@ -188,7 +190,7 @@ const EntryForm: React.FC<Props> = ({
     setPauseDuration(lastWorkEntry.pause || 0);
     setProject(lastWorkEntry.project || "");
     if (lastWorkEntry.code) setCode(lastWorkEntry.code);
-    toast.success("Daten übernommen!", { icon: "🪄" });
+    toast.success(t("entryForm.copyLastSuccess"), { icon: "🪄" });
   };
 
   const handleProjectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -217,7 +219,7 @@ const EntryForm: React.FC<Props> = ({
   };
 
   // Code-Label aus den User-Codes holen
-  const currentCodeLabel = workCodes.find(c => c.id === code)?.label || "Bitte wählen";
+  const currentCodeLabel = workCodes.find(c => c.id === code)?.label || t("entryForm.codePlaceholder");
   
   // Erster verfügbarer Code für Default
   const defaultCode = hasAnyCodes ? workCodes[0].id : 1;
@@ -228,7 +230,7 @@ const EntryForm: React.FC<Props> = ({
       <TimePickerDrawer 
         isOpen={!!activeTimeField}
         onClose={() => setActiveTimeField(null)}
-        title={activeTimeField === 'start' ? "Startzeit" : "Endzeit"}
+        title={activeTimeField === 'start' ? t("entryForm.startTime") : t("entryForm.endTime")}
         value={activeTimeField === 'start' ? startTime : endTime}
         onChange={(val) => activeTimeField === 'start' ? setStartTime(val) : setEndTime(val)}
         minuteInterval={userData?.minuteInput ? 1 : 15}
@@ -237,7 +239,7 @@ const EntryForm: React.FC<Props> = ({
       <SelectionDrawer
         isOpen={isWorkCodeOpen}
         onClose={() => setIsWorkCodeOpen(false)}
-        title="Tätigkeit wählen"
+        title={t("entryForm.selectActivity")}
         options={workCodes.filter((c) => c.id !== WORK_CODE.ARRIVAL && c.id !== WORK_CODE.DRIVE)}
         value={code}
         onChange={(id: string | number) => setCode(id as number)}
@@ -247,7 +249,7 @@ const EntryForm: React.FC<Props> = ({
         <form onSubmit={handleFormSubmit} className="p-4 space-y-5">
           
           <div className="flex justify-between items-center mb-1">
-             <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Eintragstyp</div>
+             <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{t("entryForm.entryTypeLabel")}</div>
              
              {entryType === 'work' && code !== WORK_CODE.ARRIVAL && lastWorkEntry && (
                <motion.button
@@ -260,31 +262,31 @@ const EntryForm: React.FC<Props> = ({
                  className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-800/50"
                >
                  <Wand2 size={12} />
-                 <span>Wie zuletzt</span>
+                 <span>{t("entryForm.asLast")}</span>
                </motion.button>
              )}
           </div>
 
           <div className="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-5 gap-1">
             {/* WORK */}
-            <button type="button" onClick={() => { setEntryType("work"); setCode(defaultCode); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "work" && code !== WORK_CODE.ARRIVAL ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}>Arbeit</button>
+            <button type="button" onClick={() => { setEntryType("work"); setCode(defaultCode); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "work" && code !== WORK_CODE.ARRIVAL ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}>{t("entryForm.types.work")}</button>
             {/* FAHRT (Bleibt Orange als Kategorie-Farbe) */}
-            <button type="button" onClick={() => { setEntryType("drive"); setCode(WORK_CODE.DRIVE); setPauseDuration(0); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "drive" || code === WORK_CODE.ARRIVAL ? "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Fahrt</button>
+            <button type="button" onClick={() => { setEntryType("drive"); setCode(WORK_CODE.DRIVE); setPauseDuration(0); }} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "drive" || code === WORK_CODE.ARRIVAL ? "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>{t("entryForm.types.drive")}</button>
             {/* KRANK (Rot) */}
-            <button type="button" onClick={() => setEntryType("sick")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "sick" ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Krank</button>
+            <button type="button" onClick={() => setEntryType("sick")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "sick" ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>{t("entryForm.types.sick")}</button>
             {/* URLAUB (Blau) */}
-            <button type="button" onClick={() => setEntryType("vacation")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "vacation" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>Urlaub</button>
+            <button type="button" onClick={() => setEntryType("vacation")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "vacation" ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>{t("entryForm.types.vacation")}</button>
             {/* ZA (Lila) */}
-            <button type="button" onClick={() => setEntryType("time_comp")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "time_comp" ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>ZA</button>
+            <button type="button" onClick={() => setEntryType("time_comp")} className={`py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${entryType === "time_comp" ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400 shadow-sm" : "text-zinc-500 dark:text-zinc-400"}`}>{t("entryForm.types.timeCompShort")}</button>
           </div>
 
           {(entryType === "drive" || code === WORK_CODE.ARRIVAL) && (
             <div className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
               <button type="button" onClick={() => { setEntryType("work"); setCode(WORK_CODE.ARRIVAL); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${code === WORK_CODE.ARRIVAL ? "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 ring-2 ring-green-500 ring-offset-1" : "bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300"}`}>
-                <span>An/Abreise</span><span className="text-[10px] uppercase bg-green-200 dark:bg-green-800 px-1 rounded text-green-800 dark:text-green-200">Bezahlt</span>
+                <span>{t("entryForm.driveSubtype.arrival")}</span><span className="text-[10px] uppercase bg-green-200 dark:bg-green-800 px-1 rounded text-green-800 dark:text-green-200">{t("entryForm.driveSubtype.arrivalBadge")}</span>
               </button>
               <button type="button" onClick={() => { setEntryType("drive"); setCode(WORK_CODE.DRIVE); setPauseDuration(0); setProject(""); }} className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${entryType === "drive" && code === WORK_CODE.DRIVE ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-400 ring-2 ring-emerald-500 ring-offset-1" : "bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300"}`}>
-                <span>Fahrtzeit</span><span className="text-[10px] uppercase bg-zinc-200 dark:bg-zinc-600 px-1 rounded text-zinc-600 dark:text-zinc-300">Unbezahlt</span>
+                <span>{t("entryForm.driveSubtype.driveTime")}</span><span className="text-[10px] uppercase bg-zinc-200 dark:bg-zinc-600 px-1 rounded text-zinc-600 dark:text-zinc-300">{t("entryForm.driveSubtype.driveTimeBadge")}</span>
               </button>
             </div>
           )}
@@ -294,7 +296,17 @@ const EntryForm: React.FC<Props> = ({
               {!specialManualMode && (
                 <div className={`border rounded-lg p-3 flex items-start gap-3 ${entryType === "sick" ? "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800 text-red-800 dark:text-red-300" : entryType === "vacation" ? "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-300" : "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800 text-purple-800 dark:text-purple-300"}`}>
                   {entryType === "time_comp" ? <Hourglass size={18} className="mt-0.5" /> : <Info size={18} className="mt-0.5" />}
-                  <div className="text-sm"><span className="font-bold block mb-1">Automatische Berechnung</span>Für {entryType === "vacation" ? "Urlaubstage" : entryType === "sick" ? "Krankenstand" : "Zeitausgleich"} wird automatisch die tägliche Sollzeit gutgeschrieben.</div>
+                  <div className="text-sm">
+                    <span className="font-bold block mb-1">{t("entryForm.autoCalc.title")}</span>
+                    {t("entryForm.autoCalc.message", {
+                      type:
+                        entryType === "vacation"
+                          ? t("entryForm.autoCalc.vacationType")
+                          : entryType === "sick"
+                            ? t("entryForm.autoCalc.sickType")
+                            : t("entryForm.autoCalc.timeCompType"),
+                    })}
+                  </div>
                 </div>
               )}
               <div className="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-2 gap-1">
@@ -303,21 +315,21 @@ const EntryForm: React.FC<Props> = ({
                   onClick={() => setSpecialManualMode(false)}
                   className={`py-2 rounded-lg text-xs font-bold transition-all ${!specialManualMode ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}
                 >
-                  Automatisch
+                  {t("entryForm.mode.auto")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setSpecialManualMode(true)}
                   className={`py-2 rounded-lg text-xs font-bold transition-all ${specialManualMode ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}
                 >
-                  Manuell
+                  {t("entryForm.mode.manual")}
                 </button>
               </div>
             </div>
           )}
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Datum</label>
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.date")}</label>
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => changeDate(-1)} className="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"><ChevronLeft size={20} /></button>
               <div className="flex-1">
@@ -345,7 +357,7 @@ const EntryForm: React.FC<Props> = ({
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Start</label>
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.start")}</label>
 
                   <button type="button" onClick={() => openTimePicker('start')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
                     <span className="flex-1 text-center text-lg">{startTime}</span>
@@ -353,7 +365,7 @@ const EntryForm: React.FC<Props> = ({
                   </button>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Ende</label>
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.end")}</label>
                   <button type="button" onClick={() => openTimePicker('end')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
                     <span className="flex-1 text-center text-lg">{endTime}</span>
                     <Clock size={18} className="text-zinc-400 ml-2" />
@@ -363,9 +375,9 @@ const EntryForm: React.FC<Props> = ({
 
               {entryType === "work" && code !== WORK_CODE.ARRIVAL && (
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Pause</label>
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.pause")}</label>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => setPauseDuration(0)} className={`flex-1 p-3 rounded-lg border text-sm font-bold ${pauseDuration === 0 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300"}`}>Keine</button>
+                    <button type="button" onClick={() => setPauseDuration(0)} className={`flex-1 p-3 rounded-lg border text-sm font-bold ${pauseDuration === 0 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300"}`}>{t("entryForm.noPause")}</button>
                     <button
                       type="button"
                       onClick={() => setShowPausePicker(true)}
@@ -374,15 +386,15 @@ const EntryForm: React.FC<Props> = ({
                       {pauseDuration > 0
                         ? pauseDuration >= 60
                           ? `${Math.floor(pauseDuration / 60)}h ${pauseDuration % 60 > 0 ? `${pauseDuration % 60}m` : ""}`
-                          : `${pauseDuration} Min`
-                        : "30 Min"}
+                          : t("entryForm.pauseMinutes", { minutes: pauseDuration })
+                        : t("entryForm.pauseMinutes", { minutes: 30 })}
                       <ChevronDown size={14} />
                     </button>
                   </div>
                   <TimePickerDrawer
                     isOpen={showPausePicker}
                     onClose={() => setShowPausePicker(false)}
-                    title="Pause"
+                    title={t("entryForm.pause")}
                     value={`${String(Math.floor((pauseDuration || 30) / 60)).padStart(2, "0")}:${String((pauseDuration || 30) % 60).padStart(2, "0")}`}
                     onChange={(val) => {
                       const [h, m] = val.split(":").map(Number);
@@ -396,14 +408,14 @@ const EntryForm: React.FC<Props> = ({
               {entryType === "work" && code !== WORK_CODE.ARRIVAL && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Tätigkeit</label>
+                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.activity")}</label>
                     <button
                       type="button"
                       onClick={() => setQuickAddOpen(!quickAddOpen)}
                       className="text-xs text-zinc-400 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 transition-colors"
                     >
                       <Plus size={12} />
-                      <span>Neue</span>
+                      <span>{t("entryForm.newActivity")}</span>
                     </button>
                   </div>
                   
@@ -420,7 +432,7 @@ const EntryForm: React.FC<Props> = ({
                             type="text"
                             value={quickAddValue}
                             onChange={(e) => setQuickAddValue(e.target.value)}
-                            placeholder="z.B. 99 - Sonstiges"
+                            placeholder={t("entryForm.quickAddPlaceholder")}
                             className="flex-1 p-2 text-sm bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg outline-none dark:text-white focus:border-emerald-500"
                           />
                           <button
@@ -428,7 +440,7 @@ const EntryForm: React.FC<Props> = ({
                             onClick={() => {
                               if (quickAddValue.trim()) {
                                 addCode(quickAddValue.trim());
-                                toast.success("Tätigkeit hinzugefügt!");
+                                toast.success(t("entryForm.quickAddSuccess"));
                                 setQuickAddValue("");
                                 setQuickAddOpen(false);
                               }
@@ -455,7 +467,7 @@ const EntryForm: React.FC<Props> = ({
 
               {(entryType === "work" || entryType === "drive") && (
                 <div className="space-y-1 relative">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{entryType === "drive" || code === WORK_CODE.ARRIVAL ? "Strecke / Notiz" : "Projekt"}</label>
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{entryType === "drive" || code === WORK_CODE.ARRIVAL ? t("entryForm.distanceOrNote") : t("entryForm.project")}</label>
                   <input
                     type="text"
                     value={project}
@@ -463,7 +475,7 @@ const EntryForm: React.FC<Props> = ({
                     onFocus={() => { if(project) handleProjectChange({target: {value: project}} as React.ChangeEvent<HTMLInputElement>) }}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     className="w-full p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg outline-none dark:text-white focus:border-emerald-500 transition-colors"
-                    placeholder="..."
+                    placeholder={t("entryForm.projectPlaceholder")}
                   />
 
                   <AnimatePresence>
@@ -475,7 +487,7 @@ const EntryForm: React.FC<Props> = ({
                         className="relative z-50 mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl overflow-hidden overflow-y-auto"
                       >
                         <div className="bg-zinc-50 dark:bg-zinc-900/50 px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase border-b border-zinc-100 dark:border-zinc-700 flex items-center gap-1">
-                          <History size={10} /> Bekannte Projekte
+                          <History size={10} /> {t("entryForm.knownProjects")}
                         </div>
                         {suggestions.map((s, idx) => (
                           <div
@@ -495,9 +507,9 @@ const EntryForm: React.FC<Props> = ({
           )}
 
           <div className="pt-2 flex gap-3">
-            <button type="button" onClick={onCancel} className="flex-1 py-3 font-bold text-zinc-500 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-xl">Abbrechen</button>
+            <button type="button" onClick={onCancel} className="flex-1 py-3 font-bold text-zinc-500 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-xl">{t("common.cancel")}</button>
 
-            <button type="submit" className="flex-[2] py-3 font-bold text-white bg-zinc-900 dark:bg-emerald-600 hover:bg-zinc-800 dark:hover:bg-emerald-700 rounded-xl shadow-lg flex items-center justify-center gap-2"><Save size={18} /> Speichern</button>
+            <button type="submit" className="flex-[2] py-3 font-bold text-white bg-zinc-900 dark:bg-emerald-600 hover:bg-zinc-800 dark:hover:bg-emerald-700 rounded-xl shadow-lg flex items-center justify-center gap-2"><Save size={18} /> {t("common.save")}</button>
           </div>
         </form>
       </Card>

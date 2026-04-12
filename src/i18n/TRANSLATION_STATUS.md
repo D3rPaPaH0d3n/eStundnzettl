@@ -54,7 +54,7 @@ format.*          any format helpers needing translated text
 
 - [x] B1: AppHeader + ConfirmModal + ExportModal + WorkCodeManager (tiny)
 - [x] B2: Dashboard.tsx
-- [ ] B3: EntryForm.tsx
+- [x] B3: EntryForm.tsx
 - [ ] B4: ReportDocument.tsx + PrintReport.tsx
 - [ ] B5: ViewRouter + SelectionDrawer + TimePickerDrawer + DecimalDurationPicker
 - [ ] B6: HelpModal + ChangelogModal
@@ -91,6 +91,21 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B3** (2026-04-12): migrated `EntryForm.tsx` (~36 strings).
+  New `entryForm.*` namespace covering: toasts (copyLastError/Success,
+  quickAddSuccess), code placeholder, time-picker titles, entry-type
+  tabs (`types.work/drive/sick/vacation/timeCompShort`), drive-sub-type
+  chips (`driveSubtype.arrival/arrivalBadge/driveTime/driveTimeBadge`),
+  auto-calc info panel with `{{type}}` interpolation and three type
+  labels (vacationType/sickType/timeCompType), auto/manual mode toggle,
+  field labels (date/start/end/pause/activity/project/distanceOrNote),
+  `noPause`, `pauseMinutes` with `{{minutes}}` interpolation (covers
+  both the `30 Min` default and dynamic pause value; hours-suffix stays
+  language-neutral with `h`/`m`), new-activity quick-add + placeholder,
+  project placeholder, knownProjects hint. Cancel/Save reuse
+  `common.cancel`/`common.save`.
+  `registerLocale("de", de)` and `DatePicker locale="de"` kept for C1.
+  Tests 630/630 green.
 - **Session B2** (2026-04-12): migrated `Dashboard.tsx`.
   New keys under `dashboard.*` (actual/target/balance/driveTime with
   {{code}} interpolation, overtimeShort.extra/overtime, recentEntries,

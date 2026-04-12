@@ -43,6 +43,54 @@
     "vacation": "Urlaub",
     "sick": "Krank"
   },
+  "entryForm": {
+    "copyLastError": "Kein vorheriger Eintrag gefunden.",
+    "copyLastSuccess": "Daten übernommen!",
+    "quickAddSuccess": "Tätigkeit hinzugefügt!",
+    "codePlaceholder": "Bitte wählen",
+    "startTime": "Startzeit",
+    "endTime": "Endzeit",
+    "selectActivity": "Tätigkeit wählen",
+    "entryTypeLabel": "Eintragstyp",
+    "asLast": "Wie zuletzt",
+    "types": {
+      "work": "Arbeit",
+      "drive": "Fahrt",
+      "sick": "Krank",
+      "vacation": "Urlaub",
+      "timeCompShort": "ZA"
+    },
+    "driveSubtype": {
+      "arrival": "An/Abreise",
+      "arrivalBadge": "Bezahlt",
+      "driveTime": "Fahrtzeit",
+      "driveTimeBadge": "Unbezahlt"
+    },
+    "autoCalc": {
+      "title": "Automatische Berechnung",
+      "vacationType": "Urlaubstage",
+      "sickType": "Krankenstand",
+      "timeCompType": "Zeitausgleich",
+      "message": "Für {{type}} wird automatisch die tägliche Sollzeit gutgeschrieben."
+    },
+    "mode": {
+      "auto": "Automatisch",
+      "manual": "Manuell"
+    },
+    "date": "Datum",
+    "start": "Start",
+    "end": "Ende",
+    "pause": "Pause",
+    "noPause": "Keine",
+    "pauseMinutes": "{{minutes}} Min",
+    "activity": "Tätigkeit",
+    "newActivity": "Neue",
+    "quickAddPlaceholder": "z.B. 99 - Sonstiges",
+    "distanceOrNote": "Strecke / Notiz",
+    "project": "Projekt",
+    "projectPlaceholder": "...",
+    "knownProjects": "Bekannte Projekte"
+  },
   "header": {
     "settings": "Einstellungen öffnen",
     "report": "Bericht öffnen",

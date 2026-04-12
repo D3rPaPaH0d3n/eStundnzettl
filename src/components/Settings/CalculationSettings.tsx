@@ -621,21 +621,44 @@ const CalculationSettings: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Urlaubsanspruch */}
-          <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-700">
+          {/* Urlaubsanspruch + Resturlaub */}
+          <div className="space-y-3 pt-2 border-t border-zinc-100 dark:border-zinc-700">
             <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
-              Urlaubsanspruch pro Jahr
+              Urlaub
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={0}
-                max={365}
-                value={config.vacationAllowanceDays}
-                onChange={(e) => handleVacationAllowanceChange(e.target.value)}
-                className="w-24 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
-              />
-              <span className="text-sm text-zinc-600 dark:text-zinc-300">Tage</span>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Jahresanspruch</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={365}
+                  value={config.vacationAllowanceDays}
+                  onChange={(e) => handleVacationAllowanceChange(e.target.value)}
+                  className="w-24 p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                />
+                <span className="text-sm text-zinc-600 dark:text-zinc-300">Tage</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Resturlaub / Übertrag</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={-365}
+                  max={365}
+                  value={config.vacationCarryoverDays}
+                  onChange={(e) => {
+                    const parsed = parseInt(e.target.value, 10);
+                    if (Number.isFinite(parsed)) patch({ vacationCarryoverDays: parsed });
+                  }}
+                  className="w-24 p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                />
+                <span className="text-sm text-zinc-600 dark:text-zinc-300">Tage</span>
+              </div>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 italic">
+                Resttage vom Vorjahr oder bereits verbrauchte Tage (negativ).
+              </p>
             </div>
           </div>
         </div>

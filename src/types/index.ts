@@ -101,8 +101,10 @@ export interface CalculationConfig {
   // --- SETTINGS-ONLY ---
   /** Automatische Pausenabzüge ab X Arbeitsminuten. Leer = keine Auto-Pause. */
   autoPauseRules: AutoPauseRule[];
-  /** Jährlicher Urlaubsanspruch in Tagen (reine Datenhaltung, keine Berechnung). */
+  /** Jährlicher Urlaubsanspruch in Tagen (gesetzlicher Default je nach Locale). */
   vacationAllowanceDays: number;
+  /** Resturlaub (Übertrag vom Vorjahr oder aktueller Rest bei Ersteinrichtung). */
+  vacationCarryoverDays: number;
 
   // --- META ---
   configVersion: 1;

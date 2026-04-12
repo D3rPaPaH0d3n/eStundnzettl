@@ -566,6 +566,50 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
                 <ChevronDown size={18} className="text-zinc-400" />
               </div>
             </button>
+
+            {/* Card 7: Urlaubstage */}
+            <div className="p-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 space-y-3">
+              <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
+                Urlaubstage
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Jahresanspruch</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={365}
+                    value={config.vacationAllowanceDays}
+                    onChange={(e) => {
+                      const parsed = parseInt(e.target.value, 10);
+                      if (Number.isFinite(parsed) && parsed >= 0) onChange({ ...config, vacationAllowanceDays: parsed });
+                    }}
+                    className="w-24 p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                  />
+                  <span className="text-sm text-zinc-600 dark:text-zinc-300">Tage</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Resturlaub / Übertrag</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={-365}
+                    max={365}
+                    value={config.vacationCarryoverDays}
+                    onChange={(e) => {
+                      const parsed = parseInt(e.target.value, 10);
+                      if (Number.isFinite(parsed)) onChange({ ...config, vacationCarryoverDays: parsed });
+                    }}
+                    className="w-24 p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
+                  />
+                  <span className="text-sm text-zinc-600 dark:text-zinc-300">Tage</span>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 italic">
+                  Resttage vom Vorjahr oder bereits verbrauchte Tage (negativ).
+                </p>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -44,9 +44,20 @@ export function getDefaultCalculationConfig(
     halfDayMode: { mode: "locale_default", customHalfDays: [] },
     holidayOnWorkDayMode: "additive",
     autoPauseRules: [],
-    vacationAllowanceDays: 25,
+    vacationAllowanceDays: getDefaultVacationDays(locale.country),
+    vacationCarryoverDays: 0,
     configVersion: 1,
   };
+}
+
+/** Gesetzlicher Mindest-Urlaub pro Land. */
+function getDefaultVacationDays(country: string): number {
+  switch (country) {
+    case 'at': return 25;  // 5 Wochen, AUrlG
+    case 'de': return 20;  // BUrlG §3 (5-Tage-Woche)
+    case 'ch': return 20;  // ArG (ab 20 Jahren)
+    default:   return 25;  // konservativer Fallback
+  }
 }
 
 /**
@@ -72,6 +83,7 @@ export function getBlankCalculationConfig(
     holidayOnWorkDayMode: "additive",
     autoPauseRules: [],
     vacationAllowanceDays: 25,
+    vacationCarryoverDays: 0,
     configVersion: 1,
   };
 }
@@ -115,6 +127,10 @@ export function coerceCalculationConfig(
       typeof v.vacationAllowanceDays === "number"
         ? v.vacationAllowanceDays
         : fallback.vacationAllowanceDays,
+    vacationCarryoverDays:
+      typeof v.vacationCarryoverDays === "number"
+        ? v.vacationCarryoverDays
+        : fallback.vacationCarryoverDays ?? 0,
     configVersion: 1,
   };
 }

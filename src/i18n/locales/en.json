@@ -91,6 +91,65 @@
     "projectPlaceholder": "…",
     "knownProjects": "Known projects"
   },
+  "reports": {
+    "title": "Timesheet",
+    "preview": "Preview",
+    "fullMonth": "Entire month",
+    "employeeAlt": "Employee",
+    "monthWithWeek": "{{month}} (CW {{week}})",
+    "columns": {
+      "date": "Date",
+      "time": "Time",
+      "project": "Project",
+      "code": "Code",
+      "hours": "Hrs.",
+      "balance": "Balance"
+    },
+    "pauseMin": "Break: {{minutes}}m",
+    "noPauseUpper": "NO BREAK",
+    "publicHoliday": "Public holiday",
+    "documentsLabel": "Documents:",
+    "summary": {
+      "title": "Summary",
+      "work": "Work (incl. arrival):",
+      "holidays": "Holidays:",
+      "vacation": "Vacation:",
+      "timeComp": "Time off:",
+      "sickness": "Sick leave:",
+      "totalActual": "Total (actual):",
+      "targetTime": "Target time:",
+      "balance": "Balance:",
+      "extraHours": "Extra hours:",
+      "overtime": "Overtime:",
+      "driveUnpaid": "Drive time (unpaid):"
+    },
+    "vacationBalance": {
+      "allowance": "Vacation allowance:",
+      "days": "days",
+      "carryoverPositive": "Carryover from previous year:",
+      "carryoverNegative": "Already used:",
+      "used": "Taken ({{year}}):",
+      "remaining": "Remaining:"
+    },
+    "notesTitle": "Notes:",
+    "largeExport": {
+      "title": "Large export",
+      "message": "{{count}} entries will be exported. On older devices this may cause memory issues. Recommended: export one month or a single calendar week at a time.",
+      "confirm": "Export anyway"
+    },
+    "toast": {
+      "downloadStarted": "🖨️ Download started!",
+      "readyToShare": "Ready to share",
+      "savedToDocuments": "Saved to 'Documents/eStundnzettl'",
+      "error": "Error: {{message}}"
+    },
+    "noteModal": {
+      "title": "Note for PDF",
+      "placeholder": "E.g. additional info, bank details, etc…",
+      "done": "Done"
+    },
+    "pdfElementMissing": "PDF element missing"
+  },
   "header": {
     "settings": "Open settings",
     "report": "Open report",

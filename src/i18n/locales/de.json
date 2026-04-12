@@ -91,6 +91,65 @@
     "projectPlaceholder": "...",
     "knownProjects": "Bekannte Projekte"
   },
+  "reports": {
+    "title": "Stundenzettel",
+    "preview": "Vorschau",
+    "fullMonth": "Gesamter Monat",
+    "employeeAlt": "Mitarbeiter",
+    "monthWithWeek": "{{month}} (KW {{week}})",
+    "columns": {
+      "date": "Datum",
+      "time": "Zeit",
+      "project": "Projekt",
+      "code": "Code",
+      "hours": "Std.",
+      "balance": "Saldo"
+    },
+    "pauseMin": "Pause: {{minutes}}m",
+    "noPauseUpper": "KEINE PAUSE",
+    "publicHoliday": "Gesetzlicher Feiertag",
+    "documentsLabel": "Dokumente:",
+    "summary": {
+      "title": "Zusammenfassung",
+      "work": "Arbeit (inkl. Anreise):",
+      "holidays": "Feiertage:",
+      "vacation": "Urlaub:",
+      "timeComp": "Zeitausgleich:",
+      "sickness": "Krankenstand:",
+      "totalActual": "Gesamt (IST):",
+      "targetTime": "Sollzeit (SOLL):",
+      "balance": "Saldo:",
+      "extraHours": "Mehrarbeit:",
+      "overtime": "Überstunden:",
+      "driveUnpaid": "Fahrtzeit (unbezahlt):"
+    },
+    "vacationBalance": {
+      "allowance": "Urlaubsanspruch:",
+      "days": "Tage",
+      "carryoverPositive": "Übertrag Vorjahr:",
+      "carryoverNegative": "Bereits verbraucht:",
+      "used": "Genommen ({{year}}):",
+      "remaining": "Verbleibend:"
+    },
+    "notesTitle": "Anmerkungen / Notiz:",
+    "largeExport": {
+      "title": "Großer Export",
+      "message": "{{count}} Einträge werden exportiert. Auf älteren Geräten kann das zu Speicherproblemen führen. Empfehlung: pro Monat oder einzelne Kalenderwoche exportieren.",
+      "confirm": "Trotzdem exportieren"
+    },
+    "toast": {
+      "downloadStarted": "🖨️ Download gestartet!",
+      "readyToShare": "Bereit zum Teilen",
+      "savedToDocuments": "Gespeichert in 'Dokumente/eStundnzettl'",
+      "error": "Fehler: {{message}}"
+    },
+    "noteModal": {
+      "title": "Notiz für PDF",
+      "placeholder": "Z.B. Zusätzliche Infos, Bankverbindung, etc...",
+      "done": "Fertig"
+    },
+    "pdfElementMissing": "PDF-Element fehlt"
+  },
   "header": {
     "settings": "Einstellungen öffnen",
     "report": "Bericht öffnen",

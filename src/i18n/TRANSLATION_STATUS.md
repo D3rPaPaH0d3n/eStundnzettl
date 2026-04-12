@@ -55,7 +55,7 @@ format.*          any format helpers needing translated text
 - [x] B1: AppHeader + ConfirmModal + ExportModal + WorkCodeManager (tiny)
 - [x] B2: Dashboard.tsx
 - [x] B3: EntryForm.tsx
-- [ ] B4: ReportDocument.tsx + PrintReport.tsx
+- [x] B4: ReportDocument.tsx + PrintReport.tsx
 - [ ] B5: ViewRouter + SelectionDrawer + TimePickerDrawer + DecimalDurationPicker
 - [ ] B6: HelpModal + ChangelogModal
 - [ ] B7: ImportConflictModal + LocaleMigrationModal + PresetModal + AttachmentManager
@@ -91,6 +91,33 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B4** (2026-04-12): migrated the report pair:
+  `ReportDocument.tsx` (688 lines, the headless PDF body) and
+  `PrintReport.tsx` (356 lines, the interactive preview shell).
+  Done in one session because the two files share strings and it
+  avoids key drift.
+  New `reports.*` namespace: title, preview, fullMonth, employeeAlt,
+  monthWithWeek, table column headers, pauseMin with `{{minutes}}`,
+  noPauseUpper, publicHoliday, documentsLabel, `summary.*` (work,
+  holidays, vacation, timeComp, sickness, totalActual, targetTime,
+  balance, extraHours, overtime, driveUnpaid), `vacationBalance.*`
+  (allowance, days, carryoverPositive/Negative, used with `{{year}}`,
+  remaining), notesTitle, `largeExport.*` (title, message with
+  `{{count}}`, confirm), toast.* (downloadStarted, readyToShare,
+  savedToDocuments, error with `{{message}}`), `noteModal.*` (title,
+  placeholder, done), pdfElementMissing.
+  ReportDocument now reuses `entryTypes.holiday/timeComp/vacation/sick`
+  for the per-row labels and `dashboard.calendarWeekShort` for the
+  `(KW n)` suffix next to the month.
+  Filenames and the `"Stundenzettel"` Share title string intentionally
+  keep the product wording (`t("reports.title")`) instead of a
+  hard-coded label — the filesystem path segment `eStundnzettl/…`
+  remains literal because it is an on-disk folder name.
+  Date formatting (`toLocaleDateString("de-DE", …)`) stays for C1.
+  A pre-existing Html2PdfOptions TS error in PrintReport shifted from
+  line 198 to 200 because of the two new import/hook lines — still
+  not caused by this change.
+  Tests 630/630 green.
 - **Session B3** (2026-04-12): migrated `EntryForm.tsx` (~36 strings).
   New `entryForm.*` namespace covering: toasts (copyLastError/Success,
   quickAddSuccess), code placeholder, time-picker titles, entry-type

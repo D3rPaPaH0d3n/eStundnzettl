@@ -7,6 +7,7 @@ import { Capacitor } from "@capacitor/core";
 import { useAttachmentShare } from "../hooks/useAttachmentShare";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { logger } from "../utils/logger";
 import { blobToBase64 } from "../utils";
 import {
@@ -45,6 +46,7 @@ interface Props {
 }
 
 const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, monthDate, employeeName, onClose, onMonthChange, userData, workCodes = [], attachments = [], readAttachmentFile, locale, calculationConfig }) => {
+  const { t } = useTranslation();
   // Krank-Korrektur auf allEntries anwenden (entries sind bereits korrigiert via useAppData)
   const allEntries = useMemo(() => applyEffectiveDurations(rawAllEntries, userData, locale, calculationConfig), [rawAllEntries, userData, locale, calculationConfig]);
   const [filterMode, setFilterMode] = useState<number | "month">(() => {
@@ -127,9 +129,9 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
   }, [entries]);
 
   const currentLabel = useMemo(() => {
-    if (filterMode === "month") return "Gesamter Monat";
-    return `KW ${filterMode} (${getWeekLabel(filterMode)})`;
-  }, [filterMode, availableWeeks, monthDate]);
+    if (filterMode === "month") return t("reports.fullMonth");
+    return `${t("dashboard.calendarWeekShort", { week: filterMode })} (${getWeekLabel(filterMode)})`;
+  }, [filterMode, availableWeeks, monthDate, t]);
 
   // --- STATISTIK ---
   const { periodStart, periodEnd } = useMemo(() => {
@@ -171,7 +173,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
       await new Promise(resolve => setTimeout(resolve, 300));
 
       const element = document.getElementById("report-to-print");
-      if (!element) throw new Error("PDF Element fehlt");
+      if (!element) throw new Error(t("reports.pdfElementMissing"));
 
       let timePeriod = "";
       const employeeNameClean = employeeName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
@@ -199,19 +201,19 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
 
       if (!Capacitor.isNativePlatform()) {
         await worker.save();
-        toast.success("🖨️ Download gestartet!");
-      } 
+        toast.success(t("reports.toast.downloadStarted"));
+      }
       else {
         const pdfBlob = await worker.output("blob");
         const base64 = await blobToBase64(pdfBlob);
 
         if (actionType === 'share') {
           await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache, recursive: true });
-          const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache }); 
+          const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
 
           if (reportAttachments.length === 0) {
-            await Share.share({ title: "Stundenzettel", url: uriResult.uri });
-            toast.success("Bereit zum Teilen");
+            await Share.share({ title: t("reports.title"), url: uriResult.uri });
+            toast.success(t("reports.toast.readyToShare"));
           } else {
             await shareReportBundle({
               pdfFile: {
@@ -223,7 +225,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
           }
         } else {
           await Filesystem.writeFile({ path: `eStundnzettl/${filename}`, data: base64, directory: Directory.Documents, recursive: true });
-          toast.success("Gespeichert in 'Dokumente/eStundnzettl'", { icon: "📂" });
+          toast.success(t("reports.toast.savedToDocuments"), { icon: "📂" });
         }
       }
 
@@ -235,7 +237,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
         setIsGenerating(false); setScale(1); return;
       }
       logger.error(err);
-      toast.error("Fehler: " + (err as Error).message);
+      toast.error(t("reports.toast.error", { message: (err as Error).message }));
       setIsGenerating(false);
       setScale(1); 
     }
@@ -260,16 +262,16 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
           setPendingPdfAction(null);
           if (action) handlePdfAction(action);
         }}
-        title="Großer Export"
-        message={`${filteredEntries.length} Einträge werden exportiert. Auf älteren Geräten kann das zu Speicherproblemen führen. Empfehlung: pro Monat oder einzelne Kalenderwoche exportieren.`}
-        confirmText="Trotzdem exportieren"
+        title={t("reports.largeExport.title")}
+        message={t("reports.largeExport.message", { count: filteredEntries.length })}
+        confirmText={t("reports.largeExport.confirm")}
         confirmColor="zinc"
       />
 
       <div className="bg-zinc-900 text-white p-3 shadow-xl z-50 shrink-0" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}>
         <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-lg flex items-center gap-2 text-zinc-100 min-w-0">
-                <FileText size={20} className="text-emerald-500 shrink-0" /> <span className="truncate">Vorschau</span>
+                <FileText size={20} className="text-emerald-500 shrink-0" /> <span className="truncate">{t("reports.preview")}</span>
             </h2>
             <div className="flex items-center bg-zinc-800 rounded-lg p-0.5 border border-zinc-700">
               <button onClick={() => handleMonthChange(-1)} className="p-1.5 hover:bg-zinc-700 rounded-md text-zinc-300"><ChevronLeft size={18} /></button>
@@ -292,11 +294,11 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
                             <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)} />
                             <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} transition={{ duration: 0.15 }} className="absolute top-full left-0 mt-1 w-full max-h-64 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl z-50 py-1">
                                 <div onClick={() => { setFilterMode("month"); setIsPickerOpen(false); }} className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-zinc-700/50 ${filterMode === "month" ? "text-emerald-500 bg-zinc-700/50" : "text-zinc-300 hover:bg-zinc-700 hover:text-white"}`}>
-                                    <span>Gesamter Monat</span>{filterMode === "month" && <Check size={16} />}
+                                    <span>{t("reports.fullMonth")}</span>{filterMode === "month" && <Check size={16} />}
                                 </div>
                                 {availableWeeks.map((w) => (
                                     <div key={w} onClick={() => { setFilterMode(w); setIsPickerOpen(false); }} className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-zinc-700/50 last:border-0 ${Number(filterMode) === w ? "text-emerald-500 bg-zinc-700/50" : "text-zinc-300 hover:bg-zinc-700 hover:text-white"}`}>
-                                        <span>KW {w} ({getWeekLabel(w)})</span>{Number(filterMode) === w && <Check size={16} />}
+                                        <span>{t("dashboard.calendarWeekShort", { week: w })} ({getWeekLabel(w)})</span>{Number(filterMode) === w && <Check size={16} />}
                                     </div>
                                 ))}
                             </motion.div>
@@ -339,11 +341,11 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
             <div className="fixed inset-0 z-[250] flex items-center justify-center p-4"> 
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsNoteModalOpen(false)} /> 
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-xl shadow-2xl p-5"> 
-                    <h3 className="font-bold text-lg mb-3 text-zinc-800 dark:text-white">Notiz für PDF</h3> 
-                    <textarea className="w-full h-32 p-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg resize-none outline-none focus:border-blue-500 text-zinc-800 dark:text-zinc-100" placeholder="Z.B. Zusätzliche Infos, Bankverbindung, etc..." value={customNote} onChange={(e) => setCustomNote(e.target.value)} /> 
-                    <div className="flex justify-end gap-2 mt-4"> 
-                        <button onClick={() => setCustomNote("")} className="text-red-500 text-sm font-medium px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">Löschen</button> 
-                        <button onClick={() => setIsNoteModalOpen(false)} className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold px-4 py-2 rounded-lg">Fertig</button> 
+                    <h3 className="font-bold text-lg mb-3 text-zinc-800 dark:text-white">{t("reports.noteModal.title")}</h3>
+                    <textarea className="w-full h-32 p-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg resize-none outline-none focus:border-blue-500 text-zinc-800 dark:text-zinc-100" placeholder={t("reports.noteModal.placeholder")} value={customNote} onChange={(e) => setCustomNote(e.target.value)} />
+                    <div className="flex justify-end gap-2 mt-4">
+                        <button onClick={() => setCustomNote("")} className="text-red-500 text-sm font-medium px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">{t("common.delete")}</button>
+                        <button onClick={() => setIsNoteModalOpen(false)} className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold px-4 py-2 rounded-lg">{t("reports.noteModal.done")}</button>
                     </div> 
                 </motion.div> 
             </div> 

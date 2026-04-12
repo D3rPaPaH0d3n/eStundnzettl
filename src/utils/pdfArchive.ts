@@ -14,7 +14,8 @@
 
 import { renderMonthlyReportPdfBlob } from "./reportPdfRenderer";
 import { WORK_CODE } from "../hooks/constants";
-import type { Entry, UserData, WorkCode, Attachment } from '../types';
+import type { Entry, UserData, WorkCode, Attachment, CalculationConfig } from '../types';
+import type { Locale } from '../locales/types';
 
 // ───────────── Helpers ─────────────
 
@@ -84,7 +85,7 @@ export function buildArchiveFilename({ year, month, userData }: { year: number; 
  * haengen sollte, bekommt der Aufrufer nach 30 s eine klare
  * Fehlermeldung statt eines dauerhaft blockierten UI-Zustands.
  */
-export async function generateMonthlyPdfBlob({ year, month, entries, userData, workCodes, attachments }: { year: number; month: number; entries: Entry[]; userData: UserData | null; workCodes: WorkCode[]; attachments?: Attachment[] }): Promise<Blob> {
+export async function generateMonthlyPdfBlob({ year, month, entries, userData, workCodes, attachments, locale, calculationConfig }: { year: number; month: number; entries: Entry[]; userData: UserData | null; workCodes: WorkCode[]; attachments?: Attachment[]; locale?: Locale; calculationConfig?: CalculationConfig | null }): Promise<Blob> {
   if (!year || !month) throw new Error("generateMonthlyPdfBlob: year/month fehlen");
 
   const blobPromise = renderMonthlyReportPdfBlob({
@@ -94,6 +95,8 @@ export async function generateMonthlyPdfBlob({ year, month, entries, userData, w
     userData,
     workCodes,
     attachments,
+    locale,
+    calculationConfig,
   });
 
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;

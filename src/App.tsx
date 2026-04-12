@@ -62,7 +62,7 @@ export default function App() {
 
   const { triggerManualBackup } = useAutoBackup(entries, userData, autoBackup);
   const { lastRun: pdfArchiveLastRun, lastError: pdfArchiveLastError, performRun: pdfArchivePerformRun } =
-    useAutoPdfArchive(entries, userData, workCodes);
+    useAutoPdfArchive(entries, userData, workCodes, locale, calculationConfig);
 
   const {
     attachments, addAttachment, removeAttachment, removeAttachmentsForEntry,

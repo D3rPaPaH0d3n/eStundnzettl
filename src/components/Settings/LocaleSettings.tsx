@@ -3,7 +3,11 @@ import { Globe, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 import { Card } from "../../utils";
 import type { Locale, LocaleId } from "../../locales/types";
-import { GERMAN_STATE_IDS, GERMAN_STATE_NAMES, type GermanState, getLocale } from "../../locales";
+import {
+  GERMAN_STATE_IDS, GERMAN_STATE_NAMES, type GermanState,
+  SWISS_KANTON_IDS, SWISS_KANTON_NAMES, type SwissKanton,
+  getLocale,
+} from "../../locales";
 import SelectionDrawer from "../SelectionDrawer";
 import ConfirmModal from "../ConfirmModal";
 
@@ -27,10 +31,11 @@ interface Props {
   onAfterLocaleChange?: (newLocale: Locale, workDays: number[]) => void;
 }
 
-type Group = "neutral" | "at" | "de";
+type Group = "neutral" | "at" | "de" | "ch";
 
 const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterLocaleChange }) => {
   const [stateDrawerOpen, setStateDrawerOpen] = useState(false);
+  const [kantonDrawerOpen, setKantonDrawerOpen] = useState(false);
   const [pendingLocaleId, setPendingLocaleId] = useState<LocaleId | null>(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
@@ -39,14 +44,30 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
     []
   );
 
+  const kantonOptions = useMemo(
+    () => SWISS_KANTON_IDS.map((k) => ({ id: k, label: SWISS_KANTON_NAMES[k] })),
+    []
+  );
+
   if (!locale || !setLocale) return null;
 
   const currentGroup: Group =
-    locale.id === "neutral" ? "neutral" : locale.id === "at" ? "at" : "de";
+    locale.id === "neutral"
+      ? "neutral"
+      : locale.id === "at"
+        ? "at"
+        : locale.id.startsWith("ch-")
+          ? "ch"
+          : "de";
 
   const currentGermanState: GermanState | null =
     locale.id.startsWith("de-")
       ? (locale.id.slice(3) as GermanState)
+      : null;
+
+  const currentSwissKanton: SwissKanton | null =
+    locale.id.startsWith("ch-")
+      ? (locale.id.slice(3) as SwissKanton)
       : null;
 
   // Wenn ein onAfterLocaleChange-Callback vorhanden ist, erst Confirm-
@@ -66,6 +87,11 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
       if (initiateLocaleChange("neutral")) toast.success("Auf Neutral umgestellt");
     } else if (group === "at") {
       if (initiateLocaleChange("at")) toast.success("Auf Österreich umgestellt");
+    } else if (group === "ch") {
+      const nextId: LocaleId = (currentSwissKanton
+        ? `ch-${currentSwissKanton}`
+        : "ch-zh") as LocaleId;
+      if (initiateLocaleChange(nextId)) toast.success("Auf Schweiz umgestellt");
     } else {
       const nextId: LocaleId = (currentGermanState
         ? `de-${currentGermanState}`
@@ -78,6 +104,13 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
     const stateCode = id as GermanState;
     if (initiateLocaleChange(`de-${stateCode}` as LocaleId)) {
       toast.success(`Bundesland auf ${GERMAN_STATE_NAMES[stateCode]} geändert`);
+    }
+  };
+
+  const handleSwissKantonChange = (id: string | number) => {
+    const kCode = id as SwissKanton;
+    if (initiateLocaleChange(`ch-${kCode}` as LocaleId)) {
+      toast.success(`Kanton auf ${SWISS_KANTON_NAMES[kCode]} geändert`);
     }
   };
 
@@ -121,7 +154,7 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => handleGroupChange("neutral")}
@@ -155,6 +188,17 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
         >
           Deutschland
         </button>
+        <button
+          type="button"
+          onClick={() => handleGroupChange("ch")}
+          className={`p-3 rounded-xl border-2 text-center text-xs font-bold transition-all ${
+            currentGroup === "ch"
+              ? "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
+              : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-red-300"
+          }`}
+        >
+          Schweiz
+        </button>
       </div>
 
       {currentGroup === "de" && (
@@ -175,6 +219,24 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
         </div>
       )}
 
+      {currentGroup === "ch" && (
+        <div>
+          <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
+            Kanton
+          </label>
+          <button
+            type="button"
+            onClick={() => setKantonDrawerOpen(true)}
+            className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white hover:border-red-500 transition-colors"
+          >
+            <span className="flex-1 text-left">
+              {SWISS_KANTON_NAMES[currentSwissKanton ?? "zh"]}
+            </span>
+            <ChevronDown size={18} className="text-zinc-400 ml-2" />
+          </button>
+        </div>
+      )}
+
       <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
         <span className="font-bold">Aktuell aktiv:</span> {locale.name}. Zukünftige
         Berechnungen folgen der neuen Auswahl — vergangene Einträge bleiben
@@ -188,6 +250,15 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
         options={stateOptions}
         value={currentGermanState ?? "by"}
         onChange={handleGermanStateChange}
+      />
+
+      <SelectionDrawer
+        isOpen={kantonDrawerOpen}
+        onClose={() => setKantonDrawerOpen(false)}
+        title="Kanton wählen"
+        options={kantonOptions}
+        value={currentSwissKanton ?? "zh"}
+        onChange={handleSwissKantonChange}
       />
 
       <ConfirmModal

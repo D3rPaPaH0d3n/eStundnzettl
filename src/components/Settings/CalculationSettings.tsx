@@ -4,7 +4,8 @@ import toast from "react-hot-toast";
 import { Card } from "../../utils";
 import SelectionDrawer from "../SelectionDrawer";
 import { recalculateAllEntries } from "../../utils/timeCalculations";
-import { getLocale, GERMAN_STATE_IDS, GERMAN_STATE_NAMES } from "../../locales";
+import { getLocale, GERMAN_STATE_IDS, GERMAN_STATE_NAMES, SWISS_KANTON_IDS, SWISS_KANTON_NAMES } from "../../locales";
+import { getOrthodoxHolidays, getIslamicHolidays } from "../../locales/holidays/religious";
 import { logger } from "../../utils/logger";
 import type {
   CalculationConfig,
@@ -116,6 +117,12 @@ const CalculationSettings: React.FC<Props> = ({
         id: `de-${s}`,
         label: `Deutschland – ${GERMAN_STATE_NAMES[s]}`,
       })),
+      ...SWISS_KANTON_IDS.map((k) => ({
+        id: `ch-${k}`,
+        label: `Schweiz – ${SWISS_KANTON_NAMES[k]}`,
+      })),
+      { id: "_orthodox", label: "Orthodoxe Feiertage" },
+      { id: "_islamic", label: "Islamische Feiertage (ca.)" },
     ],
     []
   );
@@ -165,10 +172,19 @@ const CalculationSettings: React.FC<Props> = ({
   };
 
   const handleImportHolidays = (id: string | number) => {
-    const localeId = id as string;
-    const loc = getLocale(localeId as never);
+    const key = id as string;
     const year = new Date().getFullYear();
-    const base = loc.getHolidays(year);
+    let base: Record<string, string>;
+
+    if (key === "_orthodox") {
+      base = getOrthodoxHolidays(year);
+    } else if (key === "_islamic") {
+      base = getIslamicHolidays(year);
+    } else {
+      const loc = getLocale(key as never);
+      base = loc.getHolidays(year);
+    }
+
     const next: Record<string, string> = { ...customHolidays };
     for (const [date, name] of Object.entries(base)) {
       next[date.slice(5)] = name;

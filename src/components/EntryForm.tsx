@@ -1,5 +1,7 @@
-import React, { forwardRef, useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus } from "lucide-react";
+import React, { Suspense, forwardRef, useState, useEffect, useMemo, useCallback } from "react";
+import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus, ChevronDown } from "lucide-react";
+
+const DecimalDurationPicker = React.lazy(() => import("./DecimalDurationPicker"));
 import { Card, getHolidayData, toLocalDateString } from "../utils";
 import { WORK_CODE } from "../hooks/constants";
 import { useWorkCodes } from "../hooks/useWorkCodes";
@@ -132,6 +134,7 @@ const EntryForm: React.FC<Props> = ({
     setActiveTimeField(field);
   }, []);
   const [isWorkCodeOpen, setIsWorkCodeOpen] = useState(false);
+  const [showPausePicker, setShowPausePicker] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickAddValue, setQuickAddValue] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -364,10 +367,35 @@ const EntryForm: React.FC<Props> = ({
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Pause</label>
                   <div className="flex gap-2">
-                    {/* CHANGE: active styles Emerald */}
                     <button type="button" onClick={() => setPauseDuration(0)} className={`flex-1 p-3 rounded-lg border text-sm font-bold ${pauseDuration === 0 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300"}`}>Keine</button>
-                    <button type="button" onClick={() => setPauseDuration(30)} className={`flex-1 p-3 rounded-lg border text-sm font-bold ${pauseDuration === 30 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300"}`}>30 Min</button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPausePicker(true)}
+                      className={`flex-1 p-3 rounded-lg border text-sm font-bold flex items-center justify-center gap-1 ${pauseDuration > 0 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300"}`}
+                    >
+                      {pauseDuration > 0
+                        ? pauseDuration >= 60
+                          ? `${Math.floor(pauseDuration / 60)}h ${pauseDuration % 60 > 0 ? `${pauseDuration % 60}m` : ""}`
+                          : `${pauseDuration} Min`
+                        : "30 Min"}
+                      <ChevronDown size={14} />
+                    </button>
                   </div>
+                  {showPausePicker && (
+                    <Suspense fallback={null}>
+                      <DecimalDurationPicker
+                        isOpen={showPausePicker}
+                        onClose={() => setShowPausePicker(false)}
+                        initialMinutes={pauseDuration > 0 ? pauseDuration : 30}
+                        onConfirm={(minutes) => {
+                          setPauseDuration(minutes);
+                          setShowPausePicker(false);
+                        }}
+                        title="Pause"
+                        minuteInterval={15}
+                      />
+                    </Suspense>
+                  )}
                 </div>
               )}
 

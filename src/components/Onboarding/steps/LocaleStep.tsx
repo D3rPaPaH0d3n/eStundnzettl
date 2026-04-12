@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Globe, Check, Info, ChevronDown, Sliders } from "lucide-react";
 import type { LocaleId } from "../../../locales/types";
-import { GERMAN_STATE_IDS, GERMAN_STATE_NAMES } from "../../../locales";
+import { GERMAN_STATE_IDS, GERMAN_STATE_NAMES, SWISS_KANTON_IDS, SWISS_KANTON_NAMES } from "../../../locales";
 import SelectionDrawer from "../../SelectionDrawer";
 
 /**
@@ -27,7 +27,7 @@ interface Props {
   onSelectCustomPlan?: () => void;
 }
 
-type TopChoice = "neutral" | "at" | "de" | "custom";
+type TopChoice = "neutral" | "at" | "de" | "ch" | "custom";
 
 const LocaleStep: React.FC<Props> = ({
   selectedLocaleId,
@@ -36,9 +36,15 @@ const LocaleStep: React.FC<Props> = ({
   onSelectCustomPlan,
 }) => {
   const [stateDrawerOpen, setStateDrawerOpen] = useState(false);
+  const [kantonDrawerOpen, setKantonDrawerOpen] = useState(false);
 
   const stateOptions = useMemo(
     () => GERMAN_STATE_IDS.map((s) => ({ id: s, label: GERMAN_STATE_NAMES[s] })),
+    []
+  );
+
+  const kantonOptions = useMemo(
+    () => SWISS_KANTON_IDS.map((k) => ({ id: k, label: SWISS_KANTON_NAMES[k] })),
     []
   );
 
@@ -49,8 +55,15 @@ const LocaleStep: React.FC<Props> = ({
         ? "neutral"
         : selectedLocaleId === "at"
           ? "at"
-          : "de"
+          : selectedLocaleId.startsWith("ch-")
+            ? "ch"
+            : "de"
       : null;
+
+  const currentSwissKanton =
+    selectedLocaleId && selectedLocaleId.startsWith("ch-")
+      ? (selectedLocaleId.slice(3) as (typeof SWISS_KANTON_IDS)[number])
+      : "zh";
 
   const currentGermanState =
     selectedLocaleId && selectedLocaleId.startsWith("de-")
@@ -58,8 +71,11 @@ const LocaleStep: React.FC<Props> = ({
       : "by";
 
   const handleDeClick = () => {
-    // Default: bei Klick auf DE zunächst Bayern vorauswählen
     onSelect(`de-${currentGermanState}` as LocaleId);
+  };
+
+  const handleChClick = () => {
+    onSelect(`ch-${currentSwissKanton}` as LocaleId);
   };
 
   return (
@@ -155,7 +171,7 @@ const LocaleStep: React.FC<Props> = ({
           )}
         </button>
 
-        {/* Bundesland-Picker erscheint, wenn Deutschland gewählt */}
+        {/* Bundesland-Picker (Deutschland) */}
         {topChoice === "de" && (
           <div className="pl-4 border-l-2 border-blue-300 dark:border-blue-700 ml-2">
             <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
@@ -168,6 +184,46 @@ const LocaleStep: React.FC<Props> = ({
             >
               <span className="flex-1 text-left">
                 {GERMAN_STATE_NAMES[currentGermanState]}
+              </span>
+              <ChevronDown size={18} className="text-zinc-400 ml-2" />
+            </button>
+          </div>
+        )}
+
+        {/* Schweiz */}
+        <button
+          type="button"
+          onClick={handleChClick}
+          className={`w-full p-4 rounded-xl border-2 text-left transition-all relative ${
+            topChoice === "ch"
+              ? "border-red-500 bg-red-50 dark:bg-red-900/20"
+              : "border-zinc-200 dark:border-zinc-700 hover:border-red-300"
+          }`}
+        >
+          <div className="font-bold text-zinc-800 dark:text-white">Schweiz</div>
+          <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+            Kantonale Feiertage, Halbtage (24./31.12.), Überstunden ab 45h/Woche (ArG).
+          </div>
+          {topChoice === "ch" && (
+            <div className="absolute top-4 right-4 text-red-500">
+              <Check size={18} />
+            </div>
+          )}
+        </button>
+
+        {/* Kantons-Picker (Schweiz) */}
+        {topChoice === "ch" && (
+          <div className="pl-4 border-l-2 border-red-300 dark:border-red-700 ml-2">
+            <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
+              Kanton
+            </label>
+            <button
+              type="button"
+              onClick={() => setKantonDrawerOpen(true)}
+              className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white hover:border-red-500 transition-colors"
+            >
+              <span className="flex-1 text-left">
+                {SWISS_KANTON_NAMES[currentSwissKanton]}
               </span>
               <ChevronDown size={18} className="text-zinc-400 ml-2" />
             </button>
@@ -209,6 +265,15 @@ const LocaleStep: React.FC<Props> = ({
         options={stateOptions}
         value={currentGermanState}
         onChange={(id) => onSelect(`de-${id}` as LocaleId)}
+      />
+
+      <SelectionDrawer
+        isOpen={kantonDrawerOpen}
+        onClose={() => setKantonDrawerOpen(false)}
+        title="Kanton wählen"
+        options={kantonOptions}
+        value={currentSwissKanton}
+        onChange={(id) => onSelect(`ch-${id}` as LocaleId)}
       />
     </motion.div>
   );

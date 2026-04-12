@@ -2,7 +2,8 @@ import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sliders, Info, ChevronDown, Plus, X, Calendar, Upload } from "lucide-react";
 import SelectionDrawer from "../../SelectionDrawer";
-import { getLocale, GERMAN_STATE_IDS, GERMAN_STATE_NAMES } from "../../../locales";
+import { getLocale, GERMAN_STATE_IDS, GERMAN_STATE_NAMES, SWISS_KANTON_IDS, SWISS_KANTON_NAMES } from "../../../locales";
+import { getOrthodoxHolidays, getIslamicHolidays } from "../../../locales/holidays/religious";
 import type { CalculationConfig, OvertimeMode, SickOnWorkDayMode, HolidayOnWorkDayMode } from "../../../types";
 
 /**
@@ -167,14 +168,22 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
   };
 
   const handleImportHolidays = (id: string | number) => {
-    const localeId = id as string;
-    const loc = getLocale(localeId as never);
+    const key = id as string;
     const year = new Date().getFullYear();
-    const base = loc.getHolidays(year);
-    // Als MM-DD-Keys speichern, damit sie jährlich wiederkehren
+    let base: Record<string, string>;
+
+    if (key === "_orthodox") {
+      base = getOrthodoxHolidays(year);
+    } else if (key === "_islamic") {
+      base = getIslamicHolidays(year);
+    } else {
+      const loc = getLocale(key as never);
+      base = loc.getHolidays(year);
+    }
+
     const next: Record<string, string> = { ...customHolidays };
     for (const [date, name] of Object.entries(base)) {
-      const mmdd = date.slice(5); // "01-01"
+      const mmdd = date.slice(5);
       next[mmdd] = name;
     }
     onChange({
@@ -259,6 +268,12 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
         id: `de-${s}`,
         label: `Deutschland – ${GERMAN_STATE_NAMES[s]}`,
       })),
+      ...SWISS_KANTON_IDS.map((k) => ({
+        id: `ch-${k}`,
+        label: `Schweiz – ${SWISS_KANTON_NAMES[k]}`,
+      })),
+      { id: "_orthodox", label: "Orthodoxe Feiertage" },
+      { id: "_islamic", label: "Islamische Feiertage (ca.)" },
     ],
     []
   );

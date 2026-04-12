@@ -1,0 +1,4 @@
+{
+  "releaseName": "v4.1.0 - Berechnungslogik-Baukasten & Schweiz",
+  "releaseNotes": "🧰 Eigener Plan: Rechenregeln selbst einstellen\n🇨🇭 Schweiz mit 26 Kantonen & Feiertagen\n☦️ Orthodoxe & islamische Feiertags-Vorlagen\n🏖️ Urlaubstage-Tracking mit PDF-Bilanz\n⏸️ Neuer Pausen-Picker (gleiche Optik wie Start/Ende)\n🛡️ 630 Tests, volle Abwärtskompatibilität"
+}

@@ -5,7 +5,7 @@
 import type { WorkCode, WorkModel } from '../types';
 
 // Version wird zur Build-Zeit von Vite aus package.json injiziert (Single Point of Truth)
-// eslint-disable-next-line no-undef
+ 
 export const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? 'v' + __APP_VERSION__ : 'dev';
 
 // -------------------------------------------------------
@@ -29,6 +29,7 @@ export const STORAGE_KEYS = {
   THEME: "estundnzettl_theme",
   WORK_CODES: "estundnzettl_work_codes",
   LOCALE: "estundnzettl_locale", // LocaleId: "neutral" | "at" | "de-by" | ...
+  LANGUAGE: "estundnzettl_language", // UI language: "de" | "en"
   
   // Backup & Sync Status (Eindeutige Benennung!)
   CLOUD_SYNC_ENABLED: "estundnzettl_cloud_sync_enabled", // Boolean: Ist Google Drive aktiv?

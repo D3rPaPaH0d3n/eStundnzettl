@@ -48,7 +48,7 @@ format.*          any format helpers needing translated text
 - [x] Session 0: status tracker + baseline (this commit)
 
 ## Phase A — Infrastructure
-- [ ] A1: i18n bootstrap (device detection, persistence, `useLocaleSetting`, dynamic `<html lang>`)
+- [x] A1: i18n bootstrap (device detection, persistence, `useLocaleSetting`, dynamic `<html lang>`)
 
 ## Phase B — Component migration
 
@@ -91,3 +91,13 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session A1** (2026-04-12): i18n bootstrap with device-language detection.
+  Added `STORAGE_KEYS.LANGUAGE`, exported `detectInitialLanguage` +
+  `LANGUAGE_STORAGE_KEY` + `SUPPORTED_LANGUAGES` from `src/i18n/index.ts`,
+  created `src/hooks/useLocaleSetting.ts` (reads/writes localStorage,
+  listens on `languageChanged`, syncs `<html lang>`). Updated `index.html`
+  inline script to resolve language early and set the `<html lang>`
+  attribute + loading-logo alt text before React mounts.
+  Tests 630/630 green, `vite build` ok. Pre-existing TS errors in
+  App.tsx/OnboardingWizard/Settings/PrintReport untouched (not caused
+  by this change).

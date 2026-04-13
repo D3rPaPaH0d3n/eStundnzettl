@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Globe, Check, Info, ChevronDown, Sliders } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { LocaleId } from "../../../locales/types";
 import { GERMAN_STATE_IDS, GERMAN_STATE_NAMES, SWISS_KANTON_IDS, SWISS_KANTON_NAMES } from "../../../locales";
 import SelectionDrawer from "../../SelectionDrawer";
@@ -35,6 +36,7 @@ const LocaleStep: React.FC<Props> = ({
   customPlanSelected = false,
   onSelectCustomPlan,
 }) => {
+  const { t } = useTranslation();
   const [stateDrawerOpen, setStateDrawerOpen] = useState(false);
   const [kantonDrawerOpen, setKantonDrawerOpen] = useState(false);
 
@@ -91,18 +93,17 @@ const LocaleStep: React.FC<Props> = ({
           <Globe size={32} />
         </div>
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">
-          Stundenberechnung
+          {t("onboarding.locale.title")}
         </h2>
         <p className="text-zinc-500 dark:text-zinc-400">
-          Wähl, welche Regeln deine App verwenden soll.
+          {t("onboarding.locale.subtitle")}
         </p>
       </div>
 
       <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
         <Info size={14} className="text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
         <p className="text-xs text-emerald-900 dark:text-emerald-100 leading-relaxed">
-          Kannst du jederzeit in den Einstellungen ändern. Beeinflusst automatische
-          Feiertage, Halbtage (24./31.12.) und die Aufteilung in Mehrarbeit/Überstunden.
+          {t("onboarding.locale.infoHint")}
         </p>
       </div>
 
@@ -117,10 +118,9 @@ const LocaleStep: React.FC<Props> = ({
               : "border-zinc-200 dark:border-zinc-700 hover:border-emerald-300"
           }`}
         >
-          <div className="font-bold text-zinc-800 dark:text-white">Neutral</div>
+          <div className="font-bold text-zinc-800 dark:text-white">{t("onboarding.locale.neutralTitle")}</div>
           <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Keine automatischen Feiertage, keine Halbtage, kein MA/ÜS-Split. Für alle
-            Berufe & Länder.
+            {t("onboarding.locale.neutralDescription")}
           </div>
           {topChoice === "neutral" && (
             <div className="absolute top-4 right-4 text-emerald-500">
@@ -139,9 +139,9 @@ const LocaleStep: React.FC<Props> = ({
               : "border-zinc-200 dark:border-zinc-700 hover:border-blue-300"
           }`}
         >
-          <div className="font-bold text-zinc-800 dark:text-white">Österreich</div>
+          <div className="font-bold text-zinc-800 dark:text-white">{t("onboarding.locale.austriaTitle")}</div>
           <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            13 gesetzliche Feiertage, 24./31.12. halbiert, Mehrarbeit/Überstunden nach AZG.
+            {t("onboarding.locale.austriaDescription")}
           </div>
           {topChoice === "at" && (
             <div className="absolute top-4 right-4 text-blue-500">
@@ -160,9 +160,9 @@ const LocaleStep: React.FC<Props> = ({
               : "border-zinc-200 dark:border-zinc-700 hover:border-blue-300"
           }`}
         >
-          <div className="font-bold text-zinc-800 dark:text-white">Deutschland</div>
+          <div className="font-bold text-zinc-800 dark:text-white">{t("onboarding.locale.germanyTitle")}</div>
           <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Bundesweite + regionale Feiertage, 40h-Woche, Mehrarbeit/Überstunden.
+            {t("onboarding.locale.germanyDescription")}
           </div>
           {topChoice === "de" && (
             <div className="absolute top-4 right-4 text-blue-500">
@@ -175,7 +175,7 @@ const LocaleStep: React.FC<Props> = ({
         {topChoice === "de" && (
           <div className="pl-4 border-l-2 border-blue-300 dark:border-blue-700 ml-2">
             <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
-              Bundesland
+              {t("onboarding.locale.stateLabel")}
             </label>
             <button
               type="button"
@@ -200,9 +200,9 @@ const LocaleStep: React.FC<Props> = ({
               : "border-zinc-200 dark:border-zinc-700 hover:border-red-300"
           }`}
         >
-          <div className="font-bold text-zinc-800 dark:text-white">Schweiz</div>
+          <div className="font-bold text-zinc-800 dark:text-white">{t("onboarding.locale.switzerlandTitle")}</div>
           <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Kantonale Feiertage, Halbtage (24./31.12.), Überstunden ab 45h/Woche (ArG).
+            {t("onboarding.locale.switzerlandDescription")}
           </div>
           {topChoice === "ch" && (
             <div className="absolute top-4 right-4 text-red-500">
@@ -215,7 +215,7 @@ const LocaleStep: React.FC<Props> = ({
         {topChoice === "ch" && (
           <div className="pl-4 border-l-2 border-red-300 dark:border-red-700 ml-2">
             <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
-              Kanton
+              {t("onboarding.locale.kantonLabel")}
             </label>
             <button
               type="button"
@@ -243,11 +243,10 @@ const LocaleStep: React.FC<Props> = ({
           >
             <div className="flex items-center gap-2">
               <Sliders size={16} className="text-emerald-600 dark:text-emerald-400" />
-              <div className="font-bold text-zinc-800 dark:text-white">Eigener Plan</div>
+              <div className="font-bold text-zinc-800 dark:text-white">{t("onboarding.locale.customTitle")}</div>
             </div>
             <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              Ich bastle mir meine Rechenregeln im nächsten Schritt selbst zusammen
-              (Überstunden, Krank, Feiertage).
+              {t("onboarding.locale.customDescription")}
             </div>
             {topChoice === "custom" && (
               <div className="absolute top-4 right-4 text-emerald-500">
@@ -261,7 +260,7 @@ const LocaleStep: React.FC<Props> = ({
       <SelectionDrawer
         isOpen={stateDrawerOpen}
         onClose={() => setStateDrawerOpen(false)}
-        title="Bundesland wählen"
+        title={t("onboarding.locale.stateDrawerTitle")}
         options={stateOptions}
         value={currentGermanState}
         onChange={(id) => onSelect(`de-${id}` as LocaleId)}
@@ -270,7 +269,7 @@ const LocaleStep: React.FC<Props> = ({
       <SelectionDrawer
         isOpen={kantonDrawerOpen}
         onClose={() => setKantonDrawerOpen(false)}
-        title="Kanton wählen"
+        title={t("onboarding.locale.kantonDrawerTitle")}
         options={kantonOptions}
         value={currentSwissKanton}
         onChange={(id) => onSelect(`ch-${id}` as LocaleId)}

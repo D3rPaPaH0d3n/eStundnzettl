@@ -65,7 +65,7 @@ format.*          any format helpers needing translated text
 - [x] B11: Settings/BackupSettings
 - [x] B12: Settings/LocaleSettings (+ Language Picker UI) + DataSettings + PdfArchiveSettings
 - [x] B13: OnboardingWizard + Welcome/Profile/SummaryStep
-- [ ] B14: Onboarding LocaleStep + WorkScheduleStep
+- [x] B14: Onboarding LocaleStep + WorkScheduleStep
 - [ ] B15: Onboarding CalculationStep
 - [ ] B16: Onboarding WorkCodesStep
 
@@ -91,6 +91,21 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B14** (2026-04-13): migrated two larger onboarding steps.
+  - `Onboarding/steps/LocaleStep.tsx`: `onboarding.locale.*` — step
+    title/subtitle, info hint, four group cards (Neutral/AT/DE/CH)
+    with title + description each, state + canton labels, both
+    SelectionDrawer titles, custom-plan card. Base locale/state/
+    kanton names still come from `GERMAN_STATE_NAMES` /
+    `SWISS_KANTON_NAMES` (data layer, handled later).
+  - `Onboarding/steps/WorkScheduleStep.tsx`: `onboarding.workSchedule.*`
+    — title/subtitle, two mode cards (Target/Actual vs Simple with
+    their hints), simple-mode info banner, custom-mode info banner,
+    daily-hours card heading, weekly-hours label, presets heading,
+    minute-input toggle (title + hint + aria). Weekday short-day
+    labels reuse `settings.weekdays.*` from B9, so Mo/Di/…/So
+    translate consistently with DataSettings.
+  Tests 630/630 green.
 - **Session B13** (2026-04-13): migrated the onboarding wizard shell
   + three small steps (Welcome/Profile/Summary). Opens the
   `onboarding.*` namespace that B14–B16 will extend.

@@ -329,6 +329,19 @@
       "minuteInputHint": "Sonst in praktischen 15-Min-Schritten",
       "minuteInputAria": "Minütige Zeiteingabe umschalten"
     },
+    "workCodes": {
+      "title": "Tätigkeiten",
+      "subtitle": "Wähl, mit welchen Codes du deine Stunden zuordnen willst.",
+      "basic": {
+        "allgemeinTitle": "Allgemein",
+        "allgemeinSubtitle": "5 neutrale Codes (Arbeit, Büro, Besprechung, Fahrzeit, Sonstiges)",
+        "leerTitle": "Keine Codes",
+        "leerSubtitle": "Starte leer — du legst deine Tätigkeiten später selbst an"
+      },
+      "industryTitle": "Branchen-Presets (optional)",
+      "codeCount": "{{description}} ({{count}} Codes)",
+      "footerHint": "Codes kannst du später jederzeit in den Einstellungen ändern oder ergänzen."
+    },
     "calc": {
       "title": "Dein eigener Plan",
       "subtitle": "Stell ein, wie wir rechnen sollen — oder lass die Vorschläge stehen.",

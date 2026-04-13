@@ -329,6 +329,19 @@
       "minuteInputHint": "Otherwise in practical 15-min steps",
       "minuteInputAria": "Toggle minute-level time entry"
     },
+    "workCodes": {
+      "title": "Activities",
+      "subtitle": "Pick which codes you want to categorise your hours with.",
+      "basic": {
+        "allgemeinTitle": "General",
+        "allgemeinSubtitle": "5 neutral codes (work, office, meeting, drive time, other)",
+        "leerTitle": "No codes",
+        "leerSubtitle": "Start empty — you add your activities later"
+      },
+      "industryTitle": "Industry presets (optional)",
+      "codeCount": "{{description}} ({{count}} codes)",
+      "footerHint": "You can change or extend codes any time in settings."
+    },
     "calc": {
       "title": "Your custom plan",
       "subtitle": "Set how we should calculate — or leave the defaults.",

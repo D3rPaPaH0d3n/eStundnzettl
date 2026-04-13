@@ -10,6 +10,7 @@ import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
 import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 import type { Entry, UserData, Theme, WorkCode, PdfArchiveRunOptions, CalculationConfig } from "../types";
 import type { Locale, LocaleId } from "../locales/types";
@@ -95,6 +96,7 @@ const Settings: React.FC<Props> = ({
   setCalculationConfig,
   resetCalculationConfigToLocale,
 }) => {
+  const { t } = useTranslation();
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showWorkCodeManager, setShowWorkCodeManager] = useState(false);
@@ -129,12 +131,12 @@ const Settings: React.FC<Props> = ({
   const openDayPicker = (index: number) => {
     const isCustomMode = activeModelId === "custom";
     if (!isCustomMode) {
-      toast("Bitte erst 'Benutzerdefiniert' wählen", { icon: "🚫" });
+      toast(t("settings.toast.customModeRequired"), { icon: "🚫" });
       Haptics.impact({ style: ImpactStyle.Light });
       return;
     }
     if (isLocked) {
-      toast("Zum Bearbeiten erst Schloss öffnen", { icon: "🔒" });
+      toast(t("settings.toast.unlockRequired"), { icon: "🔒" });
       Haptics.impact({ style: ImpactStyle.Medium });
       return;
     }
@@ -151,20 +153,20 @@ const Settings: React.FC<Props> = ({
     newWorkDays[pickerTargetIndex] = minutes;
 
     setUserData({ ...userData, workDays: newWorkDays });
-    toast.success("Zeit aktualisiert");
+    toast.success(t("settings.toast.timeUpdated"));
   };
 
   const toggleLock = () => {
     const isCustomMode = activeModelId === "custom";
     if (!isCustomMode) {
-      toast("Nur bei 'Benutzerdefiniert' möglich");
+      toast(t("settings.toast.customOnly"));
       return;
     }
     const newState = !isLocked;
     setIsLocked(newState);
     Haptics.impact({ style: ImpactStyle.Medium });
     if (!newState) {
-      toast.success("Bearbeitung freigegeben");
+      toast.success(t("settings.toast.unlocked"));
     }
   };
 
@@ -173,11 +175,11 @@ const Settings: React.FC<Props> = ({
       const json = await readJsonFile(file);
       const analysis = await analyzeBackupData(json);
       if (!analysis.valid) {
-        toast.error("Ungültiges Backup-Format");
+        toast.error(t("settings.toast.invalidBackup"));
         return;
       }
       if (analysis.integrity === "mismatch") {
-        toast("⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert", { duration: 6000 });
+        toast(t("settings.toast.integrityMismatch"), { duration: 6000 });
       }
       if (analysis.hasSettings) {
         setPendingImport(analysis);
@@ -185,10 +187,10 @@ const Settings: React.FC<Props> = ({
         await applyBackup(analysis, "ALL");
         importEntries?.(analysis.entries || []);
         if (analysis.workCodes?.length) importWorkCodes?.(analysis.workCodes);
-        toast.success(`${analysis.entryCount} Einträge importiert!`);
+        toast.success(t("settings.toast.entriesImported", { count: analysis.entryCount }));
       }
     } catch {
-      toast.error("Fehler beim Lesen der Datei");
+      toast.error(t("settings.toast.fileReadError"));
     }
   };
 
@@ -197,7 +199,7 @@ const Settings: React.FC<Props> = ({
     await applyBackup(pendingImport, mode);
     importEntries?.(pendingImport.entries || []);
     if (pendingImport.workCodes?.length) importWorkCodes?.(pendingImport.workCodes);
-    toast.success("Erfolgreich wiederhergestellt!");
+    toast.success(t("settings.toast.restoreSuccess"));
     setPendingImport(null);
   };
 
@@ -248,7 +250,11 @@ const Settings: React.FC<Props> = ({
             onConfirm={handleDurationConfirm}
             title={
               pickerTargetIndex !== null
-                ? `${["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][pickerTargetIndex]} bearbeiten`
+                ? t("settings.editDay", {
+                    weekday: t(
+                      `settings.weekdays.${(["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const)[pickerTargetIndex]}`,
+                    ),
+                  })
                 : ""
             }
           />

@@ -60,7 +60,7 @@ format.*          any format helpers needing translated text
 - [x] B6: HelpModal + ChangelogModal
 - [x] B7: ImportConflictModal + LocaleMigrationModal + PresetModal + AttachmentManager
 - [x] B8: LiveTimerOverlay + AppTour
-- [ ] B9: Settings shell + ProfileSettings + ThemeSettings + AppInfoSettings
+- [x] B9: Settings shell + ProfileSettings + ThemeSettings + AppInfoSettings
 - [ ] B10: Settings/CalculationSettings
 - [ ] B11: Settings/BackupSettings
 - [ ] B12: Settings/LocaleSettings (+ Language Picker UI) + DataSettings + PdfArchiveSettings
@@ -91,6 +91,35 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B9** (2026-04-13): migrated the settings shell and the
+  three small settings panels (Profile/Theme/AppInfo). Largest Settings
+  session so far — opens the big `settings.*` namespace that B10–B12
+  will extend.
+  - `Settings.tsx` (shell): ten toasts (customModeRequired,
+    unlockRequired, timeUpdated, customOnly, unlocked, invalidBackup,
+    integrityMismatch, entriesImported_one/_other with `{{count}}`,
+    fileReadError, restoreSuccess) under `settings.toast.*`, plus the
+    DecimalDurationPicker title built from `settings.editDay` +
+    `settings.weekdays.*` (7 keys).
+  - `ProfileSettings.tsx`: title, photo hint, photo alt, three
+    labels + placeholders (name/company/position), three toasts
+    (photoUpdated/photoError/photoRemoved).
+  - `ThemeSettings.tsx`: title + three mode labels
+    (light/dark/system) rewritten to drive button copy straight from
+    `t(\`settings.theme.\${mode}\`)`.
+  - `AppInfoSettings.tsx`: largest of the three — section headings
+    (app & info, about, danger zone, power-user), every link button
+    (play store, help, changelog, privacy, website, source, imprint,
+    license, contact, donate), power-user toggle copy, recalc &
+    demo-data chips, danger-zone body, version/credits footer, and
+    the ConfirmModal title/message/confirm for the recalc flow.
+    Added `recalcFixed` ({{fixed}}/{{total}}) and `recalcAllCorrect`
+    ({{total}}) with interpolation, plus `linkError`/`mailError`
+    toasts.
+  - Pre-existing TS errors in Settings.tsx/ProfileSettings.tsx shifted
+    two lines (import + hook) — still not introduced here. Total TS
+    error count unchanged at 59.
+  Tests 630/630 green.
 - **Session B8** (2026-04-13): migrated the floating live timer and the
   onboarding tour.
   - `LiveTimerOverlay` (~5 strings): new `liveTimer.*` namespace covers

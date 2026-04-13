@@ -103,6 +103,21 @@ Fragen, Bug-Reports, Lizenzanfragen: project@kainer.co.at
 
 ### Release Notes
 
+#### v4.2.0 (≤ 500 Zeichen)
+
+```
+English zieht ein 🌐
+• Komplette englische Oberfläche — Dashboard, Einstellungen, PDF-Bericht
+• Sprachwechsel live in den Einstellungen unter "Sprache"
+• Beim ersten Start wird die Gerätesprache automatisch erkannt
+• Datum, Kalender und Zeit-Picker folgen der gewählten Sprache
+• Changelog und Play-Store-Eintrag zweisprachig
+• Für bestehende User ändert sich nix — Deutsch bleibt Standard
+```
+
+*Wird per `fastlane/metadata/android/de-DE/changelogs/252.txt`
+gespiegelt. Länge wird nach dem Release-Build verifiziert.*
+
 #### v4.1.0 (≤ 500 Zeichen)
 
 ```
@@ -216,6 +231,21 @@ Questions, bug reports, licensing: project@kainer.co.at
 *2310 characters ✓ (limit 4000)*
 
 ### Release notes
+
+#### v4.2.0 (≤ 500 characters)
+
+```
+English support arrives 🌐
+• Full English UI — dashboard, settings, PDF report
+• Switch live in Settings → Language
+• First launch auto-detects your device language
+• Date, calendar and time picker follow the chosen language
+• Changelog and Play Store listing available in both languages
+• Nothing changes for existing users — German stays the default
+```
+
+*Mirrored in `fastlane/metadata/android/en-US/changelogs/252.txt`.
+Length verified after the release build.*
 
 #### v4.1.0 (≤ 500 characters)
 

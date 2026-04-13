@@ -1,6 +1,49 @@
 export const CHANGELOG_DATA_DE = [
 
   {
+    version: "4.2.0",
+    date: "13.04.2026",
+    title: "English zieht ein 🌐",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Globe",
+        title: "Die App redet jetzt auch Englisch",
+        items: [
+          "Komplette englische Oberfläche — von Dashboard über Einstellungen bis zum PDF-Bericht.",
+          "Sprachwechsel live in den Einstellungen unter \"Sprache\" — einmal tippen, alles passt sich an.",
+          "Beim ersten Start erkennt die App automatisch deine Gerätesprache — Deutsch oder Englisch."
+        ]
+      },
+      {
+        iconName: "Sliders",
+        title: "Datum und Zahlen folgen der Sprache",
+        items: [
+          "Datumsformate, Kalender und Zeit-Picker stellen sich automatisch auf die aktive Sprache um.",
+          "Auch der Stundenzettel im PDF trägt jetzt die Sprache, die du gewählt hast."
+        ]
+      },
+      {
+        iconName: "BookOpen",
+        title: "Changelog & Play Store zweisprachig",
+        items: [
+          "Die gesamte Versionshistorie in der App ist jetzt auch auf Englisch verfügbar.",
+          "Google Play und das GitHub README sind ebenfalls in beiden Sprachen vorbereitet."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Unter der Haube",
+        items: [
+          "Rund 900 übersetzbare Begriffe, drei neue Sicherheits-Tests gegen Übersetzungslücken.",
+          "Gerätesprach-Erkennung und Sprach-Persistenz laufen sauber über localStorage.",
+          "Für bestehende User ändert sich nix — Deutsch bleibt Standard."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "4.1.0",
     date: "12.04.2026",
     title: "Berechnungslogik-Baukasten & Schweiz 🧰",

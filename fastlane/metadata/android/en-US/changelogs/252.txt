@@ -1,0 +1,7 @@
+English support arrives 🌐
+• Full English UI — dashboard, settings, PDF report
+• Switch live in Settings → Language
+• First launch auto-detects your device language
+• Date, calendar and time picker follow the chosen language
+• Changelog and Play Store listing available in both languages
+• Nothing changes for existing users — German stays the default

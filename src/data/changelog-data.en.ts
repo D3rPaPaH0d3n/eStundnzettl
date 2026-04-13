@@ -18,6 +18,48 @@ import { CHANGELOG_DATA_DE } from "./changelog-data.de";
 
 const TRANSLATED_EN = [
   {
+    version: "4.2.0",
+    date: "13.04.2026",
+    title: "English support arrives 🌐",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Globe",
+        title: "The app now speaks English too",
+        items: [
+          "Full English UI — from dashboard to settings to the PDF report.",
+          "Switch live in Settings → Language — tap once, everything adapts.",
+          "On first launch the app auto-detects your device language — German or English."
+        ]
+      },
+      {
+        iconName: "Sliders",
+        title: "Dates and numbers follow the language",
+        items: [
+          "Date formats, calendar and time picker automatically switch to the active language.",
+          "The PDF timesheet now also carries whichever language you picked."
+        ]
+      },
+      {
+        iconName: "BookOpen",
+        title: "Changelog & Play Store bilingual",
+        items: [
+          "The full version history inside the app is now available in English too.",
+          "Google Play and the GitHub README are prepared in both languages as well."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Under the hood",
+        items: [
+          "Around 900 translatable strings, three new safety tests that catch missing translations early.",
+          "Device language detection and language persistence run cleanly via localStorage.",
+          "Nothing changes for existing users — German stays the default."
+        ]
+      }
+    ]
+  },
+  {
     version: "4.1.0",
     date: "12.04.2026",
     title: "Calculation logic toolkit & Switzerland 🧰",

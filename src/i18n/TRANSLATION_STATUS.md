@@ -58,7 +58,7 @@ format.*          any format helpers needing translated text
 - [x] B4: ReportDocument.tsx + PrintReport.tsx
 - [x] B5: ViewRouter + SelectionDrawer + TimePickerDrawer + DecimalDurationPicker
 - [x] B6: HelpModal + ChangelogModal
-- [ ] B7: ImportConflictModal + LocaleMigrationModal + PresetModal + AttachmentManager
+- [x] B7: ImportConflictModal + LocaleMigrationModal + PresetModal + AttachmentManager
 - [ ] B8: LiveTimerOverlay + AppTour
 - [ ] B9: Settings shell + ProfileSettings + ThemeSettings + AppInfoSettings
 - [ ] B10: Settings/CalculationSettings
@@ -91,6 +91,31 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B7** (2026-04-13): migrated the four interstitial modals.
+  - `ImportConflictModal` (~8 strings): backup-review title, description
+    with inline `<b>` via `<Trans>`, entry/settings labels, included
+    badge, warning, "import all" / "entries only" buttons. Cancel reuses
+    `common.cancel`.
+  - `LocaleMigrationModal` (~13 strings): migration popup that greets
+    existing users. Title, explanation, three option cards (Austria
+    with recommended note, Germany with state picker, Neutral) each
+    with their own title+description, state label, SelectionDrawer
+    title, "change later" hint. Confirm button now uses the new
+    shared `common.apply`.
+  - `PresetModal` (~3 strings): title, big-red calc-recalc warning,
+    Cancel/Apply buttons via `common.cancel` + `common.apply`. The
+    `model.label`/`model.description` copy still comes from
+    `WORK_MODELS` in `constants.ts` — that stays for B12.
+  - `AttachmentManager` (~12 strings): new `attachments.*` namespace
+    with 7 toast variants (entryMissing, selectFile, labelRequired,
+    added, addError, deleted, deleteError), title, two field labels,
+    placeholder, saving-button + add-button, existing-list heading and
+    empty-state text. `toLocaleDateString("de-DE", ...)` in the date
+    subtitle kept for C1.
+
+  New shared key: `common.apply` (shared between LocaleMigrationModal
+  and PresetModal).
+  Tests 630/630 green.
 - **Session B6** (2026-04-13): migrated `HelpModal.tsx` (~45 strings of
   user-facing copy) and `ChangelogModal.tsx` (3 shell strings — the
   actual version log content stays for E1).

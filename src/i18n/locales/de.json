@@ -7,6 +7,7 @@
     "save": "Speichern",
     "delete": "Löschen",
     "select": "Auswählen",
+    "apply": "Übernehmen",
     "loading": "Lädt..."
   },
   "app": {
@@ -268,6 +269,53 @@
       "folderDataDescription": "Wähle einen Speicherort (z.B. Downloads)",
       "share": "Teilen / Senden",
       "shareDescription": "Per WhatsApp, E-Mail oder andere Apps"
+    },
+    "importConflict": {
+      "title": "Backup Inhalt prüfen",
+      "description": "Wir haben Daten in diesem Backup gefunden. Da auch <b>Einstellungen</b> (Arbeitszeitmodell) enthalten sind, musst du entscheiden:",
+      "entriesLabel": "Zeiteinträge",
+      "settingsLabel": "Einstellungen",
+      "settingsIncluded": "Enthalten",
+      "warning": "Achtung: \"Alles importieren\" überschreibt dein aktuelles Arbeitszeitmodell!",
+      "importAll": "Alles überschreiben & Importieren",
+      "entriesOnly": "Nur Einträge (Einstellungen behalten)"
+    },
+    "localeMigration": {
+      "title": "Stundenberechnung wählen",
+      "description": "eStundnzettl kann jetzt neutral verwendet werden. Wähl einmalig, welche Berechnung zu dir passt — deine bestehenden Einträge bleiben unverändert.",
+      "austriaTitle": "Österreich",
+      "austriaNote": "(wie bisher — empfohlen)",
+      "austriaDescription": "Gesetzliche Feiertage, Halbtage (24./31.12.), Mehrarbeit/Überstunden nach AZG",
+      "germanyTitle": "Deutschland",
+      "germanyDescription": "Bundesweite + regionale Feiertage, 40h-Woche, Mehrarbeit/Überstunden",
+      "stateLabel": "Bundesland",
+      "stateSelect": "Bundesland wählen",
+      "neutralTitle": "Neutral",
+      "neutralDescription": "Keine automatischen Feiertage, keine Halbtage, kein Mehrarbeit/Überstunden-Split",
+      "changeLater": "Kannst du später in den Einstellungen jederzeit ändern."
+    },
+    "preset": {
+      "title": "Vorlage wählen",
+      "warning": "Achtung: Das Ändern der Vorlage berechnet die Überstunden aller vergangenen Einträge neu!"
+    }
+  },
+  "attachments": {
+    "title": "Dokumente",
+    "fieldDocument": "Dokument",
+    "fieldLabel": "Bezeichnung",
+    "placeholder": "z. B. Krankenstandsbestätigung",
+    "saving": "Speichere...",
+    "addButton": "Dokument hinzufügen",
+    "existingTitle": "Vorhandene Dokumente",
+    "empty": "Noch keine Dokumente für diesen Eintrag vorhanden.",
+    "toast": {
+      "entryMissing": "Eintrag fehlt.",
+      "selectFile": "Bitte zuerst ein Dokument auswählen.",
+      "labelRequired": "Bitte eine Bezeichnung eingeben.",
+      "added": "Dokument hinzugefügt",
+      "addError": "Dokument konnte nicht gespeichert werden.",
+      "deleted": "Dokument gelöscht",
+      "deleteError": "Dokument konnte nicht gelöscht werden."
     }
   },
   "workCodes": {

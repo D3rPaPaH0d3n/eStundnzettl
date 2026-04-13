@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Check, Calendar, Save, AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { WORK_MODELS } from "../hooks/constants";
 import type { WorkModel } from "../types";
 
@@ -11,6 +12,7 @@ interface Props {
 }
 
 const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
+  const { t } = useTranslation();
   const [selectedId, setSelectedId] = useState<string>(currentModelId || 'custom');
 
   useEffect(() => {
@@ -53,7 +55,7 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
             {/* CHANGE: text-slate -> text-zinc */}
             <h3 className="font-bold text-lg text-zinc-800 dark:text-white flex items-center gap-2">
                 <Calendar size={20} className="text-zinc-600 dark:text-zinc-400" />
-                Vorlage wählen
+                {t("modals.preset.title")}
             </h3>
             <button 
                 onClick={onClose}
@@ -101,7 +103,7 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
             <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900/30">
                 <AlertTriangle size={18} className="text-red-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-red-600 dark:text-red-400 font-medium">
-                    Achtung: Das Ändern der Vorlage berechnet die Überstunden aller vergangenen Einträge neu!
+                    {t("modals.preset.warning")}
                 </p>
             </div>
         </div>
@@ -109,18 +111,18 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
         {/* Footer */}
         {/* CHANGE: border-slate -> border-zinc, bg-slate -> bg-zinc */}
         <div className="p-4 border-t border-zinc-100 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/50 rounded-b-2xl flex gap-3">
-            <button 
+            <button
                 onClick={onClose}
                 className="px-4 py-3 rounded-xl text-zinc-500 font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
             >
-                Abbrechen
+                {t("common.cancel")}
             </button>
-            <button 
+            <button
                 onClick={handleSave}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center gap-2"
             >
                 <Save size={18} />
-                Übernehmen
+                {t("common.apply")}
             </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Globe, Check, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import type { LocaleId } from "../locales/types";
 import { GERMAN_STATE_IDS, GERMAN_STATE_NAMES } from "../locales";
 import SelectionDrawer from "./SelectionDrawer";
@@ -25,6 +26,7 @@ interface Props {
 type Choice = "at" | "de" | "neutral" | null;
 
 const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
+  const { t } = useTranslation();
   const [choice, setChoice] = useState<Choice>("at");
   const [germanState, setGermanState] = useState<string>("by");
   const [stateDrawerOpen, setStateDrawerOpen] = useState(false);
@@ -71,13 +73,11 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
           </div>
 
           <h3 className="text-xl font-bold text-center text-zinc-900 dark:text-white mb-2">
-            Stundenberechnung wählen
+            {t("modals.localeMigration.title")}
           </h3>
 
           <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center leading-relaxed mb-6">
-            eStundnzettl kann jetzt neutral verwendet werden. Wähl einmalig,
-            welche Berechnung zu dir passt — deine bestehenden Einträge
-            bleiben unverändert.
+            {t("modals.localeMigration.description")}
           </p>
 
           <div className="space-y-3">
@@ -92,10 +92,10 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
               }`}
             >
               <div className="font-bold text-zinc-800 dark:text-white">
-                Österreich <span className="text-xs font-normal text-emerald-600 dark:text-emerald-400">(wie bisher — empfohlen)</span>
+                {t("modals.localeMigration.austriaTitle")} <span className="text-xs font-normal text-emerald-600 dark:text-emerald-400">{t("modals.localeMigration.austriaNote")}</span>
               </div>
               <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                Gesetzliche Feiertage, Halbtage (24./31.12.), Mehrarbeit/Überstunden nach AZG
+                {t("modals.localeMigration.austriaDescription")}
               </div>
               {choice === "at" && (
                 <div className="absolute top-4 right-4 text-blue-500">
@@ -114,9 +114,9 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
                   : "border-zinc-200 dark:border-zinc-700 hover:border-blue-300"
               }`}
             >
-              <div className="font-bold text-zinc-800 dark:text-white">Deutschland</div>
+              <div className="font-bold text-zinc-800 dark:text-white">{t("modals.localeMigration.germanyTitle")}</div>
               <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                Bundesweite + regionale Feiertage, 40h-Woche, Mehrarbeit/Überstunden
+                {t("modals.localeMigration.germanyDescription")}
               </div>
               {choice === "de" && (
                 <div className="absolute top-4 right-4 text-blue-500">
@@ -129,7 +129,7 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
             {choice === "de" && (
               <div className="pl-4 border-l-2 border-blue-300 dark:border-blue-700 ml-2">
                 <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
-                  Bundesland
+                  {t("modals.localeMigration.stateLabel")}
                 </label>
                 <button
                   type="button"
@@ -154,9 +154,9 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
                   : "border-zinc-200 dark:border-zinc-700 hover:border-emerald-300"
               }`}
             >
-              <div className="font-bold text-zinc-800 dark:text-white">Neutral</div>
+              <div className="font-bold text-zinc-800 dark:text-white">{t("modals.localeMigration.neutralTitle")}</div>
               <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                Keine automatischen Feiertage, keine Halbtage, kein Mehrarbeit/Überstunden-Split
+                {t("modals.localeMigration.neutralDescription")}
               </div>
               {choice === "neutral" && (
                 <div className="absolute top-4 right-4 text-emerald-500">
@@ -167,7 +167,7 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
           </div>
 
           <p className="text-xs text-zinc-400 dark:text-zinc-500 text-center mt-5">
-            Kannst du später in den Einstellungen jederzeit ändern.
+            {t("modals.localeMigration.changeLater")}
           </p>
         </div>
 
@@ -177,7 +177,7 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
             disabled={!choice}
             className="w-full py-3 px-4 rounded-xl font-bold transition-colors shadow-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-300 dark:disabled:bg-zinc-700 text-white shadow-emerald-900/20"
           >
-            Übernehmen
+            {t("common.apply")}
           </button>
         </div>
       </motion.div>
@@ -185,7 +185,7 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
       <SelectionDrawer
         isOpen={stateDrawerOpen}
         onClose={() => setStateDrawerOpen(false)}
-        title="Bundesland wählen"
+        title={t("modals.localeMigration.stateSelect")}
         options={stateOptions}
         value={germanState}
         onChange={(id) => setGermanState(String(id))}

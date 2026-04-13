@@ -7,6 +7,7 @@
     "save": "Save",
     "delete": "Delete",
     "select": "Select",
+    "apply": "Apply",
     "loading": "Loading..."
   },
   "app": {
@@ -268,6 +269,53 @@
       "folderDataDescription": "Choose a location (e.g. Downloads)",
       "share": "Share / Send",
       "shareDescription": "Via WhatsApp, email or other apps"
+    },
+    "importConflict": {
+      "title": "Review backup content",
+      "description": "We found data in this backup. Because it also contains <b>settings</b> (work-hours model), you need to decide:",
+      "entriesLabel": "Time entries",
+      "settingsLabel": "Settings",
+      "settingsIncluded": "Included",
+      "warning": "Warning: \"Import everything\" overwrites your current work-hours model!",
+      "importAll": "Overwrite & import everything",
+      "entriesOnly": "Entries only (keep settings)"
+    },
+    "localeMigration": {
+      "title": "Pick hours calculation",
+      "description": "eStundnzettl can now be used neutrally. Pick once which calculation suits you — your existing entries stay unchanged.",
+      "austriaTitle": "Austria",
+      "austriaNote": "(same as before — recommended)",
+      "austriaDescription": "Public holidays, half-days (Dec 24/31), extra hours/overtime per Austrian labor law (AZG)",
+      "germanyTitle": "Germany",
+      "germanyDescription": "Federal + regional holidays, 40h week, extra hours/overtime",
+      "stateLabel": "State",
+      "stateSelect": "Select state",
+      "neutralTitle": "Neutral",
+      "neutralDescription": "No automatic holidays, no half-days, no extra hours/overtime split",
+      "changeLater": "You can change this later in settings at any time."
+    },
+    "preset": {
+      "title": "Pick template",
+      "warning": "Warning: Changing the template recalculates overtime for all previous entries!"
+    }
+  },
+  "attachments": {
+    "title": "Documents",
+    "fieldDocument": "Document",
+    "fieldLabel": "Label",
+    "placeholder": "e.g. sick note",
+    "saving": "Saving…",
+    "addButton": "Add document",
+    "existingTitle": "Existing documents",
+    "empty": "No documents attached to this entry yet.",
+    "toast": {
+      "entryMissing": "Entry missing.",
+      "selectFile": "Please pick a document first.",
+      "labelRequired": "Please enter a label.",
+      "added": "Document added",
+      "addError": "Couldn't save the document.",
+      "deleted": "Document deleted",
+      "deleteError": "Couldn't delete the document."
     }
   },
   "workCodes": {

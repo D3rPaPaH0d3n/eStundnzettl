@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FileText, Image as ImageIcon, Paperclip, Plus, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { useTranslation } from "react-i18next";
 import { Card } from "../utils";
 import type { Entry, Attachment } from "../types";
 
@@ -34,6 +35,7 @@ const AttachmentManager = ({
   getLabelSuggestions,
   formatFileSize,
 }: Props) => {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [label, setLabel] = useState("");
@@ -64,17 +66,17 @@ const AttachmentManager = ({
 
   const handleAdd = async () => {
     if (!entry?.id) {
-      toast.error("Eintrag fehlt.");
+      toast.error(t("attachments.toast.entryMissing"));
       return;
     }
 
     if (!selectedFile) {
-      toast.error("Bitte zuerst ein Dokument auswählen.");
+      toast.error(t("attachments.toast.selectFile"));
       return;
     }
 
     if (!label.trim()) {
-      toast.error("Bitte eine Bezeichnung eingeben.");
+      toast.error(t("attachments.toast.labelRequired"));
       return;
     }
 
@@ -86,10 +88,10 @@ const AttachmentManager = ({
         label,
       });
       Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
-      toast.success("Dokument hinzugefügt");
+      toast.success(t("attachments.toast.added"));
       resetForm();
     } catch (error) {
-      toast.error((error as Error).message || "Dokument konnte nicht gespeichert werden.");
+      toast.error((error as Error).message || t("attachments.toast.addError"));
     } finally {
       setIsSaving(false);
     }
@@ -99,9 +101,9 @@ const AttachmentManager = ({
     try {
       await removeAttachment(attachmentId);
       Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
-      toast.success("Dokument gelöscht");
+      toast.success(t("attachments.toast.deleted"));
     } catch {
-      toast.error("Dokument konnte nicht gelöscht werden.");
+      toast.error(t("attachments.toast.deleteError"));
     }
   };
 
@@ -127,7 +129,7 @@ const AttachmentManager = ({
               <div>
                 <div className="flex items-center gap-2 text-zinc-900 dark:text-white font-bold text-lg">
                   <Paperclip size={18} className="text-emerald-500" />
-                  <span>Dokumente</span>
+                  <span>{t("attachments.title")}</span>
                 </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                   {new Date(entry.date).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
@@ -145,7 +147,7 @@ const AttachmentManager = ({
               <Card>
                 <div className="p-4 space-y-3">
                   <div>
-                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Dokument</label>
+                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("attachments.fieldDocument")}</label>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -161,12 +163,12 @@ const AttachmentManager = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Bezeichnung</label>
+                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("attachments.fieldLabel")}</label>
                     <input
                       type="text"
                       value={label}
                       onChange={(e) => setLabel(e.target.value)}
-                      placeholder="z. B. Krankenstandsbestätigung"
+                      placeholder={t("attachments.placeholder")}
                       className="mt-1 w-full p-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl outline-none dark:text-white focus:border-emerald-500 transition-colors"
                     />
                     {suggestions.length > 0 && (
@@ -192,17 +194,17 @@ const AttachmentManager = ({
                     className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold flex items-center justify-center gap-2"
                   >
                     <Plus size={18} />
-                    {isSaving ? "Speichere..." : "Dokument hinzufügen"}
+                    {isSaving ? t("attachments.saving") : t("attachments.addButton")}
                   </button>
                 </div>
               </Card>
 
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase">Vorhandene Dokumente</h3>
+                <h3 className="text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("attachments.existingTitle")}</h3>
                 {attachments.length === 0 ? (
                   <Card>
                     <div className="p-4 text-sm text-zinc-500 dark:text-zinc-400">
-                      Noch keine Dokumente für diesen Eintrag vorhanden.
+                      {t("attachments.empty")}
                     </div>
                   </Card>
                 ) : (

@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { CHANGELOG_DATA } from "../data/changelog-data";
+import { getChangelogData } from "../data/changelog-data";
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Zap,
@@ -98,11 +98,15 @@ interface Props {
 }
 
 const ChangelogModal = ({ isOpen, onClose }: Props) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [openVersions, setOpenVersions] = useState<Record<string, boolean>>({});
   const dragControls = useDragControls();
 
-  const changelogData = useMemo(() => groupBugfixVersions(CHANGELOG_DATA), []);
+  const changelogData = useMemo(
+    () => groupBugfixVersions(getChangelogData()),
+    // i18n.language triggers the recompute when the user switches language
+    [i18n.language],
+  );
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";

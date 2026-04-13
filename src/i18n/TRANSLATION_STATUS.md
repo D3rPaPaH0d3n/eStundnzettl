@@ -66,7 +66,7 @@ format.*          any format helpers needing translated text
 - [x] B12: Settings/LocaleSettings (+ Language Picker UI) + DataSettings + PdfArchiveSettings
 - [x] B13: OnboardingWizard + Welcome/Profile/SummaryStep
 - [x] B14: Onboarding LocaleStep + WorkScheduleStep
-- [ ] B15: Onboarding CalculationStep
+- [x] B15: Onboarding CalculationStep
 - [ ] B16: Onboarding WorkCodesStep
 
 ## Phase C — Locale-sensitive formatting
@@ -91,6 +91,29 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B15** (2026-04-13): migrated `Onboarding/steps/CalculationStep.tsx`
+  (656 lines, the rule-builder for "custom plan" onboarding).
+  - New `onboarding.calc.*` namespace for onboarding-specific copy:
+    step title/subtitle/infoHint, contractedHoursAuto line,
+    advanced open/close labels, holidaysTitle + halfDaysTitle (short
+    single-word variants for the two advanced cards),
+    customHolidayTitle, noHolidays, noHalfDays, classicHalfDays
+    ("Add Dec 24 & Dec 31"), vacationTitle, and 6 interpolated
+    preview strings under `onboarding.calc.preview.*`
+    (overtimeNone/All/Split with {{weekTarget}}/{{balance}}/{{ma}}/
+    {{ue}}, sickCap/Additive/Ignore).
+  - Everything else (overtime/sick/holidayOnWork option labels, all
+    4 drawer titles, import-source labels with {{state}}/{{kanton}}
+    interpolation, threshold label, hoursPerWeek/Unit, dateLabel +
+    nameLabel + placeholders, days/yearlyAllowance/carryover/
+    carryoverHint, removeHolidayAria {{name}}, addHalfDayAria, the
+    three fallback labels, holidayWork drawer title,
+    importHolidays button, add button) reuses existing
+    `settings.calc.*` keys from B10. Same useMemo pattern for
+    option arrays (stable ID tuples + t()-driven labels).
+  - `formatHours` still uses `toLocaleString("de-DE", …)` — stays
+    for C1.
+  Tests 630/630 green.
 - **Session B14** (2026-04-13): migrated two larger onboarding steps.
   - `Onboarding/steps/LocaleStep.tsx`: `onboarding.locale.*` — step
     title/subtitle, info hint, four group cards (Neutral/AT/DE/CH)

@@ -329,6 +329,29 @@
       "minuteInputHint": "Sonst in praktischen 15-Min-Schritten",
       "minuteInputAria": "Minütige Zeiteingabe umschalten"
     },
+    "calc": {
+      "title": "Dein eigener Plan",
+      "subtitle": "Stell ein, wie wir rechnen sollen — oder lass die Vorschläge stehen.",
+      "infoHint": "Kein Stress — die Standardwerte sind schon okay. Jede Regel kannst du auch später jederzeit in den Einstellungen ändern.",
+      "contractedHoursAuto": "Wird automatisch aus deinen Arbeitstagen berechnet.",
+      "advancedOpen": "Erweitert öffnen",
+      "advancedClose": "Erweitert schließen",
+      "holidaysTitle": "Feiertage",
+      "halfDaysTitle": "Halbtage",
+      "customHolidayTitle": "Eigenen Feiertag hinzufügen",
+      "noHolidays": "Aktuell keine Feiertage aktiv.",
+      "noHalfDays": "Keine Halbtage hinterlegt.",
+      "classicHalfDays": "24.12. & 31.12. übernehmen",
+      "vacationTitle": "Urlaubstage",
+      "preview": {
+        "overtimeNone": "Beispiel: 10 h Arbeit bei {{weekTarget}}/Woche → Saldo {{balance}}.",
+        "overtimeAll": "Beispiel: 10 h Arbeit → {{balance}} Überstunden.",
+        "overtimeSplit": "Beispiel: 10 h Arbeit → {{ma}} Mehrarbeit, {{ue}} Überstunden.",
+        "sickCap": "Beispiel: 4 h Arbeit + danach krank bei 8,5 h Soll → Krank zählt 4,5 h (nur bis Soll).",
+        "sickAdditive": "Beispiel: 4 h Arbeit + 8 h Krank → zählen 12 h gesamt.",
+        "sickIgnore": "Beispiel: 4 h Arbeit + Krank → nur 4 h Arbeit, Krank fällt weg."
+      }
+    },
     "toast": {
       "demoLoaded": "Demo-Daten geladen! Du kannst die App jetzt ausprobieren.",
       "nameRequired": "Bitte gib deinen Namen ein.",

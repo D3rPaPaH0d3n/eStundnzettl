@@ -329,6 +329,29 @@
       "minuteInputHint": "Otherwise in practical 15-min steps",
       "minuteInputAria": "Toggle minute-level time entry"
     },
+    "calc": {
+      "title": "Your custom plan",
+      "subtitle": "Set how we should calculate — or leave the defaults.",
+      "infoHint": "No stress — the defaults are fine. You can change every rule later in settings, any time.",
+      "contractedHoursAuto": "Calculated automatically from your work days.",
+      "advancedOpen": "Open advanced",
+      "advancedClose": "Close advanced",
+      "holidaysTitle": "Holidays",
+      "halfDaysTitle": "Half-days",
+      "customHolidayTitle": "Add your own holiday",
+      "noHolidays": "No holidays active yet.",
+      "noHalfDays": "No half-days configured.",
+      "classicHalfDays": "Add Dec 24 & Dec 31",
+      "vacationTitle": "Vacation days",
+      "preview": {
+        "overtimeNone": "Example: 10 h worked at {{weekTarget}}/week → balance {{balance}}.",
+        "overtimeAll": "Example: 10 h worked → {{balance}} overtime.",
+        "overtimeSplit": "Example: 10 h worked → {{ma}} extra hours, {{ue}} overtime.",
+        "sickCap": "Example: 4 h worked + then sick at 8.5 h target → sick counts 4.5 h (up to target).",
+        "sickAdditive": "Example: 4 h worked + 8 h sick → 12 h total.",
+        "sickIgnore": "Example: 4 h worked + sick → only 4 h work, sick is dropped."
+      }
+    },
     "toast": {
       "demoLoaded": "Demo data loaded! You can try out the app now.",
       "nameRequired": "Please enter your name.",

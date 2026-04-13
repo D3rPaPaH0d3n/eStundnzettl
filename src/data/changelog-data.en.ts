@@ -244,6 +244,121 @@ const TRANSLATED_EN = [
       }
     ]
   },
+
+  {
+    version: "3.3.0",
+    date: "05.04.2026",
+    title: "Your monthly PDF lands in the archive automatically 📁",
+    sections: [
+      {
+        iconName: "FileText",
+        title: "Automatic PDF archive",
+        items: [
+          "The app now creates a clean PDF of your timesheet automatically every month — once a day, completely hands-off. This way, even years later you have an orderly, searchable monthly report ready, even if the app is no longer installed by then.",
+          "In settings you can choose where the archive should go: locally on your device into the Documents folder, into your Nextcloud or to Google Drive into its own \"eStundnzettl Archive\" folder. Each target can be toggled individually, and with \"Run now\" you can start a run manually at any time.",
+          "At month change the old month is left as a final report and a new one is started. And as long as nothing changed in your entries, nothing happens — no unnecessary upload, no extra data usage."
+        ]
+      },
+      {
+        iconName: "ShieldCheck",
+        title: "Smoother Drive connection",
+        items: [
+          "The Google Drive connection for the existing JSON backup and the new PDF archive now run cleanly side by side. The yellow \"Check Drive connection\" warning that briefly appeared for some users after connecting the PDF archive is gone too."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "3.2.1",
+    date: "05.04.2026",
+    title: "More flexible special hours ⏱️",
+    sections: [
+      {
+        iconName: "Clock",
+        title: "Sick · Vacation · Time off",
+        items: [
+          "For sick, vacation and time-off entries there's now a toggle under the info hint between \"Automatic\" and \"Manual\". Automatic stays the default — the daily target time from your work model is credited as usual. In manual mode you can enter start and end time just like in a regular entry, e.g. if you were only sick for half a day or need different hours.",
+          "The automatic target-time calculation stays untouched — anyone not changing anything gets exactly the previous behaviour."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "3.2.0",
+    date: "05.04.2026",
+    title: "Structure & trust 🧱",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "Database",
+        title: "Database",
+        items: [
+          "New migration framework: schema changes now run through a dedicated version table and can build on each other step by step. Future updates can cleanly extend your database with new fields without data loss."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Quality & stability",
+        items: [
+          "The two largest internal building blocks (actions center and setup wizard) were split into smaller, focused modules. Invisible to you, but it makes the app more robust and future changes can be tested more precisely.",
+          "When fully resetting the app, a safety backup is automatically written to the cache directory first — in case you change your mind at the last second.",
+          "Import files are now validated against a strict schema (Zod). Invalid entries are skipped individually instead of failing the whole import, and you get clear feedback on how many were skipped."
+        ]
+      },
+      {
+        iconName: "TestTube",
+        title: "Tests",
+        items: [
+          "The test suite grew from 38 to 158 tests. All database repositories (entries, settings, work codes, attachments, backup metadata) and all new action hooks are now covered by automated tests.",
+          "Coverage on tested areas: repositories 100 %, schemas 100 %, action hooks 76 %. Critical logic regressions are caught before release in CI this way."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "3.1.1",
+    date: "04.04.2026",
+    title: "Hardening & polish 🛡️",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "ShieldCheck",
+        title: "Security",
+        items: [
+          "Your Nextcloud app password is now properly encrypted (AES-GCM via the Web Crypto API). Old, base64-only passwords are migrated to the new format automatically and transparently on first launch.",
+          "Backups now carry a checksum (SHA-256). If an imported backup is tampered with, the app warns you immediately.",
+          "All known dependency security vulnerabilities were closed (npm audit is clean again)."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Quality & stability",
+        items: [
+          "First unit-test suite introduced (38 tests for time calculations, backup integrity and encryption). Every future release only passes through the Play Store workflow if the tests are green.",
+          "New central logging facade — debug output lands cleanly in the log in dev builds and is automatically silent in release builds."
+        ]
+      },
+      {
+        iconName: "Accessibility",
+        title: "Usability",
+        items: [
+          "All important icon buttons (month navigation, timer FAB, header, drawer) now have proper labels for screen readers.",
+          "When opening settings, the entry form or the setup wizard, the app now shows a clean loading skeleton instead of a blank area."
+        ]
+      },
+      {
+        iconName: "Globe",
+        title: "Under the hood",
+        items: [
+          "Multilingual infrastructure (i18next) introduced — German stays the default, English translations are prepared and will follow in a later release.",
+          "ESLint configuration tightened and the Android build directory excluded from the lint scan."
+        ]
+      }
+    ]
+  },
 ];
 
 const translatedVersions = new Set(TRANSLATED_EN.map((v) => v.version));

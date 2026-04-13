@@ -57,7 +57,7 @@ format.*          any format helpers needing translated text
 - [x] B3: EntryForm.tsx
 - [x] B4: ReportDocument.tsx + PrintReport.tsx
 - [x] B5: ViewRouter + SelectionDrawer + TimePickerDrawer + DecimalDurationPicker
-- [ ] B6: HelpModal + ChangelogModal
+- [x] B6: HelpModal + ChangelogModal
 - [ ] B7: ImportConflictModal + LocaleMigrationModal + PresetModal + AttachmentManager
 - [ ] B8: LiveTimerOverlay + AppTour
 - [ ] B9: Settings shell + ProfileSettings + ThemeSettings + AppInfoSettings
@@ -91,6 +91,26 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B6** (2026-04-13): migrated `HelpModal.tsx` (~45 strings of
+  user-facing copy) and `ChangelogModal.tsx` (3 shell strings — the
+  actual version log content stays for E1).
+  - Introduced `helpModal.*` namespace covering title/subtitle/intro,
+    seven numbered step sections (log hours, drive times, vacation/
+    sick/TO, attachments, month close, backup, power-user mode), a
+    tips grid and the tagline. Rich-text strings use the
+    react-i18next `<Trans>` component with small reusable slot
+    objects (`boldSlot`, `plusSlot`, `plusBoldSlot`, `previewIconSlot`)
+    so `<strong>`, the coloured `+` button reference and the inline
+    FileText icon survive translation.
+  - `changelogModal.*`: title, `recentBugfixes`, plural-aware
+    `versionsCount_{one,other}` replacing the hard-coded German
+    "Versionen".
+  - EN wording for step 7 was chosen as "Power-user mode" rather than
+    a literal translation of "Hausmasta" (Austrian slang); still
+    matches the settings toggle copy plan in B12.
+  - The "ZA" abbreviation in step 3 maps to "TO" in EN matching the
+    EntryForm abbreviation from B3.
+  Tests 630/630 green.
 - **Session B5** (2026-04-13): migrated the four small overlay components.
   Only a handful of strings each, but they anchor the drawer UX across
   the whole app.

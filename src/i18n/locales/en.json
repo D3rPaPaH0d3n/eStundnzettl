@@ -160,6 +160,77 @@
       "title": "Hours"
     }
   },
+  "helpModal": {
+    "title": "Guide & Help",
+    "subtitle": "Your tour of eStundnzettl",
+    "intro": {
+      "badge": "Hello and welcome!",
+      "body": "No more paper slips! With eStundnzettl you log your work hours, drives, vacation and more straight from your phone. At the end of the month a single tap produces a clean PDF."
+    },
+    "step1": {
+      "title": "Log hours",
+      "lead": "You have two ways to log your hours:",
+      "timerTitle": "Live timer",
+      "timerBody": "Long-press the <plus>+</plus> button in the bottom right and swipe up. The timer runs until you stop it with a tap. The app then fills in start, end and duration automatically.",
+      "manualTitle": "Enter manually",
+      "manualBody": "Tap the <plus>+</plus> button. Pick start and end time, break and project. With <b>\"Same as last\"</b> you copy the times from yesterday — handy when your hours stay the same!"
+    },
+    "step2": {
+      "title": "Drive times",
+      "lead": "When creating an entry, pick the type <b>\"Drive\"</b> at the top.",
+      "arrival": "<b>Arrival/Departure:</b> Paid working time — counts towards the daily target.",
+      "drive": "<b>Drive time:</b> Unpaid travel — reported separately."
+    },
+    "step3": {
+      "title": "Vacation, sick & time off",
+      "body": "Just pick <b>Vacation</b>, <b>Sick</b> or <b>TO</b> (time off). The app automatically credits the right target hours for that day. You can also enter times manually if needed."
+    },
+    "step4": {
+      "title": "Attach documents",
+      "body": "You can attach photos or files to any entry — e.g. delivery notes, receipts or work reports. Tap <b>\"Documents\"</b> on the entry. Attachments are bundled automatically when you export the PDF."
+    },
+    "step5": {
+      "title": "Month close & PDF",
+      "preview": "Tap the <icon/> icon in the top right. There you see a preview of your timesheet — filterable by month or week.",
+      "share": "Check it, then <b>share as PDF</b> — via email, WhatsApp or just save it locally. Done!"
+    },
+    "step6": {
+      "title": "Backup & data safety",
+      "lead": "Your data is precious — back it up!",
+      "gdriveTitle": "Google Drive",
+      "gdriveBody": "Connect your Google account in settings. The app will back up to the cloud every day automatically.",
+      "localTitle": "Local backup",
+      "localBody": "Pick a folder on your device. The app backs up there every day — completely offline."
+    },
+    "step7": {
+      "title": "Power-user mode",
+      "lead": "For pros who want more! Enable <b>Power-user mode</b> at the very bottom of settings. Extra features then become visible:",
+      "nextcloud": "<b>Nextcloud backup</b> — for your own cloud",
+      "jsonIO": "<b>JSON import/export</b> — back up data manually",
+      "pdfArchive": "<b>PDF archive</b> — automatic monthly PDF backup",
+      "minuteMode": "<b>Minute mode</b> — 1-minute instead of 15-minute steps",
+      "codes": "<b>Activity codes</b> — industry presets or your own codes",
+      "recordOnly": "<b>Record only</b> — without target/actual calculation"
+    },
+    "tips": {
+      "title": "Tips & tricks",
+      "deleteTitle": "Delete",
+      "deleteBody": "Swipe an entry to the <b>left</b> to delete it.",
+      "editTitle": "Edit",
+      "editBody": "Tap an entry to <b>edit</b> it.",
+      "autoBackupTitle": "Auto backup",
+      "autoBackupBody": "Once connected, the app backs up <b>daily, automatically</b>.",
+      "themeTitle": "Theme",
+      "themeBody": "Light, dark or <b>System</b> — pick your favorite in settings."
+    },
+    "tagline": "\"So not a single hour gets lost!\""
+  },
+  "changelogModal": {
+    "title": "Changelog",
+    "recentBugfixes": "Recent bug fixes",
+    "versionsCount_one": "({{count}} version)",
+    "versionsCount_other": "({{count}} versions)"
+  },
   "header": {
     "settings": "Open settings",
     "report": "Open report",

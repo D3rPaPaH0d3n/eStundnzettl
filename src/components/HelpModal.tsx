@@ -5,6 +5,7 @@ import {
   Upload, ServerCog, FolderOpen, Paperclip, Sun, Moon, Monitor,
 } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { Trans, useTranslation } from "react-i18next";
 
 interface Props {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const HelpModal = ({ isOpen, onClose }: Props) => {
+  const { t } = useTranslation();
   const dragControls = useDragControls();
 
   useEffect(() => {
@@ -22,6 +24,19 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
     }
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
+
+  // Re-usable component slots for <Trans /> inline formatting.
+  const boldSlot = { b: <strong /> };
+  const plusSlot = {
+    plus: <strong className="text-emerald-600 dark:text-emerald-400" />,
+  };
+  const plusBoldSlot = {
+    ...plusSlot,
+    b: <strong />,
+  };
+  const previewIconSlot = {
+    icon: <FileText className="inline w-4 h-4 mx-1 align-sub text-emerald-500" />,
+  };
 
   return (
     <AnimatePresence>
@@ -65,8 +80,8 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
             {/* HEADER */}
             <div className="flex justify-between items-start p-5 pb-4 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
               <div>
-                <h2 className="text-2xl font-black text-zinc-800 dark:text-white tracking-tight">Anleitung & Hilfe</h2>
-                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">Dein Wegweiser durch den eStundnzettl</p>
+                <h2 className="text-2xl font-black text-zinc-800 dark:text-white tracking-tight">{t("helpModal.title")}</h2>
+                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{t("helpModal.subtitle")}</p>
               </div>
               <button
                 onClick={onClose}
@@ -85,10 +100,10 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
               {/* INTRO */}
               <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
                 <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold uppercase text-xs tracking-wider mb-2">
-                  <Rocket size={16} /> <span>Servus und herzlich willkommen!</span>
+                  <Rocket size={16} /> <span>{t("helpModal.intro.badge")}</span>
                 </div>
                 <p className="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed">
-                  Schluss mit der Zettelwirtschaft! Mit dem eStundnzettl erfasst du deine Arbeitszeiten, Fahrten, Urlaub und mehr direkt am Handy. Am Monatsende erstellst du mit einem Tipp ein sauberes PDF.
+                  {t("helpModal.intro.body")}
                 </p>
               </div>
 
@@ -96,31 +111,31 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 flex items-center justify-center font-bold text-sm shadow-lg">1</div>
-                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">Stunden erfassen</h3>
+                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">{t("helpModal.step1.title")}</h3>
                 </div>
 
                 <div className="ml-4 border-l-2 border-zinc-100 dark:border-zinc-800 pl-6 py-1 space-y-4">
                   <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                    Du hast zwei Wege, deine Stunden einzutragen:
+                    {t("helpModal.step1.lead")}
                   </p>
 
                   {/* Timer */}
                   <div className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-3 border border-zinc-100 dark:border-zinc-700">
                     <div className="flex items-center gap-2 font-bold text-zinc-800 dark:text-white text-sm mb-1">
-                      <Play size={16} className="text-green-500" /> Live-Timer
+                      <Play size={16} className="text-green-500" /> {t("helpModal.step1.timerTitle")}
                     </div>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                      Halte den <strong className="text-emerald-600 dark:text-emerald-400">+</strong> Button unten rechts lange gedrückt und wische nach oben. Der Timer läuft, bis du ihn mit einem Tipp stoppst. Die App trägt dann Start, Ende und Dauer automatisch ein.
+                      <Trans i18nKey="helpModal.step1.timerBody" components={plusSlot} />
                     </p>
                   </div>
 
                   {/* Manuell */}
                   <div className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-3 border border-zinc-100 dark:border-zinc-700">
                     <div className="flex items-center gap-2 font-bold text-zinc-800 dark:text-white text-sm mb-1">
-                      <Wand2 size={16} className="text-emerald-500" /> Manuell eintragen
+                      <Wand2 size={16} className="text-emerald-500" /> {t("helpModal.step1.manualTitle")}
                     </div>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                      Tipp auf den <strong className="text-emerald-600 dark:text-emerald-400">+</strong> Button. Wähle Start- und Endzeit, Pause und Projekt. Mit <strong>"Wie zuletzt"</strong> übernimmst du die Zeiten vom Vortag — praktisch bei gleichbleibenden Arbeitszeiten!
+                      <Trans i18nKey="helpModal.step1.manualBody" components={plusBoldSlot} />
                     </p>
                   </div>
                 </div>
@@ -130,21 +145,21 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 flex items-center justify-center font-bold text-sm shadow-lg">2</div>
-                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">Fahrtzeiten</h3>
+                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">{t("helpModal.step2.title")}</h3>
                 </div>
 
                 <div className="ml-4 border-l-2 border-zinc-100 dark:border-zinc-800 pl-6 py-1 space-y-2">
                   <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">
-                    Wähle beim Erstellen eines Eintrags oben den Typ <strong>"Fahrt"</strong>.
+                    <Trans i18nKey="helpModal.step2.lead" components={boldSlot} />
                   </p>
                   <ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-2">
                     <li className="flex gap-2 items-center bg-green-50 dark:bg-green-900/20 p-2 rounded-lg border border-green-100 dark:border-green-900/30">
                       <span className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
-                      <span><strong>An/Abreise:</strong> Bezahlte Arbeitszeit — zählt zum Tagessoll.</span>
+                      <span><Trans i18nKey="helpModal.step2.arrival" components={boldSlot} /></span>
                     </li>
                     <li className="flex gap-2 items-center bg-orange-50 dark:bg-orange-900/20 p-2 rounded-lg border border-orange-100 dark:border-orange-900/30">
                       <span className="w-3 h-3 rounded-full bg-orange-500 shrink-0" />
-                      <span><strong>Fahrtzeit:</strong> Unbezahlte Wegzeit — wird separat ausgewiesen.</span>
+                      <span><Trans i18nKey="helpModal.step2.drive" components={boldSlot} /></span>
                     </li>
                   </ul>
                 </div>
@@ -154,14 +169,14 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 flex items-center justify-center font-bold text-sm shadow-lg">3</div>
-                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">Urlaub, Krank & ZA</h3>
+                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">{t("helpModal.step3.title")}</h3>
                 </div>
 
                 <div className="ml-4 border-l-2 border-zinc-100 dark:border-zinc-800 pl-6 py-1 space-y-2">
                   <div className="flex items-start gap-3">
                     <Hourglass className="text-purple-500 mt-1 shrink-0" size={20} />
                     <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Wähle einfach <strong>Urlaub</strong>, <strong>Krank</strong> oder <strong>ZA</strong> (Zeitausgleich). Die App rechnet automatisch die richtigen Soll-Stunden für den Tag ein. Du kannst auch manuell Zeiten eingeben, wenn nötig.
+                      <Trans i18nKey="helpModal.step3.body" components={boldSlot} />
                     </p>
                   </div>
                 </div>
@@ -171,14 +186,14 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 flex items-center justify-center font-bold text-sm shadow-lg">4</div>
-                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">Dokumente anhängen</h3>
+                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">{t("helpModal.step4.title")}</h3>
                 </div>
 
                 <div className="ml-4 border-l-2 border-zinc-100 dark:border-zinc-800 pl-6 py-1 space-y-2">
                   <div className="flex items-start gap-3">
                     <Paperclip className="text-blue-500 mt-1 shrink-0" size={20} />
                     <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Zu jedem Eintrag kannst du Fotos oder Dateien anhängen — z.B. Regiescheine, Lieferscheine oder Arbeitsberichte. Tipp auf <strong>"Dokumente"</strong> beim Eintrag. Die Anhänge werden beim PDF-Export automatisch mitgeliefert.
+                      <Trans i18nKey="helpModal.step4.body" components={boldSlot} />
                     </p>
                   </div>
                 </div>
@@ -188,15 +203,15 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 flex items-center justify-center font-bold text-sm shadow-lg">5</div>
-                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">Monatsabschluss & PDF</h3>
+                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">{t("helpModal.step5.title")}</h3>
                 </div>
 
                 <div className="ml-4 border-l-2 border-zinc-100 dark:border-zinc-800 pl-6 py-1 space-y-2">
                   <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                    Tipp oben rechts auf das <FileText className="inline w-4 h-4 mx-1 align-sub text-emerald-500" /> Symbol. Dort siehst du eine Vorschau deines Stundenzettels — nach Monat oder Woche filterbar.
+                    <Trans i18nKey="helpModal.step5.preview" components={previewIconSlot} />
                   </div>
                   <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                    Prüfen, dann als <strong>PDF teilen</strong> — per Mail, WhatsApp, oder einfach lokal speichern. Fertig!
+                    <Trans i18nKey="helpModal.step5.share" components={boldSlot} />
                   </div>
                 </div>
               </section>
@@ -205,20 +220,20 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
               <section className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 flex items-center justify-center font-bold text-sm shadow-lg">6</div>
-                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">Backup & Datensicherung</h3>
+                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">{t("helpModal.step6.title")}</h3>
                 </div>
 
                 <div className="ml-4 border-l-2 border-zinc-100 dark:border-zinc-800 pl-6 py-1 space-y-4">
                   <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                    Deine Daten sind wertvoll — sicher sie ab!
+                    {t("helpModal.step6.lead")}
                   </p>
 
                   <div className="flex items-start gap-3">
                     <Cloud className="text-emerald-500 mt-0.5 shrink-0" size={18} />
                     <div>
-                      <p className="text-sm font-bold text-zinc-800 dark:text-white">Google Drive</p>
+                      <p className="text-sm font-bold text-zinc-800 dark:text-white">{t("helpModal.step6.gdriveTitle")}</p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        Verbinde dein Google-Konto in den Einstellungen. Die App sichert täglich automatisch in die Cloud.
+                        {t("helpModal.step6.gdriveBody")}
                       </p>
                     </div>
                   </div>
@@ -226,9 +241,9 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
                   <div className="flex items-start gap-3">
                     <FolderOpen className="text-emerald-500 mt-0.5 shrink-0" size={18} />
                     <div>
-                      <p className="text-sm font-bold text-zinc-800 dark:text-white">Lokales Backup</p>
+                      <p className="text-sm font-bold text-zinc-800 dark:text-white">{t("helpModal.step6.localTitle")}</p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        Wähle einen Ordner auf deinem Gerät. Die App sichert täglich dorthin — ganz ohne Internet.
+                        {t("helpModal.step6.localBody")}
                       </p>
                     </div>
                   </div>
@@ -241,37 +256,37 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
                   <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-lg">
                     <Wrench size={16} />
                   </div>
-                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">Hausmasta-Modus</h3>
+                  <h3 className="font-bold text-lg text-zinc-800 dark:text-white">{t("helpModal.step7.title")}</h3>
                 </div>
 
                 <div className="ml-4 border-l-2 border-amber-200 dark:border-amber-900 pl-6 py-1 space-y-3">
                   <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                    Für Profis, die mehr wollen! Aktiviere den <strong>Hausmasta-Modus</strong> ganz unten in den Einstellungen. Damit werden zusätzliche Funktionen sichtbar:
+                    <Trans i18nKey="helpModal.step7.lead" components={boldSlot} />
                   </p>
                   <ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-1.5">
                     <li className="flex items-center gap-2">
                       <ServerCog size={14} className="text-amber-500 shrink-0" />
-                      <span><strong>Nextcloud-Backup</strong> — für deine eigene Cloud</span>
+                      <span><Trans i18nKey="helpModal.step7.nextcloud" components={boldSlot} /></span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Upload size={14} className="text-amber-500 shrink-0" />
-                      <span><strong>JSON Import/Export</strong> — Daten manuell sichern</span>
+                      <span><Trans i18nKey="helpModal.step7.jsonIO" components={boldSlot} /></span>
                     </li>
                     <li className="flex items-center gap-2">
                       <FileText size={14} className="text-amber-500 shrink-0" />
-                      <span><strong>PDF-Archiv</strong> — automatische monatliche PDF-Sicherung</span>
+                      <span><Trans i18nKey="helpModal.step7.pdfArchive" components={boldSlot} /></span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Clock size={14} className="text-amber-500 shrink-0" />
-                      <span><strong>Minuten-Modus</strong> — 1-Minuten statt 15-Minuten-Schritte</span>
+                      <span><Trans i18nKey="helpModal.step7.minuteMode" components={boldSlot} /></span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Tag size={14} className="text-amber-500 shrink-0" />
-                      <span><strong>Tätigkeitscodes</strong> — Branchen-Presets oder eigene Codes</span>
+                      <span><Trans i18nKey="helpModal.step7.codes" components={boldSlot} /></span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Briefcase size={14} className="text-amber-500 shrink-0" />
-                      <span><strong>Nur Aufzeichnung</strong> — ohne Soll/Ist-Berechnung</span>
+                      <span><Trans i18nKey="helpModal.step7.recordOnly" components={boldSlot} /></span>
                     </li>
                   </ul>
                 </div>
@@ -279,38 +294,38 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
 
               {/* ─── TIPPS & TRICKS ─── */}
               <div className="space-y-3 pt-2">
-                <h3 className="font-bold text-sm text-zinc-800 dark:text-white uppercase tracking-wider">Tipps & Tricks</h3>
+                <h3 className="font-bold text-sm text-zinc-800 dark:text-white uppercase tracking-wider">{t("helpModal.tips.title")}</h3>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-zinc-50 dark:bg-zinc-800 p-4 rounded-2xl">
                     <Fingerprint className="text-zinc-600 dark:text-zinc-400 mb-2" size={22} />
-                    <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-300">Löschen</h4>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-tight">Wisch einen Eintrag nach <strong>links</strong> zum Löschen.</p>
+                    <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-300">{t("helpModal.tips.deleteTitle")}</h4>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-tight"><Trans i18nKey="helpModal.tips.deleteBody" components={boldSlot} /></p>
                   </div>
                   <div className="bg-zinc-50 dark:bg-zinc-800 p-4 rounded-2xl">
                     <Wand2 className="text-zinc-600 dark:text-zinc-400 mb-2" size={22} />
-                    <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-300">Bearbeiten</h4>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-tight">Tipp auf einen Eintrag, um ihn zu <strong>bearbeiten</strong>.</p>
+                    <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-300">{t("helpModal.tips.editTitle")}</h4>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-tight"><Trans i18nKey="helpModal.tips.editBody" components={boldSlot} /></p>
                   </div>
                   <div className="bg-zinc-50 dark:bg-zinc-800 p-4 rounded-2xl">
                     <ShieldCheck className="text-zinc-600 dark:text-zinc-400 mb-2" size={22} />
-                    <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-300">Auto-Backup</h4>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-tight">Einmal verbunden, sichert die App <strong>täglich automatisch</strong>.</p>
+                    <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-300">{t("helpModal.tips.autoBackupTitle")}</h4>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-tight"><Trans i18nKey="helpModal.tips.autoBackupBody" components={boldSlot} /></p>
                   </div>
                   <div className="bg-zinc-50 dark:bg-zinc-800 p-4 rounded-2xl">
                     <div className="flex gap-1 mb-2">
                       <Sun className="text-zinc-600 dark:text-zinc-400" size={22} />
                       <Moon className="text-zinc-600 dark:text-zinc-400" size={22} />
                     </div>
-                    <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-300">Design</h4>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-tight">Hell, Dunkel oder <strong>System</strong> — in den Einstellungen wählbar.</p>
+                    <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-300">{t("helpModal.tips.themeTitle")}</h4>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-tight"><Trans i18nKey="helpModal.tips.themeBody" components={boldSlot} /></p>
                   </div>
                 </div>
               </div>
 
               {/* TAGLINE */}
               <div className="text-center text-zinc-300 dark:text-zinc-700 text-[10px] uppercase tracking-widest font-bold pb-2">
-                "Damit ka Stund verloren geht!"
+                {t("helpModal.tagline")}
               </div>
 
             </div>

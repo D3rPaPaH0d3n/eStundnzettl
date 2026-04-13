@@ -22,6 +22,7 @@ import {
   Palmtree,
 } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { CHANGELOG_DATA } from "../data/changelog-data";
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
@@ -97,6 +98,7 @@ interface Props {
 }
 
 const ChangelogModal = ({ isOpen, onClose }: Props) => {
+  const { t } = useTranslation();
   const [openVersions, setOpenVersions] = useState<Record<string, boolean>>({});
   const dragControls = useDragControls();
 
@@ -151,9 +153,9 @@ const ChangelogModal = ({ isOpen, onClose }: Props) => {
           </motion.div>
           <div className="flex-1 min-w-0">
             <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-              Kürzliche Bugfixes
+              {t("changelogModal.recentBugfixes")}
             </span>
-            <span className="text-zinc-400 text-xs ml-2">({count} Versionen)</span>
+            <span className="text-zinc-400 text-xs ml-2">{t("changelogModal.versionsCount", { count })}</span>
           </div>
         </button>
 
@@ -314,7 +316,7 @@ const ChangelogModal = ({ isOpen, onClose }: Props) => {
             <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0 bg-white dark:bg-zinc-900">
               <div className="flex items-center gap-2">
                 <div className="text-lg">📋</div>
-                <h2 className="font-bold text-zinc-800 dark:text-white">Änderungsprotokoll</h2>
+                <h2 className="font-bold text-zinc-800 dark:text-white">{t("changelogModal.title")}</h2>
               </div>
               <button
                 onClick={onClose}

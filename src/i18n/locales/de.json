@@ -160,6 +160,77 @@
       "title": "Stunden"
     }
   },
+  "helpModal": {
+    "title": "Anleitung & Hilfe",
+    "subtitle": "Dein Wegweiser durch den eStundnzettl",
+    "intro": {
+      "badge": "Servus und herzlich willkommen!",
+      "body": "Schluss mit der Zettelwirtschaft! Mit dem eStundnzettl erfasst du deine Arbeitszeiten, Fahrten, Urlaub und mehr direkt am Handy. Am Monatsende erstellst du mit einem Tipp ein sauberes PDF."
+    },
+    "step1": {
+      "title": "Stunden erfassen",
+      "lead": "Du hast zwei Wege, deine Stunden einzutragen:",
+      "timerTitle": "Live-Timer",
+      "timerBody": "Halte den <plus>+</plus> Button unten rechts lange gedrückt und wische nach oben. Der Timer läuft, bis du ihn mit einem Tipp stoppst. Die App trägt dann Start, Ende und Dauer automatisch ein.",
+      "manualTitle": "Manuell eintragen",
+      "manualBody": "Tipp auf den <plus>+</plus> Button. Wähle Start- und Endzeit, Pause und Projekt. Mit <b>\"Wie zuletzt\"</b> übernimmst du die Zeiten vom Vortag — praktisch bei gleichbleibenden Arbeitszeiten!"
+    },
+    "step2": {
+      "title": "Fahrtzeiten",
+      "lead": "Wähle beim Erstellen eines Eintrags oben den Typ <b>\"Fahrt\"</b>.",
+      "arrival": "<b>An/Abreise:</b> Bezahlte Arbeitszeit — zählt zum Tagessoll.",
+      "drive": "<b>Fahrtzeit:</b> Unbezahlte Wegzeit — wird separat ausgewiesen."
+    },
+    "step3": {
+      "title": "Urlaub, Krank & ZA",
+      "body": "Wähle einfach <b>Urlaub</b>, <b>Krank</b> oder <b>ZA</b> (Zeitausgleich). Die App rechnet automatisch die richtigen Soll-Stunden für den Tag ein. Du kannst auch manuell Zeiten eingeben, wenn nötig."
+    },
+    "step4": {
+      "title": "Dokumente anhängen",
+      "body": "Zu jedem Eintrag kannst du Fotos oder Dateien anhängen — z.B. Regiescheine, Lieferscheine oder Arbeitsberichte. Tipp auf <b>\"Dokumente\"</b> beim Eintrag. Die Anhänge werden beim PDF-Export automatisch mitgeliefert."
+    },
+    "step5": {
+      "title": "Monatsabschluss & PDF",
+      "preview": "Tipp oben rechts auf das <icon/> Symbol. Dort siehst du eine Vorschau deines Stundenzettels — nach Monat oder Woche filterbar.",
+      "share": "Prüfen, dann als <b>PDF teilen</b> — per Mail, WhatsApp, oder einfach lokal speichern. Fertig!"
+    },
+    "step6": {
+      "title": "Backup & Datensicherung",
+      "lead": "Deine Daten sind wertvoll — sicher sie ab!",
+      "gdriveTitle": "Google Drive",
+      "gdriveBody": "Verbinde dein Google-Konto in den Einstellungen. Die App sichert täglich automatisch in die Cloud.",
+      "localTitle": "Lokales Backup",
+      "localBody": "Wähle einen Ordner auf deinem Gerät. Die App sichert täglich dorthin — ganz ohne Internet."
+    },
+    "step7": {
+      "title": "Hausmasta-Modus",
+      "lead": "Für Profis, die mehr wollen! Aktiviere den <b>Hausmasta-Modus</b> ganz unten in den Einstellungen. Damit werden zusätzliche Funktionen sichtbar:",
+      "nextcloud": "<b>Nextcloud-Backup</b> — für deine eigene Cloud",
+      "jsonIO": "<b>JSON Import/Export</b> — Daten manuell sichern",
+      "pdfArchive": "<b>PDF-Archiv</b> — automatische monatliche PDF-Sicherung",
+      "minuteMode": "<b>Minuten-Modus</b> — 1-Minuten statt 15-Minuten-Schritte",
+      "codes": "<b>Tätigkeitscodes</b> — Branchen-Presets oder eigene Codes",
+      "recordOnly": "<b>Nur Aufzeichnung</b> — ohne Soll/Ist-Berechnung"
+    },
+    "tips": {
+      "title": "Tipps & Tricks",
+      "deleteTitle": "Löschen",
+      "deleteBody": "Wisch einen Eintrag nach <b>links</b> zum Löschen.",
+      "editTitle": "Bearbeiten",
+      "editBody": "Tipp auf einen Eintrag, um ihn zu <b>bearbeiten</b>.",
+      "autoBackupTitle": "Auto-Backup",
+      "autoBackupBody": "Einmal verbunden, sichert die App <b>täglich automatisch</b>.",
+      "themeTitle": "Design",
+      "themeBody": "Hell, Dunkel oder <b>System</b> — in den Einstellungen wählbar."
+    },
+    "tagline": "\"Damit ka Stund verloren geht!\""
+  },
+  "changelogModal": {
+    "title": "Änderungsprotokoll",
+    "recentBugfixes": "Kürzliche Bugfixes",
+    "versionsCount_one": "({{count}} Version)",
+    "versionsCount_other": "({{count}} Versionen)"
+  },
   "header": {
     "settings": "Einstellungen öffnen",
     "report": "Bericht öffnen",

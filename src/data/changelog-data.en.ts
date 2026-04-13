@@ -359,6 +359,230 @@ const TRANSLATED_EN = [
       }
     ]
   },
+
+  {
+    version: "3.0.2",
+    date: "01.04.2026",
+    title: "Healthy weeks, better data 🔧",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Bug",
+        title: "Bug fixes",
+        items: [
+          "Weekly hours are now always calculated for the full calendar week (Mon–Sun) — even when it spans two months.",
+          "Extra hours and overtime now line up correctly across month boundaries too.",
+          "Loading demo data works instantly without needing to restart the app.",
+          "Entries that couldn't be written to the database no longer disappear silently — you get a notification.",
+          "Auto-backup no longer registers duplicate listeners in the background."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Improvements",
+        items: [
+          "Demo data now looks realistic — with a work model, drive time, construction sites and a proper profile.",
+          "Popups (changelog, help) now extend cleanly all the way under the navigation bar.",
+          "The time picker is now also usable by screen readers."
+        ]
+      },
+      {
+        iconName: "Download",
+        title: "Under the hood",
+        items: [
+          "All Capacitor plugins updated to the latest versions.",
+          "Import data is now validated before saving — broken entries are dropped.",
+          "Entry IDs are now collision-safe, even when creating quickly in succession."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "3.0.1",
+    date: "31.03.2026",
+    title: "Small repairs, cleaner text ✨",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Bug",
+        title: "Bug fixes",
+        items: [
+          "Umlauts and special characters are displayed correctly again throughout the app.",
+          "The Play Store button uses clean wording again and shows the right text."
+        ]
+      },
+      {
+        iconName: "FileText",
+        title: "Documentation",
+        items: [
+          "The README was cleaned of broken characters and is readable again."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "3.0.0",
+    date: "30.03.2026",
+    title: "The big spring update",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "Cloud",
+        title: "Backup & cloud",
+        items: [
+          "Google Drive, Nextcloud and local backup are now cleanly built into the app.",
+          "You can connect your backup destination comfortably right in the setup wizard.",
+          "Backups and restores now access the same data everywhere."
+        ]
+      },
+      {
+        iconName: "FileText",
+        title: "Hours & reports",
+        items: [
+          "Hours calculation now runs through a shared central logic.",
+          "Dashboard, report preview and PDF draw the same values from it.",
+          "Weekly cards show extra hours and overtime more consistently now."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Stability",
+        items: [
+          "Google Drive stays connected much more reliably on Android.",
+          "Nextcloud now reports rate limits and connection issues in a more understandable way.",
+          "Several small rough edges in settings, backup status and pickers have been smoothed out."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "2.5.0",
+    date: "28.03.2026",
+    title: "Cloud, privacy and a proper data foundation",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Cloud",
+        title: "Cloud backups",
+        items: [
+          "Nextcloud was added as its own backup target.",
+          "Google Drive now uses the protected app-data area instead of visible files.",
+          "The connection status in settings became clearer and more consistent."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Daily use in the app",
+        items: [
+          "Settings were tidied up and made more organized.",
+          "The setup flow feels more rounded and takes more steps off your hands.",
+          "Smaller UI polishes make the app smoother overall."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "2.2.0",
+    date: "26.03.2026",
+    title: "SQLite, attachments and a stable foundation",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "FileText",
+        title: "Data & attachments",
+        items: [
+          "SQLite became the central local data base.",
+          "Attachments and documents can be linked to entries and shared along.",
+          "Import and export now preserve more of what really matters day to day."
+        ]
+      },
+      {
+        iconName: "Rocket",
+        title: "Tech",
+        items: [
+          "The app works more robustly with larger datasets.",
+          "Icons and build were optimized so launch and package size are cleaner.",
+          "Internal data paths became more consistent."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "2.0.0",
+    date: "23.03.2026",
+    title: "More flexibility at work",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "Sliders",
+        title: "Work routine",
+        items: [
+          "Custom activity codes and presets were added.",
+          "Time entry became finer and more flexible, depending on how precisely you want to book.",
+          "An instant 'Back up now' button saves waiting time if you prefer to back up yourself."
+        ]
+      },
+      {
+        iconName: "Clock",
+        title: "For new users",
+        items: [
+          "Onboarding now guides you better through the start.",
+          "Demo data and simpler base settings help you try things quickly.",
+          "Work schedules can be adapted to your own week more clearly."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "1.5.0",
+    date: "15.01.2026",
+    title: "The app grows up",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Timer",
+        title: "Clocking in & overview",
+        items: [
+          "Live clock-in was added and makes daily entry faster.",
+          "Dashboard and balances give you a quicker feel for where you stand.",
+          "Time off, holidays and similar cases were built in more cleanly."
+        ]
+      },
+      {
+        iconName: "FileText",
+        title: "Reports",
+        items: [
+          "PDF reports were built more clearly and helpfully.",
+          "Monthly and daily values became easier to follow.",
+          "The preview is closer to what actually gets exported later."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "1.0.0",
+    date: "18.11.2025",
+    title: "The first proper foundation",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "Sparkles",
+        title: "Launch of eStundnzettl",
+        items: [
+          "The basis for time entry, dashboard and reports was laid.",
+          "Austrian holidays and typical work cases were considered from the start.",
+          "The app got its own style and was ready for daily use."
+        ]
+      }
+    ]
+  },
 ];
 
 const translatedVersions = new Set(TRANSLATED_EN.map((v) => v.version));

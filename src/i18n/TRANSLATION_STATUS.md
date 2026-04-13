@@ -77,7 +77,7 @@ format.*          any format helpers needing translated text
 
 ## Phase E — Changelog data
 - [x] E1a: split changelog data into `changelog-data.{de,en}.ts` + live facade
-- [ ] E1b: translate changelog content (EN currently falls back to DE via stub)
+- [x] E1b: translate changelog content (all 18 versions)
 
 ## Phase F — Meta & tests
 - [x] F1: index.html alt text, App.tsx/main.tsx residual strings
@@ -92,6 +92,21 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session E1b** (2026-04-13): translated the entire changelog
+  (~200 strings across 18 versions), split into four commits to
+  stay inside API limits after the earlier "all in one go" attempt
+  failed. Every version now has a full English counterpart in
+  `TRANSLATED_EN`; the spread-over-DE fallback in the facade is
+  effectively unused at this point but stays as a safety net.
+  Sub-sessions:
+  - E1b.1: v4.1.0, v4.0.1, v4.0.0 (the three newest, biggest
+    entries).
+  - E1b.2: v3.6.0, v3.5.0, v3.4.0.
+  - E1b.3: v3.3.0, v3.2.1, v3.2.0, v3.1.1.
+  - E1b.4 (this commit): v3.0.2, v3.0.1, v3.0.0, v2.5.0, v2.2.0,
+    v2.0.0, v1.5.0, v1.0.0 — the eight older entries, mostly
+    shorter patch/minor summaries.
+  Tests 630/630 green.
 - **Session E1a** (2026-04-13): split the Changelog data file into a
   language-aware pair and added a live facade.
   - Renamed `src/data/changelog-data.ts` → `changelog-data.de.ts`

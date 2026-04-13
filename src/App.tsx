@@ -1,5 +1,6 @@
 import React, { useRef, useCallback, useMemo, Suspense } from "react";
 import { Toaster } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import type { Entry, BackupPayload } from "./types";
 import { getLocale } from "./locales";
 
@@ -37,6 +38,7 @@ import { migrateStorageKeys } from "./utils/migration";
 migrateStorageKeys();
 
 export default function App() {
+  const { t } = useTranslation();
   // --- DATA HOOKS ---
   const { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries } = useEntries();
   const {
@@ -131,7 +133,7 @@ export default function App() {
       <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#27272a', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#10b981', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />
 
       {showOnboarding && (
-        <Suspense fallback={<SkeletonScreen label="Einrichtung wird geladen..." />}>
+        <Suspense fallback={<SkeletonScreen label={t("skeleton.onboarding")} />}>
           <OnboardingWizard
             onComplete={handleOnboardingFinishWithTour}
             setUserData={setUserData}
@@ -150,8 +152,8 @@ export default function App() {
         isOpen={!!deleteTarget}
         onClose={handleCloseDeleteModal}
         onConfirm={() => executeDelete(deleteTarget)}
-        title={deleteTarget?.type === 'all' ? "Alles löschen?" : "Eintrag löschen?"}
-        message={deleteTarget?.type === 'all' ? "Möchtest du wirklich alle Einträge unwiderruflich löschen? Auch dein Profil wird zurückgesetzt." : "Möchtest du diesen Eintrag wirklich entfernen?"}
+        title={deleteTarget?.type === 'all' ? t("app.deleteAllTitle") : t("app.deleteEntryTitle")}
+        message={deleteTarget?.type === 'all' ? t("app.deleteAllMessage") : t("app.deleteEntryMessage")}
       />
 
       {/* Locale-Migration für bestehende User: Nur zeigen, wenn noch keine

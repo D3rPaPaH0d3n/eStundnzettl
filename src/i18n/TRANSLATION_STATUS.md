@@ -76,10 +76,11 @@ format.*          any format helpers needing translated text
 - [x] D1: migrate toast strings in `src/hooks/*` and `src/utils/*`
 
 ## Phase E — Changelog data
-- [ ] E1: refactor `src/data/changelog-data.ts` to keys, translate `changelog.*`
+- [x] E1a: split changelog data into `changelog-data.{de,en}.ts` + live facade
+- [ ] E1b: translate changelog content (EN currently falls back to DE via stub)
 
 ## Phase F — Meta & tests
-- [ ] F1: index.html alt text, App.tsx/main.tsx residual strings
+- [x] F1: index.html alt text, App.tsx/main.tsx residual strings
 - [ ] F2: fix tests broken by migration (Dashboard/EntryForm/hooks tests)
 
 ## Phase G — QA & release
@@ -91,6 +92,31 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session E1a** (2026-04-13): split the Changelog data file into a
+  language-aware pair and added a live facade.
+  - Renamed `src/data/changelog-data.ts` → `changelog-data.de.ts`
+    (export: `CHANGELOG_DATA_DE`).
+  - Added `src/data/changelog-data.en.ts` — currently a STUB that
+    re-exports the DE data unchanged so the picker doesn't crash.
+    The actual EN translation of all ~200 strings follows in E1b.
+  - New `src/data/changelog-data.ts` facade: `getChangelogData()`
+    returns DE or EN based on `i18n.language` at call time, plus a
+    kept `CHANGELOG_DATA` default export for backwards compatibility.
+  - `ChangelogModal.tsx` now calls `getChangelogData()` inside a
+    `useMemo([i18n.language])` so a language switch re-renders the
+    modal immediately.
+  Tests 630/630 green.
+
+- **Session F1** (2026-04-13): meta + App.tsx residuals.
+  - `App.tsx`: the OnboardingWizard suspense fallback label now uses
+    `skeleton.onboarding`; the delete-confirm ConfirmModal pulls
+    title/message from a new `app.deleteEntryTitle/Message` and
+    `app.deleteAllTitle/Message` pair.
+  - `index.html`: alt text already handled in A1 (dynamically set by
+    the inline bootstrap script based on the resolved language);
+    `<title>` stays literal as the product brand name.
+  Tests 630/630 green.
+
 - **Session D1** (2026-04-13): migrated all toasts in `src/hooks/*`.
   New `toasts.*` namespace covering 12 hook files and ~40 toasts:
   - `toasts.entry.*` — saved/updated/deleted/saveFailed/updateFailed/

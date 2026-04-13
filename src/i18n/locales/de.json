@@ -11,7 +11,11 @@
     "loading": "Lädt..."
   },
   "app": {
-    "subtitle": "Damit ka Stund verlorn geht"
+    "subtitle": "Damit ka Stund verlorn geht",
+    "deleteEntryTitle": "Eintrag löschen?",
+    "deleteEntryMessage": "Möchtest du diesen Eintrag wirklich entfernen?",
+    "deleteAllTitle": "Alles löschen?",
+    "deleteAllMessage": "Möchtest du wirklich alle Einträge unwiderruflich löschen? Auch dein Profil wird zurückgesetzt."
   },
   "dashboard": {
     "prevMonth": "Vorheriger Monat",

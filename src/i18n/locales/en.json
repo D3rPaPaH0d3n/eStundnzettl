@@ -11,7 +11,11 @@
     "loading": "Loading..."
   },
   "app": {
-    "subtitle": "Mobile time tracking"
+    "subtitle": "Mobile time tracking",
+    "deleteEntryTitle": "Delete entry?",
+    "deleteEntryMessage": "Do you really want to remove this entry?",
+    "deleteAllTitle": "Delete everything?",
+    "deleteAllMessage": "Do you really want to permanently delete all entries? Your profile will also be reset."
   },
   "dashboard": {
     "prevMonth": "Previous month",

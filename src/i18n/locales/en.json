@@ -419,6 +419,93 @@
       "recalcAllCorrect": "All {{total}} entries are correct",
       "recalcError": "Recalculation failed"
     },
+    "backup": {
+      "header": "Backup & Export",
+      "subtitle": "Back up your data to Google Drive, Nextcloud or locally",
+      "last": {
+        "now": "just now",
+        "minutes_one": "{{count}} min ago",
+        "minutes_other": "{{count}} min ago",
+        "hours_one": "{{count}} hr ago",
+        "hours_other": "{{count}} hrs ago",
+        "days_one": "{{count}} day ago",
+        "days_other": "{{count}} days ago",
+        "lastAt": "Last: {{time}}",
+        "never": "Never backed up"
+      },
+      "badge": {
+        "connected": "Connected"
+      },
+      "gdrive": {
+        "connectedAs": "Connected as {{label}}",
+        "activeAppData": "Active (Google Drive app data)",
+        "expired": "Connection expired",
+        "notConnected": "Not connected",
+        "disconnect": "Disconnect",
+        "connect": "Connect"
+      },
+      "nextcloud": {
+        "connectedAs": "Connected as {{user}}",
+        "awaitingLogin": "Waiting for login…",
+        "notConfigured": "Not configured",
+        "disconnect": "Disconnect",
+        "setup": "Set up",
+        "pollingTitle": "Waiting for Nextcloud login…",
+        "pollingHint": "Please sign in in the browser and grant access",
+        "serverUrlLabel": "Server URL",
+        "serverUrlPlaceholder": "https://cloud.example.com",
+        "connectButton": "Connect to Nextcloud",
+        "testConnection": "Test connection"
+      },
+      "local": {
+        "title": "Local backup",
+        "activeDaily": "Active (daily)",
+        "notConfigured": "Not configured",
+        "disconnect": "Disconnect",
+        "select": "Choose"
+      },
+      "warning": {
+        "gdriveFailed": "⚠️ Recent backups failed. Please check the Google Drive connection.",
+        "gdriveReconnect": "⚠️ Google Drive needs to be reconnected before backups can continue.",
+        "nextcloudWithError": "Nextcloud backup failed: {{error}}",
+        "nextcloudGeneric": "Recent Nextcloud backups failed. Please check the connection.",
+        "retrying": "Retrying…",
+        "retryNow": "Retry now"
+      },
+      "manual": {
+        "saving": "Backing up…",
+        "title": "Backup",
+        "saveNow": "Back up now"
+      },
+      "export": "Export",
+      "import": "Import",
+      "toast": {
+        "pollingTimeout": "Timed out — please try again",
+        "nextcloudLoginFailed": "Nextcloud login failed",
+        "nextcloudLoginFailedWith": "Nextcloud login failed: {{message}}",
+        "ncConnectedAs": "Connected as {{loginName}}",
+        "ncPersistError": "Connected to Nextcloud, but saving settings in the app failed",
+        "ncEnterUrl": "Please enter the server URL",
+        "ncDisconnected": "Nextcloud disconnected",
+        "ncConnectFirst": "Please connect Nextcloud first",
+        "ncTestOk": "Connection OK!",
+        "ncTestFailed": "Connection failed",
+        "ncTestError": "Test failed",
+        "gdriveConnected": "Connected: {{label}}",
+        "gdriveDefaultLabel": "Drive",
+        "gdriveCancelled": "Google sign-in cancelled",
+        "gdriveUnavailable": "Google Drive is not available on this device yet",
+        "gdriveFailed": "Google Drive connection failed",
+        "localDisconnected": "Backup folder disconnected",
+        "localActivated": "Backup enabled!",
+        "folderCancelled": "Folder selection cancelled",
+        "backupCreated": "Backup created: {{targets}}",
+        "backupPartialFailed": "Failed: {{targets}}",
+        "backupDebugTitle": "Backup error details:\n\n{{details}}",
+        "backupFailed": "Backup failed"
+      },
+      "targetLocal": "Local"
+    },
     "calc": {
       "header": "Calculation",
       "subtitle": "How overtime, sick leave and holidays are counted",

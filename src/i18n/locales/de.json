@@ -419,6 +419,93 @@
       "recalcAllCorrect": "Alle {{total}} Einträge sind korrekt",
       "recalcError": "Fehler bei der Neuberechnung"
     },
+    "backup": {
+      "header": "Backup & Export",
+      "subtitle": "Sichere deine Daten auf Google Drive, Nextcloud oder lokal",
+      "last": {
+        "now": "gerade eben",
+        "minutes_one": "vor {{count}} Min.",
+        "minutes_other": "vor {{count}} Min.",
+        "hours_one": "vor {{count}} Std.",
+        "hours_other": "vor {{count}} Std.",
+        "days_one": "vor {{count}} Tag",
+        "days_other": "vor {{count}} Tagen",
+        "lastAt": "Zuletzt: {{time}}",
+        "never": "Noch nie gesichert"
+      },
+      "badge": {
+        "connected": "Verbunden"
+      },
+      "gdrive": {
+        "connectedAs": "Verbunden als {{label}}",
+        "activeAppData": "Aktiv (Google Drive App-Daten)",
+        "expired": "Verbindung abgelaufen",
+        "notConnected": "Nicht verbunden",
+        "disconnect": "Trennen",
+        "connect": "Verbinden"
+      },
+      "nextcloud": {
+        "connectedAs": "Verbunden als {{user}}",
+        "awaitingLogin": "Warte auf Anmeldung...",
+        "notConfigured": "Nicht konfiguriert",
+        "disconnect": "Trennen",
+        "setup": "Einrichten",
+        "pollingTitle": "Warte auf Anmeldung in Nextcloud...",
+        "pollingHint": "Bitte im Browser anmelden und Zugriff gewähren",
+        "serverUrlLabel": "Server-URL",
+        "serverUrlPlaceholder": "https://cloud.example.com",
+        "connectButton": "Mit Nextcloud verbinden",
+        "testConnection": "Verbindung testen"
+      },
+      "local": {
+        "title": "Lokales Backup",
+        "activeDaily": "Aktiv (Täglich)",
+        "notConfigured": "Nicht konfiguriert",
+        "disconnect": "Trennen",
+        "select": "Wählen"
+      },
+      "warning": {
+        "gdriveFailed": "⚠️ Letzte Backups fehlgeschlagen. Bitte Google Drive Verbindung prüfen.",
+        "gdriveReconnect": "⚠️ Google Drive muss neu verbunden werden, bevor wieder gesichert werden kann.",
+        "nextcloudWithError": "Nextcloud-Backup fehlgeschlagen: {{error}}",
+        "nextcloudGeneric": "Letzte Nextcloud-Backups sind fehlgeschlagen. Bitte Verbindung prüfen.",
+        "retrying": "Wird versucht…",
+        "retryNow": "Jetzt erneut versuchen"
+      },
+      "manual": {
+        "saving": "Sichere...",
+        "title": "Backup",
+        "saveNow": "Jetzt sichern"
+      },
+      "export": "Export",
+      "import": "Import",
+      "toast": {
+        "pollingTimeout": "Zeitüberschreitung — bitte erneut versuchen",
+        "nextcloudLoginFailed": "Nextcloud Login fehlgeschlagen",
+        "nextcloudLoginFailedWith": "Nextcloud Login fehlgeschlagen: {{message}}",
+        "ncConnectedAs": "Verbunden als {{loginName}}",
+        "ncPersistError": "Nextcloud verbunden, aber Speichern in der App fehlgeschlagen",
+        "ncEnterUrl": "Bitte Server-URL eingeben",
+        "ncDisconnected": "Nextcloud getrennt",
+        "ncConnectFirst": "Bitte zuerst Nextcloud verbinden",
+        "ncTestOk": "Verbindung OK!",
+        "ncTestFailed": "Verbindung fehlgeschlagen",
+        "ncTestError": "Test fehlgeschlagen",
+        "gdriveConnected": "Verbunden: {{label}}",
+        "gdriveDefaultLabel": "Drive",
+        "gdriveCancelled": "Google-Anmeldung abgebrochen",
+        "gdriveUnavailable": "Google Drive ist auf diesem Gerät noch nicht verfügbar",
+        "gdriveFailed": "Google-Drive-Verbindung fehlgeschlagen",
+        "localDisconnected": "Backup-Ordner getrennt",
+        "localActivated": "Backup aktiviert!",
+        "folderCancelled": "Ordnerauswahl abgebrochen",
+        "backupCreated": "Backup erstellt: {{targets}}",
+        "backupPartialFailed": "Fehlgeschlagen: {{targets}}",
+        "backupDebugTitle": "Backup-Fehler Details:\n\n{{details}}",
+        "backupFailed": "Backup fehlgeschlagen"
+      },
+      "targetLocal": "Lokal"
+    },
     "calc": {
       "header": "Berechnung",
       "subtitle": "Wie Überstunden, Krank und Feiertage gezählt werden",

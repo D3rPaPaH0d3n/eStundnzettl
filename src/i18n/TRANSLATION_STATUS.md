@@ -62,7 +62,7 @@ format.*          any format helpers needing translated text
 - [x] B8: LiveTimerOverlay + AppTour
 - [x] B9: Settings shell + ProfileSettings + ThemeSettings + AppInfoSettings
 - [x] B10: Settings/CalculationSettings
-- [ ] B11: Settings/BackupSettings
+- [x] B11: Settings/BackupSettings
 - [ ] B12: Settings/LocaleSettings (+ Language Picker UI) + DataSettings + PdfArchiveSettings
 - [ ] B13: OnboardingWizard + Welcome/Profile/SummaryStep
 - [ ] B14: Onboarding LocaleStep + WorkScheduleStep
@@ -91,6 +91,43 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B11** (2026-04-13): migrated `Settings/BackupSettings.tsx`
+  (997 lines, widest Settings file by toast count).
+  New `settings.backup.*` namespace covering:
+  - Header + subtitle
+  - `last.*` block with plural-aware `minutes`/`hours`/`days` and
+    `now` + `never` + `lastAt {{time}}` for the last-backup
+    formatter (`formatLastBackup` now returns translated strings).
+  - Three connection cards:
+    * `gdrive.*` (connectedAs/activeAppData/expired/notConnected +
+      connect/disconnect button labels)
+    * `nextcloud.*` (connectedAs/awaitingLogin/notConfigured +
+      pollingTitle/pollingHint for the in-browser flow, serverUrl
+      label + placeholder, connect button, testConnection button,
+      setup/disconnect buttons)
+    * `local.*` (title, activeDaily, notConfigured, disconnect,
+      select)
+  - `badge.connected` shared across all three cards.
+  - `warning.*` block for the two failure banners
+    (gdriveFailed / gdriveReconnect / nextcloudWithError {{error}} /
+    nextcloudGeneric / retrying / retryNow).
+  - `manual.*` (saving / title / saveNow) for the manual-backup
+    card.
+  - `export` / `import` for the expert-mode buttons.
+  - Full `toast.*` tree (18 messages): polling timeout, all three
+    Nextcloud connect/test/disconnect toasts with {{message}} /
+    {{loginName}} interpolation, all three Google-Drive outcomes,
+    local folder toasts, backupCreated/backupPartialFailed with
+    {{targets}}, backupDebugTitle with {{details}}, final
+    backupFailed fallback.
+  - `targetLocal` constant for the "Lokal"/"Local" chip that the
+    manual backup toast joins with product names (Google Drive /
+    Nextcloud stay untranslated).
+  Cancel button in the polling view reuses `common.cancel`.
+  Three pre-existing TS errors in the file shifted by +3 lines
+  because of the added import, hook call, and blank line; total
+  TS error count unchanged.
+  Tests 630/630 green.
 - **Session B10** (2026-04-13): migrated `Settings/CalculationSettings.tsx`
   (717 lines, the beast of the settings area).
   Introduced the `settings.calc.*` namespace covering every label

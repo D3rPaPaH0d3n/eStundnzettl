@@ -143,6 +143,107 @@ const TRANSLATED_EN = [
       }
     ]
   },
+
+  {
+    version: "3.6.0",
+    date: "09.04.2026",
+    title: "Power-user mode & leaner settings 🔧",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "Wrench",
+        title: "Power-user mode — for pros who want more",
+        items: [
+          "Settings are now tidy and clear: only the essentials are visible. Anyone who needs Nextcloud, import/export, the PDF archive, minute mode, activity codes or record-only mode just toggles the new power-user mode at the very bottom of settings.",
+          "Power-user mode is purely cosmetic — it just reveals extra settings without changing any existing functionality. Once set up, everything keeps running as before."
+        ]
+      },
+      {
+        iconName: "Layout",
+        title: "Settings reorganized",
+        items: [
+          "The Backup & Export card now has a consistent header in the same style as the PDF archive card.",
+          "The \"Record only\" toggle moved from the user profile into the work-schedule card — that's where it logically belongs. When it's on, the model selection is hidden automatically.",
+          "No more overscrolling at the bottom of the settings page."
+        ]
+      },
+      {
+        iconName: "Bug",
+        title: "Bug fixes",
+        items: [
+          "PDF archive: holidays are now correctly included in the target calculation. Previously the target was computed for holidays without counting them as actual hours — making the PDF balance too negative.",
+          "Google Drive: the connected email address is now shown persistently after an app restart instead of just \"Google Drive app data\".",
+          "Backup import: imported data now appears immediately in the app without requiring a restart."
+        ]
+      },
+      {
+        iconName: "BookOpen",
+        title: "New guide & help",
+        items: [
+          "The help was fully reworked and updated to all current features: live timer, attaching documents, backup options and power-user mode are now explained.",
+          "New README on GitHub with screenshots and Play Store link."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "3.5.0",
+    date: "07.04.2026",
+    title: "Record-only mode & better month boundaries",
+    sections: [
+      {
+        iconName: "Sliders",
+        title: "New work-schedule model: record only",
+        items: [
+          "You can now also use the app as a pure time-tracking tool — without target/actual calculation, without overtime, without extra hours. Just write down when you worked.",
+          "The option is available in the setup wizard and also later in settings under your profile. A single toggle is enough — everything else is hidden automatically."
+        ]
+      },
+      {
+        iconName: "Bug",
+        title: "Fix: extra/overtime across month boundaries",
+        items: [
+          "For weeks that span a month boundary (e.g. CW 14 with Mon–Tue in March and Wed–Fri in April), extra hours (MA) were calculated incorrectly. The app compared the plus-hours of the edge days against the daily target and derived MA directly — even though with only 2–3 days you can't exceed the 38.5h weekly limit at all.",
+          "New rule: extra hours only arise when the actual time of the visible days exceeds the full weekly target (e.g. 38.5h). As long as you stay below, only the daily overtime (actual > daily target) is counted — without MA. This applies symmetrically at the start and end of a month."
+        ]
+      }
+    ]
+  },
+
+  {
+    version: "3.4.0",
+    date: "05.04.2026",
+    title: "Friendly start & a clean timesheet 🎉",
+    isMajor: true,
+    sections: [
+      {
+        iconName: "Sparkles",
+        title: "New welcome flow & interactive app tour",
+        items: [
+          "The setup wizard was reworked from the ground up — friendlier in tone, clearer in its explanations. Right on the first page you see what eStundnzettl stands for: everything on your phone, works offline, your data stays with you. Every step briefly and honestly explains what happens and why.",
+          "The backup step is now transparently marked as completely optional. You also learn the nice side effect right there: once you enable a backup, the app automatically adds a finished PDF timesheet every month.",
+          "Fresh after setup you get a short interactive app tour that shows you where things live in 7 steps: dashboard, live timer (including long-press + swipe up), manual entry, report and settings. Small pulsing markers point exactly at the real buttons."
+        ]
+      },
+      {
+        iconName: "FileText",
+        title: "The automatic PDF now looks like your shared report",
+        items: [
+          "The automatically archived monthly PDF used to have a plain, tabular layout — very different from the nice timesheet you can share from the report. From now on both paths use exactly the same template: company, photo, zebra stripes, summary box. Your archive PDF shows the same design as the shared report, 1:1.",
+          "As a side effect the app install gets noticeably smaller — we were able to drop a large internal PDF library entirely."
+        ]
+      },
+      {
+        iconName: "Bug",
+        title: "Fix: extra hours at month boundaries",
+        items: [
+          "For weeks that span a month boundary (e.g. CW 14 with Monday still in March and Wednesday already in April), the app could show too much extra time — in the dashboard and in the PDF. The bug was that the week was clipped at the month edge and plus-hours from the month half were compared against a halved target.",
+          "Extra hours and overtime are now always calculated over the full week (Mon–Sun). For attribution the ISO rule applies: a week belongs to the month containing its Thursday. This way every week is counted correctly exactly once — no double counting, no gaps."
+        ]
+      }
+    ]
+  },
 ];
 
 const translatedVersions = new Set(TRANSLATED_EN.map((v) => v.version));

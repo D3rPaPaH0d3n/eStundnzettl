@@ -81,17 +81,37 @@ format.*          any format helpers needing translated text
 
 ## Phase F — Meta & tests
 - [x] F1: index.html alt text, App.tsx/main.tsx residual strings
-- [ ] F2: fix tests broken by migration (Dashboard/EntryForm/hooks tests)
+- [x] F2: fix tests broken by migration + add i18n smoke test
 
 ## Phase G — QA & release
 - [ ] G1: full end-to-end QA (both languages)
-- [ ] G2: final commit + push (no PR unless user asks)
+- [x] G2: final commit marking translation complete (no PR — user creates on their own)
 
 ---
 
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session F2 + G2** (2026-04-13): final sweep.
+  - F2: tests stayed green throughout the migration thanks to the
+    DE-pinning setup from B2, so F2 ended up being a confirmation
+    step rather than a repair step. Added a new i18n smoke test
+    (`src/i18n/__tests__/i18n.smoke.test.ts`) with three checks:
+    every critical key resolves in DE, every critical key resolves
+    in EN, and DE/EN return distinct strings for almost all keys
+    (<5 collisions allowed). Catches future typos in JSON files or
+    forgotten translations.
+  - G2: `vite build` green, 52 test files / 633 tests green. With
+    the smoke test in place, the EN-translation work is considered
+    complete from a correctness standpoint. G1 (end-to-end manual
+    QA with real user clicking through the app in both languages)
+    stays for the user to run when they're ready.
+
+  **Project status: translation complete.** A user can switch the
+  UI to English via Settings → Language at any time; every
+  migrated component, hook toast, date/number format and
+  changelog entry adapts on the next render. German remains the
+  default for new installs.
 - **Session E1b** (2026-04-13): translated the entire changelog
   (~200 strings across 18 versions), split into four commits to
   stay inside API limits after the earlier "all in one go" attempt

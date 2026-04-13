@@ -59,7 +59,7 @@ format.*          any format helpers needing translated text
 - [x] B5: ViewRouter + SelectionDrawer + TimePickerDrawer + DecimalDurationPicker
 - [x] B6: HelpModal + ChangelogModal
 - [x] B7: ImportConflictModal + LocaleMigrationModal + PresetModal + AttachmentManager
-- [ ] B8: LiveTimerOverlay + AppTour
+- [x] B8: LiveTimerOverlay + AppTour
 - [ ] B9: Settings shell + ProfileSettings + ThemeSettings + AppInfoSettings
 - [ ] B10: Settings/CalculationSettings
 - [ ] B11: Settings/BackupSettings
@@ -91,6 +91,21 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B8** (2026-04-13): migrated the floating live timer and the
+  onboarding tour.
+  - `LiveTimerOverlay` (~5 strings): new `liveTimer.*` namespace covers
+    the hours suffix ("Std" → "h"), the "Pausiert" badge, the
+    swipe-up hint and the two FAB mini-labels ("AUS"/"TIMER"). The
+    existing `timer.*` aria-labels from A1 stay as-is.
+  - `AppTour` (14 strings): tour content lives in a new
+    `appTour.steps.*` tree with one entry per step (welcome, dashboard,
+    fabTap, fabTimer+hint, report, settings, done). Refactored the
+    static `steps` array into a `STEP_DEFINITIONS` constant that only
+    holds icon/color/target/hasHint; the component builds the final
+    translated step list via `useMemo` on `t`. Chrome strings (Skip
+    aria, Done, Next) moved to `appTour.skipAria/finish/next`; "Zurück"
+    reuses `common.back`.
+  Tests 630/630 green.
 - **Session B7** (2026-04-13): migrated the four interstitial modals.
   - `ImportConflictModal` (~8 strings): backup-review title, description
     with inline `<b>` via `<Trans>`, entry/settings labels, included

@@ -244,6 +244,49 @@
     "pause": "Timer pausieren",
     "resume": "Timer fortsetzen"
   },
+  "liveTimer": {
+    "hours": "Std",
+    "paused": "Pausiert",
+    "swipeHint": "Nach oben wischen zum Einstempeln",
+    "fabOff": "AUS",
+    "fabTimer": "TIMER"
+  },
+  "appTour": {
+    "skipAria": "Tour überspringen",
+    "finish": "Fertig",
+    "next": "Weiter",
+    "steps": {
+      "welcome": {
+        "title": "Kurze Tour gefällig?",
+        "body": "Servus! Lass uns in ein paar kleinen Schritten durchgehen, wo du was findest. Du kannst jederzeit auf das X tippen und überspringen."
+      },
+      "dashboard": {
+        "title": "Deine Übersicht",
+        "body": "Hier siehst du auf einen Blick: Ist-Stunden, Soll-Stunden und deine Überstunden für den gewählten Monat. Wochen kannst du antippen zum Auf- und Zuklappen."
+      },
+      "fabTap": {
+        "title": "Manueller Eintrag",
+        "body": "Der grüne Knopf rechts unten ist dein Hauptwerkzeug. Ein kurzes Tippen öffnet sofort das Formular für einen neuen Eintrag — perfekt zum Nachtragen."
+      },
+      "fabTimer": {
+        "title": "Live-Timer starten",
+        "body": "Derselbe Knopf startet den Live-Timer: einfach lang draufdrücken, bis er grün wird, und dann nach oben wischen. Nochmal tippen stoppt den Timer und legt den Eintrag automatisch an.",
+        "hint": "Lang drücken + hochwischen"
+      },
+      "report": {
+        "title": "Stundenzettel als PDF",
+        "body": "Oben rechts der grüne Button: dein fertiger Stundenzettel zum Anschauen, Teilen oder Ausdrucken. Mit Unterschrift, Notizen und deinem Logo."
+      },
+      "settings": {
+        "title": "Einstellungen & mehr",
+        "body": "Das Zahnrad ist deine Schaltzentrale: Profil, Arbeitszeit, eigene Tätigkeits-Codes, Backup, Theme und die Hilfe. Alles lässt sich jederzeit ändern."
+      },
+      "done": {
+        "title": "Das war's schon!",
+        "body": "Du kennst jetzt alle wichtigen Ecken. Falls du was nochmal nachlesen willst: Einstellungen → Hilfe. Viel Spaß mit dem eStundnzettl!"
+      }
+    }
+  },
   "skeleton": {
     "default": "Lädt...",
     "settings": "Lade Einstellungen...",

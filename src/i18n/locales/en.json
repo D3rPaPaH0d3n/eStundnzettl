@@ -244,6 +244,49 @@
     "pause": "Pause timer",
     "resume": "Resume timer"
   },
+  "liveTimer": {
+    "hours": "h",
+    "paused": "Paused",
+    "swipeHint": "Swipe up to clock in",
+    "fabOff": "OFF",
+    "fabTimer": "TIMER"
+  },
+  "appTour": {
+    "skipAria": "Skip tour",
+    "finish": "Done",
+    "next": "Next",
+    "steps": {
+      "welcome": {
+        "title": "Quick tour?",
+        "body": "Hello! Let's walk through a few quick steps to show you where things live. You can tap the X and skip at any time."
+      },
+      "dashboard": {
+        "title": "Your overview",
+        "body": "Here you see at a glance: actual hours, target hours and your overtime for the selected month. Tap a week to expand or collapse it."
+      },
+      "fabTap": {
+        "title": "Manual entry",
+        "body": "The green button in the bottom right is your main tool. A short tap opens the new-entry form right away — perfect for filling things in later."
+      },
+      "fabTimer": {
+        "title": "Start the live timer",
+        "body": "The same button also starts the live timer: press and hold until it turns green, then swipe up. Tap again to stop the timer and the entry is created automatically.",
+        "hint": "Press & hold, then swipe up"
+      },
+      "report": {
+        "title": "Timesheet as PDF",
+        "body": "The green button in the top right: your finished timesheet, ready to view, share or print. With signature, notes and your logo."
+      },
+      "settings": {
+        "title": "Settings & more",
+        "body": "The gear icon is your control center: profile, work schedule, activity codes, backup, theme and help. Everything can be changed at any time."
+      },
+      "done": {
+        "title": "That's it!",
+        "body": "You now know all the important spots. If you want to read up on something later: Settings → Help. Have fun with eStundnzettl!"
+      }
+    }
+  },
   "skeleton": {
     "default": "Loading...",
     "settings": "Loading settings...",

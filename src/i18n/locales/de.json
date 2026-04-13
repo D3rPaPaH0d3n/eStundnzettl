@@ -226,6 +226,108 @@
     },
     "tagline": "\"Damit ka Stund verloren geht!\""
   },
+  "onboarding": {
+    "nav": {
+      "back": "Zurück",
+      "next": "Weiter",
+      "finish": "Passt"
+    },
+    "welcome": {
+      "logoAlt": "eStundnzettl Logo",
+      "hello": "Servus! 👋",
+      "glad": "Schön, dass du da bist.",
+      "intro": "Dein <brand>eStundnzettl</brand> — die einfache Zeiterfassung, die einfach funktioniert. Ganz ohne Schnickschnack.",
+      "badgeMobile": "Alles am Handy",
+      "badgeOffline": "Offline nutzbar",
+      "badgePrivate": "Daten bleiben bei dir",
+      "startNew": "Los geht's — neu einrichten",
+      "restore": "Ich hab schon ein Backup",
+      "demo": "Nur mal reinschnuppern (Demo)"
+    },
+    "profile": {
+      "title": "Sag uns wer du bist",
+      "subtitle": "Damit dein Stundenzettel auch deinen Namen trägt.",
+      "privacyHint": "<b>Keine Sorge:</b> Dein Name, das Foto und alle weiteren Daten bleiben ausschließlich auf deinem Handy. Es geht nix raus, außer du willst's so.",
+      "photoAlt": "Profil",
+      "photoLabel": "Profilbild (optional)",
+      "nameLabel": "Dein Name",
+      "namePlaceholder": "Max Mustermann",
+      "companyLabel": "Firma",
+      "companyPlaceholder": "Firmenname GmbH",
+      "roleLabel": "Tätigkeit / Anstellung",
+      "rolePlaceholder": "z.B. Monteur, Kellner, Pflege, Büro..."
+    },
+    "summary": {
+      "title": "Perfekt! 🎉",
+      "bodyRestore": "Deine Daten sind wieder da. Wir zeigen dir kurz, was die App alles kann.",
+      "bodyFresh": "Alles eingerichtet. Jetzt zeigen wir dir in wenigen Klicks, wo du was findest.",
+      "tourHint": "Kurze Tour — dauert nur a Minütchen",
+      "finishButton": "Los, zeig mir die App"
+    },
+    "backup": {
+      "titleSetup": "Sicher ist sicher",
+      "titleRestore": "Backup wiederherstellen",
+      "subtitleSetup": "Willst du deine Daten zusätzlich sichern?",
+      "subtitleRestore": "Wo liegt dein Backup?",
+      "optionalHint": "<b>Komplett optional.</b> Du kannst diesen Schritt einfach überspringen — die App funktioniert auch ohne Backup. Einstellen kannst du das jederzeit später.",
+      "bonusHint": "<b>Bonus:</b> Wenn du ein Backup aktivierst, legt die App <b>automatisch jeden Monat</b> einen fertigen PDF-Stundenzettel dazu — zum Abgeben oder Archivieren.",
+      "gdrive": {
+        "title": "Google Drive",
+        "subtitle": "Tägliches Backup + Monats-PDF in deine Cloud"
+      },
+      "local": {
+        "title": "Am Handy speichern",
+        "subtitle": "Backup + PDF in einen Ordner deiner Wahl"
+      },
+      "nextcloud": {
+        "title": "Nextcloud",
+        "subtitle": "Auf deiner eigenen Cloud — volle Datenhoheit",
+        "connectedAs": "Verbunden als {{user}}",
+        "awaiting": "Warte auf Anmeldung in Nextcloud...",
+        "urlPlaceholder": "https://cloud.example.com",
+        "connectButton": "Mit Nextcloud verbinden"
+      },
+      "skipHint": "Nix dabei? Kein Problem — tipp einfach auf ‚Weiter‘.",
+      "restoreFromGdrive": "Aus Google Drive",
+      "restoreFromNextcloud": "Aus Nextcloud",
+      "restoreFromFolder": "Lokaler Ordner",
+      "restoreFromFile": "Datei (.json)",
+      "ncLoading": "Lade..."
+    },
+    "toast": {
+      "demoLoaded": "Demo-Daten geladen! Du kannst die App jetzt ausprobieren.",
+      "nameRequired": "Bitte gib deinen Namen ein.",
+      "localeRequired": "Bitte wähle eine Stundenberechnung.",
+      "gdriveLinked": "Verknüpfung erfolgreich!",
+      "gdriveLoginFailed": "Anmeldung abgebrochen oder fehlgeschlagen.",
+      "folderLinked": "Ordner verknüpft!",
+      "folderCancelled": "Auswahl abgebrochen",
+      "ncDisconnected": "Nextcloud getrennt",
+      "ncEnterUrl": "Bitte Server-URL eingeben",
+      "ncConnected": "Nextcloud verbunden!",
+      "ncTimeout": "Zeitüberschreitung — bitte erneut versuchen",
+      "ncLoginFailed": "Nextcloud Login fehlgeschlagen",
+      "ncServerUnreachable": "Server nicht erreichbar",
+      "ncServerUnreachableRestore": "Server nicht erreichbar oder Login Flow v2 nicht unterstützt",
+      "ncRestoreNotFound": "Kein Backup auf Nextcloud gefunden",
+      "ncRestoreInvalid": "Ungültiges Backup-Format",
+      "ncRestoreLoaded": "Backup von Nextcloud geladen!",
+      "signinFailed": "Anmeldung fehlgeschlagen",
+      "tokenMissing": "Kein Zugriffstoken erhalten",
+      "backupNotFound": "Kein Backup gefunden.",
+      "backupEmpty": "Backup leer.",
+      "backupInvalid": "Format ungültig.",
+      "backupInvalidShort": "Ungültiges Backup.",
+      "backupInvalidFormat": "Ungültiges Format.",
+      "backupLoaded": "Backup geladen!",
+      "loadError": "Fehler beim Laden",
+      "folderAccessError": "Fehler beim Zugriff.",
+      "fileReadError": "Datei konnte nicht gelesen werden.",
+      "integrityMismatch": "⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",
+      "restoreSuccess": "Daten wiederhergestellt!",
+      "welcome": "Willkommen!"
+    }
+  },
   "changelogModal": {
     "title": "Änderungsprotokoll",
     "recentBugfixes": "Kürzliche Bugfixes",

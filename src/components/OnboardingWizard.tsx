@@ -9,6 +9,7 @@ import WorkCodesStep, { type WorkCodePresetId } from "./Onboarding/steps/WorkCod
 import CalculationStep from "./Onboarding/steps/CalculationStep";
 import SummaryStep from "./Onboarding/steps/SummaryStep";
 import toast from "react-hot-toast";
+import { Trans, useTranslation } from "react-i18next";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
 import { downloadBackup as ncDownloadBackup, initiateLoginFlow, pollLoginResult, getNextcloudErrorMessage, resolveUserId } from "../utils/nextcloudClient";
 import { Browser } from "@capacitor/browser";
@@ -74,6 +75,7 @@ interface NcCredentials {
 }
 
 const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntries, importWorkCodes, setCloudSyncEnabled, setLocalBackupEnabled, setTheme, setLocale, setCalculationConfig }) => {
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [isRestoreFlow, setIsRestoreFlow] = useState(false);
@@ -169,17 +171,17 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     setCalculationConfig?.(demoCalcConfig);
     importWorkCodes?.(DEMO_DATA.workCodes);
     importEntries?.(demoEntries);
-    toast.success("Demo-Daten geladen! Du kannst die App jetzt ausprobieren.");
+    toast.success(t("onboarding.toast.demoLoaded"));
     onComplete();
   };
 
   const nextStep = () => {
     if (step === 1 && !formData.name.trim()) {
-      toast.error("Bitte gib deinen Namen ein.");
+      toast.error(t("onboarding.toast.nameRequired"));
       return;
     }
     if (step === 2 && !formData.localeId) {
-      toast.error("Bitte wähle eine Stundenberechnung.");
+      toast.error(t("onboarding.toast.localeRequired"));
       return;
     }
     // Locale-Wahl hat Auswirkung auf Default-WorkDays: beim Verlassen von
@@ -264,12 +266,12 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     if (newValue) {
       try {
         await signInGoogle();
-        toast.success("Verknüpfung erfolgreich!");
+        toast.success(t("onboarding.toast.gdriveLinked"));
         // Erst setzen wenn Login erfolgreich war
         setFormData(p => ({...p, autoBackup: true}));
       } catch (error) {
         log.error(error);
-        toast("Anmeldung abgebrochen oder fehlgeschlagen.", { icon: "⚠️" });
+        toast(t("onboarding.toast.gdriveLoginFailed"), { icon: "⚠️" });
         // Nicht aktivieren bei Fehler
         setFormData(p => ({...p, autoBackup: false}));
       }
@@ -284,11 +286,11 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         const success = await selectBackupFolder();
         if (success) {
           setFormData(p => ({...p, localBackupEnabled: true}));
-          toast.success("Ordner verknüpft!");
+          toast.success(t("onboarding.toast.folderLinked"));
         }
       } catch (error) {
         log.error(error);
-        toast.error("Auswahl abgebrochen");
+        toast.error(t("onboarding.toast.folderCancelled"));
       }
     } else {
       setFormData(p => ({...p, localBackupEnabled: false}));
@@ -302,7 +304,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       setNcCredentials(null);
       setNcSetupActive(false);
       setNcSetupUrl("");
-      toast("Nextcloud getrennt");
+      toast(t("onboarding.toast.ncDisconnected"));
       return;
     }
     setNcSetupActive(!ncSetupActive);
@@ -310,7 +312,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
   const handleNextcloudSetup = async () => {
     if (!ncSetupUrl) {
-      toast.error("Bitte Server-URL eingeben");
+      toast.error(t("onboarding.toast.ncEnterUrl"));
       return;
     }
     try {
@@ -332,7 +334,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
           clearInterval(ncSetupPollRef.current!);
           ncSetupPollRef.current = null;
           setNcSetupConnecting(false);
-          toast.error("Zeitüberschreitung — bitte erneut versuchen");
+          toast.error(t("onboarding.toast.ncTimeout"));
           return;
         }
         try {
@@ -357,18 +359,18 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
             });
             setNcSetupConnected(true);
             setNcSetupConnecting(false);
-            toast.success("Nextcloud verbunden!");
+            toast.success(t("onboarding.toast.ncConnected"));
           }
         } catch (error) {
           if (ncSetupPollRef.current) clearInterval(ncSetupPollRef.current);
           ncSetupPollRef.current = null;
           setNcSetupConnecting(false);
-          toast.error((error as Error)?.message || "Nextcloud Login fehlgeschlagen");
+          toast.error((error as Error)?.message || t("onboarding.toast.ncLoginFailed"));
         }
       }, 3000);
     } catch (error) {
       setNcSetupConnecting(false);
-      toast.error((error as Error)?.message || "Server nicht erreichbar");
+      toast.error((error as Error)?.message || t("onboarding.toast.ncServerUnreachable"));
     }
   };
 
@@ -477,9 +479,9 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
     if (restoreData) {
       await applyBackup(restoreData);
-      toast.success("Daten wiederhergestellt!");
+      toast.success(t("onboarding.toast.restoreSuccess"));
     } else {
-      toast.success("Willkommen!");
+      toast.success(t("onboarding.toast.welcome"));
     }
 
     onComplete();
@@ -490,29 +492,29 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     try {
       setLoading(true);
       const user = await signInGoogle();
-      if (!user) throw new Error("Anmeldung fehlgeschlagen");
+      if (!user) throw new Error(t("onboarding.toast.signinFailed"));
 
       const token = (user as GoogleSignInResult).authentication?.accessToken;
-      if (!token) throw new Error("Kein Zugriffstoken erhalten");
+      if (!token) throw new Error(t("onboarding.toast.tokenMissing"));
 
       // Nutzt jetzt automatisch die neue Logik aus googleDrive.js (inkl. Legacy Fallback)
       const file = await findLatestBackup();
-      if (!file) throw new Error("Kein Backup gefunden.");
+      if (!file) throw new Error(t("onboarding.toast.backupNotFound"));
 
       const content = await downloadFileContent(token as string, file.id as string);
-      if (!content) throw new Error("Backup leer.");
+      if (!content) throw new Error(t("onboarding.toast.backupEmpty"));
 
       const { isValid, data } = await analyzeBackupData(content);
       if (isValid) {
         setRestoreData(data);
-        toast.success("Backup geladen!");
+        toast.success(t("onboarding.toast.backupLoaded"));
         setStep(7);
       } else {
-        toast.error("Format ungültig.");
+        toast.error(t("onboarding.toast.backupInvalid"));
       }
     } catch (err) {
       log.error(err);
-      toast.error((err as Error).message || "Fehler beim Laden");
+      toast.error((err as Error).message || t("onboarding.toast.loadError"));
     } finally {
       setLoading(false);
     }
@@ -526,16 +528,16 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
           const { isValid, data } = await analyzeBackupData(backupContent);
           if (isValid) {
               setRestoreData(data);
-              toast.success("Backup geladen!");
+              toast.success(t("onboarding.toast.backupLoaded"));
               setStep(7);
           } else {
-              toast.error("Ungültiges Backup.");
+              toast.error(t("onboarding.toast.backupInvalidShort"));
           }
       } else {
-          toast.error("Kein Backup gefunden.");
+          toast.error(t("onboarding.toast.backupNotFound"));
       }
     } catch {
-        toast.error("Fehler beim Zugriff.");
+        toast.error(t("onboarding.toast.folderAccessError"));
     } finally {
         setLoading(false);
     }
@@ -550,16 +552,16 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       const { isValid, data } = await analyzeBackupData(content);
       if (isValid) {
         if ((data as BackupAnalysisResult).integrity === "mismatch") {
-          toast("⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert", { duration: 6000 });
+          toast(t("onboarding.toast.integrityMismatch"), { duration: 6000 });
         }
         setRestoreData(data);
-        toast.success("Backup geladen!");
+        toast.success(t("onboarding.toast.backupLoaded"));
         setStep(7);
       } else {
-        toast.error("Ungültiges Format.");
+        toast.error(t("onboarding.toast.backupInvalidFormat"));
       }
     } catch {
-      toast.error("Datei konnte nicht gelesen werden.");
+      toast.error(t("onboarding.toast.fileReadError"));
     } finally {
       setLoading(false);
       e.target.value = "";
@@ -568,7 +570,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
   const handleNextcloudRestore = async () => {
     if (!ncRestoreUrl) {
-      toast.error("Bitte Server-URL eingeben");
+      toast.error(t("onboarding.toast.ncEnterUrl"));
       return;
     }
     try {
@@ -589,7 +591,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         if (attempts > 100) {
           if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
           setNcRestoreConnecting(false);
-          toast.error("Zeitüberschreitung — bitte erneut versuchen");
+          toast.error(t("onboarding.toast.ncTimeout"));
           return;
         }
         try {
@@ -611,21 +613,21 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
               const userId = await resolveUserId(result.server as string, result.loginName as string, result.appPassword as string);
               const content = await ncDownloadBackup(result.server as string, userId, result.appPassword as string);
               if (!content) {
-                toast.error("Kein Backup auf Nextcloud gefunden");
+                toast.error(t("onboarding.toast.ncRestoreNotFound"));
                 setLoading(false);
                 return;
               }
               const { isValid, data } = await analyzeBackupData(content);
               if (isValid) {
                 setRestoreData(data);
-                toast.success("Backup von Nextcloud geladen!");
+                toast.success(t("onboarding.toast.ncRestoreLoaded"));
                 setShowNcRestore(false);
                 setStep(7);
               } else {
-                toast.error("Ungültiges Backup-Format");
+                toast.error(t("onboarding.toast.ncRestoreInvalid"));
               }
             } catch (err) {
-              toast.error((err as Error).message || "Fehler beim Laden");
+              toast.error((err as Error).message || t("onboarding.toast.loadError"));
             } finally {
               setLoading(false);
             }
@@ -633,12 +635,12 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         } catch (error) {
           if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
           setNcRestoreConnecting(false);
-          toast.error((error as Error)?.message || "Nextcloud Login fehlgeschlagen");
+          toast.error((error as Error)?.message || t("onboarding.toast.ncLoginFailed"));
         }
       }, 3000);
     } catch (error) {
       setNcRestoreConnecting(false);
-      toast.error((error as Error)?.message || "Server nicht erreichbar oder Login Flow v2 nicht unterstützt");
+      toast.error((error as Error)?.message || t("onboarding.toast.ncServerUnreachableRestore"));
     }
   };
 
@@ -760,10 +762,10 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                    <ShieldCheck size={32} />
                  </div>
                  <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">
-                    {isRestoreFlow ? "Backup wiederherstellen" : "Sicher ist sicher"}
+                    {isRestoreFlow ? t("onboarding.backup.titleRestore") : t("onboarding.backup.titleSetup")}
                  </h2>
                  <p className="text-zinc-500 dark:text-zinc-400">
-                    {isRestoreFlow ? "Wo liegt dein Backup?" : "Willst du deine Daten zusätzlich sichern?"}
+                    {isRestoreFlow ? t("onboarding.backup.subtitleRestore") : t("onboarding.backup.subtitleSetup")}
                  </p>
                </div>
 
@@ -772,17 +774,13 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                    <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40">
                      <Info size={14} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                      <p className="text-xs text-amber-900 dark:text-amber-100 leading-relaxed">
-                       <span className="font-bold">Komplett optional.</span> Du kannst
-                       diesen Schritt einfach überspringen — die App funktioniert auch ohne
-                       Backup. Einstellen kannst du das jederzeit später.
+                       <Trans i18nKey="onboarding.backup.optionalHint" components={{ b: <span className="font-bold" /> }} />
                      </p>
                    </div>
                    <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
                      <FileText size={14} className="text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
                      <p className="text-xs text-emerald-900 dark:text-emerald-100 leading-relaxed">
-                       <span className="font-bold">Bonus:</span> Wenn du ein Backup aktivierst,
-                       legt die App <span className="font-bold">automatisch jeden Monat</span> einen
-                       fertigen PDF-Stundenzettel dazu — zum Abgeben oder Archivieren.
+                       <Trans i18nKey="onboarding.backup.bonusHint" components={{ b: <span className="font-bold" /> }} />
                      </p>
                    </div>
                  </div>
@@ -807,8 +805,8 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                   <CloudLightning size={20}/>
                              </div>
                              <div className="text-left">
-                                <div className="font-bold text-zinc-800 dark:text-white">Google Drive</div>
-                                <div className="text-xs text-zinc-500">Tägliches Backup + Monats-PDF in deine Cloud</div>
+                                <div className="font-bold text-zinc-800 dark:text-white">{t("onboarding.backup.gdrive.title")}</div>
+                                <div className="text-xs text-zinc-500">{t("onboarding.backup.gdrive.subtitle")}</div>
                              </div>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
@@ -832,8 +830,8 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                   <FolderInput size={20}/>
                              </div>
                              <div className="text-left">
-                                <div className="font-bold text-zinc-800 dark:text-white">Am Handy speichern</div>
-                                <div className="text-xs text-zinc-500">Backup + PDF in einen Ordner deiner Wahl</div>
+                                <div className="font-bold text-zinc-800 dark:text-white">{t("onboarding.backup.local.title")}</div>
+                                <div className="text-xs text-zinc-500">{t("onboarding.backup.local.subtitle")}</div>
                              </div>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
@@ -857,13 +855,13 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                   <ServerCog size={20}/>
                              </div>
                              <div className="text-left">
-                                <div className="font-bold text-zinc-800 dark:text-white">Nextcloud</div>
+                                <div className="font-bold text-zinc-800 dark:text-white">{t("onboarding.backup.nextcloud.title")}</div>
                                 <div className="text-xs text-zinc-500">
                                   {ncSetupConnected
                                     ? <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                                        <CheckCircle2 size={12} /> Verbunden als {ncCredentials?.loginName || ncCredentials?.userId}
+                                        <CheckCircle2 size={12} /> {t("onboarding.backup.nextcloud.connectedAs", { user: ncCredentials?.loginName || ncCredentials?.userId })}
                                       </span>
-                                    : "Auf deiner eigenen Cloud — volle Datenhoheit"}
+                                    : t("onboarding.backup.nextcloud.subtitle")}
                                 </div>
                              </div>
                           </div>
@@ -876,7 +874,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
                       {!formData.autoBackup && !formData.localBackupEnabled && !ncSetupConnected && (
                         <p className="text-center text-xs text-zinc-400 dark:text-zinc-500 italic pt-1">
-                          Nix dabei? Kein Problem — tipp einfach auf „Weiter“.
+                          {t("onboarding.backup.skipHint")}
                         </p>
                       )}
 
@@ -887,7 +885,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                             <div className="flex flex-col items-center gap-2 py-3">
                               <Loader size={20} className="animate-spin text-orange-500" />
                               <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                                Warte auf Anmeldung in Nextcloud...
+                                {t("onboarding.backup.nextcloud.awaiting")}
                               </span>
                               <button
                                 onClick={(e) => {
@@ -900,7 +898,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                 }}
                                 className="mt-1 px-3 py-1 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700"
                               >
-                                Abbrechen
+                                {t("common.cancel")}
                               </button>
                             </div>
                           ) : (
@@ -910,7 +908,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                 value={ncSetupUrl}
                                 onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => setNcSetupUrl(e.target.value)}
-                                placeholder="https://cloud.example.com"
+                                placeholder={t("onboarding.backup.nextcloud.urlPlaceholder")}
                                 className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
                               />
                               <button
@@ -921,7 +919,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                 className="w-full py-2 text-sm font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-1.5"
                               >
                                 <ServerCog size={14} />
-                                Mit Nextcloud verbinden
+                                {t("onboarding.backup.nextcloud.connectButton")}
                               </button>
                             </>
                           )}
@@ -942,7 +940,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                               {loading ? <Loader size={18} className="animate-spin text-zinc-400"/> : <Cloud size={18} className="text-blue-500" />}
                             </div>
                             <div className="text-left flex-1">
-                              <div className="font-bold text-sm text-zinc-800 dark:text-white">Aus Google Drive</div>
+                              <div className="font-bold text-sm text-zinc-800 dark:text-white">{t("onboarding.backup.restoreFromGdrive")}</div>
                             </div>
                         </button>
 
@@ -955,7 +953,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                               <Cloud size={18} className="text-orange-500" />
                             </div>
                             <div className="text-left flex-1">
-                              <div className="font-bold text-sm text-zinc-800 dark:text-white">Aus Nextcloud</div>
+                              <div className="font-bold text-sm text-zinc-800 dark:text-white">{t("onboarding.backup.restoreFromNextcloud")}</div>
                             </div>
                         </button>
 
@@ -965,7 +963,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                               <div className="flex flex-col items-center gap-2 py-3">
                                 <Loader size={20} className="animate-spin text-orange-500" />
                                 <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                                  Warte auf Anmeldung in Nextcloud...
+                                  {t("onboarding.backup.nextcloud.awaiting")}
                                 </span>
                                 <button
                                   onClick={() => {
@@ -974,7 +972,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                   }}
                                   className="mt-1 px-3 py-1 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700"
                                 >
-                                  Abbrechen
+                                  {t("common.cancel")}
                                 </button>
                               </div>
                             ) : (
@@ -983,7 +981,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                   type="url"
                                   value={ncRestoreUrl}
                                   onChange={(e) => setNcRestoreUrl(e.target.value)}
-                                  placeholder="https://cloud.example.com"
+                                  placeholder={t("onboarding.backup.nextcloud.urlPlaceholder")}
                                   className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
                                 />
                                 <button
@@ -992,7 +990,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                   className="w-full py-2 text-sm font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-1.5"
                                 >
                                   {loading ? <Loader size={14} className="animate-spin" /> : null}
-                                  {loading ? "Lade..." : "Mit Nextcloud verbinden"}
+                                  {loading ? t("onboarding.backup.ncLoading") : t("onboarding.backup.nextcloud.connectButton")}
                                 </button>
                               </>
                             )}
@@ -1006,7 +1004,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                             className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
                             >
                                 <FolderInput size={20} className="text-yellow-500" />
-                                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Lokaler Ordner</span>
+                                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{t("onboarding.backup.restoreFromFolder")}</span>
                             </button>
 
                             <div className="relative">
@@ -1017,7 +1015,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                 className="w-full h-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
                                 >
                                     <Upload size={20} className="text-purple-500" />
-                                    <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Datei (.json)</span>
+                                    <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{t("onboarding.backup.restoreFromFile")}</span>
                                 </button>
                             </div>
                         </div>
@@ -1044,7 +1042,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
               onClick={prevStep}
               className="px-4 py-2 font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors flex items-center gap-1"
             >
-              <ArrowLeft size={18} /> Zurück
+              <ArrowLeft size={18} /> {t("onboarding.nav.back")}
             </button>
 
             {!isRestoreFlow && (
@@ -1052,7 +1050,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                 onClick={nextStep}
                 className="px-6 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl flex items-center gap-2 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-lg shadow-zinc-900/10"
               >
-                {step === 6 ? "Passt" : "Weiter"} <ChevronRight size={18} />
+                {step === 6 ? t("onboarding.nav.finish") : t("onboarding.nav.next")} <ChevronRight size={18} />
               </button>
             )}
           </div>

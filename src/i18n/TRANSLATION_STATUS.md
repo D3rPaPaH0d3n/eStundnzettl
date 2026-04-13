@@ -64,7 +64,7 @@ format.*          any format helpers needing translated text
 - [x] B10: Settings/CalculationSettings
 - [x] B11: Settings/BackupSettings
 - [x] B12: Settings/LocaleSettings (+ Language Picker UI) + DataSettings + PdfArchiveSettings
-- [ ] B13: OnboardingWizard + Welcome/Profile/SummaryStep
+- [x] B13: OnboardingWizard + Welcome/Profile/SummaryStep
 - [ ] B14: Onboarding LocaleStep + WorkScheduleStep
 - [ ] B15: Onboarding CalculationStep
 - [ ] B16: Onboarding WorkCodesStep
@@ -91,6 +91,29 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B13** (2026-04-13): migrated the onboarding wizard shell
+  + three small steps (Welcome/Profile/Summary). Opens the
+  `onboarding.*` namespace that B14–B16 will extend.
+  - `onboarding.nav.*` — Back/Next/Finish.
+  - `onboarding.welcome.*` — logo alt, greeting, intro (Trans with
+    <brand> slot), three feature badges, three action buttons.
+  - `onboarding.profile.*` — title/subtitle, privacy hint (Trans
+    with <b>), photo alt/label, three labels + placeholders.
+  - `onboarding.summary.*` — title, dual body (restore vs fresh),
+    tour hint, finish button.
+  - `onboarding.backup.*` — full step-6 copy: dual title/subtitle,
+    optional/bonus hints, three target cards (gdrive/local/
+    nextcloud with connectedAs {{user}}, awaiting, URL placeholder,
+    connect button), skip hint, four restore entry points
+    (gdrive/nextcloud/folder/file), ncLoading.
+  - `onboarding.toast.*` — 28 toasts including interpolation for
+    ncConnectedAs and integrity mismatch; reused integrity text
+    shared with settings.toast.integrityMismatch where appropriate.
+  Cancel buttons in the Nextcloud polling views reuse common.cancel.
+  JSON fix: the German skip-hint originally used the closing
+  low-double-quote „…" which terminates a JSON string; replaced
+  with single quotation marks ‚Weiter' so the file parses.
+  Tests 630/630 green.
 - **Session B12** (2026-04-13): migrated the last three Settings panels
   and **added the Language Picker UI** planned since A1.
   - `Settings/LocaleSettings.tsx`: new `settings.language.*` card

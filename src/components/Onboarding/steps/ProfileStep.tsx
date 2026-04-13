@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { User, Camera, Upload, Building2, Lock } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
 
 /**
  * Onboarding-Schritt 1: Profildaten des Users.
@@ -29,6 +30,7 @@ interface Props {
 }
 
 const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, onPhotoUpload }) => {
+  const { t } = useTranslation();
   return (
     <motion.div
       key="step1"
@@ -41,15 +43,14 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
         <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-600">
           <User size={32} />
         </div>
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Sag uns wer du bist</h2>
-        <p className="text-zinc-500 dark:text-zinc-400">Damit dein Stundenzettel auch deinen Namen trägt.</p>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">{t("onboarding.profile.title")}</h2>
+        <p className="text-zinc-500 dark:text-zinc-400">{t("onboarding.profile.subtitle")}</p>
       </div>
 
       <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
         <Lock size={14} className="text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
         <p className="text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">
-          <span className="font-bold">Keine Sorge:</span> Dein Name, das Foto und alle
-          weiteren Daten bleiben ausschließlich auf deinem Handy. Es geht nix raus, außer du willst's so.
+          <Trans i18nKey="onboarding.profile.privacyHint" components={{ b: <span className="font-bold" /> }} />
         </p>
       </div>
 
@@ -60,7 +61,7 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
             className="w-24 h-24 rounded-full bg-zinc-100 dark:bg-zinc-700 border-2 border-dashed border-zinc-300 dark:border-zinc-600 flex items-center justify-center cursor-pointer overflow-hidden relative group"
           >
             {formData.photo ? (
-              <img src={formData.photo} alt="Profil" className="w-full h-full object-cover" />
+              <img src={formData.photo} alt={t("onboarding.profile.photoAlt")} className="w-full h-full object-cover" />
             ) : (
               <Camera className="text-zinc-400 group-hover:text-zinc-600 transition-colors" />
             )}
@@ -68,7 +69,7 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
               <Upload size={20} className="text-white" />
             </div>
           </div>
-          <span className="text-xs text-zinc-400">Profilbild (optional)</span>
+          <span className="text-xs text-zinc-400">{t("onboarding.profile.photoLabel")}</span>
           <input
             type="file"
             ref={photoInputRef}
@@ -81,20 +82,20 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">
-              Dein Name
+              {t("onboarding.profile.nameLabel")}
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 focus:border-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
-              placeholder="Max Mustermann"
+              placeholder={t("onboarding.profile.namePlaceholder")}
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">
-              Firma
+              {t("onboarding.profile.companyLabel")}
             </label>
             <div className="relative">
               <input
@@ -102,7 +103,7 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                 className="w-full p-4 pl-12 rounded-xl bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 focus:border-emerald-500 outline-none transition-all font-medium text-zinc-800 dark:text-zinc-200"
-                placeholder="Firmenname GmbH"
+                placeholder={t("onboarding.profile.companyPlaceholder")}
               />
               <Building2
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400"
@@ -113,14 +114,14 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
 
           <div>
             <label className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">
-              Tätigkeit / Anstellung
+              {t("onboarding.profile.roleLabel")}
             </label>
             <input
               type="text"
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 focus:border-emerald-500 outline-none transition-all font-medium text-zinc-800 dark:text-zinc-200"
-              placeholder="z.B. Monteur, Kellner, Pflege, Büro..."
+              placeholder={t("onboarding.profile.rolePlaceholder")}
             />
           </div>
         </div>

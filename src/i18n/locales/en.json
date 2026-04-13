@@ -226,6 +226,108 @@
     },
     "tagline": "\"So not a single hour gets lost!\""
   },
+  "onboarding": {
+    "nav": {
+      "back": "Back",
+      "next": "Next",
+      "finish": "Looks good"
+    },
+    "welcome": {
+      "logoAlt": "eStundnzettl logo",
+      "hello": "Hello! 👋",
+      "glad": "Great to have you here.",
+      "intro": "Your <brand>eStundnzettl</brand> — simple time tracking that just works. No bells, no whistles.",
+      "badgeMobile": "All on your phone",
+      "badgeOffline": "Works offline",
+      "badgePrivate": "Your data stays yours",
+      "startNew": "Let's go — fresh setup",
+      "restore": "I already have a backup",
+      "demo": "Just take a look (demo)"
+    },
+    "profile": {
+      "title": "Tell us who you are",
+      "subtitle": "So your timesheet carries your name.",
+      "privacyHint": "<b>No worries:</b> Your name, photo and all other data stay on your phone only. Nothing leaves unless you want it to.",
+      "photoAlt": "Profile",
+      "photoLabel": "Profile picture (optional)",
+      "nameLabel": "Your name",
+      "namePlaceholder": "John Doe",
+      "companyLabel": "Company",
+      "companyPlaceholder": "Acme Ltd.",
+      "roleLabel": "Role / job title",
+      "rolePlaceholder": "e.g. technician, waiter, nurse, office…"
+    },
+    "summary": {
+      "title": "All set! 🎉",
+      "bodyRestore": "Your data is back. Let's show you what the app can do.",
+      "bodyFresh": "Everything is set up. Now we'll show you in a few clicks where things live.",
+      "tourHint": "Quick tour — just a minute",
+      "finishButton": "Go, show me the app"
+    },
+    "backup": {
+      "titleSetup": "Better safe than sorry",
+      "titleRestore": "Restore backup",
+      "subtitleSetup": "Want to back up your data as well?",
+      "subtitleRestore": "Where is your backup?",
+      "optionalHint": "<b>Totally optional.</b> You can simply skip this step — the app works without a backup too. You can set it up later at any time.",
+      "bonusHint": "<b>Bonus:</b> If you enable a backup, the app will <b>automatically add a ready-made PDF timesheet every month</b> — for handing in or archiving.",
+      "gdrive": {
+        "title": "Google Drive",
+        "subtitle": "Daily backup + monthly PDF to your cloud"
+      },
+      "local": {
+        "title": "Save on the phone",
+        "subtitle": "Backup + PDF in a folder of your choice"
+      },
+      "nextcloud": {
+        "title": "Nextcloud",
+        "subtitle": "On your own cloud — full data sovereignty",
+        "connectedAs": "Connected as {{user}}",
+        "awaiting": "Waiting for Nextcloud login…",
+        "urlPlaceholder": "https://cloud.example.com",
+        "connectButton": "Connect to Nextcloud"
+      },
+      "skipHint": "Nothing for you? No problem — just tap \"Next\".",
+      "restoreFromGdrive": "From Google Drive",
+      "restoreFromNextcloud": "From Nextcloud",
+      "restoreFromFolder": "Local folder",
+      "restoreFromFile": "File (.json)",
+      "ncLoading": "Loading…"
+    },
+    "toast": {
+      "demoLoaded": "Demo data loaded! You can try out the app now.",
+      "nameRequired": "Please enter your name.",
+      "localeRequired": "Please pick an hours calculation.",
+      "gdriveLinked": "Linked successfully!",
+      "gdriveLoginFailed": "Sign-in cancelled or failed.",
+      "folderLinked": "Folder linked!",
+      "folderCancelled": "Selection cancelled",
+      "ncDisconnected": "Nextcloud disconnected",
+      "ncEnterUrl": "Please enter the server URL",
+      "ncConnected": "Nextcloud connected!",
+      "ncTimeout": "Timed out — please try again",
+      "ncLoginFailed": "Nextcloud login failed",
+      "ncServerUnreachable": "Server unreachable",
+      "ncServerUnreachableRestore": "Server unreachable or Login Flow v2 not supported",
+      "ncRestoreNotFound": "No backup found on Nextcloud",
+      "ncRestoreInvalid": "Invalid backup format",
+      "ncRestoreLoaded": "Backup loaded from Nextcloud!",
+      "signinFailed": "Sign-in failed",
+      "tokenMissing": "No access token received",
+      "backupNotFound": "No backup found.",
+      "backupEmpty": "Backup is empty.",
+      "backupInvalid": "Invalid format.",
+      "backupInvalidShort": "Invalid backup.",
+      "backupInvalidFormat": "Invalid format.",
+      "backupLoaded": "Backup loaded!",
+      "loadError": "Error while loading",
+      "folderAccessError": "Error accessing folder.",
+      "fileReadError": "Could not read file.",
+      "integrityMismatch": "⚠️ Checksum mismatch — backup may have been tampered with",
+      "restoreSuccess": "Data restored!",
+      "welcome": "Welcome!"
+    }
+  },
   "changelogModal": {
     "title": "Changelog",
     "recentBugfixes": "Recent bug fixes",

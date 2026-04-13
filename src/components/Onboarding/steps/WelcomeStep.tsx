@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Play, RefreshCw, FlaskConical, Smartphone, WifiOff, Lock } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
 import AppLogo from "../../../assets/logo.png";
 
 /**
@@ -19,6 +20,7 @@ interface Props {
 }
 
 const WelcomeStep: React.FC<Props> = ({ onStartNew, onStartRestore, onDemoMode }) => {
+  const { t } = useTranslation();
   return (
     <motion.div
       key="step0"
@@ -31,19 +33,23 @@ const WelcomeStep: React.FC<Props> = ({ onStartNew, onStartRestore, onDemoMode }
         <div className="w-24 h-24 rounded-3xl overflow-hidden mx-auto shadow-xl shadow-emerald-500/20 ring-1 ring-black/5 dark:ring-white/10 bg-white dark:bg-zinc-800">
           <img
             src={AppLogo}
-            alt="eStundnzettl Logo"
+            alt={t("onboarding.welcome.logoAlt")}
             className="w-full h-full object-contain"
           />
         </div>
         <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
-          Servus! 👋
+          {t("onboarding.welcome.hello")}
         </h1>
         <p className="text-zinc-600 dark:text-zinc-300 font-medium">
-          Schön, dass du da bist.
+          {t("onboarding.welcome.glad")}
         </p>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-[300px] mx-auto leading-relaxed">
-          Dein <span className="font-bold text-emerald-600 dark:text-emerald-400">eStundnzettl</span> —
-          die einfache Zeiterfassung, die einfach funktioniert. Ganz ohne Schnickschnack.
+          <Trans
+            i18nKey="onboarding.welcome.intro"
+            components={{
+              brand: <span className="font-bold text-emerald-600 dark:text-emerald-400" />,
+            }}
+          />
         </p>
       </div>
 
@@ -51,15 +57,15 @@ const WelcomeStep: React.FC<Props> = ({ onStartNew, onStartRestore, onDemoMode }
       <div className="w-full grid grid-cols-3 gap-2">
         <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
           <Smartphone size={18} className="text-emerald-600 dark:text-emerald-400" />
-          <span className="text-[10px] font-bold text-center text-emerald-700 dark:text-emerald-300 leading-tight">Alles am Handy</span>
+          <span className="text-[10px] font-bold text-center text-emerald-700 dark:text-emerald-300 leading-tight">{t("onboarding.welcome.badgeMobile")}</span>
         </div>
         <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
           <WifiOff size={18} className="text-emerald-600 dark:text-emerald-400" />
-          <span className="text-[10px] font-bold text-center text-emerald-700 dark:text-emerald-300 leading-tight">Offline nutzbar</span>
+          <span className="text-[10px] font-bold text-center text-emerald-700 dark:text-emerald-300 leading-tight">{t("onboarding.welcome.badgeOffline")}</span>
         </div>
         <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
           <Lock size={18} className="text-emerald-600 dark:text-emerald-400" />
-          <span className="text-[10px] font-bold text-center text-emerald-700 dark:text-emerald-300 leading-tight">Daten bleiben bei dir</span>
+          <span className="text-[10px] font-bold text-center text-emerald-700 dark:text-emerald-300 leading-tight">{t("onboarding.welcome.badgePrivate")}</span>
         </div>
       </div>
 
@@ -70,7 +76,7 @@ const WelcomeStep: React.FC<Props> = ({ onStartNew, onStartRestore, onDemoMode }
           className="w-full p-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-bold text-base shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
         >
           <Play size={18} fill="currentColor" />
-          Los geht's — neu einrichten
+          {t("onboarding.welcome.startNew")}
         </button>
 
         <button
@@ -79,7 +85,7 @@ const WelcomeStep: React.FC<Props> = ({ onStartNew, onStartRestore, onDemoMode }
           className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-zinc-100 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-2xl font-bold text-sm hover:border-emerald-200 dark:hover:border-zinc-600 hover:bg-emerald-50/50 dark:hover:bg-zinc-700/50 transition-all flex items-center justify-center gap-3"
         >
           <RefreshCw size={18} />
-          Ich hab schon ein Backup
+          {t("onboarding.welcome.restore")}
         </button>
 
         <button
@@ -88,7 +94,7 @@ const WelcomeStep: React.FC<Props> = ({ onStartNew, onStartRestore, onDemoMode }
           className="w-full p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-300 rounded-2xl font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all flex items-center justify-center gap-2"
         >
           <FlaskConical size={16} />
-          Nur mal reinschnuppern (Demo)
+          {t("onboarding.welcome.demo")}
         </button>
       </div>
     </motion.div>

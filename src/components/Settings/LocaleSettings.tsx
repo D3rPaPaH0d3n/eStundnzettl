@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from "react";
-import { Globe, ChevronDown } from "lucide-react";
+import { Globe, ChevronDown, Languages } from "lucide-react";
 import toast from "react-hot-toast";
+import { Trans, useTranslation } from "react-i18next";
 import { Card } from "../../utils";
+import { useLocaleSetting } from "../../hooks/useLocaleSetting";
 import type { Locale, LocaleId } from "../../locales/types";
 import {
   GERMAN_STATE_IDS, GERMAN_STATE_NAMES, type GermanState,
@@ -34,6 +36,8 @@ interface Props {
 type Group = "neutral" | "at" | "de" | "ch";
 
 const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterLocaleChange }) => {
+  const { t } = useTranslation();
+  const { language, setLanguage, supportedLanguages } = useLocaleSetting();
   const [stateDrawerOpen, setStateDrawerOpen] = useState(false);
   const [kantonDrawerOpen, setKantonDrawerOpen] = useState(false);
   const [pendingLocaleId, setPendingLocaleId] = useState<LocaleId | null>(null);
@@ -84,33 +88,33 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
 
   const handleGroupChange = (group: Group) => {
     if (group === "neutral") {
-      if (initiateLocaleChange("neutral")) toast.success("Auf Neutral umgestellt");
+      if (initiateLocaleChange("neutral")) toast.success(t("settings.locale.toast.switchedNeutral"));
     } else if (group === "at") {
-      if (initiateLocaleChange("at")) toast.success("Auf Österreich umgestellt");
+      if (initiateLocaleChange("at")) toast.success(t("settings.locale.toast.switchedAustria"));
     } else if (group === "ch") {
       const nextId: LocaleId = (currentSwissKanton
         ? `ch-${currentSwissKanton}`
         : "ch-zh") as LocaleId;
-      if (initiateLocaleChange(nextId)) toast.success("Auf Schweiz umgestellt");
+      if (initiateLocaleChange(nextId)) toast.success(t("settings.locale.toast.switchedSwitzerland"));
     } else {
       const nextId: LocaleId = (currentGermanState
         ? `de-${currentGermanState}`
         : "de-by") as LocaleId;
-      if (initiateLocaleChange(nextId)) toast.success("Auf Deutschland umgestellt");
+      if (initiateLocaleChange(nextId)) toast.success(t("settings.locale.toast.switchedGermany"));
     }
   };
 
   const handleGermanStateChange = (id: string | number) => {
     const stateCode = id as GermanState;
     if (initiateLocaleChange(`de-${stateCode}` as LocaleId)) {
-      toast.success(`Bundesland auf ${GERMAN_STATE_NAMES[stateCode]} geändert`);
+      toast.success(t("settings.locale.toast.stateChanged", { name: GERMAN_STATE_NAMES[stateCode] }));
     }
   };
 
   const handleSwissKantonChange = (id: string | number) => {
     const kCode = id as SwissKanton;
     if (initiateLocaleChange(`ch-${kCode}` as LocaleId)) {
-      toast.success(`Kanton auf ${SWISS_KANTON_NAMES[kCode]} geändert`);
+      toast.success(t("settings.locale.toast.kantonChanged", { name: SWISS_KANTON_NAMES[kCode] }));
     }
   };
 
@@ -122,7 +126,7 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
     }
     setLocale(pendingLocaleId);
     onAfterLocaleChange(getLocale(pendingLocaleId), workDays ?? []);
-    toast.success("Regeln zurückgesetzt");
+    toast.success(t("settings.locale.toast.rulesReset"));
     setConfirmModalOpen(false);
     setPendingLocaleId(null);
   };
@@ -135,21 +139,58 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
     }
     // Nur Locale umschalten, Config unverändert lassen
     setLocale(pendingLocaleId);
-    toast.success("Locale umgestellt, Regeln behalten");
+    toast.success(t("settings.locale.toast.localeSwitchedKeepConfig"));
     setConfirmModalOpen(false);
     setPendingLocaleId(null);
   };
 
+  const handleLanguageChange = (next: (typeof supportedLanguages)[number]) => {
+    if (language === next) return;
+    setLanguage(next);
+    toast.success(t("settings.language.toast"));
+  };
+
   return (
+    <>
+    <Card className="p-4 space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-600">
+          <Languages size={20} />
+        </div>
+        <div>
+          <h3 className="font-bold text-zinc-800 dark:text-white">{t("settings.language.header")}</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            {t("settings.language.subtitle")}
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {supportedLanguages.map((lng) => (
+          <button
+            key={lng}
+            type="button"
+            onClick={() => handleLanguageChange(lng)}
+            className={`p-3 rounded-xl border-2 text-center text-sm font-bold transition-all ${
+              language === lng
+                ? "border-sky-500 bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300"
+                : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-sky-300"
+            }`}
+          >
+            {t(`settings.language.${lng}`)}
+          </button>
+        ))}
+      </div>
+    </Card>
+
     <Card className="p-4 space-y-4">
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
           <Globe size={20} />
         </div>
         <div>
-          <h3 className="font-bold text-zinc-800 dark:text-white">Stundenberechnung</h3>
+          <h3 className="font-bold text-zinc-800 dark:text-white">{t("settings.locale.header")}</h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Feiertage, Halbtage, Mehrarbeit/Überstunden
+            {t("settings.locale.subtitle")}
           </p>
         </div>
       </div>
@@ -164,7 +205,7 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
               : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-emerald-300"
           }`}
         >
-          Neutral
+          {t("settings.locale.group.neutral")}
         </button>
         <button
           type="button"
@@ -175,7 +216,7 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
               : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-blue-300"
           }`}
         >
-          Österreich
+          {t("settings.locale.group.austria")}
         </button>
         <button
           type="button"
@@ -186,7 +227,7 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
               : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-blue-300"
           }`}
         >
-          Deutschland
+          {t("settings.locale.group.germany")}
         </button>
         <button
           type="button"
@@ -197,14 +238,14 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
               : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-red-300"
           }`}
         >
-          Schweiz
+          {t("settings.locale.group.switzerland")}
         </button>
       </div>
 
       {currentGroup === "de" && (
         <div>
           <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
-            Bundesland
+            {t("settings.locale.stateLabel")}
           </label>
           <button
             type="button"
@@ -222,7 +263,7 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
       {currentGroup === "ch" && (
         <div>
           <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
-            Kanton
+            {t("settings.locale.kantonLabel")}
           </label>
           <button
             type="button"
@@ -238,15 +279,17 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
       )}
 
       <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-        <span className="font-bold">Aktuell aktiv:</span> {locale.name}. Zukünftige
-        Berechnungen folgen der neuen Auswahl — vergangene Einträge bleiben
-        unverändert.
+        <Trans
+          i18nKey="settings.locale.active"
+          values={{ name: locale.name }}
+          components={{ b: <span className="font-bold" /> }}
+        />
       </p>
 
       <SelectionDrawer
         isOpen={stateDrawerOpen}
         onClose={() => setStateDrawerOpen(false)}
-        title="Bundesland wählen"
+        title={t("settings.locale.stateDrawerTitle")}
         options={stateOptions}
         value={currentGermanState ?? "by"}
         onChange={handleGermanStateChange}
@@ -255,7 +298,7 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
       <SelectionDrawer
         isOpen={kantonDrawerOpen}
         onClose={() => setKantonDrawerOpen(false)}
-        title="Kanton wählen"
+        title={t("settings.locale.kantonDrawerTitle")}
         options={kantonOptions}
         value={currentSwissKanton ?? "zh"}
         onChange={handleSwissKantonChange}
@@ -265,12 +308,13 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
         isOpen={confirmModalOpen}
         onClose={handleKeepConfig}
         onConfirm={handleConfirmReset}
-        title="Regeln zurücksetzen?"
-        message="Möchtest du die Berechnungsregeln (Überstunden, Krank, Feiertage) auf die Defaults der neuen Locale zurücksetzen? Mit 'Abbrechen' bleibt deine aktuelle Konfiguration erhalten."
-        confirmText="Zurücksetzen"
+        title={t("settings.locale.confirmTitle")}
+        message={t("settings.locale.confirmMessage")}
+        confirmText={t("settings.locale.confirmConfirm")}
         confirmColor="emerald"
       />
     </Card>
+    </>
   );
 };
 

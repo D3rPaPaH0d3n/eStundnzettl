@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { FileText, CheckCircle2, AlertTriangle, Loader, HardDrive, Server, Cloud } from "lucide-react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { Card } from "../../utils";
 import { STORAGE_KEYS } from "../../hooks/constants";
 import { isSQLiteActive } from "../../db/storageMode";
@@ -31,12 +32,9 @@ async function dualWrite(lsKey: string, sqlKey: string, value: string) {
 
 const readBool = (key: string) => localStorage.getItem(key) === "true";
 
-const formatLastRun = (dateStr: string | null | undefined) => {
-  if (!dateStr) return "Noch nicht ausgefuehrt";
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-};
+// formatLastRun now lives inside the component so it can use i18n.
+// Date formatting itself still uses "de-DE" until the C1 format-locale
+// session swaps this to a dynamic helper.
 
 interface Props {
   nextcloudEnabled: boolean;
@@ -46,6 +44,13 @@ interface Props {
 }
 
 const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, lastRun, lastError }) => {
+  const { t } = useTranslation();
+  const formatLastRun = (dateStr: string | null | undefined) => {
+    if (!dateStr) return t("settings.pdfArchive.lastRunNever");
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
   const [enabled, setEnabled] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_ENABLED));
   const [localTarget, setLocalTarget] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_LOCAL));
   const [nextcloudTarget, setNextcloudTarget] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD));
@@ -114,13 +119,13 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
 
   const toggleNextcloud = useCallback(async () => {
     if (!nextcloudEnabled) {
-      toast.error("Nextcloud muss zuerst verbunden sein (Karte 'Backup & Export').");
+      toast.error(t("settings.pdfArchive.toast.ncNotConnected"));
       return;
     }
     const next = !nextcloudTarget;
     setNextcloudTarget(next);
     await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD, "pdf_archive_nextcloud", String(next));
-  }, [nextcloudTarget, nextcloudEnabled]);
+  }, [nextcloudTarget, nextcloudEnabled, t]);
 
   const handleGdriveConnect = useCallback(async () => {
     setGdriveBusy(true);
@@ -128,18 +133,18 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
       const result = await connectGoogleDrivePdf();
       setGdriveConnected(true);
       setGdriveEmail((result as { email?: string })?.email || "");
-      toast.success("Google Drive (PDF-Archiv) verbunden");
+      toast.success(t("settings.pdfArchive.toast.gdriveConnected"));
     } catch (err: unknown) {
       const msg = String((err as Error)?.message || err);
       if (msg.includes("CANCELLED")) {
-        toast("Verbindung abgebrochen", { icon: "ℹ️" });
+        toast(t("settings.pdfArchive.toast.gdriveCancelled"), { icon: "ℹ️" });
       } else {
-        toast.error(`Verbindung fehlgeschlagen: ${msg}`);
+        toast.error(t("settings.pdfArchive.toast.gdriveConnectFailed", { message: msg }));
       }
     } finally {
       setGdriveBusy(false);
     }
-  }, []);
+  }, [t]);
 
   const handleGdriveDisconnect = useCallback(async () => {
     setGdriveBusy(true);
@@ -152,56 +157,61 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
         setGdriveTarget(false);
         await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_GDRIVE, "pdf_archive_gdrive", "false");
       }
-      toast.success("Google Drive (PDF-Archiv) getrennt");
+      toast.success(t("settings.pdfArchive.toast.gdriveDisconnected"));
     } catch (err) {
-      toast.error(`Trennen fehlgeschlagen: ${(err as Error)?.message || err}`);
+      toast.error(t("settings.pdfArchive.toast.gdriveDisconnectFailed", {
+        message: (err as Error)?.message || String(err),
+      }));
     } finally {
       setGdriveBusy(false);
     }
-  }, [gdriveTarget]);
+  }, [gdriveTarget, t]);
 
   const toggleGdrive = useCallback(async () => {
     if (!gdriveConnected) {
-      toast.error("Bitte zuerst mit Google Drive verbinden.");
+      toast.error(t("settings.pdfArchive.toast.gdriveConnectFirst"));
       return;
     }
     const next = !gdriveTarget;
     setGdriveTarget(next);
     await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_GDRIVE, "pdf_archive_gdrive", String(next));
-  }, [gdriveTarget, gdriveConnected]);
+  }, [gdriveTarget, gdriveConnected, t]);
 
   const handleRunNow = useCallback(async () => {
     if (!enabled) {
-      toast.error("PDF-Archiv ist deaktiviert.");
+      toast.error(t("settings.pdfArchive.toast.archiveDisabled"));
       return;
     }
     if (!localTarget && !nextcloudTarget && !gdriveTarget) {
-      toast.error("Bitte mindestens ein Ziel auswaehlen.");
+      toast.error(t("settings.pdfArchive.toast.pickTarget"));
       return;
     }
     setIsRunning(true);
-    const toastId = toast.loading("Erzeuge Monats-PDF ...");
+    const toastId = toast.loading(t("settings.pdfArchive.toast.generating"));
     try {
       const res = await performRun({ source: "manual", force: true });
       if (res?.ok) {
         const anyUpload = res.anyRealUpload;
         const anyFail = res.anyFailure;
         if (anyFail) {
-          toast.error("Teilweise fehlgeschlagen — siehe Details unten", { id: toastId });
+          toast.error(t("settings.pdfArchive.toast.partiallyFailed"), { id: toastId });
         } else if (anyUpload) {
-          toast.success("PDF-Archiv aktualisiert", { id: toastId });
+          toast.success(t("settings.pdfArchive.toast.updated"), { id: toastId });
         } else {
-          toast.success("Nichts zu tun — Daten sind aktuell", { id: toastId, icon: "✓" });
+          toast.success(t("settings.pdfArchive.toast.upToDate"), { id: toastId, icon: "✓" });
         }
       } else {
-        toast.error(`Nicht ausgefuehrt: ${res?.reason || res?.error || "unbekannt"}`, { id: toastId });
+        const reason = (res?.reason as string) || (res?.error as string) || t("settings.pdfArchive.toast.unknownReason");
+        toast.error(t("settings.pdfArchive.toast.notRun", { reason }), { id: toastId });
       }
     } catch (err) {
-      toast.error(`Fehler: ${(err as Error)?.message || err}`, { id: toastId });
+      toast.error(t("settings.pdfArchive.toast.genericError", {
+        message: (err as Error)?.message || String(err),
+      }), { id: toastId });
     } finally {
       setIsRunning(false);
     }
-  }, [enabled, localTarget, nextcloudTarget, gdriveTarget, performRun]);
+  }, [enabled, localTarget, nextcloudTarget, gdriveTarget, performRun, t]);
 
   return (
     <Card className="p-4">
@@ -212,10 +222,10 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
           </div>
           <div>
             <h2 className="font-bold text-base text-zinc-800 dark:text-white">
-              Automatisches PDF-Archiv
+              {t("settings.pdfArchive.header")}
             </h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Taeglich ein Monats-PDF zur gesetzlich geforderten Langzeit-Aufbewahrung
+              {t("settings.pdfArchive.subtitle")}
             </p>
           </div>
         </div>
@@ -240,10 +250,10 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
               </div>
               <div>
                 <span className="block font-bold text-sm text-zinc-800 dark:text-white">
-                  Lokaler Ordner
+                  {t("settings.pdfArchive.local.title")}
                 </span>
                 <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                  Dokumente/eStundnzettl/Archiv/
+                  {t("settings.pdfArchive.local.path")}
                 </span>
               </div>
             </div>
@@ -261,10 +271,10 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
               </div>
               <div>
                 <span className="block font-bold text-sm text-zinc-800 dark:text-white">
-                  Nextcloud
+                  {t("settings.pdfArchive.nextcloud.title")}
                 </span>
                 <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                  {nextcloudEnabled ? "/eStundnzettl/Archiv/" : "Erst Nextcloud verbinden"}
+                  {nextcloudEnabled ? t("settings.pdfArchive.nextcloud.path") : t("settings.pdfArchive.nextcloud.requiresConnect")}
                 </span>
               </div>
             </div>
@@ -289,20 +299,20 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
               <div>
                 <div className="flex items-center gap-2">
                   <span className="block font-bold text-sm text-zinc-800 dark:text-white">
-                    Google Drive
+                    {t("settings.pdfArchive.gdrive.title")}
                   </span>
                   {gdriveConnected && (
                     <span className="flex items-center px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full">
-                      Verbunden
+                      {t("settings.pdfArchive.gdrive.connectedBadge")}
                     </span>
                   )}
                 </div>
                 <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                   {gdriveConnected
                     ? (gdriveEmail
-                        ? `Ordner eStundnzettl Archiv · ${gdriveEmail}`
-                        : "Ordner eStundnzettl Archiv")
-                    : "Separater Zugriff vom JSON-Backup (drive.file-Scope)"}
+                        ? t("settings.pdfArchive.gdrive.folderWithEmail", { email: gdriveEmail })
+                        : t("settings.pdfArchive.gdrive.folder"))
+                    : t("settings.pdfArchive.gdrive.info")}
                 </span>
               </div>
             </div>
@@ -322,7 +332,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
                   disabled={gdriveBusy}
                   className="px-2 py-1 text-[10px] font-bold rounded border border-red-200 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800 disabled:opacity-50"
                 >
-                  {gdriveBusy ? <Loader size={10} className="animate-spin" /> : "Trennen"}
+                  {gdriveBusy ? <Loader size={10} className="animate-spin" /> : t("settings.pdfArchive.gdrive.disconnect")}
                 </button>
               </div>
             ) : (
@@ -332,7 +342,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
                 className="px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-600 disabled:opacity-50 flex items-center gap-1.5"
               >
                 {gdriveBusy ? <Loader size={12} className="animate-spin" /> : <Cloud size={12} />}
-                Verbinden
+                {t("settings.pdfArchive.gdrive.connect")}
               </button>
             )}
           </div>
@@ -342,7 +352,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
             <div className="text-xs text-zinc-500 dark:text-zinc-400">
               <div className="flex items-center gap-1">
                 <CheckCircle2 size={12} className="text-green-500" />
-                <span>Letzter Lauf: {formatLastRun(lastRun)}</span>
+                <span>{t("settings.pdfArchive.lastRun", { date: formatLastRun(lastRun) })}</span>
               </div>
               {lastError && (
                 <div className="flex items-start gap-1 mt-1 text-red-500">
@@ -357,7 +367,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
               className="px-3 py-1.5 text-xs font-bold rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
             >
               {isRunning ? <Loader size={12} className="animate-spin" /> : <FileText size={12} />}
-              Jetzt ausfuehren
+              {t("settings.pdfArchive.runNow")}
             </button>
           </div>
         </div>

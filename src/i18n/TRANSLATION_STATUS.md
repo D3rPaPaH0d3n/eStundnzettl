@@ -63,7 +63,7 @@ format.*          any format helpers needing translated text
 - [x] B9: Settings shell + ProfileSettings + ThemeSettings + AppInfoSettings
 - [x] B10: Settings/CalculationSettings
 - [x] B11: Settings/BackupSettings
-- [ ] B12: Settings/LocaleSettings (+ Language Picker UI) + DataSettings + PdfArchiveSettings
+- [x] B12: Settings/LocaleSettings (+ Language Picker UI) + DataSettings + PdfArchiveSettings
 - [ ] B13: OnboardingWizard + Welcome/Profile/SummaryStep
 - [ ] B14: Onboarding LocaleStep + WorkScheduleStep
 - [ ] B15: Onboarding CalculationStep
@@ -91,6 +91,49 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B12** (2026-04-13): migrated the last three Settings panels
+  and **added the Language Picker UI** planned since A1.
+  - `Settings/LocaleSettings.tsx`: new `settings.language.*` card
+    rendered above the existing regional-calculation card. Uses the
+    `useLocaleSetting` hook from A1, so clicking "Deutsch"/"English"
+    persists to localStorage, calls `i18n.changeLanguage`, syncs
+    `<html lang>`, and triggers a re-render. Full `settings.locale.*`
+    namespace for the four country buttons (Neutral/Austria/Germany/
+    Switzerland), state/canton labels + drawer titles, the "active:"
+    hint (via `<Trans>` with inline `<b>` + `{{name}}`), the
+    reset-rules ConfirmModal (title/message/confirm), and eight
+    toasts (four group switches, state/canton change with {{name}},
+    rulesReset, localeSwitchedKeepConfig).
+  - `Settings/DataSettings.tsx`: new `settings.data.*` namespace
+    covering work-model heading + current-label, templates button,
+    weekly hours line with {{hours}} interpolation (number still
+    formatted via `"de-DE"` — stays for C1), simple-mode toggle copy
+    with two toasts + aria, minute-input toggle, activity codes card,
+    both ConfirmModals (preset warning + demo warning with a
+    composable {{hint}} that swaps between noBackupHint /
+    withBackupHint), three toasts (customActivated/templateApplied/
+    demoLoaded). Weekday short labels reuse `settings.weekdays.*`
+    from B9.
+  - `Settings/PdfArchiveSettings.tsx`: new `settings.pdfArchive.*`
+    namespace covering header + subtitle, three target cards (local
+    folder + path, Nextcloud path or "connect first" hint, Google
+    Drive with connected badge + folder-with-email / folder / info
+    tri-state copy), disconnect/connect buttons, lastRun line with
+    {{date}}, lastRunNever fallback, runNow button, and 16 toasts
+    (ncNotConnected, full Google-Drive connect/disconnect/toggle
+    paths, archiveDisabled, pickTarget, loading/updated/upToDate/
+    partiallyFailed/notRun with {{reason}}/genericError with
+    {{message}}). `formatLastRun` moved inside the component to use
+    `t()` for the empty-state label.
+  Pre-existing TS errors in DataSettings + PdfArchiveSettings
+  shifted lines due to imports/hooks; error count unchanged.
+  Tests 630/630 green.
+
+  **User-visible milestone:** with the Language Picker in place, a
+  user can now actually switch the whole app to English — all
+  migrated components (A1 + B1–B12) re-render through i18next.
+  Remaining migrations (B13–B16 onboarding, C1–G2) still contain
+  hard-coded strings until their own sessions.
 - **Session B11** (2026-04-13): migrated `Settings/BackupSettings.tsx`
   (997 lines, widest Settings file by toast count).
   New `settings.backup.*` namespace covering:

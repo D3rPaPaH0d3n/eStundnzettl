@@ -582,6 +582,128 @@
         "recalcAllCorrect": "Alle {{total}} Einträge sind aktuell",
         "recalcError": "Neuberechnung fehlgeschlagen"
       }
+    },
+    "locale": {
+      "header": "Stundenberechnung",
+      "subtitle": "Feiertage, Halbtage, Mehrarbeit/Überstunden",
+      "group": {
+        "neutral": "Neutral",
+        "austria": "Österreich",
+        "germany": "Deutschland",
+        "switzerland": "Schweiz"
+      },
+      "stateLabel": "Bundesland",
+      "kantonLabel": "Kanton",
+      "stateDrawerTitle": "Bundesland wählen",
+      "kantonDrawerTitle": "Kanton wählen",
+      "active": "<b>Aktuell aktiv:</b> {{name}}. Zukünftige Berechnungen folgen der neuen Auswahl — vergangene Einträge bleiben unverändert.",
+      "confirmTitle": "Regeln zurücksetzen?",
+      "confirmMessage": "Möchtest du die Berechnungsregeln (Überstunden, Krank, Feiertage) auf die Defaults der neuen Locale zurücksetzen? Mit 'Abbrechen' bleibt deine aktuelle Konfiguration erhalten.",
+      "confirmConfirm": "Zurücksetzen",
+      "toast": {
+        "switchedNeutral": "Auf Neutral umgestellt",
+        "switchedAustria": "Auf Österreich umgestellt",
+        "switchedSwitzerland": "Auf Schweiz umgestellt",
+        "switchedGermany": "Auf Deutschland umgestellt",
+        "stateChanged": "Bundesland auf {{name}} geändert",
+        "kantonChanged": "Kanton auf {{name}} geändert",
+        "rulesReset": "Regeln zurückgesetzt",
+        "localeSwitchedKeepConfig": "Locale umgestellt, Regeln behalten"
+      }
+    },
+    "language": {
+      "header": "Sprache",
+      "subtitle": "UI-Sprache der App",
+      "de": "Deutsch",
+      "en": "English",
+      "toast": "Sprache geändert"
+    },
+    "data": {
+      "workModel": {
+        "heading": "Arbeitszeit Modell",
+        "currentLabel": "Aktuell: ",
+        "defaultLabel": "Benutzerdefiniert",
+        "templatesButton": "Vorlagen",
+        "weekHours": "Wochenstunden: {{hours}} h"
+      },
+      "simpleMode": {
+        "title": "Nur Aufzeichnung",
+        "on": "Keine Soll/Ist-Berechnung",
+        "off": "Soll, Saldo & Überstunden aktiv",
+        "toggleAria": "Erfassungsmodus umschalten",
+        "toastOn": "Nur Aufzeichnung aktiviert",
+        "toastOff": "Soll/Ist-Berechnung aktiviert"
+      },
+      "minuteInput": {
+        "title": "Minütige Zeiteingabe",
+        "on": "1-Minuten-Modus",
+        "off": "15-Minuten-Schritte"
+      },
+      "workCodes": {
+        "title": "Tätigkeitscodes",
+        "subtitle": "Presets für deine Branche laden",
+        "manageButton": "Verwalten"
+      },
+      "presetWarning": {
+        "title": "Arbeitszeitmodell ändern?",
+        "message": "Achtung: Eine Änderung des Modells führt zu einer Neuberechnung der Überstunden aller bisherigen Einträge! Möchtest du fortfahren?",
+        "confirm": "Verstanden"
+      },
+      "demoWarning": {
+        "title": "⚠️ Demo-Daten laden",
+        "noBackupHint": "🚨 Du hast keine Backup-Datei erstellt! Deine Daten sind unwiderruflich verloren wenn du fortfährst!",
+        "withBackupHint": "Stelle sicher dass du ein Backup hast bevor du fortfährst.",
+        "messageTemplate": "Achtung: Alle deine bisherigen Daten werden überschrieben! {{hint}}\n\nEinträge, Einstellungen und Tätigkeitscodes werden durch die Demo-Daten ersetzt.",
+        "confirm": "Ja, laden"
+      },
+      "toast": {
+        "customActivated": "Benutzerdefiniert aktiviert",
+        "templateApplied": "Vorlage übernommen",
+        "demoLoaded": "Demo-Daten geladen!"
+      }
+    },
+    "pdfArchive": {
+      "header": "Automatisches PDF-Archiv",
+      "subtitle": "Täglich ein Monats-PDF zur gesetzlich geforderten Langzeit-Aufbewahrung",
+      "local": {
+        "title": "Lokaler Ordner",
+        "path": "Dokumente/eStundnzettl/Archiv/"
+      },
+      "nextcloud": {
+        "title": "Nextcloud",
+        "path": "/eStundnzettl/Archiv/",
+        "requiresConnect": "Erst Nextcloud verbinden"
+      },
+      "gdrive": {
+        "title": "Google Drive",
+        "connectedBadge": "Verbunden",
+        "folderWithEmail": "Ordner eStundnzettl Archiv · {{email}}",
+        "folder": "Ordner eStundnzettl Archiv",
+        "info": "Separater Zugriff vom JSON-Backup (drive.file-Scope)",
+        "disconnect": "Trennen",
+        "connect": "Verbinden"
+      },
+      "lastRun": "Letzter Lauf: {{date}}",
+      "lastRunNever": "Noch nicht ausgeführt",
+      "runNow": "Jetzt ausführen",
+      "toast": {
+        "ncNotConnected": "Nextcloud muss zuerst verbunden sein (Karte 'Backup & Export').",
+        "gdriveConnected": "Google Drive (PDF-Archiv) verbunden",
+        "gdriveCancelled": "Verbindung abgebrochen",
+        "gdriveConnectFailed": "Verbindung fehlgeschlagen: {{message}}",
+        "gdriveDisconnected": "Google Drive (PDF-Archiv) getrennt",
+        "gdriveDisconnectFailed": "Trennen fehlgeschlagen: {{message}}",
+        "gdriveConnectFirst": "Bitte zuerst mit Google Drive verbinden.",
+        "archiveDisabled": "PDF-Archiv ist deaktiviert.",
+        "pickTarget": "Bitte mindestens ein Ziel auswählen.",
+        "generating": "Erzeuge Monats-PDF …",
+        "partiallyFailed": "Teilweise fehlgeschlagen — siehe Details unten",
+        "updated": "PDF-Archiv aktualisiert",
+        "upToDate": "Nichts zu tun — Daten sind aktuell",
+        "notRun": "Nicht ausgeführt: {{reason}}",
+        "unknownReason": "unbekannt",
+        "genericError": "Fehler: {{message}}"
+      }
     }
   },
   "attachments": {

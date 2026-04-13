@@ -582,6 +582,128 @@
         "recalcAllCorrect": "All {{total}} entries are up to date",
         "recalcError": "Recalculation failed"
       }
+    },
+    "locale": {
+      "header": "Hours calculation",
+      "subtitle": "Holidays, half-days, extra hours/overtime",
+      "group": {
+        "neutral": "Neutral",
+        "austria": "Austria",
+        "germany": "Germany",
+        "switzerland": "Switzerland"
+      },
+      "stateLabel": "State",
+      "kantonLabel": "Canton",
+      "stateDrawerTitle": "Select state",
+      "kantonDrawerTitle": "Select canton",
+      "active": "<b>Currently active:</b> {{name}}. Future calculations follow the new selection — past entries stay unchanged.",
+      "confirmTitle": "Reset rules?",
+      "confirmMessage": "Do you want to reset the calculation rules (overtime, sick leave, holidays) to the new locale's defaults? If you cancel, your current configuration stays.",
+      "confirmConfirm": "Reset",
+      "toast": {
+        "switchedNeutral": "Switched to Neutral",
+        "switchedAustria": "Switched to Austria",
+        "switchedSwitzerland": "Switched to Switzerland",
+        "switchedGermany": "Switched to Germany",
+        "stateChanged": "State changed to {{name}}",
+        "kantonChanged": "Canton changed to {{name}}",
+        "rulesReset": "Rules reset",
+        "localeSwitchedKeepConfig": "Locale switched, rules kept"
+      }
+    },
+    "language": {
+      "header": "Language",
+      "subtitle": "App UI language",
+      "de": "Deutsch",
+      "en": "English",
+      "toast": "Language changed"
+    },
+    "data": {
+      "workModel": {
+        "heading": "Work schedule",
+        "currentLabel": "Current: ",
+        "defaultLabel": "Custom",
+        "templatesButton": "Templates",
+        "weekHours": "Weekly hours: {{hours}} h"
+      },
+      "simpleMode": {
+        "title": "Record only",
+        "on": "No target/actual calculation",
+        "off": "Target, balance & overtime active",
+        "toggleAria": "Toggle recording mode",
+        "toastOn": "Record-only mode enabled",
+        "toastOff": "Target/actual calculation enabled"
+      },
+      "minuteInput": {
+        "title": "Minute-level time entry",
+        "on": "1-minute mode",
+        "off": "15-minute steps"
+      },
+      "workCodes": {
+        "title": "Activity codes",
+        "subtitle": "Load presets for your industry",
+        "manageButton": "Manage"
+      },
+      "presetWarning": {
+        "title": "Change work-schedule model?",
+        "message": "Warning: Changing the model recalculates overtime for all previous entries! Do you want to continue?",
+        "confirm": "Understood"
+      },
+      "demoWarning": {
+        "title": "⚠️ Load demo data",
+        "noBackupHint": "🚨 You have no backup file! Your data will be lost permanently if you continue!",
+        "withBackupHint": "Make sure you have a backup before you continue.",
+        "messageTemplate": "Warning: All your previous data will be overwritten! {{hint}}\n\nEntries, settings and activity codes will be replaced by demo data.",
+        "confirm": "Yes, load"
+      },
+      "toast": {
+        "customActivated": "Custom mode activated",
+        "templateApplied": "Template applied",
+        "demoLoaded": "Demo data loaded!"
+      }
+    },
+    "pdfArchive": {
+      "header": "Automatic PDF archive",
+      "subtitle": "A monthly PDF every day for legally required long-term retention",
+      "local": {
+        "title": "Local folder",
+        "path": "Documents/eStundnzettl/Archive/"
+      },
+      "nextcloud": {
+        "title": "Nextcloud",
+        "path": "/eStundnzettl/Archive/",
+        "requiresConnect": "Connect Nextcloud first"
+      },
+      "gdrive": {
+        "title": "Google Drive",
+        "connectedBadge": "Connected",
+        "folderWithEmail": "Folder eStundnzettl Archive · {{email}}",
+        "folder": "Folder eStundnzettl Archive",
+        "info": "Separate access from the JSON backup (drive.file scope)",
+        "disconnect": "Disconnect",
+        "connect": "Connect"
+      },
+      "lastRun": "Last run: {{date}}",
+      "lastRunNever": "Not run yet",
+      "runNow": "Run now",
+      "toast": {
+        "ncNotConnected": "Nextcloud must be connected first (card 'Backup & Export').",
+        "gdriveConnected": "Google Drive (PDF archive) connected",
+        "gdriveCancelled": "Connection cancelled",
+        "gdriveConnectFailed": "Connection failed: {{message}}",
+        "gdriveDisconnected": "Google Drive (PDF archive) disconnected",
+        "gdriveDisconnectFailed": "Disconnect failed: {{message}}",
+        "gdriveConnectFirst": "Please connect to Google Drive first.",
+        "archiveDisabled": "PDF archive is disabled.",
+        "pickTarget": "Please pick at least one target.",
+        "generating": "Generating monthly PDF…",
+        "partiallyFailed": "Partially failed — see details below",
+        "updated": "PDF archive updated",
+        "upToDate": "Nothing to do — data is up to date",
+        "notRun": "Not run: {{reason}}",
+        "unknownReason": "unknown",
+        "genericError": "Error: {{message}}"
+      }
     }
   },
   "attachments": {

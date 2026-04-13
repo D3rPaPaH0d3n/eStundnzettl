@@ -1,0 +1,1 @@
+Einfache Zeiterfassung. Stundenzettel automatisch als PDF. Alles am Handy.

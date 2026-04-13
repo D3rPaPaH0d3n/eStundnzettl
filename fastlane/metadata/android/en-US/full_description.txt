@@ -1,0 +1,58 @@
+eStundnzettl – smart time tracking from Styria, Austria.
+
+No more paper slips! Log your work hours, drives, vacation and sick days
+straight from your phone — and at the end of the month a clean timesheet
+lands on your device as a PDF. Simple, clear, no fuss.
+
+■ Who is it for?
+Tradespeople, technicians, nurses, waiters, office workers, cleaners —
+anyone who needs flexible, honest time tracking without unnecessary
+gadgets.
+
+■ Features at a glance
+• Live timer: long-press, swipe up — timer running.
+• Manual entry with start time, end time, break and project.
+• Real-time balance: overtime, extra hours and flex-time always visible.
+• Flexible work schedules: 38.5h, 40h, 4-day week or fully custom.
+• Vacation, sick leave, time off — calculated automatically.
+• Attach documents: delivery notes, receipts, photos straight on entries.
+• PDF export per month or calendar week, ready to share or save.
+• Dark mode for the eyes at night.
+
+■ Hours calculation for your region
+Austria with 13 public holidays, half-day Dec 24/31 and AZG rules.
+Germany with all 16 federal states and regional holidays.
+Switzerland with all 26 cantons and ArG (45h week).
+Or "Neutral" — no automatic rules at all.
+Tinkerers toggle the "Custom plan" and configure every rule themselves.
+
+■ Backup & data safety
+• Google Drive with daily auto-backup
+• Nextcloud (in power-user mode) — full data sovereignty
+• A local folder of your choice
+• JSON import/export for manual backups
+Optional: a monthly PDF archive that automatically ends up in your
+backup target. Still searchable years later.
+
+■ Bilingual
+Full German and English UI — switch any time in settings, device
+language auto-detected on first launch.
+
+■ Power-user mode
+For pros who want more: Nextcloud integration, minute-precise time
+entry, custom activity codes, automatic PDF archive. Enable once, hide
+again when you're done.
+
+■ Privacy
+• All data stays local on your device.
+• No ads. No analytics. No tracking. No account required.
+• Backups only when you want them — and then to your cloud, not ours.
+
+■ Free. Completely.
+No ads, no subscription, no premium lock. If you find the app useful,
+the developer happily accepts a small thank-you via Revolut — but it's
+purely optional.
+
+Questions, bug reports, licensing: project@kainer.co.at
+
+"So that no hour gets lost!"

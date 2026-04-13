@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { useTranslation } from "react-i18next";
 import type { Entry, UserData, WorkCode, Attachment, FormState, BackupPayload, CalculationConfig } from "../types";
 import type { PeriodStatsResult } from "../utils/timeCalculations";
 import type { Locale, LocaleId } from "../locales/types";
@@ -99,6 +100,7 @@ interface ViewRouterProps {
 const AppTour = React.lazy(() => import("./AppTour"));
 
 export default function ViewRouter(props: ViewRouterProps) {
+  const { t } = useTranslation();
   const {
     view, showOnboarding,
     currentDate, setCurrentDate, changeMonth,
@@ -151,7 +153,7 @@ export default function ViewRouter(props: ViewRouterProps) {
 
           {view === "add" && !showOnboarding && (
             <motion.div key="add" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
-              <Suspense fallback={<SkeletonScreen label="Lade Eingabeformular..." />}>
+              <Suspense fallback={<SkeletonScreen label={t("skeleton.entryForm")} />}>
                 <EntryForm
                   onCancel={() => { setView("dashboard"); form.setEditingEntry(null); }}
                   onSubmit={handleSaveEntry}
@@ -186,7 +188,7 @@ export default function ViewRouter(props: ViewRouterProps) {
 
           {view === "settings" && !showOnboarding && (
             <motion.div key="settings" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
-              <Suspense fallback={<SkeletonScreen label="Lade Einstellungen..." />}>
+              <Suspense fallback={<SkeletonScreen label={t("skeleton.settings")} />}>
                 <Settings
                   userData={userData}
                   setUserData={setUserData}
@@ -228,7 +230,7 @@ export default function ViewRouter(props: ViewRouterProps) {
                 <div className="flex items-center justify-center h-full w-full bg-zinc-900/50 backdrop-blur-sm">
                   <div className="bg-white dark:bg-zinc-800 p-4 rounded-xl shadow-xl flex items-center gap-3">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500"></div>
-                    <span className="font-bold text-zinc-700 dark:text-white">Lade PDF-Modul...</span>
+                    <span className="font-bold text-zinc-700 dark:text-white">{t("skeleton.pdfModule")}</span>
                   </div>
                 </div>
               }>

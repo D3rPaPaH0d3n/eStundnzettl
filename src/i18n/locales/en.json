@@ -6,6 +6,7 @@
     "confirm": "Confirm",
     "save": "Save",
     "delete": "Delete",
+    "select": "Select",
     "loading": "Loading..."
   },
   "app": {
@@ -150,6 +151,15 @@
     },
     "pdfElementMissing": "PDF element missing"
   },
+  "drawers": {
+    "timePicker": {
+      "title": "Select time",
+      "confirmAria": "Confirm selection"
+    },
+    "decimalDuration": {
+      "title": "Hours"
+    }
+  },
   "header": {
     "settings": "Open settings",
     "report": "Open report",
@@ -166,7 +176,8 @@
     "default": "Loading...",
     "settings": "Loading settings...",
     "entryForm": "Loading entry form...",
-    "onboarding": "Loading setup wizard..."
+    "onboarding": "Loading setup wizard...",
+    "pdfModule": "Loading PDF module..."
   },
   "backup": {
     "integrityMismatch": "Checksum mismatch — backup may have been tampered with",

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, title, minuteInterval = 15 }: Props) => {
+  const { t } = useTranslation();
   const hoursRef = useRef<HTMLDivElement>(null);
   const decimalsRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
@@ -165,7 +167,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
               </button>
 
               <span className="font-bold text-zinc-800 dark:text-white tracking-wide text-base">
-                {title || "Stunden"}
+                {title || t("drawers.decimalDuration.title")}
               </span>
 
               {/* CHANGE: text-green-600 -> text-emerald-600 */}

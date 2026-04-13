@@ -56,7 +56,7 @@ format.*          any format helpers needing translated text
 - [x] B2: Dashboard.tsx
 - [x] B3: EntryForm.tsx
 - [x] B4: ReportDocument.tsx + PrintReport.tsx
-- [ ] B5: ViewRouter + SelectionDrawer + TimePickerDrawer + DecimalDurationPicker
+- [x] B5: ViewRouter + SelectionDrawer + TimePickerDrawer + DecimalDurationPicker
 - [ ] B6: HelpModal + ChangelogModal
 - [ ] B7: ImportConflictModal + LocaleMigrationModal + PresetModal + AttachmentManager
 - [ ] B8: LiveTimerOverlay + AppTour
@@ -91,6 +91,33 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B5** (2026-04-13): migrated the four small overlay components.
+  Only a handful of strings each, but they anchor the drawer UX across
+  the whole app.
+  - `SelectionDrawer.tsx`: title fallback → `common.select`, close aria
+    → `common.close`; resolved once via a `resolvedTitle` local so
+    drawer header and dialog aria-label stay consistent.
+  - `TimePickerDrawer.tsx`: title fallback → `drawers.timePicker.title`;
+    cancel-X aria → `common.cancel`; confirm-check aria →
+    `drawers.timePicker.confirmAria`.
+  - `DecimalDurationPicker.tsx`: title fallback →
+    `drawers.decimalDuration.title`.
+  - `ViewRouter.tsx`: three Suspense fallback labels now use existing
+    `skeleton.entryForm`/`skeleton.settings` plus a new
+    `skeleton.pdfModule` for the PDF-module loader.
+  Added `common.select`, `skeleton.pdfModule`, `drawers.*`.
+  Pre-existing TS error in ViewRouter line shifted 193→195 due to two
+  new lines (import + hook) — still not this commit's fault.
+
+  TEST FIX: Fixed pre-existing date-dependent flakiness in
+  Dashboard.test.tsx. Dashboard's default-expanded week comes from
+  real `new Date()`, but the test fixture pins `currentDate` to April
+  2026 and expected week 15 to be expanded. This only passed while
+  wall-clock happened to fall inside that window. Now freezes system
+  time to 2026-04-07 via `vi.useFakeTimers`/`vi.setSystemTime` in
+  beforeEach, restores real timers in afterEach. Deterministic going
+  forward — no production code change.
+  Tests 630/630 green.
 - **Session B4** (2026-04-12): migrated the report pair:
   `ReportDocument.tsx` (688 lines, the headless PDF body) and
   `PrintReport.tsx` (356 lines, the interactive preview shell).

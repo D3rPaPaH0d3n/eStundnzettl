@@ -67,10 +67,10 @@ format.*          any format helpers needing translated text
 - [x] B13: OnboardingWizard + Welcome/Profile/SummaryStep
 - [x] B14: Onboarding LocaleStep + WorkScheduleStep
 - [x] B15: Onboarding CalculationStep
-- [ ] B16: Onboarding WorkCodesStep
+- [x] B16: Onboarding WorkCodesStep
 
 ## Phase C — Locale-sensitive formatting
-- [ ] C1: `src/utils/formatLocale.ts` + swap all `de-DE` usages, register `enUS` for date-fns
+- [x] C1: `src/utils/formatLocale.ts` + swap all `de-DE` usages, register `enUS` for date-fns
 
 ## Phase D — Hooks & utility toasts
 - [ ] D1: migrate toast strings in `src/hooks/*` and `src/utils/*`
@@ -91,6 +91,35 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session C1** (2026-04-13): introduced dynamic format-locale.
+  - New `src/utils/formatLocale.ts` exporting `getCurrentLanguage()`,
+    `getIntlLocale()` (-> "de-DE" | "en-US") and
+    `getDatePickerLocale()` (-> "de" | "en"). All read from
+    `i18n.language` at call-time, so a language switch via the
+    Settings picker affects every formatter on the next render.
+  - Replaced all hard-coded `toLocaleDateString("de-DE", …)` and
+    `toLocaleString("de-DE", …)` calls in: Dashboard,
+    ReportDocument, PrintReport, AttachmentManager,
+    Settings/PdfArchiveSettings, Settings/DataSettings,
+    Settings/CalculationSettings, Onboarding/CalculationStep,
+    hooks/useExport. The remaining `de-DE` strings in the repo
+    are all in TRANSLATION_STATUS.md historical notes.
+  - Registered `enUS` from `date-fns/locale` in Dashboard and
+    EntryForm alongside `de`. The `react-datepicker` `locale` prop
+    in both is now driven by `getDatePickerLocale()`. Existing
+    `registerLocale` mocks in Dashboard.test.tsx /
+    EntryForm.test.tsx already accept any string, so tests remain
+    untouched.
+  Total TS error count unchanged at 59 (pre-existing only).
+- **Session B16** (2026-04-13): migrated `Onboarding/steps/WorkCodesStep.tsx`.
+  Small step (142 lines): step title/subtitle, two basic preset
+  cards (Allgemein/Leer with title + subtitle each), industry-
+  presets toggle, code-count line built from
+  `onboarding.workCodes.codeCount` with `{{description}}/{{count}}`
+  interpolation, footer hint. Refactored the static `BASIC_PRESETS`
+  array into a `BASIC_PRESET_IDS` tuple and resolves titles inside
+  the component via `t()` — same pattern used in B10/B15 for
+  options arrays. Tests 630/630 green.
 - **Session B15** (2026-04-13): migrated `Onboarding/steps/CalculationStep.tsx`
   (656 lines, the rule-builder for "custom plan" onboarding).
   - New `onboarding.calc.*` namespace for onboarding-specific copy:

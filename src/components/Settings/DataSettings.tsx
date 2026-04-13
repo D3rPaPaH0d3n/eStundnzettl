@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Settings as SettingsIcon, ListChecks, Calendar, Lock, Unlock, List, ChevronDown, ChevronRight, ClipboardList, Calculator } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
+import { getIntlLocale } from "../../utils/formatLocale";
 import { WORK_MODELS, STORAGE_KEYS } from "../../hooks/constants";
 import { DEMO_DATA } from "../../utils/demoData";
 import toast from "react-hot-toast";
@@ -260,7 +261,7 @@ const DataSettings: React.FC<Props> = ({
               <div className="text-center">
                 <span className="inline-block px-3 py-1 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-full">
                   {t("settings.data.workModel.weekHours", {
-                    hours: (safeUserData.workDays.reduce((a, b) => a + b, 0) / 60).toLocaleString("de-DE"),
+                    hours: (safeUserData.workDays.reduce((a, b) => a + b, 0) / 60).toLocaleString(getIntlLocale()),
                   })}
                 </span>
               </div>

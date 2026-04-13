@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { useTranslation } from "react-i18next";
 import { Card } from "../utils";
+import { getIntlLocale } from "../utils/formatLocale";
 import type { Entry, Attachment } from "../types";
 
 const getIcon = (mimeType: string | undefined) => {
@@ -132,7 +133,7 @@ const AttachmentManager = ({
                   <span>{t("attachments.title")}</span>
                 </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                  {new Date(entry.date).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
+                  {new Date(entry.date).toLocaleDateString(getIntlLocale(), { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
                 </p>
               </div>
               <button onClick={handleClose} className="p-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">

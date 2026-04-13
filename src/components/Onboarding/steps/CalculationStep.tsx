@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sliders, Info, ChevronDown, Plus, X, Calendar, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import SelectionDrawer from "../../SelectionDrawer";
+import { getIntlLocale } from "../../../utils/formatLocale";
 import { getLocale, GERMAN_STATE_IDS, GERMAN_STATE_NAMES, SWISS_KANTON_IDS, SWISS_KANTON_NAMES } from "../../../locales";
 import { getOrthodoxHolidays, getIslamicHolidays } from "../../../locales/holidays/religious";
 import type { CalculationConfig, OvertimeMode, SickOnWorkDayMode, HolidayOnWorkDayMode } from "../../../types";
@@ -42,7 +43,7 @@ const HOLIDAY_ON_WORK_OPTION_IDS: HolidayOnWorkDayMode[] = ["additive", "counts_
 const formatHours = (minutes: number): string => {
   if (!Number.isFinite(minutes)) return "0 h";
   const hours = minutes / 60;
-  return hours.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 2 }) + " h";
+  return hours.toLocaleString(getIntlLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 2 }) + " h";
 };
 
 /** Internes MM-DD-Format → deutsches DD.MM für die Anzeige. */

@@ -11,7 +11,8 @@ import { useTranslation } from "react-i18next";
 import DatePicker, { registerLocale, CalendarContainer } from "react-datepicker";
 // @ts-ignore
 import "react-datepicker/dist/react-datepicker.css";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { getDatePickerLocale } from "../utils/formatLocale";
 import TimePickerDrawer from "./TimePickerDrawer";
 import SelectionDrawer from "./SelectionDrawer";
 
@@ -20,6 +21,7 @@ import type { Locale } from "../locales/types";
 import type { CalculationConfig } from "../types";
 
 registerLocale("de", de);
+registerLocale("en", enUS);
 
 interface CustomInputProps {
   value?: string;
@@ -339,7 +341,7 @@ const EntryForm: React.FC<Props> = ({
                   onMonthChange={(date) => setViewYear(date.getFullYear())}
                   onYearChange={(date) => setViewYear(date.getFullYear())}
                   dateFormat="eee, dd.MM.yyyy" 
-                  locale="de"
+                  locale={getDatePickerLocale()}
                   withPortal
                   calendarContainer={CalendarContainerAnimation}
                   customInput={<CustomInput icon={CalIcon} />}

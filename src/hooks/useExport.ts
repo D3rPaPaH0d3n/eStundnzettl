@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import type { Entry, UserData, WorkCode, Attachment, BackupPayload, CalculationConfig } from '../types';
 import { exportToSelectedFolder, attachBackupChecksum } from "../utils/storageBackup";
 import { toLocalDateString } from "../utils";
+import { getIntlLocale } from "../utils/formatLocale";
 import { logger } from "../utils/logger";
 
 interface UseExportProps {
@@ -155,7 +156,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], expo
 
       await Share.share({
         title: "eStundnzettl Backup",
-        text: `Backup vom ${new Date().toLocaleDateString("de-DE")}`,
+        text: `Backup vom ${new Date().toLocaleDateString(getIntlLocale())}`,
         url: uriResult.uri,
         dialogTitle: "Backup sichern",
       });

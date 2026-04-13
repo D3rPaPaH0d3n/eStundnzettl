@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { logger } from "../utils/logger";
 import { blobToBase64 } from "../utils";
+import { getIntlLocale } from "../utils/formatLocale";
 import {
   getWeekNumber,
   getWeekRangeInMonth,
@@ -109,7 +110,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
     const monday = new Date(ISOweekStart);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    const fmt = (d: Date) => d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+    const fmt = (d: Date) => d.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" });
     return `${fmt(monday)} - ${fmt(sunday)}`;
   };
 
@@ -178,7 +179,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
       let timePeriod = "";
       const employeeNameClean = employeeName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
       if (filterMode === "month") {
-        timePeriod = monthDate.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+        timePeriod = monthDate.toLocaleDateString(getIntlLocale(), { month: "long", year: "numeric" });
       } else {
         const weekLabel = getWeekLabel(filterMode); 
         timePeriod = `KW_${filterMode}_(${weekLabel.replace(/[\s-.]/g, '')})`; 
@@ -275,7 +276,7 @@ const PrintReport: React.FC<Props> = ({ entries, allEntries: rawAllEntries, mont
             </h2>
             <div className="flex items-center bg-zinc-800 rounded-lg p-0.5 border border-zinc-700">
               <button onClick={() => handleMonthChange(-1)} className="p-1.5 hover:bg-zinc-700 rounded-md text-zinc-300"><ChevronLeft size={18} /></button>
-              <span className="px-2 text-sm font-bold w-24 text-center tabular-nums">{monthDate.toLocaleDateString("de-DE", { month: "short", year: "2-digit" })}</span>
+              <span className="px-2 text-sm font-bold w-24 text-center tabular-nums">{monthDate.toLocaleDateString(getIntlLocale(), { month: "short", year: "2-digit" })}</span>
               <button onClick={() => handleMonthChange(1)} className="p-1.5 hover:bg-zinc-700 rounded-md text-zinc-300"><ChevronRight size={18} /></button>
             </div>
             <button onClick={onClose} className="p-2 bg-zinc-800 rounded-full hover:bg-zinc-700 transition-colors shrink-0"><X size={20} /></button>

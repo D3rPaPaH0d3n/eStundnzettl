@@ -3,6 +3,7 @@ import { FileText, CheckCircle2, AlertTriangle, Loader, HardDrive, Server, Cloud
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { Card } from "../../utils";
+import { getIntlLocale } from "../../utils/formatLocale";
 import { STORAGE_KEYS } from "../../hooks/constants";
 import { isSQLiteActive } from "../../db/storageMode";
 import { getSetting, setSetting } from "../../db/repositories/settingsRepo";
@@ -49,7 +50,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
     if (!dateStr) return t("settings.pdfArchive.lastRunNever");
     const d = new Date(dateStr);
     if (Number.isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return d.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit", year: "numeric" });
   };
   const [enabled, setEnabled] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_ENABLED));
   const [localTarget, setLocalTarget] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_LOCAL));

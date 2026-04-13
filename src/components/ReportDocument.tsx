@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { formatTime, formatSignedTime } from "../utils";
+import { getIntlLocale } from "../utils/formatLocale";
 import { buildDayBalanceMetaMap } from "../utils/timeCalculations";
 import { resolveEffectiveRules } from "../utils/calculationConfig";
 import { WORK_CODE } from "../hooks/constants";
@@ -201,7 +202,7 @@ const ReportDocument: React.FC<Props> = ({
           <div style={{ textAlign: "right" }}>
             <p style={{ fontWeight: "500", fontSize: "0.9rem", margin: 0 }}>{employeeName}</p>
             <p style={{ fontSize: "0.8rem", color: PRINT_STYLES.textMedium, margin: 0 }}>
-              {monthDate?.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
+              {monthDate?.toLocaleDateString(getIntlLocale(), { month: "long", year: "numeric" })}
               {filterMode !== "month" && ` (${t("dashboard.calendarWeekShort", { week: filterMode })})`}
             </p>
           </div>
@@ -252,8 +253,8 @@ const ReportDocument: React.FC<Props> = ({
         <tbody>
           {entries.map((e, idx) => {
             const d = new Date(e.date);
-            const wd = d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2);
-            const ds = d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+            const wd = d.toLocaleDateString(getIntlLocale(), { weekday: "short" }).slice(0, 2);
+            const ds = d.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" });
             const meta = dayMetaMap[e.id] || {};
             const prevEntry = entries[idx - 1];
             const nextEntry = entries[idx + 1];

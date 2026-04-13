@@ -8,6 +8,7 @@ import { recalculateAllEntries } from "../../utils/timeCalculations";
 import { getLocale, GERMAN_STATE_IDS, GERMAN_STATE_NAMES, SWISS_KANTON_IDS, SWISS_KANTON_NAMES } from "../../locales";
 import { getOrthodoxHolidays, getIslamicHolidays } from "../../locales/holidays/religious";
 import { logger } from "../../utils/logger";
+import { getIntlLocale } from "../../utils/formatLocale";
 import type {
   CalculationConfig,
   OvertimeMode,
@@ -51,7 +52,7 @@ const HOLIDAY_ON_WORK_OPTION_IDS = ["additive", "counts_as_overtime", "cap_to_ta
 
 const formatHours = (minutes: number): string => {
   if (!Number.isFinite(minutes)) return "0 h";
-  return (minutes / 60).toLocaleString("de-DE", {
+  return (minutes / 60).toLocaleString(getIntlLocale(), {
     minimumFractionDigits: 1,
     maximumFractionDigits: 2,
   }) + " h";

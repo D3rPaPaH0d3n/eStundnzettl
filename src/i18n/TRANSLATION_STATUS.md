@@ -61,7 +61,7 @@ format.*          any format helpers needing translated text
 - [x] B7: ImportConflictModal + LocaleMigrationModal + PresetModal + AttachmentManager
 - [x] B8: LiveTimerOverlay + AppTour
 - [x] B9: Settings shell + ProfileSettings + ThemeSettings + AppInfoSettings
-- [ ] B10: Settings/CalculationSettings
+- [x] B10: Settings/CalculationSettings
 - [ ] B11: Settings/BackupSettings
 - [ ] B12: Settings/LocaleSettings (+ Language Picker UI) + DataSettings + PdfArchiveSettings
 - [ ] B13: OnboardingWizard + Welcome/Profile/SummaryStep
@@ -91,6 +91,29 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session B10** (2026-04-13): migrated `Settings/CalculationSettings.tsx`
+  (717 lines, the beast of the settings area).
+  Introduced the `settings.calc.*` namespace covering every label
+  above the fold (header, subtitle, teaser with `{{overtime}}` /
+  `{{sick}}`, contracted hours with `{{hours}}`, overtime rule,
+  threshold label, sick-on-workday, holidays & half-days), every
+  advanced control (auto-pause rule with `{{fromHours}}`/`{{pauseMinutes}}`,
+  vacation yearly allowance + carryover + hint) and every toast
+  (holidays imported with plural `{{count}}`, format validation,
+  recalc running/fixed/allCorrect/error with interpolation).
+  Option arrays moved from module-level German-literal constants to
+  `OVERTIME_OPTION_IDS` / `SICK_OPTION_IDS` / `HOLIDAY_ON_WORK_OPTION_IDS`
+  (stable IDs kept because they persist in `CalculationConfig`). The
+  labeled `{ id, label }` arrays are now built inside the component
+  via `useMemo` on `t`, so a language switch re-renders them
+  correctly. The country/state/kanton import options are also
+  translated with `{{state}}`/`{{kanton}}` interpolation; base locale
+  names come from `GERMAN_STATE_NAMES`/`SWISS_KANTON_NAMES` which are
+  data and handled later.
+  Settings weekday keys from B9 are NOT needed here — this file
+  doesn't render weekday pickers directly.
+  `formatHours` still uses `toLocaleString("de-DE", …)` — stays for C1.
+  Tests 630/630 green.
 - **Session B9** (2026-04-13): migrated the settings shell and the
   three small settings panels (Profile/Theme/AppInfo). Largest Settings
   session so far — opens the big `settings.*` namespace that B10–B12

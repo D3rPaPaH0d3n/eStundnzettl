@@ -418,6 +418,83 @@
       "recalcFixed": "{{fixed}} von {{total}} Einträgen korrigiert",
       "recalcAllCorrect": "Alle {{total}} Einträge sind korrekt",
       "recalcError": "Fehler bei der Neuberechnung"
+    },
+    "calc": {
+      "header": "Berechnung",
+      "subtitle": "Wie Überstunden, Krank und Feiertage gezählt werden",
+      "teaser": "{{overtime}} · Krank: {{sick}}",
+      "contractedHours": "Vertragsstunden",
+      "hoursPerWeek": "{{hours}} / Woche",
+      "overtimeRule": "Überstunden-Regel",
+      "overtimeThresholdLabel": "Überstunden ab Wochenstunden",
+      "hoursPerWeekUnit": "h / Woche",
+      "sickOnWorkDay": "Krank am Arbeitstag",
+      "holidaysHalfDays": "Feiertage & Halbtage",
+      "importHolidays": "Feiertage aus Vorlage importieren",
+      "noHolidaysActive": "Keine Feiertage aktiv.",
+      "removeHolidayAria": "{{name}} entfernen",
+      "dateLabel": "Datum",
+      "dateFormatPlaceholder": "DD.MM",
+      "nameLabel": "Bezeichnung",
+      "customHolidayPlaceholder": "z. B. Firmenjubiläum",
+      "add": "Hinzufügen",
+      "halfDays": "Halbtage",
+      "addHalfDayAria": "Halbtag hinzufügen",
+      "holidayWork": "Feiertag + Arbeit am selben Tag",
+      "advanced": "Erweitert",
+      "autoPauses": "Automatische Pausen",
+      "autoPauseInfo": "Wird nur bei Einträgen ohne manuelle Pause angewendet.",
+      "autoPauseRule": "ab {{fromHours}} → {{pauseMinutes}} min Pause",
+      "removeRuleAria": "Regel entfernen",
+      "noAutoPauseRule": "Keine Auto-Pause-Regel hinterlegt.",
+      "fromLabel": "ab",
+      "hoursToArrow": "h →",
+      "minUnit": "min",
+      "addPauseRuleAria": "Pausenregel hinzufügen",
+      "vacation": "Urlaub",
+      "yearlyAllowance": "Jahresanspruch",
+      "days": "Tage",
+      "remainingCarryover": "Resturlaub / Übertrag",
+      "carryoverHint": "Resttage vom Vorjahr oder bereits verbrauchte Tage (negativ).",
+      "recalcRunning": "Neuberechnung läuft...",
+      "recalcAll": "Alle Einträge neu berechnen",
+      "drawerHolidayWork": "Feiertag + Arbeit",
+      "drawerImportHolidays": "Feiertage importieren",
+      "overtimeOptions": {
+        "none": "Keine Unterscheidung",
+        "split": "Mehrarbeit & Überstunden trennen",
+        "ueberstunden_only": "Alles ist Überstunden"
+      },
+      "sickOptions": {
+        "cap_to_target": "Füllt bis Tagessoll auf",
+        "additive": "Zählt zusätzlich zur Arbeit",
+        "ignore": "Wird ignoriert"
+      },
+      "holidayOnWorkOptions": {
+        "additive": "Feiertag zählt zusätzlich",
+        "counts_as_overtime": "Feiertag zählt als Überstunde",
+        "cap_to_target": "Füllt bis Tagessoll auf"
+      },
+      "importOptions": {
+        "austria": "Österreich",
+        "germanyState": "Deutschland – {{state}}",
+        "swissKanton": "Schweiz – {{kanton}}",
+        "orthodox": "Orthodoxe Feiertage",
+        "islamic": "Islamische Feiertage (ca.)"
+      },
+      "fallbackOvertime": "Keine Unterscheidung",
+      "fallbackSick": "Zählt zusätzlich",
+      "fallbackHolidayOnWork": "Feiertag zählt zusätzlich",
+      "toast": {
+        "holidaysImported_one": "{{count}} Feiertag importiert",
+        "holidaysImported_other": "{{count}} Feiertage importiert",
+        "formatDateName": "Format: DD.MM + Name",
+        "formatDate": "Format: DD.MM",
+        "invalidValues": "Bitte gültige Werte eingeben",
+        "recalcFixed": "{{fixed}} von {{total}} Einträgen aktualisiert",
+        "recalcAllCorrect": "Alle {{total}} Einträge sind aktuell",
+        "recalcError": "Neuberechnung fehlgeschlagen"
+      }
     }
   },
   "attachments": {

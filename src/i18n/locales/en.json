@@ -418,6 +418,83 @@
       "recalcFixed": "Fixed {{fixed}} of {{total}} entries",
       "recalcAllCorrect": "All {{total}} entries are correct",
       "recalcError": "Recalculation failed"
+    },
+    "calc": {
+      "header": "Calculation",
+      "subtitle": "How overtime, sick leave and holidays are counted",
+      "teaser": "{{overtime}} · Sick: {{sick}}",
+      "contractedHours": "Contracted hours",
+      "hoursPerWeek": "{{hours}} / week",
+      "overtimeRule": "Overtime rule",
+      "overtimeThresholdLabel": "Overtime from weekly hours",
+      "hoursPerWeekUnit": "h / week",
+      "sickOnWorkDay": "Sick on a workday",
+      "holidaysHalfDays": "Holidays & half-days",
+      "importHolidays": "Import holidays from template",
+      "noHolidaysActive": "No holidays active.",
+      "removeHolidayAria": "Remove {{name}}",
+      "dateLabel": "Date",
+      "dateFormatPlaceholder": "DD.MM",
+      "nameLabel": "Label",
+      "customHolidayPlaceholder": "e.g. company anniversary",
+      "add": "Add",
+      "halfDays": "Half-days",
+      "addHalfDayAria": "Add half-day",
+      "holidayWork": "Holiday + work on the same day",
+      "advanced": "Advanced",
+      "autoPauses": "Automatic breaks",
+      "autoPauseInfo": "Only applied to entries without a manual break.",
+      "autoPauseRule": "from {{fromHours}} → {{pauseMinutes}} min break",
+      "removeRuleAria": "Remove rule",
+      "noAutoPauseRule": "No auto-break rule configured.",
+      "fromLabel": "from",
+      "hoursToArrow": "h →",
+      "minUnit": "min",
+      "addPauseRuleAria": "Add break rule",
+      "vacation": "Vacation",
+      "yearlyAllowance": "Yearly allowance",
+      "days": "days",
+      "remainingCarryover": "Remaining / carryover",
+      "carryoverHint": "Remaining days from last year or days already used (negative).",
+      "recalcRunning": "Recalculating…",
+      "recalcAll": "Recalculate all entries",
+      "drawerHolidayWork": "Holiday + work",
+      "drawerImportHolidays": "Import holidays",
+      "overtimeOptions": {
+        "none": "No distinction",
+        "split": "Separate extra hours & overtime",
+        "ueberstunden_only": "All is overtime"
+      },
+      "sickOptions": {
+        "cap_to_target": "Fill up to daily target",
+        "additive": "Count in addition to work",
+        "ignore": "Ignore"
+      },
+      "holidayOnWorkOptions": {
+        "additive": "Holiday counts in addition",
+        "counts_as_overtime": "Holiday counts as overtime",
+        "cap_to_target": "Fill up to daily target"
+      },
+      "importOptions": {
+        "austria": "Austria",
+        "germanyState": "Germany – {{state}}",
+        "swissKanton": "Switzerland – {{kanton}}",
+        "orthodox": "Orthodox holidays",
+        "islamic": "Islamic holidays (approx.)"
+      },
+      "fallbackOvertime": "No distinction",
+      "fallbackSick": "Count in addition",
+      "fallbackHolidayOnWork": "Holiday counts in addition",
+      "toast": {
+        "holidaysImported_one": "{{count}} holiday imported",
+        "holidaysImported_other": "{{count}} holidays imported",
+        "formatDateName": "Format: DD.MM + name",
+        "formatDate": "Format: DD.MM",
+        "invalidValues": "Please enter valid values",
+        "recalcFixed": "Updated {{fixed}} of {{total}} entries",
+        "recalcAllCorrect": "All {{total}} entries are up to date",
+        "recalcError": "Recalculation failed"
+      }
     }
   },
   "attachments": {

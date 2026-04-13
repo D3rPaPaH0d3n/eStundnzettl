@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Sliders, ChevronDown, Plus, X, Calculator, Upload, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { Card } from "../../utils";
 import SelectionDrawer from "../SelectionDrawer";
 import { recalculateAllEntries } from "../../utils/timeCalculations";
@@ -41,23 +42,12 @@ interface Props {
   ) => void;
 }
 
-const OVERTIME_OPTIONS = [
-  { id: "none", label: "Keine Unterscheidung" },
-  { id: "split", label: "Mehrarbeit & Überstunden trennen" },
-  { id: "ueberstunden_only", label: "Alles ist Überstunden" },
-];
-
-const SICK_OPTIONS = [
-  { id: "cap_to_target", label: "Füllt bis Tagessoll auf" },
-  { id: "additive", label: "Zählt zusätzlich zur Arbeit" },
-  { id: "ignore", label: "Wird ignoriert" },
-];
-
-const HOLIDAY_ON_WORK_OPTIONS = [
-  { id: "additive", label: "Feiertag zählt zusätzlich" },
-  { id: "counts_as_overtime", label: "Feiertag zählt als Überstunde" },
-  { id: "cap_to_target", label: "Füllt bis Tagessoll auf" },
-];
+// Die Options-IDs sind stabil (Persistenz in CalculationConfig); die
+// Labels werden zur Laufzeit via i18n aus settings.calc.*Options
+// aufgelöst, siehe Aufruf im Component-Body.
+const OVERTIME_OPTION_IDS = ["none", "split", "ueberstunden_only"] as const;
+const SICK_OPTION_IDS = ["cap_to_target", "additive", "ignore"] as const;
+const HOLIDAY_ON_WORK_OPTION_IDS = ["additive", "counts_as_overtime", "cap_to_target"] as const;
 
 const formatHours = (minutes: number): string => {
   if (!Number.isFinite(minutes)) return "0 h";
@@ -89,6 +79,33 @@ const CalculationSettings: React.FC<Props> = ({
   calculationConfig,
   setCalculationConfig,
 }) => {
+  const { t } = useTranslation();
+
+  const OVERTIME_OPTIONS = useMemo(
+    () =>
+      OVERTIME_OPTION_IDS.map((id) => ({
+        id,
+        label: t(`settings.calc.overtimeOptions.${id}`),
+      })),
+    [t],
+  );
+  const SICK_OPTIONS = useMemo(
+    () =>
+      SICK_OPTION_IDS.map((id) => ({
+        id,
+        label: t(`settings.calc.sickOptions.${id}`),
+      })),
+    [t],
+  );
+  const HOLIDAY_ON_WORK_OPTIONS = useMemo(
+    () =>
+      HOLIDAY_ON_WORK_OPTION_IDS.map((id) => ({
+        id,
+        label: t(`settings.calc.holidayOnWorkOptions.${id}`),
+      })),
+    [t],
+  );
+
   const [overtimeDrawerOpen, setOvertimeDrawerOpen] = useState(false);
   const [sickDrawerOpen, setSickDrawerOpen] = useState(false);
   const [holidayWorkDrawerOpen, setHolidayWorkDrawerOpen] = useState(false);
@@ -112,19 +129,19 @@ const CalculationSettings: React.FC<Props> = ({
 
   const importOptions = useMemo(
     () => [
-      { id: "at", label: "Österreich" },
+      { id: "at", label: t("settings.calc.importOptions.austria") },
       ...GERMAN_STATE_IDS.map((s) => ({
         id: `de-${s}`,
-        label: `Deutschland – ${GERMAN_STATE_NAMES[s]}`,
+        label: t("settings.calc.importOptions.germanyState", { state: GERMAN_STATE_NAMES[s] }),
       })),
       ...SWISS_KANTON_IDS.map((k) => ({
         id: `ch-${k}`,
-        label: `Schweiz – ${SWISS_KANTON_NAMES[k]}`,
+        label: t("settings.calc.importOptions.swissKanton", { kanton: SWISS_KANTON_NAMES[k] }),
       })),
-      { id: "_orthodox", label: "Orthodoxe Feiertage" },
-      { id: "_islamic", label: "Islamische Feiertage (ca.)" },
+      { id: "_orthodox", label: t("settings.calc.importOptions.orthodox") },
+      { id: "_islamic", label: t("settings.calc.importOptions.islamic") },
     ],
-    []
+    [t]
   );
 
   if (!calculationConfig || !setCalculationConfig) return null;
@@ -133,12 +150,12 @@ const CalculationSettings: React.FC<Props> = ({
   const customHolidays = customHolidaysMemo;
 
   const overtimeLabel =
-    OVERTIME_OPTIONS.find((o) => o.id === config.overtimeMode)?.label ?? "Keine Unterscheidung";
+    OVERTIME_OPTIONS.find((o) => o.id === config.overtimeMode)?.label ?? t("settings.calc.fallbackOvertime");
   const sickLabel =
-    SICK_OPTIONS.find((o) => o.id === config.sickOnWorkDayMode)?.label ?? "Zählt zusätzlich";
+    SICK_OPTIONS.find((o) => o.id === config.sickOnWorkDayMode)?.label ?? t("settings.calc.fallbackSick");
   const holidayWorkLabel =
     HOLIDAY_ON_WORK_OPTIONS.find((o) => o.id === config.holidayOnWorkDayMode)?.label ??
-    "Feiertag zählt zusätzlich";
+    t("settings.calc.fallbackHolidayOnWork");
 
   // --- Handlers -----------------------------------------------------------
   const patch = (partial: Partial<CalculationConfig>) =>
@@ -196,7 +213,7 @@ const CalculationSettings: React.FC<Props> = ({
         customHolidays: next,
       },
     });
-    toast.success(`${Object.keys(base).length} Feiertage importiert`);
+    toast.success(t("settings.calc.toast.holidaysImported", { count: Object.keys(base).length }));
   };
 
   const handleRemoveCustomHoliday = (key: string) => {
@@ -211,7 +228,7 @@ const CalculationSettings: React.FC<Props> = ({
     const mmdd = displayToMmdd(customHolidayInput.mmdd);
     const name = customHolidayInput.name.trim();
     if (!mmdd || name.length === 0) {
-      toast.error("Format: DD.MM + Name");
+      toast.error(t("settings.calc.toast.formatDateName"));
       return;
     }
     patch({
@@ -227,7 +244,7 @@ const CalculationSettings: React.FC<Props> = ({
   const handleAddCustomHalfDay = (displayInput: string) => {
     const mmdd = displayToMmdd(displayInput);
     if (!mmdd) {
-      toast.error("Format: DD.MM");
+      toast.error(t("settings.calc.toast.formatDate"));
       return;
     }
     if (config.halfDayMode.customHalfDays.includes(mmdd)) return;
@@ -254,7 +271,7 @@ const CalculationSettings: React.FC<Props> = ({
     const fromHours = parseFloat(newPauseInput.fromHours.replace(",", "."));
     const pauseMinutes = parseInt(newPauseInput.pauseMinutes, 10);
     if (!Number.isFinite(fromHours) || fromHours <= 0 || !Number.isFinite(pauseMinutes) || pauseMinutes <= 0) {
-      toast.error("Bitte gültige Werte eingeben");
+      toast.error(t("settings.calc.toast.invalidValues"));
       return;
     }
     const rule: AutoPauseRule = {
@@ -284,18 +301,18 @@ const CalculationSettings: React.FC<Props> = ({
   const handleRecalculate = async () => {
     if (recalcRunning) return;
     setRecalcRunning(true);
-    const toastId = toast.loading("Neuberechnung läuft...");
+    const toastId = toast.loading(t("settings.calc.recalcRunning"));
     try {
       const { total, fixed } = await recalculateAllEntries(userData, locale, config);
       toast.success(
         fixed > 0
-          ? `${fixed} von ${total} Einträgen aktualisiert`
-          : `Alle ${total} Einträge sind aktuell`,
+          ? t("settings.calc.toast.recalcFixed", { fixed, total })
+          : t("settings.calc.toast.recalcAllCorrect", { total }),
         { id: toastId }
       );
     } catch (err) {
       logger.error("[CalculationSettings] Neuberechnung fehlgeschlagen:", err);
-      toast.error("Neuberechnung fehlgeschlagen", { id: toastId });
+      toast.error(t("settings.calc.toast.recalcError"), { id: toastId });
     } finally {
       setRecalcRunning(false);
     }
@@ -312,9 +329,9 @@ const CalculationSettings: React.FC<Props> = ({
           <Calculator size={20} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-zinc-800 dark:text-white">Berechnung</h3>
+          <h3 className="font-bold text-zinc-800 dark:text-white">{t("settings.calc.header")}</h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Wie Überstunden, Krank und Feiertage gezählt werden
+            {t("settings.calc.subtitle")}
           </p>
         </div>
         <ChevronDown
@@ -325,7 +342,7 @@ const CalculationSettings: React.FC<Props> = ({
 
       {!isExpanded && (
         <div className="text-xs text-zinc-500 dark:text-zinc-400">
-          {overtimeLabel} &middot; Krank: {sickLabel}
+          {t("settings.calc.teaser", { overtime: overtimeLabel, sick: sickLabel })}
         </div>
       )}
 
@@ -333,10 +350,10 @@ const CalculationSettings: React.FC<Props> = ({
       {/* Vertragsstunden (Readonly) */}
       <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-700">
         <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
-          Vertragsstunden
+          {t("settings.calc.contractedHours")}
         </div>
         <div className="text-lg font-bold text-zinc-800 dark:text-white">
-          {formatHours(config.weeklyTargetMinutes)} / Woche
+          {t("settings.calc.hoursPerWeek", { hours: formatHours(config.weeklyTargetMinutes) })}
         </div>
       </div>
 
@@ -347,7 +364,7 @@ const CalculationSettings: React.FC<Props> = ({
         className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-emerald-300 transition-colors text-left"
       >
         <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-0.5">
-          Überstunden-Regel
+          {t("settings.calc.overtimeRule")}
         </div>
         <div className="flex items-center justify-between">
           <div className="font-bold text-zinc-800 dark:text-white text-sm">{overtimeLabel}</div>
@@ -358,7 +375,7 @@ const CalculationSettings: React.FC<Props> = ({
       {config.overtimeMode === "split" && (
         <div className="p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10">
           <label className="block text-xs font-bold text-zinc-600 dark:text-zinc-300 mb-2">
-            Überstunden ab Wochenstunden
+            {t("settings.calc.overtimeThresholdLabel")}
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -370,7 +387,7 @@ const CalculationSettings: React.FC<Props> = ({
               onBlur={(e) => handleThresholdHourInput(e.target.value)}
               className="flex-1 p-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-zinc-800 dark:text-white outline-none"
             />
-            <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">h / Woche</span>
+            <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">{t("settings.calc.hoursPerWeekUnit")}</span>
           </div>
         </div>
       )}
@@ -382,7 +399,7 @@ const CalculationSettings: React.FC<Props> = ({
         className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-emerald-300 transition-colors text-left"
       >
         <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-0.5">
-          Krank am Arbeitstag
+          {t("settings.calc.sickOnWorkDay")}
         </div>
         <div className="flex items-center justify-between">
           <div className="font-bold text-zinc-800 dark:text-white text-sm">{sickLabel}</div>
@@ -397,7 +414,7 @@ const CalculationSettings: React.FC<Props> = ({
         className="w-full p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 font-bold text-sm flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
       >
         <span className="flex items-center gap-2">
-          <Calendar size={14} /> Feiertage &amp; Halbtage
+          <Calendar size={14} /> {t("settings.calc.holidaysHalfDays")}
         </span>
         <ChevronDown
           size={16}
@@ -413,12 +430,12 @@ const CalculationSettings: React.FC<Props> = ({
             className="w-full p-2.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-100 transition-colors"
           >
             <Upload size={14} />
-            Feiertage aus Vorlage importieren
+            {t("settings.calc.importHolidays")}
           </button>
 
           {sortedHolidayEntries.length === 0 ? (
             <div className="text-xs text-zinc-500 italic text-center py-1">
-              Keine Feiertage aktiv.
+              {t("settings.calc.noHolidaysActive")}
             </div>
           ) : (
             <div className="space-y-1 max-h-52 overflow-y-auto">
@@ -435,7 +452,7 @@ const CalculationSettings: React.FC<Props> = ({
                     type="button"
                     onClick={() => handleRemoveCustomHoliday(key)}
                     className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
-                    aria-label={`${name} entfernen`}
+                    aria-label={t("settings.calc.removeHolidayAria", { name })}
                   >
                     <X size={16} />
                   </button>
@@ -446,20 +463,20 @@ const CalculationSettings: React.FC<Props> = ({
 
           <div className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 space-y-3">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Datum</label>
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.dateLabel")}</label>
               <input
                 type="text"
-                placeholder="DD.MM"
+                placeholder={t("settings.calc.dateFormatPlaceholder")}
                 value={customHolidayInput.mmdd}
                 onChange={(e) => setCustomHolidayInput((p) => ({ ...p, mmdd: e.target.value }))}
                 className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Bezeichnung</label>
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.nameLabel")}</label>
               <input
                 type="text"
-                placeholder="z. B. Firmenjubiläum"
+                placeholder={t("settings.calc.customHolidayPlaceholder")}
                 value={customHolidayInput.name}
                 onChange={(e) => setCustomHolidayInput((p) => ({ ...p, name: e.target.value }))}
                 className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
@@ -471,14 +488,14 @@ const CalculationSettings: React.FC<Props> = ({
               className="w-full p-2 rounded-lg bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1.5"
             >
               <Plus size={14} />
-              Hinzufügen
+              {t("settings.calc.add")}
             </button>
           </div>
 
           {/* Halbtage */}
           <div className="pt-2 border-t border-zinc-100 dark:border-zinc-700 space-y-2">
             <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
-              Halbtage
+              {t("settings.calc.halfDays")}
             </div>
 
             {config.halfDayMode.customHalfDays.length > 0 && (
@@ -500,7 +517,7 @@ const CalculationSettings: React.FC<Props> = ({
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="DD.MM"
+                placeholder={t("settings.calc.dateFormatPlaceholder")}
                 value={customHalfDayInput}
                 onChange={(e) => setCustomHalfDayInput(e.target.value)}
                 className="flex-1 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
@@ -509,7 +526,7 @@ const CalculationSettings: React.FC<Props> = ({
                 type="button"
                 onClick={() => handleAddCustomHalfDay(customHalfDayInput)}
                 className="p-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-                aria-label="Halbtag hinzufügen"
+                aria-label={t("settings.calc.addHalfDayAria")}
               >
                 <Plus size={16} />
               </button>
@@ -523,7 +540,7 @@ const CalculationSettings: React.FC<Props> = ({
             className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-emerald-300 transition-colors text-left"
           >
             <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-0.5">
-              Feiertag + Arbeit am selben Tag
+              {t("settings.calc.holidayWork")}
             </div>
             <div className="flex items-center justify-between">
               <div className="font-bold text-zinc-800 dark:text-white text-sm">{holidayWorkLabel}</div>
@@ -540,7 +557,7 @@ const CalculationSettings: React.FC<Props> = ({
         className="w-full p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 font-bold text-sm flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
       >
         <span className="flex items-center gap-2">
-          <Sliders size={14} /> Erweitert
+          <Sliders size={14} /> {t("settings.calc.advanced")}
         </span>
         <ChevronDown
           size={16}
@@ -553,10 +570,10 @@ const CalculationSettings: React.FC<Props> = ({
           {/* Auto-Pausen */}
           <div className="space-y-2">
             <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
-              Automatische Pausen
+              {t("settings.calc.autoPauses")}
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Wird nur bei Einträgen ohne manuelle Pause angewendet.
+              {t("settings.calc.autoPauseInfo")}
             </p>
 
             {config.autoPauseRules.length > 0 ? (
@@ -567,13 +584,13 @@ const CalculationSettings: React.FC<Props> = ({
                     className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 dark:bg-zinc-900/50 text-sm"
                   >
                     <div className="font-bold text-zinc-700 dark:text-zinc-200">
-                      ab {formatHours(rule.fromMinutes)} → {rule.pauseMinutes} min Pause
+                      {t("settings.calc.autoPauseRule", { fromHours: formatHours(rule.fromMinutes), pauseMinutes: rule.pauseMinutes })}
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveAutoPause(idx)}
                       className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
-                      aria-label="Regel entfernen"
+                      aria-label={t("settings.calc.removeRuleAria")}
                     >
                       <X size={16} />
                     </button>
@@ -582,12 +599,12 @@ const CalculationSettings: React.FC<Props> = ({
               </div>
             ) : (
               <div className="text-xs text-zinc-500 italic">
-                Keine Auto-Pause-Regel hinterlegt.
+                {t("settings.calc.noAutoPauseRule")}
               </div>
             )}
 
             <div className="flex gap-2 items-center">
-              <span className="text-xs text-zinc-500">ab</span>
+              <span className="text-xs text-zinc-500">{t("settings.calc.fromLabel")}</span>
               <input
                 type="number"
                 min={0}
@@ -598,7 +615,7 @@ const CalculationSettings: React.FC<Props> = ({
                 }
                 className="w-16 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
               />
-              <span className="text-xs text-zinc-500">h →</span>
+              <span className="text-xs text-zinc-500">{t("settings.calc.hoursToArrow")}</span>
               <input
                 type="number"
                 min={0}
@@ -609,12 +626,12 @@ const CalculationSettings: React.FC<Props> = ({
                 }
                 className="w-16 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
               />
-              <span className="text-xs text-zinc-500">min</span>
+              <span className="text-xs text-zinc-500">{t("settings.calc.minUnit")}</span>
               <button
                 type="button"
                 onClick={handleAddAutoPause}
                 className="ml-auto p-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-                aria-label="Pausenregel hinzufügen"
+                aria-label={t("settings.calc.addPauseRuleAria")}
               >
                 <Plus size={16} />
               </button>
@@ -624,10 +641,10 @@ const CalculationSettings: React.FC<Props> = ({
           {/* Urlaubsanspruch + Resturlaub */}
           <div className="space-y-3 pt-2 border-t border-zinc-100 dark:border-zinc-700">
             <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
-              Urlaub
+              {t("settings.calc.vacation")}
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Jahresanspruch</label>
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.yearlyAllowance")}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -637,11 +654,11 @@ const CalculationSettings: React.FC<Props> = ({
                   onChange={(e) => handleVacationAllowanceChange(e.target.value)}
                   className="w-24 p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
                 />
-                <span className="text-sm text-zinc-600 dark:text-zinc-300">Tage</span>
+                <span className="text-sm text-zinc-600 dark:text-zinc-300">{t("settings.calc.days")}</span>
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Resturlaub / Übertrag</label>
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.remainingCarryover")}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -654,10 +671,10 @@ const CalculationSettings: React.FC<Props> = ({
                   }}
                   className="w-24 p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
                 />
-                <span className="text-sm text-zinc-600 dark:text-zinc-300">Tage</span>
+                <span className="text-sm text-zinc-600 dark:text-zinc-300">{t("settings.calc.days")}</span>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 italic">
-                Resttage vom Vorjahr oder bereits verbrauchte Tage (negativ).
+                {t("settings.calc.carryoverHint")}
               </p>
             </div>
           </div>
@@ -671,14 +688,14 @@ const CalculationSettings: React.FC<Props> = ({
         disabled={recalcRunning}
         className="w-full p-3 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors disabled:opacity-50"
       >
-        {recalcRunning ? "Neuberechnung läuft..." : "Alle Einträge neu berechnen"}
+        {recalcRunning ? t("settings.calc.recalcRunning") : t("settings.calc.recalcAll")}
       </button>
       </>)}
 
       <SelectionDrawer
         isOpen={overtimeDrawerOpen}
         onClose={() => setOvertimeDrawerOpen(false)}
-        title="Überstunden-Regel"
+        title={t("settings.calc.overtimeRule")}
         options={OVERTIME_OPTIONS}
         value={config.overtimeMode}
         onChange={handleOvertimeChange}
@@ -687,7 +704,7 @@ const CalculationSettings: React.FC<Props> = ({
       <SelectionDrawer
         isOpen={sickDrawerOpen}
         onClose={() => setSickDrawerOpen(false)}
-        title="Krank am Arbeitstag"
+        title={t("settings.calc.sickOnWorkDay")}
         options={SICK_OPTIONS}
         value={config.sickOnWorkDayMode}
         onChange={handleSickChange}
@@ -696,7 +713,7 @@ const CalculationSettings: React.FC<Props> = ({
       <SelectionDrawer
         isOpen={holidayWorkDrawerOpen}
         onClose={() => setHolidayWorkDrawerOpen(false)}
-        title="Feiertag + Arbeit"
+        title={t("settings.calc.drawerHolidayWork")}
         options={HOLIDAY_ON_WORK_OPTIONS}
         value={config.holidayOnWorkDayMode}
         onChange={handleHolidayWorkChange}
@@ -705,7 +722,7 @@ const CalculationSettings: React.FC<Props> = ({
       <SelectionDrawer
         isOpen={importDrawerOpen}
         onClose={() => setImportDrawerOpen(false)}
-        title="Feiertage importieren"
+        title={t("settings.calc.drawerImportHolidays")}
         options={importOptions}
         value=""
         onChange={handleImportHolidays}

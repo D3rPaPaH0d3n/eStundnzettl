@@ -399,6 +399,65 @@
       "welcome": "Willkommen!"
     }
   },
+  "toasts": {
+    "entry": {
+      "deleted": "🗑️ Eintrag gelöscht",
+      "saved": "💾 Eintrag gespeichert",
+      "updated": "✏️ Eintrag aktualisiert",
+      "saveFailed": "Eintrag konnte nicht gespeichert werden",
+      "updateFailed": "Eintrag konnte nicht aktualisiert werden",
+      "deleteFailed": "Eintrag konnte nicht gelöscht werden",
+      "deleteAllFailed": "Einträge konnten nicht gelöscht werden",
+      "importFailed": "Import fehlgeschlagen",
+      "endBeforeStart": "⚠️ Endzeit muss nach Startzeit liegen!",
+      "overlap": "⚠️ Zeitüberschneidung!"
+    },
+    "appReset": "🧹 App vollständig zurückgesetzt",
+    "noInternet": "Keine Internetverbindung",
+    "playStore": {
+      "opening": "Öffne den Play Store...",
+      "failed": "Play Store konnte nicht geöffnet werden.",
+      "copiedClipboard": "Play-Store-Link in die Zwischenablage kopiert."
+    },
+    "onboardingCompleted": "Einrichtung abgeschlossen!",
+    "timer": {
+      "started": "⏱️ Stempeluhr gestartet!",
+      "captured": "🏁 Zeit wurde übernommen"
+    },
+    "attachments": {
+      "readyToShare_one": "1 Datei zum Teilen bereit",
+      "readyToShare_other": "{{count}} Dateien zum Teilen bereit"
+    },
+    "autoBackup": {
+      "failed5x": "Cloud-Backup fehlgeschlagen (5x). Bitte Einstellungen prüfen.",
+      "completed": "Backup abgeschlossen"
+    },
+    "autoCheckout": "⚠️ Automatisch ausgestempelt! Bitte prüfen.",
+    "export": {
+      "exporting": "Exportiere Daten...",
+      "success": "📤 Export erfolgreich!",
+      "downloadStarted": "💾 Download gestartet!",
+      "error": "❌ Export Fehler: {{message}}",
+      "exportingFolder": "Exportiere in Ordner...",
+      "folderSuccess": "✅ Erfolgreich im Ordner gespeichert!",
+      "folderCancelled": "Export abgebrochen oder fehlgeschlagen",
+      "preparing": "Bereite Export vor...",
+      "ready": "📤 Export bereitgestellt!",
+      "shareTitle": "eStundnzettl Backup",
+      "shareText": "Backup vom {{date}}",
+      "shareDialogTitle": "Backup sichern"
+    },
+    "import": {
+      "fileTooLarge": "Datei zu groß (max. 10 MB)",
+      "success": "Daten erfolgreich importiert!",
+      "error": "Fehler: {{message}}",
+      "invalidFile": "Datei ungültig.",
+      "integrityMismatch": "⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",
+      "legacyChecksum": "ℹ️ Backup ohne Prüfsumme (Legacy-Format)",
+      "skippedEntries_one": "1 ungültiger Eintrag übersprungen",
+      "skippedEntries_other": "{{count}} ungültige Einträge übersprungen"
+    }
+  },
   "changelogModal": {
     "title": "Änderungsprotokoll",
     "recentBugfixes": "Kürzliche Bugfixes",

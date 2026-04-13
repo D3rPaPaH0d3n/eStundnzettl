@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { PLAY_STORE } from "../constants";
 
@@ -9,6 +10,7 @@ import { PLAY_STORE } from "../constants";
  *  - handleManualUpdateCheck: öffnet den Play Store für ein manuelles Update
  */
 export function useMiscActions({ setCurrentDate }: { setCurrentDate: (fn: (prev: Date) => Date) => void }) {
+  const { t } = useTranslation();
   const changeMonth = useCallback(
     (delta: number) => {
       setCurrentDate((prev) => {
@@ -22,11 +24,11 @@ export function useMiscActions({ setCurrentDate }: { setCurrentDate: (fn: (prev:
 
   const handleManualUpdateCheck = useCallback(async () => {
     if (!navigator.onLine) {
-      toast.error("Keine Internetverbindung");
+      toast.error(t("toasts.noInternet"));
       return;
     }
 
-    const toastId = toast.loading("Oeffne den Play Store...");
+    const toastId = toast.loading(t("toasts.playStore.opening"));
     try {
       await new Promise((r) => setTimeout(r, 250));
       toast.dismiss(toastId);
@@ -37,19 +39,19 @@ export function useMiscActions({ setCurrentDate }: { setCurrentDate: (fn: (prev:
       if (!opened) {
         try {
           await navigator.clipboard.writeText(PLAY_STORE.URL);
-          toast("Play-Store-Link in die Zwischenablage kopiert.", {
+          toast(t("toasts.playStore.copiedClipboard"), {
             duration: 5000,
             icon: "info",
           });
         } catch {
-          toast.error("Play Store konnte nicht geoeffnet werden.");
+          toast.error(t("toasts.playStore.failed"));
         }
       }
     } catch {
       toast.dismiss(toastId);
-      toast.error("Play Store konnte nicht geoeffnet werden.");
+      toast.error(t("toasts.playStore.failed"));
     }
-  }, []);
+  }, [t]);
 
   return { changeMonth, handleManualUpdateCheck };
 }

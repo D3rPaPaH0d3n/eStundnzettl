@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import type { FormState } from '../../types';
 
@@ -20,11 +21,12 @@ interface UseTimerActionsProps {
 }
 
 export function useTimerActions({ form, startTimer, stopTimer, getDefaultCode, setView }: UseTimerActionsProps) {
+  const { t } = useTranslation();
   const handleStartLive = useCallback(() => {
     Haptics.impact({ style: ImpactStyle.Heavy });
     startTimer();
-    toast.success("⏱️ Stempeluhr gestartet!");
-  }, [startTimer]);
+    toast.success(t("toasts.timer.started"));
+  }, [startTimer, t]);
 
   const handleStopLive = useCallback(() => {
     Haptics.impact({ style: ImpactStyle.Heavy });
@@ -53,8 +55,8 @@ export function useTimerActions({ form, startTimer, stopTimer, getDefaultCode, s
     form.setIsLiveEntry(true);
 
     setView("add");
-    toast("🏁 Zeit wurde übernommen", { icon: "✨" });
-  }, [form, getDefaultCode, setView, stopTimer]);
+    toast(t("toasts.timer.captured"), { icon: "✨" });
+  }, [form, getDefaultCode, setView, stopTimer, t]);
 
   return { handleStartLive, handleStopLive };
 }

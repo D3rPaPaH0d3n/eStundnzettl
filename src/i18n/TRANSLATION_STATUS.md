@@ -73,7 +73,7 @@ format.*          any format helpers needing translated text
 - [x] C1: `src/utils/formatLocale.ts` + swap all `de-DE` usages, register `enUS` for date-fns
 
 ## Phase D — Hooks & utility toasts
-- [ ] D1: migrate toast strings in `src/hooks/*` and `src/utils/*`
+- [x] D1: migrate toast strings in `src/hooks/*` and `src/utils/*`
 
 ## Phase E — Changelog data
 - [ ] E1: refactor `src/data/changelog-data.ts` to keys, translate `changelog.*`
@@ -91,6 +91,33 @@ format.*          any format helpers needing translated text
 ## Session log (append after each session)
 
 - **Session 0** (2026-04-12): tracker created, baseline 630/630 tests green.
+- **Session D1** (2026-04-13): migrated all toasts in `src/hooks/*`.
+  New `toasts.*` namespace covering 12 hook files and ~40 toasts:
+  - `toasts.entry.*` — saved/updated/deleted/saveFailed/updateFailed/
+    deleteFailed/deleteAllFailed/importFailed plus
+    endBeforeStart/overlap.
+  - `toasts.appReset`, `toasts.noInternet`,
+    `toasts.playStore.{opening,failed,copiedClipboard}`,
+    `toasts.onboardingCompleted`, `toasts.timer.{started,captured}`,
+    `toasts.attachments.readyToShare_{one,other}` (plural with
+    {{count}}), `toasts.autoBackup.{failed5x,completed}`,
+    `toasts.autoCheckout`.
+  - `toasts.export.*` (12 keys including the share-sheet
+    title/text/dialog with {{date}}, {{message}} for the error
+    template).
+  - `toasts.import.*` (8 keys including
+    `skippedEntries_{one,other}` plural and {{message}} error
+    template).
+  Files touched: useDeleteActions, useEntryActions, useMiscActions,
+  useOnboardingActions, useTimerActions, useAttachmentShare
+  (+ chooserTitle now uses `reports.title` + `dashboard.documentsCount`),
+  useAutoBackup, useEntries, useExport, useImport,
+  useAutoCheckoutHandler. `utils/logger.ts` left as-is — its toast
+  receives the message string from callers, who are responsible for
+  translating it.
+  All hooks pull `useTranslation()` and add `t` to their useCallback
+  dependency arrays.
+  Tests 630/630 green; TS error count unchanged at 59.
 - **Session C1** (2026-04-13): introduced dynamic format-locale.
   - New `src/utils/formatLocale.ts` exporting `getCurrentLanguage()`,
     `getIntlLocale()` (-> "de-DE" | "en-US") and

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import type { AutoCheckoutData, FormState } from "../types";
 
@@ -37,6 +38,7 @@ export function useAutoCheckoutHandler({
   clearAutoCheckout: () => void;
   getDefaultCode: () => number;
 }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (autoCheckoutData) {
       Haptics.impact({ style: ImpactStyle.Heavy });
@@ -65,12 +67,12 @@ export function useAutoCheckoutHandler({
       form.setIsLiveEntry(true);
       setView("add");
 
-      toast("⚠️ Automatisch ausgestempelt! Bitte prüfen.", {
+      toast(t("toasts.autoCheckout"), {
         duration: 6000,
         icon: "🌙"
       });
 
       clearAutoCheckout();
     }
-  }, [autoCheckoutData]);
+  }, [autoCheckoutData, t]);
 }

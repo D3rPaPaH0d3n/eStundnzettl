@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { Haptics, NotificationType } from "@capacitor/haptics";
 import type { UserData, Entry } from '../../types';
 import { STORAGE_KEYS } from "../constants";
@@ -32,6 +33,7 @@ export function useOnboardingActions({
   setShowOnboarding,
   setView,
 }: UseOnboardingActionsProps) {
+  const { t } = useTranslation();
   const handleOnboardingFinish = useCallback(async () => {
     if (isSQLiteActive()) {
       try {
@@ -59,9 +61,9 @@ export function useOnboardingActions({
 
     setShowOnboarding(false);
     setView("dashboard");
-    toast.success("Einrichtung abgeschlossen!");
+    toast.success(t("toasts.onboardingCompleted"));
     Haptics.notification({ type: NotificationType.Success });
-  }, [setUserData, setAutoBackup, importEntries, setShowOnboarding, setView]);
+  }, [setUserData, setAutoBackup, importEntries, setShowOnboarding, setView, t]);
 
   return { handleOnboardingFinish };
 }

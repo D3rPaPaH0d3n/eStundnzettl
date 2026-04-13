@@ -1,5 +1,6 @@
 import React, { useCallback } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import type { Entry, UserData, WorkCode, FormState, CalculationConfig } from '../../types';
 import type { Locale } from "../../locales/types";
@@ -41,6 +42,7 @@ export function useEntryActions({
   locale,
   calculationConfig,
 }: UseEntryActionsProps) {
+  const { t } = useTranslation();
   const getDefaultTimesForDate = useCallback(
     (date: string) => {
       const dayEntries = entries
@@ -122,7 +124,7 @@ export function useEntryActions({
         const s = parseTime(form.startTime);
         const en = parseTime(form.endTime);
         if (en <= s) {
-          toast.error("⚠️ Endzeit muss nach Startzeit liegen!");
+          toast.error(t("toasts.entry.endBeforeStart"));
           return;
         }
 
@@ -137,7 +139,7 @@ export function useEntryActions({
 
         if (hasOverlap) {
           Haptics.impact({ style: ImpactStyle.Heavy });
-          toast.error("⚠️ Zeitüberschneidung!", { duration: 4000, icon: "⛔" });
+          toast.error(t("toasts.entry.overlap"), { duration: 4000, icon: "⛔" });
           return;
         }
 
@@ -232,14 +234,14 @@ export function useEntryActions({
         dualWriteSync(STORAGE_KEYS.LAST_CODE, "last_code", usedCode);
       }
 
-      toast.success(form.editingEntry ? "✏️ Eintrag aktualisiert" : "💾 Eintrag gespeichert");
+      toast.success(form.editingEntry ? t("toasts.entry.updated") : t("toasts.entry.saved"));
       form.setEditingEntry(null);
       form.setProject("");
       form.setEntryType("work");
       form.setSpecialManualMode?.(false);
       setView("dashboard");
     },
-    [form, entries, workCodes, userData, addEntry, updateEntry, setView, locale, calculationConfig]
+    [form, entries, workCodes, userData, addEntry, updateEntry, setView, locale, calculationConfig, t]
   );
 
   return { getDefaultTimesForDate, startNewEntry, startEdit, handleSaveEntry };

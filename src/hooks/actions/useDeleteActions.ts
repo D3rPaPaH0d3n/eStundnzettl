@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import type { Entry, UserData, DeleteTarget } from '../../types';
 import { dualRemoveSync } from "../../utils/dualWrite";
 import { STORAGE_KEYS, WORK_MODELS } from "../constants";
@@ -30,6 +31,7 @@ export function useDeleteActions({
   setUserData,
   setDeleteTarget,
 }: UseDeleteActionsProps) {
+  const { t } = useTranslation();
   const executeDelete = useCallback(
     async (deleteTarget: DeleteTarget | null) => {
       if (deleteTarget?.type === "single") {
@@ -37,7 +39,7 @@ export function useDeleteActions({
           await removeAttachmentsForEntry(deleteTarget.id!);
         }
         deleteEntry(deleteTarget.id!);
-        toast.success("🗑️ Eintrag gelöscht");
+        toast.success(t("toasts.entry.deleted"));
       } else if (deleteTarget?.type === "all") {
         // Sicherheits-Backup vor dem Löschen: JSON im Cache speichern
         try {
@@ -73,7 +75,7 @@ export function useDeleteActions({
         await dualRemoveSync(STORAGE_KEYS.LAST_CODE, "last_code");
         localStorage.removeItem(STORAGE_KEYS.ATTACHMENTS);
         localStorage.removeItem(STORAGE_KEYS.ATTACHMENT_LABELS);
-        toast.success("🧹 App vollständig zurückgesetzt");
+        toast.success(t("toasts.appReset"));
       }
       setDeleteTarget(null);
     },
@@ -85,6 +87,7 @@ export function useDeleteActions({
       removeAttachmentsForEntry,
       setUserData,
       setDeleteTarget,
+      t,
     ]
   );
 

@@ -399,6 +399,65 @@
       "welcome": "Welcome!"
     }
   },
+  "toasts": {
+    "entry": {
+      "deleted": "🗑️ Entry deleted",
+      "saved": "💾 Entry saved",
+      "updated": "✏️ Entry updated",
+      "saveFailed": "Couldn't save entry",
+      "updateFailed": "Couldn't update entry",
+      "deleteFailed": "Couldn't delete entry",
+      "deleteAllFailed": "Couldn't delete entries",
+      "importFailed": "Import failed",
+      "endBeforeStart": "⚠️ End time must be after start time!",
+      "overlap": "⚠️ Time overlap!"
+    },
+    "appReset": "🧹 App fully reset",
+    "noInternet": "No internet connection",
+    "playStore": {
+      "opening": "Opening the Play Store...",
+      "failed": "Couldn't open the Play Store.",
+      "copiedClipboard": "Play Store link copied to clipboard."
+    },
+    "onboardingCompleted": "Setup complete!",
+    "timer": {
+      "started": "⏱️ Time clock started!",
+      "captured": "🏁 Time captured"
+    },
+    "attachments": {
+      "readyToShare_one": "1 file ready to share",
+      "readyToShare_other": "{{count}} files ready to share"
+    },
+    "autoBackup": {
+      "failed5x": "Cloud backup failed (5x). Please check settings.",
+      "completed": "Backup complete"
+    },
+    "autoCheckout": "⚠️ Auto-clocked out! Please review.",
+    "export": {
+      "exporting": "Exporting data...",
+      "success": "📤 Export successful!",
+      "downloadStarted": "💾 Download started!",
+      "error": "❌ Export error: {{message}}",
+      "exportingFolder": "Exporting to folder...",
+      "folderSuccess": "✅ Saved to folder successfully!",
+      "folderCancelled": "Export cancelled or failed",
+      "preparing": "Preparing export...",
+      "ready": "📤 Export ready!",
+      "shareTitle": "eStundnzettl backup",
+      "shareText": "Backup from {{date}}",
+      "shareDialogTitle": "Save backup"
+    },
+    "import": {
+      "fileTooLarge": "File too large (max. 10 MB)",
+      "success": "Data imported successfully!",
+      "error": "Error: {{message}}",
+      "invalidFile": "Invalid file.",
+      "integrityMismatch": "⚠️ Checksum mismatch — backup may have been tampered with",
+      "legacyChecksum": "ℹ️ Backup without checksum (legacy format)",
+      "skippedEntries_one": "1 invalid entry skipped",
+      "skippedEntries_other": "{{count}} invalid entries skipped"
+    }
+  },
   "changelogModal": {
     "title": "Changelog",
     "recentBugfixes": "Recent bug fixes",

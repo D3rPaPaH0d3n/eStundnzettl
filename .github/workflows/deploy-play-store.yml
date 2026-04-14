@@ -16,8 +16,8 @@
 #   5. Frontend bauen (Vite — injiziert Version via __APP_VERSION__)
 #   6. Capacitor Sync + Proguard-Fix
 #   7. Release AAB bauen + signieren
-#   8. AAB zum Play Store hochladen (gewählter Track)
-#   9. Release-Name + Versionshinweise aus .github/release-meta.json
+#   8. AAB zum Play Store hochladen (NUR gewählter Track)
+#   9. Release-Name + Versionshinweise dynamisch aus package.json + Fastlane-Changelogs
 #  10. Version-Bump committen (nur Internal)
 #  11. Telegram Notification
 #
@@ -28,9 +28,15 @@
 #   - PLAY_DEPLOY_KEY_BASE64 → Base64-encoded Google Play Service Account JSON
 #
 # RELEASE-METADATEN:
-#   Release-Name und Versionshinweise werden aus .github/release-meta.json
-#   gelesen. Manueller Override via 'release_notes_override' Input möglich.
-#   Format: { "releaseName": "v4.1.0 - Titel", "releaseNotes": "..." }
+#   - Release-Name = "v<package.json.version> — <erste Zeile fastlane de-DE/<code>.txt>"
+#   - Release-Notes werden aus fastlane/metadata/android/{de-DE,en-US}/changelogs/<code>.txt
+#     gelesen und in BEIDEN Sprachen an Play Store geschickt.
+#   - Override via 'release_notes_override' Input (de-DE) oder RELEASE_NAME/RELEASE_NOTES env.
+#
+# CROSS-TRACK-SANITY-CHECK:
+#   deploy-play.py macht vor + nach dem Upload einen Snapshot aller Tracks
+#   und warnt, falls der neue versionCode in unerwarteten Tracks landet
+#   (typischerweise ein Hinweis auf Play-Console-seitige Auto-Promotion).
 #
 # ============================================================================
 

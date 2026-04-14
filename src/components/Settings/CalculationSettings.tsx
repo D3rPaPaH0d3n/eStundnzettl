@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Sliders, ChevronDown, Plus, X, Calculator, Upload, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
@@ -118,6 +118,21 @@ const CalculationSettings: React.FC<Props> = ({
   const [newPauseInput, setNewPauseInput] = useState({ fromHours: "6", pauseMinutes: "30" });
   const [recalcRunning, setRecalcRunning] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  // Local string buffers for vacation inputs so users can clear the field
+  // while typing. Without this, a controlled number input with a NaN-guard
+  // in onChange would refuse empty input and keep showing the old value.
+  const [vacationAllowanceInput, setVacationAllowanceInput] = useState<string>(
+    String(calculationConfig?.vacationAllowanceDays ?? 0),
+  );
+  const [vacationCarryoverInput, setVacationCarryoverInput] = useState<string>(
+    String(calculationConfig?.vacationCarryoverDays ?? 0),
+  );
+  useEffect(() => {
+    setVacationAllowanceInput(String(calculationConfig?.vacationAllowanceDays ?? 0));
+  }, [calculationConfig?.vacationAllowanceDays]);
+  useEffect(() => {
+    setVacationCarryoverInput(String(calculationConfig?.vacationCarryoverDays ?? 0));
+  }, [calculationConfig?.vacationCarryoverDays]);
 
   const customHolidaysMemo = useMemo(
     () => calculationConfig?.holidaySet.customHolidays ?? {},
@@ -294,9 +309,45 @@ const CalculationSettings: React.FC<Props> = ({
   };
 
   const handleVacationAllowanceChange = (value: string) => {
+    setVacationAllowanceInput(value);
+    if (value === "") return;
     const parsed = parseInt(value, 10);
     if (!Number.isFinite(parsed) || parsed < 0) return;
-    patch({ vacationAllowanceDays: parsed });
+    const clamped = Math.min(parsed, 365);
+    patch({ vacationAllowanceDays: clamped });
+  };
+
+  const handleVacationAllowanceBlur = () => {
+    const parsed = parseInt(vacationAllowanceInput, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setVacationAllowanceInput("0");
+      patch({ vacationAllowanceDays: 0 });
+      return;
+    }
+    const clamped = Math.min(parsed, 365);
+    setVacationAllowanceInput(String(clamped));
+    patch({ vacationAllowanceDays: clamped });
+  };
+
+  const handleVacationCarryoverChange = (value: string) => {
+    setVacationCarryoverInput(value);
+    if (value === "" || value === "-") return;
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return;
+    const clamped = Math.max(-365, Math.min(parsed, 365));
+    patch({ vacationCarryoverDays: clamped });
+  };
+
+  const handleVacationCarryoverBlur = () => {
+    const parsed = parseInt(vacationCarryoverInput, 10);
+    if (!Number.isFinite(parsed)) {
+      setVacationCarryoverInput("0");
+      patch({ vacationCarryoverDays: 0 });
+      return;
+    }
+    const clamped = Math.max(-365, Math.min(parsed, 365));
+    setVacationCarryoverInput(String(clamped));
+    patch({ vacationCarryoverDays: clamped });
   };
 
   const handleRecalculate = async () => {
@@ -651,8 +702,9 @@ const CalculationSettings: React.FC<Props> = ({
                   type="number"
                   min={0}
                   max={365}
-                  value={config.vacationAllowanceDays}
+                  value={vacationAllowanceInput}
                   onChange={(e) => handleVacationAllowanceChange(e.target.value)}
+                  onBlur={handleVacationAllowanceBlur}
                   className="w-24 p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
                 />
                 <span className="text-sm text-zinc-600 dark:text-zinc-300">{t("settings.calc.days")}</span>
@@ -665,11 +717,9 @@ const CalculationSettings: React.FC<Props> = ({
                   type="number"
                   min={-365}
                   max={365}
-                  value={config.vacationCarryoverDays}
-                  onChange={(e) => {
-                    const parsed = parseInt(e.target.value, 10);
-                    if (Number.isFinite(parsed)) patch({ vacationCarryoverDays: parsed });
-                  }}
+                  value={vacationCarryoverInput}
+                  onChange={(e) => handleVacationCarryoverChange(e.target.value)}
+                  onBlur={handleVacationCarryoverBlur}
                   className="w-24 p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
                 />
                 <span className="text-sm text-zinc-600 dark:text-zinc-300">{t("settings.calc.days")}</span>

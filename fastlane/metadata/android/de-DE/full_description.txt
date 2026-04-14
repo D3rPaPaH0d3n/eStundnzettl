@@ -1,0 +1,59 @@
+eStundnzettl – die smarte Zeiterfassung aus der Steiermark.
+
+Schluss mit Zettelwirtschaft! Erfasse deine Arbeitsstunden, Fahrten,
+Urlaub und Krankenstand direkt am Handy — und am Monatsende landet ein
+sauberer Stundenzettel als PDF auf deinem Gerät. Einfach, übersichtlich,
+ohne Schnickschnack.
+
+■ Für wen?
+Handwerker, Monteure, Pflegekräfte, Kellner, Büroangestellte, Reinigungs-
+kräfte — alle, die eine flexible, ehrliche Stundenerfassung ohne unnötige
+Gadgets brauchen.
+
+■ Features auf einen Blick
+• Live-Timer: lang drücken, nach oben wischen — Timer läuft.
+• Manueller Eintrag mit Start-, Endzeit, Pause und Projekt.
+• Echtzeit-Saldo: Überstunden, Mehrarbeit und Gleitzeit immer sichtbar.
+• Flexible Arbeitszeitmodelle: 38,5h, 40h, 4-Tage-Woche oder frei.
+• Urlaub, Krank, Zeitausgleich — automatisch richtig verrechnet.
+• Dokumente anhängen: Regiescheine, Lieferscheine, Fotos direkt zum Eintrag.
+• PDF-Export per Monat oder Kalenderwoche, zum Teilen oder Speichern.
+• Dark Mode für die Augen am Abend.
+
+■ Stundenberechnung nach deiner Region
+Österreich mit 13 Feiertagen, halbem 24./31.12. und AZG-Regeln.
+Deutschland mit allen 16 Bundesländern und regionalen Feiertagen.
+Schweiz mit allen 26 Kantonen und ArG (45h-Woche).
+Oder "Neutral" — komplett ohne automatische Regeln.
+Bastler schalten den "Eigenen Plan" ein und stellen jede Regel selbst ein.
+
+■ Backup & Datensicherung
+• Google Drive mit täglichem Auto-Backup
+• Nextcloud (im Hausmasta-Modus) — volle Datenhoheit
+• Lokaler Ordner deiner Wahl
+• JSON-Import/Export für manuelle Sicherung
+Optional: monatliches PDF-Archiv, das automatisch in dein Backup-Ziel
+wandert. Jahre später noch durchsuchbar.
+
+■ Zweisprachig
+Volle deutsche und englische Oberfläche — Sprachwechsel jederzeit in
+den Einstellungen, beim ersten Start wird die Gerätesprache erkannt.
+
+■ Hausmasta-Modus
+Für Profis, die mehr wollen: Nextcloud-Integration, Minuten-genaue
+Zeiteingabe, eigene Tätigkeits-Codes, automatisches PDF-Archiv. Einmal
+aktivieren, bei Bedarf wieder ausblenden.
+
+■ Datenschutz
+• Alle Daten bleiben lokal auf deinem Gerät.
+• Keine Werbung. Keine Analytics. Kein Tracking. Kein Account-Zwang.
+• Backups nur wenn du sie willst — und dann in deine Cloud, nicht unsere.
+
+■ Gratis. Komplett.
+Keine Werbung, kein Abo, kein Premium-Lock. Wenn dir die App wos wert
+is, freut sich der Entwickler über ein kleines Dankeschön via Revolut
+— ist aber rein optional.
+
+Fragen, Bug-Reports, Lizenzanfragen: project@kainer.co.at
+
+"Damit ka Stund verloren geht!"

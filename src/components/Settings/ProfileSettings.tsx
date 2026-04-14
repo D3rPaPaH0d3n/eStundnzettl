@@ -3,6 +3,7 @@ import { User, Camera, Trash2 } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { logger } from "../../utils/logger";
 
 import type { UserData } from "../../types";
@@ -13,6 +14,7 @@ interface Props {
 }
 
 const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessingImg, setIsProcessingImg] = useState(false);
 
@@ -55,11 +57,11 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
     try {
       const compressedBase64 = await processImage(file);
       setUserData({ ...userData, photo: compressedBase64 });
-      toast.success("Profilbild aktualisiert");
+      toast.success(t("settings.profile.toastPhotoUpdated"));
       Haptics.impact({ style: ImpactStyle.Light });
     } catch (err) {
       logger.error(err);
-      toast.error("Fehler beim Bild");
+      toast.error(t("settings.profile.toastPhotoError"));
     } finally {
       setIsProcessingImg(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -71,7 +73,7 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
     Haptics.impact({ style: ImpactStyle.Medium });
     const newData = { ...userData, photo: null };
     setUserData(newData);
-    toast.success("Bild entfernt");
+    toast.success(t("settings.profile.toastPhotoRemoved"));
   };
 
   return (
@@ -85,7 +87,7 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
             {isProcessingImg ? (
               <div className="animate-spin text-emerald-500">⟳</div>
             ) : safeUserData.photo ? (
-              <img src={safeUserData.photo} alt="Profil" className="w-full h-full object-cover" />
+              <img src={safeUserData.photo} alt={t("settings.profile.photoAlt")} className="w-full h-full object-cover" />
             ) : (
               <User size={32} className="text-zinc-400 dark:text-zinc-500" />
             )}
@@ -106,13 +108,13 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-lg dark:text-white truncate">Benutzerdaten</h3>
-          <p className="text-xs text-zinc-400">Tippe auf das Bild, um es zu ändern.</p>
+          <h3 className="font-bold text-lg dark:text-white truncate">{t("settings.profile.title")}</h3>
+          <p className="text-xs text-zinc-400">{t("settings.profile.photoHint")}</p>
         </div>
       </div>
       <div className="space-y-3">
         <div>
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Dein Name</label>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("settings.profile.nameLabel")}</label>
           <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 rounded-lg p-3 mt-1 focus-within:border-emerald-500 transition-colors">
             <User size={18} className="text-zinc-400" />
             <input
@@ -120,13 +122,13 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
               value={safeUserData.name || ""}
               onChange={(e) => setUserData({ ...userData, name: e.target.value })}
               className="w-full bg-transparent font-bold text-zinc-800 dark:text-white outline-none"
-              placeholder="Max Mustermann"
+              placeholder={t("settings.profile.namePlaceholder")}
             />
           </div>
         </div>
 
         <div>
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Firma</label>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("settings.profile.companyLabel")}</label>
           <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 rounded-lg p-3 mt-1 focus-within:border-emerald-500 transition-colors">
             <svg width="18" height="18" className="text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01"/></svg>
             <input
@@ -134,13 +136,13 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
               value={safeUserData.company || ""}
               onChange={(e) => setUserData({ ...userData, company: e.target.value })}
               className="w-full bg-transparent font-bold text-zinc-800 dark:text-white outline-none"
-              placeholder="Firmenname GmbH"
+              placeholder={t("settings.profile.companyPlaceholder")}
             />
           </div>
         </div>
 
         <div>
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Position / Job</label>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("settings.profile.positionLabel")}</label>
           <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600 rounded-lg p-3 mt-1 focus-within:border-emerald-500 transition-colors">
             <svg width="18" height="18" className="text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
             <input
@@ -148,7 +150,7 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
               value={safeUserData.position || ""}
               onChange={(e) => setUserData({ ...userData, position: e.target.value })}
               className="w-full bg-transparent font-bold text-zinc-800 dark:text-white outline-none"
-              placeholder="Monteur"
+              placeholder={t("settings.profile.positionPlaceholder")}
             />
           </div>
         </div>

@@ -1,5 +1,7 @@
 import React, { forwardRef, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Paperclip, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   Card,
   formatTime,
@@ -18,13 +20,15 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import DatePicker, { registerLocale } from "react-datepicker";
 // @ts-ignore
 import "react-datepicker/dist/react-datepicker.css";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { getIntlLocale, getDatePickerLocale } from "../utils/formatLocale";
 
-import type { Entry, UserData, WorkCode, Attachment } from "../types";
+import type { Entry, UserData, WorkCode, Attachment, CalculationConfig } from "../types";
 import type { PeriodStatsResult } from "../utils/timeCalculations";
 import type { Locale } from "../locales/types";
 
 registerLocale("de", de);
+registerLocale("en", enUS);
 
 interface CustomMonthInputProps {
   value?: string;
@@ -48,28 +52,50 @@ interface Props {
   userData: UserData;
   workCodes?: WorkCode[];
   locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
 }
 
 // Stylt den Monatsnamen jetzt etwas größer als Überschrift
-const CustomMonthInput = forwardRef<HTMLButtonElement, CustomMonthInputProps>(({ value, onClick }, ref) => (
-  <button
-    type="button"
-    aria-label={`Monat wählen (aktuell ${value})`}
-    className="font-bold text-zinc-800 dark:text-white text-lg hover:text-emerald-600 transition-colors capitalize"
-    onClick={onClick}
-    ref={ref}
-  >
-    {value}
-  </button>
-));
+const CustomMonthInput = forwardRef<HTMLButtonElement, CustomMonthInputProps>(({ value, onClick }, ref) => {
+  const { t } = useTranslation();
+  return (
+    <button
+      type="button"
+      aria-label={t("dashboard.monthPickerAria", { value })}
+      className="font-bold text-zinc-800 dark:text-white text-lg hover:text-emerald-600 transition-colors capitalize"
+      onClick={onClick}
+      ref={ref}
+    >
+      {value}
+    </button>
+  );
+});
 CustomMonthInput.displayName = "CustomMonthInput";
+
+// Mappt einen Entry-Type auf das i18n-Label (genutzt in Dashboard-Einträgen).
+function getEntryTypeLabel(type: Entry["type"], t: TFunction): string {
+  switch (type) {
+    case "public_holiday":
+      return t("entryTypes.paidOff");
+    case "time_comp":
+      return t("entryTypes.timeComp");
+    case "vacation":
+      return t("entryTypes.vacation");
+    case "sick":
+      return t("entryTypes.sick");
+    default:
+      return "";
+  }
+}
 
 const Dashboard: React.FC<Props> = ({
   currentDate, onSetCurrentDate, changeMonth,
   stats,
   overtime, progressPercent, groupedByWeek, viewMonth: _viewMonth, viewYear: _viewYear, onEditEntry, onDeleteEntry, onManageAttachments, getAttachmentsForEntry, userData, workCodes = [],
   locale,
+  calculationConfig,
 }) => {
+  const { t } = useTranslation();
   const [expandedWeeks, setExpandedWeeks] = useState<Record<number, boolean>>(() => {
     const currentWeek = getWeekNumber(new Date());
     return { [currentWeek]: true };
@@ -121,7 +147,7 @@ const Dashboard: React.FC<Props> = ({
         <div className="flex items-center justify-between p-3 px-4 border-b border-zinc-100 dark:border-zinc-700/50">
             <button
                 type="button"
-                aria-label="Vorheriger Monat"
+                aria-label={t("dashboard.prevMonth")}
                 className="p-2 -ml-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
                 onClick={() => changeMonth(-1)}
             >
@@ -134,7 +160,7 @@ const Dashboard: React.FC<Props> = ({
                     onChange={(date: Date | null) => { const d = new Date(date!); d.setDate(1); onSetCurrentDate(d); }} 
                     dateFormat="MMMM yyyy" 
                     showMonthYearPicker 
-                    locale="de" 
+                    locale={getDatePickerLocale()}
                     withPortal 
                     customInput={<CustomMonthInput />} 
                 />
@@ -142,7 +168,7 @@ const Dashboard: React.FC<Props> = ({
 
             <button
                 type="button"
-                aria-label="Nächster Monat"
+                aria-label={t("dashboard.nextMonth")}
                 className="p-2 -mr-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
                 onClick={() => changeMonth(1)}
             >
@@ -155,7 +181,7 @@ const Dashboard: React.FC<Props> = ({
           <div className="flex justify-between items-end">
             {/* IST */}
             <div>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider mb-0.5">IST</p>
+              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider mb-0.5">{t("dashboard.actual")}</p>
               <p className="text-2xl font-bold text-zinc-900 dark:text-white leading-none">{formatTime(stats.totalIst)}</p>
             </div>
             
@@ -163,11 +189,11 @@ const Dashboard: React.FC<Props> = ({
             {!simpleMode && (
             <div className="flex gap-6 text-right">
                 <div>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider mb-0.5">SOLL</p>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider mb-0.5">{t("dashboard.target")}</p>
                     <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-300 mt-1">{formatTime(stats.totalTarget)}</p>
                 </div>
                 <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5 text-zinc-500 dark:text-zinc-400">Saldo</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5 text-zinc-500 dark:text-zinc-400">{t("dashboard.balance")}</p>
                     <p className={`font-bold text-xl leading-none ${overtime >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400"}`}>
                         {formatSignedTime(overtime)}
                     </p>
@@ -187,7 +213,7 @@ const Dashboard: React.FC<Props> = ({
           <div className="flex flex-wrap justify-between items-center text-xs pt-1">
              <div className="text-zinc-500 dark:text-zinc-400">
                {stats.drive > 0 && (
-                 <> <span>Fahrzeit ({WORK_CODE.DRIVE}): </span> <span className="font-semibold">{formatTime(stats.drive)}</span> </>
+                 <> <span>{t("dashboard.driveTime", { code: WORK_CODE.DRIVE })}: </span> <span className="font-semibold">{formatTime(stats.drive)}</span> </>
                )}
              </div>
 
@@ -195,12 +221,12 @@ const Dashboard: React.FC<Props> = ({
              <div className="text-right flex items-center gap-3 ml-auto">
                     {monthlyOvertimeSplit.mehrarbeit > 0 && (
                         <span className="text-blue-600 dark:text-blue-400 font-medium">
-                            {formatTime(monthlyOvertimeSplit.mehrarbeit)} <span className="text-zinc-400 dark:text-zinc-500 font-normal text-[10px]">MA</span>
+                            {formatTime(monthlyOvertimeSplit.mehrarbeit)} <span className="text-zinc-400 dark:text-zinc-500 font-normal text-[10px]">{t("dashboard.overtimeShort.extra")}</span>
                         </span>
                     )}
                     {monthlyOvertimeSplit.ueberstunden > 0 && (
                         <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                            {formatTime(monthlyOvertimeSplit.ueberstunden)} <span className="text-zinc-400 dark:text-zinc-500 font-normal text-[10px]">ÜS</span>
+                            {formatTime(monthlyOvertimeSplit.ueberstunden)} <span className="text-zinc-400 dark:text-zinc-500 font-normal text-[10px]">{t("dashboard.overtimeShort.overtime")}</span>
                         </span>
                     )}
              </div>
@@ -211,10 +237,10 @@ const Dashboard: React.FC<Props> = ({
 
       {/* 3. LISTE DER EINTRÄGE */}
       <div className="space-y-3 pb-20">
-        <h3 className="font-bold text-zinc-500 dark:text-zinc-400 text-sm px-1">Letzte Einträge (nach Kalenderwoche)</h3>
+        <h3 className="font-bold text-zinc-500 dark:text-zinc-400 text-sm px-1">{t("dashboard.recentEntries")}</h3>
         {sortedWeeks.length === 0 ? (
           <div className="text-center py-12 text-zinc-400 dark:text-zinc-500 bg-white dark:bg-zinc-800 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
-            <Calendar size={32} className="mx-auto mb-2 opacity-20" /> <p>Keine Einträge vorhanden.</p>
+            <Calendar size={32} className="mx-auto mb-2 opacity-20" /> <p>{t("dashboard.noEntries")}</p>
           </div>
         ) : (
           sortedWeeks.map(([week, weekEntries]) => {
@@ -239,8 +265,8 @@ const Dashboard: React.FC<Props> = ({
             // Gebrochene Woche → nur tägliche ÜS, keine MA.
             const isBoundaryWeek = monday < monthStart || sunday > monthEnd;
             const weekStats = isBoundaryWeek
-              ? calculatePeriodStats(visibleEntries, userData, clippedMonday, clippedSunday, undefined, locale)
-              : calculateWeekStats(weekEntries, userData, locale);
+              ? calculatePeriodStats(visibleEntries, userData, clippedMonday, clippedSunday, undefined, locale, calculationConfig)
+              : calculateWeekStats(weekEntries, userData, locale, calculationConfig);
 
             const workMinutes = weekStats.totalIst;
             const diff = weekStats.totalSaldo;
@@ -272,8 +298,8 @@ const Dashboard: React.FC<Props> = ({
               <div key={week} className="mb-3">
                 <button className="w-full flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl px-3 py-2 transition-colors" onClick={() => toggleWeek(week)}>
                     <div className="flex flex-col text-left">
-                        <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Kalenderwoche</span>
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200"> KW {week}{" "} <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">({clippedMonday.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} – {clippedSunday.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })})</span> </span>
+                        <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("dashboard.calendarWeek")}</span>
+                        <span className="font-bold text-zinc-800 dark:text-zinc-200"> {t("dashboard.calendarWeekShort", { week })}{" "} <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">({clippedMonday.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" })} – {clippedSunday.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" })})</span> </span>
                         
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <div className="text-sm flex gap-3">
@@ -285,7 +311,7 @@ const Dashboard: React.FC<Props> = ({
                                 <div className="text-[10px] flex items-center gap-2 opacity-80">
                                     {mehrarbeit > 0 && (
                                         <span className="text-blue-600 dark:text-blue-400 font-medium">
-                                            {formatTime(mehrarbeit)} MA
+                                            {formatTime(mehrarbeit)} {t("dashboard.overtimeShort.extra")}
                                         </span>
                                     )}
                                     {mehrarbeit > 0 && ueberstunden > 0 && (
@@ -293,7 +319,7 @@ const Dashboard: React.FC<Props> = ({
                                     )}
                                     {ueberstunden > 0 && (
                                         <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                                            {formatTime(ueberstunden)} ÜS
+                                            {formatTime(ueberstunden)} {t("dashboard.overtimeShort.overtime")}
                                         </span>
                                     )}
                                 </div>
@@ -316,24 +342,28 @@ const Dashboard: React.FC<Props> = ({
                               <motion.div key={dateStr} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden"> 
                                 <div className="flex"> 
                                   <div className="bg-zinc-800 dark:bg-zinc-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0 z-20 relative"> 
-                                    <span className="text-xs font-bold opacity-80">{d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2)}</span> 
-                                    <span className="text-sm font-bold">{d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}</span> 
+                                    <span className="text-xs font-bold opacity-80">{d.toLocaleDateString(getIntlLocale(), { weekday: "short" }).slice(0, 2)}</span> 
+                                    <span className="text-sm font-bold">{d.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" })}</span> 
                                   </div> 
                                   <div className="flex-1 min-w-0"> 
                                     <AnimatePresence initial={false}> 
                                       {sortedEntries.map((entry, idx) => { 
-                                          const isHoliday = entry.type === "public_holiday"; 
-                                          const isTimeComp = entry.type === "time_comp"; 
-                                          const timeLabel = entry.type === "work" ? `${entry.start} - ${entry.end}` : (isHoliday ? "Feiertag" : "Ganztags"); 
-                                          
-                                          let codeLabel = ""; 
-                                          if(entry.type === "work") codeLabel = workCodeLabelMap.get(entry.code) || ""; 
-                                          else if(isHoliday) codeLabel = "Bezahlt frei"; 
-                                          else if(isTimeComp) codeLabel = "Zeitausgleich"; 
-                                          else codeLabel = entry.type === "vacation" ? "Urlaub" : "Krank"; 
-                                          
-                                          let pauseLabel = ""; 
-                                          if (entry.type === "work" && entry.code !== WORK_CODE.DRIVE) { pauseLabel = entry.pause > 0 ? ` - Pause: ${entry.pause} Min` : " - Keine Pause"; } 
+                                          const isHoliday = entry.type === "public_holiday";
+                                          const isTimeComp = entry.type === "time_comp";
+                                          const timeLabel = entry.type === "work"
+                                            ? `${entry.start} - ${entry.end}`
+                                            : (isHoliday ? t("entryTypes.holiday") : t("entryTypes.allDay"));
+
+                                          let codeLabel = "";
+                                          if(entry.type === "work") codeLabel = workCodeLabelMap.get(entry.code) || "";
+                                          else codeLabel = getEntryTypeLabel(entry.type, t);
+
+                                          let pauseLabel = "";
+                                          if (entry.type === "work" && entry.code !== WORK_CODE.DRIVE) {
+                                            pauseLabel = entry.pause > 0
+                                              ? ` - ${t("dashboard.pause", { minutes: entry.pause })}`
+                                              : ` - ${t("dashboard.noPause")}`;
+                                          }
                                           
                                           let rowClass = `p-3 flex justify-between items-start gap-3 transition-colors cursor-pointer bg-white dark:bg-zinc-800 ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`; 
                                           if(isHoliday) rowClass = `p-3 flex justify-between items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`; 
@@ -375,7 +405,7 @@ const Dashboard: React.FC<Props> = ({
                                                         className="inline-flex items-center gap-1 rounded-full bg-zinc-100 dark:bg-zinc-700 px-2 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
                                                       >
                                                         <Paperclip size={12} />
-                                                        <span>{attachmentCount > 0 ? `${attachmentCount} Dokument${attachmentCount > 1 ? 'e' : ''}` : 'Dokumente'}</span>
+                                                        <span>{attachmentCount > 0 ? t("dashboard.documentsCount", { count: attachmentCount }) : t("dashboard.documentsLabel")}</span>
                                                       </button>
                                                     </div>
                                                   </div> 
@@ -388,7 +418,7 @@ const Dashboard: React.FC<Props> = ({
                                     </AnimatePresence> 
                                   </div> 
                                   <div className="bg-zinc-50 dark:bg-zinc-700/50 w-20 border-l border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center flex-shrink-0 px-1 z-20 relative"> 
-                                    <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-400 uppercase tracking-wide mb-0.5">Gesamt</span> 
+                                    <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-400 uppercase tracking-wide mb-0.5">{t("dashboard.total")}</span>
                                     <span className="font-bold text-zinc-800 dark:text-zinc-200 whitespace-nowrap text-sm">{formatTime(daySum)}</span> 
                                   </div> 
                                 </div> 

@@ -62,13 +62,13 @@ const LiveTimerOverlay = ({
         else tone = "red";
       }
 
-      setDisplayStatus({ text: `${h}:${String(m).padStart(2, "0")} Std`, tone });
+      setDisplayStatus({ text: `${h}:${String(m).padStart(2, "0")} ${t("liveTimer.hours")}`, tone });
     };
 
     update();
     const interval = setInterval(update, 1000 * 30);
     return () => clearInterval(interval);
-  }, [timerState, targetMinutes]);
+  }, [timerState, targetMinutes, t]);
 
   useEffect(() => {
     if (timerState.isRunning) {
@@ -164,7 +164,7 @@ const LiveTimerOverlay = ({
             }`}
             style={{ bottom: "calc(7rem + env(safe-area-inset-bottom))" }}
           >
-            {timerState.isRunning ? (timerState.isPaused ? "Pausiert" : displayStatus.text) : "Nach oben wischen zum Einstempeln"}
+            {timerState.isRunning ? (timerState.isPaused ? t("liveTimer.paused") : displayStatus.text) : t("liveTimer.swipeHint")}
           </motion.div>
         )}
       </AnimatePresence>
@@ -193,12 +193,12 @@ const LiveTimerOverlay = ({
         {timerState.isRunning ? (
           <>
             <Square size={18} fill="currentColor" className="mb-0.5" />
-            <span className="text-[9px] font-black leading-none">AUS</span>
+            <span className="text-[9px] font-black leading-none">{t("liveTimer.fabOff")}</span>
           </>
         ) : isSwipeReady ? (
           <>
             <ArrowUp size={18} className="mb-0.5" />
-            <span className="text-[8px] font-black leading-none">TIMER</span>
+            <span className="text-[8px] font-black leading-none">{t("liveTimer.fabTimer")}</span>
           </>
         ) : (
           <Plus size={28} />

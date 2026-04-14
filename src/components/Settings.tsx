@@ -4,15 +4,16 @@ import ProfileSettings from "./Settings/ProfileSettings";
 import DataSettings from "./Settings/DataSettings";
 import ThemeSettings from "./Settings/ThemeSettings";
 import LocaleSettings from "./Settings/LocaleSettings";
+import CalculationSettings from "./Settings/CalculationSettings";
 import BackupSettings from "./Settings/BackupSettings";
 import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
 import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
-import type { Entry, UserData, Theme, WorkCode, PdfArchiveRunOptions } from "../types";
+import type { Entry, UserData, Theme, WorkCode, PdfArchiveRunOptions, CalculationConfig } from "../types";
 import type { Locale, LocaleId } from "../locales/types";
-import { getErrorMessage } from "../utils/errorUtils";
 
 const ChangelogModal = React.lazy(() => import("./ChangelogModal"));
 const HelpModal = React.lazy(() => import("./HelpModal"));
@@ -52,6 +53,10 @@ interface Props {
   // Locale (Stundenberechnung)
   locale?: Locale;
   setLocale?: (id: LocaleId) => void;
+  // Rechenkonfiguration
+  calculationConfig?: CalculationConfig | null;
+  setCalculationConfig?: (next: CalculationConfig | ((prev: CalculationConfig) => CalculationConfig)) => void;
+  resetCalculationConfigToLocale?: (newLocale: Locale, workDays: number[]) => void;
 }
 
 const Settings: React.FC<Props> = ({
@@ -62,8 +67,8 @@ const Settings: React.FC<Props> = ({
   autoBackup,
   setAutoBackup,
   onTriggerManualBackup,
-  entries = [],
-  lastBackup = null,
+  entries: _entries = [],
+  lastBackup: _lastBackup = null,
   importEntries,
   importWorkCodes,
   onExport,
@@ -86,7 +91,12 @@ const Settings: React.FC<Props> = ({
   // Locale
   locale,
   setLocale,
+  // Calculation Config
+  calculationConfig,
+  setCalculationConfig,
+  resetCalculationConfigToLocale,
 }) => {
+  const { t } = useTranslation();
   const [showChangelog, setShowChangelog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showWorkCodeManager, setShowWorkCodeManager] = useState(false);
@@ -121,12 +131,12 @@ const Settings: React.FC<Props> = ({
   const openDayPicker = (index: number) => {
     const isCustomMode = activeModelId === "custom";
     if (!isCustomMode) {
-      toast("Bitte erst 'Benutzerdefiniert' wählen", { icon: "🚫" });
+      toast(t("settings.toast.customModeRequired"), { icon: "🚫" });
       Haptics.impact({ style: ImpactStyle.Light });
       return;
     }
     if (isLocked) {
-      toast("Zum Bearbeiten erst Schloss öffnen", { icon: "🔒" });
+      toast(t("settings.toast.unlockRequired"), { icon: "🔒" });
       Haptics.impact({ style: ImpactStyle.Medium });
       return;
     }
@@ -143,20 +153,20 @@ const Settings: React.FC<Props> = ({
     newWorkDays[pickerTargetIndex] = minutes;
 
     setUserData({ ...userData, workDays: newWorkDays });
-    toast.success("Zeit aktualisiert");
+    toast.success(t("settings.toast.timeUpdated"));
   };
 
   const toggleLock = () => {
     const isCustomMode = activeModelId === "custom";
     if (!isCustomMode) {
-      toast("Nur bei 'Benutzerdefiniert' möglich");
+      toast(t("settings.toast.customOnly"));
       return;
     }
     const newState = !isLocked;
     setIsLocked(newState);
     Haptics.impact({ style: ImpactStyle.Medium });
     if (!newState) {
-      toast.success("Bearbeitung freigegeben");
+      toast.success(t("settings.toast.unlocked"));
     }
   };
 
@@ -165,11 +175,11 @@ const Settings: React.FC<Props> = ({
       const json = await readJsonFile(file);
       const analysis = await analyzeBackupData(json);
       if (!analysis.valid) {
-        toast.error("Ungültiges Backup-Format");
+        toast.error(t("settings.toast.invalidBackup"));
         return;
       }
       if (analysis.integrity === "mismatch") {
-        toast("⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert", { duration: 6000 });
+        toast(t("settings.toast.integrityMismatch"), { duration: 6000 });
       }
       if (analysis.hasSettings) {
         setPendingImport(analysis);
@@ -177,39 +187,11 @@ const Settings: React.FC<Props> = ({
         await applyBackup(analysis, "ALL");
         importEntries?.(analysis.entries || []);
         if (analysis.workCodes?.length) importWorkCodes?.(analysis.workCodes);
-        toast.success(`${analysis.entryCount} Einträge importiert!`);
+        toast.success(t("settings.toast.entriesImported", { count: analysis.entryCount }));
       }
     } catch {
-      toast.error("Fehler beim Lesen der Datei");
+      toast.error(t("settings.toast.fileReadError"));
     }
-  };
-
-  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const json = await readJsonFile(file);
-      const analysis = await analyzeBackupData(json);
-      if (!analysis.valid) {
-        toast.error("Ungültiges Backup-Format");
-        return;
-      }
-      if (analysis.integrity === "mismatch") {
-        toast("⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert", { duration: 6000 });
-      }
-      if (analysis.hasSettings) {
-        setPendingImport(analysis);
-      } else {
-        await applyBackup(analysis, "ALL");
-        importEntries?.(analysis.entries || []);
-        if (analysis.workCodes?.length) importWorkCodes?.(analysis.workCodes);
-        toast.success(`${analysis.entryCount} Einträge importiert!`);
-      }
-    } catch {
-      toast.error("Fehler beim Lesen der Datei");
-    }
-    (e.target as HTMLInputElement).value = "";
   };
 
   const handleConfirmImport = async (mode: string) => {
@@ -217,7 +199,7 @@ const Settings: React.FC<Props> = ({
     await applyBackup(pendingImport, mode);
     importEntries?.(pendingImport.entries || []);
     if (pendingImport.workCodes?.length) importWorkCodes?.(pendingImport.workCodes);
-    toast.success("Erfolgreich wiederhergestellt!");
+    toast.success(t("settings.toast.restoreSuccess"));
     setPendingImport(null);
   };
 
@@ -268,7 +250,11 @@ const Settings: React.FC<Props> = ({
             onConfirm={handleDurationConfirm}
             title={
               pickerTargetIndex !== null
-                ? `${["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][pickerTargetIndex]} bearbeiten`
+                ? t("settings.editDay", {
+                    weekday: t(
+                      `settings.weekdays.${(["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const)[pickerTargetIndex]}`,
+                    ),
+                  })
                 : ""
             }
           />
@@ -297,8 +283,21 @@ const Settings: React.FC<Props> = ({
 
       {/* 3b. Stundenberechnung / Locale — nur im Hausmasta-Modus */}
       {(userData?.expertMode ?? false) && (
-        <LocaleSettings locale={locale} setLocale={setLocale} />
+        <LocaleSettings
+          locale={locale}
+          setLocale={setLocale}
+          workDays={userData?.workDays}
+          onAfterLocaleChange={resetCalculationConfigToLocale}
+        />
       )}
+
+      {/* 3c. Berechnungsregeln — sichtbar für alle User */}
+      <CalculationSettings
+        userData={userData}
+        locale={locale}
+        calculationConfig={calculationConfig}
+        setCalculationConfig={setCalculationConfig}
+      />
 
       {/* 4. Backup Settings */}
       <BackupSettings
@@ -339,6 +338,7 @@ const Settings: React.FC<Props> = ({
         userData={userData}
         setUserData={setUserData}
         locale={locale}
+        calculationConfig={calculationConfig}
       />
     </main>
   );

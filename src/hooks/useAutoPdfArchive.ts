@@ -36,7 +36,8 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { App } from "@capacitor/app";
-import type { Entry, UserData, WorkCode } from '../types';
+import type { Entry, UserData, WorkCode, CalculationConfig } from '../types';
+import type { Locale } from '../locales/types';
 import { STORAGE_KEYS } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
 import { setSetting } from "../db/repositories/settingsRepo";
@@ -92,7 +93,7 @@ interface PdfArchiveTargets {
   gdrive: boolean;
 }
 
-async function runForMonth({ entries, userData, workCodes, year, month, targets }: { entries: Entry[]; userData: UserData; workCodes: WorkCode[]; year: number; month: number; targets: PdfArchiveTargets }) {
+async function runForMonth({ entries, userData, workCodes, year, month, targets, locale, calculationConfig }: { entries: Entry[]; userData: UserData; workCodes: WorkCode[]; year: number; month: number; targets: PdfArchiveTargets; locale?: Locale; calculationConfig?: CalculationConfig | null }) {
   const filename = buildArchiveFilename({ year, month, userData });
   const newHash = hashMonthContent({ entries, userData, year, month });
   const lastHashKey = `${STORAGE_KEYS.PDF_ARCHIVE_LAST_HASH}_${year}-${String(month).padStart(2, "0")}`;
@@ -109,7 +110,7 @@ async function runForMonth({ entries, userData, workCodes, year, month, targets 
     return { skipped: true, filename, empty: true };
   }
 
-  const blob = await generateMonthlyPdfBlob({ year, month, entries, userData, workCodes });
+  const blob = await generateMonthlyPdfBlob({ year, month, entries, userData, workCodes, locale, calculationConfig });
   const base64 = await blobToBase64(blob);
 
   const results = [];
@@ -133,7 +134,7 @@ async function runForMonth({ entries, userData, workCodes, year, month, targets 
   return { skipped: false, filename, results, anyOk, errors };
 }
 
-export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCodes: WorkCode[]) {
+export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCodes: WorkCode[], locale?: Locale, calculationConfig?: CalculationConfig | null) {
   const latestDataRef = useRef<{ entries: Entry[]; userData: UserData; workCodes: WorkCode[] }>({ entries, userData, workCodes });
   const isRunning = useRef<boolean>(false);
   const [lastRun, setLastRun] = useState(
@@ -200,7 +201,7 @@ export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCode
           log.info(`Monats-Uebergang erkannt: finalisiere ${lastYM}`);
           const prevRes = await runForMonth({
             entries, userData, workCodes,
-            year: py, month: pm, targets,
+            year: py, month: pm, targets, locale, calculationConfig,
           });
           results.push({ month: lastYM, ...prevRes });
         }
@@ -209,7 +210,7 @@ export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCode
       // Aktuelles Monat
       const curRes = await runForMonth({
         entries, userData, workCodes,
-        year: now.getFullYear(), month: now.getMonth() + 1, targets,
+        year: now.getFullYear(), month: now.getMonth() + 1, targets, locale, calculationConfig,
       });
       results.push({ month: currentYM, ...curRes });
 

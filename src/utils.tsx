@@ -12,6 +12,8 @@ import {
 } from "./utils/timeCalculations";
 import type { Locale } from "./locales/types";
 import { getLocale } from "./locales";
+import type { CalculationConfig } from "./types";
+import { resolveEffectiveRules } from "./utils/calculationConfig";
 
 // -------------------------------------------------------
 // HELPER-FUNKTIONEN
@@ -85,18 +87,58 @@ export { calculateOvertimeSplit, calculatePeriodStats };
 export { getWeekRangeInMonth, calculateWeekStats };
 
 // -------------------------------------------------------
-// FEIERTAGE (delegiert an das Locale-System)
+// FEIERTAGE (delegiert an das Locale-System + Config-Overrides)
 // -------------------------------------------------------
 /**
- * Liefert die Feiertage eines Jahres für eine Locale.
+ * Liefert die Feiertage eines Jahres für eine Locale, berücksichtigt
+ * optional eine `CalculationConfig`:
+ *
+ *   - `config.holidaySet.mode === "custom"`: liefert ausschließlich
+ *     `config.holidaySet.customHolidays` (Map von `YYYY-MM-DD` oder
+ *     `MM-DD` → Name). `MM-DD`-Keys werden auf das angefragte Jahr
+ *     expandiert.
+ *   - `config.holidaySet.mode === "locale_default"`: Locale-Liste
+ *     minus `config.holidaySet.disabledHolidayKeys` (MM-DD-Suffixe).
+ *
  * Ohne Locale-Parameter wird die Default-Locale (Österreich) genutzt,
  * damit bestehende Aufrufer unverändert funktionieren.
  */
 export const getHolidayData = (
   year: number,
-  locale?: Locale
+  locale?: Locale,
+  config?: CalculationConfig | null
 ): Record<string, string> => {
-  return (locale ?? getLocale(undefined)).getHolidays(year);
+  const loc = locale ?? getLocale(undefined);
+  const effective = resolveEffectiveRules(loc, config);
+
+  // Custom-Modus: komplett eigene Liste, Locale wird ignoriert
+  if (effective.holidaySetMode === "custom" && effective.customHolidays) {
+    const out: Record<string, string> = {};
+    for (const [key, name] of Object.entries(effective.customHolidays)) {
+      if (!key || typeof key !== "string") continue;
+      if (key.length === 5 && key[2] === "-") {
+        // MM-DD → auf Jahr expandieren
+        out[`${year}-${key}`] = name;
+      } else if (key.length === 10) {
+        // YYYY-MM-DD, nur übernehmen wenn Jahr passt
+        if (key.startsWith(`${year}-`)) out[key] = name;
+      }
+    }
+    return out;
+  }
+
+  // locale_default + optional disabledHolidayKeys ausfiltern
+  const raw = loc.getHolidays(year);
+  if (effective.disabledHolidayKeys.length === 0) return raw;
+  const disabledSet = new Set(effective.disabledHolidayKeys);
+  const out: Record<string, string> = {};
+  for (const [date, name] of Object.entries(raw)) {
+    // date ist YYYY-MM-DD, Key zum Vergleich ist MM-DD
+    const mmdd = date.slice(5);
+    if (disabledSet.has(mmdd)) continue;
+    out[date] = name;
+  }
+  return out;
 };
 
 // -------------------------------------------------------

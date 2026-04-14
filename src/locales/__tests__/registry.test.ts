@@ -4,25 +4,31 @@ import {
   getLocale,
   DEFAULT_LOCALE_ID,
   GERMANY_LOCALE_IDS,
+  SWITZERLAND_LOCALE_IDS,
   TOP_LEVEL_LOCALES,
 } from '../index';
 
 describe('LOCALES registry', () => {
-  it('hat 18 Locales (neutral + at + 16 DE-Bundesländer)', () => {
-    expect(Object.keys(LOCALES)).toHaveLength(18);
+  it('hat 44 Locales (neutral + at + 16 DE + 26 CH)', () => {
+    expect(Object.keys(LOCALES)).toHaveLength(44);
   });
 
-  it('enthält neutral, at und alle 16 de-XX Varianten', () => {
+  it('enthält neutral, at, alle 16 de-XX und alle 26 ch-XX Varianten', () => {
     expect(LOCALES.neutral).toBeDefined();
     expect(LOCALES.at).toBeDefined();
     expect(LOCALES['de-by']).toBeDefined();
     expect(LOCALES['de-nw']).toBeDefined();
     expect(LOCALES['de-be']).toBeDefined();
     expect(GERMANY_LOCALE_IDS).toHaveLength(16);
+    expect(LOCALES['ch-zh']).toBeDefined();
+    expect(LOCALES['ch-be']).toBeDefined();
+    expect(LOCALES['ch-ti']).toBeDefined();
+    expect(LOCALES['ch-ge']).toBeDefined();
+    expect(SWITZERLAND_LOCALE_IDS).toHaveLength(26);
   });
 
-  it('TOP_LEVEL_LOCALES hat nur 3 Einträge (neutral, at, de)', () => {
-    expect(TOP_LEVEL_LOCALES).toEqual(['neutral', 'at', 'de']);
+  it('TOP_LEVEL_LOCALES hat 4 Einträge (neutral, at, de, ch)', () => {
+    expect(TOP_LEVEL_LOCALES).toEqual(['neutral', 'at', 'de', 'ch']);
   });
 });
 

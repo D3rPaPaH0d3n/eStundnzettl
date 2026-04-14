@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Check, Play, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 /**
  * Onboarding-Schritt 4: Abschluss-Bildschirm.
@@ -15,6 +16,7 @@ interface Props {
 }
 
 const SummaryStep: React.FC<Props> = ({ hasRestoreData, onFinish }) => {
+  const { t } = useTranslation();
   return (
     <motion.div
       key="step4"
@@ -27,17 +29,15 @@ const SummaryStep: React.FC<Props> = ({ hasRestoreData, onFinish }) => {
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">Perfekt! 🎉</h2>
+        <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">{t("onboarding.summary.title")}</h2>
         <p className="text-zinc-500 dark:text-zinc-400 max-w-[280px] mx-auto leading-relaxed">
-          {hasRestoreData
-            ? "Deine Daten sind wieder da. Wir zeigen dir kurz, was die App alles kann."
-            : "Alles eingerichtet. Jetzt zeigen wir dir in wenigen Klicks, wo du was findest."}
+          {hasRestoreData ? t("onboarding.summary.bodyRestore") : t("onboarding.summary.bodyFresh")}
         </p>
       </div>
 
       <div className="flex items-center justify-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-bold">
         <Sparkles size={14} />
-        <span>Kurze Tour — dauert nur a Minütchen</span>
+        <span>{t("onboarding.summary.tourHint")}</span>
       </div>
 
       <div className="pt-2">
@@ -46,7 +46,7 @@ const SummaryStep: React.FC<Props> = ({ hasRestoreData, onFinish }) => {
           onClick={onFinish}
           className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-lg rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
         >
-          Los, zeig mir die App <Play size={20} fill="currentColor" />
+          {t("onboarding.summary.finishButton")} <Play size={20} fill="currentColor" />
         </button>
       </div>
     </motion.div>

@@ -30,14 +30,18 @@ describe("timeCalculations mit Neutral-Locale", () => {
     expect(getTargetMinutesForDate("2024-12-31", null, neutralLocale)).toBe(480);
   });
 
-  it("calculateOvertimeSplit liefert bei Neutral alles als ueberstunden-Bucket", () => {
+  it("calculateOvertimeSplit liefert bei Neutral kein MA/ÜS (reiner Saldo)", () => {
+    // Seit der Config-Umstellung: Neutral → overtimeMode="none"
+    // → weder Mehrarbeit noch Überstunden. Der Caller zeigt nur
+    // totalSaldo an (calculatePeriodStats returnt in dem Pfad
+    // ohnehin direkt, bevor calculateOvertimeSplit aufgerufen wird).
     expect(calculateOvertimeSplit(120, 2400, neutralLocale)).toEqual({
       mehrarbeit: 0,
-      ueberstunden: 120,
+      ueberstunden: 0,
     });
     expect(calculateOvertimeSplit(30, 2310, neutralLocale)).toEqual({
       mehrarbeit: 0,
-      ueberstunden: 30,
+      ueberstunden: 0,
     });
   });
 

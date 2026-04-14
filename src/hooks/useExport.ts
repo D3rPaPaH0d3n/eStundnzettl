@@ -3,9 +3,11 @@ import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import toast from "react-hot-toast";
-import type { Entry, UserData, WorkCode, Attachment, BackupPayload } from '../types';
+import { useTranslation } from "react-i18next";
+import type { Entry, UserData, WorkCode, Attachment, BackupPayload, CalculationConfig } from '../types';
 import { exportToSelectedFolder, attachBackupChecksum } from "../utils/storageBackup";
 import { toLocalDateString } from "../utils";
+import { getIntlLocale } from "../utils/formatLocale";
 import { logger } from "../utils/logger";
 
 interface UseExportProps {
@@ -14,6 +16,7 @@ interface UseExportProps {
   workCodes: WorkCode[];
   attachments?: Attachment[];
   exportPayloadRef: MutableRefObject<BackupPayload | null>;
+  calculationConfig?: CalculationConfig | null;
 }
 
 /**
@@ -39,16 +42,18 @@ interface UseExportProps {
  * - `handleExportToFolder()` — schreibt in SAF-Ordner
  * - `handleExportShare()` — öffnet natives Share-Sheet
  */
-export function useExport({ entries, userData, workCodes, attachments = [], exportPayloadRef }: UseExportProps) {
+export function useExport({ entries, userData, workCodes, attachments = [], exportPayloadRef, calculationConfig }: UseExportProps) {
+  const { t } = useTranslation();
   const [showExportModal, setShowExportModal] = useState(false);
 
   const buildPayload = async () => {
-    const payload = {
+    const payload: Record<string, unknown> = {
       user: userData,
       entries,
       workCodes,
       attachments,
       attachmentLabels: [],
+      calculationConfig: calculationConfig ?? null,
       exportedAt: new Date().toISOString(),
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     };
@@ -58,7 +63,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], expo
 
   // --- Web fallback: download as file ---
   const handleWebExport = async () => {
-    const toastId = toast.loading("Exportiere Daten...");
+    const toastId = toast.loading(t("toasts.export.exporting"));
     try {
       const dateStr = toLocalDateString(new Date());
       const fileName = `estundnzettl_${dateStr}.json`;
@@ -69,7 +74,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], expo
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: "eStundnzettl Backup", text: "Backup meiner Stunden" });
-          toast.success("📤 Export erfolgreich!", { id: toastId });
+          toast.success(t("toasts.export.success"), { id: toastId });
           return;
         } catch (shareError: unknown) {
           if ((shareError as DOMException).name === "AbortError") {
@@ -87,9 +92,9 @@ export function useExport({ entries, userData, workCodes, attachments = [], expo
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("💾 Download gestartet!", { id: toastId });
+      toast.success(t("toasts.export.downloadStarted"), { id: toastId });
     } catch (e) {
-      toast.error(`❌ Export Fehler: ${(e as Error).message}`, { id: toastId, duration: 5000 });
+      toast.error(t("toasts.export.error", { message: (e as Error).message }), { id: toastId, duration: 5000 });
     }
   };
 
@@ -106,7 +111,7 @@ export function useExport({ entries, userData, workCodes, attachments = [], expo
   // --- Capacitor: save to selected folder ---
   const handleExportToFolder = async () => {
     setShowExportModal(false);
-    const toastId = toast.loading("Exportiere in Ordner...");
+    const toastId = toast.loading(t("toasts.export.exportingFolder"));
 
     try {
       const now = new Date();
@@ -116,20 +121,20 @@ export function useExport({ entries, userData, workCodes, attachments = [], expo
       const success = await exportToSelectedFolder(fileName, exportPayloadRef.current);
 
       if (success) {
-        toast.success("✅ Erfolgreich im Ordner gespeichert!", { id: toastId });
+        toast.success(t("toasts.export.folderSuccess"), { id: toastId });
       } else {
         toast.dismiss(toastId);
       }
     } catch (e) {
       logger.error("Export to folder error:", e);
-      toast.error("Export abgebrochen oder fehlgeschlagen", { id: toastId });
+      toast.error(t("toasts.export.folderCancelled"), { id: toastId });
     }
   };
 
   // --- Capacitor: native share sheet ---
   const handleExportShare = async () => {
     setShowExportModal(false);
-    const toastId = toast.loading("Bereite Export vor...");
+    const toastId = toast.loading(t("toasts.export.preparing"));
 
     try {
       const now = new Date();
@@ -152,19 +157,19 @@ export function useExport({ entries, userData, workCodes, attachments = [], expo
       });
 
       await Share.share({
-        title: "eStundnzettl Backup",
-        text: `Backup vom ${new Date().toLocaleDateString("de-DE")}`,
+        title: t("toasts.export.shareTitle"),
+        text: t("toasts.export.shareText", { date: new Date().toLocaleDateString(getIntlLocale()) }),
         url: uriResult.uri,
-        dialogTitle: "Backup sichern",
+        dialogTitle: t("toasts.export.shareDialogTitle"),
       });
 
-      toast.success("📤 Export bereitgestellt!", { id: toastId });
+      toast.success(t("toasts.export.ready"), { id: toastId });
     } catch (e) {
       logger.error("Share error:", e);
       if ((e as Error).message?.includes("canceled") || (e as Error).message?.includes("cancelled")) {
         toast.dismiss(toastId);
       } else {
-        toast.error(`❌ Export Fehler: ${(e as Error).message}`, { id: toastId, duration: 5000 });
+        toast.error(t("toasts.export.error", { message: (e as Error).message }), { id: toastId, duration: 5000 });
       }
     }
   };

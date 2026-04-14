@@ -1,0 +1,7 @@
+Calculation logic toolkit & Switzerland 🧰
+• New "Custom plan" mode: overtime, sick rules, holidays freely configurable
+• Switzerland with all 26 cantons and ArG rules (45h week)
+• Holiday import: Orthodox & Islamic holidays
+• Vacation day tracking with allowance + remaining, also in the PDF footer
+• English UI translation: picker in settings (DE/EN)
+• 48 new unit tests — stability as usual

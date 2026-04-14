@@ -3,6 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { MultiShare } from "../plugins/MultiSharePlugin";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import type { Attachment } from '../types';
 
 const sanitizeFileName = (fileName: string = "datei"): string => fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -34,6 +35,7 @@ interface PdfFile {
  *   wird geschluckt (kein Crash).
  */
 export function useAttachmentShare({ readAttachmentFile }: { readAttachmentFile: (attachment: Attachment) => Promise<string> }) {
+  const { t } = useTranslation();
   const copyAttachmentToCache = useCallback(async (attachment: Attachment) => {
     const base64Data = await readAttachmentFile(attachment);
     const safeName = sanitizeFileName(attachment.fileName || attachment.label || `anhang_${attachment.id || Date.now()}`);
@@ -83,22 +85,22 @@ export function useAttachmentShare({ readAttachmentFile }: { readAttachmentFile:
       }
 
       const suffix = attachments.length > 0
-        ? ` + ${attachments.length} Dokument${attachments.length > 1 ? "e" : ""}`
+        ? ` + ${t("dashboard.documentsCount", { count: attachments.length })}`
         : "";
 
       await MultiShare.shareMultiple({
         files,
-        chooserTitle: `Stundenzettel${suffix}`,
+        chooserTitle: `${t("reports.title")}${suffix}`,
       });
 
-      toast.success(`${files.length} Datei${files.length > 1 ? "en" : ""} zum Teilen bereit`);
+      toast.success(t("toasts.attachments.readyToShare", { count: files.length }));
     } catch (error: unknown) {
       if ((error as Error)?.message?.includes("canceled") || (error as Error)?.message?.includes("cancelled")) {
         return;
       }
       throw error;
     }
-  }, [copyAttachmentToCache]);
+  }, [copyAttachmentToCache, t]);
 
   return {
     shareReportBundle,

@@ -1,9 +1,9 @@
 {
   "name": "eStundnzettl",
   "private": true,
-  "version": "4.0.1",
+  "version": "4.2.0",
   "type": "module",
-  "description": "Elektronischer Stundenzettel \u2014 smarte Zeiterfassung aus der Steiermark (Ionic/Capacitor App).",
+  "description": "Elektronischer Stundenzettel — smarte Zeiterfassung aus der Steiermark (Ionic/Capacitor App).",
   "license": "MIT",
   "author": {
     "name": "Markus Kainer",

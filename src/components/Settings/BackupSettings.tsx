@@ -31,6 +31,7 @@ import {
 } from "../../utils/storageBackup";
 import { testConnection as ncTestConnection, initiateLoginFlow, pollLoginResult, ensureFolder as ncEnsureFolder, getNextcloudErrorMessage } from "../../utils/nextcloudClient";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { logger } from "../../utils/logger";
 import { getErrorMessage } from "../../utils/errorUtils";
 import type { GoogleAuthStatus, GoogleSignInResult } from "../../types";
@@ -75,6 +76,7 @@ const BackupSettings: React.FC<Props> = ({
   expertMode = false,
   onTriggerManualBackup,
 }) => {
+  const { t } = useTranslation();
   const importInputRef = useRef<HTMLInputElement>(null);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [hasBackupFolder, setHasBackupFolder] = useState(false);
@@ -105,12 +107,12 @@ const BackupSettings: React.FC<Props> = ({
     if (!isoString) return null;
     const diff = Date.now() - new Date(isoString).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "gerade eben";
-    if (mins < 60) return `vor ${mins} Min.`;
+    if (mins < 1) return t("settings.backup.last.now");
+    if (mins < 60) return t("settings.backup.last.minutes", { count: mins });
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `vor ${hrs} Std.`;
+    if (hrs < 24) return t("settings.backup.last.hours", { count: hrs });
     const days = Math.floor(hrs / 24);
-    return `vor ${days} Tag${days > 1 ? "en" : ""}`;
+    return t("settings.backup.last.days", { count: days });
   };
 
   // =====================
@@ -341,7 +343,7 @@ const BackupSettings: React.FC<Props> = ({
         clearInterval(ncPollInterval.current!);
         ncPollInterval.current = null;
         setNcConnecting(false);
-        toast.error("Zeitüberschreitung — bitte erneut versuchen");
+        toast.error(t("settings.backup.toast.pollingTimeout"));
         return;
       }
 
@@ -369,7 +371,7 @@ const BackupSettings: React.FC<Props> = ({
         clearInterval(ncPollInterval.current!);
         ncPollInterval.current = null;
         setNcConnecting(false);
-        toast.error((error as Error)?.message || "Nextcloud Login fehlgeschlagen");
+        toast.error((error as Error)?.message || t("settings.backup.toast.nextcloudLoginFailed"));
       }
     }, 3000);
   };
@@ -408,13 +410,13 @@ const BackupSettings: React.FC<Props> = ({
         // Browser might already be closed - that's OK
       }
 
-      toast.success(`Verbunden als ${loginName}`);
+      toast.success(t("settings.backup.toast.ncConnectedAs", { loginName }));
       log.debug('Login flow completed successfully');
-      
+
     } catch (persistError) {
       log.error('Persistence error:', persistError);
       setNcConnecting(false);
-      toast.error("Nextcloud verbunden, aber Speichern in der App fehlgeschlagen");
+      toast.error(t("settings.backup.toast.ncPersistError"));
     }
   };
 
@@ -424,7 +426,7 @@ const BackupSettings: React.FC<Props> = ({
 
   const handleNcConnect = async () => {
     if (!nextcloudUrl) {
-      toast.error("Bitte Server-URL eingeben");
+      toast.error(t("settings.backup.toast.ncEnterUrl"));
       return;
     }
     
@@ -454,8 +456,8 @@ const BackupSettings: React.FC<Props> = ({
     } catch (err) {
       log.error('Login flow error:', err);
       setNcConnecting(false);
-      const message = (err as Error)?.message || 'Unbekannter Fehler';
-      toast.error(`Nextcloud Login fehlgeschlagen: ${message}`);
+      const message = (err as Error)?.message || 'Unknown error';
+      toast.error(t("settings.backup.toast.nextcloudLoginFailedWith", { message }));
     }
   };
 
@@ -483,29 +485,29 @@ const BackupSettings: React.FC<Props> = ({
     setNextcloudBackupFailCount(0);
     setNextcloudBackupLastError("");
     
-    toast("Nextcloud getrennt");
+    toast(t("settings.backup.toast.ncDisconnected"));
     log.debug('Disconnected successfully');
   };
 
   const handleNcTest = async () => {
     if (!nextcloudUrl || !nextcloudUser || !nextcloudPass) {
-      toast.error("Bitte zuerst Nextcloud verbinden");
+      toast.error(t("settings.backup.toast.ncConnectFirst"));
       return;
     }
-    
+
     try {
       setNcStatus(null);
       const result = await ncTestConnection(nextcloudUrl, nextcloudUser, nextcloudPass);
       if (result.ok) {
         setNcStatus("ok");
-        toast.success("Verbindung OK!");
+        toast.success(t("settings.backup.toast.ncTestOk"));
       } else {
         setNcStatus("error");
-        toast.error(result.error || "Verbindung fehlgeschlagen");
+        toast.error(result.error || t("settings.backup.toast.ncTestFailed"));
       }
     } catch {
       setNcStatus("error");
-      toast.error("Test fehlgeschlagen");
+      toast.error(t("settings.backup.toast.ncTestError"));
     }
   };
 
@@ -547,18 +549,20 @@ const BackupSettings: React.FC<Props> = ({
             ""
           );
           if (!autoBackup) setAutoBackup(true);
-          toast.success(`Verbunden: ${user.givenName || user.email || "Drive"}`);
+          toast.success(t("settings.backup.toast.gdriveConnected", {
+            label: user.givenName || user.email || t("settings.backup.toast.gdriveDefaultLabel"),
+          }));
         }
       } catch (error) {
         log.error(error);
         setIsTokenValid(false);
         const message = String((error as Error)?.message || error || "");
         if (message.includes("GOOGLE_DRIVE_AUTH_CANCELLED")) {
-          toast.error("Google-Anmeldung abgebrochen");
+          toast.error(t("settings.backup.toast.gdriveCancelled"));
         } else if (message.includes("GOOGLE_DRIVE_NATIVE_UNAVAILABLE")) {
-          toast.error("Google Drive ist auf diesem Gerät noch nicht verfügbar");
+          toast.error(t("settings.backup.toast.gdriveUnavailable"));
         } else {
-          toast.error("Google-Drive-Verbindung fehlgeschlagen");
+          toast.error(t("settings.backup.toast.gdriveFailed"));
         }
       }
     }
@@ -571,7 +575,7 @@ const BackupSettings: React.FC<Props> = ({
       await clearBackupTarget();
       setHasBackupFolder(false);
       localStorage.removeItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
-      toast("Backup-Ordner getrennt");
+      toast(t("settings.backup.toast.localDisconnected"));
     } else {
       try {
         const success = await selectBackupFolder();
@@ -579,12 +583,12 @@ const BackupSettings: React.FC<Props> = ({
           setHasBackupFolder(true);
           localStorage.setItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED, "true");
           if (!autoBackup) setAutoBackup(true);
-          toast.success("Backup aktiviert!");
+          toast.success(t("settings.backup.toast.localActivated"));
         }
       } catch {
         // Partiellen State bereinigen (dualWrite könnte BACKUP_TARGET bereits gesetzt haben)
         await clearBackupTarget();
-        toast.error("Ordnerauswahl abgebrochen");
+        toast.error(t("settings.backup.toast.folderCancelled"));
       }
     }
   };
@@ -601,34 +605,35 @@ const BackupSettings: React.FC<Props> = ({
         localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, now);
 
         // Differenzierte Erfolgsmeldung
+        const localLabel = t("settings.backup.targetLocal");
         const parts = [];
         if (result.gdrive) parts.push("Google Drive");
-        if (result.local) parts.push("Lokal");
+        if (result.local) parts.push(localLabel);
         if (result.nextcloud) parts.push("Nextcloud");
-        toast.success(`Backup erstellt: ${parts.join(", ")}`);
+        toast.success(t("settings.backup.toast.backupCreated", { targets: parts.join(", ") }));
 
         // Warnung für fehlgeschlagene Ziele
         const failed = [];
         if (result.gdrive === false) failed.push("Google Drive");
-        if (result.local === false) failed.push("Lokal");
+        if (result.local === false) failed.push(localLabel);
         if (result.nextcloud === false) failed.push("Nextcloud");
         if (failed.length > 0) {
-          toast.error(`Fehlgeschlagen: ${failed.join(", ")}`);
+          toast.error(t("settings.backup.toast.backupPartialFailed", { targets: failed.join(", ") }));
           // Debug: Zeige detaillierte Fehlermeldung in Alert (scrollbar)
           const details: string[] = [];
           if (result.nextcloud === false && result.nextcloudError) {
             details.push(`Nextcloud: ${result.nextcloudError}`);
           }
           if (details.length > 0) {
-            setTimeout(() => alert(`Backup-Fehler Details:\n\n${details.join("\n\n")}`), 500);
+            setTimeout(() => alert(t("settings.backup.toast.backupDebugTitle", { details: details.join("\n\n") })), 500);
           }
         }
       } else {
-        toast.error(getErrorMessage(result, "Backup fehlgeschlagen"));
+        toast.error(getErrorMessage(result, t("settings.backup.toast.backupFailed")));
       }
     } catch (error) {
       log.error(error);
-      toast.error("Backup fehlgeschlagen");
+      toast.error(t("settings.backup.toast.backupFailed"));
     } finally {
       setIsBackingUp(false);
     }
@@ -654,10 +659,10 @@ const BackupSettings: React.FC<Props> = ({
           </div>
           <div>
             <h2 className="font-bold text-base text-zinc-800 dark:text-white">
-              Backup &amp; Export
+              {t("settings.backup.header")}
             </h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Sichere deine Daten auf Google Drive, Nextcloud oder lokal
+              {t("settings.backup.subtitle")}
             </p>
           </div>
         </div>
@@ -682,17 +687,17 @@ const BackupSettings: React.FC<Props> = ({
                   Google Drive
                 </span>
                 {isCloudConnected && isTokenValid && (
-                  <span className={connectionBadgeClassName}>Verbunden</span>
+                  <span className={connectionBadgeClassName}>{t("settings.backup.badge.connected")}</span>
                 )}
               </div>
               <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                 {isCloudConnected
                   ? (isTokenValid
                     ? (googleAccountLabel
-                      ? `Verbunden als ${googleAccountLabel}`
-                      : "Aktiv (Google Drive App-Daten)")
-                    : "Verbindung abgelaufen")
-                  : "Nicht verbunden"}
+                      ? t("settings.backup.gdrive.connectedAs", { label: googleAccountLabel })
+                      : t("settings.backup.gdrive.activeAppData"))
+                    : t("settings.backup.gdrive.expired"))
+                  : t("settings.backup.gdrive.notConnected")}
               </span>
             </div>
           </div>
@@ -704,7 +709,7 @@ const BackupSettings: React.FC<Props> = ({
                 : "border-zinc-300 bg-white text-zinc-700"
             }`}
           >
-            {isCloudConnected ? "Trennen" : "Verbinden"}
+            {isCloudConnected ? t("settings.backup.gdrive.disconnect") : t("settings.backup.gdrive.connect")}
           </button>
         </div>
 
@@ -730,16 +735,16 @@ const BackupSettings: React.FC<Props> = ({
                 </span>
                 {nextcloudEnabled && (
                   <span className={connectionBadgeClassName}>
-                    Verbunden
+                    {t("settings.backup.badge.connected")}
                   </span>
                 )}
               </div>
               <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                 {nextcloudEnabled
-                  ? `Verbunden als ${ncLoginName || nextcloudUser}`
+                  ? t("settings.backup.nextcloud.connectedAs", { user: ncLoginName || nextcloudUser })
                   : ncConnecting
-                    ? "Warte auf Anmeldung..."
-                    : "Nicht konfiguriert"}
+                    ? t("settings.backup.nextcloud.awaitingLogin")
+                    : t("settings.backup.nextcloud.notConfigured")}
               </span>
             </div>
           </div>
@@ -752,7 +757,7 @@ const BackupSettings: React.FC<Props> = ({
                 : "border-zinc-300 bg-white text-zinc-700"
             }`}
           >
-            {nextcloudEnabled ? "Trennen" : "Einrichten"}
+            {nextcloudEnabled ? t("settings.backup.nextcloud.disconnect") : t("settings.backup.nextcloud.setup")}
           </button>
         </div>
 
@@ -763,10 +768,10 @@ const BackupSettings: React.FC<Props> = ({
               <div className="flex flex-col items-center gap-3 py-4">
                 <Loader size={24} className="animate-spin text-orange-500" />
                 <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                  Warte auf Anmeldung in Nextcloud...
+                  {t("settings.backup.nextcloud.pollingTitle")}
                 </span>
                 <span className="text-xs text-zinc-400">
-                  Bitte im Browser anmelden und Zugriff gewähren
+                  {t("settings.backup.nextcloud.pollingHint")}
                 </span>
                 <button
                   onClick={() => {
@@ -775,18 +780,18 @@ const BackupSettings: React.FC<Props> = ({
                   }}
                   className="mt-2 px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors"
                 >
-                  Abbrechen
+                  {t("common.cancel")}
                 </button>
               </div>
             ) : (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 mb-1">Server-URL</label>
+                  <label className="block text-xs font-bold text-zinc-500 mb-1">{t("settings.backup.nextcloud.serverUrlLabel")}</label>
                   <input
                     type="url"
                     value={nextcloudUrl}
                     onChange={(e) => setNextcloudUrl(e.target.value)}
-                    placeholder="https://cloud.example.com"
+                    placeholder={t("settings.backup.nextcloud.serverUrlPlaceholder")}
                     className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none focus:border-orange-400"
                   />
                 </div>
@@ -795,14 +800,14 @@ const BackupSettings: React.FC<Props> = ({
                   className="w-full py-2.5 text-sm font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-2"
                 >
                   <ServerCog size={16} />
-                  Mit Nextcloud verbinden
+                  {t("settings.backup.nextcloud.connectButton")}
                 </button>
                 {nextcloudUrl && nextcloudUser && nextcloudPass && (
                   <button
                     onClick={handleNcTest}
                     className="w-full py-2 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors"
                   >
-                    Verbindung testen
+                    {t("settings.backup.nextcloud.testConnection")}
                   </button>
                 )}
               </>
@@ -830,14 +835,14 @@ const BackupSettings: React.FC<Props> = ({
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="block font-bold text-sm text-zinc-800 dark:text-white">
-                  Lokales Backup
+                  {t("settings.backup.local.title")}
                 </span>
                 {hasBackupFolder && (
-                  <span className={connectionBadgeClassName}>Verbunden</span>
+                  <span className={connectionBadgeClassName}>{t("settings.backup.badge.connected")}</span>
                 )}
               </div>
               <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                {hasBackupFolder ? "Aktiv (Täglich)" : "Nicht konfiguriert"}
+                {hasBackupFolder ? t("settings.backup.local.activeDaily") : t("settings.backup.local.notConfigured")}
               </span>
             </div>
           </div>
@@ -849,7 +854,7 @@ const BackupSettings: React.FC<Props> = ({
                 : "border-zinc-300 bg-white text-zinc-700"
             }`}
           >
-            {hasBackupFolder ? "Trennen" : "Wählen"}
+            {hasBackupFolder ? t("settings.backup.local.disconnect") : t("settings.backup.local.select")}
           </button>
         </div>
 
@@ -861,8 +866,8 @@ const BackupSettings: React.FC<Props> = ({
               <div className="flex flex-col gap-1 min-w-0">
                 <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                   {isTokenValid
-                    ? "⚠️ Letzte Backups fehlgeschlagen. Bitte Google Drive Verbindung prüfen."
-                    : "⚠️ Google Drive muss neu verbunden werden, bevor wieder gesichert werden kann."}
+                    ? t("settings.backup.warning.gdriveFailed")
+                    : t("settings.backup.warning.gdriveReconnect")}
                 </span>
                 {backupLastError && (
                   <span className="text-[11px] text-amber-600 dark:text-amber-400 break-words">
@@ -888,7 +893,7 @@ const BackupSettings: React.FC<Props> = ({
                 }}
                 className="self-start px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-bold rounded-md transition-colors"
               >
-                {isRetryingBackup ? "Wird versucht…" : "Jetzt erneut versuchen"}
+                {isRetryingBackup ? t("settings.backup.warning.retrying") : t("settings.backup.warning.retryNow")}
               </button>
             )}
           </div>
@@ -900,8 +905,8 @@ const BackupSettings: React.FC<Props> = ({
               <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
               <span className="text-xs font-medium text-amber-700 dark:text-amber-300 break-words">
                 {nextcloudBackupLastError
-                  ? `Nextcloud-Backup fehlgeschlagen: ${nextcloudBackupLastError}`
-                  : "Letzte Nextcloud-Backups sind fehlgeschlagen. Bitte Verbindung prüfen."}
+                  ? t("settings.backup.warning.nextcloudWithError", { error: nextcloudBackupLastError })
+                  : t("settings.backup.warning.nextcloudGeneric")}
               </span>
             </div>
             {onTriggerManualBackup && nextcloudBackupFailCount >= 3 && (
@@ -920,7 +925,7 @@ const BackupSettings: React.FC<Props> = ({
                 }}
                 className="self-start px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-bold rounded-md transition-colors"
               >
-                {isRetryingBackup ? "Wird versucht…" : "Jetzt erneut versuchen"}
+                {isRetryingBackup ? t("settings.backup.warning.retrying") : t("settings.backup.warning.retryNow")}
               </button>
             )}
           </div>
@@ -939,12 +944,12 @@ const BackupSettings: React.FC<Props> = ({
               </div>
               <div>
                 <span className="block font-bold text-sm text-emerald-700 dark:text-emerald-300">
-                  {isBackingUp ? "Sichere..." : "Backup"}
+                  {isBackingUp ? t("settings.backup.manual.saving") : t("settings.backup.manual.title")}
                 </span>
                 <span className="block text-xs text-emerald-600 dark:text-emerald-400">
                   {lastBackupDate
-                    ? `Zuletzt: ${formatLastBackup(lastBackupDate)}`
-                    : "Noch nie gesichert"}
+                    ? t("settings.backup.last.lastAt", { time: formatLastBackup(lastBackupDate) })
+                    : t("settings.backup.last.never")}
                 </span>
               </div>
             </div>
@@ -958,7 +963,7 @@ const BackupSettings: React.FC<Props> = ({
               ) : (
                 <Upload size={14} />
               )}
-              {isBackingUp ? "Sichere..." : "Jetzt sichern"}
+              {isBackingUp ? t("settings.backup.manual.saving") : t("settings.backup.manual.saveNow")}
             </button>
           </div>
         )}
@@ -970,14 +975,14 @@ const BackupSettings: React.FC<Props> = ({
               onClick={onExport}
               className="w-full py-3 bg-zinc-900 dark:bg-zinc-700 text-white font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-600 flex items-center justify-center gap-2 transition-colors"
             >
-              <Upload size={18} className="rotate-180" /> Export
+              <Upload size={18} className="rotate-180" /> {t("settings.backup.export")}
             </button>
 
             <button
               onClick={() => importInputRef.current?.click()}
               className="w-full py-3 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors"
             >
-              <Upload size={18} /> Import
+              <Upload size={18} /> {t("settings.backup.import")}
             </button>
 
             <input

@@ -71,23 +71,50 @@
       (function() {
         const savedTheme = localStorage.getItem('eStundnzettl_theme');
         const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
+
         // Da wir beim Start eh dunkel sind, ist die Klasse 'dark' hier der Standard
         if (savedTheme === 'dark' || (!savedTheme && systemDark) || (savedTheme === 'system' && systemDark)) {
           document.documentElement.classList.add('dark');
         } else {
           document.documentElement.classList.remove('dark');
         }
+
+        // Sprache möglichst früh setzen, damit Screen-Reader/Browser
+        // sofort das richtige Tag sehen. Priorität:
+        // 1) explizit gespeicherte Wahl (estundnzettl_language)
+        // 2) Gerätesprache (navigator.language)
+        // 3) Fallback: de
+        var SUPPORTED = ['de', 'en'];
+        var stored = null;
+        try { stored = localStorage.getItem('estundnzettl_language'); } catch (e) {}
+        var lang = null;
+        if (stored && SUPPORTED.indexOf(stored) !== -1) {
+          lang = stored;
+        } else {
+          var nav = (navigator.language || '').split('-')[0].toLowerCase();
+          lang = SUPPORTED.indexOf(nav) !== -1 ? nav : 'de';
+        }
+        document.documentElement.lang = lang;
+        // Loading-Screen alt-Text an gewählte Sprache anpassen (SR-freundlich)
+        window.__ESZ_LOADING_ALT__ = lang === 'en' ? 'Loading\u2026' : 'Lädt\u2026';
       })();
     </script>
   </head>
   <body>
     <div id="root">
       <div class="loading-container">
-        <img src="/src/assets/logo.png" class="loading-logo" alt="Lade..." />
+        <img src="/src/assets/logo.png" class="loading-logo" alt="" id="loading-logo" />
         <div class="spinner"></div>
       </div>
     </div>
+    <script>
+      (function() {
+        var img = document.getElementById('loading-logo');
+        if (img && window.__ESZ_LOADING_ALT__) {
+          img.alt = window.__ESZ_LOADING_ALT__;
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

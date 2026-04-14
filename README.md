@@ -1,18 +1,22 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/D3rPaPaH0d3n/eStundnzettl/main/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" width="120" alt="eStundnzettl Logo" />
+  <strong>🇬🇧 English</strong> · <a href="./README.de.md">🇩🇪 Deutsch</a>
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/D3rPaPaH0d3n/eStundnzettl/main/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" width="120" alt="eStundnzettl logo" />
 </p>
 
 <h1 align="center">eStundnzettl</h1>
 
 <p align="center">
-  <strong>🏔️ Die smarte Zeiterfassung aus der Steiermark.</strong><br />
-  Schluss mit Zettelwirtschaft — Stunden, Fahrten und Urlaub direkt am Handy erfassen.<br />
-  Am Monatsende ein sauberes PDF. Fertig. ✅
+  <strong>🏔️ Smart time tracking from Styria, Austria.</strong><br />
+  No more paper slips — log hours, drives and vacation straight from your phone.<br />
+  At the end of the month: one clean PDF. Done. ✅
 </p>
 
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.estundnzettl.app">
-    <img src="https://img.shields.io/badge/Google_Play-Jetzt_laden-3DDC84?style=for-the-badge&logo=google-play&logoColor=white" alt="Google Play" />
+    <img src="https://img.shields.io/badge/Google_Play-Get_it_now-3DDC84?style=for-the-badge&logo=google-play&logoColor=white" alt="Google Play" />
   </a>
 </p>
 
@@ -21,199 +25,207 @@
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/dashboard_detail.png" width="150" alt="Wochendetails" style="transform: rotate(-3deg);" />
+  <img src="docs/screenshots/dashboard_detail.png" width="150" alt="Weekly details" style="transform: rotate(-3deg);" />
   &nbsp;&nbsp;
-  <img src="docs/screenshots/onboarding.png" width="170" alt="Willkommen" />
+  <img src="docs/screenshots/onboarding.png" width="170" alt="Welcome" />
   &nbsp;&nbsp;
-  <img src="docs/screenshots/bericht.png" width="150" alt="PDF-Bericht" style="transform: rotate(2deg);" />
+  <img src="docs/screenshots/bericht.png" width="150" alt="PDF report" style="transform: rotate(2deg);" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/neuer_eintrag.png" width="140" alt="Neuer Eintrag" style="transform: rotate(2deg);" />
+  <img src="docs/screenshots/neuer_eintrag.png" width="140" alt="New entry" style="transform: rotate(2deg);" />
   &nbsp;
-  <img src="docs/screenshots/dashboard.png" width="180" alt="Monatsübersicht" />
+  <img src="docs/screenshots/dashboard.png" width="180" alt="Monthly overview" />
   &nbsp;
-  <img src="docs/screenshots/einstellungen.png" width="140" alt="Einstellungen" style="transform: rotate(-2deg);" />
+  <img src="docs/screenshots/einstellungen.png" width="140" alt="Settings" style="transform: rotate(-2deg);" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/arbeitszeitmodell.png" width="150" alt="Arbeitszeitmodell" style="transform: rotate(-2deg);" />
+  <img src="docs/screenshots/arbeitszeitmodell.png" width="150" alt="Work schedule" style="transform: rotate(-2deg);" />
   &nbsp;&nbsp;
-  <img src="docs/screenshots/backup_setup.png" width="170" alt="Backup-Setup" />
+  <img src="docs/screenshots/backup_setup.png" width="170" alt="Backup setup" />
   &nbsp;&nbsp;
-  <img src="docs/screenshots/hilfe.png" width="150" alt="Anleitung & Hilfe" style="transform: rotate(3deg);" />
+  <img src="docs/screenshots/hilfe.png" width="150" alt="Guide & help" style="transform: rotate(3deg);" />
 </p>
 
 ---
 
 ## ✨ Highlights
 
-| | Feature | Beschreibung |
+| | Feature | Description |
 |---|---------|--------------|
-| 🎯 | **Flexible Arbeitszeitmodelle** | 38,5h, 40h, 4-Tage-Woche oder komplett individuell |
-| ⏱️ | **Live-Timer** | Lang drücken, nach oben wischen — Timer läuft |
-| 📊 | **Echtzeit-Saldo** | Überstunden, Mehrarbeit und Gleitzeit immer im Blick |
-| 📄 | **PDF-Export** | Professioneller Stundenzettel per Monats- oder Wochenansicht |
-| ☁️ | **Automatische Backups** | Google Drive, Nextcloud oder lokal — täglich gesichert |
-| 📎 | **Dokumente anhängen** | Regiescheine, Fotos und Lieferscheine direkt zum Eintrag |
-| 🌙 | **Dark Mode** | Augenschonend, wenn's draußen schon finster ist |
-| 🔧 | **Hausmasta-Modus** | Erweiterte Einstellungen für Profis — bei Bedarf aktivierbar |
+| 🎯 | **Flexible work schedules** | 38.5h, 40h, 4-day week or fully custom |
+| ⏱️ | **Live timer** | Long-press, swipe up — timer running |
+| 📊 | **Real-time balance** | Overtime, extra hours and flex-time always in view |
+| 📄 | **PDF export** | Professional timesheet by month or week |
+| ☁️ | **Automatic backups** | Google Drive, Nextcloud or local — daily |
+| 📎 | **Attach documents** | Delivery notes, photos and receipts straight on the entry |
+| 🌙 | **Dark mode** | Easy on the eyes when it's dark outside |
+| 🔧 | **Power-user mode** | Advanced settings for pros — opt-in |
+| 🌐 | **Bilingual** | Full German and English UI — picker in settings |
 
 ---
 
-## 🚀 Schnellstart
+## 🚀 Quick start
 
-### 1️⃣ Einrichten — in 2 Minuten startklar
+### 1️⃣ Set up — ready in 2 minutes
 
-Beim ersten Start führt dich der **Einrichtungs-Assistent** gemütlich durch alles:
+On first launch the **setup wizard** walks you through everything:
 
-- 👤 **Name & Firma** eintragen
-- 📅 **Arbeitszeitmodell** wählen (Vollzeit, Teilzeit, 4-Tage-Woche, ...)
-- 💾 **Backup** einrichten (optional — Google Drive, lokal oder Nextcloud)
+- 👤 Enter **name & company**
+- 📅 Pick your **work schedule** (full-time, part-time, 4-day week, …)
+- 💾 Configure **backup** (optional — Google Drive, local or Nextcloud)
 
-> 🧪 Oder einfach auf **"Nur mal reinschnuppern"** tippen und mit Demo-Daten starten!
+> 🧪 Or just tap **"Just take a look"** and start with demo data!
 
-### 2️⃣ Stunden erfassen
+### 2️⃣ Log hours
 
-Drück unten rechts auf den **+** Button — oder nutze den **Live-Timer**:
+Hit the **+** button in the bottom right — or use the **live timer**:
 
-| Methode | So geht's |
+| Method | How |
 |---------|-----------|
-| ▶️ **Live-Timer** | **+** Button lange drücken und nach oben wischen. Timer läuft bis du stoppst. |
-| ✏️ **Manuell** | **+** tippen, Zeiten einstellen, Tätigkeit wählen, speichern. |
-| 🪄 **Wie zuletzt** | Übernimmt Start, Ende und Pause vom Vortag — ein Tipp genügt. |
+| ▶️ **Live timer** | Long-press the **+** button and swipe up. Timer runs until you stop it. |
+| ✏️ **Manual** | Tap **+**, set times, pick activity, save. |
+| 🪄 **Same as last** | Copies start, end and break from the previous day — one tap. |
 
-### 3️⃣ Fahrtzeiten
+### 3️⃣ Drive times
 
-Wähle den Typ **"Fahrt"** beim Erstellen:
+Pick the **"Drive"** type when creating the entry:
 
-- 🟢 **An/Abreise** — bezahlte Arbeitszeit, zählt zum Tagessoll
-- 🟠 **Fahrtzeit** — unbezahlte Wegzeit, wird separat ausgewiesen
+- 🟢 **Arrival / Departure** — paid work time, counts towards the daily target
+- 🟠 **Drive time** — unpaid travel, reported separately
 
-### 4️⃣ Urlaub, Krank & Zeitausgleich
+### 4️⃣ Vacation, sick leave & time off
 
-🏖️ Einfach den passenden Typ wählen — die App rechnet automatisch die richtigen Soll-Stunden für den Tag ein. Kein manuelles Rechnen nötig.
+🏖️ Just pick the right type — the app automatically credits the correct target hours for the day. No manual math needed.
 
-### 5️⃣ Dokumente anhängen
+### 5️⃣ Attach documents
 
-📎 Zu jedem Eintrag kannst du Fotos oder Dateien anhängen — Regiescheine, Lieferscheine, Arbeitsberichte. Die Anhänge werden beim PDF-Export automatisch mitgeliefert.
+📎 You can attach photos or files to any entry — delivery notes, receipts, work reports. Attachments are included automatically when you export the PDF.
 
-### 6️⃣ Monatsabschluss — PDF erstellen
+### 6️⃣ Month close — create the PDF
 
-1. Oben rechts auf das **📊 Bericht-Symbol** tippen
-2. Monat oder Kalenderwoche auswählen
-3. **📤 PDF teilen** — per Mail, WhatsApp oder lokal speichern
+1. Tap the **📊 report icon** in the top right
+2. Pick a month or calendar week
+3. **📤 Share PDF** — via email, WhatsApp or save locally
 
 ---
 
-## 💾 Backup & Datensicherung
+## 💾 Backup & data safety
 
-| Ziel | Beschreibung |
+| Target | Description |
 |------|-------------|
-| ☁️ **Google Drive** | Tägliches Auto-Backup + monatliches PDF-Archiv in deine Cloud |
-| 📁 **Lokal** | Backup + PDF in einen Ordner deiner Wahl auf dem Gerät |
-| 🖥️ **Nextcloud** | Für volle Datenhoheit auf deiner eigenen Cloud |
+| ☁️ **Google Drive** | Daily auto-backup + monthly PDF archive to your cloud |
+| 📁 **Local** | Backup + PDF to a folder of your choice on the device |
+| 🖥️ **Nextcloud** | Full data sovereignty on your own cloud |
 
-> 💡 Alles optional — die App funktioniert auch komplett offline und ohne Backup.
-
----
-
-## 🔧 Hausmasta-Modus
-
-Für Profis, die mehr wollen! Aktiviere den **Hausmasta-Modus** in den Einstellungen und schalte zusätzliche Features frei:
-
-- 🖥️ **Nextcloud-Integration** — Backup auf deine eigene Cloud
-- 📦 **JSON Import/Export** — Daten manuell sichern und übertragen
-- 📄 **Automatisches PDF-Archiv** — monatliche PDF-Sicherung auf alle Ziele
-- ⏱️ **Minuten-Modus** — 1-Minuten- statt 15-Minuten-Schritte
-- 🏷️ **Tätigkeitscodes** — Branchen-Presets oder eigene Codes verwalten
-- 📋 **Nur Aufzeichnung** — Stundenerfassung ohne Soll/Ist-Berechnung
+> 💡 Everything is optional — the app works fully offline and without backups.
 
 ---
 
-## 📲 Installation
+## 🔧 Power-user mode
 
-1. Öffne den [**Google Play Store**](https://play.google.com/store/apps/details?id=com.estundnzettl.app) auf deinem Android-Gerät
-2. Tippe auf **Installieren**
-3. **Fertig!** 🎉
+For pros who want more! Enable **power-user mode** in settings to unlock extra features:
 
-> 💡 Die App wird über den Play Store automatisch aktualisiert — du hast immer die neueste Version.
-
----
-
-## 🛡️ Datensicherheit
-
-- 🔒 **Lokal first:** Alle Daten bleiben auf deinem Gerät
-- 💾 **Backups:** Optional — lokal, Google Drive oder Nextcloud
-- 🚫 **Kein Tracking:** Keine Werbung, keine Analytics, keine Datensammlung
-- ✅ **Volle Kontrolle:** Du entscheidest, wohin deine Daten gehen
+- 🖥️ **Nextcloud integration** — back up to your own cloud
+- 📦 **JSON import / export** — back up and move data manually
+- 📄 **Automatic PDF archive** — monthly PDF backups to every target
+- ⏱️ **Minute mode** — 1-minute instead of 15-minute steps
+- 🏷️ **Activity codes** — industry presets or your own codes
+- 📋 **Record only** — hour tracking without target/actual calculation
 
 ---
 
-## ☕ A Scherzl spendier'n
+## 🌐 Language
 
-Die App is **komplett gratis** und bleibt's a — **kane Werbung, kei Abo, nix**.
-Wennst magst und dir die App wos wert is, freu i mi über a kloane Anerkennung via Revolut. Is koa muas, aber a "Vergelt's Gott" hot no nie gschodt. 😄
+The app UI ships with full **German and English** translations. Settings → **Language** lets you switch any time; the device language is auto-detected on first launch.
+
+---
+
+## 📲 Install
+
+1. Open the [**Google Play Store**](https://play.google.com/store/apps/details?id=com.estundnzettl.app) on your Android device
+2. Tap **Install**
+3. **Done!** 🎉
+
+> 💡 The app updates automatically via the Play Store — you always have the latest version.
+
+---
+
+## 🛡️ Data security
+
+- 🔒 **Local first:** All data stays on your device
+- 💾 **Backups:** Optional — local, Google Drive or Nextcloud
+- 🚫 **No tracking:** No ads, no analytics, no data collection
+- ✅ **Full control:** You decide where your data goes
+
+---
+
+## ☕ Buy me a coffee
+
+The app is **completely free** and stays that way — **no ads, no subscription, nothing**.
+If you find it useful and feel like saying thanks, a small tip via Revolut is always appreciated. No obligation, but a little "cheers!" never hurt anyone. 😄
 
 <p align="center">
   <a href="https://revolut.me/mkainer/pocket/QAt1Q0Ntsb">
-    <img src="https://img.shields.io/badge/Revolut-A_Scherzl_spendier'n-0075EB?style=for-the-badge&logo=revolut&logoColor=white" alt="A Scherzl spendier'n via Revolut" />
+    <img src="https://img.shields.io/badge/Revolut-Buy_me_a_coffee-0075EB?style=for-the-badge&logo=revolut&logoColor=white" alt="Buy me a coffee via Revolut" />
   </a>
 </p>
 
 <p align="center">
-  <em>🏔️ Vergelt's Gott und pfiat di! 🏔️</em>
+  <em>🏔️ Thanks a lot and take care! 🏔️</em>
 </p>
 
 ---
 
-## ⚙️ Tech Stack
+## ⚙️ Tech stack
 
-| | Technologie |
+| | Technology |
 |---|-------------|
 | 🖥️ Frontend | TypeScript, React, Vite |
 | 📱 Mobile | Capacitor (Android) |
-| 🗄️ Datenbank | SQLite + localStorage (Dual-Write) |
-| 📄 PDF | html2pdf.js + React-Renderer |
+| 🗄️ Database | SQLite + localStorage (dual-write) |
+| 📄 PDF | html2pdf.js + React renderer |
 | ☁️ Cloud | Google Drive API, Nextcloud WebDAV |
+| 🌐 i18n | i18next + react-i18next |
 | 🧪 Tests | Vitest |
 
 ---
 
 ## 📝 Changelog
 
-Die vollständige Versionshistorie findest du in der App unter **Einstellungen → Änderungsprotokoll** oder in den [GitHub Releases](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases).
+The full version history is available in the app under **Settings → Changelog** or in the [GitHub Releases](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases).
 
 ---
 
-## 📄 Lizenz
+## 📄 License
 
-Der Quellcode dieses Projekts steht unter der **[MIT-Lizenz](./LICENSE)**.
+The source code of this project is licensed under the **[MIT License](./LICENSE)**.
 
-Du darfst den Code verwenden, kopieren, ändern und weiterverbreiten — solange der Copyright-Vermerk `Copyright (c) 2024-2026 Markus Kainer` und der Lizenztext enthalten bleiben. Kurz gesagt: **Wer den Code nutzt, muss mich erwähnen.** ✌️
-
----
-
-## ™️ Name & Logo
-
-Die MIT-Lizenz deckt **nur den Quellcode** ab. Der Name **"eStundnzettl"**, das App-Logo, das visuelle Erscheinungsbild und die Screenshots sind **nicht** Teil der Open-Source-Lizenz und bleiben geschützt.
-
-👉 Details dazu in der [**TRADEMARK.md**](./TRADEMARK.md).
-
-Kurzversion: Forks bitte gerne — aber unter eigenem Namen und mit eigenem Logo. 🙏
+You may use, copy, modify and redistribute the code — as long as the copyright notice `Copyright (c) 2024-2026 Markus Kainer` and the license text remain included. In short: **whoever uses the code must credit me.** ✌️
 
 ---
 
-## 📬 Kontakt
+## ™️ Name & logo
 
-Fragen, Lizenzanfragen, Markenrechts-Themen oder Bug-Reports?
+The MIT license covers **only the source code**. The name **"eStundnzettl"**, the app logo, the visual identity and the screenshots are **not** part of the open-source license and remain protected.
+
+👉 Details in [**TRADEMARK.md**](./TRADEMARK.md).
+
+Short version: forks are welcome — but under your own name and with your own logo. 🙏
+
+---
+
+## 📬 Contact
+
+Questions, licensing requests, trademark topics or bug reports?
 
 **[project@kainer.co.at](mailto:project@kainer.co.at)**
 
 ---
 
 <p align="center">
-  <strong>Ausgetüftelt 💭 von Markus 👨 — und mit Herz ❤️, Hirn 🧠 und KI-Agenten 🤖 gebaut.</strong><br />
+  <strong>Crafted 💭 by Markus 👨 — built with heart ❤️, brain 🧠 and AI agents 🤖.</strong><br />
   <br />
-  <em>🏔️ "Damit ka Stund verloren geht!" 🏔️</em>
+  <em>🏔️ "So that no hour gets lost!" 🏔️</em>
 </p>

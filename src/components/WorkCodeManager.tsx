@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { 
   X, 
   Plus, 
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export const WorkCodeManager = ({ isOpen, onClose }: Props) => {
+  const { t } = useTranslation();
   const {
     workCodes,
     isLoading,
@@ -122,7 +124,7 @@ export const WorkCodeManager = ({ isOpen, onClose }: Props) => {
             <div className="flex items-center gap-3">
               <ListChecks className="w-6 h-6 text-sky-500" />
               <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
-                Tätigkeitscodes
+                {t("workCodes.title")}
               </h2>
             </div>
             <button
@@ -142,7 +144,7 @@ export const WorkCodeManager = ({ isOpen, onClose }: Props) => {
               >
                 <span className="flex items-center gap-2">
                   <Download className="w-5 h-5 text-sky-500" />
-                  Preset laden
+                  {t("workCodes.loadPreset")}
                 </span>
                 <ChevronDown className={`w-5 h-5 transition-transform ${showPresetDropdown ? 'rotate-180' : ''}`} />
               </button>
@@ -165,7 +167,7 @@ export const WorkCodeManager = ({ isOpen, onClose }: Props) => {
                           {preset.name}
                         </div>
                         <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                          {preset.description} ({preset.codes.length} Codes)
+                          {preset.description} ({t("workCodes.presetCodesCount", { count: preset.codes.length })})
                         </div>
                       </button>
                     ))}
@@ -178,12 +180,12 @@ export const WorkCodeManager = ({ isOpen, onClose }: Props) => {
           {/* Code Liste */}
           <div className="flex-1 overflow-y-auto p-4">
             {isLoading ? (
-              <div className="text-center text-zinc-500 py-8">Laden...</div>
+              <div className="text-center text-zinc-500 py-8">{t("workCodes.loading")}</div>
             ) : !hasAnyCodes ? (
               <div className="text-center text-zinc-500 dark:text-zinc-400 py-8">
                 <ListChecks className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>Keine Codes vorhanden.</p>
-                <p className="text-sm mt-1">Lade ein Preset oder erstelle eigene Codes.</p>
+                <p>{t("workCodes.empty")}</p>
+                <p className="text-sm mt-1">{t("workCodes.emptyHint")}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -255,7 +257,7 @@ export const WorkCodeManager = ({ isOpen, onClose }: Props) => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleAddCode();
                 }}
-                placeholder="Neuen Code hinzufügen..."
+                placeholder={t("workCodes.newCodePlaceholder")}
                 className="flex-1 px-4 py-3 bg-zinc-100 dark:bg-zinc-700 border-0 rounded-xl text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
               <button
@@ -273,7 +275,7 @@ export const WorkCodeManager = ({ isOpen, onClose }: Props) => {
                 onClick={() => setShowDeleteAllConfirm(true)}
                 className="w-full mt-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
               >
-                Alle Codes löschen
+                {t("workCodes.deleteAll")}
               </button>
             )}
           </div>
@@ -298,23 +300,23 @@ export const WorkCodeManager = ({ isOpen, onClose }: Props) => {
               >
                 <div className="flex items-center gap-3 text-amber-500 mb-4">
                   <AlertTriangle className="w-6 h-6" />
-                  <h3 className="font-bold text-lg">Achtung!</h3>
+                  <h3 className="font-bold text-lg">{t("workCodes.presetReplaceWarning.title")}</h3>
                 </div>
                 <p className="text-zinc-600 dark:text-zinc-300 mb-6">
-                  Das Laden eines Presets ersetzt alle deine aktuellen Codes. Fortfahren?
+                  {t("workCodes.presetReplaceWarning.message")}
                 </p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowPresetConfirm(null)}
                     className="flex-1 px-4 py-2 bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-xl hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
                   >
-                    Abbrechen
+                    {t("common.cancel")}
                   </button>
                   <button
                     onClick={confirmLoadPreset}
                     className="flex-1 px-4 py-2 bg-sky-500 text-white rounded-xl hover:bg-sky-600 transition-colors"
                   >
-                    Ja, ersetzen
+                    {t("workCodes.presetReplaceWarning.confirm")}
                   </button>
                 </div>
               </motion.div>
@@ -341,23 +343,23 @@ export const WorkCodeManager = ({ isOpen, onClose }: Props) => {
               >
                 <div className="flex items-center gap-3 text-red-500 mb-4">
                   <AlertTriangle className="w-6 h-6" />
-                  <h3 className="font-bold text-lg">Alle löschen?</h3>
+                  <h3 className="font-bold text-lg">{t("workCodes.deleteAllWarning.title")}</h3>
                 </div>
                 <p className="text-zinc-600 dark:text-zinc-300 mb-6">
-                  Möchtest du wirklich alle Tätigkeitscodes löschen? Dies kann nicht rückgängig gemacht werden.
+                  {t("workCodes.deleteAllWarning.message")}
                 </p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowDeleteAllConfirm(false)}
                     className="flex-1 px-4 py-2 bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-xl hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
                   >
-                    Abbrechen
+                    {t("common.cancel")}
                   </button>
                   <button
                     onClick={handleDeleteAll}
                     className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
                   >
-                    Ja, löschen
+                    {t("workCodes.deleteAllWarning.confirm")}
                   </button>
                 </div>
               </motion.div>

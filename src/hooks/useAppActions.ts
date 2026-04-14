@@ -21,7 +21,7 @@
  * …)
  */
 
-import type { Entry, UserData, WorkCode, DeleteTarget, FormState } from '../types';
+import type { Entry, UserData, WorkCode, DeleteTarget, FormState, CalculationConfig } from '../types';
 import type { Locale } from "../locales/types";
 import { useTimerActions } from "./actions/useTimerActions";
 import { useEntryActions } from "./actions/useEntryActions";
@@ -50,6 +50,7 @@ interface UseAppActionsProps {
   setDeleteTarget: (target: DeleteTarget | null) => void;
   setShowOnboarding: (show: boolean) => void;
   locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
 }
 
 export function useAppActions({
@@ -85,6 +86,8 @@ export function useAppActions({
   setShowOnboarding,
   // Locale
   locale,
+  // Rechenkonfiguration
+  calculationConfig,
 }: UseAppActionsProps) {
   const { handleStartLive, handleStopLive } = useTimerActions({
     form,
@@ -104,6 +107,7 @@ export function useAppActions({
     getDefaultCode,
     setView,
     locale,
+    calculationConfig,
   });
 
   const { executeDelete } = useDeleteActions({

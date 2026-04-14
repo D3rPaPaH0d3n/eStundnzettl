@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowLeft, Settings as SettingsIcon, FileBarChart } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import AppLogo from "../assets/logo.png";
 import type { Entry } from "../types";
 
@@ -21,6 +22,7 @@ export default function AppHeader({
   onOpenSettings,
   onOpenReport,
 }: AppHeaderProps) {
+  const { t } = useTranslation();
   return (
     <header
       className="fixed top-0 left-0 right-0 bg-zinc-900 text-white p-4 pb-6 shadow-xl z-50 w-full transition-all"
@@ -31,7 +33,7 @@ export default function AppHeader({
           {view !== "dashboard" && view !== "report" ? (
             <button
               type="button"
-              aria-label="Zurück zur Übersicht"
+              aria-label={t("header.backToOverview")}
               onClick={onNavigateBack}
               className="p-2 hover:bg-zinc-700 rounded-full transition-colors"
             >
@@ -39,7 +41,7 @@ export default function AppHeader({
             </button>
           ) : (
             <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-zinc-800 shadow-inner">
-              <img src={AppLogo} alt="Logo" className="w-full h-full object-contain" />
+              <img src={AppLogo} alt={t("header.logoAlt")} className="w-full h-full object-contain" />
             </div>
           )}
           <div>
@@ -48,7 +50,7 @@ export default function AppHeader({
             </h1>
             {view === "dashboard" && (
               <p className="text-xs text-zinc-400 font-medium mt-0.5 italic">
-                Damit ka Stund verlorn geht<span className="ml-1">⏱️</span>
+                {t("app.subtitle")}<span className="ml-1">⏱️</span>
               </p>
             )}
           </div>
@@ -58,7 +60,7 @@ export default function AppHeader({
             <button
               type="button"
               data-tour="settings"
-              aria-label="Einstellungen öffnen"
+              aria-label={t("header.settings")}
               onClick={onOpenSettings}
               className="p-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors active:scale-95"
             >
@@ -67,7 +69,7 @@ export default function AppHeader({
             <motion.button
               type="button"
               data-tour="report"
-              aria-label="Bericht öffnen"
+              aria-label={t("header.report")}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onOpenReport}

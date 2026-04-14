@@ -1,5 +1,6 @@
 import React, { useRef, useCallback, useMemo, Suspense } from "react";
 import { Toaster } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import type { Entry, BackupPayload } from "./types";
 import { getLocale } from "./locales";
 
@@ -7,6 +8,7 @@ import { STORAGE_KEYS, WORK_CODE } from "./hooks/constants";
 import { useWorkCodes } from "./hooks/useWorkCodes";
 import { useEntries } from "./hooks/useEntries";
 import { useSettings } from "./hooks/useSettings";
+import { useCalculationConfig } from "./hooks/useCalculationConfig";
 import { useAutoBackup } from "./hooks/useAutoBackup";
 import { useAutoPdfArchive } from "./hooks/useAutoPdfArchive";
 import { useLiveTimer } from "./hooks/useLiveTimer";
@@ -36,6 +38,7 @@ import { migrateStorageKeys } from "./utils/migration";
 migrateStorageKeys();
 
 export default function App() {
+  const { t } = useTranslation();
   // --- DATA HOOKS ---
   const { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries } = useEntries();
   const {
@@ -48,6 +51,12 @@ export default function App() {
   } = useSettings();
   // Locale-Objekt aus gespeicherter LocaleId auflösen (Fallback: AT)
   const locale = useMemo(() => getLocale(localeId), [localeId]);
+  // Per-User Rechenkonfiguration (überschreibt Locale-Defaults)
+  const {
+    calculationConfig,
+    setCalculationConfig,
+    resetCalculationConfigToLocale,
+  } = useCalculationConfig({ locale, localeId, userData });
   const { workCodes, hasAnyCodes, loadWorkCodes } = useWorkCodes();
   const getDefaultCode = useLastCode({ hasAnyCodes, workCodes });
   const form = useFormState({ getDefaultCode });
@@ -55,7 +64,7 @@ export default function App() {
 
   const { triggerManualBackup } = useAutoBackup(entries, userData, autoBackup);
   const { lastRun: pdfArchiveLastRun, lastError: pdfArchiveLastError, performRun: pdfArchivePerformRun } =
-    useAutoPdfArchive(entries, userData, workCodes);
+    useAutoPdfArchive(entries, userData, workCodes, locale, calculationConfig);
 
   const {
     attachments, addAttachment, removeAttachment, removeAttachmentsForEntry,
@@ -64,7 +73,7 @@ export default function App() {
 
   const exportPayloadRef = useRef<BackupPayload | null>(null);
   const { showExportModal, setShowExportModal, exportData, handleExportToFolder, handleExportShare } = useExport({
-    entries, userData, workCodes, attachments, exportPayloadRef,
+    entries, userData, workCodes, attachments, exportPayloadRef, calculationConfig,
   });
   const { handleImport } = useImport({
     importEntries, setUserData, importWorkCodes: loadWorkCodes,
@@ -91,7 +100,7 @@ export default function App() {
     entriesWithHolidays, groupedByWeek, stats,
     overtime, progressPercent, todayTarget,
     lastWorkEntry, uniqueProjects,
-  } = useAppData({ entries, userData, viewMonth, viewYear, allEntries: entries, locale });
+  } = useAppData({ entries, userData, viewMonth, viewYear, allEntries: entries, locale, calculationConfig });
 
   // --- HANDLERS ---
   const {
@@ -104,6 +113,7 @@ export default function App() {
     startTimer, stopTimer, setUserData, setAutoBackup,
     setView, setCurrentDate, setDeleteTarget, setShowOnboarding,
     locale,
+    calculationConfig,
   });
 
   // --- EFFECTS ---
@@ -123,7 +133,7 @@ export default function App() {
       <Toaster position="bottom-center" containerStyle={{ bottom: 40 }} toastOptions={{ style: { background: '#27272a', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '500', padding: '12px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }, success: { iconTheme: { primary: '#10b981', secondary: '#fff' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } } }} />
 
       {showOnboarding && (
-        <Suspense fallback={<SkeletonScreen label="Einrichtung wird geladen..." />}>
+        <Suspense fallback={<SkeletonScreen label={t("skeleton.onboarding")} />}>
           <OnboardingWizard
             onComplete={handleOnboardingFinishWithTour}
             setUserData={setUserData}
@@ -133,6 +143,7 @@ export default function App() {
             setLocalBackupEnabled={() => {}}
             setTheme={setTheme}
             setLocale={setLocale}
+            setCalculationConfig={setCalculationConfig}
           />
         </Suspense>
       )}
@@ -141,8 +152,8 @@ export default function App() {
         isOpen={!!deleteTarget}
         onClose={handleCloseDeleteModal}
         onConfirm={() => executeDelete(deleteTarget)}
-        title={deleteTarget?.type === 'all' ? "Alles löschen?" : "Eintrag löschen?"}
-        message={deleteTarget?.type === 'all' ? "Möchtest du wirklich alle Einträge unwiderruflich löschen? Auch dein Profil wird zurückgesetzt." : "Möchtest du diesen Eintrag wirklich entfernen?"}
+        title={deleteTarget?.type === 'all' ? t("app.deleteAllTitle") : t("app.deleteEntryTitle")}
+        message={deleteTarget?.type === 'all' ? t("app.deleteAllMessage") : t("app.deleteEntryMessage")}
       />
 
       {/* Locale-Migration für bestehende User: Nur zeigen, wenn noch keine
@@ -257,6 +268,9 @@ export default function App() {
         handleTourClose={handleTourClose}
         locale={locale}
         setLocale={setLocale}
+        calculationConfig={calculationConfig}
+        setCalculationConfig={setCalculationConfig}
+        resetCalculationConfigToLocale={resetCalculationConfigToLocale}
       />
     </div>
   );

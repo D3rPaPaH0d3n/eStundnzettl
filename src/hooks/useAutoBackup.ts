@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { App } from "@capacitor/app";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import type { Entry, UserData } from '../types';
 import { uploadOrUpdateFile, getValidToken } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
@@ -109,6 +110,7 @@ async function dualWrite(lsKey: string, sqlKey: string, value: string | number |
  *   Backoffs und überschreibt Hash-Skip
  */
 export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: boolean) {
+  const { t } = useTranslation();
   const latestDataRef = useRef<{ entries: Entry[]; userData: UserData }>({ entries, userData });
   const lastHash = useRef<string>("");
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -162,7 +164,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
     await dualWrite(STORAGE_KEYS.BACKUP_BACKOFF_UNTIL, "backup_backoff_until", backoffUntilIso);
     setBackupFailCount(newCount);
     if (newCount === 5) {
-      toast.error("Cloud-Backup fehlgeschlagen (5x). Bitte Einstellungen prüfen.", { duration: 8000 });
+      toast.error(t("toasts.autoBackup.failed5x"), { duration: 8000 });
     }
     logger.warn("Cloud-Backup fehlgeschlagen:", error);
   };
@@ -273,7 +275,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
       }
 
       if (source === "Manual") {
-        toast.success("Backup abgeschlossen");
+        toast.success(t("toasts.autoBackup.completed"));
       }
     } catch {
       // Silent fail

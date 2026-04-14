@@ -152,10 +152,17 @@ const renderDashboard = (opts: RenderOptions = {}) => {
 describe("Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Dashboard's expanded-weeks default comes from the real `new Date()`,
+    // so freeze "now" to the fixture-month to keep week 15 expanded by
+    // default and make these assertions deterministic regardless of wall clock.
+    vi.useFakeTimers();
+    // 2026-04-07 is Tuesday of ISO week 15 — matches the test entry dates.
+    vi.setSystemTime(new Date("2026-04-07T12:00:00Z"));
   });
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
   });
 
   it("rendert ohne Crash mit Minimal-Props", () => {

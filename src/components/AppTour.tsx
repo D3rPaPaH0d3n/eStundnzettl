@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useLayoutEffect, useCallback } from "react";
+import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import {
   Sparkles,
   Play,
@@ -30,74 +31,27 @@ import {
  * unabhängig von Safe-Area, Theme oder Gerätegröße.
  */
 
-interface TourStep {
+/**
+ * Statische Tour-Schritt-Definition — Text kommt zur Laufzeit aus i18n
+ * via `translationKey` und wird im Component-Body über t() aufgelöst.
+ */
+interface TourStepDefinition {
   id: string;
+  translationKey: string;      // passt auf appTour.steps.<key>
   icon: React.ComponentType<any>;
   color: string;
-  title: string;
-  body: string;
   target: string | null;
-  hint?: string;
+  hasHint?: boolean;
 }
 
-const steps: TourStep[] = [
-  {
-    id: "welcome",
-    icon: Sparkles,
-    color: "emerald",
-    title: "Kurze Tour gefällig?",
-    body: "Servus! Lass uns in ein paar kleinen Schritten durchgehen, wo du was findest. Du kannst jederzeit auf das X tippen und überspringen.",
-    target: null,
-  },
-  {
-    id: "dashboard",
-    icon: BarChart3,
-    color: "emerald",
-    title: "Deine Übersicht",
-    body: "Hier siehst du auf einen Blick: Ist-Stunden, Soll-Stunden und deine Überstunden für den gewählten Monat. Wochen kannst du antippen zum Auf- und Zuklappen.",
-    target: null,
-  },
-  {
-    id: "fab-tap",
-    icon: Plus,
-    color: "emerald",
-    title: "Manueller Eintrag",
-    body: "Der grüne Knopf rechts unten ist dein Hauptwerkzeug. Ein kurzes Tippen öffnet sofort das Formular für einen neuen Eintrag — perfekt zum Nachtragen.",
-    target: '[data-tour="fab"]',
-  },
-  {
-    id: "fab-timer",
-    icon: ArrowUp,
-    color: "emerald",
-    title: "Live-Timer starten",
-    body: "Derselbe Knopf startet den Live-Timer: einfach lang draufdrücken, bis er grün wird, und dann nach oben wischen. Nochmal tippen stoppt den Timer und legt den Eintrag automatisch an.",
-    target: '[data-tour="fab"]',
-    hint: "Lang drücken + hochwischen",
-  },
-  {
-    id: "report",
-    icon: FileBarChart,
-    color: "emerald",
-    title: "Stundenzettel als PDF",
-    body: "Oben rechts der grüne Button: dein fertiger Stundenzettel zum Anschauen, Teilen oder Ausdrucken. Mit Unterschrift, Notizen und deinem Logo.",
-    target: '[data-tour="report"]',
-  },
-  {
-    id: "settings",
-    icon: SettingsIcon,
-    color: "zinc",
-    title: "Einstellungen & mehr",
-    body: "Das Zahnrad ist deine Schaltzentrale: Profil, Arbeitszeit, eigene Tätigkeits-Codes, Backup, Theme und die Hilfe. Alles lässt sich jederzeit ändern.",
-    target: '[data-tour="settings"]',
-  },
-  {
-    id: "done",
-    icon: Check,
-    color: "emerald",
-    title: "Das war's schon!",
-    body: "Du kennst jetzt alle wichtigen Ecken. Falls du was nochmal nachlesen willst: Einstellungen → Hilfe. Viel Spaß mit dem eStundnzettl!",
-    target: null,
-  },
+const STEP_DEFINITIONS: TourStepDefinition[] = [
+  { id: "welcome", translationKey: "welcome", icon: Sparkles, color: "emerald", target: null },
+  { id: "dashboard", translationKey: "dashboard", icon: BarChart3, color: "emerald", target: null },
+  { id: "fab-tap", translationKey: "fabTap", icon: Plus, color: "emerald", target: '[data-tour="fab"]' },
+  { id: "fab-timer", translationKey: "fabTimer", icon: ArrowUp, color: "emerald", target: '[data-tour="fab"]', hasHint: true },
+  { id: "report", translationKey: "report", icon: FileBarChart, color: "emerald", target: '[data-tour="report"]' },
+  { id: "settings", translationKey: "settings", icon: SettingsIcon, color: "zinc", target: '[data-tour="settings"]' },
+  { id: "done", translationKey: "done", icon: Check, color: "emerald", target: null },
 ];
 
 const colorMap: Record<string, { bg: string; text: string; ring: string; btn: string }> = {
@@ -178,7 +132,21 @@ interface Props {
 }
 
 const AppTour = ({ onClose }: Props) => {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(0);
+
+  // Statische Definition + übersetzte Texte kombinieren.
+  const steps = useMemo(
+    () =>
+      STEP_DEFINITIONS.map((def) => ({
+        ...def,
+        title: t(`appTour.steps.${def.translationKey}.title`),
+        body: t(`appTour.steps.${def.translationKey}.body`),
+        hint: def.hasHint ? t(`appTour.steps.${def.translationKey}.hint`) : undefined,
+      })),
+    [t],
+  );
+
   const step = steps[index];
   const Icon = step.icon;
   const colors = colorMap[step.color] || colorMap.emerald;
@@ -301,7 +269,7 @@ const AppTour = ({ onClose }: Props) => {
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Tour überspringen"
+                aria-label={t("appTour.skipAria")}
                 className="p-1.5 -mr-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
               >
                 <X size={16} />
@@ -339,7 +307,7 @@ const AppTour = ({ onClose }: Props) => {
                 disabled={isFirst}
                 className="px-3 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
               >
-                <ArrowLeft size={14} /> Zurück
+                <ArrowLeft size={14} /> {t("common.back")}
               </button>
 
               <span className="text-[11px] font-bold text-zinc-400">
@@ -351,7 +319,7 @@ const AppTour = ({ onClose }: Props) => {
                 onClick={handleNext}
                 className={`px-4 py-2 text-xs font-bold rounded-lg text-white transition-colors flex items-center gap-1 ${colors.btn}`}
               >
-                {isLast ? "Fertig" : "Weiter"}
+                {isLast ? t("appTour.finish") : t("appTour.next")}
                 {isLast ? <Check size={14} /> : <ArrowRight size={14} />}
               </button>
             </div>

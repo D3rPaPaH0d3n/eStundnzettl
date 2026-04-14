@@ -5,20 +5,474 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",
+    "delete": "Delete",
+    "select": "Select",
+    "apply": "Apply",
     "loading": "Loading..."
   },
   "app": {
-    "subtitle": "Mobile time tracking"
+    "subtitle": "Mobile time tracking",
+    "deleteEntryTitle": "Delete entry?",
+    "deleteEntryMessage": "Do you really want to remove this entry?",
+    "deleteAllTitle": "Delete everything?",
+    "deleteAllMessage": "Do you really want to permanently delete all entries? Your profile will also be reset."
   },
   "dashboard": {
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
-    "selectMonth": "Select month"
+    "selectMonth": "Select month",
+    "monthPickerAria": "Select month (currently {{value}})",
+    "actual": "ACTUAL",
+    "target": "TARGET",
+    "balance": "Balance",
+    "driveTime": "Drive time ({{code}})",
+    "overtimeShort": {
+      "extra": "ET",
+      "overtime": "OT"
+    },
+    "recentEntries": "Recent entries (by calendar week)",
+    "noEntries": "No entries yet.",
+    "calendarWeek": "Calendar week",
+    "calendarWeekShort": "CW {{week}}",
+    "total": "Total",
+    "pause": "Break: {{minutes}} min",
+    "noPause": "No break",
+    "documentsLabel": "Documents",
+    "documentsCount_one": "{{count}} document",
+    "documentsCount_other": "{{count}} documents"
+  },
+  "entryTypes": {
+    "holiday": "Holiday",
+    "allDay": "All day",
+    "paidOff": "Paid off",
+    "timeComp": "Time off",
+    "vacation": "Vacation",
+    "sick": "Sick"
+  },
+  "entryForm": {
+    "copyLastError": "No previous entry found.",
+    "copyLastSuccess": "Data copied!",
+    "quickAddSuccess": "Activity added!",
+    "codePlaceholder": "Please select",
+    "startTime": "Start time",
+    "endTime": "End time",
+    "selectActivity": "Select activity",
+    "entryTypeLabel": "Entry type",
+    "asLast": "Same as last",
+    "types": {
+      "work": "Work",
+      "drive": "Drive",
+      "sick": "Sick",
+      "vacation": "Vacation",
+      "timeCompShort": "TO"
+    },
+    "driveSubtype": {
+      "arrival": "Arrival/Departure",
+      "arrivalBadge": "Paid",
+      "driveTime": "Drive time",
+      "driveTimeBadge": "Unpaid"
+    },
+    "autoCalc": {
+      "title": "Automatic calculation",
+      "vacationType": "Vacation days",
+      "sickType": "Sick leave",
+      "timeCompType": "Time off",
+      "message": "For {{type}}, the daily target time is credited automatically."
+    },
+    "mode": {
+      "auto": "Automatic",
+      "manual": "Manual"
+    },
+    "date": "Date",
+    "start": "Start",
+    "end": "End",
+    "pause": "Break",
+    "noPause": "None",
+    "pauseMinutes": "{{minutes}} min",
+    "activity": "Activity",
+    "newActivity": "New",
+    "quickAddPlaceholder": "e.g. 99 - Other",
+    "distanceOrNote": "Route / Note",
+    "project": "Project",
+    "projectPlaceholder": "…",
+    "knownProjects": "Known projects"
+  },
+  "reports": {
+    "title": "Timesheet",
+    "preview": "Preview",
+    "fullMonth": "Entire month",
+    "employeeAlt": "Employee",
+    "monthWithWeek": "{{month}} (CW {{week}})",
+    "columns": {
+      "date": "Date",
+      "time": "Time",
+      "project": "Project",
+      "code": "Code",
+      "hours": "Hrs.",
+      "balance": "Balance"
+    },
+    "pauseMin": "Break: {{minutes}}m",
+    "noPauseUpper": "NO BREAK",
+    "publicHoliday": "Public holiday",
+    "documentsLabel": "Documents:",
+    "summary": {
+      "title": "Summary",
+      "work": "Work (incl. arrival):",
+      "holidays": "Holidays:",
+      "vacation": "Vacation:",
+      "timeComp": "Time off:",
+      "sickness": "Sick leave:",
+      "totalActual": "Total (actual):",
+      "targetTime": "Target time:",
+      "balance": "Balance:",
+      "extraHours": "Extra hours:",
+      "overtime": "Overtime:",
+      "driveUnpaid": "Drive time (unpaid):"
+    },
+    "vacationBalance": {
+      "allowance": "Vacation allowance:",
+      "days": "days",
+      "carryoverPositive": "Carryover from previous year:",
+      "carryoverNegative": "Already used:",
+      "used": "Taken ({{year}}):",
+      "remaining": "Remaining:"
+    },
+    "notesTitle": "Notes:",
+    "largeExport": {
+      "title": "Large export",
+      "message": "{{count}} entries will be exported. On older devices this may cause memory issues. Recommended: export one month or a single calendar week at a time.",
+      "confirm": "Export anyway"
+    },
+    "toast": {
+      "downloadStarted": "🖨️ Download started!",
+      "readyToShare": "Ready to share",
+      "savedToDocuments": "Saved to 'Documents/eStundnzettl'",
+      "error": "Error: {{message}}"
+    },
+    "noteModal": {
+      "title": "Note for PDF",
+      "placeholder": "E.g. additional info, bank details, etc…",
+      "done": "Done"
+    },
+    "pdfElementMissing": "PDF element missing"
+  },
+  "drawers": {
+    "timePicker": {
+      "title": "Select time",
+      "confirmAria": "Confirm selection"
+    },
+    "decimalDuration": {
+      "title": "Hours"
+    }
+  },
+  "helpModal": {
+    "title": "Guide & Help",
+    "subtitle": "Your tour of eStundnzettl",
+    "intro": {
+      "badge": "Hello and welcome!",
+      "body": "No more paper slips! With eStundnzettl you log your work hours, drives, vacation and more straight from your phone. At the end of the month a single tap produces a clean PDF."
+    },
+    "step1": {
+      "title": "Log hours",
+      "lead": "You have two ways to log your hours:",
+      "timerTitle": "Live timer",
+      "timerBody": "Long-press the <plus>+</plus> button in the bottom right and swipe up. The timer runs until you stop it with a tap. The app then fills in start, end and duration automatically.",
+      "manualTitle": "Enter manually",
+      "manualBody": "Tap the <plus>+</plus> button. Pick start and end time, break and project. With <b>\"Same as last\"</b> you copy the times from yesterday — handy when your hours stay the same!"
+    },
+    "step2": {
+      "title": "Drive times",
+      "lead": "When creating an entry, pick the type <b>\"Drive\"</b> at the top.",
+      "arrival": "<b>Arrival/Departure:</b> Paid working time — counts towards the daily target.",
+      "drive": "<b>Drive time:</b> Unpaid travel — reported separately."
+    },
+    "step3": {
+      "title": "Vacation, sick & time off",
+      "body": "Just pick <b>Vacation</b>, <b>Sick</b> or <b>TO</b> (time off). The app automatically credits the right target hours for that day. You can also enter times manually if needed."
+    },
+    "step4": {
+      "title": "Attach documents",
+      "body": "You can attach photos or files to any entry — e.g. delivery notes, receipts or work reports. Tap <b>\"Documents\"</b> on the entry. Attachments are bundled automatically when you export the PDF."
+    },
+    "step5": {
+      "title": "Month close & PDF",
+      "preview": "Tap the <icon/> icon in the top right. There you see a preview of your timesheet — filterable by month or week.",
+      "share": "Check it, then <b>share as PDF</b> — via email, WhatsApp or just save it locally. Done!"
+    },
+    "step6": {
+      "title": "Backup & data safety",
+      "lead": "Your data is precious — back it up!",
+      "gdriveTitle": "Google Drive",
+      "gdriveBody": "Connect your Google account in settings. The app will back up to the cloud every day automatically.",
+      "localTitle": "Local backup",
+      "localBody": "Pick a folder on your device. The app backs up there every day — completely offline."
+    },
+    "step7": {
+      "title": "Power-user mode",
+      "lead": "For pros who want more! Enable <b>Power-user mode</b> at the very bottom of settings. Extra features then become visible:",
+      "nextcloud": "<b>Nextcloud backup</b> — for your own cloud",
+      "jsonIO": "<b>JSON import/export</b> — back up data manually",
+      "pdfArchive": "<b>PDF archive</b> — automatic monthly PDF backup",
+      "minuteMode": "<b>Minute mode</b> — 1-minute instead of 15-minute steps",
+      "codes": "<b>Activity codes</b> — industry presets or your own codes",
+      "recordOnly": "<b>Record only</b> — without target/actual calculation"
+    },
+    "tips": {
+      "title": "Tips & tricks",
+      "deleteTitle": "Delete",
+      "deleteBody": "Swipe an entry to the <b>left</b> to delete it.",
+      "editTitle": "Edit",
+      "editBody": "Tap an entry to <b>edit</b> it.",
+      "autoBackupTitle": "Auto backup",
+      "autoBackupBody": "Once connected, the app backs up <b>daily, automatically</b>.",
+      "themeTitle": "Theme",
+      "themeBody": "Light, dark or <b>System</b> — pick your favorite in settings."
+    },
+    "tagline": "\"So not a single hour gets lost!\""
+  },
+  "onboarding": {
+    "nav": {
+      "back": "Back",
+      "next": "Next",
+      "finish": "Looks good"
+    },
+    "welcome": {
+      "logoAlt": "eStundnzettl logo",
+      "hello": "Hello! 👋",
+      "glad": "Great to have you here.",
+      "intro": "Your <brand>eStundnzettl</brand> — simple time tracking that just works. No bells, no whistles.",
+      "badgeMobile": "All on your phone",
+      "badgeOffline": "Works offline",
+      "badgePrivate": "Your data stays yours",
+      "startNew": "Let's go — fresh setup",
+      "restore": "I already have a backup",
+      "demo": "Just take a look (demo)"
+    },
+    "profile": {
+      "title": "Tell us who you are",
+      "subtitle": "So your timesheet carries your name.",
+      "privacyHint": "<b>No worries:</b> Your name, photo and all other data stay on your phone only. Nothing leaves unless you want it to.",
+      "photoAlt": "Profile",
+      "photoLabel": "Profile picture (optional)",
+      "nameLabel": "Your name",
+      "namePlaceholder": "John Doe",
+      "companyLabel": "Company",
+      "companyPlaceholder": "Acme Ltd.",
+      "roleLabel": "Role / job title",
+      "rolePlaceholder": "e.g. technician, waiter, nurse, office…"
+    },
+    "summary": {
+      "title": "All set! 🎉",
+      "bodyRestore": "Your data is back. Let's show you what the app can do.",
+      "bodyFresh": "Everything is set up. Now we'll show you in a few clicks where things live.",
+      "tourHint": "Quick tour — just a minute",
+      "finishButton": "Go, show me the app"
+    },
+    "backup": {
+      "titleSetup": "Better safe than sorry",
+      "titleRestore": "Restore backup",
+      "subtitleSetup": "Want to back up your data as well?",
+      "subtitleRestore": "Where is your backup?",
+      "optionalHint": "<b>Totally optional.</b> You can simply skip this step — the app works without a backup too. You can set it up later at any time.",
+      "bonusHint": "<b>Bonus:</b> If you enable a backup, the app will <b>automatically add a ready-made PDF timesheet every month</b> — for handing in or archiving.",
+      "gdrive": {
+        "title": "Google Drive",
+        "subtitle": "Daily backup + monthly PDF to your cloud"
+      },
+      "local": {
+        "title": "Save on the phone",
+        "subtitle": "Backup + PDF in a folder of your choice"
+      },
+      "nextcloud": {
+        "title": "Nextcloud",
+        "subtitle": "On your own cloud — full data sovereignty",
+        "connectedAs": "Connected as {{user}}",
+        "awaiting": "Waiting for Nextcloud login…",
+        "urlPlaceholder": "https://cloud.example.com",
+        "connectButton": "Connect to Nextcloud"
+      },
+      "skipHint": "Nothing for you? No problem — just tap \"Next\".",
+      "restoreFromGdrive": "From Google Drive",
+      "restoreFromNextcloud": "From Nextcloud",
+      "restoreFromFolder": "Local folder",
+      "restoreFromFile": "File (.json)",
+      "ncLoading": "Loading…"
+    },
+    "locale": {
+      "title": "Hours calculation",
+      "subtitle": "Pick which rules your app should use.",
+      "infoHint": "You can change this any time in settings. Controls automatic holidays, half-days (Dec 24/31) and the split into extra hours / overtime.",
+      "neutralTitle": "Neutral",
+      "neutralDescription": "No automatic holidays, no half-days, no extra-hours/overtime split. For all professions and countries.",
+      "austriaTitle": "Austria",
+      "austriaDescription": "13 public holidays, Dec 24/31 halved, extra hours/overtime per Austrian labor law (AZG).",
+      "germanyTitle": "Germany",
+      "germanyDescription": "Federal + regional holidays, 40h week, extra hours/overtime.",
+      "switzerlandTitle": "Switzerland",
+      "switzerlandDescription": "Cantonal holidays, half-days (Dec 24/31), overtime from 45h/week (ArG).",
+      "stateLabel": "State",
+      "kantonLabel": "Canton",
+      "stateDrawerTitle": "Select state",
+      "kantonDrawerTitle": "Select canton",
+      "customTitle": "Custom plan",
+      "customDescription": "I'll put together my own calculation rules in the next step (overtime, sick leave, holidays)."
+    },
+    "workSchedule": {
+      "title": "How do you want to track?",
+      "subtitle": "Pick the mode that fits you best.",
+      "modeTargetActual": "Target/Actual",
+      "modeTargetActualHint": "With overtime & balance",
+      "modeSimple": "Simple",
+      "modeSimpleHint": "Just record hours",
+      "simpleInfo": "Your hours are summed weekly and monthly — without target, balance or overtime. You can change the mode later in settings.",
+      "customInfo": "Set your hours per day directly. Below you'll find optional presets you can apply if you want — later also changeable at any time in settings.",
+      "dailyHoursTitle": "Daily hours (custom)",
+      "weeklyHours": "Weekly hours:",
+      "presetsTitle": "Presets (optional)",
+      "minuteInputTitle": "Track to the minute",
+      "minuteInputHint": "Otherwise in practical 15-min steps",
+      "minuteInputAria": "Toggle minute-level time entry"
+    },
+    "workCodes": {
+      "title": "Activities",
+      "subtitle": "Pick which codes you want to categorise your hours with.",
+      "basic": {
+        "allgemeinTitle": "General",
+        "allgemeinSubtitle": "5 neutral codes (work, office, meeting, drive time, other)",
+        "leerTitle": "No codes",
+        "leerSubtitle": "Start empty — you add your activities later"
+      },
+      "industryTitle": "Industry presets (optional)",
+      "codeCount": "{{description}} ({{count}} codes)",
+      "footerHint": "You can change or extend codes any time in settings."
+    },
+    "calc": {
+      "title": "Your custom plan",
+      "subtitle": "Set how we should calculate — or leave the defaults.",
+      "infoHint": "No stress — the defaults are fine. You can change every rule later in settings, any time.",
+      "contractedHoursAuto": "Calculated automatically from your work days.",
+      "advancedOpen": "Open advanced",
+      "advancedClose": "Close advanced",
+      "holidaysTitle": "Holidays",
+      "halfDaysTitle": "Half-days",
+      "customHolidayTitle": "Add your own holiday",
+      "noHolidays": "No holidays active yet.",
+      "noHalfDays": "No half-days configured.",
+      "classicHalfDays": "Add Dec 24 & Dec 31",
+      "vacationTitle": "Vacation days",
+      "preview": {
+        "overtimeNone": "Example: 10 h worked at {{weekTarget}}/week → balance {{balance}}.",
+        "overtimeAll": "Example: 10 h worked → {{balance}} overtime.",
+        "overtimeSplit": "Example: 10 h worked → {{ma}} extra hours, {{ue}} overtime.",
+        "sickCap": "Example: 4 h worked + then sick at 8.5 h target → sick counts 4.5 h (up to target).",
+        "sickAdditive": "Example: 4 h worked + 8 h sick → 12 h total.",
+        "sickIgnore": "Example: 4 h worked + sick → only 4 h work, sick is dropped."
+      }
+    },
+    "toast": {
+      "demoLoaded": "Demo data loaded! You can try out the app now.",
+      "nameRequired": "Please enter your name.",
+      "localeRequired": "Please pick an hours calculation.",
+      "gdriveLinked": "Linked successfully!",
+      "gdriveLoginFailed": "Sign-in cancelled or failed.",
+      "folderLinked": "Folder linked!",
+      "folderCancelled": "Selection cancelled",
+      "ncDisconnected": "Nextcloud disconnected",
+      "ncEnterUrl": "Please enter the server URL",
+      "ncConnected": "Nextcloud connected!",
+      "ncTimeout": "Timed out — please try again",
+      "ncLoginFailed": "Nextcloud login failed",
+      "ncServerUnreachable": "Server unreachable",
+      "ncServerUnreachableRestore": "Server unreachable or Login Flow v2 not supported",
+      "ncRestoreNotFound": "No backup found on Nextcloud",
+      "ncRestoreInvalid": "Invalid backup format",
+      "ncRestoreLoaded": "Backup loaded from Nextcloud!",
+      "signinFailed": "Sign-in failed",
+      "tokenMissing": "No access token received",
+      "backupNotFound": "No backup found.",
+      "backupEmpty": "Backup is empty.",
+      "backupInvalid": "Invalid format.",
+      "backupInvalidShort": "Invalid backup.",
+      "backupInvalidFormat": "Invalid format.",
+      "backupLoaded": "Backup loaded!",
+      "loadError": "Error while loading",
+      "folderAccessError": "Error accessing folder.",
+      "fileReadError": "Could not read file.",
+      "integrityMismatch": "⚠️ Checksum mismatch — backup may have been tampered with",
+      "restoreSuccess": "Data restored!",
+      "welcome": "Welcome!"
+    }
+  },
+  "toasts": {
+    "entry": {
+      "deleted": "🗑️ Entry deleted",
+      "saved": "💾 Entry saved",
+      "updated": "✏️ Entry updated",
+      "saveFailed": "Couldn't save entry",
+      "updateFailed": "Couldn't update entry",
+      "deleteFailed": "Couldn't delete entry",
+      "deleteAllFailed": "Couldn't delete entries",
+      "importFailed": "Import failed",
+      "endBeforeStart": "⚠️ End time must be after start time!",
+      "overlap": "⚠️ Time overlap!"
+    },
+    "appReset": "🧹 App fully reset",
+    "noInternet": "No internet connection",
+    "playStore": {
+      "opening": "Opening the Play Store...",
+      "failed": "Couldn't open the Play Store.",
+      "copiedClipboard": "Play Store link copied to clipboard."
+    },
+    "onboardingCompleted": "Setup complete!",
+    "timer": {
+      "started": "⏱️ Time clock started!",
+      "captured": "🏁 Time captured"
+    },
+    "attachments": {
+      "readyToShare_one": "1 file ready to share",
+      "readyToShare_other": "{{count}} files ready to share"
+    },
+    "autoBackup": {
+      "failed5x": "Cloud backup failed (5x). Please check settings.",
+      "completed": "Backup complete"
+    },
+    "autoCheckout": "⚠️ Auto-clocked out! Please review.",
+    "export": {
+      "exporting": "Exporting data...",
+      "success": "📤 Export successful!",
+      "downloadStarted": "💾 Download started!",
+      "error": "❌ Export error: {{message}}",
+      "exportingFolder": "Exporting to folder...",
+      "folderSuccess": "✅ Saved to folder successfully!",
+      "folderCancelled": "Export cancelled or failed",
+      "preparing": "Preparing export...",
+      "ready": "📤 Export ready!",
+      "shareTitle": "eStundnzettl backup",
+      "shareText": "Backup from {{date}}",
+      "shareDialogTitle": "Save backup"
+    },
+    "import": {
+      "fileTooLarge": "File too large (max. 10 MB)",
+      "success": "Data imported successfully!",
+      "error": "Error: {{message}}",
+      "invalidFile": "Invalid file.",
+      "integrityMismatch": "⚠️ Checksum mismatch — backup may have been tampered with",
+      "legacyChecksum": "ℹ️ Backup without checksum (legacy format)",
+      "skippedEntries_one": "1 invalid entry skipped",
+      "skippedEntries_other": "{{count}} invalid entries skipped"
+    }
+  },
+  "changelogModal": {
+    "title": "Changelog",
+    "recentBugfixes": "Recent bug fixes",
+    "versionsCount_one": "({{count}} version)",
+    "versionsCount_other": "({{count}} versions)"
   },
   "header": {
     "settings": "Open settings",
     "report": "Open report",
-    "backToOverview": "Back to overview"
+    "backToOverview": "Back to overview",
+    "logoAlt": "Logo"
   },
   "timer": {
     "start": "Add new entry or start timer",
@@ -26,14 +480,505 @@
     "pause": "Pause timer",
     "resume": "Resume timer"
   },
+  "liveTimer": {
+    "hours": "h",
+    "paused": "Paused",
+    "swipeHint": "Swipe up to clock in",
+    "fabOff": "OFF",
+    "fabTimer": "TIMER"
+  },
+  "appTour": {
+    "skipAria": "Skip tour",
+    "finish": "Done",
+    "next": "Next",
+    "steps": {
+      "welcome": {
+        "title": "Quick tour?",
+        "body": "Hello! Let's walk through a few quick steps to show you where things live. You can tap the X and skip at any time."
+      },
+      "dashboard": {
+        "title": "Your overview",
+        "body": "Here you see at a glance: actual hours, target hours and your overtime for the selected month. Tap a week to expand or collapse it."
+      },
+      "fabTap": {
+        "title": "Manual entry",
+        "body": "The green button in the bottom right is your main tool. A short tap opens the new-entry form right away — perfect for filling things in later."
+      },
+      "fabTimer": {
+        "title": "Start the live timer",
+        "body": "The same button also starts the live timer: press and hold until it turns green, then swipe up. Tap again to stop the timer and the entry is created automatically.",
+        "hint": "Press & hold, then swipe up"
+      },
+      "report": {
+        "title": "Timesheet as PDF",
+        "body": "The green button in the top right: your finished timesheet, ready to view, share or print. With signature, notes and your logo."
+      },
+      "settings": {
+        "title": "Settings & more",
+        "body": "The gear icon is your control center: profile, work schedule, activity codes, backup, theme and help. Everything can be changed at any time."
+      },
+      "done": {
+        "title": "That's it!",
+        "body": "You now know all the important spots. If you want to read up on something later: Settings → Help. Have fun with eStundnzettl!"
+      }
+    }
+  },
   "skeleton": {
     "default": "Loading...",
     "settings": "Loading settings...",
     "entryForm": "Loading entry form...",
-    "onboarding": "Loading setup wizard..."
+    "onboarding": "Loading setup wizard...",
+    "pdfModule": "Loading PDF module..."
   },
   "backup": {
     "integrityMismatch": "Checksum mismatch — backup may have been tampered with",
     "integrityUnverified": "Backup without checksum (legacy format)"
+  },
+  "modals": {
+    "confirm": {
+      "defaultConfirmText": "Delete"
+    },
+    "export": {
+      "titlePdf": "Save PDF",
+      "titleData": "Export data",
+      "subtitle": "Choose a method",
+      "folderPdf": "Save to Documents",
+      "folderData": "Save to folder",
+      "folderPdfDescription": "Saves the PDF to the 'Documents' folder",
+      "folderDataDescription": "Choose a location (e.g. Downloads)",
+      "share": "Share / Send",
+      "shareDescription": "Via WhatsApp, email or other apps"
+    },
+    "importConflict": {
+      "title": "Review backup content",
+      "description": "We found data in this backup. Because it also contains <b>settings</b> (work-hours model), you need to decide:",
+      "entriesLabel": "Time entries",
+      "settingsLabel": "Settings",
+      "settingsIncluded": "Included",
+      "warning": "Warning: \"Import everything\" overwrites your current work-hours model!",
+      "importAll": "Overwrite & import everything",
+      "entriesOnly": "Entries only (keep settings)"
+    },
+    "localeMigration": {
+      "title": "Pick hours calculation",
+      "description": "eStundnzettl can now be used neutrally. Pick once which calculation suits you — your existing entries stay unchanged.",
+      "austriaTitle": "Austria",
+      "austriaNote": "(same as before — recommended)",
+      "austriaDescription": "Public holidays, half-days (Dec 24/31), extra hours/overtime per Austrian labor law (AZG)",
+      "germanyTitle": "Germany",
+      "germanyDescription": "Federal + regional holidays, 40h week, extra hours/overtime",
+      "stateLabel": "State",
+      "stateSelect": "Select state",
+      "neutralTitle": "Neutral",
+      "neutralDescription": "No automatic holidays, no half-days, no extra hours/overtime split",
+      "changeLater": "You can change this later in settings at any time."
+    },
+    "preset": {
+      "title": "Pick template",
+      "warning": "Warning: Changing the template recalculates overtime for all previous entries!"
+    }
+  },
+  "settings": {
+    "toast": {
+      "customModeRequired": "Pick 'Custom' first",
+      "unlockRequired": "Unlock the padlock first to edit",
+      "timeUpdated": "Time updated",
+      "customOnly": "Only available in 'Custom' mode",
+      "unlocked": "Editing unlocked",
+      "invalidBackup": "Invalid backup format",
+      "integrityMismatch": "⚠️ Checksum mismatch — backup may have been tampered with",
+      "entriesImported_one": "{{count}} entry imported!",
+      "entriesImported_other": "{{count}} entries imported!",
+      "fileReadError": "Couldn't read the file",
+      "restoreSuccess": "Successfully restored!",
+      "expertOn": "Power-user mode on",
+      "expertOff": "Power-user mode off"
+    },
+    "weekdays": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    },
+    "editDay": "Edit {{weekday}}",
+    "profile": {
+      "title": "Profile",
+      "photoHint": "Tap the picture to change it.",
+      "photoAlt": "Profile",
+      "nameLabel": "Your name",
+      "namePlaceholder": "John Doe",
+      "companyLabel": "Company",
+      "companyPlaceholder": "Acme Ltd.",
+      "positionLabel": "Position / Job",
+      "positionPlaceholder": "Engineer",
+      "toastPhotoUpdated": "Profile picture updated",
+      "toastPhotoError": "Image error",
+      "toastPhotoRemoved": "Picture removed"
+    },
+    "theme": {
+      "title": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "appInfo": {
+      "sectionInfoTitle": "App & information",
+      "playStore": "Open in Play Store",
+      "help": "Guide & Help",
+      "changelog": "Changelog",
+      "sectionAboutTitle": "About",
+      "privacy": "Privacy policy",
+      "website": "Website",
+      "sourceCode": "Source code on GitHub",
+      "imprint": "Imprint",
+      "license": "License",
+      "contact": "Contact",
+      "donate": "Buy me a coffee",
+      "expertTitle": "Power-user mode",
+      "expertOn": "All settings visible",
+      "expertOff": "Advanced settings hidden",
+      "recalc": "Recalculate",
+      "demoData": "Demo data",
+      "dangerTitle": "Danger zone",
+      "dangerBody": "Here you can reset the app and irreversibly delete all local data. This gives you a fresh start — ideal if you want to run the setup wizard again, e.g. to change your work-hours model or schedule.",
+      "deleteAll": "Delete everything & reset app",
+      "versionLabel": "Version {{version}}",
+      "credits": "Crafted 💭 by Markus 👨 with heart ❤️, brain 🧠 and AI agents 🤖!",
+      "linkError": "Couldn't open link",
+      "mailError": "Couldn't open the mail app",
+      "recalcModalTitle": "Recalculate entries?",
+      "recalcModalMessage": "All saved work-time entries will be recalculated from start, end and break. This fixes incorrect values from older app versions. Correct entries stay unchanged.",
+      "recalcFixed": "Fixed {{fixed}} of {{total}} entries",
+      "recalcAllCorrect": "All {{total}} entries are correct",
+      "recalcError": "Recalculation failed"
+    },
+    "backup": {
+      "header": "Backup & Export",
+      "subtitle": "Back up your data to Google Drive, Nextcloud or locally",
+      "last": {
+        "now": "just now",
+        "minutes_one": "{{count}} min ago",
+        "minutes_other": "{{count}} min ago",
+        "hours_one": "{{count}} hr ago",
+        "hours_other": "{{count}} hrs ago",
+        "days_one": "{{count}} day ago",
+        "days_other": "{{count}} days ago",
+        "lastAt": "Last: {{time}}",
+        "never": "Never backed up"
+      },
+      "badge": {
+        "connected": "Connected"
+      },
+      "gdrive": {
+        "connectedAs": "Connected as {{label}}",
+        "activeAppData": "Active (Google Drive app data)",
+        "expired": "Connection expired",
+        "notConnected": "Not connected",
+        "disconnect": "Disconnect",
+        "connect": "Connect"
+      },
+      "nextcloud": {
+        "connectedAs": "Connected as {{user}}",
+        "awaitingLogin": "Waiting for login…",
+        "notConfigured": "Not configured",
+        "disconnect": "Disconnect",
+        "setup": "Set up",
+        "pollingTitle": "Waiting for Nextcloud login…",
+        "pollingHint": "Please sign in in the browser and grant access",
+        "serverUrlLabel": "Server URL",
+        "serverUrlPlaceholder": "https://cloud.example.com",
+        "connectButton": "Connect to Nextcloud",
+        "testConnection": "Test connection"
+      },
+      "local": {
+        "title": "Local backup",
+        "activeDaily": "Active (daily)",
+        "notConfigured": "Not configured",
+        "disconnect": "Disconnect",
+        "select": "Choose"
+      },
+      "warning": {
+        "gdriveFailed": "⚠️ Recent backups failed. Please check the Google Drive connection.",
+        "gdriveReconnect": "⚠️ Google Drive needs to be reconnected before backups can continue.",
+        "nextcloudWithError": "Nextcloud backup failed: {{error}}",
+        "nextcloudGeneric": "Recent Nextcloud backups failed. Please check the connection.",
+        "retrying": "Retrying…",
+        "retryNow": "Retry now"
+      },
+      "manual": {
+        "saving": "Backing up…",
+        "title": "Backup",
+        "saveNow": "Back up now"
+      },
+      "export": "Export",
+      "import": "Import",
+      "toast": {
+        "pollingTimeout": "Timed out — please try again",
+        "nextcloudLoginFailed": "Nextcloud login failed",
+        "nextcloudLoginFailedWith": "Nextcloud login failed: {{message}}",
+        "ncConnectedAs": "Connected as {{loginName}}",
+        "ncPersistError": "Connected to Nextcloud, but saving settings in the app failed",
+        "ncEnterUrl": "Please enter the server URL",
+        "ncDisconnected": "Nextcloud disconnected",
+        "ncConnectFirst": "Please connect Nextcloud first",
+        "ncTestOk": "Connection OK!",
+        "ncTestFailed": "Connection failed",
+        "ncTestError": "Test failed",
+        "gdriveConnected": "Connected: {{label}}",
+        "gdriveDefaultLabel": "Drive",
+        "gdriveCancelled": "Google sign-in cancelled",
+        "gdriveUnavailable": "Google Drive is not available on this device yet",
+        "gdriveFailed": "Google Drive connection failed",
+        "localDisconnected": "Backup folder disconnected",
+        "localActivated": "Backup enabled!",
+        "folderCancelled": "Folder selection cancelled",
+        "backupCreated": "Backup created: {{targets}}",
+        "backupPartialFailed": "Failed: {{targets}}",
+        "backupDebugTitle": "Backup error details:\n\n{{details}}",
+        "backupFailed": "Backup failed"
+      },
+      "targetLocal": "Local"
+    },
+    "calc": {
+      "header": "Calculation",
+      "subtitle": "How overtime, sick leave and holidays are counted",
+      "teaser": "{{overtime}} · Sick: {{sick}}",
+      "contractedHours": "Contracted hours",
+      "hoursPerWeek": "{{hours}} / week",
+      "overtimeRule": "Overtime rule",
+      "overtimeThresholdLabel": "Overtime from weekly hours",
+      "hoursPerWeekUnit": "h / week",
+      "sickOnWorkDay": "Sick on a workday",
+      "holidaysHalfDays": "Holidays & half-days",
+      "importHolidays": "Import holidays from template",
+      "noHolidaysActive": "No holidays active.",
+      "removeHolidayAria": "Remove {{name}}",
+      "dateLabel": "Date",
+      "dateFormatPlaceholder": "DD.MM",
+      "nameLabel": "Label",
+      "customHolidayPlaceholder": "e.g. company anniversary",
+      "add": "Add",
+      "halfDays": "Half-days",
+      "addHalfDayAria": "Add half-day",
+      "holidayWork": "Holiday + work on the same day",
+      "advanced": "Advanced",
+      "autoPauses": "Automatic breaks",
+      "autoPauseInfo": "Only applied to entries without a manual break.",
+      "autoPauseRule": "from {{fromHours}} → {{pauseMinutes}} min break",
+      "removeRuleAria": "Remove rule",
+      "noAutoPauseRule": "No auto-break rule configured.",
+      "fromLabel": "from",
+      "hoursToArrow": "h →",
+      "minUnit": "min",
+      "addPauseRuleAria": "Add break rule",
+      "vacation": "Vacation",
+      "yearlyAllowance": "Yearly allowance",
+      "days": "days",
+      "remainingCarryover": "Remaining / carryover",
+      "carryoverHint": "Remaining days from last year or days already used (negative).",
+      "recalcRunning": "Recalculating…",
+      "recalcAll": "Recalculate all entries",
+      "drawerHolidayWork": "Holiday + work",
+      "drawerImportHolidays": "Import holidays",
+      "overtimeOptions": {
+        "none": "No distinction",
+        "split": "Separate extra hours & overtime",
+        "ueberstunden_only": "All is overtime"
+      },
+      "sickOptions": {
+        "cap_to_target": "Fill up to daily target",
+        "additive": "Count in addition to work",
+        "ignore": "Ignore"
+      },
+      "holidayOnWorkOptions": {
+        "additive": "Holiday counts in addition",
+        "counts_as_overtime": "Holiday counts as overtime",
+        "cap_to_target": "Fill up to daily target"
+      },
+      "importOptions": {
+        "austria": "Austria",
+        "germanyState": "Germany – {{state}}",
+        "swissKanton": "Switzerland – {{kanton}}",
+        "orthodox": "Orthodox holidays",
+        "islamic": "Islamic holidays (approx.)"
+      },
+      "fallbackOvertime": "No distinction",
+      "fallbackSick": "Count in addition",
+      "fallbackHolidayOnWork": "Holiday counts in addition",
+      "toast": {
+        "holidaysImported_one": "{{count}} holiday imported",
+        "holidaysImported_other": "{{count}} holidays imported",
+        "formatDateName": "Format: DD.MM + name",
+        "formatDate": "Format: DD.MM",
+        "invalidValues": "Please enter valid values",
+        "recalcFixed": "Updated {{fixed}} of {{total}} entries",
+        "recalcAllCorrect": "All {{total}} entries are up to date",
+        "recalcError": "Recalculation failed"
+      }
+    },
+    "locale": {
+      "header": "Hours calculation",
+      "subtitle": "Holidays, half-days, extra hours/overtime",
+      "group": {
+        "neutral": "Neutral",
+        "austria": "Austria",
+        "germany": "Germany",
+        "switzerland": "Switzerland"
+      },
+      "stateLabel": "State",
+      "kantonLabel": "Canton",
+      "stateDrawerTitle": "Select state",
+      "kantonDrawerTitle": "Select canton",
+      "active": "<b>Currently active:</b> {{name}}. Future calculations follow the new selection — past entries stay unchanged.",
+      "confirmTitle": "Reset rules?",
+      "confirmMessage": "Do you want to reset the calculation rules (overtime, sick leave, holidays) to the new locale's defaults? If you cancel, your current configuration stays.",
+      "confirmConfirm": "Reset",
+      "toast": {
+        "switchedNeutral": "Switched to Neutral",
+        "switchedAustria": "Switched to Austria",
+        "switchedSwitzerland": "Switched to Switzerland",
+        "switchedGermany": "Switched to Germany",
+        "stateChanged": "State changed to {{name}}",
+        "kantonChanged": "Canton changed to {{name}}",
+        "rulesReset": "Rules reset",
+        "localeSwitchedKeepConfig": "Locale switched, rules kept"
+      }
+    },
+    "language": {
+      "header": "Language",
+      "subtitle": "App UI language",
+      "de": "Deutsch",
+      "en": "English",
+      "toast": "Language changed"
+    },
+    "data": {
+      "workModel": {
+        "heading": "Work schedule",
+        "currentLabel": "Current: ",
+        "defaultLabel": "Custom",
+        "templatesButton": "Templates",
+        "weekHours": "Weekly hours: {{hours}} h"
+      },
+      "simpleMode": {
+        "title": "Record only",
+        "on": "No target/actual calculation",
+        "off": "Target, balance & overtime active",
+        "toggleAria": "Toggle recording mode",
+        "toastOn": "Record-only mode enabled",
+        "toastOff": "Target/actual calculation enabled"
+      },
+      "minuteInput": {
+        "title": "Minute-level time entry",
+        "on": "1-minute mode",
+        "off": "15-minute steps"
+      },
+      "workCodes": {
+        "title": "Activity codes",
+        "subtitle": "Load presets for your industry",
+        "manageButton": "Manage"
+      },
+      "presetWarning": {
+        "title": "Change work-schedule model?",
+        "message": "Warning: Changing the model recalculates overtime for all previous entries! Do you want to continue?",
+        "confirm": "Understood"
+      },
+      "demoWarning": {
+        "title": "⚠️ Load demo data",
+        "noBackupHint": "🚨 You have no backup file! Your data will be lost permanently if you continue!",
+        "withBackupHint": "Make sure you have a backup before you continue.",
+        "messageTemplate": "Warning: All your previous data will be overwritten! {{hint}}\n\nEntries, settings and activity codes will be replaced by demo data.",
+        "confirm": "Yes, load"
+      },
+      "toast": {
+        "customActivated": "Custom mode activated",
+        "templateApplied": "Template applied",
+        "demoLoaded": "Demo data loaded!"
+      }
+    },
+    "pdfArchive": {
+      "header": "Automatic PDF archive",
+      "subtitle": "A monthly PDF every day for legally required long-term retention",
+      "local": {
+        "title": "Local folder",
+        "path": "Documents/eStundnzettl/Archive/"
+      },
+      "nextcloud": {
+        "title": "Nextcloud",
+        "path": "/eStundnzettl/Archive/",
+        "requiresConnect": "Connect Nextcloud first"
+      },
+      "gdrive": {
+        "title": "Google Drive",
+        "connectedBadge": "Connected",
+        "folderWithEmail": "Folder eStundnzettl Archive · {{email}}",
+        "folder": "Folder eStundnzettl Archive",
+        "info": "Separate access from the JSON backup (drive.file scope)",
+        "disconnect": "Disconnect",
+        "connect": "Connect"
+      },
+      "lastRun": "Last run: {{date}}",
+      "lastRunNever": "Not run yet",
+      "runNow": "Run now",
+      "toast": {
+        "ncNotConnected": "Nextcloud must be connected first (card 'Backup & Export').",
+        "gdriveConnected": "Google Drive (PDF archive) connected",
+        "gdriveCancelled": "Connection cancelled",
+        "gdriveConnectFailed": "Connection failed: {{message}}",
+        "gdriveDisconnected": "Google Drive (PDF archive) disconnected",
+        "gdriveDisconnectFailed": "Disconnect failed: {{message}}",
+        "gdriveConnectFirst": "Please connect to Google Drive first.",
+        "archiveDisabled": "PDF archive is disabled.",
+        "pickTarget": "Please pick at least one target.",
+        "generating": "Generating monthly PDF…",
+        "partiallyFailed": "Partially failed — see details below",
+        "updated": "PDF archive updated",
+        "upToDate": "Nothing to do — data is up to date",
+        "notRun": "Not run: {{reason}}",
+        "unknownReason": "unknown",
+        "genericError": "Error: {{message}}"
+      }
+    }
+  },
+  "attachments": {
+    "title": "Documents",
+    "fieldDocument": "Document",
+    "fieldLabel": "Label",
+    "placeholder": "e.g. sick note",
+    "saving": "Saving…",
+    "addButton": "Add document",
+    "existingTitle": "Existing documents",
+    "empty": "No documents attached to this entry yet.",
+    "toast": {
+      "entryMissing": "Entry missing.",
+      "selectFile": "Please pick a document first.",
+      "labelRequired": "Please enter a label.",
+      "added": "Document added",
+      "addError": "Couldn't save the document.",
+      "deleted": "Document deleted",
+      "deleteError": "Couldn't delete the document."
+    }
+  },
+  "workCodes": {
+    "title": "Activity codes",
+    "loadPreset": "Load preset",
+    "presetCodesCount": "{{count}} codes",
+    "loading": "Loading...",
+    "empty": "No codes yet.",
+    "emptyHint": "Load a preset or create your own codes.",
+    "newCodePlaceholder": "Add new code…",
+    "deleteAll": "Delete all codes",
+    "presetReplaceWarning": {
+      "title": "Warning!",
+      "message": "Loading a preset replaces all your current codes. Continue?",
+      "confirm": "Yes, replace"
+    },
+    "deleteAllWarning": {
+      "title": "Delete all?",
+      "message": "Do you really want to delete all activity codes? This cannot be undone.",
+      "confirm": "Yes, delete"
+    }
   }
 }

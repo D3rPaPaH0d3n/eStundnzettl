@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import type { Entry } from '../types';
 import { getDb } from "../db/database";
 import { setStorageMode } from "../db/storageMode";
@@ -36,6 +37,7 @@ import { logger } from "../utils/logger";
  * - `importEntries(newEntries)` — Bulk-Import beim JSON-Restore
  */
 export function useEntries() {
+  const { t } = useTranslation();
   const [entries, setEntries] = useState<Entry[]>([]);
   const sqliteReady = useRef<boolean>(false);
   const initDone = useRef<boolean>(false);
@@ -89,7 +91,7 @@ export function useEntries() {
     } catch (err) {
       logger.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
       setEntries((prev) => prev.filter((e) => e.id !== entry.id));
-      toast.error("Eintrag konnte nicht gespeichert werden");
+      toast.error(t("toasts.entry.saveFailed"));
     }
   }, []);
 
@@ -106,7 +108,7 @@ export function useEntries() {
       if (previous) {
         setEntries((prev) => prev.map((e) => (e.id === updatedEntry.id ? previous! : e)));
       }
-      toast.error("Eintrag konnte nicht aktualisiert werden");
+      toast.error(t("toasts.entry.updateFailed"));
     }
   }, []);
 
@@ -123,7 +125,7 @@ export function useEntries() {
       if (removed) {
         setEntries((prev) => [removed!, ...prev]);
       }
-      toast.error("Eintrag konnte nicht gelöscht werden");
+      toast.error(t("toasts.entry.deleteFailed"));
     }
   }, []);
 
@@ -135,7 +137,7 @@ export function useEntries() {
     } catch (err) {
       logger.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
       setEntries(backup);
-      toast.error("Einträge konnten nicht gelöscht werden");
+      toast.error(t("toasts.entry.deleteAllFailed"));
     }
   }, []);
 
@@ -147,7 +149,7 @@ export function useEntries() {
     } catch (err) {
       logger.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
       setEntries(backup);
-      toast.error("Import fehlgeschlagen");
+      toast.error(t("toasts.entry.importFailed"));
     }
   }, []);
 

@@ -2,6 +2,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, FolderUp, Share2, HardDrive, FileText } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = false }: Props) => {
+  const { t } = useTranslation();
 
   const handleChoice = (choice: string) => {
     Haptics.impact({ style: ImpactStyle.Light });
@@ -56,11 +58,11 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
                   <div>
                     {/* CHANGE: text-slate-800 -> text-zinc-800 */}
                     <h2 className="font-bold text-lg text-zinc-800 dark:text-white">
-                      {isPdf ? "PDF speichern" : "Daten exportieren"}
+                      {isPdf ? t("modals.export.titlePdf") : t("modals.export.titleData")}
                     </h2>
                     {/* CHANGE: text-slate-500 -> text-zinc-500 */}
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      Wähle eine Methode
+                      {t("modals.export.subtitle")}
                     </p>
                   </div>
                 </div>
@@ -87,13 +89,13 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
                 <div className="text-left flex-1">
                   {/* CHANGE: text-slate-800 -> text-zinc-800 */}
                   <span className="block font-bold text-zinc-800 dark:text-white">
-                    {isPdf ? "In Dokumente speichern" : "In Ordner speichern"}
+                    {isPdf ? t("modals.export.folderPdf") : t("modals.export.folderData")}
                   </span>
                   {/* CHANGE: text-slate-500 -> text-zinc-500 */}
                   <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                    {isPdf 
-                      ? "Speichert die PDF im Ordner 'Documents'" 
-                      : "Wähle einen Speicherort (z.B. Downloads)"
+                    {isPdf
+                      ? t("modals.export.folderPdfDescription")
+                      : t("modals.export.folderDataDescription")
                     }
                   </span>
                 </div>
@@ -110,11 +112,11 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
                 <div className="text-left flex-1">
                   {/* CHANGE: text-slate-800 -> text-zinc-800 */}
                   <span className="block font-bold text-zinc-800 dark:text-white">
-                    Teilen / Senden
+                    {t("modals.export.share")}
                   </span>
                   {/* CHANGE: text-slate-500 -> text-zinc-500 */}
                   <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                    Per WhatsApp, E-Mail oder andere Apps
+                    {t("modals.export.shareDescription")}
                   </span>
                 </div>
               </button>
@@ -126,7 +128,7 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
                 onClick={onClose}
                 className="w-full py-3 text-zinc-500 dark:text-zinc-400 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-700/50 rounded-xl transition-colors"
               >
-                Abbrechen
+                {t("common.cancel")}
               </button>
             </div>
           </motion.div>

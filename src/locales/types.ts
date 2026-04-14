@@ -31,12 +31,38 @@ export type LocaleId =
   | 'de-sn' // Sachsen
   | 'de-st' // Sachsen-Anhalt
   | 'de-sh' // Schleswig-Holstein
-  | 'de-th'; // Thüringen
+  | 'de-th' // Thüringen
+  | 'ch-ag' // Aargau
+  | 'ch-ai' // Appenzell Innerrhoden
+  | 'ch-ar' // Appenzell Ausserrhoden
+  | 'ch-be' // Bern
+  | 'ch-bl' // Basel-Landschaft
+  | 'ch-bs' // Basel-Stadt
+  | 'ch-fr' // Freiburg
+  | 'ch-ge' // Genf
+  | 'ch-gl' // Glarus
+  | 'ch-gr' // Graubünden
+  | 'ch-ju' // Jura
+  | 'ch-lu' // Luzern
+  | 'ch-ne' // Neuenburg
+  | 'ch-nw' // Nidwalden
+  | 'ch-ow' // Obwalden
+  | 'ch-sg' // St. Gallen
+  | 'ch-sh' // Schaffhausen
+  | 'ch-so' // Solothurn
+  | 'ch-sz' // Schwyz
+  | 'ch-tg' // Thurgau
+  | 'ch-ti' // Tessin
+  | 'ch-ur' // Uri
+  | 'ch-vd' // Waadt
+  | 'ch-vs' // Wallis
+  | 'ch-zh' // Zürich
+  | 'ch-zg'; // Zug
 
 /**
  * Country-Kategorie — für UI-Gruppierung und grobe Logik-Zweige.
  */
-export type LocaleCountry = 'neutral' | 'at' | 'de';
+export type LocaleCountry = 'neutral' | 'at' | 'de' | 'ch';
 
 /**
  * Eine Locale beschreibt alle länder/regions-spezifischen Regeln,

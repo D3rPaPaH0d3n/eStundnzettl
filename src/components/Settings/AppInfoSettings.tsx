@@ -19,12 +19,13 @@ import {
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Browser } from "@capacitor/browser";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { Card } from "../../utils";
 import { APP_VERSION } from "../../hooks/constants";
 import ConfirmModal from "../ConfirmModal";
 import { recalculateAllEntries } from "../../utils/timeCalculations";
 import { logger } from "../../utils/logger";
-import type { UserData } from "../../types";
+import type { UserData, CalculationConfig } from "../../types";
 import type { Locale } from "../../locales/types";
 
 interface Props {
@@ -36,6 +37,7 @@ interface Props {
   userData: UserData;
   setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
   locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
 }
 
 const AppInfoSettings: React.FC<Props> = ({
@@ -47,22 +49,24 @@ const AppInfoSettings: React.FC<Props> = ({
   userData,
   setUserData,
   locale,
+  calculationConfig,
 }) => {
+  const { t } = useTranslation();
   const expertMode = userData?.expertMode ?? false;
   const [showRecalcWarning, setShowRecalcWarning] = useState(false);
 
   const handleConfirmRecalculate = async () => {
     Haptics.impact({ style: ImpactStyle.Medium });
     try {
-      const { total, fixed } = await recalculateAllEntries(userData, locale);
+      const { total, fixed } = await recalculateAllEntries(userData, locale, calculationConfig);
       if (fixed > 0) {
-        toast.success(`${fixed} von ${total} Einträgen korrigiert`);
+        toast.success(t("settings.appInfo.recalcFixed", { fixed, total }));
       } else {
-        toast.success(`Alle ${total} Einträge sind korrekt`);
+        toast.success(t("settings.appInfo.recalcAllCorrect", { total }));
       }
     } catch (err) {
       logger.error("[AppInfoSettings] Neuberechnung fehlgeschlagen:", err);
-      toast.error("Fehler bei der Neuberechnung");
+      toast.error(t("settings.appInfo.recalcError"));
     }
   };
 
@@ -72,7 +76,7 @@ const AppInfoSettings: React.FC<Props> = ({
       await Browser.open({ url });
     } catch (err) {
       logger.error("[AppInfoSettings] Link konnte nicht geöffnet werden:", err);
-      toast.error("Link konnte nicht geöffnet werden");
+      toast.error(t("settings.appInfo.linkError"));
     }
   };
 
@@ -82,7 +86,7 @@ const AppInfoSettings: React.FC<Props> = ({
       window.location.href = `mailto:${email}`;
     } catch (err) {
       logger.error("[AppInfoSettings] Mail-App konnte nicht geöffnet werden:", err);
-      toast.error("Mail-App konnte nicht geöffnet werden");
+      toast.error(t("settings.appInfo.mailError"));
     }
   };
 
@@ -90,7 +94,7 @@ const AppInfoSettings: React.FC<Props> = ({
     Haptics.impact({ style: ImpactStyle.Medium });
     const next = !expertMode;
     setUserData((prev: UserData) => ({ ...prev, expertMode: next }));
-    toast(next ? "Hausmasta-Modus aktiviert" : "Hausmasta-Modus deaktiviert", {
+    toast(next ? t("settings.toast.expertOn") : t("settings.toast.expertOff"), {
       icon: next ? "\uD83D\uDD27" : "\uD83D\uDD12",
     });
   };
@@ -98,7 +102,7 @@ const AppInfoSettings: React.FC<Props> = ({
     <>
       <Card className="p-5 space-y-3">
         <h3 className="font-bold text-zinc-700 dark:text-white">
-          App & Informationen
+          {t("settings.appInfo.sectionInfoTitle")}
         </h3>
 
         <button
@@ -108,7 +112,7 @@ const AppInfoSettings: React.FC<Props> = ({
           }}
           className="w-full py-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
         >
-          <RefreshCw size={18} /> Im Play Store öffnen
+          <RefreshCw size={18} /> {t("settings.appInfo.playStore")}
         </button>
 
         <button
@@ -118,7 +122,7 @@ const AppInfoSettings: React.FC<Props> = ({
           }}
           className="w-full py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
         >
-          <BookOpen size={18} /> Anleitung & Hilfe
+          <BookOpen size={18} /> {t("settings.appInfo.help")}
         </button>
 
         <button
@@ -128,35 +132,35 @@ const AppInfoSettings: React.FC<Props> = ({
           }}
           className="w-full py-3 border border-blue-100 dark:border-blue-900 text-blue-600 dark:text-blue-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
         >
-          <History size={18} /> Änderungsprotokoll
+          <History size={18} /> {t("settings.appInfo.changelog")}
         </button>
       </Card>
 
       {/* Über — Links zu Datenschutz, Website, GitHub */}
       <Card className="p-5 space-y-3">
         <h3 className="font-bold text-zinc-700 dark:text-white">
-          Über
+          {t("settings.appInfo.sectionAboutTitle")}
         </h3>
 
         <button
           onClick={() => openExternalLink("https://d3rpapah0d3n.github.io/eStundnzettl/privacy.html")}
           className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
         >
-          <Shield size={18} /> Datenschutzerklärung
+          <Shield size={18} /> {t("settings.appInfo.privacy")}
         </button>
 
         <button
           onClick={() => openExternalLink("https://d3rpapah0d3n.github.io/eStundnzettl/")}
           className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
         >
-          <Globe size={18} /> Website
+          <Globe size={18} /> {t("settings.appInfo.website")}
         </button>
 
         <button
           onClick={() => openExternalLink("https://github.com/D3rPaPaH0d3n/eStundnzettl")}
           className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
         >
-          <Code2 size={18} /> Quellcode auf GitHub
+          <Code2 size={18} /> {t("settings.appInfo.sourceCode")}
         </button>
 
         {/* Rechtliches & Kontakt — kompakter 3-Spalten-Grid */}
@@ -166,7 +170,7 @@ const AppInfoSettings: React.FC<Props> = ({
             className="py-2 px-1 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
           >
             <FileText size={16} />
-            <span>Impressum</span>
+            <span>{t("settings.appInfo.imprint")}</span>
           </button>
 
           <button
@@ -174,7 +178,7 @@ const AppInfoSettings: React.FC<Props> = ({
             className="py-2 px-1 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
           >
             <Scale size={16} />
-            <span>Lizenz</span>
+            <span>{t("settings.appInfo.license")}</span>
           </button>
 
           <button
@@ -182,7 +186,7 @@ const AppInfoSettings: React.FC<Props> = ({
             className="py-2 px-1 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
           >
             <Mail size={16} />
-            <span>Kontakt</span>
+            <span>{t("settings.appInfo.contact")}</span>
           </button>
         </div>
 
@@ -190,7 +194,7 @@ const AppInfoSettings: React.FC<Props> = ({
           onClick={() => openExternalLink("https://revolut.me/mkainer/pocket/QAt1Q0Ntsb")}
           className="w-full py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors border border-amber-200 dark:border-amber-800"
         >
-          <Coffee size={18} /> A Scherzl spendier'n
+          <Coffee size={18} /> {t("settings.appInfo.donate")}
         </button>
       </Card>
 
@@ -203,10 +207,10 @@ const AppInfoSettings: React.FC<Props> = ({
             </div>
             <div>
               <h2 className="font-bold text-base text-zinc-800 dark:text-white">
-                Hausmasta-Modus
+                {t("settings.appInfo.expertTitle")}
               </h2>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                {expertMode ? "Alle Einstellungen sichtbar" : "Erweiterte Einstellungen ausgeblendet"}
+                {expertMode ? t("settings.appInfo.expertOn") : t("settings.appInfo.expertOff")}
               </p>
             </div>
           </div>
@@ -228,14 +232,14 @@ const AppInfoSettings: React.FC<Props> = ({
               className="flex-1 py-2 px-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors flex items-center justify-center gap-1.5"
             >
               <Calculator size={14} />
-              Neu berechnen
+              {t("settings.appInfo.recalc")}
             </button>
             <button
               onClick={onLoadDemoData}
               className="flex-1 py-2 px-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors flex items-center justify-center gap-1.5"
             >
               <FlaskConical size={14} />
-              Demo-Daten
+              {t("settings.appInfo.demoData")}
             </button>
           </div>
         )}
@@ -249,15 +253,12 @@ const AppInfoSettings: React.FC<Props> = ({
             size={20}
           />
           <h3 className="font-bold text-red-700 dark:text-red-400">
-            Gefahrenzone
+            {t("settings.appInfo.dangerTitle")}
           </h3>
         </div>
 
         <p className="text-sm text-red-600/80 dark:text-red-400/80 mb-4 font-medium leading-relaxed">
-          Hier kannst du die App komplett zurücksetzen und alle lokalen Daten
-          unwiderruflich löschen. Das ermöglicht dir einen frischen Start – ideal,
-          wenn du z.B. den Einrichtungs-Assistenten erneut durchlaufen möchtest,
-          um dein Stundenmodell oder deine Arbeitszeiten zu ändern.
+          {t("settings.appInfo.dangerBody")}
         </p>
 
         <button
@@ -267,17 +268,17 @@ const AppInfoSettings: React.FC<Props> = ({
           }}
           className="w-full py-3 bg-white dark:bg-zinc-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center justify-center gap-2"
         >
-          <Trash2 size={18} /> Alles löschen & App zurücksetzen
+          <Trash2 size={18} /> {t("settings.appInfo.deleteAll")}
         </button>
       </Card>
 
       {/* Footer */}
       <div className="text-center space-y-1 pb-4">
         <p className="text-xs font-bold text-zinc-400 dark:text-zinc-500">
-          Version {APP_VERSION}
+          {t("settings.appInfo.versionLabel", { version: APP_VERSION })}
         </p>
         <p className="text-[10px] text-zinc-300 dark:text-zinc-600 font-medium">
-          Ausgetüftelt 💭 von Markus 👨 und mit Herz ❤️, Hirn 🧠 und KI-Agenten 🤖 gebaut!
+          {t("settings.appInfo.credits")}
         </p>
       </div>
 
@@ -288,9 +289,9 @@ const AppInfoSettings: React.FC<Props> = ({
           setShowRecalcWarning(false);
           handleConfirmRecalculate();
         }}
-        title="Einträge neu berechnen?"
-        message="Alle gespeicherten Arbeitszeit-Einträge werden anhand von Start, Ende und Pause neu berechnet. Dies korrigiert fehlerhafte Werte aus älteren App-Versionen. Korrekte Einträge bleiben unverändert."
-        confirmText="Neu berechnen"
+        title={t("settings.appInfo.recalcModalTitle")}
+        message={t("settings.appInfo.recalcModalMessage")}
+        confirmText={t("settings.appInfo.recalc")}
         confirmColor="emerald"
       />
     </>

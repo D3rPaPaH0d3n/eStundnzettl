@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { ClipboardList, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { WORK_CODE_PRESETS } from "../../../hooks/constants";
 
 /**
@@ -24,23 +25,18 @@ interface Props {
   onSelect: (id: WorkCodePresetId) => void;
 }
 
-const BASIC_PRESETS: Array<{ id: BasicPresetId; title: string; subtitle: string }> = [
-  {
-    id: "allgemein",
-    title: "Allgemein",
-    subtitle: "5 neutrale Codes (Arbeit, Büro, Besprechung, Fahrzeit, Sonstiges)",
-  },
-  {
-    id: "leer",
-    title: "Keine Codes",
-    subtitle: "Starte leer — du legst deine Tätigkeiten später selbst an",
-  },
-];
-
+const BASIC_PRESET_IDS: BasicPresetId[] = ["allgemein", "leer"];
 const ADVANCED_PRESET_IDS: AdvancedPresetId[] = ["kogler"];
 
 const WorkCodesStep: React.FC<Props> = ({ selectedPresetId, onSelect }) => {
+  const { t } = useTranslation();
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const basicPresets = BASIC_PRESET_IDS.map((id) => ({
+    id,
+    title: t(`onboarding.workCodes.basic.${id}Title`),
+    subtitle: t(`onboarding.workCodes.basic.${id}Subtitle`),
+  }));
 
   return (
     <motion.div
@@ -55,15 +51,15 @@ const WorkCodesStep: React.FC<Props> = ({ selectedPresetId, onSelect }) => {
           <ClipboardList size={32} />
         </div>
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">
-          Tätigkeiten
+          {t("onboarding.workCodes.title")}
         </h2>
         <p className="text-zinc-500 dark:text-zinc-400">
-          Wähl, mit welchen Codes du deine Stunden zuordnen willst.
+          {t("onboarding.workCodes.subtitle")}
         </p>
       </div>
 
       <div className="space-y-3">
-        {BASIC_PRESETS.map((preset) => {
+        {basicPresets.map((preset) => {
           const selected = selectedPresetId === preset.id;
           return (
             <button
@@ -95,7 +91,7 @@ const WorkCodesStep: React.FC<Props> = ({ selectedPresetId, onSelect }) => {
           onClick={() => setShowAdvanced((v) => !v)}
           className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 uppercase transition-colors"
         >
-          <span>Branchen-Presets (optional)</span>
+          <span>{t("onboarding.workCodes.industryTitle")}</span>
           {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
 
@@ -118,7 +114,10 @@ const WorkCodesStep: React.FC<Props> = ({ selectedPresetId, onSelect }) => {
                 >
                   <div className="font-bold text-zinc-800 dark:text-white">{preset.name}</div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                    {preset.description} ({preset.codes.length} Codes)
+                    {t("onboarding.workCodes.codeCount", {
+                      description: preset.description,
+                      count: preset.codes.length,
+                    })}
                   </div>
                   {selected && (
                     <div className="absolute top-4 right-4 text-blue-500">
@@ -133,7 +132,7 @@ const WorkCodesStep: React.FC<Props> = ({ selectedPresetId, onSelect }) => {
       </div>
 
       <p className="text-xs text-zinc-400 dark:text-zinc-500 text-center">
-        Codes kannst du später jederzeit in den Einstellungen ändern oder ergänzen.
+        {t("onboarding.workCodes.footerHint")}
       </p>
     </motion.div>
   );

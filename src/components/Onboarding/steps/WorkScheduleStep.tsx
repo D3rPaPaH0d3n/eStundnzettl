@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Briefcase, Check, Info, ClipboardList, Calculator } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { WORK_MODELS } from "../../../hooks/constants";
 
 import type { WorkModel } from "../../../types";
@@ -54,6 +55,7 @@ const WorkScheduleStep: React.FC<Props> = ({
   onMinuteInputToggle,
   onSimpleModeToggle,
 }) => {
+  const { t } = useTranslation();
   const simpleMode = !!formData.simpleMode;
   // Presets für die optionale Liste unterhalb der Slider — ohne den
   // 'custom'-Entry, denn die Slider SIND bereits die aktive Custom-Ansicht.
@@ -71,8 +73,8 @@ const WorkScheduleStep: React.FC<Props> = ({
         <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600">
           <Briefcase size={32} />
         </div>
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Wie willst du erfassen?</h2>
-        <p className="text-zinc-500 dark:text-zinc-400">Wähle den Modus, der am besten zu dir passt.</p>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">{t("onboarding.workSchedule.title")}</h2>
+        <p className="text-zinc-500 dark:text-zinc-400">{t("onboarding.workSchedule.subtitle")}</p>
       </div>
 
       {/* Mode-Auswahl */}
@@ -87,8 +89,8 @@ const WorkScheduleStep: React.FC<Props> = ({
           }`}
         >
           <Calculator size={24} className="mx-auto mb-2 text-blue-600" />
-          <div className="font-bold text-sm text-zinc-800 dark:text-white">Soll/Ist</div>
-          <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">Mit Überstunden & Saldo</div>
+          <div className="font-bold text-sm text-zinc-800 dark:text-white">{t("onboarding.workSchedule.modeTargetActual")}</div>
+          <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">{t("onboarding.workSchedule.modeTargetActualHint")}</div>
         </button>
         <button
           type="button"
@@ -100,8 +102,8 @@ const WorkScheduleStep: React.FC<Props> = ({
           }`}
         >
           <ClipboardList size={24} className="mx-auto mb-2 text-emerald-600" />
-          <div className="font-bold text-sm text-zinc-800 dark:text-white">Einfach</div>
-          <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">Nur Stunden aufzeichnen</div>
+          <div className="font-bold text-sm text-zinc-800 dark:text-white">{t("onboarding.workSchedule.modeSimple")}</div>
+          <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">{t("onboarding.workSchedule.modeSimpleHint")}</div>
         </button>
       </div>
 
@@ -109,7 +111,7 @@ const WorkScheduleStep: React.FC<Props> = ({
         <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
           <Info size={14} className="text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
           <p className="text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">
-            Deine Stunden werden wochen- und monatsweise summiert — ohne Soll, Saldo oder Überstunden. Du kannst den Modus später in den Einstellungen ändern.
+            {t("onboarding.workSchedule.simpleInfo")}
           </p>
         </div>
       )}
@@ -119,16 +121,14 @@ const WorkScheduleStep: React.FC<Props> = ({
           <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40">
             <Info size={14} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-              Stell deine Stunden pro Tag direkt ein. Unten findest du optionale
-              Presets, die du bei Bedarf übernehmen kannst — später in den
-              Einstellungen ebenfalls jederzeit änderbar.
+              {t("onboarding.workSchedule.customInfo")}
             </p>
           </div>
 
           {/* 1. Immer aktiv: benutzerdefinierte Slider */}
           <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">
             <h3 className="text-xs font-bold text-zinc-400 uppercase mb-3">
-              Tagesstunden (benutzerdefiniert)
+              {t("onboarding.workSchedule.dailyHoursTitle")}
             </h3>
             <div className="space-y-3">
               {/*
@@ -138,13 +138,13 @@ const WorkScheduleStep: React.FC<Props> = ({
                 Date.getDay() mit 0 = Sonntag). Wir mappen hier nur die UI.
               */}
               {[
-                { label: "Mo", idx: 1 },
-                { label: "Di", idx: 2 },
-                { label: "Mi", idx: 3 },
-                { label: "Do", idx: 4 },
-                { label: "Fr", idx: 5 },
-                { label: "Sa", idx: 6 },
-                { label: "So", idx: 0 },
+                { label: t("settings.weekdays.mon"), idx: 1 },
+                { label: t("settings.weekdays.tue"), idx: 2 },
+                { label: t("settings.weekdays.wed"), idx: 3 },
+                { label: t("settings.weekdays.thu"), idx: 4 },
+                { label: t("settings.weekdays.fri"), idx: 5 },
+                { label: t("settings.weekdays.sat"), idx: 6 },
+                { label: t("settings.weekdays.sun"), idx: 0 },
               ].map(({ label, idx }) => {
                 const isWeekend = idx === 0 || idx === 6;
                 return (
@@ -174,7 +174,7 @@ const WorkScheduleStep: React.FC<Props> = ({
             </div>
             <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-700 flex justify-between items-center">
               <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
-                Wochenstunden:
+                {t("onboarding.workSchedule.weeklyHours")}
               </span>
               <span className="text-lg font-bold text-emerald-500">
                 {minToHours(totalWeeklyMinutes)}
@@ -185,7 +185,7 @@ const WorkScheduleStep: React.FC<Props> = ({
           {/* 2. Optionale Presets (überschreiben die Slider bei Klick) */}
           <div className="space-y-2">
             <h3 className="text-xs font-bold text-zinc-400 uppercase px-1">
-              Presets (optional übernehmen)
+              {t("onboarding.workSchedule.presetsTitle")}
             </h3>
             <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
               {selectablePresets.map((model) => {
@@ -226,14 +226,14 @@ const WorkScheduleStep: React.FC<Props> = ({
           <div className="text-2xl">⏱️</div>
           <div>
             <div className="font-bold text-sm text-zinc-800 dark:text-white">
-              Minutengenau erfassen
+              {t("onboarding.workSchedule.minuteInputTitle")}
             </div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Sonst in praktischen 15-Min-Schritten</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">{t("onboarding.workSchedule.minuteInputHint")}</div>
           </div>
         </div>
         <button
           type="button"
-          aria-label="Minütige Zeiteingabe umschalten"
+          aria-label={t("onboarding.workSchedule.minuteInputAria")}
           onClick={onMinuteInputToggle}
           className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
             formData.minuteInput ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-600"

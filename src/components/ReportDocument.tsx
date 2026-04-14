@@ -1,9 +1,13 @@
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { formatTime, formatSignedTime } from "../utils";
+import { getIntlLocale } from "../utils/formatLocale";
 import { buildDayBalanceMetaMap } from "../utils/timeCalculations";
+import { resolveEffectiveRules } from "../utils/calculationConfig";
 import { WORK_CODE } from "../hooks/constants";
 
-import type { Entry, UserData, WorkCode, Attachment } from "../types";
+import type { Entry, UserData, WorkCode, Attachment, CalculationConfig } from "../types";
+import type { Locale } from "../locales/types";
 
 /**
  * ReportDocument
@@ -55,6 +59,10 @@ interface Props {
   attachments?: Attachment[];
   customNote?: string;
   domId?: string;
+  locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
+  /** Alle Einträge des Jahres — für die Urlaubstage-Bilanz im Footer. */
+  allEntries?: Entry[];
 }
 
 // COLORS (Zinc & Emerald Theme) — 1:1 wie bisher in PrintReport
@@ -84,7 +92,18 @@ const ReportDocument: React.FC<Props> = ({
   attachments = [],
   customNote = "",
   domId = "report-to-print",
+  locale,
+  calculationConfig,
+  allEntries = [],
 }) => {
+  const { t } = useTranslation();
+  // Wenn der User keine MA/ÜS-Unterscheidung will, blenden wir die
+  // Spalten Mehrarbeit & Überstunden komplett aus und zeigen nur Saldo.
+  const showOvertimeColumns = useMemo(() => {
+    if (!locale) return true; // Abwärtskompatibel: ohne Locale-Info immer anzeigen
+    const rules = resolveEffectiveRules(locale, calculationConfig);
+    return rules.overtimeMode !== "none";
+  }, [locale, calculationConfig]);
   const employeeName = userData?.name || "";
   const userPhoto = userData?.photo || null;
 
@@ -104,10 +123,26 @@ const ReportDocument: React.FC<Props> = ({
   );
 
   const dayMetaMap = useMemo(
-    () => buildDayBalanceMetaMap(entries, userData),
-    [entries, userData]
+    () => buildDayBalanceMetaMap(entries, userData, locale, calculationConfig),
+    [entries, userData, locale, calculationConfig]
   );
 
+
+  // Urlaubstage-Bilanz (nur wenn konfiguriert)
+  const vacationBalance = useMemo(() => {
+    const allowance = calculationConfig?.vacationAllowanceDays ?? 0;
+    if (allowance <= 0) return null;
+    const carryover = calculationConfig?.vacationCarryoverDays ?? 0;
+    const year = monthDate.getFullYear();
+    const yearPrefix = `${year}-`;
+    // Alle Urlaubseinträge des Jahres zählen (jeder Eintrag = 1 Tag)
+    const source = allEntries.length > 0 ? allEntries : entries;
+    const usedDays = source.filter(
+      (e) => e.type === "vacation" && typeof e.date === "string" && e.date.startsWith(yearPrefix)
+    ).length;
+    const remaining = allowance + carryover - usedDays;
+    return { allowance, carryover, usedDays, remaining };
+  }, [calculationConfig, monthDate, allEntries, entries]);
 
   // Fallback-Stats, damit die Komponente auch ohne usePeriodStats laeuft.
   const safeStats = stats || {
@@ -147,7 +182,7 @@ const ReportDocument: React.FC<Props> = ({
               margin: 0,
             }}
           >
-            Stundenzettel
+            {t("reports.title")}
           </h1>
           {userData?.company && (
             <p
@@ -167,14 +202,14 @@ const ReportDocument: React.FC<Props> = ({
           <div style={{ textAlign: "right" }}>
             <p style={{ fontWeight: "500", fontSize: "0.9rem", margin: 0 }}>{employeeName}</p>
             <p style={{ fontSize: "0.8rem", color: PRINT_STYLES.textMedium, margin: 0 }}>
-              {monthDate?.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
-              {filterMode !== "month" && ` (KW ${filterMode})`}
+              {monthDate?.toLocaleDateString(getIntlLocale(), { month: "long", year: "numeric" })}
+              {filterMode !== "month" && ` (${t("dashboard.calendarWeekShort", { week: filterMode })})`}
             </p>
           </div>
           {userPhoto && (
             <img
               src={userPhoto}
-              alt="Mitarbeiter"
+              alt={t("reports.employeeAlt")}
               style={{
                 width: "55px",
                 height: "55px",
@@ -207,19 +242,19 @@ const ReportDocument: React.FC<Props> = ({
               fontSize: "0.75rem",
             }}
           >
-            <th style={{ padding: "0.4rem 0", width: "5rem" }}>Datum</th>
-            <th style={{ padding: "0.4rem 0", width: "6rem" }}>Zeit</th>
-            <th style={{ padding: "0.4rem 0" }}>Projekt</th>
-            <th style={{ padding: "0.4rem 0", width: "5.5rem" }}>Code</th>
-            <th style={{ padding: "0.4rem 0", width: "3.5rem", textAlign: "right" }}>Std.</th>
-            <th style={{ padding: "0.4rem 0", width: "3.5rem", textAlign: "right" }}>Saldo</th>
+            <th style={{ padding: "0.4rem 0", width: "5rem" }}>{t("reports.columns.date")}</th>
+            <th style={{ padding: "0.4rem 0", width: "6rem" }}>{t("reports.columns.time")}</th>
+            <th style={{ padding: "0.4rem 0" }}>{t("reports.columns.project")}</th>
+            <th style={{ padding: "0.4rem 0", width: "5.5rem" }}>{t("reports.columns.code")}</th>
+            <th style={{ padding: "0.4rem 0", width: "3.5rem", textAlign: "right" }}>{t("reports.columns.hours")}</th>
+            <th style={{ padding: "0.4rem 0", width: "3.5rem", textAlign: "right" }}>{t("reports.columns.balance")}</th>
           </tr>
         </thead>
         <tbody>
           {entries.map((e, idx) => {
             const d = new Date(e.date);
-            const wd = d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 2);
-            const ds = d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+            const wd = d.toLocaleDateString(getIntlLocale(), { weekday: "short" }).slice(0, 2);
+            const ds = d.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" });
             const meta = dayMetaMap[e.id] || {};
             const prevEntry = entries[idx - 1];
             const nextEntry = entries[idx + 1];
@@ -241,7 +276,7 @@ const ReportDocument: React.FC<Props> = ({
                 durationDisplay = "-";
                 timeColor = PRINT_STYLES.textLight;
               }
-              const pauseText = e.pause > 0 ? `Pause: ${e.pause}m` : "KEINE PAUSE";
+              const pauseText = e.pause > 0 ? t("reports.pauseMin", { minutes: e.pause }) : t("reports.noPauseUpper");
               const pauseColor = e.pause > 0 ? PRINT_STYLES.textMedium : PRINT_STYLES.textLight;
               timeCellContent = (
                 <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
@@ -268,17 +303,17 @@ const ReportDocument: React.FC<Props> = ({
                 </div>
               );
             } else if (e.type === "public_holiday") {
-              timeCellContent = <span style={{ fontWeight: "bold", color: PRINT_STYLES.textDark }}>Feiertag</span>;
-              projectText = e.project || "Gesetzlicher Feiertag";
+              timeCellContent = <span style={{ fontWeight: "bold", color: PRINT_STYLES.textDark }}>{t("entryTypes.holiday")}</span>;
+              projectText = e.project || t("reports.publicHoliday");
               durationDisplay = formatTime(e.netDuration);
               timeColor = PRINT_STYLES.textBlue;
             } else if (e.type === "time_comp") {
               timeCellContent = <span style={{ color: PRINT_STYLES.textLight }}>-</span>;
-              projectText = "Zeitausgleich";
+              projectText = t("entryTypes.timeComp");
               timeColor = "#7e22ce";
             } else {
               timeCellContent = <span style={{ color: PRINT_STYLES.textLight }}>-</span>;
-              projectText = e.type === "vacation" ? "Urlaub" : "Krank";
+              projectText = e.type === "vacation" ? t("entryTypes.vacation") : t("entryTypes.sick");
             }
 
             const borderStyle = isLastOfDay ? `1px solid ${PRINT_STYLES.borderLight}` : "none";
@@ -334,7 +369,7 @@ const ReportDocument: React.FC<Props> = ({
                         lineHeight: 1.35,
                       }}
                     >
-                      <span style={{ fontWeight: "bold" }}>Dokumente:</span>{" "}
+                      <span style={{ fontWeight: "bold" }}>{t("reports.documentsLabel")}</span>{" "}
                       {entryAttachments.map((attachment) => attachment.label).join(", ")}
                     </div>
                   )}
@@ -403,7 +438,7 @@ const ReportDocument: React.FC<Props> = ({
               color: PRINT_STYLES.textMedium,
             }}
           >
-            Zusammenfassung
+            {t("reports.summary.title")}
           </h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem 2rem" }}>
             <div>
@@ -415,7 +450,7 @@ const ReportDocument: React.FC<Props> = ({
                   marginBottom: "0.1rem",
                 }}
               >
-                <span>Arbeit (inkl. Anreise):</span>
+                <span>{t("reports.summary.work")}</span>
                 <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.work)}</span>
               </div>
               {safeStats.holiday > 0 && (
@@ -428,7 +463,7 @@ const ReportDocument: React.FC<Props> = ({
                     color: PRINT_STYLES.textBlue,
                   }}
                 >
-                  <span>Feiertage:</span>
+                  <span>{t("reports.summary.holidays")}</span>
                   <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.holiday)}</span>
                 </div>
               )}
@@ -442,7 +477,7 @@ const ReportDocument: React.FC<Props> = ({
                     color: PRINT_STYLES.textBlue,
                   }}
                 >
-                  <span>Urlaub:</span>
+                  <span>{t("reports.summary.vacation")}</span>
                   <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.vacation)}</span>
                 </div>
               )}
@@ -456,7 +491,7 @@ const ReportDocument: React.FC<Props> = ({
                     color: "#7e22ce",
                   }}
                 >
-                  <span>Zeitausgleich:</span>
+                  <span>{t("reports.summary.timeComp")}</span>
                   <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.timeComp)}</span>
                 </div>
               )}
@@ -470,7 +505,7 @@ const ReportDocument: React.FC<Props> = ({
                     color: PRINT_STYLES.textRed,
                   }}
                 >
-                  <span>Krankenstand:</span>
+                  <span>{t("reports.summary.sickness")}</span>
                   <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.sick)}</span>
                 </div>
               )}
@@ -486,25 +521,11 @@ const ReportDocument: React.FC<Props> = ({
                   paddingBottom: "2px",
                 }}
               >
-                <span>Gesamt (IST):</span>
+                <span>{t("reports.summary.totalActual")}</span>
                 <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.totalIst)}</span>
               </div>
               {!userData?.simpleMode && (
               <>
-              {safeStats.normalstunden > 0 && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "0.8rem",
-                    marginBottom: "0.1rem",
-                    color: PRINT_STYLES.textMedium,
-                  }}
-                >
-                  <span>Normalstunden:</span>
-                  <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.normalstunden)}</span>
-                </div>
-              )}
               <div
                 style={{
                   display: "flex",
@@ -514,7 +535,7 @@ const ReportDocument: React.FC<Props> = ({
                   color: PRINT_STYLES.textMedium,
                 }}
               >
-                <span>Sollzeit (SOLL):</span>
+                <span>{t("reports.summary.targetTime")}</span>
                 <span>{formatTime(safeStats.totalTarget)}</span>
               </div>
               <div
@@ -526,13 +547,13 @@ const ReportDocument: React.FC<Props> = ({
                   fontWeight: "bold",
                 }}
               >
-                <span>Saldo:</span>
+                <span>{t("reports.summary.balance")}</span>
                 <span style={{ color: safeStats.totalSaldo >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed }}>
                   {formatSignedTime(safeStats.totalSaldo)}
                 </span>
               </div>
 
-              {(safeStats.overtimeSplit.mehrarbeit > 0 || safeStats.overtimeSplit.ueberstunden > 0) && (
+              {showOvertimeColumns && (safeStats.overtimeSplit.mehrarbeit > 0 || safeStats.overtimeSplit.ueberstunden > 0) && (
                 <div
                   style={{
                     marginTop: "0.4rem",
@@ -549,7 +570,7 @@ const ReportDocument: React.FC<Props> = ({
                         color: PRINT_STYLES.textBlue,
                       }}
                     >
-                      <span>Mehrarbeit:</span>
+                      <span>{t("reports.summary.extraHours")}</span>
                       <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.overtimeSplit.mehrarbeit)}</span>
                     </div>
                   )}
@@ -562,7 +583,7 @@ const ReportDocument: React.FC<Props> = ({
                         color: "#7e22ce",
                       }}
                     >
-                      <span>Überstunden:</span>
+                      <span>{t("reports.summary.overtime")}</span>
                       <span style={{ fontWeight: "bold" }}>{formatTime(safeStats.overtimeSplit.ueberstunden)}</span>
                     </div>
                   )}
@@ -585,8 +606,47 @@ const ReportDocument: React.FC<Props> = ({
                 fontStyle: "italic",
               }}
             >
-              <span>Fahrtzeit (unbezahlt):</span>
+              <span>{t("reports.summary.driveUnpaid")}</span>
               <span>{formatTime(safeStats.drive)}</span>
+            </div>
+          )}
+
+          {/* Urlaubstage-Bilanz */}
+          {vacationBalance && (
+            <div
+              style={{
+                borderTop: `1px solid ${PRINT_STYLES.borderLight}`,
+                marginTop: "0.4rem",
+                paddingTop: "0.3rem",
+                fontSize: "0.75rem",
+                color: PRINT_STYLES.textMedium,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.15rem" }}>
+                <span>{t("reports.vacationBalance.allowance")}</span>
+                <span style={{ fontWeight: "bold" }}>{vacationBalance.allowance} {t("reports.vacationBalance.days")}</span>
+              </div>
+              {vacationBalance.carryover !== 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.15rem" }}>
+                  <span>{vacationBalance.carryover > 0 ? t("reports.vacationBalance.carryoverPositive") : t("reports.vacationBalance.carryoverNegative")}</span>
+                  <span style={{ fontWeight: "bold" }}>{vacationBalance.carryover > 0 ? `+${vacationBalance.carryover}` : `${vacationBalance.carryover}`} {t("reports.vacationBalance.days")}</span>
+                </div>
+              )}
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.15rem" }}>
+                <span>{t("reports.vacationBalance.used", { year: monthDate.getFullYear() })}</span>
+                <span style={{ fontWeight: "bold" }}>{vacationBalance.usedDays} {t("reports.vacationBalance.days")}</span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontWeight: "bold",
+                  color: vacationBalance.remaining >= 0 ? PRINT_STYLES.textGreen : PRINT_STYLES.textRed,
+                }}
+              >
+                <span>{t("reports.vacationBalance.remaining")}</span>
+                <span>{vacationBalance.remaining} {t("reports.vacationBalance.days")}</span>
+              </div>
             </div>
           )}
         </div>
@@ -610,7 +670,7 @@ const ReportDocument: React.FC<Props> = ({
               marginBottom: "0.5rem",
             }}
           >
-            Anmerkungen / Notiz:
+            {t("reports.notesTitle")}
           </h3>
           <p
             style={{

@@ -22,7 +22,10 @@ import type { SqlValue } from "../types";
 // ausführen, bleibt dieser Wert auf 1 festgenagelt. Bei echten Schema-Changes
 // (neue Tables/Columns) muss hier erhöht UND addUpgradeStatement() registriert
 // werden.
-const SCHEMA_VERSION: number = 1;
+//
+// Siehe `APP_SCHEMA_VERSION` in `schema.ts` — bewusst getrennte Begriffe,
+// damit Plugin-Slot und JS-Migrations-Version nicht verwechselt werden.
+const PLUGIN_DB_VERSION: number = 1;
 
 let _ready: Promise<boolean> | null = null; // Promise<boolean> — true = SQLite verfügbar, false = Fallback
 let _dbOpen: boolean = false;
@@ -44,7 +47,7 @@ async function init(): Promise<boolean> {
     // Connection erstellen
     await CapacitorSQLite.createConnection({
       database: DB_NAME,
-      version: SCHEMA_VERSION,
+      version: PLUGIN_DB_VERSION,
       encrypted: false,
       mode: "no-encryption",
       readonly: false,

@@ -1,7 +1,0 @@
-English zieht ein 🌐
-• Komplette englische Oberfläche — Dashboard, Einstellungen, PDF-Bericht
-• Sprachwechsel live in den Einstellungen unter "Sprache"
-• Beim ersten Start wird die Gerätesprache automatisch erkannt
-• Datum, Kalender und Zeit-Picker folgen der gewählten Sprache
-• Changelog und Play-Store-Eintrag zweisprachig
-• Für bestehende User ändert sich nix — Deutsch bleibt Standard

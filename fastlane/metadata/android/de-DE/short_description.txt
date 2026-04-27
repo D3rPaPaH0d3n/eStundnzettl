@@ -1,1 +1,1 @@
-Stundenzettel & Zeiterfassung am Handy. Arbeitszeit, Urlaub, Krank, PDF-Export.
+Stundenzettel & Arbeitszeitnachweis als PDF. Urlaub, Krank, Überstunden.

@@ -1,33 +1,37 @@
-eStundnzettl – die smarte Stundenzettel- und Zeiterfassungs-App aus der
-Steiermark. Arbeitsstunden erfassen, automatischer PDF-Export, Urlaub
-und Krankenstand richtig verrechnet.
+eStundnzettl – die smarte Stundenzettel- und Zeiterfassungs-App aus
+der Steiermark. Arbeitszeitnachweis und Stundenaufzeichnung direkt
+am Handy, automatischer PDF-Export, Urlaub und Krankenstand richtig
+verrechnet.
 
 Schluss mit Zettelwirtschaft! Erfasse deine Arbeitsstunden, Fahrten,
-Urlaub und Krankenstand direkt am Handy — und am Monatsende landet ein
-sauberer Stundenzettel als PDF auf deinem Gerät. Einfach, übersichtlich,
-ohne Schnickschnack.
+Urlaub und Krankenstand direkt am Handy — und am Monatsende landet
+ein sauberer Stundenzettel als PDF auf deinem Gerät. In der Schweiz
+spricht man vom Stundenrapport, in Österreich vom Stundnzettl, das
+Ergebnis ist überall dasselbe: einfach, übersichtlich, ohne
+Schnickschnack.
 
 ■ Für wen?
-Handwerker, Monteure, Pflegekräfte, Kellner, Büroangestellte, Reinigungs-
-kräfte — alle, die eine flexible, ehrliche Stundenerfassung ohne unnötige
-Gadgets brauchen.
+Handwerker, Monteure, Pflegekräfte, Kellner, Büroangestellte,
+Reinigungskräfte — alle, die eine flexible, ehrliche
+Stundenerfassung ohne unnötige Gadgets brauchen.
 
 ■ Features auf einen Blick
 • Live-Timer: lang drücken, nach oben wischen — Timer läuft.
 • Manueller Eintrag mit Start-, Endzeit, Pause und Projekt.
 • Echtzeit-Saldo: Überstunden, Mehrarbeit und Gleitzeit immer sichtbar.
-• Flexible Arbeitszeitmodelle: 38,5h, 40h, 4-Tage-Woche oder frei.
-• Urlaub, Krank, Zeitausgleich — automatisch richtig verrechnet.
+• Flexible Arbeitszeitmodelle: 38,5h, 40h, 42h, 45h, 4-Tage-Woche oder frei.
+• Urlaub/Ferien, Krank/Krankenstand, Zeitausgleich — automatisch verrechnet.
 • Dokumente anhängen: Regiescheine, Lieferscheine, Fotos direkt zum Eintrag.
 • PDF-Export per Monat oder Kalenderwoche, zum Teilen oder Speichern.
 • Dark Mode für die Augen am Abend.
 
 ■ Stundenberechnung nach deiner Region
-Österreich mit 13 Feiertagen, halbem 24./31.12. und AZG-Regeln.
-Deutschland mit allen 16 Bundesländern und regionalen Feiertagen.
-Schweiz mit allen 26 Kantonen und ArG (45h-Woche).
-Oder "Neutral" — komplett ohne automatische Regeln.
-Bastler schalten den "Eigenen Plan" ein und stellen jede Regel selbst ein.
+Österreich (AZG) mit 13 Feiertagen, halbem 24./31.12. und
+Mehrarbeit/Überstunden-Split. Deutschland mit allen 16 Bundesländern
+und regionalen Feiertagen. Schweiz (ArG) mit allen 26 Kantonen und
+45h-Woche. Oder "Neutral" — komplett ohne automatische Regeln.
+Bastler schalten den "Eigenen Plan" ein und stellen jede Regel selbst
+ein.
 
 ■ Backup & Datensicherung
 • Google Drive mit täglichem Auto-Backup
@@ -43,8 +47,8 @@ den Einstellungen, beim ersten Start wird die Gerätesprache erkannt.
 
 ■ Hausmasta-Modus
 Für Profis, die mehr wollen: Nextcloud-Integration, Minuten-genaue
-Zeiteingabe, eigene Tätigkeits-Codes, automatisches PDF-Archiv. Einmal
-aktivieren, bei Bedarf wieder ausblenden.
+Zeiteingabe, eigene Tätigkeits-Codes, automatisches PDF-Archiv.
+Einmal aktivieren, bei Bedarf wieder ausblenden.
 
 ■ Datenschutz
 • Alle Daten bleiben lokal auf deinem Gerät.
@@ -56,10 +60,14 @@ Keine Werbung, kein Abo, kein Premium-Lock. Wenn dir die App wos wert
 is, freut sich der Entwickler über ein kleines Dankeschön via Revolut
 — ist aber rein optional.
 
-Schlagworte: Stundenzettel, Zeiterfassung, Arbeitszeiterfassung,
-Stundenliste, Arbeitsstunden, Stempeluhr, Stempel-App, Stundenkonto,
-Zeitkonto, Überstunden, Gleitzeit, Urlaubsverwaltung, PDF-Export,
-Handwerker, Monteur, Pflege, Außendienst, Baustelle, Schichtarbeit.
+Schlagworte: Stundenzettel, Stundenrapport, Stundnzettl,
+Arbeitszeitnachweis, Stundenaufzeichnung, Zeiterfassung,
+Arbeitszeiterfassung, Zeitnachweis, Tätigkeitsnachweis,
+Arbeitszeitprotokoll, Arbeitsnachweis, Stundenliste, Stundenkonto,
+Zeitkonto, Arbeitsstunden, Stempeluhr, Stempel-App, Stempelkarte,
+Überstunden, Mehrarbeit, Gleitzeit, Urlaubsverwaltung, Krankenstand,
+Ferien, PDF-Export, AZG, ArG, Handwerker, Monteur, Pflege,
+Außendienst, Baustelle, Schichtarbeit, Steiermark, Wien, Zürich.
 
 Fragen, Bug-Reports, Lizenzanfragen: project@kainer.co.at
 

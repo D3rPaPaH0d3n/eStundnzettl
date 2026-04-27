@@ -1,7 +1,0 @@
-Berechnungslogik-Baukasten & Schweiz 🧰
-• Neuer "Eigener Plan"-Modus: Überstunden, Krank, Feiertage frei konfigurierbar
-• Schweiz mit allen 26 Kantonen und ArG-Regeln (45h-Woche)
-• Feiertags-Import: Orthodoxe & islamische Feiertage
-• Urlaubstage-Tracking mit Anspruch + Resturlaub, auch im PDF-Footer
-• Englische UI-Übersetzung: Picker in den Einstellungen (DE/EN)
-• 48 neue Unit-Tests — Stabilität wie gewohnt

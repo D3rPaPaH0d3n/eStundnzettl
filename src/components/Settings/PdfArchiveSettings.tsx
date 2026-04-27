@@ -14,6 +14,7 @@ import {
   disconnectGoogleDrivePdf,
   getGoogleDrivePdfStatus,
 } from "../../utils/googleDrivePdfArchive";
+import { useFeatureAvailability } from "../../hooks/useFeatureAvailability";
 
 const log = logger.scope("PdfArchiveSettings");
 
@@ -46,6 +47,11 @@ interface Props {
 
 const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, lastRun, lastError }) => {
   const { t } = useTranslation();
+  const featureAvailability = useFeatureAvailability();
+  const gdriveDisabled =
+    !featureAvailability.loading &&
+    !featureAvailability.probeFailed &&
+    featureAvailability.googleServicesAvailable === false;
   const formatLastRun = (dateStr: string | null | undefined) => {
     if (!dateStr) return t("settings.pdfArchive.lastRunNever");
     const d = new Date(dateStr);
@@ -292,9 +298,23 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
           </div>
 
           {/* Google Drive (drive.file, sichtbarer Ordner eStundnzettl Archiv) */}
-          <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl">
+          <div
+            className={`flex items-center justify-between p-3 rounded-xl ${
+              gdriveDisabled
+                ? "bg-zinc-50 dark:bg-zinc-800/50 opacity-60"
+                : "bg-zinc-100 dark:bg-zinc-700"
+            }`}
+          >
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-full ${gdriveTarget && gdriveConnected ? "bg-green-100 text-green-600" : "bg-zinc-200 text-zinc-400"}`}>
+              <div
+                className={`p-2 rounded-full ${
+                  gdriveDisabled
+                    ? "bg-zinc-200 text-zinc-400"
+                    : gdriveTarget && gdriveConnected
+                    ? "bg-green-100 text-green-600"
+                    : "bg-zinc-200 text-zinc-400"
+                }`}
+              >
                 <Cloud size={18} />
               </div>
               <div>
@@ -302,14 +322,16 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
                   <span className="block font-bold text-sm text-zinc-800 dark:text-white">
                     {t("settings.pdfArchive.gdrive.title")}
                   </span>
-                  {gdriveConnected && (
+                  {gdriveConnected && !gdriveDisabled && (
                     <span className="flex items-center px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full">
                       {t("settings.pdfArchive.gdrive.connectedBadge")}
                     </span>
                   )}
                 </div>
                 <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                  {gdriveConnected
+                  {gdriveDisabled
+                    ? t("settings.backup.unavailable.hint")
+                    : gdriveConnected
                     ? (gdriveEmail
                         ? t("settings.pdfArchive.gdrive.folderWithEmail", { email: gdriveEmail })
                         : t("settings.pdfArchive.gdrive.folder"))
@@ -317,7 +339,15 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
                 </span>
               </div>
             </div>
-            {gdriveConnected ? (
+            {gdriveDisabled ? (
+              <button
+                disabled
+                title={t("settings.backup.unavailable.hint")}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-200 bg-zinc-100 text-zinc-400 cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+              >
+                {t("settings.pdfArchive.gdrive.connect")}
+              </button>
+            ) : gdriveConnected ? (
               <div className="flex items-center gap-2">
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input

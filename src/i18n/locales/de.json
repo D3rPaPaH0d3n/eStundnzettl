@@ -740,7 +740,13 @@
         "backupDebugTitle": "Backup-Fehler Details:\n\n{{details}}",
         "backupFailed": "Backup fehlgeschlagen"
       },
-      "targetLocal": "Lokal"
+      "targetLocal": "Lokal",
+      "unavailable": {
+        "hint": "Benötigt Google Play Services",
+        "bannerTitle": "Manche Funktionen sind hier nicht verfügbar",
+        "bannerBody": "Auf diesem Gerät wurden keine Google Play Services gefunden. Google Drive Backup und das Spracheingabe-Widget brauchen sie. Lokale Backups und Nextcloud funktionieren wie gewohnt weiter.",
+        "dismiss": "Verstanden"
+      }
     },
     "calc": {
       "header": "Berechnung",

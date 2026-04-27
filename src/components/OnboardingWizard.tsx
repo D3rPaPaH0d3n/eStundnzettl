@@ -11,6 +11,7 @@ import SummaryStep from "./Onboarding/steps/SummaryStep";
 import toast from "react-hot-toast";
 import { Trans, useTranslation } from "react-i18next";
 import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
+import { useFeatureAvailability } from "../hooks/useFeatureAvailability";
 import { downloadBackup as ncDownloadBackup, initiateLoginFlow, pollLoginResult, getNextcloudErrorMessage, resolveUserId } from "../utils/nextcloudClient";
 import { Browser } from "@capacitor/browser";
 import { analyzeBackupData, applyBackup, readJsonFile, readBackupFromFolder, selectBackupFolder } from "../utils/storageBackup";
@@ -76,6 +77,11 @@ interface NcCredentials {
 
 const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntries, importWorkCodes, setCloudSyncEnabled, setLocalBackupEnabled, setTheme, setLocale, setCalculationConfig }) => {
   const { t } = useTranslation();
+  const featureAvailability = useFeatureAvailability();
+  const gdriveDisabled =
+    !featureAvailability.loading &&
+    !featureAvailability.probeFailed &&
+    featureAvailability.googleServicesAvailable === false;
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [isRestoreFlow, setIsRestoreFlow] = useState(false);
@@ -791,12 +797,13 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                  {/* FALL A: EINRICHTUNG */}
                  {!isRestoreFlow && (
                    <>
-                     {/* 1. CLOUD BACKUP */}
-                     <div 
+                     {/* 1. CLOUD BACKUP — versteckt wenn Google Play Services fehlen */}
+                     {!gdriveDisabled && (
+                     <div
                         onClick={handleAutoBackupToggle}
                         className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
-                          formData.autoBackup 
-                              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm" 
+                          formData.autoBackup
+                              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm"
                               : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800"
                         }`}
                       >
@@ -815,6 +822,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                             {formData.autoBackup && <Check size={14} strokeWidth={3} />}
                           </div>
                       </div>
+                      )}
 
                       {/* 2. LOKALES BACKUP */}
                       <div 
@@ -931,6 +939,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                  {/* FALL B: WIEDERHERSTELLUNG */}
                  {isRestoreFlow && (
                     <div className="grid grid-cols-1 gap-2">
+                        {!gdriveDisabled && (
                         <button
                           onClick={handleGoogleDriveRestore}
                           disabled={loading}
@@ -943,6 +952,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                               <div className="font-bold text-sm text-zinc-800 dark:text-white">{t("onboarding.backup.restoreFromGdrive")}</div>
                             </div>
                         </button>
+                        )}
 
                         <button
                           onClick={() => setShowNcRestore(!showNcRestore)}

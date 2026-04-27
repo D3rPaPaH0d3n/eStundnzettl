@@ -9,6 +9,8 @@ import {
   AlertTriangle,
   ServerCog,
 } from "lucide-react";
+import { useFeatureAvailability } from "../../hooks/useFeatureAvailability";
+import PlayServicesBanner from "./PlayServicesBanner";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Browser } from "@capacitor/browser";
 import { App } from "@capacitor/app";
@@ -77,6 +79,14 @@ const BackupSettings: React.FC<Props> = ({
   onTriggerManualBackup,
 }) => {
   const { t } = useTranslation();
+  const featureAvailability = useFeatureAvailability();
+  // Only treat the feature as unavailable when the probe completed AND
+  // explicitly returned false. While loading or after a probe error we
+  // keep the UI fully enabled (fail-open).
+  const gdriveDisabled =
+    !featureAvailability.loading &&
+    !featureAvailability.probeFailed &&
+    featureAvailability.googleServicesAvailable === false;
   const importInputRef = useRef<HTMLInputElement>(null);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [hasBackupFolder, setHasBackupFolder] = useState(false);
@@ -668,30 +678,42 @@ const BackupSettings: React.FC<Props> = ({
         </div>
       </div>
 
+      <PlayServicesBanner show={gdriveDisabled} />
+
       <div className="space-y-3">
         {/* Google Drive */}
-        <div className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl">
+        <div
+          className={`flex items-center justify-between p-3 rounded-xl ${
+            gdriveDisabled
+              ? "bg-zinc-50 dark:bg-zinc-800/50 opacity-60"
+              : "bg-zinc-100 dark:bg-zinc-700"
+          }`}
+        >
           <div className="flex items-center gap-3">
             <div
               className={`p-2 rounded-full ${
-                isCloudConnected
+                gdriveDisabled
+                  ? "bg-zinc-200 text-zinc-400"
+                  : isCloudConnected
                   ? "bg-green-100 text-green-600"
                   : "bg-zinc-200 text-zinc-400"
               }`}
             >
-              {isCloudConnected ? <Cloud size={20} /> : <CloudOff size={20} />}
+              {isCloudConnected && !gdriveDisabled ? <Cloud size={20} /> : <CloudOff size={20} />}
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="block font-bold text-sm text-zinc-800 dark:text-white">
                   Google Drive
                 </span>
-                {isCloudConnected && isTokenValid && (
+                {isCloudConnected && isTokenValid && !gdriveDisabled && (
                   <span className={connectionBadgeClassName}>{t("settings.backup.badge.connected")}</span>
                 )}
               </div>
               <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                {isCloudConnected
+                {gdriveDisabled
+                  ? t("settings.backup.unavailable.hint")
+                  : isCloudConnected
                   ? (isTokenValid
                     ? (googleAccountLabel
                       ? t("settings.backup.gdrive.connectedAs", { label: googleAccountLabel })
@@ -703,13 +725,17 @@ const BackupSettings: React.FC<Props> = ({
           </div>
           <button
             onClick={handleGoogleToggle}
+            disabled={gdriveDisabled}
+            title={gdriveDisabled ? t("settings.backup.unavailable.hint") : undefined}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${
-              isCloudConnected
+              gdriveDisabled
+                ? "border-zinc-200 bg-zinc-100 text-zinc-400 cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+                : isCloudConnected
                 ? "border-red-200 bg-red-50 text-red-600"
                 : "border-zinc-300 bg-white text-zinc-700"
             }`}
           >
-            {isCloudConnected ? t("settings.backup.gdrive.disconnect") : t("settings.backup.gdrive.connect")}
+            {isCloudConnected && !gdriveDisabled ? t("settings.backup.gdrive.disconnect") : t("settings.backup.gdrive.connect")}
           </button>
         </div>
 
@@ -859,7 +885,7 @@ const BackupSettings: React.FC<Props> = ({
         </div>
 
         {/* Warning for failed backups */}
-        {isCloudConnected && (!isTokenValid || backupFailCount >= 3) && (
+        {!gdriveDisabled && isCloudConnected && (!isTokenValid || backupFailCount >= 3) && (
           <div className="flex flex-col gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
             <div className="flex items-start gap-3">
               <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />

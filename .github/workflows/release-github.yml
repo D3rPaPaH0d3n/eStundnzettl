@@ -1,0 +1,283 @@
+# ============================================================================
+# Release to GitHub
+# ============================================================================
+#
+# WANN LÄUFT DAS?
+#   - NUR MANUELL über GitHub Actions → "Run workflow"
+#
+# WAS PASSIERT?
+#   1. Code auschecken (auf dem Branch, von dem aus getriggert wird)
+#   2. Tests ausführen (Sicherheitsnetz)
+#   3. Frontend bauen + Capacitor Sync
+#   4. Universal Release-APK bauen (signiert mit dem Play-Store-Keystore)
+#   5. APK mit apksigner v2/v3 signieren
+#   6. SHA-256 Checksum erzeugen
+#   7. Release-Notes aus fastlane/metadata/android/de-DE/changelogs/<code>.txt
+#   8. GitHub Release anlegen mit APK + Checksum als Assets
+#
+# WAS PASSIERT NICHT?
+#   - Kein Versionsbump (lokales versionCode/versionName aus build.gradle wird genutzt)
+#   - Kein Play-Store-Upload
+#   - Kein Commit/Push (lesender Workflow)
+#
+# WICHTIG — KEYSTORE-IDENTITÄT
+#   Wir signieren mit dem GLEICHEN Keystore wie der Play-Store-Workflow.
+#   Das ist Absicht: Android erkennt eine App nur dann als "die selbe",
+#   wenn die Signatur identisch ist. Würden wir hier einen anderen
+#   Keystore nehmen, könnten User nicht von der GitHub-APK auf die
+#   Play-Store-Version (oder umgekehrt) updaten ohne Deinstallation.
+#
+# SECRETS (gleicher Pool wie deploy-play-store.yml):
+#   - KEYSTORE_BASE64    → Base64-encoded Keystore (.jks)
+#   - KEYSTORE_PASSWORD  → Keystore Passwort
+#   - KEYSTORE_ALIAS     → Key Alias (z.B. "estundnzettl")
+#
+# ============================================================================
+
+name: Release to GitHub
+
+on:
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: "Release als Entwurf erstellen (nicht öffentlich)"
+        type: boolean
+        default: true
+      prerelease:
+        description: "Als Pre-Release markieren"
+        type: boolean
+        default: false
+      release_notes_override:
+        description: "Release-Notes überschreiben (optional, sonst aus fastlane changelog)"
+        required: false
+        default: ""
+
+# Verhindern, dass parallele Releases sich gegenseitig stören.
+concurrency:
+  group: github-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: "Build & publish GitHub Release"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # für GitHub Release + Asset-Upload
+
+    steps:
+      # ── 1. Code auschecken ───────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
+
+      - name: Read version from build.gradle and package.json
+        id: version
+        run: |
+          CODE=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
+          NAME=$(node -p "require('./package.json').version")
+          TAG="v${NAME}"
+          APK_NAME="eStundnzettl-${TAG}-universal.apk"
+          echo "code=$CODE" >> $GITHUB_OUTPUT
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "📌 Version: $NAME (versionCode $CODE) → $TAG"
+
+      - name: Check that tag does not exist yet
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG existiert bereits. Bitte zuerst die Version in package.json + android/app/build.gradle erhöhen."
+            exit 1
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::GitHub Release $TAG existiert bereits."
+            exit 1
+          fi
+          echo "✅ Tag $TAG ist noch frei."
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # ── 2. Node + Tests ──────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      # ── 3. Frontend + Capacitor ──────────────────────────────────────
+      - name: Build web assets
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Fix Capacitor Proguard reference
+        run: |
+          find node_modules/@capacitor -name "build.gradle" \
+            -exec sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" {} \;
+
+      # ── 4. APK bauen ─────────────────────────────────────────────────
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build release APK
+        run: cd android && ./gradlew assembleRelease --no-daemon
+
+      # ── 5. Signieren mit apksigner (v2/v3) ───────────────────────────
+      - name: Decode keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
+
+      - name: Locate apksigner and zipalign
+        id: tools
+        run: |
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          echo "apksigner=$BUILD_TOOLS/apksigner" >> $GITHUB_OUTPUT
+          echo "zipalign=$BUILD_TOOLS/zipalign" >> $GITHUB_OUTPUT
+          echo "📌 Build-Tools: $BUILD_TOOLS"
+
+      - name: Zipalign and sign APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+        run: |
+          UNSIGNED="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          ALIGNED="android/app/build/outputs/apk/release/app-release-aligned.apk"
+          SIGNED="${{ steps.version.outputs.apk_name }}"
+
+          if [ ! -f "$UNSIGNED" ]; then
+            # assembleRelease produces app-release.apk if a signing config is present,
+            # otherwise app-release-unsigned.apk. Handle both.
+            ALT="android/app/build/outputs/apk/release/app-release.apk"
+            if [ -f "$ALT" ]; then
+              UNSIGNED="$ALT"
+            else
+              echo "::error::Kein APK-Output gefunden!"
+              ls -la android/app/build/outputs/apk/release/
+              exit 1
+            fi
+          fi
+
+          "${{ steps.tools.outputs.zipalign }}" -v -p 4 "$UNSIGNED" "$ALIGNED"
+          "${{ steps.tools.outputs.apksigner }}" sign \
+            --ks keystore.jks \
+            --ks-key-alias "$KEYSTORE_ALIAS" \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \
+            --key-pass "pass:$KEYSTORE_PASSWORD" \
+            --out "$SIGNED" \
+            "$ALIGNED"
+
+          "${{ steps.tools.outputs.apksigner }}" verify --verbose "$SIGNED"
+          echo "✅ APK signiert und verifiziert: $SIGNED"
+
+      # ── 6. SHA-256 Checksum ──────────────────────────────────────────
+      - name: Generate SHA-256 checksum
+        id: checksum
+        run: |
+          APK="${{ steps.version.outputs.apk_name }}"
+          SUM_FILE="${APK}.sha256"
+          sha256sum "$APK" > "$SUM_FILE"
+          echo "✅ Checksum:"
+          cat "$SUM_FILE"
+          echo "sum_file=$SUM_FILE" >> $GITHUB_OUTPUT
+
+      # ── 7. Release-Notes aus Fastlane-Changelog lesen ────────────────
+      - name: Build release notes
+        id: notes
+        run: |
+          CODE="${{ steps.version.outputs.code }}"
+          NAME="${{ steps.version.outputs.name }}"
+          DE_FILE="fastlane/metadata/android/de-DE/changelogs/${CODE}.txt"
+          EN_FILE="fastlane/metadata/android/en-US/changelogs/${CODE}.txt"
+          OVERRIDE='${{ github.event.inputs.release_notes_override }}'
+
+          NOTES_FILE="$(mktemp)"
+
+          if [ -n "$OVERRIDE" ]; then
+            printf '%s\n' "$OVERRIDE" > "$NOTES_FILE"
+          else
+            {
+              echo "## eStundnzettl v${NAME} (versionCode ${CODE})"
+              echo ""
+              echo "### 🇩🇪 Deutsch"
+              if [ -f "$DE_FILE" ]; then
+                cat "$DE_FILE"
+              else
+                echo "_Keine deutsche Versionshinweise hinterlegt._"
+              fi
+              echo ""
+              echo "### 🇬🇧 English"
+              if [ -f "$EN_FILE" ]; then
+                cat "$EN_FILE"
+              else
+                echo "_No English release notes available._"
+              fi
+            } > "$NOTES_FILE"
+          fi
+
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "### Installation"
+            echo ""
+            echo "1. APK herunterladen (\`${{ steps.version.outputs.apk_name }}\`)."
+            echo "2. Optional: SHA-256 verifizieren:"
+            echo "   \`\`\`"
+            echo "   sha256sum -c ${{ steps.version.outputs.apk_name }}.sha256"
+            echo "   \`\`\`"
+            echo "3. Auf dem Android-Gerät \"Installation aus unbekannten Quellen\" für deinen Browser/Datei-Manager erlauben."
+            echo "4. APK öffnen und installieren."
+            echo ""
+            echo "**Hinweis:** Die GitHub-APK ist mit dem gleichen Keystore signiert wie die Play-Store-Version. Ein Wechsel zwischen den Bezugsquellen (in beide Richtungen) ist ohne Datenverlust möglich."
+          } >> "$NOTES_FILE"
+
+          echo "notes_file=$NOTES_FILE" >> $GITHUB_OUTPUT
+          echo "── Release Notes ──"
+          cat "$NOTES_FILE"
+          echo "───────────────────"
+
+      # ── 8. GitHub Release erstellen ──────────────────────────────────
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          DRAFT: ${{ inputs.draft }}
+          PRE: ${{ inputs.prerelease }}
+        run: |
+          ARGS=()
+          if [ "$DRAFT" = "true" ]; then ARGS+=(--draft); fi
+          if [ "$PRE" = "true" ]; then ARGS+=(--prerelease); fi
+
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "eStundnzettl ${TAG}" \
+            --notes-file "${{ steps.notes.outputs.notes_file }}" \
+            "${ARGS[@]}" \
+            "${{ steps.version.outputs.apk_name }}" \
+            "${{ steps.checksum.outputs.sum_file }}"
+
+          echo "✅ Release ${TAG} erstellt (draft=$DRAFT, prerelease=$PRE)"
+          echo ""
+          echo "🔗 ${{ github.server_url }}/${{ github.repository }}/releases/tag/${TAG}"
+
+      # ── 9. Cleanup ───────────────────────────────────────────────────
+      - name: Cleanup secrets
+        if: always()
+        run: rm -f keystore.jks

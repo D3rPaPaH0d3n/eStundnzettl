@@ -124,7 +124,8 @@ export async function runMigrations(
 
 /**
  * Liefert die höchste aktuell registrierte Migrations-Version.
- * Wird als `SCHEMA_VERSION` an das Capacitor-SQLite-Plugin übergeben.
+ * Pendant zu `APP_SCHEMA_VERSION` in `schema.ts` (NICHT zu verwechseln mit
+ * `PLUGIN_DB_VERSION` in `database.ts`, das ist der Capacitor-Plugin-Slot).
  */
 export function getLatestSchemaVersion(): number {
   return MIGRATIONS.reduce((max, m) => (m.version > max ? m.version : max), 0);

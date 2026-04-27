@@ -1,0 +1,7 @@
+Update-Hinweise & GitHub-Releases 🔔
+• "Was ist neu" zeigt nach jedem Update auf einen Blick, was sich getan hat
+• Funktioniert auch auf Geräten ohne Google Play Services (z.B. GrapheneOS) — Drive-Backups werden ausgegraut, alles andere läuft normal weiter
+• Direkter Download über GitHub für alle ohne Play Store
+• PDF-Erstellung jetzt robuster
+• Über 60 zusätzliche automatische Tests
+• Bessere Auffindbarkeit im Play Store

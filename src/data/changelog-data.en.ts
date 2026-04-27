@@ -18,6 +18,50 @@ import { CHANGELOG_DATA_DE } from "./changelog-data.de";
 
 const TRANSLATED_EN = [
   {
+    version: "4.2.2",
+    date: "27.04.2026",
+    title: "Update hints & GitHub releases 🔔",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Sparkles",
+        title: "What's new",
+        items: [
+          "After every update, the app shows you what changed on next launch — the changelog jumps straight to the latest version.",
+          "First launch on a fresh device stays quiet — no version-history overload."
+        ]
+      },
+      {
+        iconName: "Download",
+        title: "GitHub as a second source",
+        items: [
+          "eStundnzettl is now also available directly on GitHub — for anyone who wants to skip the Play Store.",
+          "If you installed from there, you'll see a discreet hint in the dashboard whenever a new version drops, with a one-click download.",
+          "Data format and app signature are 1:1 identical — you can switch between Play Store and GitHub without re-setup."
+        ]
+      },
+      {
+        iconName: "ShieldCheck",
+        title: "Works without Google Play Services too",
+        items: [
+          "On devices without Google services (e.g. GrapheneOS, /e/OS, Huawei) the app now detects this on its own.",
+          "Google Drive backup is greyed out with a short hint — local and Nextcloud backups keep working as usual.",
+          "Onboarding only offers options that actually work, instead of a Drive choice that wouldn't go anywhere."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Under the hood",
+        items: [
+          "PDF generation is more robust — if it ever hangs, you'll get a clean error instead of a frozen preview.",
+          "Over 60 additional tests for the PDF report and entry logic guard against regressions in future updates.",
+          "Continuous integration via GitHub Actions: every push is built and tested automatically.",
+          "Better discoverability on the Play Store — all relevant search terms (timesheet, time tracker, work hours) made it into the listing."
+        ]
+      }
+    ]
+  },
+  {
     version: "4.2.0",
     date: "13.04.2026",
     title: "English support arrives 🌐",

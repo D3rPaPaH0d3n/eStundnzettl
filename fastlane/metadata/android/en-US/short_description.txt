@@ -1,1 +1,1 @@
-Simple time tracking. Monthly timesheet as PDF. Everything on your phone.
+Timesheet & time tracker. Work hours, vacation, sick days, auto PDF export.

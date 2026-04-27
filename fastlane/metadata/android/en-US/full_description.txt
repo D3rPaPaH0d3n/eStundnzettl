@@ -1,4 +1,6 @@
-eStundnzettl – smart time tracking from Styria, Austria.
+eStundnzettl – the smart timesheet and time tracking app from Styria,
+Austria. Log work hours, automatic PDF export, vacation and sick days
+calculated correctly.
 
 No more paper slips! Log your work hours, drives, vacation and sick days
 straight from your phone — and at the end of the month a clean timesheet
@@ -52,6 +54,12 @@ again when you're done.
 No ads, no subscription, no premium lock. If you find the app useful,
 the developer happily accepts a small thank-you via Revolut — but it's
 purely optional.
+
+Tags: timesheet, time tracker, time tracking, work hours, hours
+tracker, work log, work hours tracker, employee timesheet, timecard,
+PDF timesheet, time clock, overtime tracker, vacation tracker, sick
+leave, freelancer hours, contractor hours, construction timesheet,
+field service, shift work, weekly timesheet, monthly timesheet.
 
 Questions, bug reports, licensing: project@kainer.co.at
 

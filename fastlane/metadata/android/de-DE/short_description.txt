@@ -1,1 +1,1 @@
-Einfache Zeiterfassung. Stundenzettel automatisch als PDF. Alles am Handy.
+Stundenzettel & Zeiterfassung am Handy. Arbeitszeit, Urlaub, Krank, PDF-Export.

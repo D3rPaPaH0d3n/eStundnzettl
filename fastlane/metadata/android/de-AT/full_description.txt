@@ -1,9 +1,9 @@
-eStundnzettl – die smarte Stundenzettel- und Zeiterfassungs-App aus der
-Steiermark. Arbeitsstunden erfassen, automatischer PDF-Export, Urlaub
-und Krankenstand richtig verrechnet.
+eStundnzettl – dein digitaler Stundnzettl. Smarte Stundenzettel- und
+Zeiterfassungs-App aus der Steiermark. Arbeitszeit erfassen, Urlaub
+und Krankenstand richtig verrechnet, automatischer PDF-Export.
 
-Schluss mit Zettelwirtschaft! Erfasse deine Arbeitsstunden, Fahrten,
-Urlaub und Krankenstand direkt am Handy — und am Monatsende landet ein
+Schluss mit Zettlwirtschaft! Erfass deine Arbeitsstunden, Fahrten,
+Urlaub und Krankenstand direkt am Handy — am Monatsende landet ein
 sauberer Stundenzettel als PDF auf deinem Gerät. Einfach, übersichtlich,
 ohne Schnickschnack.
 
@@ -15,19 +15,19 @@ Gadgets brauchen.
 ■ Features auf einen Blick
 • Live-Timer: lang drücken, nach oben wischen — Timer läuft.
 • Manueller Eintrag mit Start-, Endzeit, Pause und Projekt.
-• Echtzeit-Saldo: Überstunden, Mehrarbeit und Gleitzeit immer sichtbar.
+• Echtzeit-Saldo: Mehrarbeit, Überstunden und Gleitzeit immer sichtbar.
 • Flexible Arbeitszeitmodelle: 38,5h, 40h, 4-Tage-Woche oder frei.
-• Urlaub, Krank, Zeitausgleich — automatisch richtig verrechnet.
-• Dokumente anhängen: Regiescheine, Lieferscheine, Fotos direkt zum Eintrag.
+• Urlaub, Krankenstand, Zeitausgleich — automatisch richtig verrechnet.
+• Dokumente anhängen: Regiescheine, Lieferscheine, Fotos direkt am Eintrag.
 • PDF-Export per Monat oder Kalenderwoche, zum Teilen oder Speichern.
 • Dark Mode für die Augen am Abend.
 
-■ Stundenberechnung nach deiner Region
-Österreich mit 13 Feiertagen, halbem 24./31.12. und AZG-Regeln.
-Deutschland mit allen 16 Bundesländern und regionalen Feiertagen.
-Schweiz mit allen 26 Kantonen und ArG (45h-Woche).
-Oder "Neutral" — komplett ohne automatische Regeln.
-Bastler schalten den "Eigenen Plan" ein und stellen jede Regel selbst ein.
+■ Stundenberechnung nach AZG (Österreich)
+13 gesetzliche Feiertage (bundesweit), Halbtage am 24.12. und 31.12.,
+Mehrarbeit/Überstunden-Split nach Arbeitszeitgesetz (38,5h/40h-Schwelle),
+Krank-Aufrechnung bis Tagessoll. Funktioniert auch für Deutschland
+(alle 16 Bundesländer) und die Schweiz (alle 26 Kantone, ArG 45h-Woche)
+— oder im "Eigenen Plan" bastelst du dir deine Regeln selbst zusammen.
 
 ■ Backup & Datensicherung
 • Google Drive mit täglichem Auto-Backup
@@ -56,10 +56,10 @@ Keine Werbung, kein Abo, kein Premium-Lock. Wenn dir die App wos wert
 is, freut sich der Entwickler über ein kleines Dankeschön via Revolut
 — ist aber rein optional.
 
-Schlagworte: Stundenzettel, Zeiterfassung, Arbeitszeiterfassung,
-Stundenliste, Arbeitsstunden, Stempeluhr, Stempel-App, Stundenkonto,
-Zeitkonto, Überstunden, Gleitzeit, Urlaubsverwaltung, PDF-Export,
-Handwerker, Monteur, Pflege, Außendienst, Baustelle, Schichtarbeit.
+Schlagworte: Stundnzettl, Stundenzettel, Zeiterfassung, AZG,
+Arbeitszeit, Mehrarbeit, Überstunden, Krankenstand, Urlaubstage,
+Pflegeurlaub, Lohnzettel, Stundenliste, Stempel-App, Außendienst,
+Baustelle, Schichtarbeit, Steiermark, Handwerker, Monteur.
 
 Fragen, Bug-Reports, Lizenzanfragen: project@kainer.co.at
 

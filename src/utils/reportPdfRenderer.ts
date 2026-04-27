@@ -33,6 +33,11 @@ const log = logger.scope("ReportPdfRenderer");
 
 const A4_WIDTH_PX = 794; // 210mm bei 96dpi — identisch zur Vorschau
 const WAIT_FOR_IMAGES_TIMEOUT_MS = 4000;
+// Bewusst < 30s vom Aufrufer-Timeout in pdfArchive.generateMonthlyPdfBlob:
+// so feuert der innere Timeout zuerst, das try/finally kann den Offscreen-
+// Container abräumen, statt dass der äußere Timeout den Aufrufer befreit
+// während der host im DOM hängenbleibt.
+const HTML2PDF_TIMEOUT_MS = 25000;
 
 /**
  * Erzeugt synthetische public_holiday-Eintraege fuer alle gesetzlichen
@@ -168,6 +173,7 @@ export async function renderMonthlyReportPdfBlob({
 
   const host = createOffscreenContainer();
   const root = createRoot(host);
+  let html2pdfTimeoutHandle: ReturnType<typeof setTimeout> | undefined;
 
   try {
     await new Promise<void>((resolve) => {
@@ -212,12 +218,23 @@ export async function renderMonthlyReportPdfBlob({
       pagebreak: { mode: "css" },
     };
 
-    const blob = await html2pdf().set(opt).from(element as HTMLElement).output("blob");
+    const html2pdfPromise = html2pdf()
+      .set(opt)
+      .from(element as HTMLElement)
+      .output("blob");
+    const html2pdfTimeoutPromise = new Promise<never>((_, reject) => {
+      html2pdfTimeoutHandle = setTimeout(
+        () => reject(new Error(`html2pdf Timeout (${HTML2PDF_TIMEOUT_MS}ms)`)),
+        HTML2PDF_TIMEOUT_MS,
+      );
+    });
+    const blob = await Promise.race([html2pdfPromise, html2pdfTimeoutPromise]);
     return blob;
   } catch (err) {
     log.error("renderMonthlyReportPdfBlob failed:", err);
     throw err;
   } finally {
+    clearTimeout(html2pdfTimeoutHandle);
     try {
       root.unmount();
     } catch (e) {

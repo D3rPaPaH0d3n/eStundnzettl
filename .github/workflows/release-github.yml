@@ -197,14 +197,20 @@ jobs:
           cat "$SUM_FILE"
           echo "sum_file=$SUM_FILE" >> $GITHUB_OUTPUT
 
-      # ── 7. Release-Notes aus Fastlane-Changelog lesen ────────────────
+      # ── 7. Release-Notes zusammenbauen ───────────────────────────────
+      # Reihenfolge:
+      #   1. Override-Input — wenn gesetzt, gewinnt der.
+      #   2. Strukturierter App-Changelog (src/data/changelog-data.*.ts)
+      #      — gleicher Inhalt wie das ChangelogModal in der App.
+      #   3. Fastlane-Kurzhinweise (fastlane/.../changelogs/<code>.txt)
+      #      als Fallback, falls die Version nicht im App-Changelog steht.
       - name: Build release notes
         id: notes
         run: |
           CODE="${{ steps.version.outputs.code }}"
           NAME="${{ steps.version.outputs.name }}"
-          DE_FILE="fastlane/metadata/android/de-DE/changelogs/${CODE}.txt"
-          EN_FILE="fastlane/metadata/android/en-US/changelogs/${CODE}.txt"
+          DE_FALLBACK="fastlane/metadata/android/de-DE/changelogs/${CODE}.txt"
+          EN_FALLBACK="fastlane/metadata/android/en-US/changelogs/${CODE}.txt"
           OVERRIDE='${{ github.event.inputs.release_notes_override }}'
 
           NOTES_FILE="$(mktemp)"
@@ -212,19 +218,26 @@ jobs:
           if [ -n "$OVERRIDE" ]; then
             printf '%s\n' "$OVERRIDE" > "$NOTES_FILE"
           else
+            DE_APP="$(node scripts/extract-changelog.mjs --version "$NAME" --lang de 2>/dev/null || true)"
+            EN_APP="$(node scripts/extract-changelog.mjs --version "$NAME" --lang en 2>/dev/null || true)"
+
             {
               echo "## eStundnzettl v${NAME} (versionCode ${CODE})"
               echo ""
               echo "### 🇩🇪 Deutsch"
-              if [ -f "$DE_FILE" ]; then
-                cat "$DE_FILE"
+              if [ -n "$DE_APP" ]; then
+                printf '%s\n' "$DE_APP"
+              elif [ -f "$DE_FALLBACK" ]; then
+                cat "$DE_FALLBACK"
               else
                 echo "_Keine deutsche Versionshinweise hinterlegt._"
               fi
               echo ""
               echo "### 🇬🇧 English"
-              if [ -f "$EN_FILE" ]; then
-                cat "$EN_FILE"
+              if [ -n "$EN_APP" ]; then
+                printf '%s\n' "$EN_APP"
+              elif [ -f "$EN_FALLBACK" ]; then
+                cat "$EN_FALLBACK"
               else
                 echo "_No English release notes available._"
               fi

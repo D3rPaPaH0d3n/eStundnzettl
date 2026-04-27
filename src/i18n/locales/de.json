@@ -986,5 +986,13 @@
       "message": "Möchtest du wirklich alle Tätigkeitscodes löschen? Dies kann nicht rückgängig gemacht werden.",
       "confirm": "Ja, löschen"
     }
+  },
+  "updates": {
+    "available": {
+      "title": "Neue Version verfügbar",
+      "body": "Version {{version}} steht auf GitHub bereit.",
+      "download": "Zum Download",
+      "dismiss": "Später"
+    }
   }
 }

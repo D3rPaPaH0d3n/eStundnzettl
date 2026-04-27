@@ -986,5 +986,13 @@
       "message": "Do you really want to delete all activity codes? This cannot be undone.",
       "confirm": "Yes, delete"
     }
+  },
+  "updates": {
+    "available": {
+      "title": "New version available",
+      "body": "Version {{version}} is ready on GitHub.",
+      "download": "Download",
+      "dismiss": "Later"
+    }
   }
 }

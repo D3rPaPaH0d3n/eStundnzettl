@@ -1,0 +1,50 @@
+# =============================================================================
+# Fastlane configuration for eStundnzettl
+#
+# Currently only manages Play Store **store listings** (title, short and
+# full descriptions, plus localized assets that live under
+# `fastlane/metadata/android/<locale>/`). Build, signing and AAB upload
+# stay in the existing GitHub workflow `deploy-play-store.yml` which
+# uses a custom Python script (`.github/scripts/deploy-play.py`).
+#
+# Why split? The deploy workflow tightly couples version bumps,
+# signing and track promotion. Listing metadata changes much more
+# often, has zero risk of breaking the app, and benefits from being
+# triggerable on its own.
+# =============================================================================
+
+default_platform(:android)
+
+platform :android do
+  desc "Sync store listings (title, short/full description, localized assets) to the Play Store. Does NOT touch APKs/AABs, changelogs or tracks."
+  lane :update_listings do
+    supply(
+      # Limit to listing metadata. Builds, changelogs and track changes
+      # are handled by deploy-play-store.yml — never from this lane.
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: false,
+      skip_upload_screenshots: false,
+
+      metadata_path: "fastlane/metadata/android",
+
+      # Fail fast if the local metadata is missing required fields,
+      # rather than silently uploading incomplete listings.
+      validate_only: false,
+    )
+  end
+
+  desc "Dry-run: validates local listing metadata against the Play Store API without making changes."
+  lane :validate_listings do
+    supply(
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      metadata_path: "fastlane/metadata/android",
+      validate_only: true,
+    )
+  end
+end

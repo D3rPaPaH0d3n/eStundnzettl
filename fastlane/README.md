@@ -2,10 +2,11 @@
 
 Play Store listing texts in the layout that Fastlane's
 [`supply`](https://docs.fastlane.tools/actions/supply/) action
-expects. **No Fastlane configuration is committed yet** (no
-`Fastfile`, no `Appfile`, no `Pluginfile`, no Ruby) — just the
-metadata tree, so it's trivial to add Fastlane later without
-re-translating.
+expects. The repo includes a minimal `Fastfile` + `Appfile` and a
+GitHub workflow (`update-store-listings.yml`) that uploads the
+listings — APKs/AABs and changelogs continue to be handled by
+`deploy-play-store.yml` and the Python script in
+`.github/scripts/deploy-play.py`.
 
 The **single source of truth** for every text below remains
 `docs/play-store-listing.md`. Keep them in sync.
@@ -33,51 +34,41 @@ correspond to development builds that were never in Play Store
 production. Add a new `<code>.txt` file per language for each
 release going forward.
 
-## Manual upload (current workflow)
+## Upload via GitHub Actions
 
-Google Play Console only — no automation yet:
+The `Update Play Store Listings` workflow uploads everything in
+this folder to the Play Store. Trigger it manually:
 
-1. Open Play Console → your app → **Grow → Store presence → Main
-   store listing**.
-2. **Manage translations → Add translation → English (United
-   States)** if not already added.
-3. Copy-paste from each `.txt` file into the matching field
-   (title / short description / full description).
-4. Save for each language.
-5. For release notes: **Release → Production →** open the release
-   → paste the `<versionCode>.txt` content into the "What's new"
-   field for every configured language.
-6. Review → submit.
+1. Open the GitHub repo → **Actions** → **Update Play Store
+   Listings** → **Run workflow**.
+2. Toggle "Nur validieren, kein Upload" on for a dry-run that
+   only validates the metadata against the Play Store API.
+3. Hit **Run workflow** — the job decodes the existing
+   `PLAY_DEPLOY_KEY_BASE64` secret (same one the deploy
+   workflow uses), installs fastlane, and runs `supply` with
+   `--skip_upload_apk --skip_upload_aab --skip_upload_changelogs`.
+4. New translations are picked up automatically — drop a new
+   `<locale>/` folder in here, push, run the workflow.
 
-## Future: automate with `fastlane supply`
+What the workflow **does not** touch:
+- AAB/APK builds and signing
+- Changelogs (release notes per `versionCode`)
+- Track promotions (Internal/Beta/Production)
+- Version bumps
 
-Once you're ready to auto-upload, you'll need three one-time
-setups:
+## Local upload (optional)
 
-1. **Ruby + Bundler** on the build host (or CI).
-2. **Google Play API service account** (Play Console → Setup →
-   API access → create service account → grant "Release manager"
-   role → download JSON key). Store the key outside the repo —
-   e.g. `$HOME/.config/fastlane/play-store-key.json`.
-3. Run `bundle init` + `bundle add fastlane` in the repo root,
-   then `bundle exec fastlane init` with the service-account
-   path.
-
-`supply` will then read the existing `fastlane/metadata/android`
-tree straight away. Typical invocation from CI:
+If you have a service-account JSON locally (NOT committed):
 
 ```bash
-bundle exec fastlane supply \
-  --package_name com.estundnzettl.app \
-  --json_key "$HOME/.config/fastlane/play-store-key.json" \
-  --skip_upload_apk \
-  --skip_upload_aab \
-  --skip_upload_images \
-  --skip_upload_screenshots
+SUPPLY_JSON_KEY=/path/to/play-key.json fastlane android update_listings
 ```
 
-(Skip the asset flags unless you also curate screenshots / feature
-graphic in `fastlane/metadata/android/<locale>/images/`.)
+Or for a dry-run:
+
+```bash
+SUPPLY_JSON_KEY=/path/to/play-key.json fastlane android validate_listings
+```
 
 ## Adding a new release
 

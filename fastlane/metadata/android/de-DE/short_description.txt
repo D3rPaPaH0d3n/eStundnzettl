@@ -1,1 +1,1 @@
-Einfache Zeiterfassung. Stundenzettel automatisch als PDF. Alles am Handy.
+Stundenzettel & Arbeitszeitnachweis als PDF. Urlaub, Krank, Überstunden.

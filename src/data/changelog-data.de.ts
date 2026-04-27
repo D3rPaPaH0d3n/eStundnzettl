@@ -1,6 +1,51 @@
 export const CHANGELOG_DATA_DE = [
 
   {
+    version: "4.2.2",
+    date: "27.04.2026",
+    title: "Update-Hinweise & GitHub-Releases 🔔",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Sparkles",
+        title: "Was hat sich getan?",
+        items: [
+          "Nach jedem Update zeigt die App beim nächsten Start automatisch, was neu ist — der Changelog springt direkt zur aktuellen Version.",
+          "Beim ersten Start auf einem neuen Gerät bleibt's still — kein Versionshistorie-Overload."
+        ]
+      },
+      {
+        iconName: "Download",
+        title: "GitHub als zweite Bezugsquelle",
+        items: [
+          "eStundnzettl gibt's jetzt auch direkt auf GitHub — für alle, die ohne Play Store auskommen wollen.",
+          "Wer von dort lädt, bekommt einen dezenten Hinweis im Dashboard, sobald eine neue Version oben ist. Mit einem Klick zum Download.",
+          "Datenformat und App-Signatur sind 1:1 identisch — du kannst zwischen Play Store und GitHub wechseln, ohne neu einrichten zu müssen."
+        ]
+      },
+      {
+        iconName: "ShieldCheck",
+        title: "Auch ohne Google Play Services",
+        items: [
+          "Auf Geräten ohne Google-Dienste (z.B. GrapheneOS, /e/OS, Huawei) erkennt die App das jetzt selbst.",
+          "Google Drive Backup wird ausgegraut mit kurzem Hinweis — lokale und Nextcloud-Backups laufen wie gewohnt weiter.",
+          "Im Onboarding tauchen passende Optionen auf, statt einer Drive-Wahl, die eh nicht funktioniert."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Unter der Haube",
+        items: [
+          "PDF-Erstellung ist robuster — falls mal was hängt, gibt's einen sauberen Abbruch statt einer eingefrorenen Vorschau.",
+          "Über 60 zusätzliche Tests für PDF-Bericht und Eintrags-Logik schützen vor Regressionen bei künftigen Updates.",
+          "Continuous Integration über GitHub Actions: jeder Push wird automatisch getestet und gebaut.",
+          "Bessere Auffindbarkeit im Play Store — alle DACH-Suchbegriffe (Stundenzettel, Stundenrapport, Arbeitszeitnachweis, Stundnzettl) wandern ins Listing."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "4.2.0",
     date: "13.04.2026",
     title: "English zieht ein 🌐",

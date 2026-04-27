@@ -19,6 +19,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(NextcloudLoginFlowPlugin.class);
         registerPlugin(GoogleDriveBackupPlugin.class);
         registerPlugin(PlayServicesAvailabilityPlugin.class);
+        registerPlugin(InstallSourcePlugin.class);
 
         super.onCreate(savedInstanceState);
         // Enable edge-to-edge display for Android 15+ compatibility

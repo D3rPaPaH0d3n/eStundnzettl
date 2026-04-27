@@ -22,16 +22,20 @@ import { useAppState } from "./hooks/useAppState";
 import { useAutoCheckoutHandler } from "./hooks/useAutoCheckoutHandler";
 import { useBackButtonHandler } from "./hooks/useBackButtonHandler";
 import { useLastCode } from "./hooks/useLastCode";
+import { useWhatsNewModal } from "./hooks/useWhatsNewModal";
+import { useUpdateAvailable } from "./hooks/useUpdateAvailable";
 
 import AppHeader from "./components/AppHeader";
 import ViewRouter from "./components/ViewRouter";
 import ConfirmModal from "./components/ConfirmModal";
 import SkeletonScreen from "./components/SkeletonScreen";
+import UpdateAvailableBanner from "./components/UpdateAvailableBanner";
 
 const OnboardingWizard = React.lazy(() => import("./components/OnboardingWizard"));
 const ExportModal = React.lazy(() => import("./components/ExportModal"));
 const AttachmentManager = React.lazy(() => import("./components/AttachmentManager"));
 const LocaleMigrationModal = React.lazy(() => import("./components/LocaleMigrationModal"));
+const ChangelogModal = React.lazy(() => import("./components/ChangelogModal"));
 
 // MIGRATION — run once on module import
 import { migrateStorageKeys } from "./utils/migration";
@@ -127,6 +131,16 @@ export default function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // "Was ist neu" — zeigt das ChangelogModal automatisch beim ersten
+  // App-Start nach einem Update. Wird unterdrückt während Onboarding,
+  // damit Erstinstallation nicht direkt mit Versionshistorie kommt.
+  const whatsNew = useWhatsNewModal();
+  const showWhatsNew = whatsNew.shouldShow && !showOnboarding && localeId !== null;
+
+  // Update-Verfügbar — nur für Sideload-Installs, prüft GitHub Releases
+  // einmal pro Tag. Play Store / Amazon / Huawei sehen das nie.
+  const updateInfo = useUpdateAvailable();
+
   // --- RENDER ---
   return (
     <div className="min-h-screen w-screen font-sans bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 overflow-x-hidden relative">
@@ -168,6 +182,15 @@ export default function App() {
         </Suspense>
       )}
 
+      {showWhatsNew && (
+        <Suspense fallback={null}>
+          <ChangelogModal
+            isOpen={true}
+            onClose={whatsNew.markSeen}
+          />
+        </Suspense>
+      )}
+
       {showExportModal && (
         <Suspense fallback={null}>
           <ExportModal
@@ -204,6 +227,15 @@ export default function App() {
           onNavigateBack={() => { setView("dashboard"); form.setEditingEntry(null); }}
           onOpenSettings={() => setView("settings")}
           onOpenReport={() => setView("report")}
+        />
+      )}
+
+      {!showOnboarding && view === "dashboard" && (
+        <UpdateAvailableBanner
+          show={updateInfo.available}
+          version={updateInfo.latestTag}
+          htmlUrl={updateInfo.htmlUrl}
+          onDismiss={updateInfo.dismiss}
         />
       )}
 

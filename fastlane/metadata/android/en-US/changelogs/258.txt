@@ -1,0 +1,7 @@
+Update hints & GitHub releases 🔔
+• "What's new" shows you the latest changes at a glance after every update
+• Works on devices without Google Play Services too (e.g. GrapheneOS) — Drive backups are greyed out, everything else keeps running
+• Direct download via GitHub for those who skip the Play Store
+• PDF generation is more robust now
+• 60+ additional automated tests
+• Better discoverability on the Play Store

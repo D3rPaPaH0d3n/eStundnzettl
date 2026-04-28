@@ -10,7 +10,7 @@ verify lengths at a glance. Use `wc -c < path/to/text.txt` to double
 check, or in the snippet below each section.
 
 > **Important:** The German (`de-DE`) text below is my best derivation
-> from the current `README.de.md` and changelog. It may differ from
+> from the current `README.md` (German) and changelog. It may differ from
 > what you already have in Play Console. Before copying to Play
 > Console, diff it against your existing listing and reconcile.
 > The English (`en-US`) version is brand-new — nothing to reconcile.

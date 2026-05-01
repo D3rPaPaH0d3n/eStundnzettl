@@ -61,10 +61,14 @@ export default defineConfig({
             // 1. PDF-Bibliotheken in einen eigenen Chunk.
             //    Hinweis: PrintReport ist via React.lazy ausgelagert,
             //    aber useAutoPdfArchive importiert renderMonthlyReportPdfBlob
-            //    statisch und zieht den Chunk damit auch beim Start ein.
-            //    Trennung dient hauptsaechlich der Cache-Stabilitaet.
+            //    statisch und zieht @react-pdf damit beim Start ein.
+            //    pdfjs-dist (fuer die Canvas-Vorschau) ist nur in
+            //    PrintReport gebraucht und damit lazy.
             if (id.includes('@react-pdf') || id.includes('react-pdf') || id.includes('@fontsource')) {
               return 'pdf-libs';
+            }
+            if (id.includes('pdfjs-dist')) {
+              return 'pdfjs';
             }
             
             // 2. Animations-Bibliothek separat

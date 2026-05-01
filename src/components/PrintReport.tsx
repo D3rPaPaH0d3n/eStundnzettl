@@ -10,7 +10,7 @@ import {
   Check,
   MessageSquarePlus,
 } from "lucide-react";
-import { pdf, PDFViewer } from "@react-pdf/renderer";
+import { pdf } from "@react-pdf/renderer";
 import i18n from "../i18n";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
@@ -30,6 +30,7 @@ import {
 import { usePeriodStats } from "../hooks/usePeriodStats";
 import ExportModal from "./ExportModal";
 import ReportPdfDocument from "./ReportPdfDocument";
+import PdfBlobPreview from "./PdfBlobPreview";
 
 import type {
   Entry,
@@ -211,48 +212,65 @@ const PrintReport: React.FC<Props> = ({
     return attachments.filter((a) => ids.has(a.entryId));
   }, [filteredEntries, attachments]);
 
-  // Sprache als Memo-Trigger, damit ein UI-Sprachwechsel waehrend der
-  // Preview offen ist auch das PDF neu rendert. Die ReportPdfDocument
-  // verwendet `i18n.t` ueber den Singleton — ein Sprachwechsel ruft
-  // ohne expliziten Trigger sonst kein Re-Render aus.
+  // Sprache als Re-Render-Trigger, damit ein UI-Sprachwechsel waehrend
+  // der Preview offen ist auch das PDF neu generiert. Die
+  // ReportPdfDocument verwendet `i18n.t` ueber den Singleton — ein
+  // Sprachwechsel ruft ohne expliziten Trigger sonst kein Re-Render aus.
   const currentLanguage = i18n.language;
 
-  // Vorschau-Dokument: nutzt den debouncten Notiz-Wert, damit das
-  // PDF nicht auf jeden Tastendruck neu gerendert wird.
-  const previewDocument = useMemo(
-    () => {
-      void currentLanguage; // bewusst nur als Memo-Trigger genutzt
-      return (
-        <ReportPdfDocument
-          entries={filteredEntries}
-          userData={userData}
-          monthDate={monthDate}
-          filterMode={filterMode}
-          stats={stats}
-          workCodes={workCodes}
-          attachments={reportAttachments}
-          customNote={debouncedNote}
-          locale={locale}
-          calculationConfig={calculationConfig}
-          allEntries={allEntries}
-        />
-      );
-    },
-    [
-      filteredEntries,
-      userData,
-      monthDate,
-      filterMode,
-      stats,
-      workCodes,
-      reportAttachments,
-      debouncedNote,
-      locale,
-      calculationConfig,
-      allEntries,
-      currentLanguage,
-    ],
-  );
+  // Vorschau-Blob: pdfjs-dist rendert die fertige PDF auf Canvas in
+  // PdfBlobPreview. Wir generieren den Blob selbst, damit wir den
+  // Memo-/Effect-Lifecycle voll im Griff haben (Debounce, Sprachwechsel,
+  // Cancellation).
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void currentLanguage; // Trigger fuer Sprachwechsel
+    const promise = pdf(
+      <ReportPdfDocument
+        entries={filteredEntries}
+        userData={userData}
+        monthDate={monthDate}
+        filterMode={filterMode}
+        stats={stats}
+        workCodes={workCodes}
+        attachments={reportAttachments}
+        customNote={debouncedNote}
+        locale={locale}
+        calculationConfig={calculationConfig}
+        allEntries={allEntries}
+      />,
+    ).toBlob();
+
+    promise
+      .then((blob) => {
+        if (!cancelled) setPreviewBlob(blob);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          logger.error("Vorschau-Blob fehlgeschlagen:", err);
+          setPreviewBlob(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    filteredEntries,
+    userData,
+    monthDate,
+    filterMode,
+    stats,
+    workCodes,
+    reportAttachments,
+    debouncedNote,
+    locale,
+    calculationConfig,
+    allEntries,
+    currentLanguage,
+  ]);
 
   /** Erzeugt das Export-PDF (immer mit aktuellem, nicht-debouncten Notiz-Stand). */
   const buildExportBlob = async (): Promise<Blob> =>
@@ -498,24 +516,12 @@ const PrintReport: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Inline-PDF-Vorschau via <PDFViewer> (iframe + blob:-URL).
-          Funktioniert auf modernen Browsern (Web-Fallback) und in der
-          Capacitor-Android-App ab Chrome-WebView 99+ (Standard seit
-          Mitte 2022). Bei extrem alten WebView-Builds bliebe die
-          iframe leer; in dem Fall steht der "PDF"-Button oben
-          weiterhin als Export-Pfad zur Verfuegung. */}
-      <div className="flex-1 bg-zinc-800/50 relative overflow-hidden">
-        <PDFViewer
-          width="100%"
-          height="100%"
-          showToolbar={false}
-          style={{ border: "none" }}
-          innerRef={(node) => {
-            if (node) node.title = t("reports.preview");
-          }}
-        >
-          {previewDocument}
-        </PDFViewer>
+      {/* Inline-PDF-Vorschau via pdfjs-dist (Canvas-Render).
+          Bewusst NICHT <PDFViewer>: dessen iframe mit blob:-URL wird
+          von der Capacitor-Android-WebView nicht gerendert (schwarze
+          Vorschau). Canvas-Rendering funktioniert in jeder WebView. */}
+      <div className="flex-1 overflow-hidden">
+        <PdfBlobPreview blob={previewBlob} />
       </div>
 
       <AnimatePresence>

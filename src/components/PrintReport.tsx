@@ -499,11 +499,11 @@ const PrintReport: React.FC<Props> = ({
       </div>
 
       {/* Inline-PDF-Vorschau via <PDFViewer> (iframe + blob:-URL).
-          Funktioniert auf modernen Browsern, iOS WKWebView und auf
-          Android mit Chrome-WebView 99+ (Standard seit Mitte 2022).
-          Bei extrem alten WebView-Builds bliebe die iframe leer; in dem
-          Fall steht der "PDF"-Button oben weiterhin als Export-Pfad zur
-          Verfuegung. */}
+          Funktioniert auf modernen Browsern (Web-Fallback) und in der
+          Capacitor-Android-App ab Chrome-WebView 99+ (Standard seit
+          Mitte 2022). Bei extrem alten WebView-Builds bliebe die
+          iframe leer; in dem Fall steht der "PDF"-Button oben
+          weiterhin als Export-Pfad zur Verfuegung. */}
       <div className="flex-1 bg-zinc-800/50 relative overflow-hidden">
         <PDFViewer
           width="100%"

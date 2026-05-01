@@ -676,6 +676,7 @@ const BackupSettings: React.FC<Props> = ({
           <Upload size={20} />
         </div>
       }
+      defaultExpanded={false}
       bodyClassName="px-4 pb-4 pt-0"
     >
       <PlayServicesBanner show={gdriveDisabled} />

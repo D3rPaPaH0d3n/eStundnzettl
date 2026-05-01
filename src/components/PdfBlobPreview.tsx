@@ -208,7 +208,12 @@ const PdfBlobPreview: React.FC<Props> = ({ blob, renderScale = 1.5 }) => {
   return (
     <div className="relative h-full">
       {/* Zoom-Toolbar */}
-      <div className="absolute top-3 right-3 z-10 flex flex-col items-stretch gap-1 bg-zinc-900/85 backdrop-blur-sm rounded-lg p-1 border border-zinc-700 shadow-lg select-none">
+      {/* Zoom-Toolbar: bewusst unten LINKS — oben-rechts hat ueber
+          dem PDF gestoert; unten-rechts ist vom Senden-FAB belegt. */}
+      <div
+        style={{ bottom: "calc(env(safe-area-inset-bottom) + 1.75rem)" }}
+        className="absolute left-3 z-10 flex flex-col items-stretch gap-1 bg-zinc-900/85 backdrop-blur-sm rounded-lg p-1 border border-zinc-700 shadow-lg select-none"
+      >
         <button
           type="button"
           onClick={zoomIn}

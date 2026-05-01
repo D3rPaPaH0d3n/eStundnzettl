@@ -153,6 +153,7 @@ const DataSettings: React.FC<Props> = ({
             <ClipboardList size={20} />
           </div>
         }
+        defaultExpanded={false}
         bodyClassName="px-5 pb-5 pt-0 space-y-4"
       >
         {/* Nur Aufzeichnung Toggle — nur im Hausmasta-Modus */}

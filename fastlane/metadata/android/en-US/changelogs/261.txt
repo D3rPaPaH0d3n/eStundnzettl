@@ -1,0 +1,6 @@
+Vector PDFs & live preview ✨
+• Timesheets now render as searchable vector PDFs — crisp at any zoom, much smaller file
+• Pinch-to-zoom directly in the preview, plus buttons if you prefer tapping
+• Toggle PDF fields on/off live — summary, balance, overtime, code column, etc. (Expert mode)
+• Send button now sits as a FAB at bottom-right — easier one-handed
+• Settings tidied up: collapsible cards, calculation in one card, PDF archive grouped with backup

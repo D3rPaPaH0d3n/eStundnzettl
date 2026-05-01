@@ -247,6 +247,7 @@ export default function ViewRouter(props: ViewRouterProps) {
                   readAttachmentFile={readAttachmentFile as (file: Attachment) => Promise<string>}
                   locale={locale}
                   calculationConfig={calculationConfig}
+                  setCalculationConfig={setCalculationConfig}
                 />
               </Suspense>
             </motion.div>

@@ -31,11 +31,19 @@ interface Props {
    * unverändert (dann wird der Callback nicht aufgerufen).
    */
   onAfterLocaleChange?: (newLocale: Locale, workDays: number[]) => void;
+  /**
+   * Render-Modus:
+   *  - "language"        → nur die Sprache-Auswahl (Top-Card)
+   *  - "stundenberechnung" → nur den Locale-/Stundenberechnung-Block
+   *    OHNE Card-Wrapper (zum Einbetten in eine andere Card)
+   *  - undefined         → beide Karten (Backward-Compat)
+   */
+  mode?: "language" | "stundenberechnung";
 }
 
 type Group = "neutral" | "at" | "de" | "ch";
 
-const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterLocaleChange }) => {
+const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterLocaleChange, mode }) => {
   const { t } = useTranslation();
   const { language, setLanguage, supportedLanguages } = useLocaleSetting();
   const [stateDrawerOpen, setStateDrawerOpen] = useState(false);
@@ -150,8 +158,8 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
     toast.success(t("settings.language.toast"));
   };
 
-  return (
-    <>
+  // Inhalt der Sprache-Auswahl (mit Card-Wrapper)
+  const languageCard = (
     <Card className="p-4 space-y-4">
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-600">
@@ -181,19 +189,61 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
         ))}
       </div>
     </Card>
+  );
 
-    <Card className="p-4 space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
-          <Globe size={20} />
+  // Modals (vom Render-Modus unabhaengig — werden absolut ueberlagert)
+  const modals = (
+    <>
+      <SelectionDrawer
+        isOpen={stateDrawerOpen}
+        onClose={() => setStateDrawerOpen(false)}
+        title={t("settings.locale.stateDrawerTitle")}
+        options={stateOptions}
+        value={currentGermanState ?? "by"}
+        onChange={handleGermanStateChange}
+      />
+      <SelectionDrawer
+        isOpen={kantonDrawerOpen}
+        onClose={() => setKantonDrawerOpen(false)}
+        title={t("settings.locale.kantonDrawerTitle")}
+        options={kantonOptions}
+        value={currentSwissKanton ?? "zh"}
+        onChange={handleSwissKantonChange}
+      />
+      <ConfirmModal
+        isOpen={confirmModalOpen}
+        onClose={handleKeepConfig}
+        onConfirm={handleConfirmReset}
+        title={t("settings.locale.confirmTitle")}
+        message={t("settings.locale.confirmMessage")}
+        confirmText={t("settings.locale.confirmConfirm")}
+        confirmColor="emerald"
+      />
+    </>
+  );
+
+  // Inhalt der Stundenberechnung-Auswahl (ohne Card-Wrapper, damit
+  // er in einer anderen Card eingebettet werden kann)
+  // Inhalt der Stundenberechnung-Auswahl (ohne Card-Wrapper, damit
+  // er in einer anderen Card eingebettet werden kann). Im
+  // "stundenberechnung"-Modus rendern wir den eigenen Header NICHT,
+  // weil die umschliessende Karte bereits "Stundenberechnung" als
+  // Titel traegt — sonst doppelte Ueberschrift.
+  const stundenberechnungContent = (
+    <div className="space-y-4">
+      {mode !== "stundenberechnung" && (
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+            <Globe size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-zinc-800 dark:text-white">{t("settings.locale.header")}</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              {t("settings.locale.subtitle")}
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-bold text-zinc-800 dark:text-white">{t("settings.locale.header")}</h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            {t("settings.locale.subtitle")}
-          </p>
-        </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         <button
@@ -286,34 +336,25 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
         />
       </p>
 
-      <SelectionDrawer
-        isOpen={stateDrawerOpen}
-        onClose={() => setStateDrawerOpen(false)}
-        title={t("settings.locale.stateDrawerTitle")}
-        options={stateOptions}
-        value={currentGermanState ?? "by"}
-        onChange={handleGermanStateChange}
-      />
+    </div>
+  );
 
-      <SelectionDrawer
-        isOpen={kantonDrawerOpen}
-        onClose={() => setKantonDrawerOpen(false)}
-        title={t("settings.locale.kantonDrawerTitle")}
-        options={kantonOptions}
-        value={currentSwissKanton ?? "zh"}
-        onChange={handleSwissKantonChange}
-      />
-
-      <ConfirmModal
-        isOpen={confirmModalOpen}
-        onClose={handleKeepConfig}
-        onConfirm={handleConfirmReset}
-        title={t("settings.locale.confirmTitle")}
-        message={t("settings.locale.confirmMessage")}
-        confirmText={t("settings.locale.confirmConfirm")}
-        confirmColor="emerald"
-      />
-    </Card>
+  if (mode === "language") {
+    return languageCard;
+  }
+  if (mode === "stundenberechnung") {
+    return (
+      <>
+        {stundenberechnungContent}
+        {modals}
+      </>
+    );
+  }
+  return (
+    <>
+      {languageCard}
+      <Card className="p-4">{stundenberechnungContent}</Card>
+      {modals}
     </>
   );
 };

@@ -1,10 +1,12 @@
 import React, { Suspense, useState, useEffect } from "react";
+import { Calculator } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import ProfileSettings from "./Settings/ProfileSettings";
 import DataSettings from "./Settings/DataSettings";
 import ThemeSettings from "./Settings/ThemeSettings";
 import LocaleSettings from "./Settings/LocaleSettings";
 import CalculationSettings from "./Settings/CalculationSettings";
+import CollapsibleCard from "./Settings/CollapsibleCard";
 import BackupSettings from "./Settings/BackupSettings";
 import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
@@ -278,35 +280,46 @@ const Settings: React.FC<Props> = ({
         demoTrigger={demoTrigger}
       />
 
-      {/* 3. Theme Settings */}
-      <ThemeSettings theme={theme} setTheme={setTheme} />
-
-      {/* 3b. Stundenberechnung / Locale — nur im Hausmasta-Modus */}
-      {(userData?.expertMode ?? false) && (
-        <LocaleSettings
+      {/* 3. Stundenberechnung (Locale + Berechnungsregeln in EINER
+          Card). Im Hausmasta-Modus enthält sie zusätzlich den Locale-
+          Picker. Default zugeklappt, da sehr viel Inhalt. */}
+      <CollapsibleCard
+        title={t("settings.locale.header")}
+        subtitle={t("settings.locale.subtitle")}
+        icon={
+          <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+            <Calculator size={20} />
+          </div>
+        }
+        defaultExpanded={false}
+        bodyClassName="px-4 pb-4 pt-0 space-y-4"
+      >
+        {(userData?.expertMode ?? false) && (
+          <LocaleSettings
+            mode="stundenberechnung"
+            locale={locale}
+            setLocale={setLocale}
+            workDays={userData?.workDays}
+            onAfterLocaleChange={resetCalculationConfigToLocale}
+          />
+        )}
+        <CalculationSettings
+          unwrapped
+          userData={userData}
           locale={locale}
-          setLocale={setLocale}
-          workDays={userData?.workDays}
-          onAfterLocaleChange={resetCalculationConfigToLocale}
+          calculationConfig={calculationConfig}
+          setCalculationConfig={setCalculationConfig}
         />
-      )}
+      </CollapsibleCard>
 
-      {/* 3c. Berechnungsregeln — sichtbar für alle User */}
-      <CalculationSettings
-        userData={userData}
-        locale={locale}
-        calculationConfig={calculationConfig}
-        setCalculationConfig={setCalculationConfig}
-      />
-
-      {/* 4. Backup Settings */}
+      {/* 4. Backup & Export — inkl. integriertem PDF-Archiv im
+          Hausmasta-Modus. Beide zusammen in einer einklappbaren Karte. */}
       <BackupSettings
         autoBackup={autoBackup}
         setAutoBackup={setAutoBackup}
         onExport={onExport}
         onFileImport={handleFileImportFromFile}
         onTriggerManualBackup={onTriggerManualBackup}
-        // Nextcloud State
         nextcloudEnabled={nextcloudEnabled}
         nextcloudUrl={nextcloudUrl}
         nextcloudUser={nextcloudUser}
@@ -316,19 +329,32 @@ const Settings: React.FC<Props> = ({
         setNextcloudUser={setNextcloudUser}
         setNextcloudPass={setNextcloudPass}
         expertMode={userData?.expertMode ?? false}
+        extraContent={
+          (userData?.expertMode ?? false) && pdfArchivePerformRun ? (
+            <PdfArchiveSettings
+              unwrapped
+              nextcloudEnabled={nextcloudEnabled}
+              performRun={pdfArchivePerformRun}
+              lastRun={pdfArchiveLastRun}
+              lastError={pdfArchiveLastError}
+            />
+          ) : null
+        }
       />
 
-      {/* 4b. PDF-Archiv (monatlich wachsendes PDF) — nur im Hausmasta-Modus */}
-      {(userData?.expertMode ?? false) && pdfArchivePerformRun && (
-        <PdfArchiveSettings
-          nextcloudEnabled={nextcloudEnabled}
-          performRun={pdfArchivePerformRun}
-          lastRun={pdfArchiveLastRun}
-          lastError={pdfArchiveLastError}
-        />
-      )}
+      {/* 5. Sprache (kosmetisch, weiter unten) */}
+      <LocaleSettings
+        mode="language"
+        locale={locale}
+        setLocale={setLocale}
+        workDays={userData?.workDays}
+        onAfterLocaleChange={resetCalculationConfigToLocale}
+      />
 
-      {/* 5. App Info & Danger Zone */}
+      {/* 6. Design (kosmetisch, weiter unten) */}
+      <ThemeSettings theme={theme} setTheme={setTheme} />
+
+      {/* 7. App Info & Danger Zone */}
       <AppInfoSettings
         onCheckUpdate={onCheckUpdate}
         onDeleteAll={onDeleteAll}

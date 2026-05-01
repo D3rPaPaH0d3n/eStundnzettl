@@ -14,7 +14,7 @@ import PlayServicesBanner from "./PlayServicesBanner";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Browser } from "@capacitor/browser";
 import { App } from "@capacitor/app";
-import { Card } from "../../utils";
+import CollapsibleCard from "./CollapsibleCard";
 import { STORAGE_KEYS } from "../../hooks/constants";
 import { isSQLiteActive } from "../../db/storageMode";
 import { getSetting } from "../../db/repositories/settingsRepo";
@@ -59,6 +59,12 @@ interface Props {
   setNextcloudPass: (pass: string) => void;
   expertMode?: boolean;
   onTriggerManualBackup?: () => Promise<void> | void;
+  /**
+   * Optionaler Inhalt, der am Ende der Karte angezeigt wird (etwa
+   * das automatische PDF-Archiv-Panel als integrierte Erweiterung).
+   * Wird nur gerendert, wenn der User die Karte aufgeklappt hat.
+   */
+  extraContent?: React.ReactNode;
 }
 
 const BackupSettings: React.FC<Props> = ({
@@ -77,6 +83,7 @@ const BackupSettings: React.FC<Props> = ({
   setNextcloudPass,
   expertMode = false,
   onTriggerManualBackup,
+  extraContent,
 }) => {
   const { t } = useTranslation();
   const featureAvailability = useFeatureAvailability();
@@ -661,23 +668,17 @@ const BackupSettings: React.FC<Props> = ({
   // =====================
 
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
-            <Upload size={20} />
-          </div>
-          <div>
-            <h2 className="font-bold text-base text-zinc-800 dark:text-white">
-              {t("settings.backup.header")}
-            </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              {t("settings.backup.subtitle")}
-            </p>
-          </div>
+    <CollapsibleCard
+      title={t("settings.backup.header")}
+      subtitle={t("settings.backup.subtitle")}
+      icon={
+        <div className="p-2 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
+          <Upload size={20} />
         </div>
-      </div>
-
+      }
+      defaultExpanded={false}
+      bodyClassName="px-4 pb-4 pt-0"
+    >
       <PlayServicesBanner show={gdriveDisabled} />
 
       <div className="space-y-3">
@@ -1021,7 +1022,9 @@ const BackupSettings: React.FC<Props> = ({
           </div>
         )}
       </div>
-    </Card>
+
+      {extraContent}
+    </CollapsibleCard>
   );
 };
 

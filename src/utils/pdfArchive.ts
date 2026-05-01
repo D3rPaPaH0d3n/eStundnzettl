@@ -1,10 +1,10 @@
 /**
- * pdfArchive.js — Headless monatlicher PDF-Generator.
+ * pdfArchive.ts — Headless monatlicher PDF-Generator.
  *
  * Erzeugt ein A4-Portrait-PDF fuer die automatische Langzeit-Archivierung
- * (useAutoPdfArchive). Das Layout wird jetzt von `ReportDocument` (der
- * gleichen React-Komponente wie die interaktive Vorschau in PrintReport)
- * produziert — dadurch sieht das automatische Monats-PDF 1:1 wie der
+ * (useAutoPdfArchive). Das Layout produziert `ReportPdfDocument` (die
+ * gleiche react-pdf-Komponente wie die interaktive Vorschau in
+ * PrintReport) — dadurch sieht das automatische Monats-PDF 1:1 wie der
  * vom Nutzer manuell geteilte Stundenzettel aus.
  *
  * Die Archiv-spezifische Logik (Dateinamen, Content-Hash fuer das
@@ -81,14 +81,15 @@ export function buildArchiveFilename({ year, month, userData }: { year: number; 
  * `renderMonthlyReportPdfBlob`, damit automatisches Archiv und manuell
  * geteiltes PDF optisch identisch sind.
  *
- * Safety-Timeout via Promise.race: wenn der Renderer wider Erwarten
- * haengen sollte, bekommt der Aufrufer nach 30 s eine klare
- * Fehlermeldung statt eines dauerhaft blockierten UI-Zustands.
+ * Frueher gab es hier zusaetzlich einen 30-s-Safety-Timeout fuer den
+ * html2canvas-basierten Renderer. Mit dem react-pdf-Vector-Renderer
+ * existiert keine vergleichbare Hang-Klasse mehr (kein DOM-Render,
+ * kein Canvas-Limit), daher entfaellt der Timeout-Wrapper.
  */
 export async function generateMonthlyPdfBlob({ year, month, entries, userData, workCodes, attachments, locale, calculationConfig }: { year: number; month: number; entries: Entry[]; userData: UserData | null; workCodes: WorkCode[]; attachments?: Attachment[]; locale?: Locale; calculationConfig?: CalculationConfig | null }): Promise<Blob> {
   if (!year || !month) throw new Error("generateMonthlyPdfBlob: year/month fehlen");
 
-  const blobPromise = renderMonthlyReportPdfBlob({
+  return renderMonthlyReportPdfBlob({
     year,
     month,
     entries,
@@ -98,20 +99,6 @@ export async function generateMonthlyPdfBlob({ year, month, entries, userData, w
     locale,
     calculationConfig,
   });
-
-  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutHandle = setTimeout(
-      () => reject(new Error("PDF-Generierung Timeout (30s)")),
-      30000,
-    );
-  });
-
-  try {
-    return await Promise.race([blobPromise, timeoutPromise]);
-  } finally {
-    clearTimeout(timeoutHandle);
-  }
 }
 
 // Re-export fuer Tests

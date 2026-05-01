@@ -18,6 +18,62 @@ import { CHANGELOG_DATA_DE } from "./changelog-data.de";
 
 const TRANSLATED_EN = [
   {
+    version: "4.3.0",
+    date: "01.05.2026",
+    title: "Vector PDFs & live preview ✨",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "FileText",
+        title: "Timesheets are now true vector PDFs",
+        items: [
+          "The PDF is generated from scratch — sharp at any zoom, searchable and selectable for whoever receives it.",
+          "File size drops dramatically: a typical month is now around 10 KB instead of the previous 200–800 KB.",
+          "Clean table page-breaks on long reports — the table header repeats on every new page automatically."
+        ]
+      },
+      {
+        iconName: "Zap",
+        title: "Zoom in the preview",
+        items: [
+          "Two-finger pinch-to-zoom directly in the preview (50% to 300%).",
+          "On devices with a mouse: Ctrl/Cmd + scroll wheel.",
+          "Three small buttons in the bottom-left for +, reset, and − — if you prefer tapping."
+        ]
+      },
+      {
+        iconName: "Sliders",
+        title: "Toggle fields on and off live",
+        items: [
+          "Open the new sliders icon in the preview to flip 8 fields on or off — visible only in Expert mode.",
+          "Summary, target hours, balance, overtime split, vacation balance, attachments list, code column, and notes — each toggleable independently.",
+          "Changes take effect immediately in the preview AND in the exported PDF."
+        ]
+      },
+      {
+        iconName: "Layout",
+        title: "Settings & Send tidied up",
+        items: [
+          "Cards now collapse and expand — the Settings page opens compact, and you only open what you need.",
+          "Locale and calculation rules now share a single card.",
+          "The automatic PDF archive lives inside the Backup & Export card — closely related tools, grouped together.",
+          "Language and Design moved further down; daily-use cards come first.",
+          "The Send button in the preview screen now sits as a FAB at bottom-right — same one-handed reach as the “+” on the Dashboard."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Under the hood",
+        items: [
+          "PDF engine fully migrated to @react-pdf/renderer — removes several hang-class risks on older Android devices and produces much smaller files.",
+          "The second-generation preview is powered by pdfjs-dist and renders reliably on every device, regardless of WebView version.",
+          "Over 700 automated tests keep calculation and render logic stable."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "4.2.2",
     date: "27.04.2026",
     title: "Update hints & GitHub releases 🔔",

@@ -15,6 +15,13 @@ const config: KnipConfig = {
     'replace-in-files-cli',
     // Tailwind is used via @tailwindcss/vite plugin, not directly imported
     'tailwindcss',
+    // Required transitively by @react-pdf/pdfkit's browser build, which
+    // imports `pako/lib/zlib/...` directly. Must be a top-level dep so
+    // Rollup can resolve it during `vite build`.
+    'pako',
+    // Type-only package used in ReportPdfDocument.tsx; ships as transitive
+    // dep of @react-pdf/renderer.
+    '@react-pdf/types',
   ],
   // Disable Capacitor plugin detection (config file format not supported)
   capacitor: false,

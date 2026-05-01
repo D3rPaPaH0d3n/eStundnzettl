@@ -1,0 +1,6 @@
+Vektor-PDF & Live-Vorschau ✨
+• Stundenzettel jetzt als durchsuchbares Vektor-PDF — gestochen scharf in jedem Zoom, deutlich kleinere Datei
+• Pinch-to-Zoom direkt in der Vorschau, optional Buttons zum Zoomen
+• Felder im PDF live ein-/ausblenden — Zusammenfassung, Saldo, Mehrarbeit, Code-Spalte etc. (Hausmasta)
+• Senden-Button als FAB unten rechts — bequemer auf einer Hand
+• Settings aufgeräumt: ein-/ausklappbare Karten, Berechnung in einer Karte, PDF-Archiv beim Backup

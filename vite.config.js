@@ -58,9 +58,17 @@ export default defineConfig({
           // Prüft, ob das Modul aus node_modules kommt
           if (id.includes('node_modules')) {
             
-            // 1. PDF-Bibliotheken in einen eigenen Chunk (werden jetzt lazy geladen)
-            if (id.includes('html2pdf') || id.includes('html2canvas') || id.includes('jspdf')) {
+            // 1. PDF-Bibliotheken in einen eigenen Chunk.
+            //    Hinweis: PrintReport ist via React.lazy ausgelagert,
+            //    aber useAutoPdfArchive importiert renderMonthlyReportPdfBlob
+            //    statisch und zieht @react-pdf damit beim Start ein.
+            //    pdfjs-dist (fuer die Canvas-Vorschau) ist nur in
+            //    PrintReport gebraucht und damit lazy.
+            if (id.includes('@react-pdf') || id.includes('react-pdf') || id.includes('@fontsource')) {
               return 'pdf-libs';
+            }
+            if (id.includes('pdfjs-dist')) {
+              return 'pdfjs';
             }
             
             // 2. Animations-Bibliothek separat

@@ -1,6 +1,62 @@
 export const CHANGELOG_DATA_DE = [
 
   {
+    version: "4.3.0",
+    date: "01.05.2026",
+    title: "Vektor-PDF & Live-Vorschau ✨",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "FileText",
+        title: "Stundenzettel jetzt als echtes Vektor-PDF",
+        items: [
+          "Der Bericht wird komplett neu erzeugt — gestochen scharf in jedem Zoom, durchsuchbar und kopierbar beim Empfänger.",
+          "Datei-Größe sinkt drastisch: ein typischer Monat braucht jetzt rund 10 KB statt vorher 200–800 KB.",
+          "Saubere Tabellen-Umbrüche bei langen Berichten — der Tabellenkopf wiederholt sich automatisch auf neuen Seiten."
+        ]
+      },
+      {
+        iconName: "Zap",
+        title: "Zoom in der Vorschau",
+        items: [
+          "Pinch-to-Zoom mit zwei Fingern direkt in der Vorschau (50 % bis 300 %).",
+          "Auf Geräten mit Maus: Strg/Cmd + Mausrad.",
+          "Drei kleine Buttons unten links für +, Reset und − — wenn du's lieber tippst."
+        ]
+      },
+      {
+        iconName: "Sliders",
+        title: "Felder live ein- und ausblenden",
+        items: [
+          "Im Vorschau-Screen über das neue Slider-Icon ein Panel mit 8 Toggles aufrufen — sichtbar nur im Hausmasta-Modus.",
+          "Zusammenfassung, Sollzeit, Saldo, Mehrarbeit/Überstunden, Urlaubsbilanz, Anhänge-Liste, Code-Spalte und Notizen lassen sich einzeln umschalten.",
+          "Änderungen wirken sofort auf die Vorschau und auch auf das exportierte PDF."
+        ]
+      },
+      {
+        iconName: "Layout",
+        title: "Settings & Senden aufgeräumt",
+        items: [
+          "Karten lassen sich ein- und ausklappen — die Settings-Seite startet kompakt, du öffnest nur, was du gerade brauchst.",
+          "Stundenberechnung und Berechnungsregeln liegen in einer gemeinsamen Karte zusammen.",
+          "Das automatische PDF-Archiv ist Teil der Backup-Karte — sinnverwandte Funktionen sind jetzt eine Einheit.",
+          "Sprache und Design sind weiter nach unten gewandert; was du täglich brauchst, kommt zuerst.",
+          "Der Senden-Button im Vorschau-Screen sitzt jetzt als FAB unten rechts — gleicher Daumenweg wie der „+“ am Dashboard."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Unter der Haube",
+        items: [
+          "PDF-Engine komplett umgestellt auf @react-pdf/renderer — entfernt mehrere Hänger-Risiken auf älteren Android-Geräten und liefert deutlich kleinere Dateien.",
+          "Die zweite Generation der Vorschau setzt auf pdfjs-dist und rendert auf jedem Gerät zuverlässig — egal welche WebView-Version.",
+          "Über 700 automatische Tests halten Berechnungs- und Render-Logik stabil."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "4.2.2",
     date: "27.04.2026",
     title: "Update-Hinweise & GitHub-Releases 🔔",

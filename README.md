@@ -194,7 +194,7 @@ Wennst magst und dir die App wos wert is, freu i mi über a kloane Anerkennung v
 | 🖥️ Frontend | TypeScript, React, Vite |
 | 📱 Mobile | Capacitor (Android) |
 | 🗄️ Datenbank | SQLite + localStorage (Dual-Write) |
-| 📄 PDF | html2pdf.js + React-Renderer |
+| 📄 PDF | @react-pdf/renderer (Vektor, durchsuchbar) |
 | ☁️ Cloud | Google Drive API, Nextcloud WebDAV |
 | 🧪 Tests | Vitest |
 

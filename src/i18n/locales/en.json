@@ -100,8 +100,13 @@
   "reports": {
     "title": "Timesheet",
     "preview": "Preview",
+    "exportButton": "Send",
     "fullMonth": "Entire month",
     "employeeAlt": "Employee",
+    "layoutPanel": {
+      "title": "PDF display",
+      "subtitle": "Toggle fields live"
+    },
     "monthWithWeek": "{{month}} (CW {{week}})",
     "columns": {
       "date": "Date",
@@ -751,6 +756,8 @@
     "calc": {
       "header": "Calculation",
       "subtitle": "How overtime, sick leave and holidays are counted",
+      "combinedTitle": "Calculation",
+      "combinedSubtitle": "Locale & rules",
       "teaser": "{{overtime}} · Sick: {{sick}}",
       "contractedHours": "Contracted hours",
       "hoursPerWeek": "{{hours}} / week",
@@ -861,6 +868,8 @@
       "toast": "Language changed"
     },
     "data": {
+      "cardTitle": "Recording",
+      "cardSubtitle": "Mode, schedule, and work codes",
       "workModel": {
         "heading": "Work schedule",
         "currentLabel": "Current: ",
@@ -946,6 +955,26 @@
         "unknownReason": "unknown",
         "genericError": "Error: {{message}}"
       }
+    },
+    "pdfLayout": {
+      "title": "PDF display",
+      "subtitle": "Which fields appear in the exported PDF",
+      "showSummary": "Show summary",
+      "showSummaryDesc": "Grey box with totals at the end of the table",
+      "showTargetTime": "Show target hours",
+      "showTargetTimeDesc": "The target-time row in the summary",
+      "showBalance": "Show balance",
+      "showBalanceDesc": "Summary bottom line and per-day balance column",
+      "showOvertimeSplit": "Show overtime split",
+      "showOvertimeSplitDesc": "Split into extra hours and overtime in the summary",
+      "showVacationBalance": "Show vacation balance",
+      "showVacationBalanceDesc": "Remaining-vacation block at the end of the summary",
+      "showAttachmentsList": "Show attachments list",
+      "showAttachmentsListDesc": "Linked documents enumerated per entry",
+      "showWorkCodeColumn": "Show code column",
+      "showWorkCodeColumnDesc": "The work-code column in the table",
+      "showCustomNote": "Show notes",
+      "showCustomNoteDesc": "Optional notes block at the end of the report"
     }
   },
   "attachments": {

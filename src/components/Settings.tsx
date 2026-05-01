@@ -280,19 +280,7 @@ const Settings: React.FC<Props> = ({
         demoTrigger={demoTrigger}
       />
 
-      {/* 3. Theme Settings */}
-      <ThemeSettings theme={theme} setTheme={setTheme} />
-
-      {/* 3b. Sprache — immer sichtbar */}
-      <LocaleSettings
-        mode="language"
-        locale={locale}
-        setLocale={setLocale}
-        workDays={userData?.workDays}
-        onAfterLocaleChange={resetCalculationConfigToLocale}
-      />
-
-      {/* 3c. Berechnung (Stundenberechnung + Berechnungsregeln in EINER
+      {/* 3. Berechnung (Stundenberechnung + Berechnungsregeln in EINER
           Card). Im Hausmasta-Modus enthält sie zusätzlich den Locale-
           Picker (Stundenberechnung). Default zugeklappt, da sehr viel
           Inhalt. */}
@@ -355,7 +343,19 @@ const Settings: React.FC<Props> = ({
         }
       />
 
-      {/* 5. App Info & Danger Zone */}
+      {/* 5. Sprache (kosmetisch, weiter unten) */}
+      <LocaleSettings
+        mode="language"
+        locale={locale}
+        setLocale={setLocale}
+        workDays={userData?.workDays}
+        onAfterLocaleChange={resetCalculationConfigToLocale}
+      />
+
+      {/* 6. Design (kosmetisch, weiter unten) */}
+      <ThemeSettings theme={theme} setTheme={setTheme} />
+
+      {/* 7. App Info & Danger Zone */}
       <AppInfoSettings
         onCheckUpdate={onCheckUpdate}
         onDeleteAll={onDeleteAll}

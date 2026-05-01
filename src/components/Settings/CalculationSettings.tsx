@@ -387,33 +387,35 @@ const CalculationSettings: React.FC<Props> = ({
 
   return (
     <Wrapper>
-      <button
-        type="button"
-        onClick={() => setIsExpanded((v) => !v)}
-        className="w-full flex items-center gap-3 text-left"
-      >
-        <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
-          <Calculator size={20} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-zinc-800 dark:text-white">{t("settings.calc.header")}</h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            {t("settings.calc.subtitle")}
-          </p>
-        </div>
-        <ChevronDown
-          size={18}
-          className={`text-zinc-400 transition-transform flex-shrink-0 ${isExpanded ? "rotate-180" : ""}`}
-        />
-      </button>
+      {!unwrapped && (
+        <button
+          type="button"
+          onClick={() => setIsExpanded((v) => !v)}
+          className="w-full flex items-center gap-3 text-left"
+        >
+          <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+            <Calculator size={20} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-zinc-800 dark:text-white">{t("settings.calc.header")}</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              {t("settings.calc.subtitle")}
+            </p>
+          </div>
+          <ChevronDown
+            size={18}
+            className={`text-zinc-400 transition-transform flex-shrink-0 ${isExpanded ? "rotate-180" : ""}`}
+          />
+        </button>
+      )}
 
-      {!isExpanded && (
+      {!unwrapped && !isExpanded && (
         <div className="text-xs text-zinc-500 dark:text-zinc-400">
           {t("settings.calc.teaser", { overtime: overtimeLabel, sick: sickLabel })}
         </div>
       )}
 
-      {isExpanded && (<>
+      {(unwrapped || isExpanded) && (<>
       {/* Vertragsstunden (Readonly) */}
       <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-700">
         <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">

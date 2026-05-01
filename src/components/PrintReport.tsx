@@ -498,51 +498,24 @@ const PrintReport: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Vorschau-Bereich.
-          - Web + iOS (WKWebView): <PDFViewer> rendert eine echte
-            iframe-PDF-Vorschau, pixel-identisch zum spaeteren Export.
-          - Android: einige WebView-Builds rendern blob:-PDFs nicht
-            inline. Statt einer leeren iframe zeigen wir dort eine
-            Hinweiskarte mit prominentem Export-CTA. iOS WKWebView und
-            Browser sind davon nicht betroffen. */}
-      <div className="flex-1 bg-zinc-800/50 relative overflow-hidden flex flex-col">
-        {Capacitor.getPlatform() === "android" ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-400">
-            <FileText size={56} className="text-emerald-500/70 mb-4" />
-            <h3 className="text-zinc-100 font-bold text-lg mb-2">
-              {t("reports.title")}
-            </h3>
-            <p className="text-sm max-w-xs mb-6">
-              {t("reports.preview")}: {filteredEntries.length}{" "}
-              {filteredEntries.length === 1 ? "Eintrag" : "Eintraege"} im{" "}
-              {currentLabel}.
-            </p>
-            <button
-              onClick={() => setShowExportModal(true)}
-              disabled={isGenerating}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 disabled:opacity-50"
-            >
-              {isGenerating ? (
-                <Loader className="animate-spin" size={18} />
-              ) : (
-                <Download size={18} />
-              )}
-              {t("reports.title")} exportieren
-            </button>
-          </div>
-        ) : (
-          <PDFViewer
-            width="100%"
-            height="100%"
-            showToolbar={false}
-            style={{ border: "none" }}
-            innerRef={(node) => {
-              if (node) node.title = t("reports.preview");
-            }}
-          >
-            {previewDocument}
-          </PDFViewer>
-        )}
+      {/* Inline-PDF-Vorschau via <PDFViewer> (iframe + blob:-URL).
+          Funktioniert auf modernen Browsern, iOS WKWebView und auf
+          Android mit Chrome-WebView 99+ (Standard seit Mitte 2022).
+          Bei extrem alten WebView-Builds bliebe die iframe leer; in dem
+          Fall steht der "PDF"-Button oben weiterhin als Export-Pfad zur
+          Verfuegung. */}
+      <div className="flex-1 bg-zinc-800/50 relative overflow-hidden">
+        <PDFViewer
+          width="100%"
+          height="100%"
+          showToolbar={false}
+          style={{ border: "none" }}
+          innerRef={(node) => {
+            if (node) node.title = t("reports.preview");
+          }}
+        >
+          {previewDocument}
+        </PDFViewer>
       </div>
 
       <AnimatePresence>

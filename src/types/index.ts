@@ -281,30 +281,6 @@ export interface PdfArchiveRunOptions {
   force?: boolean;
 }
 
-// ─── html2pdf Options ───────────────────────────────────────
-
-export interface Html2PdfOptions {
-  margin?: number | number[];
-  filename?: string;
-  image?: { type: string; quality: number };
-  html2canvas?: {
-    scale?: number;
-    useCORS?: boolean;
-    logging?: boolean;
-    windowWidth?: number;
-    windowHeight?: number;
-    [key: string]: unknown;
-  };
-  jsPDF?: {
-    unit?: string;
-    format?: string;
-    orientation?: string;
-    compress?: boolean;
-    [key: string]: unknown;
-  };
-  pagebreak?: { mode?: string | string[] };
-}
-
 // ─── SQL Types ──────────────────────────────────────────────
 
 export type SqlValue = string | number | boolean | null;

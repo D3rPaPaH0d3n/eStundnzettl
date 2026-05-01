@@ -58,8 +58,9 @@ export default defineConfig({
           // Prüft, ob das Modul aus node_modules kommt
           if (id.includes('node_modules')) {
             
-            // 1. PDF-Bibliotheken in einen eigenen Chunk (werden jetzt lazy geladen)
-            if (id.includes('html2pdf') || id.includes('html2canvas') || id.includes('jspdf')) {
+            // 1. PDF-Bibliotheken in einen eigenen Chunk (werden lazy geladen
+            //    via React.lazy(PrintReport)).
+            if (id.includes('@react-pdf') || id.includes('react-pdf')) {
               return 'pdf-libs';
             }
             

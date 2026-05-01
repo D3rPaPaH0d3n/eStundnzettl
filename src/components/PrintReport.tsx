@@ -499,15 +499,14 @@ const PrintReport: React.FC<Props> = ({
       </div>
 
       {/* Vorschau-Bereich.
-          - Web: <PDFViewer> rendert eine echte iframe-PDF-Vorschau,
-            pixel-identisch zum spaeteren Export.
-          - Capacitor native: viele Android-WebViews rendern blob:-PDFs
-            nicht inline (Chromium-Restriktion). Statt einer leeren
-            iframe zeigen wir eine Hinweiskarte mit prominentem
-            Export-CTA, der dieselbe Aktion wie der "PDF"-Button oben
-            ausloest. */}
+          - Web + iOS (WKWebView): <PDFViewer> rendert eine echte
+            iframe-PDF-Vorschau, pixel-identisch zum spaeteren Export.
+          - Android: einige WebView-Builds rendern blob:-PDFs nicht
+            inline. Statt einer leeren iframe zeigen wir dort eine
+            Hinweiskarte mit prominentem Export-CTA. iOS WKWebView und
+            Browser sind davon nicht betroffen. */}
       <div className="flex-1 bg-zinc-800/50 relative overflow-hidden flex flex-col">
-        {Capacitor.isNativePlatform() ? (
+        {Capacitor.getPlatform() === "android" ? (
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-400">
             <FileText size={56} className="text-emerald-500/70 mb-4" />
             <h3 className="text-zinc-100 font-bold text-lg mb-2">

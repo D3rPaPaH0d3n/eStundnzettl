@@ -525,20 +525,6 @@ const PrintReport: React.FC<Props> = ({
               )}
             </AnimatePresence>
           </div>
-
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowExportModal(true)}
-            disabled={isGenerating}
-            className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white py-2.5 px-4 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-emerald-900/30 ring-1 ring-emerald-400/40 shrink-0"
-          >
-            {isGenerating ? (
-              <Loader className="animate-spin" size={18} />
-            ) : (
-              <Send size={18} />
-            )}
-            <span>{t("reports.exportButton")}</span>
-          </motion.button>
         </div>
       </div>
 
@@ -649,6 +635,27 @@ const PrintReport: React.FC<Props> = ({
           </>
         )}
       </AnimatePresence>
+
+      {/* Senden-FAB unten rechts (analog zum Dashboard-FAB
+          "Neuer Eintrag"). Bewusst NICHT im Layout-Panel oder
+          oberen Toolbar — User ist beim Lesen der Vorschau, der
+          natuerliche Daumenweg endet unten rechts. */}
+      <motion.button
+        type="button"
+        aria-label={t("reports.exportButton")}
+        whileTap={{ scale: 0.92 }}
+        onClick={() => setShowExportModal(true)}
+        disabled={isGenerating}
+        style={{ bottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
+        className="fixed right-6 z-[80] bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-full shadow-2xl shadow-emerald-900/40 ring-2 ring-emerald-400/50 disabled:opacity-50 flex items-center justify-center gap-2 px-5 py-3.5 font-bold"
+      >
+        {isGenerating ? (
+          <Loader className="animate-spin" size={20} />
+        ) : (
+          <Send size={20} />
+        )}
+        <span>{t("reports.exportButton")}</span>
+      </motion.button>
     </div>
   );
 };

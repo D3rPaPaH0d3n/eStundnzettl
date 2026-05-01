@@ -280,13 +280,12 @@ const Settings: React.FC<Props> = ({
         demoTrigger={demoTrigger}
       />
 
-      {/* 3. Berechnung (Stundenberechnung + Berechnungsregeln in EINER
+      {/* 3. Stundenberechnung (Locale + Berechnungsregeln in EINER
           Card). Im Hausmasta-Modus enthält sie zusätzlich den Locale-
-          Picker (Stundenberechnung). Default zugeklappt, da sehr viel
-          Inhalt. */}
+          Picker. Default zugeklappt, da sehr viel Inhalt. */}
       <CollapsibleCard
-        title={t("settings.calc.combinedTitle")}
-        subtitle={t("settings.calc.combinedSubtitle")}
+        title={t("settings.locale.header")}
+        subtitle={t("settings.locale.subtitle")}
         icon={
           <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
             <Calculator size={20} />

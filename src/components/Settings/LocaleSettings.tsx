@@ -224,19 +224,26 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
 
   // Inhalt der Stundenberechnung-Auswahl (ohne Card-Wrapper, damit
   // er in einer anderen Card eingebettet werden kann)
+  // Inhalt der Stundenberechnung-Auswahl (ohne Card-Wrapper, damit
+  // er in einer anderen Card eingebettet werden kann). Im
+  // "stundenberechnung"-Modus rendern wir den eigenen Header NICHT,
+  // weil die umschliessende Karte bereits "Stundenberechnung" als
+  // Titel traegt — sonst doppelte Ueberschrift.
   const stundenberechnungContent = (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
-          <Globe size={20} />
+      {mode !== "stundenberechnung" && (
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+            <Globe size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-zinc-800 dark:text-white">{t("settings.locale.header")}</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              {t("settings.locale.subtitle")}
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-bold text-zinc-800 dark:text-white">{t("settings.locale.header")}</h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            {t("settings.locale.subtitle")}
-          </p>
-        </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         <button

@@ -43,9 +43,15 @@ interface Props {
   performRun: (opts: PdfArchiveRunOptions) => Promise<Record<string, unknown>>;
   lastRun?: string | null;
   lastError?: string | null;
+  /**
+   * Wenn true, rendert die Komponente ohne eigenen Card-Wrapper, damit
+   * sie z.B. unten in der "Backup & Export"-Card als Sub-Sektion
+   * eingebettet werden kann. Header (Icon + Titel) bleibt sichtbar.
+   */
+  unwrapped?: boolean;
 }
 
-const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, lastRun, lastError }) => {
+const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, lastRun, lastError, unwrapped = false }) => {
   const { t } = useTranslation();
   const featureAvailability = useFeatureAvailability();
   const gdriveDisabled =
@@ -220,8 +226,18 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
     }
   }, [enabled, localTarget, nextcloudTarget, gdriveTarget, performRun, t]);
 
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
+    unwrapped ? (
+      // Eingebettet in eine andere Card: Trenner oben, kein eigener Card-Rahmen
+      <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-4">
+        {children}
+      </div>
+    ) : (
+      <Card className="p-4">{children}</Card>
+    );
+
   return (
-    <Card className="p-4">
+    <Wrapper>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
@@ -403,7 +419,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
           </div>
         </div>
       )}
-    </Card>
+    </Wrapper>
   );
 };
 

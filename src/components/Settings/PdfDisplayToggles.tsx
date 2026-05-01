@@ -7,11 +7,10 @@ import type { CalculationConfig, PdfDisplayConfig } from "../../types";
 /**
  * PdfDisplayToggles — Reine Toggle-Liste fuer die 8 PDF-Anzeige-Felder.
  *
- * Wiederverwendet vom Settings-Tab `PdfLayoutSettings` (in einem Card-
- * Wrapper) und vom Live-Slide-in-Panel im Vorschau-Screen
- * (`PrintReport`). Beide Aufrufer schreiben in dieselbe
- * `CalculationConfig.pdfDisplay`, dadurch sieht der User Aenderungen
- * sofort in der Vorschau und im naechsten Settings-Aufruf.
+ * Wird ausschliesslich vom Live-Slide-in-Panel im Vorschau-Screen
+ * (`PrintReport`) verwendet. Schreibt direkt in
+ * `CalculationConfig.pdfDisplay`; Aenderungen werden vom debounced
+ * Vorschau-Effect aufgegriffen und das PDF neu gerendert.
  */
 
 interface ToggleDef {

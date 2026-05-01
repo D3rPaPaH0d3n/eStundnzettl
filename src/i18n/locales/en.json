@@ -756,6 +756,8 @@
     "calc": {
       "header": "Calculation",
       "subtitle": "How overtime, sick leave and holidays are counted",
+      "combinedTitle": "Calculation",
+      "combinedSubtitle": "Locale & rules",
       "teaser": "{{overtime}} · Sick: {{sick}}",
       "contractedHours": "Contracted hours",
       "hoursPerWeek": "{{hours}} / week",
@@ -866,6 +868,8 @@
       "toast": "Language changed"
     },
     "data": {
+      "cardTitle": "Recording",
+      "cardSubtitle": "Mode, schedule, and work codes",
       "workModel": {
         "heading": "Work schedule",
         "currentLabel": "Current: ",

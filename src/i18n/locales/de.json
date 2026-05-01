@@ -756,6 +756,8 @@
     "calc": {
       "header": "Berechnung",
       "subtitle": "Wie Überstunden, Krank und Feiertage gezählt werden",
+      "combinedTitle": "Berechnung",
+      "combinedSubtitle": "Stundenberechnung & Regeln",
       "teaser": "{{overtime}} · Krank: {{sick}}",
       "contractedHours": "Vertragsstunden",
       "hoursPerWeek": "{{hours}} / Woche",
@@ -866,6 +868,8 @@
       "toast": "Sprache geändert"
     },
     "data": {
+      "cardTitle": "Erfassung",
+      "cardSubtitle": "Modell, Modus und Tätigkeitscodes",
       "workModel": {
         "heading": "Arbeitszeit Modell",
         "currentLabel": "Aktuell: ",

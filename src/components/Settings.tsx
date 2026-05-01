@@ -1,13 +1,14 @@
 import React, { Suspense, useState, useEffect } from "react";
+import { Calculator } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import ProfileSettings from "./Settings/ProfileSettings";
 import DataSettings from "./Settings/DataSettings";
 import ThemeSettings from "./Settings/ThemeSettings";
 import LocaleSettings from "./Settings/LocaleSettings";
 import CalculationSettings from "./Settings/CalculationSettings";
+import CollapsibleCard from "./Settings/CollapsibleCard";
 import BackupSettings from "./Settings/BackupSettings";
 import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
-import PdfLayoutSettings from "./Settings/PdfLayoutSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
 import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import toast from "react-hot-toast";
@@ -282,32 +283,56 @@ const Settings: React.FC<Props> = ({
       {/* 3. Theme Settings */}
       <ThemeSettings theme={theme} setTheme={setTheme} />
 
-      {/* 3b. Stundenberechnung / Locale — nur im Hausmasta-Modus */}
-      {(userData?.expertMode ?? false) && (
-        <LocaleSettings
-          locale={locale}
-          setLocale={setLocale}
-          workDays={userData?.workDays}
-          onAfterLocaleChange={resetCalculationConfigToLocale}
-        />
-      )}
-
-      {/* 3c. Berechnungsregeln — sichtbar für alle User */}
-      <CalculationSettings
-        userData={userData}
+      {/* 3b. Sprache — immer sichtbar */}
+      <LocaleSettings
+        mode="language"
         locale={locale}
-        calculationConfig={calculationConfig}
-        setCalculationConfig={setCalculationConfig}
+        setLocale={setLocale}
+        workDays={userData?.workDays}
+        onAfterLocaleChange={resetCalculationConfigToLocale}
       />
 
-      {/* 4. Backup Settings */}
+      {/* 3c. Berechnung (Stundenberechnung + Berechnungsregeln in EINER
+          Card). Im Hausmasta-Modus enthält sie zusätzlich den Locale-
+          Picker (Stundenberechnung). Default zugeklappt, da sehr viel
+          Inhalt. */}
+      <CollapsibleCard
+        title={t("settings.calc.combinedTitle")}
+        subtitle={t("settings.calc.combinedSubtitle")}
+        icon={
+          <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+            <Calculator size={20} />
+          </div>
+        }
+        defaultExpanded={false}
+        bodyClassName="px-4 pb-4 pt-0 space-y-4"
+      >
+        {(userData?.expertMode ?? false) && (
+          <LocaleSettings
+            mode="stundenberechnung"
+            locale={locale}
+            setLocale={setLocale}
+            workDays={userData?.workDays}
+            onAfterLocaleChange={resetCalculationConfigToLocale}
+          />
+        )}
+        <CalculationSettings
+          unwrapped
+          userData={userData}
+          locale={locale}
+          calculationConfig={calculationConfig}
+          setCalculationConfig={setCalculationConfig}
+        />
+      </CollapsibleCard>
+
+      {/* 4. Backup & Export — inkl. integriertem PDF-Archiv im
+          Hausmasta-Modus. Beide zusammen in einer einklappbaren Karte. */}
       <BackupSettings
         autoBackup={autoBackup}
         setAutoBackup={setAutoBackup}
         onExport={onExport}
         onFileImport={handleFileImportFromFile}
         onTriggerManualBackup={onTriggerManualBackup}
-        // Nextcloud State
         nextcloudEnabled={nextcloudEnabled}
         nextcloudUrl={nextcloudUrl}
         nextcloudUser={nextcloudUser}
@@ -317,25 +342,18 @@ const Settings: React.FC<Props> = ({
         setNextcloudUser={setNextcloudUser}
         setNextcloudPass={setNextcloudPass}
         expertMode={userData?.expertMode ?? false}
+        extraContent={
+          (userData?.expertMode ?? false) && pdfArchivePerformRun ? (
+            <PdfArchiveSettings
+              unwrapped
+              nextcloudEnabled={nextcloudEnabled}
+              performRun={pdfArchivePerformRun}
+              lastRun={pdfArchiveLastRun}
+              lastError={pdfArchiveLastError}
+            />
+          ) : null
+        }
       />
-
-      {/* 4b. PDF-Archiv (monatlich wachsendes PDF) — nur im Hausmasta-Modus */}
-      {(userData?.expertMode ?? false) && pdfArchivePerformRun && (
-        <PdfArchiveSettings
-          nextcloudEnabled={nextcloudEnabled}
-          performRun={pdfArchivePerformRun}
-          lastRun={pdfArchiveLastRun}
-          lastError={pdfArchiveLastError}
-        />
-      )}
-
-      {/* 4c. PDF-Anzeige-Toggles — nur im Hausmasta-Modus */}
-      {(userData?.expertMode ?? false) && (
-        <PdfLayoutSettings
-          calculationConfig={calculationConfig}
-          setCalculationConfig={setCalculationConfig}
-        />
-      )}
 
       {/* 5. App Info & Danger Zone */}
       <AppInfoSettings

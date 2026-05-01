@@ -41,6 +41,13 @@ interface Props {
   setCalculationConfig?: (
     next: CalculationConfig | ((prev: CalculationConfig) => CalculationConfig)
   ) => void;
+  /**
+   * Wenn true, rendert die Komponente ohne eigenen Card-Wrapper, damit
+   * sie z.B. in einer kombinierten "Berechnung"-Card eingebettet werden
+   * kann. Der Header-Toggle (Klick auf Header → Body kollabieren) bleibt
+   * erhalten.
+   */
+  unwrapped?: boolean;
 }
 
 // Die Options-IDs sind stabil (Persistenz in CalculationConfig); die
@@ -79,6 +86,7 @@ const CalculationSettings: React.FC<Props> = ({
   locale,
   calculationConfig,
   setCalculationConfig,
+  unwrapped = false,
 }) => {
   const { t } = useTranslation();
 
@@ -370,8 +378,15 @@ const CalculationSettings: React.FC<Props> = ({
     }
   };
 
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
+    unwrapped ? (
+      <div className="space-y-4">{children}</div>
+    ) : (
+      <Card className="p-4 space-y-4">{children}</Card>
+    );
+
   return (
-    <Card className="p-4 space-y-4">
+    <Wrapper>
       <button
         type="button"
         onClick={() => setIsExpanded((v) => !v)}
@@ -778,7 +793,7 @@ const CalculationSettings: React.FC<Props> = ({
         value=""
         onChange={handleImportHolidays}
       />
-    </Card>
+    </Wrapper>
   );
 };
 

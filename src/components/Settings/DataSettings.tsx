@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Settings as SettingsIcon, ListChecks, Calendar, Lock, Unlock, List, ChevronDown, ChevronRight, ClipboardList, Calculator } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Card } from "../../utils";
+import CollapsibleCard from "./CollapsibleCard";
 import { getIntlLocale } from "../../utils/formatLocale";
 import { WORK_MODELS, STORAGE_KEYS } from "../../hooks/constants";
 import { DEMO_DATA } from "../../utils/demoData";
@@ -144,7 +145,16 @@ const DataSettings: React.FC<Props> = ({
 
   return (
     <>
-      <Card className="p-5 space-y-4">
+      <CollapsibleCard
+        title={t("settings.data.cardTitle")}
+        subtitle={t("settings.data.cardSubtitle")}
+        icon={
+          <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+            <ClipboardList size={20} />
+          </div>
+        }
+        bodyClassName="px-5 pb-5 pt-0 space-y-4"
+      >
         {/* Nur Aufzeichnung Toggle — nur im Hausmasta-Modus */}
         {expertMode && (
           <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">
@@ -388,7 +398,7 @@ const DataSettings: React.FC<Props> = ({
           </div>
         )}
 
-      </Card>
+      </CollapsibleCard>
 
       {/* Modals */}
       <PresetModal

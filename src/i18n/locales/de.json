@@ -100,8 +100,13 @@
   "reports": {
     "title": "Stundenzettel",
     "preview": "Vorschau",
+    "exportButton": "Senden",
     "fullMonth": "Gesamter Monat",
     "employeeAlt": "Mitarbeiter",
+    "layoutPanel": {
+      "title": "PDF-Anzeige",
+      "subtitle": "Felder live ein-/ausblenden"
+    },
     "monthWithWeek": "{{month}} (KW {{week}})",
     "columns": {
       "date": "Datum",

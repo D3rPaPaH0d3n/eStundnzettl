@@ -100,8 +100,13 @@
   "reports": {
     "title": "Timesheet",
     "preview": "Preview",
+    "exportButton": "Send",
     "fullMonth": "Entire month",
     "employeeAlt": "Employee",
+    "layoutPanel": {
+      "title": "PDF display",
+      "subtitle": "Toggle fields live"
+    },
     "monthWithWeek": "{{month}} (CW {{week}})",
     "columns": {
       "date": "Date",

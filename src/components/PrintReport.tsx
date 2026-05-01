@@ -2,13 +2,14 @@ import React, { useState, useMemo, useEffect } from "react";
 import {
   X,
   Loader,
-  Download,
+  Send,
   ChevronDown,
   FileText,
   ChevronLeft,
   ChevronRight,
   Check,
   MessageSquarePlus,
+  SlidersHorizontal,
 } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
 import i18n from "../i18n";
@@ -31,6 +32,7 @@ import { usePeriodStats } from "../hooks/usePeriodStats";
 import ExportModal from "./ExportModal";
 import ReportPdfDocument from "./ReportPdfDocument";
 import PdfBlobPreview from "./PdfBlobPreview";
+import PdfDisplayToggles from "./Settings/PdfDisplayToggles";
 
 import type {
   Entry,
@@ -59,6 +61,11 @@ interface Props {
   readAttachmentFile: (file: Attachment) => Promise<string>;
   locale?: Locale;
   calculationConfig?: CalculationConfig | null;
+  /** Optionaler Setter — nur uebergeben, wenn die Anzeige-Toggles
+   *  live im Vorschau-Panel anpassbar sein sollen. */
+  setCalculationConfig?: (
+    next: CalculationConfig | ((prev: CalculationConfig) => CalculationConfig),
+  ) => void;
 }
 
 /**
@@ -88,6 +95,7 @@ const PrintReport: React.FC<Props> = ({
   readAttachmentFile,
   locale,
   calculationConfig,
+  setCalculationConfig,
 }) => {
   const { t } = useTranslation();
   // Krank-Korrektur auf allEntries anwenden (entries sind bereits korrigiert via useAppData)
@@ -111,6 +119,10 @@ const PrintReport: React.FC<Props> = ({
   const [customNote, setCustomNote] = useState("");
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [isLayoutPanelOpen, setIsLayoutPanelOpen] = useState(false);
+
+  const layoutTogglesAvailable =
+    (userData?.expertMode ?? false) && !!setCalculationConfig && !!calculationConfig;
 
   const debouncedNote = useDebounced(customNote, PREVIEW_DEBOUNCE_MS);
 
@@ -428,7 +440,8 @@ const PrintReport: React.FC<Props> = ({
         <div className="flex gap-2 items-center">
           <button
             onClick={() => setIsNoteModalOpen(true)}
-            className={`p-2 rounded-lg border flex items-center justify-center transition-colors ${
+            aria-label={t("reports.noteModal.title")}
+            className={`p-2 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
               customNote
                 ? "bg-blue-500/20 text-blue-400 border-blue-500/50"
                 : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white"
@@ -436,6 +449,19 @@ const PrintReport: React.FC<Props> = ({
           >
             <MessageSquarePlus size={20} />
           </button>
+          {layoutTogglesAvailable && (
+            <button
+              onClick={() => setIsLayoutPanelOpen(true)}
+              aria-label={t("reports.layoutPanel.title")}
+              className={`p-2 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
+                isLayoutPanelOpen
+                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
+                  : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white"
+              }`}
+            >
+              <SlidersHorizontal size={20} />
+            </button>
+          )}
           <div className="relative flex-1 min-w-0">
             <button
               onClick={() => setIsPickerOpen(!isPickerOpen)}
@@ -504,14 +530,14 @@ const PrintReport: React.FC<Props> = ({
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowExportModal(true)}
             disabled={isGenerating}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 px-4 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-emerald-900/20 shrink-0"
+            className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white py-2.5 px-4 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-emerald-900/30 ring-1 ring-emerald-400/40 shrink-0"
           >
             {isGenerating ? (
               <Loader className="animate-spin" size={18} />
             ) : (
-              <Download size={18} />
+              <Send size={18} />
             )}
-            <span className="hidden sm:inline">PDF</span>
+            <span>{t("reports.exportButton")}</span>
           </motion.button>
         </div>
       </div>
@@ -565,6 +591,62 @@ const PrintReport: React.FC<Props> = ({
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Slide-in-Panel: PDF-Anzeige-Toggles (Hausmasta-Modus). Live-
+          Aenderungen schreiben in calculationConfig.pdfDisplay; das
+          Vorschau-PDF wird via useEffect-Debounce neu generiert. */}
+      <AnimatePresence>
+        {isLayoutPanelOpen && layoutTogglesAvailable && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[210]"
+              onClick={() => setIsLayoutPanelOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "tween", duration: 0.22, ease: "easeOut" }}
+              className="fixed top-0 right-0 bottom-0 z-[220] w-full max-w-sm bg-zinc-50 dark:bg-zinc-900 shadow-2xl flex flex-col"
+              style={{ paddingTop: "env(safe-area-inset-top)" }}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300 shrink-0">
+                    <SlidersHorizontal size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-base text-zinc-800 dark:text-white truncate">
+                      {t("reports.layoutPanel.title")}
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                      {t("reports.layoutPanel.subtitle")}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsLayoutPanelOpen(false)}
+                  aria-label={t("common.close")}
+                  className="p-2 -mr-1 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 shrink-0"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3">
+                <PdfDisplayToggles
+                  calculationConfig={calculationConfig}
+                  setCalculationConfig={setCalculationConfig}
+                  compact
+                />
+              </div>
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
     </div>

@@ -20,9 +20,32 @@
  */
 
 import React, { useMemo } from "react";
-import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/types";
+import RobotoRegular from "@fontsource/roboto/files/roboto-latin-400-normal.woff?url";
+import RobotoBold from "@fontsource/roboto/files/roboto-latin-700-normal.woff?url";
+import RobotoLatinExtRegular from "@fontsource/roboto/files/roboto-latin-ext-400-normal.woff?url";
+import RobotoLatinExtBold from "@fontsource/roboto/files/roboto-latin-ext-700-normal.woff?url";
 import i18n from "../i18n";
+
+// Roboto registrieren — Latin + Latin-Extended decken West-, Mittel-
+// und Osteuropa ab (deutsche Umlaute, polnisch, tschechisch, ungarisch,
+// rumaenisch, vietnamesisch). Die eingebauten PDF-Type-1-Fonts
+// (Helvetica, Times) unterstuetzen nur WinAnsi und wuerden bei
+// erweiterten Latin-Glyphen leere Kaesten produzieren — daher der
+// Wechsel auf Roboto.
+//
+// Bewusst NICHT registriert: Cyrillic/Greek/CJK. Wer derartige Inhalte
+// in Projektnamen/Notizen pflegt, muss das Font-Setup erweitern.
+Font.register({
+  family: "Roboto",
+  fonts: [
+    { src: RobotoRegular, fontWeight: 400 },
+    { src: RobotoLatinExtRegular, fontWeight: 400 },
+    { src: RobotoBold, fontWeight: 700 },
+    { src: RobotoLatinExtBold, fontWeight: 700 },
+  ],
+});
 import { formatTime, formatSignedTime } from "../utils";
 import { getIntlLocale } from "../utils/formatLocale";
 import { buildDayBalanceMetaMap } from "../utils/timeCalculations";
@@ -102,7 +125,7 @@ const styles = StyleSheet.create({
     paddingLeft: 18,
     paddingRight: 18,
     fontSize: 9,
-    fontFamily: "Helvetica",
+    fontFamily: "Roboto",
     color: C.textBlack,
     backgroundColor: C.bgWhite,
   },
@@ -119,20 +142,20 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto", fontWeight: 700,
     color: C.textDark,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   company: {
     fontSize: 9,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto", fontWeight: 700,
     color: C.textMedium,
     marginTop: 2,
   },
   headerRight: { flexDirection: "row", alignItems: "center" },
   headerMeta: { textAlign: "right", marginRight: 8 },
-  headerName: { fontSize: 9.5, fontFamily: "Helvetica-Bold" },
+  headerName: { fontSize: 9.5, fontFamily: "Roboto", fontWeight: 700 },
   headerMonth: { fontSize: 8.5, color: C.textMedium, marginTop: 1 },
   avatar: {
     width: 38,
@@ -153,7 +176,7 @@ const styles = StyleSheet.create({
   },
   th: {
     fontSize: 7.5,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto", fontWeight: 700,
     color: C.textMedium,
     textTransform: "uppercase",
     letterSpacing: 0.3,
@@ -180,11 +203,11 @@ const styles = StyleSheet.create({
   trNoBorder: { borderBottomWidth: 0 },
 
   cellDate: { flexDirection: "row" },
-  weekday: { width: 18, fontFamily: "Helvetica-Bold" },
+  weekday: { width: 18, fontFamily: "Roboto", fontWeight: 700 },
   dateStr: { color: C.textMedium },
 
   // Zeit-Zelle (zweizeilig: Spanne + Pause)
-  timeRange: { fontFamily: "Helvetica-Bold", color: C.textDark },
+  timeRange: { fontFamily: "Roboto", fontWeight: 700, color: C.textDark },
   pause: {
     fontSize: 6.5,
     color: C.textMedium,
@@ -199,26 +222,26 @@ const styles = StyleSheet.create({
   },
 
   // Projekt
-  project: { fontFamily: "Helvetica-Bold", color: C.textMedium, fontSize: 9 },
-  projectHoliday: { fontFamily: "Helvetica-Bold", color: C.textBlue, fontSize: 9 },
-  projectTimeComp: { fontFamily: "Helvetica-Bold", color: C.textPurple, fontSize: 9 },
+  project: { fontFamily: "Roboto", fontWeight: 700, color: C.textMedium, fontSize: 9 },
+  projectHoliday: { fontFamily: "Roboto", fontWeight: 700, color: C.textBlue, fontSize: 9 },
+  projectTimeComp: { fontFamily: "Roboto", fontWeight: 700, color: C.textPurple, fontSize: 9 },
   attachmentLine: {
     fontSize: 6.5,
     color: C.textLight,
     marginTop: 2,
   },
-  attachmentLabel: { fontFamily: "Helvetica-Bold", color: C.textLight },
+  attachmentLabel: { fontFamily: "Roboto", fontWeight: 700, color: C.textLight },
 
   // Code
   codeText: { fontSize: 7.5, color: C.textMedium },
 
   // Std
-  hours: { fontFamily: "Helvetica-Bold", color: C.textDark },
-  hoursDrive: { color: C.textLight, fontFamily: "Helvetica" },
-  hoursHoliday: { color: C.textBlue, fontFamily: "Helvetica-Bold" },
-  hoursTimeComp: { color: C.textPurple, fontFamily: "Helvetica-Bold" },
-  balancePos: { color: C.textGreen, fontFamily: "Helvetica-Bold", fontSize: 7.5 },
-  balanceNeg: { color: C.textRed, fontFamily: "Helvetica-Bold", fontSize: 7.5 },
+  hours: { fontFamily: "Roboto", fontWeight: 700, color: C.textDark },
+  hoursDrive: { color: C.textLight, fontFamily: "Roboto" },
+  hoursHoliday: { color: C.textBlue, fontFamily: "Roboto", fontWeight: 700 },
+  hoursTimeComp: { color: C.textPurple, fontFamily: "Roboto", fontWeight: 700 },
+  balancePos: { color: C.textGreen, fontFamily: "Roboto", fontWeight: 700, fontSize: 7.5 },
+  balanceNeg: { color: C.textRed, fontFamily: "Roboto", fontWeight: 700, fontSize: 7.5 },
   emptyDash: { color: C.textLight },
 
   // Summary
@@ -232,7 +255,7 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     fontSize: 7.5,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto", fontWeight: 700,
     color: C.textMedium,
     textTransform: "uppercase",
     letterSpacing: 0.4,
@@ -251,7 +274,7 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
   sumLabel: { color: C.textDark },
-  sumValue: { fontFamily: "Helvetica-Bold", color: C.textDark },
+  sumValue: { fontFamily: "Roboto", fontWeight: 700, color: C.textDark },
   sumRowDashed: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -267,7 +290,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     fontSize: 9,
     marginTop: 3,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto", fontWeight: 700,
   },
   overtimeBlock: {
     marginTop: 4,
@@ -304,7 +327,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     fontSize: 7.5,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto", fontWeight: 700,
   },
 
   // Notizen
@@ -317,7 +340,7 @@ const styles = StyleSheet.create({
   },
   noteTitle: {
     fontSize: 8,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto", fontWeight: 700,
     color: C.textMedium,
     textTransform: "uppercase",
     marginBottom: 4,
@@ -542,7 +565,7 @@ const Summary: React.FC<SummaryProps> = ({
               <Text style={{ color: C.textBlue }}>
                 {t("reports.summary.holidays")}
               </Text>
-              <Text style={{ fontFamily: "Helvetica-Bold", color: C.textBlue }}>
+              <Text style={{ fontFamily: "Roboto", fontWeight: 700, color: C.textBlue }}>
                 {formatTime(stats.holiday)}
               </Text>
             </View>
@@ -552,7 +575,7 @@ const Summary: React.FC<SummaryProps> = ({
               <Text style={{ color: C.textBlue }}>
                 {t("reports.summary.vacation")}
               </Text>
-              <Text style={{ fontFamily: "Helvetica-Bold", color: C.textBlue }}>
+              <Text style={{ fontFamily: "Roboto", fontWeight: 700, color: C.textBlue }}>
                 {formatTime(stats.vacation)}
               </Text>
             </View>
@@ -562,7 +585,7 @@ const Summary: React.FC<SummaryProps> = ({
               <Text style={{ color: C.textPurple }}>
                 {t("reports.summary.timeComp")}
               </Text>
-              <Text style={{ fontFamily: "Helvetica-Bold", color: C.textPurple }}>
+              <Text style={{ fontFamily: "Roboto", fontWeight: 700, color: C.textPurple }}>
                 {formatTime(stats.timeComp)}
               </Text>
             </View>
@@ -572,7 +595,7 @@ const Summary: React.FC<SummaryProps> = ({
               <Text style={{ color: C.textRed }}>
                 {t("reports.summary.sickness")}
               </Text>
-              <Text style={{ fontFamily: "Helvetica-Bold", color: C.textRed }}>
+              <Text style={{ fontFamily: "Roboto", fontWeight: 700, color: C.textRed }}>
                 {formatTime(stats.sick)}
               </Text>
             </View>
@@ -613,7 +636,7 @@ const Summary: React.FC<SummaryProps> = ({
                         {t("reports.summary.extraHours")}
                       </Text>
                       <Text
-                        style={{ fontFamily: "Helvetica-Bold", color: C.textBlue }}
+                        style={{ fontFamily: "Roboto", fontWeight: 700, color: C.textBlue }}
                       >
                         {formatTime(stats.overtimeSplit.mehrarbeit)}
                       </Text>
@@ -625,7 +648,7 @@ const Summary: React.FC<SummaryProps> = ({
                         {t("reports.summary.overtime")}
                       </Text>
                       <Text
-                        style={{ fontFamily: "Helvetica-Bold", color: C.textPurple }}
+                        style={{ fontFamily: "Roboto", fontWeight: 700, color: C.textPurple }}
                       >
                         {formatTime(stats.overtimeSplit.ueberstunden)}
                       </Text>
@@ -649,7 +672,7 @@ const Summary: React.FC<SummaryProps> = ({
         <View style={styles.vacationBalance}>
           <View style={styles.vacationRow}>
             <Text>{t("reports.vacationBalance.allowance")}</Text>
-            <Text style={{ fontFamily: "Helvetica-Bold" }}>
+            <Text style={{ fontFamily: "Roboto", fontWeight: 700 }}>
               {vacationBalance.allowance} {t("reports.vacationBalance.days")}
             </Text>
           </View>
@@ -660,7 +683,7 @@ const Summary: React.FC<SummaryProps> = ({
                   ? t("reports.vacationBalance.carryoverPositive")
                   : t("reports.vacationBalance.carryoverNegative")}
               </Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>
+              <Text style={{ fontFamily: "Roboto", fontWeight: 700 }}>
                 {vacationBalance.carryover > 0
                   ? `+${vacationBalance.carryover}`
                   : `${vacationBalance.carryover}`}{" "}
@@ -674,7 +697,7 @@ const Summary: React.FC<SummaryProps> = ({
                 year: monthDate.getFullYear(),
               })}
             </Text>
-            <Text style={{ fontFamily: "Helvetica-Bold" }}>
+            <Text style={{ fontFamily: "Roboto", fontWeight: 700 }}>
               {vacationBalance.usedDays} {t("reports.vacationBalance.days")}
             </Text>
           </View>

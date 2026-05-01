@@ -58,9 +58,12 @@ export default defineConfig({
           // Prüft, ob das Modul aus node_modules kommt
           if (id.includes('node_modules')) {
             
-            // 1. PDF-Bibliotheken in einen eigenen Chunk (werden lazy geladen
-            //    via React.lazy(PrintReport)).
-            if (id.includes('@react-pdf') || id.includes('react-pdf')) {
+            // 1. PDF-Bibliotheken in einen eigenen Chunk.
+            //    Hinweis: PrintReport ist via React.lazy ausgelagert,
+            //    aber useAutoPdfArchive importiert renderMonthlyReportPdfBlob
+            //    statisch und zieht den Chunk damit auch beim Start ein.
+            //    Trennung dient hauptsaechlich der Cache-Stabilitaet.
+            if (id.includes('@react-pdf') || id.includes('react-pdf') || id.includes('@fontsource')) {
               return 'pdf-libs';
             }
             

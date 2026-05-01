@@ -11,6 +11,7 @@ import {
   MessageSquarePlus,
 } from "lucide-react";
 import { pdf, PDFViewer } from "@react-pdf/renderer";
+import i18n from "../i18n";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
@@ -210,24 +211,33 @@ const PrintReport: React.FC<Props> = ({
     return attachments.filter((a) => ids.has(a.entryId));
   }, [filteredEntries, attachments]);
 
+  // Sprache als Memo-Trigger, damit ein UI-Sprachwechsel waehrend der
+  // Preview offen ist auch das PDF neu rendert. Die ReportPdfDocument
+  // verwendet `i18n.t` ueber den Singleton — ein Sprachwechsel ruft
+  // ohne expliziten Trigger sonst kein Re-Render aus.
+  const currentLanguage = i18n.language;
+
   // Vorschau-Dokument: nutzt den debouncten Notiz-Wert, damit das
   // PDF nicht auf jeden Tastendruck neu gerendert wird.
   const previewDocument = useMemo(
-    () => (
-      <ReportPdfDocument
-        entries={filteredEntries}
-        userData={userData}
-        monthDate={monthDate}
-        filterMode={filterMode}
-        stats={stats}
-        workCodes={workCodes}
-        attachments={reportAttachments}
-        customNote={debouncedNote}
-        locale={locale}
-        calculationConfig={calculationConfig}
-        allEntries={allEntries}
-      />
-    ),
+    () => {
+      void currentLanguage; // bewusst nur als Memo-Trigger genutzt
+      return (
+        <ReportPdfDocument
+          entries={filteredEntries}
+          userData={userData}
+          monthDate={monthDate}
+          filterMode={filterMode}
+          stats={stats}
+          workCodes={workCodes}
+          attachments={reportAttachments}
+          customNote={debouncedNote}
+          locale={locale}
+          calculationConfig={calculationConfig}
+          allEntries={allEntries}
+        />
+      );
+    },
     [
       filteredEntries,
       userData,
@@ -240,6 +250,7 @@ const PrintReport: React.FC<Props> = ({
       locale,
       calculationConfig,
       allEntries,
+      currentLanguage,
     ],
   );
 
@@ -487,19 +498,52 @@ const PrintReport: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Vorschau: PDFViewer rendert das gleiche Dokument, das auch
-          exportiert wird → Pixel-identische Vorschau. Auf Plattformen
-          ohne native iframe-PDF-Unterstuetzung (manche Android-WebViews)
-          zeigt der Viewer nichts; der Export funktioniert dort trotzdem. */}
-      <div className="flex-1 bg-zinc-800/50 relative overflow-hidden">
-        <PDFViewer
-          width="100%"
-          height="100%"
-          showToolbar={false}
-          style={{ border: "none" }}
-        >
-          {previewDocument}
-        </PDFViewer>
+      {/* Vorschau-Bereich.
+          - Web: <PDFViewer> rendert eine echte iframe-PDF-Vorschau,
+            pixel-identisch zum spaeteren Export.
+          - Capacitor native: viele Android-WebViews rendern blob:-PDFs
+            nicht inline (Chromium-Restriktion). Statt einer leeren
+            iframe zeigen wir eine Hinweiskarte mit prominentem
+            Export-CTA, der dieselbe Aktion wie der "PDF"-Button oben
+            ausloest. */}
+      <div className="flex-1 bg-zinc-800/50 relative overflow-hidden flex flex-col">
+        {Capacitor.isNativePlatform() ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-400">
+            <FileText size={56} className="text-emerald-500/70 mb-4" />
+            <h3 className="text-zinc-100 font-bold text-lg mb-2">
+              {t("reports.title")}
+            </h3>
+            <p className="text-sm max-w-xs mb-6">
+              {t("reports.preview")}: {filteredEntries.length}{" "}
+              {filteredEntries.length === 1 ? "Eintrag" : "Eintraege"} im{" "}
+              {currentLabel}.
+            </p>
+            <button
+              onClick={() => setShowExportModal(true)}
+              disabled={isGenerating}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 disabled:opacity-50"
+            >
+              {isGenerating ? (
+                <Loader className="animate-spin" size={18} />
+              ) : (
+                <Download size={18} />
+              )}
+              {t("reports.title")} exportieren
+            </button>
+          </div>
+        ) : (
+          <PDFViewer
+            width="100%"
+            height="100%"
+            showToolbar={false}
+            style={{ border: "none" }}
+            innerRef={(node) => {
+              if (node) node.title = t("reports.preview");
+            }}
+          >
+            {previewDocument}
+          </PDFViewer>
+        )}
       </div>
 
       <AnimatePresence>

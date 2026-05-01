@@ -59,10 +59,18 @@ vi.mock("@react-pdf/renderer", () => {
         "data-pdf-image": true,
       }),
     StyleSheet: { create: <T,>(s: T): T => s },
+    Font: { register: vi.fn() },
     pdf: vi.fn(),
     PDFViewer: passthrough("div", "data-pdf-viewer"),
   };
 });
+
+// Vite-`?url`-Imports sind im Test-Lauf nicht aufloesbar; wir liefern
+// Dummy-Strings fuer das gemockte Font.register.
+vi.mock("@fontsource/roboto/files/roboto-latin-400-normal.woff?url", () => ({ default: "" }));
+vi.mock("@fontsource/roboto/files/roboto-latin-700-normal.woff?url", () => ({ default: "" }));
+vi.mock("@fontsource/roboto/files/roboto-latin-ext-400-normal.woff?url", () => ({ default: "" }));
+vi.mock("@fontsource/roboto/files/roboto-latin-ext-700-normal.woff?url", () => ({ default: "" }));
 
 // Importe NACH den Mocks
 import ReportPdfDocument from "../ReportPdfDocument";

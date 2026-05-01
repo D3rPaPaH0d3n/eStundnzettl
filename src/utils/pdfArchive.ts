@@ -1,10 +1,10 @@
 /**
- * pdfArchive.js — Headless monatlicher PDF-Generator.
+ * pdfArchive.ts — Headless monatlicher PDF-Generator.
  *
  * Erzeugt ein A4-Portrait-PDF fuer die automatische Langzeit-Archivierung
- * (useAutoPdfArchive). Das Layout wird jetzt von `ReportDocument` (der
- * gleichen React-Komponente wie die interaktive Vorschau in PrintReport)
- * produziert — dadurch sieht das automatische Monats-PDF 1:1 wie der
+ * (useAutoPdfArchive). Das Layout produziert `ReportPdfDocument` (die
+ * gleiche react-pdf-Komponente wie die interaktive Vorschau in
+ * PrintReport) — dadurch sieht das automatische Monats-PDF 1:1 wie der
  * vom Nutzer manuell geteilte Stundenzettel aus.
  *
  * Die Archiv-spezifische Logik (Dateinamen, Content-Hash fuer das

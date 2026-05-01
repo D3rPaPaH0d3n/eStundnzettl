@@ -81,6 +81,7 @@ import type {
   WorkCode,
   Attachment,
   CalculationConfig,
+  PdfDisplayConfig,
 } from "../../types";
 import type { Locale } from "../../locales/types";
 
@@ -402,6 +403,139 @@ describe("ReportPdfDocument", () => {
       const { container } = renderReport({ monthDate: new Date(2026, 3, 6) });
       // Default ist "month" → kein KW-Suffix
       expect(container.textContent).not.toMatch(/KW\s/);
+    });
+  });
+
+  describe("PDF-Display-Toggles (Hausmasta-Modus)", () => {
+    // Helfer: erzeugt eine vollstaendige CalculationConfig mit nur einem
+    // gezielt veraenderten pdfDisplay-Feld. Alle anderen Toggles bleiben
+    // dank Default-Resolver auf AN.
+    const configWithToggle = (
+      key: string,
+      value: boolean,
+    ): CalculationConfig => ({
+      weeklyTargetMinutes: 2310,
+      overtimeMode: "split",
+      overtimeThresholdMinutes: 2400,
+      sickOnWorkDayMode: "additive",
+      holidaySet: { mode: "locale_default", disabledHolidayKeys: [] },
+      halfDayMode: { mode: "locale_default", customHalfDays: [] },
+      holidayOnWorkDayMode: "additive",
+      autoPauseRules: [],
+      vacationAllowanceDays: 25,
+      vacationCarryoverDays: 0,
+      configVersion: 1,
+      pdfDisplay: {
+        showSummary: true,
+        showTargetTime: true,
+        showBalance: true,
+        showOvertimeSplit: true,
+        showVacationBalance: true,
+        showAttachmentsList: true,
+        showWorkCodeColumn: true,
+        showCustomNote: true,
+        [key]: value,
+      } as PdfDisplayConfig,
+    });
+
+    it("blendet die komplette Summary aus, wenn showSummary=false", () => {
+      const { container } = renderReport({
+        calculationConfig: configWithToggle("showSummary", false),
+      });
+      expect(container.textContent).not.toMatch(/Zusammenfassung/);
+      // Auch Sub-Bloecke wie Soll/Saldo verschwinden mit
+      expect(container.textContent).not.toMatch(/Sollzeit/);
+    });
+
+    it("blendet nur die Sollzeit-Zeile aus, wenn showTargetTime=false", () => {
+      const { container } = renderReport({
+        calculationConfig: configWithToggle("showTargetTime", false),
+      });
+      // Summary selbst bleibt sichtbar
+      expect(container.textContent).toMatch(/Zusammenfassung/);
+      // Sollzeit-Label fehlt
+      expect(container.textContent).not.toMatch(/Sollzeit/);
+    });
+
+    it("blendet Saldo + Saldo-Spalte aus, wenn showBalance=false", () => {
+      const { container } = renderReport({
+        calculationConfig: configWithToggle("showBalance", false),
+      });
+      // "Saldo:"-Label aus der Summary darf nicht erscheinen.
+      // Der Tabellenkopf zeigt "Saldo" als Spaltentitel, das auch verschwinden soll.
+      expect(container.textContent).not.toMatch(/Saldo/);
+    });
+
+    it("blendet Mehrarbeit/Ueberstunden-Block aus, wenn showOvertimeSplit=false", () => {
+      const splitStats = makeStats({
+        overtimeSplit: { mehrarbeit: 60, ueberstunden: 30 },
+      });
+      const { container } = renderReport({
+        stats: splitStats,
+        calculationConfig: configWithToggle("showOvertimeSplit", false),
+      });
+      expect(container.textContent).not.toMatch(/Mehrarbeit/);
+      expect(container.textContent).not.toMatch(/Überstunden/);
+    });
+
+    it("blendet die Urlaubsbilanz aus, wenn showVacationBalance=false", () => {
+      const { queryByText } = renderReport({
+        calculationConfig: configWithToggle("showVacationBalance", false),
+      });
+      expect(queryByText(/Urlaubsanspruch/)).toBeNull();
+    });
+
+    it("blendet die Anhaenge-Liste aus, wenn showAttachmentsList=false", () => {
+      const { container } = renderReport({
+        entries: [makeEntry({ id: 5 })],
+        attachments: [
+          {
+            id: "att-1",
+            entryId: 5,
+            label: "Lieferschein",
+            fileName: "ls.pdf",
+            mimeType: "application/pdf",
+            storagePath: "/foo",
+            fileSize: 1024,
+            createdAt: "2026-04-07T10:00:00",
+          } as Attachment,
+        ],
+        calculationConfig: configWithToggle("showAttachmentsList", false),
+      });
+      expect(container.textContent).not.toMatch(/Lieferschein/);
+    });
+
+    it("blendet die Code-Spalte aus, wenn showWorkCodeColumn=false", () => {
+      const { container, queryAllByText } = renderReport({
+        entries: [makeEntry({ project: "Baustelle Nord", code: 1 })],
+        workCodes: [{ id: 1, label: "Standard" }],
+        calculationConfig: configWithToggle("showWorkCodeColumn", false),
+      });
+      // Spaltenkopf "Code" weg
+      expect(container.textContent).not.toMatch(/Code/);
+      // Auch das Label "Standard" aus dieser Spalte erscheint nicht
+      expect(queryAllByText("Standard").length).toBe(0);
+    });
+
+    it("blendet den Notiz-Block aus, wenn showCustomNote=false", () => {
+      const { container } = renderReport({
+        customNote: "Sondereinsatz Wochenende",
+        calculationConfig: configWithToggle("showCustomNote", false),
+      });
+      expect(container.textContent).not.toMatch(/Sondereinsatz Wochenende/);
+      expect(container.textContent).not.toMatch(/Anmerkungen/);
+    });
+
+    it("Default ohne Config: alle Toggles AN (rueckwaertskompatibel)", () => {
+      // Legacy-Path: User hat keine pdfDisplay-Config — Defaults greifen,
+      // alles ist sichtbar.
+      const { container } = renderReport({
+        entries: [makeEntry({ project: "Legacy" })],
+        calculationConfig: null,
+      });
+      expect(container.textContent).toMatch(/Zusammenfassung/);
+      expect(container.textContent).toMatch(/Code/);
+      expect(container.textContent).toMatch(/Saldo/);
     });
   });
 });

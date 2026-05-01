@@ -49,10 +49,10 @@ Font.register({
 import { formatTime, formatSignedTime } from "../utils";
 import { getIntlLocale } from "../utils/formatLocale";
 import { buildDayBalanceMetaMap } from "../utils/timeCalculations";
-import { resolveEffectiveRules } from "../utils/calculationConfig";
+import { resolveEffectiveRules, getEffectivePdfDisplay } from "../utils/calculationConfig";
 import { WORK_CODE } from "../hooks/constants";
 
-import type { Entry, UserData, WorkCode, Attachment, CalculationConfig } from "../types";
+import type { Entry, UserData, WorkCode, Attachment, CalculationConfig, PdfDisplayConfig } from "../types";
 import type { Locale } from "../locales/types";
 
 // ─── Stats-Shape (1:1 wie zuvor in ReportDocument) ─────────────────
@@ -403,14 +403,22 @@ const Header: React.FC<HeaderProps> = ({ userData, monthDate, filterMode }) => {
   );
 };
 
-const TableHead: React.FC = () => (
+interface TableHeadProps {
+  showWorkCodeColumn: boolean;
+  showBalance: boolean;
+}
+const TableHead: React.FC<TableHeadProps> = ({ showWorkCodeColumn, showBalance }) => (
   <View style={styles.thead} fixed>
     <Text style={[styles.th, styles.colDate]}>{t("reports.columns.date")}</Text>
     <Text style={[styles.th, styles.colTime]}>{t("reports.columns.time")}</Text>
     <Text style={[styles.th, styles.colProject]}>{t("reports.columns.project")}</Text>
-    <Text style={[styles.th, styles.colCode]}>{t("reports.columns.code")}</Text>
+    {showWorkCodeColumn ? (
+      <Text style={[styles.th, styles.colCode]}>{t("reports.columns.code")}</Text>
+    ) : null}
     <Text style={[styles.th, styles.colHours]}>{t("reports.columns.hours")}</Text>
-    <Text style={[styles.th, styles.colBalance]}>{t("reports.columns.balance")}</Text>
+    {showBalance ? (
+      <Text style={[styles.th, styles.colBalance]}>{t("reports.columns.balance")}</Text>
+    ) : null}
   </View>
 );
 
@@ -421,6 +429,9 @@ interface RowProps {
   workCodeLabelMap: Map<number, string>;
   attachmentsForEntry: Attachment[];
   meta: { dayIndex?: number; isEvenDay?: boolean; showBalance?: boolean; balance?: number };
+  showWorkCodeColumn: boolean;
+  showBalance: boolean;
+  showAttachmentsList: boolean;
 }
 const Row: React.FC<RowProps> = ({
   e,
@@ -429,6 +440,9 @@ const Row: React.FC<RowProps> = ({
   workCodeLabelMap,
   attachmentsForEntry,
   meta,
+  showWorkCodeColumn,
+  showBalance,
+  showAttachmentsList,
 }) => {
   const sameDay = prev && prev.date === e.date;
   const lastOfDay = !next || next.date !== e.date;
@@ -504,7 +518,7 @@ const Row: React.FC<RowProps> = ({
       <View style={styles.colTime}>{timeCell}</View>
       <View style={styles.colProject}>
         <Text style={projectStyle}>{projectText}</Text>
-        {attachmentsForEntry.length > 0 ? (
+        {showAttachmentsList && attachmentsForEntry.length > 0 ? (
           <Text style={styles.attachmentLine}>
             <Text style={styles.attachmentLabel}>
               {t("reports.documentsLabel")}
@@ -513,20 +527,25 @@ const Row: React.FC<RowProps> = ({
           </Text>
         ) : null}
       </View>
-      <Text style={[styles.colCode, styles.codeText]}>{codeText}</Text>
+      {showWorkCodeColumn ? (
+        <Text style={[styles.colCode, styles.codeText]}>{codeText}</Text>
+      ) : null}
       <Text style={hoursStyle}>{hoursText}</Text>
-      <View style={styles.colBalance}>
-        {lastOfDay && meta?.showBalance ? (
-          <Text style={(meta.balance ?? 0) >= 0 ? styles.balancePos : styles.balanceNeg}>
-            {formatSignedTime(meta.balance ?? 0)}
-          </Text>
-        ) : null}
-      </View>
+      {showBalance ? (
+        <View style={styles.colBalance}>
+          {lastOfDay && meta?.showBalance ? (
+            <Text style={(meta.balance ?? 0) >= 0 ? styles.balancePos : styles.balanceNeg}>
+              {formatSignedTime(meta.balance ?? 0)}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 };
 
 interface SummaryProps {
+  display: PdfDisplayConfig;
   stats: ReportStats;
   userData?: UserData;
   showOvertimeColumns: boolean;
@@ -540,13 +559,17 @@ interface VacationBalance {
   remaining: number;
 }
 const Summary: React.FC<SummaryProps> = ({
+  display,
   stats,
   userData,
   showOvertimeColumns,
   vacationBalance,
   monthDate,
 }) => {
+  const showSollSection = !userData?.simpleMode && display.showTargetTime;
+  const showSaldoSection = !userData?.simpleMode && display.showBalance;
   const overtimeVisible =
+    display.showOvertimeSplit &&
     showOvertimeColumns &&
     (stats.overtimeSplit.mehrarbeit > 0 || stats.overtimeSplit.ueberstunden > 0);
 
@@ -608,55 +631,55 @@ const Summary: React.FC<SummaryProps> = ({
             <Text style={styles.sumLabel}>{t("reports.summary.totalActual")}</Text>
             <Text style={styles.sumValue}>{formatTime(stats.totalIst)}</Text>
           </View>
-          {!userData?.simpleMode ? (
-            <>
-              <View style={styles.sumRow}>
-                <Text style={{ color: C.textMedium }}>
-                  {t("reports.summary.targetTime")}
-                </Text>
-                <Text style={{ color: C.textMedium }}>
-                  {formatTime(stats.totalTarget)}
-                </Text>
-              </View>
-              <View style={styles.sumRowBold}>
-                <Text>{t("reports.summary.balance")}</Text>
-                <Text
-                  style={{
-                    color: stats.totalSaldo >= 0 ? C.textGreen : C.textRed,
-                  }}
-                >
-                  {formatSignedTime(stats.totalSaldo)}
-                </Text>
-              </View>
-              {overtimeVisible ? (
-                <View style={styles.overtimeBlock}>
-                  {stats.overtimeSplit.mehrarbeit > 0 ? (
-                    <View style={styles.sumRow}>
-                      <Text style={{ color: C.textBlue }}>
-                        {t("reports.summary.extraHours")}
-                      </Text>
-                      <Text
-                        style={{ fontFamily: "Roboto", fontWeight: 700, color: C.textBlue }}
-                      >
-                        {formatTime(stats.overtimeSplit.mehrarbeit)}
-                      </Text>
-                    </View>
-                  ) : null}
-                  {stats.overtimeSplit.ueberstunden > 0 ? (
-                    <View style={styles.sumRow}>
-                      <Text style={{ color: C.textPurple }}>
-                        {t("reports.summary.overtime")}
-                      </Text>
-                      <Text
-                        style={{ fontFamily: "Roboto", fontWeight: 700, color: C.textPurple }}
-                      >
-                        {formatTime(stats.overtimeSplit.ueberstunden)}
-                      </Text>
-                    </View>
-                  ) : null}
+          {showSollSection ? (
+            <View style={styles.sumRow}>
+              <Text style={{ color: C.textMedium }}>
+                {t("reports.summary.targetTime")}
+              </Text>
+              <Text style={{ color: C.textMedium }}>
+                {formatTime(stats.totalTarget)}
+              </Text>
+            </View>
+          ) : null}
+          {showSaldoSection ? (
+            <View style={styles.sumRowBold}>
+              <Text>{t("reports.summary.balance")}</Text>
+              <Text
+                style={{
+                  color: stats.totalSaldo >= 0 ? C.textGreen : C.textRed,
+                }}
+              >
+                {formatSignedTime(stats.totalSaldo)}
+              </Text>
+            </View>
+          ) : null}
+          {overtimeVisible ? (
+            <View style={styles.overtimeBlock}>
+              {stats.overtimeSplit.mehrarbeit > 0 ? (
+                <View style={styles.sumRow}>
+                  <Text style={{ color: C.textBlue }}>
+                    {t("reports.summary.extraHours")}
+                  </Text>
+                  <Text
+                    style={{ fontFamily: "Roboto", fontWeight: 700, color: C.textBlue }}
+                  >
+                    {formatTime(stats.overtimeSplit.mehrarbeit)}
+                  </Text>
                 </View>
               ) : null}
-            </>
+              {stats.overtimeSplit.ueberstunden > 0 ? (
+                <View style={styles.sumRow}>
+                  <Text style={{ color: C.textPurple }}>
+                    {t("reports.summary.overtime")}
+                  </Text>
+                  <Text
+                    style={{ fontFamily: "Roboto", fontWeight: 700, color: C.textPurple }}
+                  >
+                    {formatTime(stats.overtimeSplit.ueberstunden)}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           ) : null}
         </View>
       </View>
@@ -668,7 +691,7 @@ const Summary: React.FC<SummaryProps> = ({
         </View>
       ) : null}
 
-      {vacationBalance ? (
+      {display.showVacationBalance && vacationBalance ? (
         <View style={styles.vacationBalance}>
           <View style={styles.vacationRow}>
             <Text>{t("reports.vacationBalance.allowance")}</Text>
@@ -750,6 +773,12 @@ const ReportPdfDocument: React.FC<Props> = ({
     return rules.overtimeMode !== "none";
   }, [locale, calculationConfig]);
 
+  // Anzeige-Toggles (Hausmasta) — Defaults: alles AN
+  const display = useMemo(
+    () => getEffectivePdfDisplay(calculationConfig),
+    [calculationConfig],
+  );
+
   // Code-Label-Map
   const workCodeLabelMap = useMemo<Map<number, string>>(
     () => new Map(workCodes.map((c) => [c.id, c.label])),
@@ -813,7 +842,10 @@ const ReportPdfDocument: React.FC<Props> = ({
     <Document>
       <Page size="A4" style={styles.page}>
         <Header userData={userData} monthDate={monthDate} filterMode={filterMode} />
-        <TableHead />
+        <TableHead
+          showWorkCodeColumn={display.showWorkCodeColumn}
+          showBalance={display.showBalance}
+        />
         {entries.map((e, idx) => (
           <Row
             key={e.id}
@@ -823,16 +855,22 @@ const ReportPdfDocument: React.FC<Props> = ({
             workCodeLabelMap={workCodeLabelMap}
             attachmentsForEntry={attachmentsByEntryId.get(e.id) || []}
             meta={dayMetaMap[e.id] || {}}
+            showWorkCodeColumn={display.showWorkCodeColumn}
+            showBalance={display.showBalance}
+            showAttachmentsList={display.showAttachmentsList}
           />
         ))}
-        <Summary
-          stats={safeStats}
-          userData={userData}
-          showOvertimeColumns={showOvertimeColumns}
-          vacationBalance={vacationBalance}
-          monthDate={monthDate}
-        />
-        <Note note={customNote} />
+        {display.showSummary ? (
+          <Summary
+            display={display}
+            stats={safeStats}
+            userData={userData}
+            showOvertimeColumns={showOvertimeColumns}
+            vacationBalance={vacationBalance}
+            monthDate={monthDate}
+          />
+        ) : null}
+        {display.showCustomNote ? <Note note={customNote} /> : null}
       </Page>
     </Document>
   );

@@ -7,6 +7,7 @@ import LocaleSettings from "./Settings/LocaleSettings";
 import CalculationSettings from "./Settings/CalculationSettings";
 import BackupSettings from "./Settings/BackupSettings";
 import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
+import PdfLayoutSettings from "./Settings/PdfLayoutSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
 import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import toast from "react-hot-toast";
@@ -325,6 +326,14 @@ const Settings: React.FC<Props> = ({
           performRun={pdfArchivePerformRun}
           lastRun={pdfArchiveLastRun}
           lastError={pdfArchiveLastError}
+        />
+      )}
+
+      {/* 4c. PDF-Anzeige-Toggles — nur im Hausmasta-Modus */}
+      {(userData?.expertMode ?? false) && (
+        <PdfLayoutSettings
+          calculationConfig={calculationConfig}
+          setCalculationConfig={setCalculationConfig}
         />
       )}
 

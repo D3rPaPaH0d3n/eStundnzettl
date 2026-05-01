@@ -19,7 +19,37 @@ import type {
   SickOnWorkDayMode,
   HolidayOnWorkDayMode,
   AutoPauseRule,
+  PdfDisplayConfig,
 } from "../types";
+
+/**
+ * Default-Anzeige-Toggles fuer das PDF: alles AN. Wird in
+ * `getEffectivePdfDisplay()` verwendet, damit Komponenten ohne
+ * weiteres Boilerplate auf eine vollstaendige Konfiguration zugreifen
+ * koennen.
+ */
+const DEFAULT_PDF_DISPLAY: PdfDisplayConfig = {
+  showSummary: true,
+  showTargetTime: true,
+  showBalance: true,
+  showOvertimeSplit: true,
+  showVacationBalance: true,
+  showAttachmentsList: true,
+  showWorkCodeColumn: true,
+  showCustomNote: true,
+};
+
+/**
+ * Liefert eine vollstaendige `PdfDisplayConfig` mit Defaults fuer alle
+ * fehlenden Felder. Bestehende User ohne Config bekommen alles AN
+ * (kein Layout-Bruch). Aufrufer reichen das Ergebnis direkt an die
+ * conditional Render-Bloecke in `ReportPdfDocument` weiter.
+ */
+export function getEffectivePdfDisplay(
+  config: CalculationConfig | null | undefined,
+): PdfDisplayConfig {
+  return { ...DEFAULT_PDF_DISPLAY, ...(config?.pdfDisplay ?? {}) };
+}
 
 /**
  * Erzeugt eine neue `CalculationConfig` aus den Locale-Defaults und den
@@ -131,8 +161,36 @@ export function coerceCalculationConfig(
       typeof v.vacationCarryoverDays === "number"
         ? v.vacationCarryoverDays
         : fallback.vacationCarryoverDays ?? 0,
+    pdfDisplay: coercePdfDisplay(v.pdfDisplay, fallback.pdfDisplay),
     configVersion: 1,
   };
+}
+
+function coercePdfDisplay(
+  v: unknown,
+  fallback: PdfDisplayConfig | undefined,
+): PdfDisplayConfig | undefined {
+  if (!v || typeof v !== "object") return fallback;
+  const partial = v as Partial<PdfDisplayConfig>;
+  // Wir setzen nur Felder, die explizit als boolean ankommen — der Rest
+  // wird vom Default-Resolver `getEffectivePdfDisplay` bei Verwendung
+  // ergaenzt.
+  const out: Partial<PdfDisplayConfig> = {};
+  const keys: (keyof PdfDisplayConfig)[] = [
+    "showSummary",
+    "showTargetTime",
+    "showBalance",
+    "showOvertimeSplit",
+    "showVacationBalance",
+    "showAttachmentsList",
+    "showWorkCodeColumn",
+    "showCustomNote",
+  ];
+  for (const k of keys) {
+    if (typeof partial[k] === "boolean") out[k] = partial[k];
+  }
+  if (Object.keys(out).length === 0) return fallback;
+  return { ...DEFAULT_PDF_DISPLAY, ...out };
 }
 
 function isOvertimeMode(v: unknown): v is OvertimeMode {

@@ -60,6 +60,31 @@ export type HolidayOnWorkDayMode = "cap_to_target" | "additive" | "counts_as_ove
 export type HolidaySetMode = "locale_default" | "custom";
 export type HalfDayMode = "locale_default" | "none" | "custom";
 
+/**
+ * Anzeige-Toggles fuer das exportierte und in der Vorschau gerenderte
+ * PDF. Alle Felder default `true` (siehe `getDefaultPdfDisplay`); der
+ * User kann einzelne Bloecke gezielt ausblenden, ohne das Layout
+ * grundlegend zu aendern. Sichtbar nur im Hausmasta-Modus.
+ */
+export interface PdfDisplayConfig {
+  /** Komplette graue Zusammenfassungs-Box am Ende der Tabelle. */
+  showSummary: boolean;
+  /** "Sollzeit"-Zeile in der Summary. */
+  showTargetTime: boolean;
+  /** "Saldo"-Zeile (Bottom Line) und taegliche Saldo-Spalte. */
+  showBalance: boolean;
+  /** "Mehrarbeit"/"Ueberstunden"-Untergruppe in der Summary. */
+  showOvertimeSplit: boolean;
+  /** Urlaubsbilanz-Block am Ende der Summary. */
+  showVacationBalance: boolean;
+  /** Anhaenge-Liste pro Eintrag. */
+  showAttachmentsList: boolean;
+  /** "Code"-Spalte in der Tabelle. */
+  showWorkCodeColumn: boolean;
+  /** Notizen-Block am Ende des Reports. */
+  showCustomNote: boolean;
+}
+
 export interface AutoPauseRule {
   fromMinutes: number;    // Arbeitszeit-Schwelle in Minuten (z.B. 360 = 6h)
   pauseMinutes: number;   // abzuziehende Pausendauer in Minuten
@@ -105,6 +130,8 @@ export interface CalculationConfig {
   vacationAllowanceDays: number;
   /** Resturlaub (Übertrag vom Vorjahr oder aktueller Rest bei Ersteinrichtung). */
   vacationCarryoverDays: number;
+  /** Optionale PDF-Anzeige-Toggles (Hausmasta). Wenn fehlt → alles AN. */
+  pdfDisplay?: PdfDisplayConfig;
 
   // --- META ---
   configVersion: 1;

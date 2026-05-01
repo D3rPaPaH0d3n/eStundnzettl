@@ -946,6 +946,26 @@
         "unknownReason": "unbekannt",
         "genericError": "Fehler: {{message}}"
       }
+    },
+    "pdfLayout": {
+      "title": "PDF-Anzeige",
+      "subtitle": "Welche Felder im exportierten PDF erscheinen",
+      "showSummary": "Zusammenfassung anzeigen",
+      "showSummaryDesc": "Graue Box mit Gesamtwerten am Ende der Tabelle",
+      "showTargetTime": "Sollzeit anzeigen",
+      "showTargetTimeDesc": "Die Sollzeit-Zeile in der Zusammenfassung",
+      "showBalance": "Saldo anzeigen",
+      "showBalanceDesc": "Bottom Line der Zusammenfassung und tägliche Saldo-Spalte",
+      "showOvertimeSplit": "Mehrarbeit/Überstunden anzeigen",
+      "showOvertimeSplitDesc": "Aufgesplittete Überstunden in der Zusammenfassung",
+      "showVacationBalance": "Urlaubsbilanz anzeigen",
+      "showVacationBalanceDesc": "Resturlaub-Block am Ende der Zusammenfassung",
+      "showAttachmentsList": "Anhänge-Liste anzeigen",
+      "showAttachmentsListDesc": "Aufzählung verknüpfter Dokumente pro Eintrag",
+      "showWorkCodeColumn": "Code-Spalte anzeigen",
+      "showWorkCodeColumnDesc": "Die Tätigkeitscode-Spalte in der Tabelle",
+      "showCustomNote": "Notizen anzeigen",
+      "showCustomNoteDesc": "Optionaler Notiz-Block am Ende des Berichts"
     }
   },
   "attachments": {

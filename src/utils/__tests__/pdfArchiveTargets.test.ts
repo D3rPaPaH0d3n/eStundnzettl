@@ -30,8 +30,8 @@ vi.mock("../googleDrivePdfArchive", () => ({
   uploadPdfArchiveFile: vi.fn(),
 }));
 
-vi.mock("../obfuscate", () => ({
-  deobfuscate: vi.fn((val: string) => Promise.resolve(val)),
+vi.mock("../nextcloudSecret", () => ({
+  getNextcloudAppPassword: vi.fn(async () => localStorage.getItem("estundnzettl_nextcloud_pass") || ""),
 }));
 
 vi.mock("../logger", () => ({
@@ -41,6 +41,7 @@ vi.mock("../logger", () => ({
 import { Filesystem } from "@capacitor/filesystem";
 import { uploadBinaryToPath } from "../nextcloudClient";
 import { uploadPdfArchiveFile } from "../googleDrivePdfArchive";
+import { getNextcloudAppPassword } from "../nextcloudSecret";
 import {
   writeLocalArchive,
   uploadNextcloudArchive,
@@ -52,6 +53,7 @@ beforeEach(() => {
   localStorage.clear();
   mockIsNative.mockReturnValue(false);
   mockGetPlatform.mockReturnValue("web");
+  vi.mocked(getNextcloudAppPassword).mockImplementation(async () => localStorage.getItem("estundnzettl_nextcloud_pass") || "");
 });
 
 describe("writeLocalArchive", () => {

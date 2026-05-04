@@ -40,8 +40,8 @@ vi.mock("../../utils/nextcloudClient", () => ({
   uploadBackup: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../utils/obfuscate", () => ({
-  deobfuscate: vi.fn((val: string) => Promise.resolve(val)),
+vi.mock("../../utils/nextcloudSecret", () => ({
+  getNextcloudAppPassword: vi.fn(async () => localStorage.getItem("estundnzettl_nextcloud_pass") || ""),
 }));
 
 vi.mock("../../db/storageMode", () => ({
@@ -66,6 +66,7 @@ import { writeBackupFile } from "../../utils/storageBackup";
 import { uploadOrUpdateFile, getValidToken } from "../../utils/googleDrive";
 import { uploadBackup as ncUploadBackup } from "../../utils/nextcloudClient";
 import { logger } from "../../utils/logger";
+import { getNextcloudAppPassword } from "../../utils/nextcloudSecret";
 import { useAutoBackup } from "../useAutoBackup";
 import type { Entry, UserData } from "../../types";
 
@@ -101,6 +102,7 @@ describe("useAutoBackup", () => {
     vi.mocked(getValidToken).mockResolvedValue({ accessToken: "test-token" });
     vi.mocked(uploadOrUpdateFile).mockResolvedValue(undefined);
     vi.mocked(writeBackupFile).mockResolvedValue(undefined);
+    vi.mocked(getNextcloudAppPassword).mockImplementation(async () => localStorage.getItem("estundnzettl_nextcloud_pass") || "");
     vi.useFakeTimers();
     localStorage.clear();
   });
@@ -281,6 +283,27 @@ describe("useAutoBackup", () => {
     expect(logger.warn).toHaveBeenCalledWith(
       "[useAutoBackup] Lokales Backup fehlgeschlagen:",
       "write failed",
+    );
+  });
+
+  it("uses the secure Nextcloud secret for backup when legacy storage is empty", async () => {
+    localStorage.setItem("estundnzettl_nextcloud_enabled", "true");
+    localStorage.setItem("estundnzettl_nextcloud_url", "https://nc.example.com");
+    localStorage.setItem("estundnzettl_nextcloud_user", "demo-user");
+    vi.mocked(getNextcloudAppPassword).mockResolvedValueOnce("fixture-secure-pass");
+    const entries = [makeEntry()];
+    renderHook(() => useAutoBackup(entries, USER, true));
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+      await Promise.resolve();
+    });
+
+    expect(ncUploadBackup).toHaveBeenCalledWith(
+      "https://nc.example.com",
+      "demo-user",
+      "fixture-secure-pass",
+      expect.objectContaining({ version: "v6" }),
     );
   });
 

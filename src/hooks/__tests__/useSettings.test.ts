@@ -4,6 +4,11 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 // ─── Module-Mocks ───────────────────────────────────────────
 
 const storageModeListeners = vi.hoisted(() => new Set<() => void>());
+const secureSecretsMock = vi.hoisted(() => ({
+  store: new Map<string, string>(),
+  available: true,
+  failSet: false,
+}));
 
 vi.mock("../../db/storageMode", () => ({
   isSQLiteActive: vi.fn(() => false),
@@ -21,8 +26,29 @@ vi.mock("../../db/repositories/settingsRepo", () => ({
 
 vi.mock("../../utils/obfuscate", () => ({
   obfuscate: vi.fn((val: string) => Promise.resolve(`enc:${val}`)),
-  deobfuscate: vi.fn((val: string) => Promise.resolve(val.replace("enc:", ""))),
+  deobfuscate: vi.fn((val: string) => Promise.resolve(val.startsWith("enc:") ? val.replace("enc:", "") : val)),
   deobfuscateLegacySync: vi.fn((val: string) => val),
+}));
+
+vi.mock("../../utils/secureSecrets", () => ({
+  getSecret: vi.fn(async (key: string) => {
+    if (!secureSecretsMock.available) {
+      return { status: "unavailable", value: null, message: "secure storage unavailable" };
+    }
+    const value = secureSecretsMock.store.get(key);
+    return value ? { status: "ready", value } : { status: "missing", value: null };
+  }),
+  setSecret: vi.fn(async (key: string, value: string) => {
+    if (!secureSecretsMock.available || secureSecretsMock.failSet) {
+      return { status: secureSecretsMock.available ? "failed" : "unavailable", ok: false, message: "secure storage unavailable" };
+    }
+    secureSecretsMock.store.set(key, value);
+    return { status: "ready", ok: true };
+  }),
+  deleteSecret: vi.fn(async (key: string) => {
+    secureSecretsMock.store.delete(key);
+    return { status: "ready", ok: true };
+  }),
 }));
 
 vi.mock("../../utils/logger", () => ({
@@ -31,8 +57,10 @@ vi.mock("../../utils/logger", () => ({
 
 import { useSettings } from "../useSettings";
 import { isSQLiteActive } from "../../db/storageMode";
-import { getSetting, setSetting } from "../../db/repositories/settingsRepo";
-import { deobfuscateLegacySync } from "../../utils/obfuscate";
+import { getSetting, setSetting, deleteSetting } from "../../db/repositories/settingsRepo";
+import { deobfuscate, deobfuscateLegacySync } from "../../utils/obfuscate";
+import { getSecret, setSecret } from "../../utils/secureSecrets";
+import { NEXTCLOUD_APP_PASSWORD_SECRET_KEY } from "../../utils/nextcloudSecret";
 
 // ─── Tests ──────────────────────────────────────────────────
 
@@ -43,7 +71,12 @@ describe("useSettings", () => {
     vi.mocked(isSQLiteActive).mockReturnValue(false);
     vi.mocked(getSetting).mockResolvedValue(null);
     vi.mocked(setSetting).mockResolvedValue(undefined);
+    vi.mocked(deleteSetting).mockResolvedValue(undefined);
+    vi.mocked(deobfuscate).mockImplementation((val: string) => Promise.resolve(val.startsWith("enc:") ? val.replace("enc:", "") : val));
     vi.mocked(deobfuscateLegacySync).mockImplementation((val: string) => val);
+    secureSecretsMock.store.clear();
+    secureSecretsMock.available = true;
+    secureSecretsMock.failSet = false;
     localStorage.clear();
 
     // jsdom does not implement matchMedia — provide a minimal stub
@@ -354,6 +387,72 @@ describe("useSettings", () => {
 
     expect(deobfuscateLegacySync).toHaveBeenCalledWith("obf:ZGVtby1hcHAtcGFzc3dvcmQ=");
     expect(result.current.nextcloudPass).toBe("demo-app-password");
+  });
+
+  it("migrates a legacy Nextcloud password only after secure write verification", async () => {
+    vi.mocked(deobfuscateLegacySync).mockReturnValue("fixture-legacy-pass");
+    vi.mocked(deobfuscate).mockResolvedValue("fixture-legacy-pass");
+    localStorage.setItem("estundnzettl_nextcloud_pass", "obf:ZmFrZS1maXh0dXJl");
+
+    const { result } = renderHook(() => useSettings());
+
+    await waitFor(() => {
+      expect(result.current.nextcloudSecretStatus).toBe("migrated");
+    });
+
+    expect(setSecret).toHaveBeenCalledWith(NEXTCLOUD_APP_PASSWORD_SECRET_KEY, "fixture-legacy-pass");
+    expect(getSecret).toHaveBeenCalledWith(NEXTCLOUD_APP_PASSWORD_SECRET_KEY);
+    expect(localStorage.getItem("estundnzettl_nextcloud_pass")).toBeNull();
+    expect(result.current.nextcloudPass).toBe("fixture-legacy-pass");
+  });
+
+  it("keeps the legacy fallback when secure migration fails", async () => {
+    secureSecretsMock.failSet = true;
+    vi.mocked(deobfuscateLegacySync).mockReturnValue("fixture-legacy-pass");
+    vi.mocked(deobfuscate).mockResolvedValue("fixture-legacy-pass");
+    localStorage.setItem("estundnzettl_nextcloud_pass", "enc:v1:fixture");
+
+    const { result } = renderHook(() => useSettings());
+
+    await waitFor(() => {
+      expect(result.current.nextcloudSecretStatus).toBe("legacy-fallback");
+    });
+
+    expect(result.current.nextcloudPass).toBe("fixture-legacy-pass");
+    expect(localStorage.getItem("estundnzettl_nextcloud_pass")).toBe("enc:v1:fixture");
+  });
+
+  it("writes a new Nextcloud password to secure storage only", async () => {
+    const { result } = renderHook(() => useSettings());
+
+    act(() => {
+      result.current.setNextcloudPass("fixture-new-pass");
+    });
+
+    await waitFor(() => {
+      expect(setSecret).toHaveBeenCalledWith(NEXTCLOUD_APP_PASSWORD_SECRET_KEY, "fixture-new-pass");
+      expect(result.current.nextcloudSecretStatus).toBe("ready");
+    });
+
+    expect(localStorage.getItem("estundnzettl_nextcloud_pass")).toBeNull();
+    expect(setSetting).not.toHaveBeenCalledWith("nextcloud_pass", expect.anything());
+  });
+
+  it("reports unavailable secure storage and does not delete the legacy Nextcloud password", async () => {
+    secureSecretsMock.available = false;
+    vi.mocked(deobfuscateLegacySync).mockReturnValue("fixture-legacy-pass");
+    vi.mocked(deobfuscate).mockResolvedValue("fixture-legacy-pass");
+    localStorage.setItem("estundnzettl_nextcloud_pass", "plain-fixture-legacy");
+
+    const { result } = renderHook(() => useSettings());
+
+    await waitFor(() => {
+      expect(result.current.nextcloudSecretStatus).toBe("unavailable");
+      expect(result.current.nextcloudSecretError).toContain("unavailable");
+    });
+
+    expect(result.current.nextcloudPass).toBe("fixture-legacy-pass");
+    expect(localStorage.getItem("estundnzettl_nextcloud_pass")).toBe("plain-fixture-legacy");
   });
 
   it("handles corrupt userData in localStorage gracefully (uses defaults)", () => {

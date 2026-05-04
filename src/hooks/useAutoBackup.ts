@@ -7,7 +7,7 @@ import { uploadOrUpdateFile, getValidToken } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
 import { uploadBackup as ncUploadBackup } from "../utils/nextcloudClient";
 import { STORAGE_KEYS, BACKUP_CONFIG } from "./constants";
-import { deobfuscate } from "../utils/obfuscate";
+import { getNextcloudAppPassword } from "../utils/nextcloudSecret";
 import { isSQLiteActive } from "../db/storageMode";
 import { getSetting, setSetting } from "../db/repositories/settingsRepo";
 import { logger } from "../utils/logger";
@@ -274,7 +274,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
           try {
             const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
             const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
-            const ncPass = await deobfuscate(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "");
+            const ncPass = await getNextcloudAppPassword();
             if (ncUrl && ncUser && ncPass) {
               await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
               anyBackupSucceeded = true;

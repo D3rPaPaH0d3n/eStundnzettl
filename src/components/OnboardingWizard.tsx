@@ -19,7 +19,7 @@ import ImportConflictModal from "./ImportConflictModal";
 import { WORK_MODELS, WORK_CODE_PRESETS, STORAGE_KEYS } from "../hooks/constants";
 import { DEMO_DATA } from "../utils/demoData";
 import { setSetting } from "../db/repositories/settingsRepo";
-import { obfuscate } from "../utils/obfuscate";
+import { storeNextcloudAppPassword } from "../utils/nextcloudSecret";
 import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
 import { bulkInsertEntries } from "../db/repositories/entriesRepo";
 import { logger } from "../utils/logger";
@@ -423,15 +423,16 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     // Nextcloud Credentials speichern
     if (ncCredentials) {
       try {
-        const encryptedPass = await obfuscate(ncCredentials.appPassword);
+        const secretResult = await storeNextcloudAppPassword(ncCredentials.appPassword);
+        if (secretResult.status !== "ready") {
+          throw new Error(secretResult.message || "Secure Nextcloud password storage unavailable");
+        }
         await setSetting("nextcloud_url", ncCredentials.server);
         await setSetting("nextcloud_user", ncCredentials.userId);
-        await setSetting("nextcloud_pass", encryptedPass);
         await setSetting("nextcloud_enabled", true);
         // Auch in localStorage für sofortige Verfügbarkeit (Keys MÜSSEN mit STORAGE_KEYS übereinstimmen!)
         localStorage.setItem("estundnzettl_nextcloud_url", ncCredentials.server);
         localStorage.setItem("estundnzettl_nextcloud_user", ncCredentials.userId);
-        localStorage.setItem("estundnzettl_nextcloud_pass", encryptedPass);
         localStorage.setItem("estundnzettl_nextcloud_enabled", "true");
       } catch (err) {
         log.error("Nextcloud settings save failed:", err);

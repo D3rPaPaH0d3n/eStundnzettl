@@ -19,8 +19,13 @@ import { getSetting, setSetting, deleteSetting } from "../db/repositories/settin
 import type { LocaleId } from "../locales/types";
 import { LOCALES } from "../locales";
 
-import { obfuscate, deobfuscate, deobfuscateLegacySync } from "../utils/obfuscate";
+import { deobfuscateLegacySync } from "../utils/obfuscate";
 import { logger } from "../utils/logger";
+import {
+  loadOrMigrateNextcloudAppPassword,
+  storeNextcloudAppPassword,
+  type NextcloudSecretStatus,
+} from "../utils/nextcloudSecret";
 
 type SettingsStorageStatus = "fallback" | "loading" | "ready" | "failed";
 
@@ -63,12 +68,12 @@ function defaultUserData(): UserData {
  * mit Rollback bei SQLite-Fehler.
  *
  * ### Nextcloud-Sonderbehandlung
- * Das Passwort wird vor dem Speichern mit `obfuscate()` (XOR +
- * Base64) verschleiert — bewusst kein echtes Crypto, weil die App
- * nur als Local-First-Tool für self-hosted Nextcloud gedacht ist
- * und Nextcloud ohnehin App-Passwörter verwendet, die serverseitig
- * widerrufbar sind. Legacy-Werte ohne Obfuskierung werden beim
- * ersten Load synchron via `deobfuscateLegacySync()` migriert.
+ * Neue Nextcloud-App-Passwörter werden in nativer Secure Storage
+ * abgelegt. Bestehende Legacy-Werte (`obf:`, `enc:v1:` oder Klartext)
+ * werden gelesen und erst nach erfolgreichem Secure-Write + Verify aus
+ * localStorage/SQLite entfernt. Ist Secure Storage nicht verfügbar, bleibt
+ * der Legacy-Wert als Fallback erhalten und es wird kein neuer Secret-Wert
+ * unsicher in localStorage/SQLite geschrieben.
  *
  * ### Return
  * Der Return enthält State + Setter für alle Settings. Für
@@ -84,8 +89,8 @@ function defaultUserData(): UserData {
  * - `nextcloudEnabled` / `setNextcloudEnabled` — Nextcloud an/aus
  * - `nextcloudUrl` / `setNextcloudUrl` — WebDAV-URL
  * - `nextcloudUser` / `setNextcloudUser` — Nextcloud-Username
- * - `nextcloudPass` / `setNextcloudPass` — Klartext-Passwort (wird
- *   intern obfuskiert gespeichert, entschlüsselt zurückgegeben)
+ * - `nextcloudPass` / `setNextcloudPass` — Klartext-Passwort im State;
+ *   persistiert wird es über native Secure Storage
  *
  * @remarks
  * Dieser Hook wird in `App.tsx` genau einmal instanziiert. Andere
@@ -128,14 +133,22 @@ export function useSettings() {
   );
   // Sync-Init nur für Legacy-"obf:"-Werte. "enc:v1:"-Werte werden im SQLite-Load-Effekt
   // asynchron entschlüsselt und setzen den State dann korrekt.
-  const [nextcloudPass, setNextcloudPass] = useState(
+  const [nextcloudPass, setNextcloudPassState] = useState(
     () => deobfuscateLegacySync(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "")
   );
 
   const [sqliteReady, setSqliteReady] = useState<boolean>(false);
   const sqliteLoadStarted = useRef<boolean>(false);
+  const nextcloudPassUserWrite = useRef<boolean>(false);
   const [settingsStorageStatus, setSettingsStorageStatus] = useState<SettingsStorageStatus>("fallback");
   const [settingsStorageError, setSettingsStorageError] = useState<string | null>(null);
+  const [nextcloudSecretStatus, setNextcloudSecretStatus] = useState<NextcloudSecretStatus>("missing");
+  const [nextcloudSecretError, setNextcloudSecretError] = useState<string | null>(null);
+
+  const setNextcloudPass = useCallback((pass: string) => {
+    nextcloudPassUserWrite.current = true;
+    setNextcloudPassState(pass);
+  }, []);
 
   // ─── SQLite-Init: Daten aus SQLite nachladen (wenn verfügbar) ───
   useEffect(() => {
@@ -180,11 +193,11 @@ export function useSettings() {
         if (sqlNcUrl) setNextcloudUrl(sqlNcUrl as string);
         if (sqlNcUser) setNextcloudUser(sqlNcUser as string);
         if (sqlNcPass) {
-          try {
-            const plain = await deobfuscate(sqlNcPass as string);
-            if (!cancelled && plain) setNextcloudPass(plain);
-          } catch (err) {
-            logger.error("[useSettings] Nextcloud-Pass konnte nicht entschlüsselt werden:", err);
+          const secretResult = await loadOrMigrateNextcloudAppPassword(sqlNcPass);
+          if (!cancelled) {
+            setNextcloudSecretStatus(secretResult.status);
+            setNextcloudSecretError(secretResult.message || null);
+            if (secretResult.password) setNextcloudPassState(secretResult.password);
           }
         }
         setSqliteReady(true);
@@ -315,17 +328,30 @@ export function useSettings() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const encrypted = await obfuscate(nextcloudPass);
-        if (cancelled) return;
-        localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_PASS, encrypted);
-        sqliteWrite("nextcloud_pass", encrypted);
-      } catch (err) {
-        logger.error("[useSettings] Nextcloud-Pass konnte nicht verschlüsselt werden:", err);
+      const secretResult = await loadOrMigrateNextcloudAppPassword();
+      if (cancelled) return;
+      setNextcloudSecretStatus(secretResult.status);
+      setNextcloudSecretError(secretResult.message || null);
+      if (secretResult.password) setNextcloudPassState(secretResult.password);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!nextcloudPassUserWrite.current) return;
+    nextcloudPassUserWrite.current = false;
+    let cancelled = false;
+    (async () => {
+      const secretResult = await storeNextcloudAppPassword(nextcloudPass);
+      if (cancelled) return;
+      setNextcloudSecretStatus(secretResult.status);
+      setNextcloudSecretError(secretResult.message || null);
+      if (secretResult.status !== "ready" && secretResult.status !== "migrated") {
+        logger.warn("[useSettings] Nextcloud password is kept in memory because secure storage is unavailable.");
       }
     })();
     return () => { cancelled = true; };
-  }, [nextcloudPass, sqliteWrite]);
+  }, [nextcloudPass]);
 
   // ─── Return (API identisch zum Original + locale) ───
   return {
@@ -362,5 +388,7 @@ export function useSettings() {
     sqliteReady,
     settingsStorageStatus,
     settingsStorageError,
+    nextcloudSecretStatus,
+    nextcloudSecretError,
   };
 }

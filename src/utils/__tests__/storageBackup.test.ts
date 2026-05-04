@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 
 // Mocks für Capacitor- und DB-Abhängigkeiten, damit storageBackup im Test geladen werden kann.
 vi.mock("@capacitor/filesystem", () => ({
@@ -16,6 +16,9 @@ vi.mock("../googleDrive", () => ({
 }));
 vi.mock("../nextcloudClient", () => ({
   uploadBackup: vi.fn(),
+}));
+vi.mock("../nextcloudSecret", () => ({
+  getNextcloudAppPassword: vi.fn(),
 }));
 vi.mock("../../db/storageMode", () => ({
   isSQLiteActive: () => false,
@@ -42,7 +45,15 @@ import {
   attachBackupChecksum,
   verifyBackupIntegrity,
   analyzeBackupData,
+  triggerManualBackup,
 } from "../storageBackup";
+import { uploadBackup } from "../nextcloudClient";
+import { getNextcloudAppPassword } from "../nextcloudSecret";
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
+});
 
 describe("computeBackupChecksum", () => {
   it("liefert einen deterministischen SHA-256-Hex", async () => {
@@ -147,5 +158,27 @@ describe("analyzeBackupData", () => {
       ],
     });
     expect(result.entryCount).toBe(1);
+  });
+});
+
+describe("triggerManualBackup", () => {
+  it("liest das Nextcloud-App-Passwort aus Secure Storage statt aus Legacy-Storage", async () => {
+    localStorage.setItem("estundnzettl_nextcloud_enabled", "true");
+    localStorage.setItem("estundnzettl_nextcloud_url", "https://cloud.invalid/remote.php/dav/files/demo");
+    localStorage.setItem("estundnzettl_nextcloud_user", "demo-user");
+    localStorage.setItem("estundnzettl_entries", JSON.stringify([{ id: 1, date: "2024-01-01", type: "work" }]));
+    vi.mocked(getNextcloudAppPassword).mockResolvedValue("fixture-secure-pass");
+    vi.mocked(uploadBackup).mockResolvedValue(undefined);
+
+    const result = await triggerManualBackup();
+
+    expect(result.nextcloud).toBe(true);
+    expect(getNextcloudAppPassword).toHaveBeenCalledTimes(1);
+    expect(uploadBackup).toHaveBeenCalledWith(
+      "https://cloud.invalid/remote.php/dav/files/demo",
+      "demo-user",
+      "fixture-secure-pass",
+      expect.objectContaining({ version: "v6" }),
+    );
   });
 });

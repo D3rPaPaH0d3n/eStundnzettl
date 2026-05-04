@@ -11,7 +11,7 @@ import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
 import { uploadBinaryToPath } from "./nextcloudClient";
 import { uploadPdfArchiveFile } from "./googleDrivePdfArchive";
-import { deobfuscate } from "./obfuscate";
+import { getNextcloudAppPassword } from "./nextcloudSecret";
 import { STORAGE_KEYS } from "../hooks/constants";
 import { logger } from "./logger";
 import { getErrorMessage } from "./errorUtils";
@@ -119,12 +119,11 @@ export async function writeLocalArchive(filename: string, base64: string, blob?:
 export async function uploadNextcloudArchive(filename: string, base64: string): Promise<ArchiveResult> {
   const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
   const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
-  const ncPassRaw = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "";
-  if (!ncUrl || !ncUser || !ncPassRaw) {
+  const ncPass = await getNextcloudAppPassword();
+  if (!ncUrl || !ncUser || !ncPass) {
     return { ok: false, error: "Nextcloud nicht konfiguriert", target: "nextcloud" };
   }
   try {
-    const ncPass = await deobfuscate(ncPassRaw);
     await uploadBinaryToPath(
       ncUrl,
       ncUser,

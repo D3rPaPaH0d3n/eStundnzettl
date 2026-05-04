@@ -439,7 +439,8 @@
     },
     "autoBackup": {
       "failed5x": "Cloud-Backup fehlgeschlagen (5x). Bitte Einstellungen prüfen.",
-      "completed": "Backup abgeschlossen"
+      "completed": "Backup abgeschlossen",
+      "failed": "Backup fehlgeschlagen"
     },
     "autoCheckout": "⚠️ Automatisch ausgestempelt! Bitte prüfen.",
     "export": {

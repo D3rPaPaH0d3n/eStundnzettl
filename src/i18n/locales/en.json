@@ -439,7 +439,8 @@
     },
     "autoBackup": {
       "failed5x": "Cloud backup failed (5x). Please check settings.",
-      "completed": "Backup complete"
+      "completed": "Backup complete",
+      "failed": "Backup failed"
     },
     "autoCheckout": "⚠️ Auto-clocked out! Please review.",
     "export": {

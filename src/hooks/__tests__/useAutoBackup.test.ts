@@ -58,12 +58,14 @@ vi.mock("../../utils/logger", () => ({
 }));
 
 vi.mock("../../utils/errorUtils", () => ({
-  getErrorMessage: vi.fn((_e: unknown, fallback: string) => fallback),
+  getErrorMessage: vi.fn((e: unknown, fallback: string) => e instanceof Error ? e.message : fallback),
 }));
 
 import toast from "react-hot-toast";
 import { writeBackupFile } from "../../utils/storageBackup";
 import { uploadOrUpdateFile, getValidToken } from "../../utils/googleDrive";
+import { uploadBackup as ncUploadBackup } from "../../utils/nextcloudClient";
+import { logger } from "../../utils/logger";
 import { useAutoBackup } from "../useAutoBackup";
 import type { Entry, UserData } from "../../types";
 
@@ -242,6 +244,83 @@ describe("useAutoBackup", () => {
       "test-token",
       "estundnzettl_backup.json",
       expect.objectContaining({ entries: expect.any(Array), version: "v6" })
+    );
+  });
+
+  it("manual backup bypasses unchanged-hash skip", async () => {
+    localStorage.setItem("estundnzettl_local_backup_enabled", "true");
+    const entries = [makeEntry()];
+    const { result } = renderHook(() => useAutoBackup(entries, USER, true));
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+      await Promise.resolve();
+    });
+    expect(writeBackupFile).toHaveBeenCalledTimes(1);
+    vi.mocked(writeBackupFile).mockClear();
+
+    await act(async () => {
+      await result.current.triggerManualBackup();
+    });
+
+    expect(writeBackupFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not mark local-only backup successful when local write fails", async () => {
+    localStorage.setItem("estundnzettl_local_backup_enabled", "true");
+    vi.mocked(writeBackupFile).mockRejectedValueOnce(new Error("write failed"));
+    const entries = [makeEntry()];
+    renderHook(() => useAutoBackup(entries, USER, true));
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+      await Promise.resolve();
+    });
+
+    expect(localStorage.getItem("estundnzettl_last_backup_date")).toBeNull();
+    expect(logger.warn).toHaveBeenCalledWith(
+      "[useAutoBackup] Lokales Backup fehlgeschlagen:",
+      "write failed",
+    );
+  });
+
+  it("continues cloud and Nextcloud backups when local backup fails", async () => {
+    localStorage.setItem("estundnzettl_local_backup_enabled", "true");
+    localStorage.setItem("estundnzettl_cloud_sync_enabled", "true");
+    localStorage.setItem("estundnzettl_nextcloud_enabled", "true");
+    localStorage.setItem("estundnzettl_nextcloud_url", "https://nc.example.com");
+    localStorage.setItem("estundnzettl_nextcloud_user", "demo-user");
+    localStorage.setItem("estundnzettl_nextcloud_pass", "obfuscated-fixture");
+    vi.mocked(writeBackupFile).mockRejectedValueOnce(new Error("disk unavailable"));
+    const entries = [makeEntry()];
+    renderHook(() => useAutoBackup(entries, USER, true));
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+      await Promise.resolve();
+    });
+
+    expect(uploadOrUpdateFile).toHaveBeenCalled();
+    expect(ncUploadBackup).toHaveBeenCalled();
+    expect(localStorage.getItem("estundnzettl_backup_fail_count")).toBe("0");
+    expect(localStorage.getItem("estundnzettl_nextcloud_backup_fail_count")).toBe("0");
+  });
+
+  it("stores a friendly Google reconnect error for AUTH_REQUIRED", async () => {
+    localStorage.setItem("estundnzettl_cloud_sync_enabled", "true");
+    vi.mocked(getValidToken).mockRejectedValueOnce(new Error("AUTH_REQUIRED"));
+    const entries = [makeEntry()];
+    renderHook(() => useAutoBackup(entries, USER, true));
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+      await Promise.resolve();
+    });
+
+    expect(localStorage.getItem("estundnzettl_backup_last_error")).toBe("Google Drive Anmeldung erforderlich");
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Cloud-Backup fehlgeschlagen:",
+      "Google Drive Anmeldung erforderlich",
     );
   });
 

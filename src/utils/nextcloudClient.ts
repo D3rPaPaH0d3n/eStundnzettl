@@ -278,6 +278,14 @@ function formatRateLimitMessage(remainingMs: number): string {
   return `Nextcloud drosselt gerade Anfragen. Bitte ${seconds}s warten und dann erneut versuchen.`;
 }
 
+function redactSensitiveText(text: string): string {
+  return String(text || "")
+    .replace(/("(?:access[_-]?token|refresh[_-]?token|token|password|pass|appPassword)"\s*:\s*")([^"]+)(")/gi, "$1[redacted]$3")
+    .replace(/(access[_-]?token|refresh[_-]?token|token|password|pass|appPassword)=([^\s&]+)/gi, "$1=[redacted]")
+    .replace(/(Bearer\s+)[A-Za-z0-9._~+/=-]+/gi, "$1[redacted]")
+    .replace(/(Basic\s+)[A-Za-z0-9+/=-]+/gi, "$1[redacted]");
+}
+
 /**
  * Echte Nextcloud User-ID via OCS API auflösen.
  * loginName aus Login Flow v2 kann vom WebDAV-Pfad abweichen
@@ -408,7 +416,7 @@ export async function ensureFolder(url: string, user: string, pass: string): Pro
       verifiedFolderCache.set(cacheKey, true);
       return { ok: true };
     }
-    throw new Error(`MKCOL ${res.status} auf ${folderUrl} body=${(res.body || "").substring(0, 500)}`);
+    throw new Error(`MKCOL ${res.status} auf ${folderUrl} body=${redactSensitiveText((res.body || "").substring(0, 500))}`);
   } catch (err) {
     if ((err as Error).message.includes("401")) throw err;
     if ((err as Error).message.includes("drosselt gerade Anfragen")) {
@@ -539,7 +547,7 @@ export async function uploadBinaryToPath(url: string, user: string, pass: string
     return true;
   }
   if (res.status === 401) throw new Error("Nicht autorisiert (401)");
-  throw new Error(`Upload ${res.status} auf ${targetUrl} body=${(res.body || "").substring(0, 200)}`);
+  throw new Error(`Upload ${res.status} auf ${targetUrl} body=${redactSensitiveText((res.body || "").substring(0, 200))}`);
 }
 
 export async function uploadBackup(url: string, user: string, pass: string, jsonData: unknown): Promise<boolean> {
@@ -566,7 +574,7 @@ export async function uploadBackup(url: string, user: string, pass: string, json
     return true;
   }
   if (res.status === 401) throw new Error("Nicht autorisiert (401)");
-  throw new Error(`Upload ${res.status} auf ${targetUrl} body=${(res.body || "").substring(0, 200)}`);
+  throw new Error(`Upload ${res.status} auf ${targetUrl} body=${redactSensitiveText((res.body || "").substring(0, 200))}`);
 }
 
 export async function downloadBackup(url: string, user: string, pass: string): Promise<unknown> {

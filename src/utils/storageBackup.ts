@@ -76,6 +76,16 @@ export async function attachBackupChecksum(payload: Record<string, unknown> | nu
   return payload;
 }
 
+function redactBackupErrorMessage(error: unknown, fallback: string): string {
+  const message = getErrorMessage(error, fallback);
+  if (message === "AUTH_REQUIRED") return "Google Drive Anmeldung erforderlich";
+  return message
+    .replace(/("(?:access[_-]?token|refresh[_-]?token|token|password|pass|appPassword)"\s*:\s*")([^"]+)(")/gi, "$1[redacted]$3")
+    .replace(/(access[_-]?token|refresh[_-]?token|token|password|pass|appPassword)=([^\s&]+)/gi, "$1=[redacted]")
+    .replace(/(Bearer\s+)[A-Za-z0-9._~+/=-]+/gi, "$1[redacted]")
+    .replace(/(Basic\s+)[A-Za-z0-9+/=-]+/gi, "$1[redacted]");
+}
+
 /**
  * Verifiziert die Integrität eines gespeicherten Backup-Payloads.
  * Rückgabe:
@@ -525,7 +535,7 @@ export const triggerManualBackup = async (): Promise<Record<string, unknown>> =>
           gdriveOk = true;
         }
       } catch (e) {
-        logger.error("[triggerManualBackup] Google Drive fehlgeschlagen:", e);
+        logger.error("[triggerManualBackup] Google Drive fehlgeschlagen:", redactBackupErrorMessage(e, "Google Drive fehlgeschlagen"));
       }
     }
 
@@ -534,7 +544,7 @@ export const triggerManualBackup = async (): Promise<Record<string, unknown>> =>
         await writeBackupFile(BACKUP_CONFIG.FILENAME, payload);
         localOk = true;
       } catch (e) {
-        logger.error("[triggerManualBackup] Lokales Backup fehlgeschlagen:", e);
+        logger.error("[triggerManualBackup] Lokales Backup fehlgeschlagen:", redactBackupErrorMessage(e, "Lokales Backup fehlgeschlagen"));
       }
     }
 
@@ -552,7 +562,7 @@ export const triggerManualBackup = async (): Promise<Record<string, unknown>> =>
           nextcloudError = "Nextcloud-Anmeldedaten unvollständig";
         }
       } catch (e) {
-        nextcloudError = getErrorMessage(e, "Nextcloud-Upload fehlgeschlagen");
+        nextcloudError = redactBackupErrorMessage(e, "Nextcloud-Upload fehlgeschlagen");
       }
     }
 

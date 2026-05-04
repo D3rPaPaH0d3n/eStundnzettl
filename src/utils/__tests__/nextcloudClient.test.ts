@@ -198,3 +198,50 @@ describe("getNextcloudErrorMessage", () => {
     expect(getNextcloudErrorMessage({ ok: true })).toBe("Nextcloud Login fehlgeschlagen");
   });
 });
+
+describe("uploadBackup error handling", () => {
+  it("redacts sensitive server response details from upload errors", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        status: 200,
+        text: async () => JSON.stringify({ ocs: { data: { id: "demo-user" } } }),
+      })
+      .mockResolvedValueOnce({ status: 405, text: async () => "" })
+      .mockResolvedValueOnce({
+        status: 500,
+        text: async () => "password=fixture-sensitive-value&token=fixture-sensitive-value",
+      });
+
+    await expect(uploadBackup(
+      "https://nc.example.com",
+      "demo-user",
+      "fixture-sensitive-value",
+      { entries: [] },
+    )).rejects.not.toThrow("fixture-sensitive-value");
+  });
+
+  it("turns 429 responses into a retry-wait error and skips repeated WebDAV calls while limited", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        status: 200,
+        text: async () => JSON.stringify({ ocs: { data: { id: "rate-user" } } }),
+      })
+      .mockResolvedValueOnce({ status: 429, text: async () => "Too Many Requests" });
+
+    await expect(uploadBackup(
+      "https://nc.example.com",
+      "rate-user",
+      "fixture-passphrase",
+      { entries: [] },
+    )).rejects.toThrow("Nextcloud drosselt gerade Anfragen");
+
+    await expect(uploadBackup(
+      "https://nc.example.com",
+      "rate-user",
+      "fixture-passphrase",
+      { entries: [] },
+    )).rejects.toThrow("Nextcloud drosselt gerade Anfragen");
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});

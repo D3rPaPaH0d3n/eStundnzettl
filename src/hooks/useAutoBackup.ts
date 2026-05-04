@@ -51,6 +51,20 @@ function isBackoffActive(key: string): boolean {
   return until > Date.now();
 }
 
+function redactBackupErrorMessage(message: string): string {
+  return message
+    .replace(/("(?:access[_-]?token|refresh[_-]?token|token|password|pass|appPassword)"\s*:\s*")([^"]+)(")/gi, "$1[redacted]$3")
+    .replace(/(access[_-]?token|refresh[_-]?token|token|password|pass|appPassword)=([^\s&]+)/gi, "$1=[redacted]")
+    .replace(/(Bearer\s+)[A-Za-z0-9._~+/=-]+/gi, "$1[redacted]")
+    .replace(/(Basic\s+)[A-Za-z0-9+/=-]+/gi, "$1[redacted]");
+}
+
+function backupErrorMessage(error: unknown, fallback: string): string {
+  const message = getErrorMessage(error, fallback);
+  if (message === "AUTH_REQUIRED") return "Google Drive Anmeldung erforderlich";
+  return redactBackupErrorMessage(message);
+}
+
 /** Dual-Write: localStorage + SQLite (mit Rollback bei Fehler). */
 async function dualWrite(lsKey: string, sqlKey: string, value: string | number | boolean): Promise<void> {
   const prev = localStorage.getItem(lsKey);
@@ -157,7 +171,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
   const registerCloudFailure = async (error: unknown) => {
     const current = readLSInt(STORAGE_KEYS.BACKUP_FAIL_COUNT);
     const newCount = current + 1;
-    const message = getErrorMessage(error, "Cloud-Backup fehlgeschlagen");
+    const message = backupErrorMessage(error, "Cloud-Backup fehlgeschlagen");
     const backoffUntilIso = new Date(Date.now() + calculateBackoffDelay(newCount)).toISOString();
     await dualWrite(STORAGE_KEYS.BACKUP_FAIL_COUNT, "backup_fail_count", String(newCount));
     await dualWrite(STORAGE_KEYS.BACKUP_LAST_ERROR, "backup_last_error", message);
@@ -166,7 +180,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
     if (newCount === 5) {
       toast.error(t("toasts.autoBackup.failed5x"), { duration: 8000 });
     }
-    logger.warn("Cloud-Backup fehlgeschlagen:", error);
+    logger.warn("Cloud-Backup fehlgeschlagen:", message);
   };
 
   const clearNextcloudErrorState = async () => {
@@ -178,7 +192,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
   const registerNextcloudFailure = async (error: unknown) => {
     const current = readLSInt(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT);
     const newCount = current + 1;
-    const message = getErrorMessage(error, "Nextcloud-Backup fehlgeschlagen");
+    const message = backupErrorMessage(error, "Nextcloud-Backup fehlgeschlagen");
     const backoffUntilIso = new Date(Date.now() + calculateBackoffDelay(newCount)).toISOString();
     await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT, "nextcloud_backup_fail_count", String(newCount));
     await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", message);
@@ -199,8 +213,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
     const currentHash = createHash({ entries, userData });
     if (currentHash === lastHash.current && source === "Auto-Save") return;
 
-    // Manual-Retry ignoriert Backoff und Hash-Skip (falls wir oben durch Hash weg sind,
-    // hätten wir schon returned; dieser Branch greift nur wenn sich Daten geändert haben).
+    // Manual-Retry ignoriert Backoff und den Auto-Save-Hash-Skip.
     const ignoreBackoff = source === "Manual";
 
     const payload = {
@@ -215,11 +228,16 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
     isUploading.current = true;
 
     try {
+      let anyBackupSucceeded = false;
+      let allActiveTargetsSatisfied = true;
+
       if (localActive) {
         try {
           await writeBackupFile(BACKUP_CONFIG.FILENAME, payload);
-        } catch {
-          // Silent fail for local backup
+          anyBackupSucceeded = true;
+        } catch (localErr) {
+          allActiveTargetsSatisfied = false;
+          logger.warn("[useAutoBackup] Lokales Backup fehlgeschlagen:", backupErrorMessage(localErr, "Lokales Backup fehlgeschlagen"));
         }
       }
 
@@ -227,19 +245,20 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
         if (!ignoreBackoff && isBackoffActive(STORAGE_KEYS.BACKUP_BACKOFF_UNTIL)) {
           const until = localStorage.getItem(STORAGE_KEYS.BACKUP_BACKOFF_UNTIL);
           logger.warn(`[useAutoBackup] Cloud-Backup übersprungen, Backoff aktiv bis ${until}`);
+          allActiveTargetsSatisfied = false;
         } else {
           try {
             const authResponse = await getValidToken();
 
             if (authResponse?.accessToken) {
               await uploadOrUpdateFile(authResponse.accessToken, BACKUP_CONFIG.FILENAME, payload);
-              lastHash.current = currentHash;
-              await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
+              anyBackupSucceeded = true;
               await clearCloudErrorState();
             } else {
               throw new Error("AUTH_REQUIRED");
             }
           } catch (cloudErr) {
+            allActiveTargetsSatisfied = false;
             await registerCloudFailure(cloudErr);
           }
         }
@@ -250,6 +269,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
         if (!ignoreBackoff && isBackoffActive(STORAGE_KEYS.NEXTCLOUD_BACKOFF_UNTIL)) {
           const until = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKOFF_UNTIL);
           logger.warn(`[useAutoBackup] Nextcloud-Backup übersprungen, Backoff aktiv bis ${until}`);
+          allActiveTargetsSatisfied = false;
         } else {
           try {
             const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
@@ -257,25 +277,33 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
             const ncPass = await deobfuscate(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "");
             if (ncUrl && ncUser && ncPass) {
               await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
-              lastHash.current = currentHash;
-              await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
+              anyBackupSucceeded = true;
               await clearNextcloudErrorState();
+            } else {
+              allActiveTargetsSatisfied = false;
             }
           } catch (ncErr) {
+            allActiveTargetsSatisfied = false;
             await registerNextcloudFailure(ncErr);
-            logger.warn("Nextcloud-Backup fehlgeschlagen:", ncErr);
+            logger.warn("Nextcloud-Backup fehlgeschlagen:", backupErrorMessage(ncErr, "Nextcloud-Backup fehlgeschlagen"));
           }
         }
       }
 
-      if (localActive && !cloudActive && !ncActive) {
-        lastHash.current = currentHash;
-        // Dual-Write: LAST_BACKUP
+      if (anyBackupSucceeded) {
         await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
       }
 
+      if (anyBackupSucceeded && allActiveTargetsSatisfied) {
+        lastHash.current = currentHash;
+      }
+
       if (source === "Manual") {
-        toast.success(t("toasts.autoBackup.completed"));
+        if (anyBackupSucceeded) {
+          toast.success(t("toasts.autoBackup.completed"));
+        } else {
+          toast.error(t("toasts.autoBackup.failed"));
+        }
       }
     } catch {
       // Silent fail

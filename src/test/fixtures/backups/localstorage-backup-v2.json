@@ -1,0 +1,29 @@
+{
+  "version": "v2",
+  "formatVersion": 1,
+  "exportedAt": "2025-03-10T09:30:00.000Z",
+  "timezone": "Europe/Vienna",
+  "user": {
+    "name": "Demo Legacy V2",
+    "position": "Service",
+    "photo": null,
+    "workDays": [0, 450, 450, 450, 450, 270, 0]
+  },
+  "entries": [
+    {
+      "id": 201,
+      "type": "vacation",
+      "date": "2025-03-10",
+      "start": null,
+      "end": null,
+      "pause": 0,
+      "project": null,
+      "code": null,
+      "netDuration": 450
+    }
+  ],
+  "workCodes": [
+    { "id": 1, "label": "Demo Arbeit" },
+    { "id": 2, "label": "Demo Bereitschaft" }
+  ]
+}

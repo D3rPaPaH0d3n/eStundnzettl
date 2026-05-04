@@ -1,0 +1,59 @@
+{
+  "version": "v6",
+  "formatVersion": 2,
+  "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
+  "exportedAt": "2026-04-30T12:00:00.000Z",
+  "lastModified": "2026-04-30T12:00:00.000Z",
+  "timezone": "Europe/Vienna",
+  "note": "eStundnzettl fixture backup — demo data only",
+  "user": {
+    "name": "Demo Current V6",
+    "position": "Objektbetreuung",
+    "photo": null,
+    "workDays": [0, 480, 480, 480, 480, 240, 0],
+    "simpleMode": false,
+    "expertMode": true
+  },
+  "entries": [
+    {
+      "id": 601,
+      "type": "work",
+      "date": "2026-04-30",
+      "start": "08:00",
+      "end": "16:00",
+      "pause": 30,
+      "project": "Demo Standort",
+      "code": 3,
+      "netDuration": 450
+    },
+    {
+      "id": 602,
+      "type": "public_holiday",
+      "date": "2026-05-01",
+      "start": null,
+      "end": null,
+      "pause": 0,
+      "project": null,
+      "code": null,
+      "netDuration": 0
+    }
+  ],
+  "workCodes": [
+    { "id": 3, "label": "Rundgang" },
+    { "id": 4, "label": "Dokumentation" }
+  ],
+  "attachments": [
+    {
+      "id": "att-demo-v6-1",
+      "entryId": 601,
+      "label": "Foto",
+      "fileName": "demo-foto.jpg",
+      "mimeType": "image/jpeg",
+      "storagePath": "attachments/demo-foto.jpg",
+      "fileSize": 2048,
+      "createdAt": "2026-04-30T15:45:00.000Z"
+    }
+  ],
+  "attachmentLabels": ["Foto", "Beleg"],
+  "calculationConfig": null
+}

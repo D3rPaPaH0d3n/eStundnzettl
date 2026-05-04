@@ -130,7 +130,7 @@ export function useSettings() {
     () => deobfuscateLegacySync(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_PASS) || "")
   );
 
-  const sqliteReady = useRef<boolean>(false);
+  const [sqliteReady, setSqliteReady] = useState<boolean>(false);
   const initDone = useRef<boolean>(false);
 
   // ─── SQLite-Init: Daten aus SQLite nachladen (wenn verfügbar) ───
@@ -144,8 +144,6 @@ export function useSettings() {
 
     (async () => {
       try {
-        sqliteReady.current = true;
-
         // Settings aus SQLite laden — nur überschreiben wenn vorhanden
         const [sqlUser, sqlTheme, sqlCloud, sqlLocal, sqlLocale, sqlNcEnabled, sqlNcUrl, sqlNcUser, sqlNcPass] = await Promise.all([
           getSetting("user"),
@@ -185,9 +183,10 @@ export function useSettings() {
             logger.error("[useSettings] Nextcloud-Pass konnte nicht entschlüsselt werden:", err);
           }
         }
+        setSqliteReady(true);
       } catch (err) {
         logger.error("[useSettings] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
-        sqliteReady.current = false;
+        setSqliteReady(false);
       }
     })();
 
@@ -196,7 +195,7 @@ export function useSettings() {
 
   // ─── SQLite-Write Helper (fire-and-forget) ───
   const sqliteWrite = useCallback(async (key: string, value: unknown) => {
-    if (!sqliteReady.current) return;
+    if (!sqliteReady) return;
     try {
       if (value === null || value === undefined) {
         await deleteSetting(key);
@@ -206,7 +205,7 @@ export function useSettings() {
     } catch (err) {
       logger.error(`[useSettings] SQLite-Write für "${key}" fehlgeschlagen:`, err);
     }
-  }, []);
+  }, [sqliteReady]);
 
   // ─── Persistenz: Dual-Write (localStorage + SQLite) ───
 

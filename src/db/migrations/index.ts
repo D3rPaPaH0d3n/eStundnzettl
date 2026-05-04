@@ -7,10 +7,10 @@
  *  - Angewendete Migrationen werden in der Tabelle `schema_version` protokolliert.
  *
  * Abwärtskompatibilität:
- *  - Bestehende Installationen haben die Baseline-Tabellen bereits über den
- *    alten `CREATE TABLE IF NOT EXISTS`-Pfad angelegt. Der Runner erkennt
- *    das (`entries`-Tabelle existiert, `schema_version` ist leer) und
- *    markiert Migration 1 still als "angewendet", ohne sie erneut auszuführen.
+ *  - Bestehende Installationen können einzelne Baseline-Tabellen bereits über
+ *    den alten `CREATE TABLE IF NOT EXISTS`-Pfad angelegt haben. Migration 1
+ *    läuft deshalb bewusst idempotent weiter, damit teilweise vorhandene Legacy-
+ *    DBs fehlende Baseline-Tabellen sicher nachziehen, ohne Daten anzufassen.
  *
  * Neue Migrationen hinzufügen:
  *  1. Neue Datei `NNN_short_name.js` mit exportiertem Migrations-Objekt anlegen.
@@ -34,6 +34,12 @@ const SCHEMA_VERSION_TABLE_SQL: string = `
     applied_at TEXT    NOT NULL
   );
 `;
+
+// Diese Migrationen bestehen ausschließlich aus `CREATE ... IF NOT EXISTS`-
+// Statements. Wenn sie bereits in schema_version stehen, dürfen wir sie trotzdem
+// erneut als Safety-Net ausführen, um durch frühere Legacy-Detection übersprungene
+// Baseline-Objekte nachzuziehen, ohne schema_version zu duplizieren.
+const IDEMPOTENT_SCHEMA_REPAIR_MIGRATIONS = new Set<number>([1, 2]);
 
 /**
  * Führt alle ausstehenden Migrationen gegen die übergebenen SQL-Funktionen aus.
@@ -76,29 +82,21 @@ export async function runMigrations(
       .filter((v) => Number.isInteger(v))
   );
 
-  // 3) Legacy-Detection: wenn `entries` existiert aber schema_version leer ist,
-  //    ist die DB aus dem alten Flow vorhanden → Migration 1 still als erledigt markieren.
+  // 3) Migrationen in Reihenfolge prüfen/ausführen.
+  //    Wichtig: Migration 1 wird auch bei Legacy-DBs mit vorhandener `entries`-
+  //    Tabelle ausgeführt. Bereits protokollierte idempotente Migrationen werden
+  //    als stiller Schema-Repair erneut re-asserted, damit frühere Teil-Erkennung
+  //    keine fehlenden Baseline-Tabellen/Indizes zurücklassen kann.
   const skipped: number[] = [];
-  if (applied.size === 0) {
-    const existing = await query(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='entries';"
-    );
-    if ((existing || []).length > 0) {
-      const nowIso = new Date().toISOString();
-      await execute(
-        `INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (1, '${nowIso}');`
-      );
-      applied.add(1);
-      skipped.push(1);
-      log.info?.("[migrations] Legacy-DB erkannt — Migration 1 als bereits angewendet markiert");
-    }
-  }
-
-  // 4) Ausstehende Migrationen in Reihenfolge ausführen.
   const sorted = [...MIGRATIONS].sort((a, b) => a.version - b.version);
   const appliedVersions: number[] = [];
   for (const migration of sorted) {
-    if (applied.has(migration.version)) continue;
+    if (applied.has(migration.version)) {
+      if (IDEMPOTENT_SCHEMA_REPAIR_MIGRATIONS.has(migration.version)) {
+        await migration.up(execute);
+      }
+      continue;
+    }
 
     log.info?.(`[migrations] Wende Migration ${migration.version} (${migration.name}) an...`);
     try {

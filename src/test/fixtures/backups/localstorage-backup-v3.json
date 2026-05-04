@@ -1,0 +1,45 @@
+{
+  "version": "v3",
+  "formatVersion": 1,
+  "exportedAt": "2025-11-20T17:45:00.000Z",
+  "timezone": "Europe/Vienna",
+  "user": {
+    "name": "Demo Legacy V3",
+    "position": "Hausbetreuung",
+    "photo": null,
+    "workDays": [0, 510, 510, 510, 510, 270, 0]
+  },
+  "entries": [
+    {
+      "id": 301,
+      "type": "work",
+      "date": "2025-11-20",
+      "start": "07:30",
+      "end": "16:00",
+      "pause": 30,
+      "project": "Demo Objekt A",
+      "code": 7,
+      "netDuration": 480
+    }
+  ],
+  "workCodes": [
+    { "id": 7, "label": "Kontrolle" }
+  ],
+  "attachments": [
+    {
+      "id": "att-demo-v3-1",
+      "entryId": 301,
+      "label": "Demo Beleg",
+      "fileName": "demo-beleg.pdf",
+      "mimeType": "application/pdf",
+      "fileSize": 12345,
+      "createdAt": "2025-11-20T16:00:00.000Z"
+    }
+  ],
+  "attachmentLabels": ["Demo Beleg"],
+  "legacySettings": {
+    "nextcloudUrl": "https://cloud.invalid/remote.php/dav/files/demo",
+    "nextcloudUser": "demo-user",
+    "nextcloudPass": "obf:REVNTy1PTkxZ"
+  }
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 
 // ─── Module-Mocks ───────────────────────────────────────────
 
@@ -24,12 +24,19 @@ vi.mock("../../utils/logger", () => ({
 }));
 
 import { useSettings } from "../useSettings";
+import { isSQLiteActive } from "../../db/storageMode";
+import { getSetting, setSetting } from "../../db/repositories/settingsRepo";
+import { deobfuscateLegacySync } from "../../utils/obfuscate";
 
 // ─── Tests ──────────────────────────────────────────────────
 
 describe("useSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(isSQLiteActive).mockReturnValue(false);
+    vi.mocked(getSetting).mockResolvedValue(null);
+    vi.mocked(setSetting).mockResolvedValue(undefined);
+    vi.mocked(deobfuscateLegacySync).mockImplementation((val: string) => val);
     localStorage.clear();
 
     // jsdom does not implement matchMedia — provide a minimal stub
@@ -87,8 +94,86 @@ describe("useSettings", () => {
     act(() => result.current.setUserData(newUser));
 
     expect(result.current.userData.name).toBe("Anna");
-    const stored = JSON.parse(localStorage.getItem("estundnzettl_user")!);
+    const storedUser = localStorage.getItem("estundnzettl_user");
+    expect(storedUser).not.toBeNull();
+    const stored = JSON.parse(storedUser ?? "{}");
     expect(stored.name).toBe("Anna");
+  });
+
+  it("uses localStorage fallback and does not read SQLite while SQLite is not active", () => {
+    const user = {
+      name: "Fallback User",
+      position: "Legacy",
+      photo: null,
+      workDays: [0, 420, 420, 420, 420, 420, 0],
+    };
+    localStorage.setItem("estundnzettl_user", JSON.stringify(user));
+    localStorage.setItem("estundnzettl_theme", "dark");
+
+    const { result } = renderHook(() => useSettings());
+
+    expect(result.current.userData.name).toBe("Fallback User");
+    expect(result.current.theme).toBe("dark");
+    expect(getSetting).not.toHaveBeenCalled();
+    expect(setSetting).not.toHaveBeenCalled();
+  });
+
+  it("lets SQLite values override localStorage only after the async DB read is ready", async () => {
+    vi.mocked(isSQLiteActive).mockReturnValue(true);
+
+    const localUser = {
+      name: "Local User",
+      position: "Legacy",
+      photo: null,
+      workDays: [0, 420, 420, 420, 420, 420, 0],
+    };
+    const sqliteUser = {
+      name: "SQLite User",
+      position: "Persisted",
+      photo: null,
+      workDays: [0, 480, 480, 480, 480, 300, 0],
+    };
+    localStorage.setItem("estundnzettl_user", JSON.stringify(localUser));
+    localStorage.setItem("estundnzettl_theme", "light");
+
+    let releaseDbRead: () => void = () => {
+      throw new Error("DB read gate was not initialized");
+    };
+    const dbReadGate = new Promise<void>((resolve) => {
+      releaseDbRead = resolve;
+    });
+    vi.mocked(getSetting).mockImplementation(async (key: string) => {
+      await dbReadGate;
+      const values: Record<string, unknown> = {
+        user: sqliteUser,
+        theme: "dark",
+        cloud_sync_enabled: true,
+        local_backup_enabled: true,
+      };
+      return values[key] ?? null;
+    });
+
+    const { result } = renderHook(() => useSettings());
+
+    expect(result.current.userData.name).toBe("Local User");
+    expect(result.current.theme).toBe("light");
+    expect(setSetting).not.toHaveBeenCalled();
+
+    releaseDbRead();
+
+    await waitFor(() => {
+      expect(result.current.userData.name).toBe("SQLite User");
+      expect(result.current.theme).toBe("dark");
+      expect(result.current.cloudSyncEnabled).toBe(true);
+      expect(result.current.localBackupEnabled).toBe(true);
+    });
+
+    const storedSqliteUser = localStorage.getItem("estundnzettl_user");
+    expect(storedSqliteUser).not.toBeNull();
+    expect(JSON.parse(storedSqliteUser ?? "{}").name).toBe("SQLite User");
+    expect(localStorage.getItem("estundnzettl_theme")).toBe("dark");
+    expect(setSetting).toHaveBeenCalledWith("user", expect.objectContaining({ name: "SQLite User" }));
+    expect(setSetting).not.toHaveBeenCalledWith("user", expect.objectContaining({ name: "Local User" }));
   });
 
   it("defaults theme to 'system'", () => {
@@ -161,6 +246,16 @@ describe("useSettings", () => {
     expect(result.current.nextcloudUrl).toBe("https://cloud.example.com");
     expect(result.current.nextcloudUser).toBe("admin");
     expect(result.current.nextcloudPass).toBe("secret123");
+  });
+
+  it("keeps legacy Nextcloud password fallback readable on init", () => {
+    vi.mocked(deobfuscateLegacySync).mockReturnValue("demo-app-password");
+    localStorage.setItem("estundnzettl_nextcloud_pass", "obf:ZGVtby1hcHAtcGFzc3dvcmQ=");
+
+    const { result } = renderHook(() => useSettings());
+
+    expect(deobfuscateLegacySync).toHaveBeenCalledWith("obf:ZGVtby1hcHAtcGFzc3dvcmQ=");
+    expect(result.current.nextcloudPass).toBe("demo-app-password");
   });
 
   it("handles corrupt userData in localStorage gracefully (uses defaults)", () => {

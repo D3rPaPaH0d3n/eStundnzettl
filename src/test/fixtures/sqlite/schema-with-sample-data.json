@@ -1,0 +1,56 @@
+{
+  "description": "SQLite fixture schema with demo rows for entries, settings, work_codes, attachments, attachment_labels, backup_metadata and schema_version.",
+  "schemaVersionRows": [
+    { "version": 1, "applied_at": "2026-04-01T00:00:00.000Z" },
+    { "version": 2, "applied_at": "2026-04-01T00:00:01.000Z" }
+  ],
+  "tables": {
+    "entries": [
+      {
+        "id": 7001,
+        "type": "work",
+        "date": "2026-04-15",
+        "start": "08:15",
+        "end": "16:45",
+        "pause": 30,
+        "project": "Demo SQLite Objekt",
+        "code": 11,
+        "netDuration": 480
+      }
+    ],
+    "settings": [
+      { "key": "user", "value": "{\"name\":\"SQLite Demo\",\"position\":\"Technik\",\"photo\":null,\"workDays\":[0,480,480,480,480,240,0]}" },
+      { "key": "theme", "value": "\"system\"" },
+      { "key": "nextcloud_url", "value": "\"https://cloud.invalid/remote.php/dav/files/demo\"" },
+      { "key": "nextcloud_user", "value": "\"demo-user\"" },
+      { "key": "nextcloud_pass", "value": "\"obf:REVNTy1PTkxZ\"" }
+    ],
+    "work_codes": [
+      { "id": 11, "label": "Demo Kontrolle" }
+    ],
+    "attachments": [
+      {
+        "id": "att-sqlite-demo-1",
+        "entryId": 7001,
+        "label": "Demo Foto",
+        "fileName": "demo-foto.jpg",
+        "mimeType": "image/jpeg",
+        "storagePath": "attachments/demo-foto.jpg",
+        "fileSize": 4096,
+        "createdAt": "2026-04-15T16:40:00.000Z"
+      }
+    ],
+    "attachment_labels": [
+      { "label": "Demo Foto", "position": 0 }
+    ],
+    "backup_metadata": [
+      {
+        "id": 1,
+        "type": "local",
+        "timestamp": "2026-04-15T17:00:00.000Z",
+        "size_bytes": 2048,
+        "location": "Directory.Data/eStundnzettl"
+      }
+    ]
+  }
+}

@@ -96,6 +96,9 @@ function makeEntry(overrides: Partial<Entry> = {}): Entry {
 describe("useAutoBackup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getValidToken).mockResolvedValue({ accessToken: "test-token" });
+    vi.mocked(uploadOrUpdateFile).mockResolvedValue(undefined);
+    vi.mocked(writeBackupFile).mockResolvedValue(undefined);
     vi.useFakeTimers();
     localStorage.clear();
   });
@@ -194,6 +197,77 @@ describe("useAutoBackup", () => {
     expect(writeBackupFile).toHaveBeenCalledTimes(1);
   });
 
+  it("skips Auto-Save when payload hash is unchanged", async () => {
+    localStorage.setItem("estundnzettl_local_backup_enabled", "true");
+    const entries = [makeEntry({ id: 1 })];
+    const { rerender } = renderHook(
+      ({ currentEntries, currentUser }) => useAutoBackup(currentEntries, currentUser, true),
+      { initialProps: { currentEntries: entries, currentUser: USER } }
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+      await Promise.resolve();
+    });
+
+    rerender({
+      currentEntries: [makeEntry({ id: 1 })],
+      currentUser: { ...USER, workDays: [...USER.workDays] },
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+      await Promise.resolve();
+    });
+
+    expect(writeBackupFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("manual backup is not blocked by cloud backoff", async () => {
+    localStorage.setItem("estundnzettl_cloud_sync_enabled", "true");
+    localStorage.setItem(
+      "estundnzettl_backup_backoff_until",
+      new Date(Date.now() + 30 * 60_000).toISOString()
+    );
+
+    const entries = [makeEntry()];
+    const { result } = renderHook(() => useAutoBackup(entries, USER, true));
+
+    await act(async () => {
+      await result.current.triggerManualBackup();
+    });
+
+    expect(getValidToken).toHaveBeenCalled();
+    expect(uploadOrUpdateFile).toHaveBeenCalledWith(
+      "test-token",
+      "estundnzettl_backup.json",
+      expect.objectContaining({ entries: expect.any(Array), version: "v6" })
+    );
+  });
+
+  it("background backup remains possible even when Auto-Save hash is unchanged", async () => {
+    localStorage.setItem("estundnzettl_local_backup_enabled", "true");
+    const entries = [makeEntry()];
+    renderHook(() => useAutoBackup(entries, USER, true));
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+      await Promise.resolve();
+    });
+    expect(writeBackupFile).toHaveBeenCalledTimes(1);
+    vi.mocked(writeBackupFile).mockClear();
+
+    const appModule = await import("@capacitor/app");
+    const callback = (appModule as unknown as { __getCallback: () => ((state: { isActive: boolean }) => void) | null }).__getCallback();
+
+    await act(async () => {
+      callback?.({ isActive: false });
+      await Promise.resolve();
+    });
+
+    expect(writeBackupFile).toHaveBeenCalledTimes(1);
+  });
+
   it("increments backupFailCount on cloud backup failure", async () => {
     localStorage.setItem("estundnzettl_cloud_sync_enabled", "true");
     vi.mocked(getValidToken).mockResolvedValueOnce(null);
@@ -205,6 +279,7 @@ describe("useAutoBackup", () => {
     });
 
     expect(result.current.backupFailCount).toBe(1);
+    expect(localStorage.getItem("estundnzettl_backup_fail_count")).toBe("1");
   });
 
   it("shows error toast when cloud backup fails 5 times", async () => {

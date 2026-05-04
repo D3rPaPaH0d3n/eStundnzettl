@@ -4,10 +4,10 @@
  * Entspricht dem bisher über `getInitSQL()` in schema.js ausgelieferten Stand:
  * entries, settings, work_codes, attachments (+ MRU-Labels), backup_metadata.
  *
- * Bestehende Installationen: Die Tabellen existieren bereits aus dem alten
- * `CREATE TABLE IF NOT EXISTS`-Flow. Die Migration ist idempotent (alle
- * Statements nutzen IF NOT EXISTS), der Runner markiert sie zusätzlich als
- * "bereits angewendet", um sie in Zukunft gar nicht erst auszuführen.
+ * Bestehende Installationen: Tabellen können bereits teilweise aus dem alten
+ * `CREATE TABLE IF NOT EXISTS`-Flow existieren. Die Migration ist idempotent
+ * (alle Statements nutzen IF NOT EXISTS) und darf deshalb auch auf Legacy-DBs
+ * laufen, um fehlende Baseline-Tabellen/Indizes ohne Datenverlust nachzuziehen.
  */
 
 export interface Migration {

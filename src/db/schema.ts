@@ -4,13 +4,18 @@
  * Alle Schema-Versionen und Migrations-SQL zentral verwaltet.
  */
 
+import { getLatestSchemaVersion } from "./migrations";
+
 /**
  * Höchste Version unserer JS-seitigen Migrationen (siehe `migrations/`).
  * Bewusst NICHT identisch mit `PLUGIN_DB_VERSION` in `database.ts` —
  * letztere ist der Plugin-Slot von @capacitor-community/sqlite und wandert
  * nur, wenn ein `addUpgradeStatement()`-Upgrade benötigt wird.
+ *
+ * Single source of truth ist die registrierte Migration-Registry; dieser Export
+ * bleibt als abwärtskompatibler Alias für bestehende Imports erhalten.
  */
-export const APP_SCHEMA_VERSION: number = 3;
+export const APP_SCHEMA_VERSION: number = getLatestSchemaVersion();
 
 export const DB_NAME = "estundnzettl";
 

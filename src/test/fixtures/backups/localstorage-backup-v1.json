@@ -1,0 +1,23 @@
+{
+  "version": "v1",
+  "exportedAt": "2024-01-15T08:00:00.000Z",
+  "user": {
+    "name": "Demo Legacy V1",
+    "position": "Technik",
+    "photo": null,
+    "workDays": [0, 480, 480, 480, 480, 300, 0]
+  },
+  "entries": [
+    {
+      "id": 101,
+      "type": "work",
+      "date": "2024-01-15",
+      "start": "08:00",
+      "end": "16:30",
+      "pause": 30,
+      "project": "Sample Projekt",
+      "code": 1,
+      "netDuration": 480
+    }
+  ]
+}

@@ -28,7 +28,7 @@
     "coverage": "vitest run --coverage",
     "analyze": "ANALYZE=true vite build",
     "knip": "knip",
-    "postinstall": "npx replace-in-files-cli --string=\"proguard-android.txt\" --replacement=\"proguard-android-optimize.txt\" \"node_modules/@capacitor/*/android/build.gradle\" \"node_modules/@capgo/*/android/build.gradle\" \"node_modules/@capacitor-community/*/android/build.gradle\"",
+    "postinstall": "npx replace-in-files-cli --string=\"proguard-android.txt\" --replacement=\"proguard-android-optimize.txt\" \"node_modules/@capacitor/*/android/build.gradle\" \"node_modules/@capgo/*/android/build.gradle\" \"node_modules/@capacitor-community/*/android/build.gradle\" \"node_modules/capacitor-secure-storage-plugin/android/build.gradle\"",
     "cap:open": "npx cap open android",
     "version": "node scripts/sync-version.js",
     "release:patch": "node scripts/confirm-release.js && npm version patch && git push && git push --tags && npm run build && npx cap sync && npx cap open android",

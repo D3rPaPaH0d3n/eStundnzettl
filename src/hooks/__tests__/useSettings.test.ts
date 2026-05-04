@@ -3,8 +3,14 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 
 // ─── Module-Mocks ───────────────────────────────────────────
 
+const storageModeListeners = vi.hoisted(() => new Set<() => void>());
+
 vi.mock("../../db/storageMode", () => ({
   isSQLiteActive: vi.fn(() => false),
+  subscribeStorageMode: vi.fn((listener: () => void) => {
+    storageModeListeners.add(listener);
+    return () => storageModeListeners.delete(listener);
+  }),
 }));
 
 vi.mock("../../db/repositories/settingsRepo", () => ({
@@ -33,6 +39,7 @@ import { deobfuscateLegacySync } from "../../utils/obfuscate";
 describe("useSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    storageModeListeners.clear();
     vi.mocked(isSQLiteActive).mockReturnValue(false);
     vi.mocked(getSetting).mockResolvedValue(null);
     vi.mocked(setSetting).mockResolvedValue(undefined);
@@ -118,6 +125,42 @@ describe("useSettings", () => {
     expect(setSetting).not.toHaveBeenCalled();
   });
 
+  it("loads SQLite settings when SQLite becomes active after initial render", async () => {
+    const sqliteUser = {
+      name: "Delayed SQLite User",
+      position: "Persisted",
+      photo: null,
+      workDays: [0, 480, 480, 480, 480, 300, 0],
+    };
+    vi.mocked(getSetting).mockImplementation(async (key: string) => {
+      const values: Record<string, unknown> = {
+        user: sqliteUser,
+        theme: "dark",
+      };
+      return values[key] ?? null;
+    });
+
+    const { result } = renderHook(() => useSettings());
+
+    expect(result.current.settingsStorageStatus).toBe("fallback");
+    expect(getSetting).not.toHaveBeenCalled();
+    expect(setSetting).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.mocked(isSQLiteActive).mockReturnValue(true);
+      storageModeListeners.forEach((listener) => listener());
+    });
+
+    await waitFor(() => {
+      expect(result.current.userData.name).toBe("Delayed SQLite User");
+      expect(result.current.theme).toBe("dark");
+      expect(result.current.settingsStorageStatus).toBe("ready");
+      expect(result.current.sqliteReady).toBe(true);
+    });
+
+    expect(setSetting).not.toHaveBeenCalledWith("user", expect.objectContaining({ name: "" }));
+  });
+
   it("lets SQLite values override localStorage only after the async DB read is ready", async () => {
     vi.mocked(isSQLiteActive).mockReturnValue(true);
 
@@ -166,14 +209,69 @@ describe("useSettings", () => {
       expect(result.current.theme).toBe("dark");
       expect(result.current.cloudSyncEnabled).toBe(true);
       expect(result.current.localBackupEnabled).toBe(true);
+      expect(result.current.settingsStorageStatus).toBe("ready");
+    });
+
+    await waitFor(() => {
+      expect(setSetting).toHaveBeenCalledWith("user", expect.objectContaining({ name: "SQLite User" }));
     });
 
     const storedSqliteUser = localStorage.getItem("estundnzettl_user");
     expect(storedSqliteUser).not.toBeNull();
     expect(JSON.parse(storedSqliteUser ?? "{}").name).toBe("SQLite User");
     expect(localStorage.getItem("estundnzettl_theme")).toBe("dark");
-    expect(setSetting).toHaveBeenCalledWith("user", expect.objectContaining({ name: "SQLite User" }));
     expect(setSetting).not.toHaveBeenCalledWith("user", expect.objectContaining({ name: "Local User" }));
+  });
+
+  it("does not overwrite SQLite with the default empty profile while startup load is pending", async () => {
+    vi.mocked(isSQLiteActive).mockReturnValue(true);
+
+    const sqliteUser = {
+      name: "Persisted SQLite User",
+      position: "Crew",
+      photo: null,
+      workDays: [0, 480, 480, 480, 480, 240, 0],
+    };
+    let releaseDbRead: () => void = () => {
+      throw new Error("DB read gate was not initialized");
+    };
+    const dbReadGate = new Promise<void>((resolve) => {
+      releaseDbRead = resolve;
+    });
+    vi.mocked(getSetting).mockImplementation(async (key: string) => {
+      await dbReadGate;
+      return key === "user" ? sqliteUser : null;
+    });
+
+    const { result } = renderHook(() => useSettings());
+
+    expect(result.current.userData.name).toBe("");
+    expect(result.current.settingsStorageStatus).toBe("loading");
+    expect(setSetting).not.toHaveBeenCalled();
+
+    releaseDbRead();
+
+    await waitFor(() => {
+      expect(result.current.userData.name).toBe("Persisted SQLite User");
+      expect(result.current.settingsStorageStatus).toBe("ready");
+    });
+
+    expect(setSetting).not.toHaveBeenCalledWith("user", expect.objectContaining({ name: "" }));
+  });
+
+  it("reports SQLite load failures and does not write fallback values back to SQLite", async () => {
+    vi.mocked(isSQLiteActive).mockReturnValue(true);
+    vi.mocked(getSetting).mockRejectedValue(new Error("db unavailable"));
+
+    const { result } = renderHook(() => useSettings());
+
+    await waitFor(() => {
+      expect(result.current.settingsStorageStatus).toBe("failed");
+      expect(result.current.settingsStorageError).toContain("db unavailable");
+      expect(result.current.sqliteReady).toBe(false);
+    });
+
+    expect(setSetting).not.toHaveBeenCalled();
   });
 
   it("defaults theme to 'system'", () => {

@@ -8,6 +8,17 @@
 import { logger } from "../utils/logger";
 
 let _initialized: boolean = false;
+const listeners = new Set<() => void>();
+
+function notifyStorageModeListeners(): void {
+  listeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (err) {
+      logger.error("[storageMode] Listener fehlgeschlagen", err);
+    }
+  });
+}
 
 /**
  * Setzt den aktiven Storage-Modus (nur "sqlite" erlaubt).
@@ -20,6 +31,20 @@ export function setStorageMode(mode: "sqlite" | "localStorage"): void {
   }
   _initialized = true;
   logger.info(`[storageMode] Aktiver Speicher: sqlite`);
+  notifyStorageModeListeners();
+}
+
+/**
+ * Informiert Consumer, sobald der Storage-Modus bestimmt/neu bestätigt wurde.
+ * Das ist absichtlich klein gehalten: Hooks wie `useSettings` können damit
+ * nach einem initialen localStorage-Fallback zuverlässig SQLite nachladen,
+ * sobald `useEntries` die DB-Verbindung erfolgreich hergestellt hat.
+ */
+export function subscribeStorageMode(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 /**

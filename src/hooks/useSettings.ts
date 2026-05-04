@@ -14,13 +14,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { UserData, Theme } from '../types';
 import { STORAGE_KEYS, WORK_MODELS } from "./constants";
-import { isSQLiteActive } from "../db/storageMode";
+import { isSQLiteActive, subscribeStorageMode } from "../db/storageMode";
 import { getSetting, setSetting, deleteSetting } from "../db/repositories/settingsRepo";
 import type { LocaleId } from "../locales/types";
 import { LOCALES } from "../locales";
 
 import { obfuscate, deobfuscate, deobfuscateLegacySync } from "../utils/obfuscate";
 import { logger } from "../utils/logger";
+
+type SettingsStorageStatus = "fallback" | "loading" | "ready" | "failed";
 
 // ─── localStorage Helper (identisch zum Original) ───────────
 
@@ -131,18 +133,20 @@ export function useSettings() {
   );
 
   const [sqliteReady, setSqliteReady] = useState<boolean>(false);
-  const initDone = useRef<boolean>(false);
+  const sqliteLoadStarted = useRef<boolean>(false);
+  const [settingsStorageStatus, setSettingsStorageStatus] = useState<SettingsStorageStatus>("fallback");
+  const [settingsStorageError, setSettingsStorageError] = useState<string | null>(null);
 
   // ─── SQLite-Init: Daten aus SQLite nachladen (wenn verfügbar) ───
   useEffect(() => {
-    if (initDone.current) return;
-    initDone.current = true;
-
-    if (!isSQLiteActive()) return;
-
     let cancelled = false;
 
-    (async () => {
+    const loadFromSQLite = async () => {
+      if (cancelled || sqliteLoadStarted.current || !isSQLiteActive()) return;
+      sqliteLoadStarted.current = true;
+      setSettingsStorageStatus("loading");
+      setSettingsStorageError(null);
+
       try {
         // Settings aus SQLite laden — nur überschreiben wenn vorhanden
         const [sqlUser, sqlTheme, sqlCloud, sqlLocal, sqlLocale, sqlNcEnabled, sqlNcUrl, sqlNcUser, sqlNcPass] = await Promise.all([
@@ -184,13 +188,26 @@ export function useSettings() {
           }
         }
         setSqliteReady(true);
+        setSettingsStorageStatus("ready");
       } catch (err) {
+        if (cancelled) return;
         logger.error("[useSettings] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
         setSqliteReady(false);
+        setSettingsStorageStatus("failed");
+        setSettingsStorageError(err instanceof Error ? err.message : String(err));
       }
-    })();
+    };
 
-    return () => { cancelled = true; };
+    void loadFromSQLite();
+
+    const unsubscribe = subscribeStorageMode(() => {
+      void loadFromSQLite();
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   // ─── SQLite-Write Helper (fire-and-forget) ───
@@ -340,5 +357,10 @@ export function useSettings() {
     setNextcloudUser,
     nextcloudPass,
     setNextcloudPass,
+
+    // Diagnose/Startup-Status: additive API, bestehende Consumer bleiben kompatibel
+    sqliteReady,
+    settingsStorageStatus,
+    settingsStorageError,
   };
 }

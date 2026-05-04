@@ -58,6 +58,12 @@ describe("getAllAttachments", () => {
     expect(r[0].fileSize).toBe(0);
     expect(r[0].fileName).toBe("");
   });
+
+  it("preserves legacy string entryId values from SQLite rows", async () => {
+    queryMock.mockResolvedValue([{ id: "att-x", entryId: "legacy-101" }]);
+    const r = await getAllAttachments();
+    expect(r[0].entryId).toBe("legacy-101");
+  });
 });
 
 describe("getAttachmentsByEntryId", () => {
@@ -65,6 +71,12 @@ describe("getAttachmentsByEntryId", () => {
     queryMock.mockResolvedValue([]);
     await getAttachmentsByEntryId(42);
     expect(queryMock).toHaveBeenCalledWith(expect.stringMatching(/entryId = \?/i), [42]);
+  });
+
+  it("übergibt legacy string entryId unverändert als Parameter", async () => {
+    queryMock.mockResolvedValue([]);
+    await getAttachmentsByEntryId("legacy-42");
+    expect(queryMock).toHaveBeenCalledWith(expect.stringMatching(/entryId = \?/i), ["legacy-42"]);
   });
 });
 
@@ -93,6 +105,13 @@ describe("insertAttachment", () => {
     });
     const values = runMock.mock.calls[0][1];
     expect(values).toEqual(["y", 2, "Test", "a.pdf", "application/pdf", "p", 999, "2020-01-01T00:00:00Z"]);
+  });
+
+  it("preserves string entryId for legacy/imported attachments", async () => {
+    runMock.mockResolvedValue(undefined);
+    await insertAttachment({ id: "legacy-att", entryId: "legacy-301" } as Attachment);
+    const values = runMock.mock.calls[0][1];
+    expect(values[1]).toBe("legacy-301");
   });
 });
 
@@ -125,6 +144,15 @@ describe("bulkReplaceAttachments", () => {
     const [set] = executeSetMock.mock.calls[0];
     expect(set).toHaveLength(2);
     expect(set[0].statement).toMatch(/DELETE FROM attachments/i);
+  });
+
+  it("preserves string entryId during backup-style bulk replace", async () => {
+    executeSetMock.mockResolvedValue(undefined);
+    await bulkReplaceAttachments([
+      { id: "a", entryId: "legacy-301", label: "x", fileName: "a.pdf" } as Attachment,
+    ]);
+    const [set] = executeSetMock.mock.calls[0];
+    expect(set[1].values[1]).toBe("legacy-301");
   });
 
   it("behandelt null oder leeres Array korrekt", async () => {

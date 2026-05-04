@@ -8,12 +8,24 @@
 import { run, query, execute, executeSet } from "../database";
 import type { Entry } from "../../types";
 
+interface EntryRow extends Record<string, unknown> {
+  id: Entry["id"];
+  type?: Entry["type"] | null;
+  date: string;
+  start?: string | null;
+  end?: string | null;
+  pause?: number | null;
+  project?: string | null;
+  code?: number | null;
+  netDuration?: number | null;
+}
+
 /**
  * Alle Entries laden, sortiert nach Datum absteigend (neueste zuerst).
  * @returns {Promise<Array>} — Array von Entry-Objekten
  */
 export async function getAllEntries(): Promise<Entry[]> {
-  const rows = await query("SELECT * FROM entries ORDER BY date DESC, id DESC");
+  const rows = await query<EntryRow>("SELECT * FROM entries ORDER BY date DESC, id DESC");
   return rows.map(rowToEntry);
 }
 
@@ -23,7 +35,7 @@ export async function getAllEntries(): Promise<Entry[]> {
  * @returns {Promise<Object|null>}
  */
 export async function getEntryById(id: number | string): Promise<Entry | null> {
-  const rows = await query("SELECT * FROM entries WHERE id = ?", [id]);
+  const rows = await query<EntryRow>("SELECT * FROM entries WHERE id = ?", [id]);
   return rows.length > 0 ? rowToEntry(rows[0]) : null;
 }
 
@@ -130,7 +142,7 @@ export async function bulkInsertEntries(entries: Entry[]): Promise<void> {
  * SQLite-Row (Objekt) → normalisiertes Entry-Objekt.
  * Stellt sicher, dass null-Werte korrekt behandelt werden.
  */
-function rowToEntry(row: Record<string, any>): Entry {
+function rowToEntry(row: EntryRow): Entry {
   return {
     id: row.id,
     type: row.type || "work",

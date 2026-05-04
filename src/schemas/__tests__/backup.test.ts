@@ -50,4 +50,22 @@ describe("parseBackupPayloadSafe", () => {
       expect(result.data.formatVersion).toBe(2);
     }
   });
+
+  it("preserves legacy string entry IDs and matching attachment entryId", () => {
+    const result = parseBackupPayloadSafe({
+      version: "legacy-string-id",
+      entries: [
+        { id: "legacy-301", type: "work", date: "2026-04-04", start: "08:00", end: "16:00" },
+      ],
+      attachments: [
+        { id: "att-legacy-301", entryId: "legacy-301", label: "Beleg" },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.entries[0].id).toBe("legacy-301");
+      expect(result.data.attachments[0].entryId).toBe("legacy-301");
+    }
+  });
 });

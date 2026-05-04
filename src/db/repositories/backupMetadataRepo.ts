@@ -7,12 +7,20 @@
 import { run, query } from "../database";
 import type { BackupMetadata } from "../../types";
 
+interface BackupMetadataRow extends Record<string, unknown> {
+  id: number;
+  type: string | null;
+  timestamp: string | null;
+  size_bytes: number | null;
+  location: string | null;
+}
+
 /**
  * Letzten Backup-Eintrag laden.
  * @returns {Promise<Object|null>} - { id, type, timestamp, size_bytes, location }
  */
 export async function getLastBackupMetadata(): Promise<BackupMetadata | null> {
-  const rows = await query(
+  const rows = await query<BackupMetadataRow>(
     "SELECT * FROM backup_metadata ORDER BY timestamp DESC LIMIT 1"
   );
   return rows.length > 0 ? rowToBackupMetadata(rows[0]) : null;
@@ -42,7 +50,7 @@ export async function insertBackupMetadata(metadata: Partial<BackupMetadata> & {
  * @returns {Promise<Array>}
  */
 export async function getBackupHistory(limit: number = 10): Promise<BackupMetadata[]> {
-  const rows = await query(
+  const rows = await query<BackupMetadataRow>(
     "SELECT * FROM backup_metadata ORDER BY timestamp DESC LIMIT ?",
     [limit]
   );
@@ -55,7 +63,7 @@ export async function getBackupHistory(limit: number = 10): Promise<BackupMetada
  * @returns {Promise<Array>}
  */
 export async function getBackupMetadataByType(type: string): Promise<BackupMetadata[]> {
-  const rows = await query(
+  const rows = await query<BackupMetadataRow>(
     "SELECT * FROM backup_metadata WHERE type = ? ORDER BY timestamp DESC",
     [type]
   );
@@ -64,7 +72,7 @@ export async function getBackupMetadataByType(type: string): Promise<BackupMetad
 
 // ─── Helpers ─────────────────────────────────────────────
 
-function rowToBackupMetadata(row: Record<string, any>): BackupMetadata {
+function rowToBackupMetadata(row: BackupMetadataRow): BackupMetadata {
   return {
     id: row.id,
     type: row.type,

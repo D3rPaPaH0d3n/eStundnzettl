@@ -8,6 +8,21 @@
 import { run, query, execute, executeSet } from "../database";
 import type { Attachment } from "../../types";
 
+interface AttachmentRow extends Record<string, unknown> {
+  id: string;
+  entryId: Attachment["entryId"];
+  label?: string | null;
+  fileName?: string | null;
+  mimeType?: string | null;
+  storagePath?: string | null;
+  fileSize?: number | null;
+  createdAt?: string | null;
+}
+
+interface AttachmentLabelRow extends Record<string, unknown> {
+  label: string;
+}
+
 // ─── Attachments ─────────────────────────────────────────────
 
 /**
@@ -15,7 +30,7 @@ import type { Attachment } from "../../types";
  * @returns {Promise<Array>}
  */
 export async function getAllAttachments(): Promise<Attachment[]> {
-  const rows = await query("SELECT * FROM attachments ORDER BY createdAt ASC");
+  const rows = await query<AttachmentRow>("SELECT * FROM attachments ORDER BY createdAt ASC");
   return rows.map(rowToAttachment);
 }
 
@@ -25,7 +40,7 @@ export async function getAllAttachments(): Promise<Attachment[]> {
  * @returns {Promise<Array>}
  */
 export async function getAttachmentsByEntryId(entryId: number | string): Promise<Attachment[]> {
-  const rows = await query(
+  const rows = await query<AttachmentRow>(
     "SELECT * FROM attachments WHERE entryId = ? ORDER BY createdAt ASC",
     [entryId]
   );
@@ -105,7 +120,7 @@ export async function bulkReplaceAttachments(attachments: Attachment[]): Promise
  * @returns {Promise<Array<string>>}
  */
 export async function getAllLabelSuggestions(): Promise<string[]> {
-  const rows = await query(
+  const rows = await query<AttachmentLabelRow>(
     "SELECT label FROM attachment_labels ORDER BY position ASC"
   );
   return rows.map((r) => r.label);
@@ -158,7 +173,7 @@ export async function pushLabelSuggestion(label: string): Promise<void> {
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-function rowToAttachment(row: Record<string, any>): Attachment {
+function rowToAttachment(row: AttachmentRow): Attachment {
   return {
     id: row.id,
     entryId: row.entryId,
@@ -170,4 +185,3 @@ function rowToAttachment(row: Record<string, any>): Attachment {
     createdAt: row.createdAt || "",
   };
 }
-

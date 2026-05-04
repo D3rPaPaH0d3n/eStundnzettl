@@ -7,13 +7,22 @@
 
 import { run, query, executeSet } from "../database";
 
+interface SettingsRow extends Record<string, unknown> {
+  key: string;
+  value: string;
+}
+
+interface SettingValueRow extends Record<string, unknown> {
+  value: string;
+}
+
 /**
  * Einzelnen Setting-Wert lesen.
  * @param {string} key
  * @returns {Promise<*>} — geparstes JSON oder null wenn nicht gefunden
  */
 export async function getSetting(key: string): Promise<unknown> {
-  const rows = await query("SELECT value FROM settings WHERE key = ?", [key]);
+  const rows = await query<SettingValueRow>("SELECT value FROM settings WHERE key = ?", [key]);
   if (rows.length === 0) return null;
   try {
     return JSON.parse(rows[0].value);
@@ -50,7 +59,7 @@ export async function deleteSetting(key: string): Promise<void> {
  * @returns {Promise<Object>} — { key: value, ... }
  */
 export async function getAllSettings(): Promise<Record<string, unknown>> {
-  const rows = await query("SELECT key, value FROM settings");
+  const rows = await query<SettingsRow>("SELECT key, value FROM settings");
   const result: Record<string, unknown> = {};
   for (const row of rows) {
     try {

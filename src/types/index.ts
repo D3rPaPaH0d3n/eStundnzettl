@@ -10,8 +10,19 @@
 
 export type EntryType = "work" | "vacation" | "sick" | "public_holiday" | "time_comp";
 
+/**
+ * Entry IDs are generated as numbers for new app data (`generateEntryId`).
+ * The union stays intentional for legacy backups/localStorage-era imports and
+ * repository boundaries: import code must not coerce an entry ID independently
+ * from `Attachment.entryId`, otherwise existing attachment links can break.
+ *
+ * Do not migrate ID shapes opportunistically. If a future schema migration ever
+ * changes IDs, migrate entries and attachments together with explicit tests.
+ */
+export type EntryId = number | string;
+
 export interface Entry {
-  id: number | string;
+  id: EntryId;
   type: EntryType;
   date: string;             // YYYY-MM-DD
   start?: string | null;    // HH:MM
@@ -159,7 +170,8 @@ export interface AutoCheckoutData {
 
 export interface Attachment {
   id: string;
-  entryId: number | string;
+  /** Must match `Entry.id` exactly as imported/stored for legacy link safety. */
+  entryId: EntryId;
   label: string;
   fileName: string;
   mimeType: string;
@@ -226,10 +238,10 @@ export interface PeriodStats {
 
 export interface BackupMetadata {
   id: number;
-  type: string;
-  timestamp: string;
-  size_bytes: number;
-  location: string;
+  type: string | null;
+  timestamp: string | null;
+  size_bytes: number | null;
+  location: string | null;
 }
 
 // ─── Delete Target ───────────────────────────────────────────

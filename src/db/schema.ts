@@ -24,6 +24,12 @@ export const DB_NAME = "estundnzettl";
 /**
  * Entries-Tabelle (Welle 1)
  * Felder entsprechen 1:1 dem bestehenden Entry-Objekt.
+ *
+ * ID-Strategie: Neue Einträge nutzen numerische IDs. TypeScript erlaubt an
+ * Import-/Repository-Grenzen weiterhin number|string, weil Legacy-Backups und
+ * Attachments ihre entryId unverändert spiegeln müssen. Dieses INTEGER-Schema
+ * bleibt bewusst unverändert; keine implizite ID-Migration ohne gekoppelten
+ * Entries+Attachments-Migrationsplan.
  */
 export const CREATE_ENTRIES_TABLE = `
   CREATE TABLE IF NOT EXISTS entries (
@@ -88,6 +94,8 @@ export const CREATE_WORK_CODES_TABLE = `
  *
  * entryId verweist logisch auf entries.id (kein FOREIGN KEY Constraint,
  * damit Attachments auch bei entry-unabhängigen Operationen stabil bleiben).
+ * Die App koerziert entryId im Repository nicht, damit Legacy-Importe dieselbe
+ * ID-Form wie beim zugehörigen Entry behalten.
  */
 export const CREATE_ATTACHMENTS_TABLE = `
   CREATE TABLE IF NOT EXISTS attachments (

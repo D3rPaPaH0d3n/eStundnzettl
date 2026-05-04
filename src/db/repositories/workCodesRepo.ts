@@ -8,12 +8,17 @@
 import { run, query, execute, executeSet } from "../database";
 import type { WorkCode } from "../../types";
 
+interface WorkCodeRow extends Record<string, unknown> {
+  id: number;
+  label?: string | null;
+}
+
 /**
  * Alle WorkCodes laden, sortiert nach ID.
  * @returns {Promise<Array<{id: number, label: string}>>}
  */
 export async function getAllWorkCodes(): Promise<WorkCode[]> {
-  const rows = await query("SELECT id, label FROM work_codes ORDER BY id ASC");
+  const rows = await query<WorkCodeRow>("SELECT id, label FROM work_codes ORDER BY id ASC");
   return rows.map(rowToWorkCode);
 }
 
@@ -75,7 +80,7 @@ export async function bulkReplaceWorkCodes(codes: WorkCode[]): Promise<void> {
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-function rowToWorkCode(row: Record<string, any>): WorkCode {
+function rowToWorkCode(row: WorkCodeRow): WorkCode {
   return {
     id: row.id,
     label: row.label || "",

@@ -159,6 +159,21 @@ describe("analyzeBackupData", () => {
     });
     expect(result.entryCount).toBe(1);
   });
+
+  it("keeps legacy backup attachment links aligned with string entry IDs", async () => {
+    const result = await analyzeBackupData({
+      entries: [
+        { id: "legacy-301", date: "2024-01-01", type: "work" },
+      ],
+      attachments: [
+        { id: "att-legacy-301", entryId: "legacy-301", label: "Beleg" },
+      ],
+    });
+
+    expect(result.valid).toBe(true);
+    expect((result.entries as Array<{ id: string }>)[0].id).toBe("legacy-301");
+    expect((result.attachments as Array<{ entryId: string }>)[0].entryId).toBe("legacy-301");
+  });
 });
 
 describe("triggerManualBackup", () => {

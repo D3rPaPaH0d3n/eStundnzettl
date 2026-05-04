@@ -66,6 +66,14 @@ describe("getAllEntries", () => {
     expect(entries[0].pause).toBe(0);
     expect(entries[0].netDuration).toBe(0);
   });
+
+  it("preserves legacy string IDs without repository-side coercion", async () => {
+    queryMock.mockResolvedValue([
+      { id: "legacy-101", type: "work", date: "2026-04-04", start: "08:00", end: "16:00" },
+    ]);
+    const entries = await getAllEntries();
+    expect(entries[0].id).toBe("legacy-101");
+  });
 });
 
 describe("getEntryById", () => {
@@ -143,6 +151,12 @@ describe("deleteEntryFromDb / deleteAllEntriesFromDb", () => {
     expect(runMock).toHaveBeenCalledWith(expect.stringMatching(/DELETE FROM entries/i), [7]);
   });
 
+  it("übergibt Legacy-String-IDs unverändert an DELETE", async () => {
+    runMock.mockResolvedValue(undefined);
+    await deleteEntryFromDb("legacy-7");
+    expect(runMock).toHaveBeenCalledWith(expect.stringMatching(/DELETE FROM entries/i), ["legacy-7"]);
+  });
+
   it("schickt bulk DELETE ohne Parameter", async () => {
     executeMock.mockResolvedValue(undefined);
     await deleteAllEntriesFromDb();
@@ -169,5 +183,14 @@ describe("bulkInsertEntries", () => {
     expect(set[0].statement).toMatch(/DELETE FROM entries/i);
     expect(set[1].values[0]).toBe(1);
     expect(set[2].values[0]).toBe(2);
+  });
+
+  it("preserves string IDs during backup-style bulk insert", async () => {
+    executeSetMock.mockResolvedValue(undefined);
+    await bulkInsertEntries([
+      { id: "legacy-301", type: "work", date: "2026-04-04", start: "08:00", end: "16:00", pause: 0, netDuration: 480 },
+    ]);
+    const [set] = executeSetMock.mock.calls[0];
+    expect(set[1].values[0]).toBe("legacy-301");
   });
 });

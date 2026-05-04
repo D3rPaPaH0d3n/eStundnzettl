@@ -158,8 +158,8 @@ export async function executeSet(set: Array<{ statement: string; values: SqlValu
 /**
  * Raw query — SELECT mit Parametern.
  */
-export async function query(sql: string, values: SqlValue[] = []): Promise<Record<string, unknown>[]> {
+export async function query<T extends Record<string, unknown> = Record<string, unknown>>(sql: string, values: SqlValue[] = []): Promise<T[]> {
   const db = await getDb();
   const result = await CapacitorSQLite.query({ database: db!, statement: sql, values });
-  return result.values || [];
+  return (result.values || []) as T[];
 }

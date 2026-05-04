@@ -1,7 +1,7 @@
 import React, { useRef, useCallback, useMemo, Suspense } from "react";
 import { Toaster } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import type { Entry, BackupPayload } from "./types";
+import type { BackupPayload } from "./types";
 import { getLocale } from "./locales";
 
 import { STORAGE_KEYS, WORK_CODE } from "./hooks/constants";
@@ -141,6 +141,35 @@ export default function App() {
   // einmal pro Tag. Play Store / Amazon / Huawei sehen das nie.
   const updateInfo = useUpdateAvailable();
 
+  const settingsRouteProps = {
+    theme,
+    setTheme,
+    autoBackup,
+    setAutoBackup,
+    onTriggerManualBackup: triggerManualBackup,
+    onExport: exportData,
+    onImport: () => fileInputRef.current?.click(),
+    onDeleteAll: handleRequestDeleteAll,
+    onCheckUpdate: handleManualUpdateCheck,
+    importEntries,
+    importWorkCodes: loadWorkCodes,
+    setUserData,
+    nextcloudEnabled,
+    nextcloudUrl,
+    nextcloudUser,
+    nextcloudPass,
+    setNextcloudEnabled,
+    setNextcloudUrl,
+    setNextcloudUser,
+    setNextcloudPass,
+    pdfArchiveLastRun,
+    pdfArchiveLastError,
+    pdfArchivePerformRun,
+    setLocale,
+    setCalculationConfig,
+    resetCalculationConfigToLocale,
+  };
+
   // --- RENDER ---
   return (
     <div className="min-h-screen w-screen font-sans bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 overflow-x-hidden relative">
@@ -263,29 +292,7 @@ export default function App() {
         lastWorkEntry={lastWorkEntry}
         uniqueProjects={uniqueProjects}
         entries={entries}
-        theme={theme}
-        setTheme={setTheme}
-        autoBackup={autoBackup}
-        setAutoBackup={setAutoBackup}
-        onTriggerManualBackup={triggerManualBackup}
-        onExport={exportData}
-        onImport={() => fileInputRef.current?.click()}
-        onDeleteAll={handleRequestDeleteAll}
-        onCheckUpdate={handleManualUpdateCheck}
-        importEntries={importEntries}
-        loadWorkCodes={loadWorkCodes}
-        setUserData={setUserData}
-        nextcloudEnabled={nextcloudEnabled}
-        nextcloudUrl={nextcloudUrl}
-        nextcloudUser={nextcloudUser}
-        nextcloudPass={nextcloudPass}
-        setNextcloudEnabled={setNextcloudEnabled}
-        setNextcloudUrl={setNextcloudUrl}
-        setNextcloudUser={setNextcloudUser}
-        setNextcloudPass={setNextcloudPass}
-        pdfArchiveLastRun={pdfArchiveLastRun}
-        pdfArchiveLastError={pdfArchiveLastError}
-        pdfArchivePerformRun={pdfArchivePerformRun}
+        settings={settingsRouteProps}
         entriesWithHolidays={entriesWithHolidays}
         attachments={attachments}
         readAttachmentFile={readAttachmentFile}
@@ -299,10 +306,7 @@ export default function App() {
         showTour={showTour}
         handleTourClose={handleTourClose}
         locale={locale}
-        setLocale={setLocale}
         calculationConfig={calculationConfig}
-        setCalculationConfig={setCalculationConfig}
-        resetCalculationConfigToLocale={resetCalculationConfigToLocale}
       />
     </div>
   );

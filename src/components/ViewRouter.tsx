@@ -2,7 +2,7 @@ import React, { Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { useTranslation } from "react-i18next";
-import type { Entry, UserData, WorkCode, Attachment, FormState, BackupPayload, CalculationConfig } from "../types";
+import type { Entry, UserData, WorkCode, Attachment, FormState, CalculationConfig, Theme, PdfArchiveRunOptions } from "../types";
 import type { PeriodStatsResult } from "../utils/timeCalculations";
 import type { Locale, LocaleId } from "../locales/types";
 import {
@@ -22,6 +22,35 @@ const Settings = React.lazy(() => import("./Settings"));
 const EntryForm = React.lazy(() => import("./EntryForm"));
 
 import type { TimerState } from "../types";
+
+interface SettingsRouteProps {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  autoBackup: boolean;
+  setAutoBackup: (enabled: boolean) => void;
+  onTriggerManualBackup: () => Promise<void> | void;
+  onExport: () => void;
+  onImport: () => void;
+  onDeleteAll: () => void;
+  onCheckUpdate: () => void;
+  importEntries: (entries: Entry[]) => void;
+  importWorkCodes: (codes: WorkCode[]) => void;
+  setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
+  nextcloudEnabled: boolean;
+  nextcloudUrl: string;
+  nextcloudUser: string;
+  nextcloudPass: string;
+  setNextcloudEnabled: (enabled: boolean) => void;
+  setNextcloudUrl: (url: string) => void;
+  setNextcloudUser: (user: string) => void;
+  setNextcloudPass: (pass: string) => void;
+  pdfArchiveLastRun: string | null;
+  pdfArchiveLastError: string | null;
+  pdfArchivePerformRun: (opts?: PdfArchiveRunOptions) => Promise<{ ok: boolean; message?: string }>;
+  setLocale: (id: LocaleId) => void;
+  setCalculationConfig: (next: CalculationConfig | ((prev: CalculationConfig) => CalculationConfig)) => void;
+  resetCalculationConfigToLocale: (newLocale: Locale, workDays: number[]) => void;
+}
 
 interface ViewRouterProps {
   view: string;
@@ -49,30 +78,7 @@ interface ViewRouterProps {
   lastWorkEntry: Entry | null;
   uniqueProjects: string[];
   entries: Entry[];
-  // Settings props
-  theme: string;
-  setTheme: (t: string) => void;
-  autoBackup: boolean;
-  setAutoBackup: (b: boolean) => void;
-  onTriggerManualBackup: () => Promise<void> | void;
-  onExport: () => void;
-  onImport: () => void;
-  onDeleteAll: () => void;
-  onCheckUpdate: () => void;
-  importEntries: (entries: Entry[]) => void;
-  loadWorkCodes: () => void;
-  setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
-  nextcloudEnabled: boolean;
-  nextcloudUrl: string;
-  nextcloudUser: string;
-  nextcloudPass: string;
-  setNextcloudEnabled: (b: boolean) => void;
-  setNextcloudUrl: (s: string) => void;
-  setNextcloudUser: (s: string) => void;
-  setNextcloudPass: (s: string) => void;
-  pdfArchiveLastRun: string | null;
-  pdfArchiveLastError: string | null;
-  pdfArchivePerformRun: (opts?: { month?: number; year?: number; force?: boolean }) => Promise<{ ok: boolean; message?: string }>;
+  settings: SettingsRouteProps;
   // PrintReport props
   entriesWithHolidays: Entry[];
   attachments: Attachment[];
@@ -90,11 +96,8 @@ interface ViewRouterProps {
   handleTourClose: () => void;
   // Locale
   locale: Locale;
-  setLocale: (id: LocaleId) => void;
   // Calculation Config
   calculationConfig: CalculationConfig;
-  setCalculationConfig: (next: CalculationConfig | ((prev: CalculationConfig) => CalculationConfig)) => void;
-  resetCalculationConfigToLocale: (newLocale: Locale, workDays: number[]) => void;
 }
 
 const AppTour = React.lazy(() => import("./AppTour"));
@@ -110,17 +113,12 @@ export default function ViewRouter(props: ViewRouterProps) {
     userData, workCodes,
     form, handleSaveEntry, setView,
     lastWorkEntry, uniqueProjects, entries,
-    theme, setTheme, autoBackup, setAutoBackup, onTriggerManualBackup,
-    onExport, onImport, onDeleteAll, onCheckUpdate,
-    importEntries, loadWorkCodes, setUserData,
-    nextcloudEnabled, nextcloudUrl, nextcloudUser, nextcloudPass,
-    setNextcloudEnabled, setNextcloudUrl, setNextcloudUser, setNextcloudPass,
-    pdfArchiveLastRun, pdfArchiveLastError, pdfArchivePerformRun,
+    settings,
     entriesWithHolidays, attachments, readAttachmentFile,
     timerState, startNewEntry, handleStartLive, handleStopLive, pauseTimer, resumeTimer, todayTarget,
     showTour, handleTourClose,
-    locale, setLocale,
-    calculationConfig, setCalculationConfig, resetCalculationConfigToLocale,
+    locale,
+    calculationConfig,
   } = props;
 
   return (
@@ -191,34 +189,9 @@ export default function ViewRouter(props: ViewRouterProps) {
               <Suspense fallback={<SkeletonScreen label={t("skeleton.settings")} />}>
                 <Settings
                   userData={userData}
-                  setUserData={setUserData}
-                  theme={theme}
-                  setTheme={setTheme}
-                  autoBackup={autoBackup}
-                  setAutoBackup={setAutoBackup}
-                  onTriggerManualBackup={onTriggerManualBackup}
-                  onExport={onExport}
-                  onImport={onImport}
-                  onDeleteAll={onDeleteAll}
-                  onCheckUpdate={onCheckUpdate}
-                  importEntries={importEntries}
-                  importWorkCodes={loadWorkCodes}
-                  nextcloudEnabled={nextcloudEnabled}
-                  nextcloudUrl={nextcloudUrl}
-                  nextcloudUser={nextcloudUser}
-                  nextcloudPass={nextcloudPass}
-                  setNextcloudEnabled={setNextcloudEnabled}
-                  setNextcloudUrl={setNextcloudUrl}
-                  setNextcloudUser={setNextcloudUser}
-                  setNextcloudPass={setNextcloudPass}
-                  pdfArchiveLastRun={pdfArchiveLastRun}
-                  pdfArchiveLastError={pdfArchiveLastError}
-                  pdfArchivePerformRun={pdfArchivePerformRun}
+                  {...settings}
                   locale={locale}
-                  setLocale={setLocale}
                   calculationConfig={calculationConfig}
-                  setCalculationConfig={setCalculationConfig}
-                  resetCalculationConfigToLocale={resetCalculationConfigToLocale}
                 />
               </Suspense>
             </motion.div>
@@ -247,7 +220,7 @@ export default function ViewRouter(props: ViewRouterProps) {
                   readAttachmentFile={readAttachmentFile as (file: Attachment) => Promise<string>}
                   locale={locale}
                   calculationConfig={calculationConfig}
-                  setCalculationConfig={setCalculationConfig}
+                  setCalculationConfig={settings.setCalculationConfig}
                 />
               </Suspense>
             </motion.div>

@@ -100,12 +100,14 @@ interface RenderOptions {
   entries?: Entry[];
   userData?: UserData;
   workCodes?: WorkCode[];
+  addEntry?: ReturnType<typeof vi.fn>;
+  updateEntry?: ReturnType<typeof vi.fn>;
 }
 
 const renderActions = (opts: RenderOptions = {}) => {
   const form = opts.form ?? makeForm();
-  const addEntry = vi.fn();
-  const updateEntry = vi.fn();
+  const addEntry = opts.addEntry ?? vi.fn().mockResolvedValue(undefined);
+  const updateEntry = opts.updateEntry ?? vi.fn().mockResolvedValue(undefined);
   const setView = vi.fn();
   const getDefaultCode = vi.fn(() => 1);
 
@@ -126,6 +128,12 @@ const renderActions = (opts: RenderOptions = {}) => {
 };
 
 const fakeEvent = () => ({ preventDefault: vi.fn() }) as unknown as React.FormEvent;
+
+const saveEntry = async (result: ReturnType<typeof renderActions>["result"]) => {
+  await act(async () => {
+    await result.current.handleSaveEntry(fakeEvent());
+  });
+};
 
 // ─── Tests ────────────────────────────────────────────────────
 
@@ -242,17 +250,17 @@ describe("useEntryActions", () => {
   });
 
   describe("handleSaveEntry — Validierung", () => {
-    it("verweigert Speichern wenn end <= start (toast, kein addEntry)", () => {
+    it("verweigert Speichern wenn end <= start (toast, kein addEntry)", async () => {
       const form = makeForm({ startTime: "10:00", endTime: "09:00" });
       const { result, addEntry } = renderActions({ form });
 
-      act(() => result.current.handleSaveEntry(fakeEvent()));
+      await saveEntry(result);
 
       expect(toast.error).toHaveBeenCalled();
       expect(addEntry).not.toHaveBeenCalled();
     });
 
-    it("verweigert Speichern bei Überlappung mit existierendem Eintrag", () => {
+    it("verweigert Speichern bei Überlappung mit existierendem Eintrag", async () => {
       const form = makeForm({
         formDate: "2026-04-07",
         startTime: "09:00",
@@ -266,14 +274,14 @@ describe("useEntryActions", () => {
       });
       const { result, addEntry } = renderActions({ form, entries: [overlap] });
 
-      act(() => result.current.handleSaveEntry(fakeEvent()));
+      await saveEntry(result);
 
       expect(toast.error).toHaveBeenCalled();
       expect(Haptics.impact).toHaveBeenCalled();
       expect(addEntry).not.toHaveBeenCalled();
     });
 
-    it("erlaubt Speichern eines bearbeiteten Eintrags an seiner eigenen Slot-Zeit", () => {
+    it("erlaubt Speichern eines bearbeiteten Eintrags an seiner eigenen Slot-Zeit", async () => {
       const editing = makeEntry({
         id: 42,
         date: "2026-04-07",
@@ -291,7 +299,7 @@ describe("useEntryActions", () => {
         entries: [editing],
       });
 
-      act(() => result.current.handleSaveEntry(fakeEvent()));
+      await saveEntry(result);
 
       expect(updateEntry).toHaveBeenCalled();
       expect(toast.error).not.toHaveBeenCalled();
@@ -299,7 +307,7 @@ describe("useEntryActions", () => {
   });
 
   describe("handleSaveEntry — Speichern", () => {
-    it("ruft addEntry mit korrekten Feldern für neuen work-Eintrag", () => {
+    it("ruft addEntry mit korrekten Feldern für neuen work-Eintrag", async () => {
       const form = makeForm({
         formDate: "2026-04-07",
         startTime: "08:00",
@@ -310,7 +318,7 @@ describe("useEntryActions", () => {
       });
       const { result, addEntry } = renderActions({ form });
 
-      act(() => result.current.handleSaveEntry(fakeEvent()));
+      await saveEntry(result);
 
       expect(addEntry).toHaveBeenCalledTimes(1);
       const saved = addEntry.mock.calls[0][0];
@@ -324,19 +332,19 @@ describe("useEntryActions", () => {
       expect(saved.netDuration).toBeGreaterThan(0);
     });
 
-    it("ruft updateEntry statt addEntry, wenn editingEntry gesetzt ist", () => {
+    it("ruft updateEntry statt addEntry, wenn editingEntry gesetzt ist", async () => {
       const editing = makeEntry({ id: 7 });
       const form = makeForm({ editingEntry: editing });
       const { result, addEntry, updateEntry } = renderActions({ form });
 
-      act(() => result.current.handleSaveEntry(fakeEvent()));
+      await saveEntry(result);
 
       expect(addEntry).not.toHaveBeenCalled();
       expect(updateEntry).toHaveBeenCalledTimes(1);
       expect(updateEntry.mock.calls[0][0].id).toBe(7);
     });
 
-    it("speichert Drive-Eintrag mit type='work', code=DRIVE, pause=0", () => {
+    it("speichert Drive-Eintrag mit type='work', code=DRIVE, pause=0", async () => {
       const form = makeForm({
         entryType: "drive",
         startTime: "08:00",
@@ -345,7 +353,7 @@ describe("useEntryActions", () => {
       });
       const { result, addEntry } = renderActions({ form });
 
-      act(() => result.current.handleSaveEntry(fakeEvent()));
+      await saveEntry(result);
 
       const saved = addEntry.mock.calls[0][0];
       expect(saved.type).toBe("work");
@@ -353,11 +361,11 @@ describe("useEntryActions", () => {
       expect(saved.pause).toBe(0);
     });
 
-    it("speichert simplen vacation-Eintrag ohne Zeiten", () => {
+    it("speichert simplen vacation-Eintrag ohne Zeiten", async () => {
       const form = makeForm({ entryType: "vacation", specialManualMode: false });
       const { result, addEntry } = renderActions({ form });
 
-      act(() => result.current.handleSaveEntry(fakeEvent()));
+      await saveEntry(result);
 
       const saved = addEntry.mock.calls[0][0];
       expect(saved.type).toBe("vacation");
@@ -367,11 +375,11 @@ describe("useEntryActions", () => {
       expect(saved.code).toBeNull();
     });
 
-    it("persistiert last_code via dualWriteSync für Standard-Codes", () => {
+    it("persistiert last_code via dualWriteSync für Standard-Codes", async () => {
       const form = makeForm({ code: 5 });
       const { result } = renderActions({ form });
 
-      act(() => result.current.handleSaveEntry(fakeEvent()));
+      await saveEntry(result);
 
       expect(mockDualWriteSync).toHaveBeenCalledWith(
         expect.any(String),
@@ -380,34 +388,63 @@ describe("useEntryActions", () => {
       );
     });
 
-    it("persistiert KEIN last_code für Drive-Code", () => {
+    it("persistiert KEIN last_code für Drive-Code", async () => {
       const form = makeForm({ entryType: "drive" });
       const { result } = renderActions({ form });
 
-      act(() => result.current.handleSaveEntry(fakeEvent()));
+      await saveEntry(result);
 
       expect(mockDualWriteSync).not.toHaveBeenCalled();
     });
 
-    it("setzt View nach erfolgreichem Speichern auf 'dashboard'", () => {
+    it("setzt View nach erfolgreichem Speichern auf 'dashboard'", async () => {
       const form = makeForm();
       const { result, setView } = renderActions({ form });
 
-      act(() => result.current.handleSaveEntry(fakeEvent()));
+      await saveEntry(result);
 
       expect(setView).toHaveBeenCalledWith("dashboard");
       expect(toast.success).toHaveBeenCalled();
     });
 
-    it("räumt das Formular nach Erfolg auf", () => {
+    it("räumt das Formular nach Erfolg auf", async () => {
       const form = makeForm();
       const { result } = renderActions({ form });
 
-      act(() => result.current.handleSaveEntry(fakeEvent()));
+      await saveEntry(result);
 
       expect(form.setEditingEntry).toHaveBeenCalledWith(null);
       expect(form.setProject).toHaveBeenCalledWith("");
       expect(form.setEntryType).toHaveBeenCalledWith("work");
+    });
+
+    it("zeigt bei addEntry-Fehler keinen Erfolg und bleibt in der sicheren Formular-View", async () => {
+      const form = makeForm();
+      const addEntry = vi.fn().mockRejectedValue(new Error("insert failed"));
+      const { result, setView } = renderActions({ form, addEntry });
+
+      await saveEntry(result);
+
+      expect(addEntry).toHaveBeenCalledOnce();
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(setView).not.toHaveBeenCalledWith("dashboard");
+      expect(form.setEditingEntry).not.toHaveBeenCalledWith(null);
+      expect(form.setProject).not.toHaveBeenCalledWith("");
+      expect(mockDualWriteSync).not.toHaveBeenCalled();
+    });
+
+    it("zeigt bei updateEntry-Fehler keinen Erfolg und verlässt die Bearbeitung nicht", async () => {
+      const editing = makeEntry({ id: 7 });
+      const form = makeForm({ editingEntry: editing });
+      const updateEntry = vi.fn().mockRejectedValue(new Error("update failed"));
+      const { result, setView } = renderActions({ form, updateEntry });
+
+      await saveEntry(result);
+
+      expect(updateEntry).toHaveBeenCalledOnce();
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(setView).not.toHaveBeenCalledWith("dashboard");
+      expect(form.setEditingEntry).not.toHaveBeenCalledWith(null);
     });
   });
 });

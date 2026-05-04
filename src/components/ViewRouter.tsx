@@ -44,7 +44,7 @@ interface ViewRouterProps {
   workCodes: WorkCode[];
   // EntryForm props
   form: FormState;
-  handleSaveEntry: () => void;
+  handleSaveEntry: (e: React.FormEvent) => Promise<void>;
   setView: (view: string) => void;
   lastWorkEntry: Entry | null;
   uniqueProjects: string[];

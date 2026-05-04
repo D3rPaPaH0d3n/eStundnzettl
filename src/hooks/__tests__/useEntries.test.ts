@@ -118,9 +118,11 @@ describe("useEntries", () => {
     mockInsertEntry.mockRejectedValueOnce(new Error("write failed"));
     const entry = makeEntry({ id: 200 });
 
-    await act(async () => {
-      await result.current.addEntry(entry);
-    });
+    await expect(
+      act(async () => {
+        await result.current.addEntry(entry);
+      }),
+    ).rejects.toThrow("write failed");
 
     // The entry should be reverted
     expect(result.current.entries.find((e) => e.id === 200)).toBeUndefined();
@@ -155,10 +157,13 @@ describe("useEntries", () => {
 
     mockUpdateEntryInDb.mockRejectedValueOnce(new Error("update failed"));
 
-    await act(async () => {
-      await result.current.updateEntry(makeEntry({ id: 1, project: "New" }));
-    });
+    await expect(
+      act(async () => {
+        await result.current.updateEntry(makeEntry({ id: 1, project: "New" }));
+      }),
+    ).rejects.toThrow("update failed");
 
+    expect(result.current.entries[0].project).toBe("Old");
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("aktualisiert"));
   });
 
@@ -190,10 +195,14 @@ describe("useEntries", () => {
 
     mockDeleteEntryFromDb.mockRejectedValueOnce(new Error("delete failed"));
 
-    await act(async () => {
-      await result.current.deleteEntry(1);
-    });
+    await expect(
+      act(async () => {
+        await result.current.deleteEntry(1);
+      }),
+    ).rejects.toThrow("delete failed");
 
+    expect(result.current.entries).toHaveLength(1);
+    expect(result.current.entries[0].id).toBe(1);
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("gelöscht"));
   });
 

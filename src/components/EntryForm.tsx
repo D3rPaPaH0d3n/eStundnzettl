@@ -66,7 +66,7 @@ const CalendarContainerAnimation: React.FC<CalendarContainerAnimationProps> = ({
 
 interface Props {
   onCancel: () => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: React.FormEvent) => Promise<void> | void;
   entryType: string;
   setEntryType: (type: string) => void;
   code: number;

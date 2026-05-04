@@ -22,8 +22,8 @@ interface UseEntryActionsProps {
   entries: Entry[];
   userData: UserData;
   workCodes: WorkCode[];
-  addEntry: (entry: Entry) => void;
-  updateEntry: (entry: Entry) => void;
+  addEntry: (entry: Entry) => Promise<void>;
+  updateEntry: (entry: Entry) => Promise<void>;
   getDefaultCode: () => number;
   setView: (view: string) => void;
   locale?: Locale;
@@ -108,7 +108,7 @@ export function useEntryActions({
   );
 
   const handleSaveEntry = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent): Promise<void> => {
       e.preventDefault();
       const isDrive = form.entryType === "drive";
       const isSpecial =
@@ -222,8 +222,12 @@ export function useEntryActions({
         netDuration: net,
       };
 
-      if (form.editingEntry) updateEntry(newEntry);
-      else addEntry(newEntry);
+      try {
+        if (form.editingEntry) await updateEntry(newEntry);
+        else await addEntry(newEntry);
+      } catch {
+        return;
+      }
 
       if (
         storedType === "work" &&

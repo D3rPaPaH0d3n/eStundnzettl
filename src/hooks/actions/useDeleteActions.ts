@@ -15,8 +15,8 @@ import { STORAGE_KEYS, WORK_MODELS } from "../constants";
 interface UseDeleteActionsProps {
   entries: Entry[];
   userData: UserData;
-  deleteEntry: (id: number | string) => void;
-  deleteAllEntries: () => void;
+  deleteEntry: (id: number | string) => Promise<void>;
+  deleteAllEntries: () => Promise<void>;
   removeAttachmentsForEntry: ((entryId: number | string) => Promise<void>) | null;
   setUserData: (data: UserData) => void;
   setDeleteTarget: (target: DeleteTarget | null) => void;
@@ -35,10 +35,10 @@ export function useDeleteActions({
   const executeDelete = useCallback(
     async (deleteTarget: DeleteTarget | null) => {
       if (deleteTarget?.type === "single") {
+        await deleteEntry(deleteTarget.id!);
         if (removeAttachmentsForEntry) {
           await removeAttachmentsForEntry(deleteTarget.id!);
         }
-        deleteEntry(deleteTarget.id!);
         toast.success(t("toasts.entry.deleted"));
       } else if (deleteTarget?.type === "all") {
         // Sicherheits-Backup vor dem Löschen: JSON im Cache speichern
@@ -64,7 +64,7 @@ export function useDeleteActions({
             await removeAttachmentsForEntry(entry.id);
           }
         }
-        deleteAllEntries();
+        await deleteAllEntries();
         const emptyUser = {
           name: "",
           position: "",

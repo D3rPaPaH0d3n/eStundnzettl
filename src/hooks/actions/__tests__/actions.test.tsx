@@ -153,8 +153,8 @@ describe("useEntryActions", () => {
     form?: FormState;
     entries?: Entry[];
     workCodes?: WorkCode[];
-    addEntry?: (entry: Entry) => void;
-    updateEntry?: (entry: Entry) => void;
+    addEntry?: (entry: Entry) => Promise<void>;
+    updateEntry?: (entry: Entry) => Promise<void>;
     setView?: (view: string) => void;
   } = {}) {
     return renderHook(() =>
@@ -168,12 +168,19 @@ describe("useEntryActions", () => {
               { id: 70, label: "Arbeit" },
               { id: 19, label: "Fahrzeit" },
             ],
-        addEntry: addEntry ?? vi.fn(),
-        updateEntry: updateEntry ?? vi.fn(),
+        addEntry: addEntry ?? vi.fn().mockResolvedValue(undefined),
+        updateEntry: updateEntry ?? vi.fn().mockResolvedValue(undefined),
         getDefaultCode: () => 0,
         setView: setView ?? vi.fn(),
       })
     );
+  }
+
+
+  async function saveEntry(result: ReturnType<typeof mount>["result"]) {
+    await act(async () => {
+      await result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent);
+    });
   }
 
   it("getDefaultTimesForDate: Default 06:00/16:30 ohne vorige Einträge", () => {
@@ -219,23 +226,23 @@ describe("useEntryActions", () => {
     expect(form.setProject).toHaveBeenCalledWith("Projekt X");
   });
 
-  it("handleSaveEntry: Endzeit <= Startzeit → Fehler-Toast, kein Add", () => {
+  it("handleSaveEntry: Endzeit <= Startzeit → Fehler-Toast, kein Add", async () => {
     const addEntry = vi.fn();
     const form = makeForm({ startTime: "10:00", endTime: "09:00" });
     const { result } = mount({ form, addEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
+    await saveEntry(result);
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("Endzeit"));
     expect(addEntry).not.toHaveBeenCalled();
   });
 
-  it("handleSaveEntry: erkennt Zeitüberschneidung und blockiert Speichern", () => {
+  it("handleSaveEntry: erkennt Zeitüberschneidung und blockiert Speichern", async () => {
     const addEntry = vi.fn();
     const entries = [
       { id: 1, type: "work", date: "2026-04-04", start: "08:00", end: "12:00", code: 70 },
     ] as unknown as Entry[];
     const form = makeForm({ startTime: "10:00", endTime: "14:00" });
     const { result } = mount({ form, entries, addEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
+    await saveEntry(result);
     expect(toast.error).toHaveBeenCalledWith(
       expect.stringContaining("Zeitüberschneidung"),
       expect.any(Object)
@@ -243,7 +250,7 @@ describe("useEntryActions", () => {
     expect(addEntry).not.toHaveBeenCalled();
   });
 
-  it("handleSaveEntry: gültiger Work-Entry → addEntry + dualWriteSync(last_code)", () => {
+  it("handleSaveEntry: gültiger Work-Entry → addEntry + dualWriteSync(last_code)", async () => {
     const addEntry = vi.fn();
     const form = makeForm({ startTime: "08:00", endTime: "16:30", code: 42 });
     const { result } = mount({
@@ -251,7 +258,7 @@ describe("useEntryActions", () => {
       addEntry,
       workCodes: [{ id: 42, label: "Custom" }],
     });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
+    await saveEntry(result);
     expect(addEntry).toHaveBeenCalledOnce();
     const saved = addEntry.mock.calls[0][0];
     expect(saved.type).toBe("work");
@@ -261,11 +268,11 @@ describe("useEntryActions", () => {
     expect(dualWriteSync).toHaveBeenCalledWith(expect.any(String), "last_code", 42);
   });
 
-  it("handleSaveEntry: Krank im Auto-Modus → netDuration aus Sollzeit, start/end null", () => {
+  it("handleSaveEntry: Krank im Auto-Modus → netDuration aus Sollzeit, start/end null", async () => {
     const addEntry = vi.fn();
     const form = makeForm({ entryType: "sick", specialManualMode: false });
     const { result } = mount({ form, addEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
+    await saveEntry(result);
     expect(addEntry).toHaveBeenCalledOnce();
     const saved = addEntry.mock.calls[0][0];
     expect(saved.type).toBe("sick");
@@ -276,7 +283,7 @@ describe("useEntryActions", () => {
     expect(saved.netDuration).toBe(0);
   });
 
-  it("handleSaveEntry: Urlaub im Manual-Modus → netDuration aus Start/Ende, Zeiten persistiert", () => {
+  it("handleSaveEntry: Urlaub im Manual-Modus → netDuration aus Start/Ende, Zeiten persistiert", async () => {
     const addEntry = vi.fn();
     const form = makeForm({
       entryType: "vacation",
@@ -285,7 +292,7 @@ describe("useEntryActions", () => {
       specialManualMode: true,
     });
     const { result } = mount({ form, addEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
+    await saveEntry(result);
     expect(addEntry).toHaveBeenCalledOnce();
     const saved = addEntry.mock.calls[0][0];
     expect(saved.type).toBe("vacation");
@@ -295,7 +302,7 @@ describe("useEntryActions", () => {
     expect(saved.netDuration).toBe(240);
   });
 
-  it("handleSaveEntry: Manual-Special blockiert bei Überschneidung mit bestehendem Work-Eintrag", () => {
+  it("handleSaveEntry: Manual-Special blockiert bei Überschneidung mit bestehendem Work-Eintrag", async () => {
     const addEntry = vi.fn();
     const entries = [
       { id: 1, type: "work", date: "2026-04-04", start: "09:00", end: "11:00", code: 70 },
@@ -307,7 +314,7 @@ describe("useEntryActions", () => {
       specialManualMode: true,
     });
     const { result } = mount({ form, entries, addEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
+    await saveEntry(result);
     expect(toast.error).toHaveBeenCalledWith(
       expect.stringContaining("Zeitüberschneidung"),
       expect.any(Object)
@@ -336,7 +343,7 @@ describe("useEntryActions", () => {
     expect(form.setEndTime).toHaveBeenCalledWith("12:00");
   });
 
-  it("handleSaveEntry: editingEntry → updateEntry statt addEntry", () => {
+  it("handleSaveEntry: editingEntry → updateEntry statt addEntry", async () => {
     const addEntry = vi.fn();
     const updateEntry = vi.fn();
     const form = makeForm({
@@ -345,7 +352,7 @@ describe("useEntryActions", () => {
       editingEntry: { id: 99, type: "work" } as unknown as Entry,
     });
     const { result } = mount({ form, addEntry, updateEntry });
-    act(() => result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent));
+    await saveEntry(result);
     expect(updateEntry).toHaveBeenCalledOnce();
     expect(updateEntry.mock.calls[0][0].id).toBe(99);
     expect(addEntry).not.toHaveBeenCalled();

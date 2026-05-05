@@ -1,6 +1,51 @@
 export const CHANGELOG_DATA_DE = [
 
   {
+    version: "4.3.1",
+    date: "05.05.2026",
+    title: "Stabiler speichern & sicherer sichern 🛡️",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Shield",
+        title: "Nextcloud-Passwort besser geschützt",
+        items: [
+          "Das Nextcloud-App-Passwort wird auf Android jetzt im sicheren Gerätespeicher abgelegt statt in den normalen App-Einstellungen.",
+          "Bestehende Nextcloud-Zugänge werden behutsam übernommen — du solltest nach dem Update einfach weiter sichern können.",
+          "Wenn sicherer Speicher am Gerät nicht verfügbar ist, bricht die App sauber ab statt heimlich unsicher weiterzumachen."
+        ]
+      },
+      {
+        iconName: "Cloud",
+        title: "Backups zuverlässiger",
+        items: [
+          "Manuelle Backups lassen sich auch nach vorherigen Fehlern wieder bewusst anstoßen.",
+          "Lokale Sicherung, Nextcloud und Google Drive sind robuster voneinander getrennt — ein Cloud-Fehler soll nicht alles mitreißen.",
+          "Fehlermeldungen wurden geschärft, ohne Zugangsdaten oder Tokens preiszugeben."
+        ]
+      },
+      {
+        iconName: "Wrench",
+        title: "Datenbasis gehärtet",
+        items: [
+          "Einstellungen und Datenbankstart sind besser abgesichert, damit beim App-Start keine alten Werte überschrieben werden.",
+          "Einträge melden erst dann Erfolg, wenn das Speichern wirklich durch ist.",
+          "Migrationen, Datenmodelle und Backup-Formate sind mit zusätzlichen Tests gegen Regressionen geschützt."
+        ]
+      },
+      {
+        iconName: "Bug",
+        title: "Unter der Haube",
+        items: [
+          "Android-Build enthält das Secure-Storage-Plugin jetzt vollständig.",
+          "Über 750 automatische Tests prüfen Speichern, Migrationen, Backups, PDF und Berechnung weiter ab.",
+          "Viele interne Typen rund um Datenbank-Zeilen und Repositories wurden nachgeschärft."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "4.3.0",
     date: "01.05.2026",
     title: "Vektor-PDF & Live-Vorschau ✨",

@@ -1,0 +1,6 @@
+More reliable saving & safer backups 🛡️
+• Nextcloud app password now uses secure Android device storage
+• More robust backups: local, Google Drive and Nextcloud are better isolated
+• Entries show success only after saving really completed
+• Settings, migrations and backup formats are better guarded
+• Android build now includes the secure-storage plugin completely

@@ -1,0 +1,6 @@
+Stabiler speichern & sicherer sichern 🛡️
+• Nextcloud-App-Passwort liegt auf Android jetzt im sicheren Gerätespeicher
+• Backups robuster: lokale Sicherung, Google Drive und Nextcloud besser getrennt
+• Einträge melden Erfolg erst nach wirklich abgeschlossenem Speichern
+• Einstellungen, Migrationen und Backup-Formate stärker abgesichert
+• Android-Build enthält das Secure-Storage-Plugin vollständig

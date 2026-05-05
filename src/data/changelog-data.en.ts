@@ -17,6 +17,52 @@
 import { CHANGELOG_DATA_DE } from "./changelog-data.de";
 
 const TRANSLATED_EN = [
+
+  {
+    version: "4.3.1",
+    date: "05.05.2026",
+    title: "More reliable saving & safer backups 🛡️",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Shield",
+        title: "Better protection for your Nextcloud password",
+        items: [
+          "On Android, the Nextcloud app password is now stored in secure device storage instead of normal app settings.",
+          "Existing Nextcloud connections are migrated carefully — backups should keep working after the update.",
+          "If secure storage is not available on the device, the app fails clearly instead of silently falling back to unsafe storage."
+        ]
+      },
+      {
+        iconName: "Cloud",
+        title: "More reliable backups",
+        items: [
+          "Manual backups can be triggered deliberately again, even after previous backup errors.",
+          "Local backup, Nextcloud and Google Drive are better isolated from each other — one cloud error should not take down everything.",
+          "Error messages are clearer without exposing passwords or tokens."
+        ]
+      },
+      {
+        iconName: "Wrench",
+        title: "Hardened data foundation",
+        items: [
+          "Settings and database startup are safer now, so old values are not overwritten during app launch.",
+          "Entries only show a success message after saving has actually completed.",
+          "Migrations, data models and backup formats are covered by additional regression tests."
+        ]
+      },
+      {
+        iconName: "Bug",
+        title: "Under the hood",
+        items: [
+          "The Android build now includes the secure-storage plugin completely.",
+          "Over 750 automated tests continue to cover saving, migrations, backups, PDFs and calculations.",
+          "Many internal database row and repository types have been tightened up."
+        ]
+      }
+    ]
+  },
+
   {
     version: "4.3.0",
     date: "01.05.2026",

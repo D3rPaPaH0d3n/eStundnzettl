@@ -43,20 +43,25 @@ const log = logger.scope("ReportPdfRenderer");
  * Feiertage eines Monats, die auf einen Arbeitstag fallen.
  * Identisch zur Logik in useAppData, aber ohne React-Hooks.
  */
-function generateHolidayEntries(
+const localDateString = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+export function generateHolidayEntries(
   year: number,
   month: number,
   userData: UserData | null,
   locale?: Locale,
   config?: CalculationConfig | null,
+  currentDate: Date = new Date(),
 ): Entry[] {
   const holidayMap = getHolidayData(year, locale, config);
   const daysInMonth = new Date(year, month, 0).getDate();
+  const todayStr = localDateString(currentDate);
   const holidays: Entry[] = [];
 
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    if (!holidayMap[dateStr]) continue;
+    if (!holidayMap[dateStr] || dateStr > todayStr) continue;
 
     const targetMin = getTargetMinutesForDate(
       dateStr,
@@ -109,6 +114,7 @@ export async function renderMonthlyReportPdfBlob({
   customNote = "",
   locale,
   calculationConfig,
+  currentDate,
 }: {
   year: number;
   month: number;
@@ -119,6 +125,7 @@ export async function renderMonthlyReportPdfBlob({
   customNote?: string;
   locale?: Locale;
   calculationConfig?: CalculationConfig | null;
+  currentDate?: Date;
 }): Promise<Blob> {
   if (!year || !month) {
     throw new Error("renderMonthlyReportPdfBlob: year/month fehlen");
@@ -131,6 +138,7 @@ export async function renderMonthlyReportPdfBlob({
     userData,
     locale,
     calculationConfig,
+    currentDate,
   );
   const entriesWithHolidays = [...entries, ...holidayEntries];
 

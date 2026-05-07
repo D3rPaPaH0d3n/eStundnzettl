@@ -19,6 +19,41 @@ import { CHANGELOG_DATA_DE } from "./changelog-data.de";
 const TRANSLATED_EN = [
 
   {
+    version: "4.3.2",
+    date: "07.05.2026",
+    title: "PDF archive & activity codes cleaned up 🔧",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "FileText",
+        title: "Cleaner PDF archive",
+        items: [
+          "The automatic PDF archive no longer shows future public holidays too early in the current month.",
+          "Once a holiday has actually arrived, the archive detects the change and creates an updated PDF when needed.",
+          "The archive check now also includes holiday and calculation rules, so it no longer sticks to stale data."
+        ]
+      },
+      {
+        iconName: "Wrench",
+        title: "Activity codes are easier to reach",
+        items: [
+          "Activity codes are now visible and manageable in Settings even without Power-user mode.",
+          "The recording card stays reachable in record-only mode too, so you can always get to your codes.",
+          "Help and store texts were updated to make it clear: activity codes are no longer a hidden pro feature."
+        ]
+      },
+      {
+        iconName: "Bug",
+        title: "Small bugfix round",
+        items: [
+          "Two reported GitHub issues were fixed and covered by tests.",
+          "The existing PDF archive tests were extended so future holidays do not sneak back in."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "4.3.1",
     date: "05.05.2026",
     title: "More reliable saving & safer backups 🛡️",
@@ -342,7 +377,7 @@ const TRANSLATED_EN = [
         iconName: "Wrench",
         title: "Power-user mode — for pros who want more",
         items: [
-          "Settings are now tidy and clear: only the essentials are visible. Anyone who needs Nextcloud, import/export, the PDF archive, minute mode, activity codes or record-only mode just toggles the new power-user mode at the very bottom of settings.",
+          "Settings are now tidy and clear: only the essentials are visible. Anyone who needs Nextcloud, import/export, the PDF archive, minute mode or record-only mode just toggles the new power-user mode at the very bottom of settings. Activity codes stay directly accessible regardless of that mode.",
           "Power-user mode is purely cosmetic — it just reveals extra settings without changing any existing functionality. Once set up, everything keeps running as before."
         ]
       },

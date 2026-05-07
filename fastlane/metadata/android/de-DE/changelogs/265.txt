@@ -1,0 +1,6 @@
+PDF-Archiv & Tätigkeitscodes gschmeidiger 🔧
+• Automatisches PDF-Archiv zeigt keine zukünftigen Feiertage mehr zu früh
+• Archiv erkennt Feiertags-/Berechnungsänderungen und aktualisiert PDFs bei Bedarf
+• Tätigkeitscodes sind jetzt auch ohne Hausmasta-Modus direkt verwaltbar
+• Erfassungs-Karte bleibt auch im Nur-Aufzeichnung-Modus erreichbar
+• Zusätzliche Tests schützen beide Fixes vor Rückfällen

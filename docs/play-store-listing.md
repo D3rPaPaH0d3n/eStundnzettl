@@ -81,8 +81,8 @@ den Einstellungen, beim ersten Start wird die Gerätesprache erkannt.
 
 ■ Hausmasta-Modus
 Für Profis, die mehr wollen: Nextcloud-Integration, Minuten-genaue
-Zeiteingabe, eigene Tätigkeits-Codes, automatisches PDF-Archiv. Einmal
-aktivieren, bei Bedarf wieder ausblenden.
+Zeiteingabe und automatisches PDF-Archiv. Tätigkeits-Codes bleiben
+direkt erreichbar — auch ohne Hausmasta-Modus.
 
 ■ Datenschutz
 • Alle Daten bleiben lokal auf deinem Gerät.
@@ -102,6 +102,19 @@ Fragen, Bug-Reports, Lizenzanfragen: project@kainer.co.at
 *2496 Zeichen ✓ (Limit 4000)*
 
 ### Release Notes
+
+#### v4.3.2 (≤ 500 Zeichen)
+
+```
+PDF-Archiv & Tätigkeitscodes gschmeidiger 🔧
+• Automatisches PDF-Archiv zeigt keine zukünftigen Feiertage mehr zu früh
+• Archiv erkennt Feiertags-/Berechnungsänderungen und aktualisiert PDFs bei Bedarf
+• Tätigkeitscodes sind jetzt auch ohne Hausmasta-Modus direkt verwaltbar
+• Erfassungs-Karte bleibt auch im Nur-Aufzeichnung-Modus erreichbar
+• Zusätzliche Tests schützen beide Fixes vor Rückfällen
+```
+
+*Gespiegelt in `fastlane/metadata/android/de-DE/changelogs/265.txt`.*
 
 #### v4.2.0 (≤ 500 Zeichen)
 
@@ -210,8 +223,8 @@ language auto-detected on first launch.
 
 ■ Power-user mode
 For pros who want more: Nextcloud integration, minute-precise time
-entry, custom activity codes, automatic PDF archive. Enable once, hide
-again when you're done.
+entry and automatic PDF archive. Activity codes stay directly available
+even without Power-user mode.
 
 ■ Privacy
 • All data stays local on your device.
@@ -231,6 +244,19 @@ Questions, bug reports, licensing: project@kainer.co.at
 *2310 characters ✓ (limit 4000)*
 
 ### Release notes
+
+#### v4.3.2 (≤ 500 characters)
+
+```
+PDF archive & activity codes cleaned up 🔧
+• Automatic PDF archive no longer shows future holidays too early
+• Archive detects holiday/calculation changes and updates PDFs when needed
+• Activity codes are now manageable without Power-user mode
+• Recording card stays reachable in record-only mode too
+• Extra tests protect both fixes from regressions
+```
+
+*Mirrored in `fastlane/metadata/android/en-US/changelogs/265.txt`.*
 
 #### v4.2.0 (≤ 500 characters)
 

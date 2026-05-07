@@ -42,8 +42,8 @@ language auto-detected on first launch.
 
 ■ Power-user mode
 For pros who want more: Nextcloud integration, minute-precise time
-entry, custom activity codes, automatic PDF archive. Enable once, hide
-again when you're done.
+entry and automatic PDF archive. Activity codes stay directly available
+even without Power-user mode.
 
 ■ Privacy
 • All data stays local on your device.

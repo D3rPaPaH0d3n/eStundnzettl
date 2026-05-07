@@ -214,12 +214,12 @@
     },
     "step7": {
       "title": "Hausmasta-Modus",
-      "lead": "Für Profis, die mehr wollen! Aktiviere den <b>Hausmasta-Modus</b> ganz unten in den Einstellungen. Damit werden zusätzliche Funktionen sichtbar:",
+      "lead": "Für Profis, die mehr wollen! Aktiviere den <b>Hausmasta-Modus</b> ganz unten in den Einstellungen. Damit werden zusätzliche Funktionen sichtbar — Tätigkeitscodes findest du unabhängig davon direkt in der Erfassung:",
       "nextcloud": "<b>Nextcloud-Backup</b> — für deine eigene Cloud",
       "jsonIO": "<b>JSON Import/Export</b> — Daten manuell sichern",
       "pdfArchive": "<b>PDF-Archiv</b> — automatische monatliche PDF-Sicherung",
       "minuteMode": "<b>Minuten-Modus</b> — 1-Minuten statt 15-Minuten-Schritte",
-      "codes": "<b>Tätigkeitscodes</b> — Branchen-Presets oder eigene Codes",
+      "codes": "<b>Tätigkeitscodes</b> — Branchen-Presets oder eigene Codes, auch ohne Hausmasta-Modus",
       "recordOnly": "<b>Nur Aufzeichnung</b> — ohne Soll/Ist-Berechnung"
     },
     "tips": {

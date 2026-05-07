@@ -47,8 +47,8 @@ den Einstellungen, beim ersten Start wird die Gerätesprache erkannt.
 
 ■ Hausmasta-Modus
 Für Profis, die mehr wollen: Nextcloud-Integration, Minuten-genaue
-Zeiteingabe, eigene Tätigkeits-Codes, automatisches PDF-Archiv.
-Einmal aktivieren, bei Bedarf wieder ausblenden.
+Zeiteingabe und automatisches PDF-Archiv. Tätigkeits-Codes bleiben
+direkt erreichbar — auch ohne Hausmasta-Modus.
 
 ■ Datenschutz
 • Alle Daten bleiben lokal auf deinem Gerät.

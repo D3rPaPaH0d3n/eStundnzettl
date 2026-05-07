@@ -95,7 +95,8 @@ interface PdfArchiveTargets {
 
 async function runForMonth({ entries, userData, workCodes, year, month, targets, locale, calculationConfig }: { entries: Entry[]; userData: UserData; workCodes: WorkCode[]; year: number; month: number; targets: PdfArchiveTargets; locale?: Locale; calculationConfig?: CalculationConfig | null }) {
   const filename = buildArchiveFilename({ year, month, userData });
-  const newHash = hashMonthContent({ entries, userData, year, month });
+  const currentDate = new Date();
+  const newHash = hashMonthContent({ entries, userData, year, month, locale, calculationConfig, currentDate });
   const lastHashKey = `${STORAGE_KEYS.PDF_ARCHIVE_LAST_HASH}_${year}-${String(month).padStart(2, "0")}`;
   const prevHash = localStorage.getItem(lastHashKey);
 
@@ -110,7 +111,7 @@ async function runForMonth({ entries, userData, workCodes, year, month, targets,
     return { skipped: true, filename, empty: true };
   }
 
-  const blob = await generateMonthlyPdfBlob({ year, month, entries, userData, workCodes, locale, calculationConfig });
+  const blob = await generateMonthlyPdfBlob({ year, month, entries, userData, workCodes, locale, calculationConfig, currentDate });
   const base64 = await blobToBase64(blob);
 
   const results = [];

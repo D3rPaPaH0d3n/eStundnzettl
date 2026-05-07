@@ -139,9 +139,7 @@ const DataSettings: React.FC<Props> = ({
     toast.success(t("settings.data.toast.demoLoaded"));
   };
 
-  // Card komplett ausblenden wenn simpleMode aktiv und kein Hausmasta-Modus
-  const hasVisibleContent = expertMode || !safeUserData.simpleMode;
-  if (!hasVisibleContent) return null;
+  // Card bleibt sichtbar, weil Tätigkeitscodes auch ohne Hausmasta-Modus verwaltbar sein sollen.
 
   return (
     <>
@@ -371,9 +369,8 @@ const DataSettings: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Tätigkeitscodes — nur im Hausmasta-Modus */}
-        {expertMode && (
-          <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+        {/* Tätigkeitscodes — unabhängig vom Hausmasta-Modus */}
+        <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <ListChecks size={18} className="text-sky-500" />
@@ -397,7 +394,6 @@ const DataSettings: React.FC<Props> = ({
               </button>
             </div>
           </div>
-        )}
 
       </CollapsibleCard>
 

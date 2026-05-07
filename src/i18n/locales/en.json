@@ -214,12 +214,12 @@
     },
     "step7": {
       "title": "Power-user mode",
-      "lead": "For pros who want more! Enable <b>Power-user mode</b> at the very bottom of settings. Extra features then become visible:",
+      "lead": "For pros who want more! Enable <b>Power-user mode</b> at the very bottom of settings. Extra features then become visible — activity codes stay directly available in Recording either way:",
       "nextcloud": "<b>Nextcloud backup</b> — for your own cloud",
       "jsonIO": "<b>JSON import/export</b> — back up data manually",
       "pdfArchive": "<b>PDF archive</b> — automatic monthly PDF backup",
       "minuteMode": "<b>Minute mode</b> — 1-minute instead of 15-minute steps",
-      "codes": "<b>Activity codes</b> — industry presets or your own codes",
+      "codes": "<b>Activity codes</b> — industry presets or your own codes, even without Power-user mode",
       "recordOnly": "<b>Record only</b> — without target/actual calculation"
     },
     "tips": {

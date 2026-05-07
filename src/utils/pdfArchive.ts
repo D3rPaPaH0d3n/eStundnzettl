@@ -12,7 +12,7 @@
  * `pdfArchiveTargets` ihre API nicht aendern muessen.
  */
 
-import { renderMonthlyReportPdfBlob } from "./reportPdfRenderer";
+import { generateHolidayEntries, renderMonthlyReportPdfBlob } from "./reportPdfRenderer";
 import { WORK_CODE } from "../hooks/constants";
 import type { Entry, UserData, WorkCode, Attachment, CalculationConfig } from '../types';
 import type { Locale } from '../locales/types';
@@ -39,12 +39,27 @@ export function filterEntriesForMonth(entries: Entry[], year: number, month: num
  * Gleicher Algorithmus wie in useAutoBackup (djb2), damit das Muster
  * konsistent bleibt.
  */
-export function hashMonthContent({ entries, userData, year, month }: { entries: Entry[]; userData: UserData | null; year: number; month: number }): string {
+export function hashMonthContent({ entries, userData, year, month, locale, calculationConfig, currentDate }: { entries: Entry[]; userData: UserData | null; year: number; month: number; locale?: Locale; calculationConfig?: CalculationConfig | null; currentDate?: Date }): string {
+  const holidayEntries = generateHolidayEntries(
+    year,
+    month,
+    userData,
+    locale,
+    calculationConfig,
+    currentDate,
+  );
   const relevant = {
     ym: `${year}-${pad2(month)}`,
     name: userData?.name || "",
     workDays: userData?.workDays || null,
     workModel: (userData as UserData & { workModel?: unknown })?.workModel || null,
+    calculationConfig: calculationConfig || null,
+    holidays: holidayEntries.map((e) => ({
+      id: e.id,
+      d: e.date,
+      pr: e.project || null,
+      n: e.netDuration || 0,
+    })),
     entries: filterEntriesForMonth(entries, year, month).map((e) => ({
       id: e.id,
       t: e.type,
@@ -86,7 +101,7 @@ export function buildArchiveFilename({ year, month, userData }: { year: number; 
  * existiert keine vergleichbare Hang-Klasse mehr (kein DOM-Render,
  * kein Canvas-Limit), daher entfaellt der Timeout-Wrapper.
  */
-export async function generateMonthlyPdfBlob({ year, month, entries, userData, workCodes, attachments, locale, calculationConfig }: { year: number; month: number; entries: Entry[]; userData: UserData | null; workCodes: WorkCode[]; attachments?: Attachment[]; locale?: Locale; calculationConfig?: CalculationConfig | null }): Promise<Blob> {
+export async function generateMonthlyPdfBlob({ year, month, entries, userData, workCodes, attachments, locale, calculationConfig, currentDate }: { year: number; month: number; entries: Entry[]; userData: UserData | null; workCodes: WorkCode[]; attachments?: Attachment[]; locale?: Locale; calculationConfig?: CalculationConfig | null; currentDate?: Date }): Promise<Blob> {
   if (!year || !month) throw new Error("generateMonthlyPdfBlob: year/month fehlen");
 
   return renderMonthlyReportPdfBlob({
@@ -98,6 +113,7 @@ export async function generateMonthlyPdfBlob({ year, month, entries, userData, w
     attachments,
     locale,
     calculationConfig,
+    currentDate,
   });
 }
 

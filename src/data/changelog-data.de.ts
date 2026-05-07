@@ -1,6 +1,41 @@
 export const CHANGELOG_DATA_DE = [
 
   {
+    version: "4.3.2",
+    date: "07.05.2026",
+    title: "PDF-Archiv & Tätigkeitscodes gschmeidiger 🔧",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "FileText",
+        title: "PDF-Archiv sauberer",
+        items: [
+          "Das automatische PDF-Archiv zeigt im laufenden Monat keine zukünftigen Feiertage mehr vorzeitig an.",
+          "Sobald ein Feiertag wirklich dran ist, erkennt das Archiv die Änderung und erzeugt bei Bedarf ein aktualisiertes PDF.",
+          "Die Prüfung berücksichtigt jetzt auch Feiertags- und Berechnungsregeln, damit das Archiv nicht stur bei alten Daten bleibt."
+        ]
+      },
+      {
+        iconName: "Wrench",
+        title: "Tätigkeitscodes direkter erreichbar",
+        items: [
+          "Tätigkeitscodes sind in den Einstellungen jetzt auch ohne Hausmasta-Modus sichtbar und verwaltbar.",
+          "Auch im Nur-Aufzeichnung-Modus bleibt die Erfassungs-Karte erreichbar, damit du jederzeit an deine Codes kommst.",
+          "Hilfs- und Store-Texte wurden nachgezogen, damit klar ist: Codes sind kein verstecktes Profi-Feature mehr."
+        ]
+      },
+      {
+        iconName: "Bug",
+        title: "Kleine Bugfix-Runde",
+        items: [
+          "Zwei gemeldete GitHub-Issues wurden behoben und mit Tests abgesichert.",
+          "Die bestehenden PDF-Archiv-Tests wurden erweitert, damit zukünftige Feiertage nicht wieder hineinrutschen."
+        ]
+      }
+    ]
+  },
+
+  {
     version: "4.3.1",
     date: "05.05.2026",
     title: "Stabiler speichern & sicherer sichern 🛡️",
@@ -326,7 +361,7 @@ export const CHANGELOG_DATA_DE = [
         iconName: "Wrench",
         title: "Hausmasta-Modus — für Profis, die mehr wollen",
         items: [
-          "Die Einstellungen sind jetzt aufgeräumt und übersichtlich: Nur das Wichtigste ist sichtbar. Wer Nextcloud, Import/Export, PDF-Archiv, Minutenmodus, Tätigkeitscodes oder den Nur-Aufzeichnung-Modus braucht, aktiviert einfach den neuen Hausmasta-Modus ganz unten in den Einstellungen.",
+          "Die Einstellungen sind jetzt aufgeräumt und übersichtlich: Nur das Wichtigste ist sichtbar. Wer Nextcloud, Import/Export, PDF-Archiv, Minutenmodus oder den Nur-Aufzeichnung-Modus braucht, aktiviert einfach den neuen Hausmasta-Modus ganz unten in den Einstellungen. Tätigkeitscodes bleiben unabhängig davon direkt erreichbar.",
           "Der Hausmasta-Modus ist rein kosmetisch — er blendet nur zusätzliche Einstellungen ein, ohne bestehende Funktionen zu verändern. Einmal eingerichtet läuft alles wie gewohnt weiter."
         ]
       },

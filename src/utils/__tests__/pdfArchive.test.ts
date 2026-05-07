@@ -4,6 +4,9 @@ import {
   hashMonthContent,
   buildArchiveFilename,
 } from "../pdfArchive";
+import { generateHolidayEntries } from "../reportPdfRenderer";
+import { getDefaultCalculationConfig } from "../calculationConfig";
+import { getLocale } from "../../locales";
 import type { Entry, UserData } from "../../types";
 
 const makeEntry = (overrides: Partial<Entry> = {}): Entry => ({
@@ -128,6 +131,71 @@ describe("hashMonthContent", () => {
     const b = hashMonthContent(baseParams);
     // The April entry should be filtered out, so hashes should match
     expect(a).toBe(b);
+  });
+
+  it("changes when a holiday becomes visible in the automatic PDF", () => {
+    const locale = getLocale(undefined);
+    const config = {
+      ...getDefaultCalculationConfig(locale, baseParams.userData.workDays),
+      holidaySet: {
+        mode: "custom" as const,
+        disabledHolidayKeys: [],
+        customHolidays: { "05-14": "Test-Feiertag" },
+      },
+    };
+
+    const beforeHoliday = hashMonthContent({
+      ...baseParams,
+      year: 2026,
+      month: 5,
+      locale,
+      calculationConfig: config,
+      currentDate: new Date(2026, 4, 6),
+    });
+    const onHoliday = hashMonthContent({
+      ...baseParams,
+      year: 2026,
+      month: 5,
+      locale,
+      calculationConfig: config,
+      currentDate: new Date(2026, 4, 14),
+    });
+
+    expect(onHoliday).not.toBe(beforeHoliday);
+  });
+});
+
+describe("generateHolidayEntries", () => {
+  const locale = getLocale(undefined);
+  const userData = {
+    name: "Max",
+    position: "Dev",
+    photo: null,
+    workDays: [0, 480, 480, 480, 480, 480, 0],
+  } as UserData;
+  const config = {
+    ...getDefaultCalculationConfig(locale, userData.workDays),
+    holidaySet: {
+      mode: "custom" as const,
+      disabledHolidayKeys: [],
+      customHolidays: {
+        "05-01": "Vergangener Feiertag",
+        "05-14": "Zukünftiger Feiertag",
+      },
+    },
+  };
+
+  it("does not add future holidays to the current automatic PDF month", () => {
+    const holidays = generateHolidayEntries(
+      2026,
+      5,
+      userData,
+      locale,
+      config,
+      new Date(2026, 4, 6),
+    );
+
+    expect(holidays.map((entry) => entry.date)).toEqual(["2026-05-01"]);
   });
 });
 

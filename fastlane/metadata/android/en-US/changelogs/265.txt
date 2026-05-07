@@ -1,0 +1,6 @@
+PDF archive & activity codes cleaned up 🔧
+• Automatic PDF archive no longer shows future holidays too early
+• Archive detects holiday/calculation changes and updates PDFs when needed
+• Activity codes are now manageable without Power-user mode
+• Recording card stays reachable in record-only mode too
+• Extra tests protect both fixes from regressions

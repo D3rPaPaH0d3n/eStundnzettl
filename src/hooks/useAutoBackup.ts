@@ -6,18 +6,50 @@ import type { Entry, UserData } from '../types';
 import { uploadOrUpdateFile, getValidToken } from "../utils/googleDrive";
 import { writeBackupFile } from "../utils/storageBackup";
 import { uploadBackup as ncUploadBackup } from "../utils/nextcloudClient";
-import { STORAGE_KEYS, BACKUP_CONFIG } from "./constants";
+import { BACKUP_CONFIG } from "./constants";
 import { getNextcloudAppPassword } from "../utils/nextcloudSecret";
 import { isSQLiteActive } from "../db/storageMode";
 import { getSetting, setSetting } from "../db/repositories/settingsRepo";
 import { logger } from "../utils/logger";
 import { getErrorMessage } from "../utils/errorUtils";
 
-// ─── Dual-Write Helpers (SQLite + localStorage) ─────────────
+// ─── SQLite Settings Helpers ────────────────────────────────
 
-/** Liest aus localStorage (sync, für Init-State). SQLite wird async nachgeladen. */
-function readLSInt(key: string, fallback: number = 0): number {
-  return parseInt(localStorage.getItem(key) || String(fallback), 10);
+async function readSettingBool(key: string): Promise<boolean> {
+  if (!isSQLiteActive()) {
+    const lsKey = {
+      cloud_sync_enabled: "estundnzettl_cloud_sync_enabled",
+      local_backup_enabled: "estundnzettl_local_backup_enabled",
+      nextcloud_enabled: "estundnzettl_nextcloud_enabled",
+    }[key];
+    return lsKey ? localStorage.getItem(lsKey) === "true" : false;
+  }
+  return await getSetting(key) === true;
+}
+
+async function readSettingString(key: string): Promise<string> {
+  if (!isSQLiteActive()) {
+    const lsKey = {
+      backup_backoff_until: "estundnzettl_backup_backoff_until",
+      nextcloud_backoff_until: "estundnzettl_nextcloud_backoff_until",
+      nextcloud_url: "estundnzettl_nextcloud_url",
+      nextcloud_user: "estundnzettl_nextcloud_user",
+    }[key];
+    return lsKey ? localStorage.getItem(lsKey) || "" : "";
+  }
+  return String(await getSetting(key) || "");
+}
+
+async function readSettingInt(key: string, fallback: number = 0): Promise<number> {
+  if (!isSQLiteActive()) {
+    const lsKey = {
+      backup_fail_count: "estundnzettl_backup_fail_count",
+      nextcloud_backup_fail_count: "estundnzettl_nextcloud_backup_fail_count",
+    }[key];
+    return parseInt((lsKey && localStorage.getItem(lsKey)) || String(fallback), 10);
+  }
+  const value = parseInt(String(await getSetting(key) || String(fallback)), 10);
+  return Number.isFinite(value) ? value : fallback;
 }
 
 /**
@@ -43,8 +75,8 @@ function calculateBackoffDelay(failCount: number): number {
 }
 
 /** True wenn der gespeicherte Backoff-Timestamp in der Zukunft liegt. */
-function isBackoffActive(key: string): boolean {
-  const iso = localStorage.getItem(key);
+async function isBackoffActive(key: string): Promise<boolean> {
+  const iso = await readSettingString(key);
   if (!iso) return false;
   const until = Date.parse(iso);
   if (Number.isNaN(until)) return false;
@@ -65,17 +97,25 @@ function backupErrorMessage(error: unknown, fallback: string): string {
   return redactBackupErrorMessage(message);
 }
 
-/** Dual-Write: localStorage + SQLite (mit Rollback bei Fehler). */
-async function dualWrite(lsKey: string, sqlKey: string, value: string | number | boolean): Promise<void> {
-  const prev = localStorage.getItem(lsKey);
-  localStorage.setItem(lsKey, String(value));
+async function writeSetting(key: string, value: string | number | boolean): Promise<void> {
+  if (!isSQLiteActive()) {
+    const lsKey = {
+      backup_fail_count: "estundnzettl_backup_fail_count",
+      backup_last_error: "estundnzettl_backup_last_error",
+      backup_backoff_until: "estundnzettl_backup_backoff_until",
+      nextcloud_backup_fail_count: "estundnzettl_nextcloud_backup_fail_count",
+      nextcloud_backup_last_error: "estundnzettl_nextcloud_backup_last_error",
+      nextcloud_backoff_until: "estundnzettl_nextcloud_backoff_until",
+      last_backup: "estundnzettl_last_backup_date",
+    }[key];
+    if (lsKey) localStorage.setItem(lsKey, String(value));
+    return;
+  }
   if (isSQLiteActive()) {
     try {
-      await setSetting(sqlKey, value);
+      await setSetting(key, value);
     } catch (e) {
-      if (prev !== null) localStorage.setItem(lsKey, prev);
-      else localStorage.removeItem(lsKey);
-      logger.error(`[useAutoBackup] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
+      logger.error(`[useAutoBackup] SQLite-Write "${key}" fehlgeschlagen:`, e);
     }
   }
 }
@@ -107,11 +147,8 @@ async function dualWrite(lsKey: string, sqlKey: string, value: string | number |
  * Siehe {@link calculateBackoffDelay}.
  *
  * ### Fail-State
- * `backupFailCount` wird sowohl in localStorage als auch SQLite
- * persistiert (dual-write). Nach 5 aufeinander folgenden Fehlern
- * zeigt der Hook einen persistenten Toast. Die UI
- * (`BackupSettings.tsx`) liest den State separat aus localStorage
- * und zeigt ab 3 Fehlern einen Retry-Button.
+ * `backupFailCount` wird in SQLite persistiert. Nach 5 aufeinander
+ * folgenden Fehlern zeigt der Hook einen persistenten Toast.
  *
  * @param entries — alle Einträge, werden Teil des Backup-Payloads
  * @param userData — User-Profil, wird Teil des Backup-Payloads
@@ -129,9 +166,10 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
   const lastHash = useRef<string>("");
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isUploading = useRef<boolean>(false);
-  const [backupFailCount, setBackupFailCount] = useState(
-    () => readLSInt(STORAGE_KEYS.BACKUP_FAIL_COUNT)
-  );
+  const [backupFailCount, setBackupFailCount] = useState(() => {
+    if (isSQLiteActive()) return 0;
+    return parseInt(localStorage.getItem("estundnzettl_backup_fail_count") || "0", 10);
+  });
 
   // SQLite-Nachladen (einmalig, async)
   const sqliteInitDone = useRef(false);
@@ -162,20 +200,20 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
   };
 
   const clearCloudErrorState = async () => {
-    await dualWrite(STORAGE_KEYS.BACKUP_FAIL_COUNT, "backup_fail_count", "0");
-    await dualWrite(STORAGE_KEYS.BACKUP_LAST_ERROR, "backup_last_error", "");
-    await dualWrite(STORAGE_KEYS.BACKUP_BACKOFF_UNTIL, "backup_backoff_until", "");
+    await writeSetting("backup_fail_count", "0");
+    await writeSetting("backup_last_error", "");
+    await writeSetting("backup_backoff_until", "");
     setBackupFailCount(0);
   };
 
   const registerCloudFailure = async (error: unknown) => {
-    const current = readLSInt(STORAGE_KEYS.BACKUP_FAIL_COUNT);
+    const current = await readSettingInt("backup_fail_count");
     const newCount = current + 1;
     const message = backupErrorMessage(error, "Cloud-Backup fehlgeschlagen");
     const backoffUntilIso = new Date(Date.now() + calculateBackoffDelay(newCount)).toISOString();
-    await dualWrite(STORAGE_KEYS.BACKUP_FAIL_COUNT, "backup_fail_count", String(newCount));
-    await dualWrite(STORAGE_KEYS.BACKUP_LAST_ERROR, "backup_last_error", message);
-    await dualWrite(STORAGE_KEYS.BACKUP_BACKOFF_UNTIL, "backup_backoff_until", backoffUntilIso);
+    await writeSetting("backup_fail_count", String(newCount));
+    await writeSetting("backup_last_error", message);
+    await writeSetting("backup_backoff_until", backoffUntilIso);
     setBackupFailCount(newCount);
     if (newCount === 5) {
       toast.error(t("toasts.autoBackup.failed5x"), { duration: 8000 });
@@ -184,27 +222,27 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
   };
 
   const clearNextcloudErrorState = async () => {
-    await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT, "nextcloud_backup_fail_count", "0");
-    await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", "");
-    await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKOFF_UNTIL, "nextcloud_backoff_until", "");
+    await writeSetting("nextcloud_backup_fail_count", "0");
+    await writeSetting("nextcloud_backup_last_error", "");
+    await writeSetting("nextcloud_backoff_until", "");
   };
 
   const registerNextcloudFailure = async (error: unknown) => {
-    const current = readLSInt(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT);
+    const current = await readSettingInt("nextcloud_backup_fail_count");
     const newCount = current + 1;
     const message = backupErrorMessage(error, "Nextcloud-Backup fehlgeschlagen");
     const backoffUntilIso = new Date(Date.now() + calculateBackoffDelay(newCount)).toISOString();
-    await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT, "nextcloud_backup_fail_count", String(newCount));
-    await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", message);
-    await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKOFF_UNTIL, "nextcloud_backoff_until", backoffUntilIso);
+    await writeSetting("nextcloud_backup_fail_count", String(newCount));
+    await writeSetting("nextcloud_backup_last_error", message);
+    await writeSetting("nextcloud_backoff_until", backoffUntilIso);
   };
 
   const performBackup = async (source: "Auto-Save" | "Background" | "Manual" = "Auto-Save") => {
     const { entries, userData } = latestDataRef.current;
 
-    const cloudActive = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
-    const localActive = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
-    const ncActive = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true";
+    const cloudActive = await readSettingBool("cloud_sync_enabled");
+    const localActive = await readSettingBool("local_backup_enabled");
+    const ncActive = await readSettingBool("nextcloud_enabled");
 
     if (!isEnabled && !cloudActive && !localActive && !ncActive) return;
     if (!entries || entries.length === 0) return;
@@ -242,8 +280,8 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
       }
 
       if (cloudActive) {
-        if (!ignoreBackoff && isBackoffActive(STORAGE_KEYS.BACKUP_BACKOFF_UNTIL)) {
-          const until = localStorage.getItem(STORAGE_KEYS.BACKUP_BACKOFF_UNTIL);
+        if (!ignoreBackoff && await isBackoffActive("backup_backoff_until")) {
+          const until = await readSettingString("backup_backoff_until");
           logger.warn(`[useAutoBackup] Cloud-Backup übersprungen, Backoff aktiv bis ${until}`);
           allActiveTargetsSatisfied = false;
         } else {
@@ -266,14 +304,14 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
 
       // Nextcloud Backup
       if (ncActive) {
-        if (!ignoreBackoff && isBackoffActive(STORAGE_KEYS.NEXTCLOUD_BACKOFF_UNTIL)) {
-          const until = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKOFF_UNTIL);
+        if (!ignoreBackoff && await isBackoffActive("nextcloud_backoff_until")) {
+          const until = await readSettingString("nextcloud_backoff_until");
           logger.warn(`[useAutoBackup] Nextcloud-Backup übersprungen, Backoff aktiv bis ${until}`);
           allActiveTargetsSatisfied = false;
         } else {
           try {
-            const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
-            const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
+            const ncUrl = await readSettingString("nextcloud_url");
+            const ncUser = await readSettingString("nextcloud_user");
             const ncPass = await getNextcloudAppPassword();
             if (ncUrl && ncUser && ncPass) {
               await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
@@ -291,7 +329,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
       }
 
       if (anyBackupSucceeded) {
-        await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
+        await writeSetting("last_backup", new Date().toISOString());
       }
 
       if (anyBackupSucceeded && allActiveTargetsSatisfied) {

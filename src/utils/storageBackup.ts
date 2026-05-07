@@ -104,24 +104,53 @@ export async function verifyBackupIntegrity(payload: Record<string, unknown> | n
   return actual === expected ? "verified" : "mismatch";
 }
 
-// ─── Dual-Write Helper ──────────────────────────────────────
+// ─── Settings Helper ────────────────────────────────────────
 
-async function dualWrite(lsKey: string, sqlKey: string, value: unknown): Promise<void> {
-  localStorage.setItem(lsKey, String(value));
+const BACKUP_SETTING_LOCAL_KEYS: Record<string, string> = {
+  backup_target: STORAGE_KEYS.BACKUP_TARGET,
+  last_backup: STORAGE_KEYS.LAST_BACKUP,
+  backup_fail_count: STORAGE_KEYS.BACKUP_FAIL_COUNT,
+  backup_last_error: STORAGE_KEYS.BACKUP_LAST_ERROR,
+  nextcloud_backup_fail_count: STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT,
+  nextcloud_backup_last_error: STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR,
+};
+
+async function readSetting(sqlKey: string): Promise<unknown> {
+  if (isSQLiteActive()) {
+    try { return await getSetting(sqlKey); } catch (e) {
+      logger.error(`[storageBackup] SQLite-Read "${sqlKey}" fehlgeschlagen:`, e);
+      return null;
+    }
+  }
+
+  const lsKey = BACKUP_SETTING_LOCAL_KEYS[sqlKey];
+  return lsKey ? localStorage.getItem(lsKey) : null;
+}
+
+async function writeSetting(sqlKey: string, value: unknown): Promise<void> {
   if (isSQLiteActive()) {
     try { await setSetting(sqlKey, value); } catch (e) {
       logger.error(`[storageBackup] SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
     }
+    return;
   }
+
+  const lsKey = BACKUP_SETTING_LOCAL_KEYS[sqlKey];
+  if (!lsKey) return;
+  if (value === null || value === undefined || value === "") localStorage.removeItem(lsKey);
+  else localStorage.setItem(lsKey, String(value));
 }
 
-async function dualRemove(lsKey: string, sqlKey: string): Promise<void> {
-  localStorage.removeItem(lsKey);
+async function removeSetting(sqlKey: string): Promise<void> {
   if (isSQLiteActive()) {
     try { await deleteSetting(sqlKey); } catch (e) {
       logger.error(`[storageBackup] SQLite-Delete "${sqlKey}" fehlgeschlagen:`, e);
     }
+    return;
   }
+
+  const lsKey = BACKUP_SETTING_LOCAL_KEYS[sqlKey];
+  if (lsKey) localStorage.removeItem(lsKey);
 }
 
 // Ordner erstellen falls nicht vorhanden (für Documents - manueller Export)
@@ -158,8 +187,7 @@ const ensureInternalBackupFolder = async (): Promise<void> => {
 export const selectBackupFolder = async (): Promise<boolean> => {
   try {
     await ensureInternalBackupFolder();
-    // Dual-Write: BACKUP_TARGET
-    await dualWrite(STORAGE_KEYS.BACKUP_TARGET, "backup_target", "documents");
+    await writeSetting("backup_target", "documents");
     return true;
   } catch (err) {
     logger.error("Backup-Ordner konnte nicht erstellt werden:", err);
@@ -167,7 +195,7 @@ export const selectBackupFolder = async (): Promise<boolean> => {
   }
 };
 
-// 2. Zugriff prüfen (synchron, aus localStorage — schnell für UI)
+// 2. Zugriff prüfen (sync UI-Hint; SQLite wird in Settings/Backup-Flows async geladen)
 export const hasBackupTarget = (): boolean => {
   return localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET) === 'documents';
 };
@@ -195,7 +223,7 @@ export const writeBackupFile = async (fileName: string, dataObj: unknown): Promi
 
 // 4. Zugriff entfernen
 export const clearBackupTarget = async (): Promise<void> => {
-  await dualRemove(STORAGE_KEYS.BACKUP_TARGET, "backup_target");
+  await removeSetting("backup_target");
 };
 
 // 5. Einmaliger Export (JSON) - in Documents für User sichtbar
@@ -407,24 +435,6 @@ export const applyBackup = async (analyzedData: BackupAnalysisResult & Record<st
   if (!analyzedData || !analyzedData.valid) return false;
 
   try {
-    localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(analyzedData.entries || []));
-
-    if (mode === 'ALL' && analyzedData.hasSettings && analyzedData.settings) {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(analyzedData.settings));
-    }
-
-    if (analyzedData.hasWorkCodes) {
-      localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(analyzedData.workCodes));
-    }
-
-    if (analyzedData.hasAttachments) {
-      localStorage.setItem(STORAGE_KEYS.ATTACHMENTS, JSON.stringify(analyzedData.attachments));
-    }
-
-    if (analyzedData.attachmentLabels?.length) {
-      localStorage.setItem(STORAGE_KEYS.ATTACHMENT_LABELS, JSON.stringify(analyzedData.attachmentLabels));
-    }
-
     if (isSQLiteActive()) {
       await bulkInsertEntries(analyzedData.entries || []);
 
@@ -445,14 +455,9 @@ export const applyBackup = async (analyzedData: BackupAnalysisResult & Record<st
       }
 
       // CalculationConfig aus Backup übernehmen (wenn mode=ALL).
-      // Dual-Write: SQLite + localStorage, damit useCalculationConfig beim
-      // nächsten Mount die Werte sofort sieht.
       const calcConfig = (analyzedData as Record<string, unknown>).calculationConfig;
       if (mode === 'ALL' && calcConfig && typeof calcConfig === 'object') {
         await setSetting("calculationConfig", calcConfig);
-        try {
-          localStorage.setItem("estundnzettl_calculation_config", JSON.stringify(calcConfig));
-        } catch { /* ignore */ }
       }
     }
 
@@ -466,7 +471,6 @@ export const applyBackup = async (analyzedData: BackupAnalysisResult & Record<st
 // 6. MANUELLER BACKUP (für "Jetzt sichern"-Button)
 export const triggerManualBackup = async (): Promise<Record<string, unknown>> => {
   try {
-    // Daten aus SQLite laden (Source of Truth), localStorage nur als Fallback
     let userData: unknown = null;
     let entries: unknown[] = [];
 
@@ -475,36 +479,31 @@ export const triggerManualBackup = async (): Promise<Record<string, unknown>> =>
         userData = await getSetting("user");
         entries = await getAllEntries();
       } catch (e) {
-        logger.warn("[triggerManualBackup] SQLite-Read fehlgeschlagen, Fallback auf localStorage:", e);
+        logger.warn("[triggerManualBackup] SQLite-Read fehlgeschlagen:", e);
       }
-    }
-
-    // Fallback auf localStorage
-    if (!userData) {
+    } else {
       try { userData = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null'); } catch { /* corrupt */ }
-    }
-    if (!entries || entries.length === 0) {
       try { entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]'); } catch { entries = []; }
     }
 
-    // CalculationConfig für Backup laden (SQLite bevorzugt, localStorage Fallback)
+    // CalculationConfig für Backup laden
     let calcConfig: unknown = null;
     if (isSQLiteActive()) {
       try { calcConfig = await getSetting("calculationConfig"); } catch { /* ignore */ }
     }
-    if (!calcConfig) {
-      try {
-        const raw = localStorage.getItem("estundnzettl_calculation_config");
-        if (raw) calcConfig = JSON.parse(raw);
-      } catch { /* corrupt */ }
-    }
 
     // Cloud-Status: Nur das aktivierte Flag ist relevant.
     // Das eigentliche Zugriffstoken wird nativ still erneuert.
-    const cloudFlag = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
+    const cloudFlag = isSQLiteActive()
+      ? await getSetting("cloud_sync_enabled") === true
+      : localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
     const cloudActive = cloudFlag;
-    const localActive = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
-    const ncActive = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true";
+    const localActive = isSQLiteActive()
+      ? await getSetting("local_backup_enabled") === true
+      : localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true";
+    const ncActive = isSQLiteActive()
+      ? await getSetting("nextcloud_enabled") === true
+      : localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true";
 
     if (!entries || entries.length === 0) {
       return { success: false, message: "Keine Daten zum Sichern" };
@@ -550,14 +549,18 @@ export const triggerManualBackup = async (): Promise<Record<string, unknown>> =>
 
     if (ncActive) {
       try {
-        const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
-        const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
+        const ncUrl = isSQLiteActive()
+          ? String(await getSetting("nextcloud_url") || "")
+          : localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
+        const ncUser = isSQLiteActive()
+          ? String(await getSetting("nextcloud_user") || "")
+          : localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
         const ncPass = await getNextcloudAppPassword();
         if (ncUrl && ncUser && ncPass) {
           await ncUploadBackup(ncUrl, ncUser, ncPass, payload);
           nextcloudOk = true;
-          await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT, "nextcloud_backup_fail_count", "0");
-          await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", "");
+          await writeSetting("nextcloud_backup_fail_count", "0");
+          await writeSetting("nextcloud_backup_last_error", "");
         } else {
           nextcloudError = "Nextcloud-Anmeldedaten unvollständig";
         }
@@ -574,13 +577,13 @@ export const triggerManualBackup = async (): Promise<Record<string, unknown>> =>
     }
 
     if (anySuccess) {
-      await dualWrite(STORAGE_KEYS.LAST_BACKUP, "last_backup", new Date().toISOString());
+      await writeSetting("last_backup", new Date().toISOString());
     }
 
     if (nextcloudOk === false && nextcloudError) {
-      const currentNcFailCount = parseInt(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT) || "0", 10);
-      await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT, "nextcloud_backup_fail_count", String(currentNcFailCount + 1));
-      await dualWrite(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR, "nextcloud_backup_last_error", nextcloudError);
+      const currentNcFailCount = parseInt(String(await readSetting("nextcloud_backup_fail_count") || "0"), 10);
+      await writeSetting("nextcloud_backup_fail_count", String(currentNcFailCount + 1));
+      await writeSetting("nextcloud_backup_last_error", nextcloudError);
     }
 
     return {

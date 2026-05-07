@@ -200,7 +200,7 @@ If you find it useful and feel like saying thanks, a small tip via Revolut is al
 |---|-------------|
 | 🖥️ Frontend | TypeScript, React, Vite |
 | 📱 Mobile | Capacitor (Android) |
-| 🗄️ Database | SQLite + localStorage (dual-write) |
+| 🗄️ Database | SQLite (domain data), localStorage only for UI/cache/legacy migration |
 | 📄 PDF | @react-pdf/renderer (vector, searchable) |
 | ☁️ Cloud | Google Drive API, Nextcloud WebDAV |
 | 🌐 i18n | i18next + react-i18next |

@@ -2,8 +2,8 @@ import { useCallback } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import type { Entry, UserData, DeleteTarget } from '../../types';
-import { dualRemoveSync } from "../../utils/dualWrite";
-import { STORAGE_KEYS, WORK_MODELS } from "../constants";
+import { clearLastCode } from "../../utils/lastCode";
+import { WORK_MODELS } from "../constants";
 
 /**
  * Löschen von Einträgen und vollständiges Zurücksetzen der App.
@@ -72,9 +72,7 @@ export function useDeleteActions({
           workDays: [...WORK_MODELS[0].days],
         };
         setUserData(emptyUser);
-        await dualRemoveSync(STORAGE_KEYS.LAST_CODE, "last_code");
-        localStorage.removeItem(STORAGE_KEYS.ATTACHMENTS);
-        localStorage.removeItem(STORAGE_KEYS.ATTACHMENT_LABELS);
+        await clearLastCode();
         toast.success(t("toasts.appReset"));
       }
       setDeleteTarget(null);

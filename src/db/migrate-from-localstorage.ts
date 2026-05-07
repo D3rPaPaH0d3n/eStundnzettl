@@ -19,6 +19,28 @@ import { bulkReplaceAttachments, bulkReplaceLabelSuggestions } from "./repositor
 import { logger } from "../utils/logger";
 import type { Entry, WorkCode, Attachment } from "../types";
 
+const readJsonSetting = (key: string): unknown => {
+  try {
+    const stored = localStorage.getItem(key);
+    if (!stored || stored === "undefined") return undefined;
+    return JSON.parse(stored);
+  } catch {
+    return undefined;
+  }
+};
+
+const readBoolSetting = (key: string): boolean | undefined => {
+  const value = localStorage.getItem(key);
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return undefined;
+};
+
+const readStringSetting = (key: string): string | undefined => {
+  const value = localStorage.getItem(key);
+  return value ? value : undefined;
+};
+
 // ─── Migration Result Types ─────────────────────────────────
 
 interface MigrationResult {
@@ -137,6 +159,16 @@ export async function migrateSettingsToSQLite(): Promise<MigrationResult> {
   const theme = localStorage.getItem(STORAGE_KEYS.THEME);
   if (theme) settings.theme = theme;
 
+  // Locale
+  const locale = readStringSetting(STORAGE_KEYS.LOCALE);
+  if (locale) settings.locale = locale;
+
+  // Calculation config
+  const calculationConfig = readJsonSetting("estundnzettl_calculation_config");
+  if (calculationConfig && typeof calculationConfig === "object") {
+    settings.calculationConfig = calculationConfig;
+  }
+
   // Cloud Sync
   const cloudSync = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
   if (cloudSync === "true") settings.cloud_sync_enabled = true;
@@ -144,6 +176,15 @@ export async function migrateSettingsToSQLite(): Promise<MigrationResult> {
   // Local Backup
   const localBackup = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
   if (localBackup === "true") settings.local_backup_enabled = true;
+
+  // Nextcloud connection settings (password is migrated separately by
+  // nextcloudSecret/useSettings and intentionally not copied in plain text).
+  const nextcloudEnabled = readBoolSetting(STORAGE_KEYS.NEXTCLOUD_ENABLED);
+  if (nextcloudEnabled !== undefined) settings.nextcloud_enabled = nextcloudEnabled;
+  const nextcloudUrl = readStringSetting(STORAGE_KEYS.NEXTCLOUD_URL);
+  if (nextcloudUrl) settings.nextcloud_url = nextcloudUrl;
+  const nextcloudUser = readStringSetting(STORAGE_KEYS.NEXTCLOUD_USER);
+  if (nextcloudUser) settings.nextcloud_user = nextcloudUser;
 
   const count = Object.keys(settings).length;
 
@@ -269,7 +310,7 @@ export async function migrateAttachmentsToSQLite(): Promise<AttachmentMigrationR
 /**
  * Migriert Backup-Meta-Keys von localStorage nach SQLite (Welle 4).
  *
- * Betrifft: LAST_CODE, LAST_BACKUP, BACKUP_TARGET, BACKUP_FAIL_COUNT.
+ * Betrifft: LAST_CODE, Backup-/PDF-Archiv-Metadaten und Status-Keys.
  * Idempotent — schreibt nur vorhandene Werte, löscht nichts aus localStorage.
  *
  * @returns {Promise<{migrated: number, skipped: boolean}>}
@@ -301,6 +342,52 @@ export async function migrateBackupMetaToSQLite(): Promise<MigrationResult> {
   if (failRaw) {
     const failNum = parseInt(failRaw, 10);
     if (!isNaN(failNum)) settings.backup_fail_count = failNum;
+  }
+
+  const backupLastError = readStringSetting(STORAGE_KEYS.BACKUP_LAST_ERROR);
+  if (backupLastError) settings.backup_last_error = backupLastError;
+  const backupBackoffUntil = readStringSetting(STORAGE_KEYS.BACKUP_BACKOFF_UNTIL);
+  if (backupBackoffUntil) settings.backup_backoff_until = backupBackoffUntil;
+
+  const nextcloudFailRaw = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT);
+  if (nextcloudFailRaw) {
+    const failNum = parseInt(nextcloudFailRaw, 10);
+    if (!isNaN(failNum)) settings.nextcloud_backup_fail_count = failNum;
+  }
+  const nextcloudLastError = readStringSetting(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR);
+  if (nextcloudLastError) settings.nextcloud_backup_last_error = nextcloudLastError;
+  const nextcloudBackoffUntil = readStringSetting(STORAGE_KEYS.NEXTCLOUD_BACKOFF_UNTIL);
+  if (nextcloudBackoffUntil) settings.nextcloud_backoff_until = nextcloudBackoffUntil;
+
+  const pdfArchiveBoolKeys: Array<[string, string]> = [
+    [STORAGE_KEYS.PDF_ARCHIVE_ENABLED, "pdf_archive_enabled"],
+    [STORAGE_KEYS.PDF_ARCHIVE_LOCAL, "pdf_archive_local"],
+    [STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD, "pdf_archive_nextcloud"],
+    [STORAGE_KEYS.PDF_ARCHIVE_GDRIVE, "pdf_archive_gdrive"],
+  ];
+  for (const [lsKey, sqlKey] of pdfArchiveBoolKeys) {
+    const value = readBoolSetting(lsKey);
+    if (value !== undefined) settings[sqlKey] = value;
+  }
+
+  const pdfArchiveStringKeys: Array<[string, string]> = [
+    [STORAGE_KEYS.PDF_ARCHIVE_LAST_RUN, "pdf_archive_last_run"],
+    [STORAGE_KEYS.PDF_ARCHIVE_LAST_MONTH, "pdf_archive_last_month"],
+    [STORAGE_KEYS.PDF_ARCHIVE_FAIL_COUNT, "pdf_archive_fail_count"],
+    [STORAGE_KEYS.PDF_ARCHIVE_LAST_ERROR, "pdf_archive_last_error"],
+  ];
+  for (const [lsKey, sqlKey] of pdfArchiveStringKeys) {
+    const value = readStringSetting(lsKey);
+    if (value) settings[sqlKey] = value;
+  }
+
+  // Monatsbezogene Hash-Keys behalten ihren vollständigen Key-Namen.
+  const pdfHashPrefix = `${STORAGE_KEYS.PDF_ARCHIVE_LAST_HASH}_`;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith(pdfHashPrefix)) continue;
+    const value = readStringSetting(key);
+    if (value) settings[key] = value;
   }
 
   const count = Object.keys(settings).length;

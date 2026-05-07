@@ -193,7 +193,7 @@ Wennst magst und dir die App wos wert is, freu i mi über a kloane Anerkennung v
 |---|-------------|
 | 🖥️ Frontend | TypeScript, React, Vite |
 | 📱 Mobile | Capacitor (Android) |
-| 🗄️ Datenbank | SQLite + localStorage (Dual-Write) |
+| 🗄️ Datenbank | SQLite (Domain-Daten), localStorage nur für UI-/Cache-/Legacy-Migration |
 | 📄 PDF | @react-pdf/renderer (Vektor, durchsuchbar) |
 | ☁️ Cloud | Google Drive API, Nextcloud WebDAV |
 | 🧪 Tests | Vitest |

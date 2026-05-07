@@ -18,21 +18,26 @@ import { useFeatureAvailability } from "../../hooks/useFeatureAvailability";
 
 const log = logger.scope("PdfArchiveSettings");
 
-async function dualWrite(lsKey: string, sqlKey: string, value: string) {
-  const prev = localStorage.getItem(lsKey);
-  localStorage.setItem(lsKey, String(value));
+const PDF_ARCHIVE_SETTING_KEYS: Record<string, string> = {
+  pdf_archive_enabled: STORAGE_KEYS.PDF_ARCHIVE_ENABLED,
+  pdf_archive_local: STORAGE_KEYS.PDF_ARCHIVE_LOCAL,
+  pdf_archive_nextcloud: STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD,
+  pdf_archive_gdrive: STORAGE_KEYS.PDF_ARCHIVE_GDRIVE,
+};
+
+async function writeSetting(sqlKey: string, value: string) {
   if (isSQLiteActive()) {
     try {
       await setSetting(sqlKey, value);
     } catch (e) {
-      if (prev !== null) localStorage.setItem(lsKey, prev);
-      else localStorage.removeItem(lsKey);
       log.warn(`SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
     }
+    return;
   }
-}
 
-const readBool = (key: string) => localStorage.getItem(key) === "true";
+  const lsKey = PDF_ARCHIVE_SETTING_KEYS[sqlKey];
+  if (lsKey) localStorage.setItem(lsKey, value);
+}
 
 // formatLastRun now lives inside the component so it can use i18n.
 // Date formatting itself still uses "de-DE" until the C1 format-locale
@@ -64,27 +69,33 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
     if (Number.isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit", year: "numeric" });
   };
-  const [enabled, setEnabled] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_ENABLED));
-  const [localTarget, setLocalTarget] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_LOCAL));
-  const [nextcloudTarget, setNextcloudTarget] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD));
-  const [gdriveTarget, setGdriveTarget] = useState(() => readBool(STORAGE_KEYS.PDF_ARCHIVE_GDRIVE));
+  const [enabled, setEnabled] = useState(false);
+  const [localTarget, setLocalTarget] = useState(false);
+  const [nextcloudTarget, setNextcloudTarget] = useState(false);
+  const [gdriveTarget, setGdriveTarget] = useState(false);
   const [gdriveConnected, setGdriveConnected] = useState(false);
   const [gdriveEmail, setGdriveEmail] = useState("");
   const [gdriveBusy, setGdriveBusy] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
 
-  // SQLite nachladen (analog zum bestehenden Muster)
+  // Settings nachladen (SQLite aktiv, sonst localStorage-Fallback fuer Web/Dev)
   useEffect(() => {
-    if (!isSQLiteActive()) return;
     let cancelled = false;
     (async () => {
       try {
-        const [en, loc, nc, gd] = await Promise.all([
-          getSetting("pdf_archive_enabled"),
-          getSetting("pdf_archive_local"),
-          getSetting("pdf_archive_nextcloud"),
-          getSetting("pdf_archive_gdrive"),
-        ]);
+        const [en, loc, nc, gd] = isSQLiteActive()
+          ? await Promise.all([
+              getSetting("pdf_archive_enabled"),
+              getSetting("pdf_archive_local"),
+              getSetting("pdf_archive_nextcloud"),
+              getSetting("pdf_archive_gdrive"),
+            ])
+          : [
+              localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_ENABLED),
+              localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_LOCAL),
+              localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD),
+              localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_GDRIVE),
+            ];
         if (cancelled) return;
         if (en != null) setEnabled(String(en) === "true");
         if (loc != null) setLocalTarget(String(loc) === "true");
@@ -116,18 +127,18 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
   const toggleEnabled = useCallback(async () => {
     const next = !enabled;
     setEnabled(next);
-    await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_ENABLED, "pdf_archive_enabled", String(next));
+    await writeSetting("pdf_archive_enabled", String(next));
     // Default: Lokal auto-aktivieren, damit beim ersten Einschalten gleich etwas passiert
     if (next && !localTarget && !nextcloudTarget) {
       setLocalTarget(true);
-      await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_LOCAL, "pdf_archive_local", "true");
+      await writeSetting("pdf_archive_local", "true");
     }
   }, [enabled, localTarget, nextcloudTarget]);
 
   const toggleLocal = useCallback(async () => {
     const next = !localTarget;
     setLocalTarget(next);
-    await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_LOCAL, "pdf_archive_local", String(next));
+    await writeSetting("pdf_archive_local", String(next));
   }, [localTarget]);
 
   const toggleNextcloud = useCallback(async () => {
@@ -137,7 +148,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
     }
     const next = !nextcloudTarget;
     setNextcloudTarget(next);
-    await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD, "pdf_archive_nextcloud", String(next));
+    await writeSetting("pdf_archive_nextcloud", String(next));
   }, [nextcloudTarget, nextcloudEnabled, t]);
 
   const handleGdriveConnect = useCallback(async () => {
@@ -168,7 +179,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
       // Wenn der User trennt, deaktiviere auch den Ziel-Toggle
       if (gdriveTarget) {
         setGdriveTarget(false);
-        await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_GDRIVE, "pdf_archive_gdrive", "false");
+        await writeSetting("pdf_archive_gdrive", "false");
       }
       toast.success(t("settings.pdfArchive.toast.gdriveDisconnected"));
     } catch (err) {
@@ -187,7 +198,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
     }
     const next = !gdriveTarget;
     setGdriveTarget(next);
-    await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_GDRIVE, "pdf_archive_gdrive", String(next));
+    await writeSetting("pdf_archive_gdrive", String(next));
   }, [gdriveTarget, gdriveConnected, t]);
 
   const handleRunNow = useCallback(async () => {

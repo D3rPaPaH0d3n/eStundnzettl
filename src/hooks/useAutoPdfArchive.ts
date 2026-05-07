@@ -40,7 +40,7 @@ import type { Entry, UserData, WorkCode, CalculationConfig } from '../types';
 import type { Locale } from '../locales/types';
 import { STORAGE_KEYS } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
-import { setSetting } from "../db/repositories/settingsRepo";
+import { getSetting, setSetting } from "../db/repositories/settingsRepo";
 import { logger } from "../utils/logger";
 import {
   generateMonthlyPdfBlob,
@@ -61,24 +61,56 @@ const todayStr = (): string => {
 const monthStr = (date: Date = new Date()): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
-/** Dual-Write: localStorage + (wenn verfuegbar) SQLite. */
-async function dualWrite(lsKey: string, sqlKey: string, value: string | number | boolean): Promise<void> {
-  const prev = localStorage.getItem(lsKey);
-  localStorage.setItem(lsKey, String(value));
+const PDF_ARCHIVE_SETTING_KEYS: Record<string, string> = {
+  pdf_archive_enabled: STORAGE_KEYS.PDF_ARCHIVE_ENABLED,
+  pdf_archive_local: STORAGE_KEYS.PDF_ARCHIVE_LOCAL,
+  pdf_archive_nextcloud: STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD,
+  pdf_archive_gdrive: STORAGE_KEYS.PDF_ARCHIVE_GDRIVE,
+  pdf_archive_last_run: STORAGE_KEYS.PDF_ARCHIVE_LAST_RUN,
+  pdf_archive_last_month: STORAGE_KEYS.PDF_ARCHIVE_LAST_MONTH,
+  pdf_archive_fail_count: STORAGE_KEYS.PDF_ARCHIVE_FAIL_COUNT,
+  pdf_archive_last_error: STORAGE_KEYS.PDF_ARCHIVE_LAST_ERROR,
+};
+
+function localStorageKeyForSetting(sqlKey: string): string | undefined {
+  if (sqlKey.startsWith(`${STORAGE_KEYS.PDF_ARCHIVE_LAST_HASH}_`)) return sqlKey;
+  return PDF_ARCHIVE_SETTING_KEYS[sqlKey];
+}
+
+async function writeSetting(sqlKey: string, value: string | number | boolean): Promise<void> {
   if (isSQLiteActive()) {
     try {
       await setSetting(sqlKey, value);
     } catch (e) {
-      if (prev !== null) localStorage.setItem(lsKey, prev);
-      else localStorage.removeItem(lsKey);
       log.warn(`SQLite-Write "${sqlKey}" fehlgeschlagen:`, e);
     }
+    return;
   }
+
+  const lsKey = localStorageKeyForSetting(sqlKey);
+  if (lsKey) localStorage.setItem(lsKey, String(value));
+}
+
+async function readSettingString(sqlKey: string): Promise<string> {
+  if (!isSQLiteActive()) {
+    const lsKey = localStorageKeyForSetting(sqlKey);
+    return lsKey ? localStorage.getItem(lsKey) || "" : "";
+  }
+  return String(await getSetting(sqlKey) || "");
+}
+
+async function readSettingBool(sqlKey: string): Promise<boolean> {
+  if (!isSQLiteActive()) {
+    const lsKey = localStorageKeyForSetting(sqlKey);
+    return lsKey ? localStorage.getItem(lsKey) === "true" : false;
+  }
+  const value = await getSetting(sqlKey);
+  return value === true || value === "true";
 }
 
 /** Prueft, ob der letzte Lauf vor heute 00:00 liegt. */
-function isDueToday(): boolean {
-  const last = localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_LAST_RUN) || "";
+async function isDueToday(): Promise<boolean> {
+  const last = await readSettingString("pdf_archive_last_run");
   return last !== todayStr();
 }
 
@@ -98,7 +130,7 @@ async function runForMonth({ entries, userData, workCodes, year, month, targets,
   const currentDate = new Date();
   const newHash = hashMonthContent({ entries, userData, year, month, locale, calculationConfig, currentDate });
   const lastHashKey = `${STORAGE_KEYS.PDF_ARCHIVE_LAST_HASH}_${year}-${String(month).padStart(2, "0")}`;
-  const prevHash = localStorage.getItem(lastHashKey);
+  const prevHash = await readSettingString(lastHashKey);
 
   if (prevHash === newHash) {
     log.info(`Hash unveraendert fuer ${year}-${month} — kein Upload.`);
@@ -129,7 +161,7 @@ async function runForMonth({ entries, userData, workCodes, year, month, targets,
   const errors = results.filter((r) => !r.ok);
 
   if (anyOk) {
-    localStorage.setItem(lastHashKey, newHash);
+    await writeSetting(lastHashKey, newHash);
   }
 
   return { skipped: false, filename, results, anyOk, errors };
@@ -139,23 +171,41 @@ export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCode
   const latestDataRef = useRef<{ entries: Entry[]; userData: UserData; workCodes: WorkCode[] }>({ entries, userData, workCodes });
   const isRunning = useRef<boolean>(false);
   const [lastRun, setLastRun] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_LAST_RUN) || ""
+    () => ""
   );
   const [lastError, setLastError] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_LAST_ERROR) || ""
+    () => ""
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [run, error] = await Promise.all([
+          readSettingString("pdf_archive_last_run"),
+          readSettingString("pdf_archive_last_error"),
+        ]);
+        if (cancelled) return;
+        setLastRun(run);
+        setLastError(error);
+      } catch (err) {
+        log.warn("PDF archive status load failed:", err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     latestDataRef.current = { entries, userData, workCodes };
   }, [entries, userData, workCodes]);
 
-  const getActiveTargets = (): PdfArchiveTargets | null => {
-    const masterOn = localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_ENABLED) === "true";
+  const getActiveTargets = async (): Promise<PdfArchiveTargets | null> => {
+    const masterOn = await readSettingBool("pdf_archive_enabled");
     if (!masterOn) return null;
     const targets = {
-      local: localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_LOCAL) === "true",
-      nextcloud: localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD) === "true",
-      gdrive: localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_GDRIVE) === "true",
+      local: await readSettingBool("pdf_archive_local"),
+      nextcloud: await readSettingBool("pdf_archive_nextcloud"),
+      gdrive: await readSettingBool("pdf_archive_gdrive"),
     };
     if (!targets.local && !targets.nextcloud && !targets.gdrive) return null;
     return targets;
@@ -171,13 +221,13 @@ export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCode
       return { ok: false, reason: "already-running" };
     }
 
-    const targets = getActiveTargets();
+    const targets = await getActiveTargets();
     if (!targets) {
       log.info(`performRun (${source}) — nicht aktiv, skip.`);
       return { ok: false, reason: "disabled" };
     }
 
-    if (!force && !isDueToday()) {
+    if (!force && !(await isDueToday())) {
       log.info(`performRun (${source}) — heute bereits gelaufen, skip.`);
       return { ok: false, reason: "already-today" };
     }
@@ -191,7 +241,7 @@ export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCode
 
       const now = new Date();
       const currentYM = monthStr(now);
-      const lastYM = localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_LAST_MONTH) || "";
+      const lastYM = await readSettingString("pdf_archive_last_month");
 
       const results = [];
 
@@ -220,19 +270,19 @@ export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCode
       const anyRealUpload = results.some((r) => !r.skipped && r.anyOk);
       const anyFailure = results.some((r) => !r.skipped && r.errors && r.errors.length > 0);
 
-      await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_LAST_RUN, "pdf_archive_last_run", today);
-      await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_LAST_MONTH, "pdf_archive_last_month", currentYM);
+      await writeSetting("pdf_archive_last_run", today);
+      await writeSetting("pdf_archive_last_month", currentYM);
       setLastRun(today);
 
       if (anyFailure) {
-        const current = parseInt(localStorage.getItem(STORAGE_KEYS.PDF_ARCHIVE_FAIL_COUNT) || "0", 10);
+        const current = parseInt(await readSettingString("pdf_archive_fail_count") || "0", 10);
         const msg = results.flatMap((r) => (r.errors || []).map((e) => `${e.target}: ${e.error}`)).join(" · ");
-        await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_FAIL_COUNT, "pdf_archive_fail_count", String(current + 1));
-        await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_LAST_ERROR, "pdf_archive_last_error", msg);
+        await writeSetting("pdf_archive_fail_count", String(current + 1));
+        await writeSetting("pdf_archive_last_error", msg);
         setLastError(msg);
       } else if (anyRealUpload) {
-        await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_FAIL_COUNT, "pdf_archive_fail_count", "0");
-        await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_LAST_ERROR, "pdf_archive_last_error", "");
+        await writeSetting("pdf_archive_fail_count", "0");
+        await writeSetting("pdf_archive_last_error", "");
         setLastError("");
       }
 
@@ -240,7 +290,7 @@ export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCode
     } catch (err) {
       log.error("performRun failed:", err);
       const msg = String((err as Error)?.message || err);
-      await dualWrite(STORAGE_KEYS.PDF_ARCHIVE_LAST_ERROR, "pdf_archive_last_error", msg);
+      await writeSetting("pdf_archive_last_error", msg);
       setLastError(msg);
       return { ok: false, error: msg };
     } finally {

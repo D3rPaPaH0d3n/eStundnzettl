@@ -43,9 +43,9 @@ vi.mock("../../../db/repositories/workCodesRepo", () => ({
   getAllWorkCodes: vi.fn(),
 }));
 
-vi.mock("../../../utils/dualWrite", () => ({
-  dualWriteSync: vi.fn(),
-  dualRemoveSync: vi.fn().mockResolvedValue(undefined),
+vi.mock("../../../utils/lastCode", () => ({
+  saveLastCode: vi.fn(),
+  clearLastCode: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Hooks erst NACH den Mocks importieren.
@@ -55,7 +55,7 @@ import { useEntryActions } from "../useEntryActions";
 import { useDeleteActions } from "../useDeleteActions";
 import { useMiscActions } from "../useMiscActions";
 import { useOnboardingActions } from "../useOnboardingActions";
-import { dualWriteSync, dualRemoveSync } from "../../../utils/dualWrite";
+import { saveLastCode, clearLastCode } from "../../../utils/lastCode";
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -250,7 +250,7 @@ describe("useEntryActions", () => {
     expect(addEntry).not.toHaveBeenCalled();
   });
 
-  it("handleSaveEntry: gültiger Work-Entry → addEntry + dualWriteSync(last_code)", async () => {
+  it("handleSaveEntry: gültiger Work-Entry → addEntry + saveLastCode", async () => {
     const addEntry = vi.fn();
     const form = makeForm({ startTime: "08:00", endTime: "16:30", code: 42 });
     const { result } = mount({
@@ -265,7 +265,7 @@ describe("useEntryActions", () => {
     expect(saved.start).toBe("08:00");
     expect(saved.end).toBe("16:30");
     expect(saved.netDuration).toBeGreaterThan(0);
-    expect(dualWriteSync).toHaveBeenCalledWith(expect.any(String), "last_code", 42);
+    expect(saveLastCode).toHaveBeenCalledWith(42);
   });
 
   it("handleSaveEntry: Krank im Auto-Modus → netDuration aus Sollzeit, start/end null", async () => {
@@ -409,7 +409,7 @@ describe("useDeleteActions", () => {
     );
     expect(deleteAllEntries).toHaveBeenCalledOnce();
     expect(setUserData).toHaveBeenCalledWith(expect.objectContaining({ name: "" }));
-    expect(dualRemoveSync).toHaveBeenCalledWith(expect.any(String), "last_code");
+    expect(clearLastCode).toHaveBeenCalled();
   });
 
   it("type='all' bleibt funktionsfähig, wenn Filesystem.writeFile fehlschlägt", async () => {

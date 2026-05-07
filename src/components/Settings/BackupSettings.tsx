@@ -15,9 +15,8 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Browser } from "@capacitor/browser";
 import { App } from "@capacitor/app";
 import CollapsibleCard from "./CollapsibleCard";
-import { STORAGE_KEYS } from "../../hooks/constants";
 import { isSQLiteActive } from "../../db/storageMode";
-import { getSetting } from "../../db/repositories/settingsRepo";
+import { getSetting, setSetting } from "../../db/repositories/settingsRepo";
 import {
   initGoogleAuth,
   signInGoogle,
@@ -177,14 +176,7 @@ const BackupSettings: React.FC<Props> = ({
 
   // Load initial data
   useEffect(() => {
-    // 1) Sofort aus localStorage laden (schnelle UI)
-    const cloudEnabled =
-      localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true";
-    setIsCloudConnected(cloudEnabled);
     setHasBackupFolder(hasBackupTarget());
-
-    const saved = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
-    if (saved) setLastBackupDate(saved);
 
     Promise.resolve(getGoogleAuthStatus())
       .then((googleStatus: Record<string, unknown>) => {
@@ -204,26 +196,25 @@ const BackupSettings: React.FC<Props> = ({
         setGoogleAccountLabel((storedAuth?.email as string) || (storedAuth?.accountEmail as string) || "");
       });
 
-    const failCount = parseInt(localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT) || "0", 10);
-    setBackupFailCount(failCount);
-    setBackupLastError(localStorage.getItem(STORAGE_KEYS.BACKUP_LAST_ERROR) || "");
-    setNextcloudBackupFailCount(parseInt(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT) || "0", 10));
-    setNextcloudBackupLastError(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR) || "");
-
-    // 2) SQLite nachladen (async, überschreibt wenn vorhanden)
+    // SQLite nachladen
     if (isSQLiteActive()) {
       (async () => {
         try {
-          const [sqlLastBackup, sqlFailCount, sqlCloudEnabled, sqlNcFailCount, sqlNcLastError] = await Promise.all([
+          const [sqlLastBackup, sqlFailCount, sqlLastError, sqlCloudEnabled, sqlBackupTarget, sqlNcFailCount, sqlNcLastError] = await Promise.all([
             getSetting("last_backup"),
             getSetting("backup_fail_count"),
+            getSetting("backup_last_error"),
             getSetting("cloud_sync_enabled"),
+            getSetting("backup_target"),
             getSetting("nextcloud_backup_fail_count"),
             getSetting("nextcloud_backup_last_error"),
           ]);
           if (sqlLastBackup) setLastBackupDate(sqlLastBackup as string);
           if (sqlFailCount !== null) {
             setBackupFailCount(parseInt(String(sqlFailCount), 10) || 0);
+          }
+          if (typeof sqlLastError === "string") {
+            setBackupLastError(sqlLastError);
           }
           if (sqlNcFailCount !== null) {
             setNextcloudBackupFailCount(parseInt(String(sqlNcFailCount), 10) || 0);
@@ -234,6 +225,9 @@ const BackupSettings: React.FC<Props> = ({
           if (sqlCloudEnabled !== null) {
             const enabled = !!sqlCloudEnabled;
             setIsCloudConnected(enabled);
+          }
+          if (sqlBackupTarget === "documents") {
+            setHasBackupFolder(true);
           }
           const refreshedStatus = await getGoogleAuthStatus() as Record<string, unknown>;
           setIsTokenValid(isGoogleConnectionReady(refreshedStatus as GoogleAuthStatus));
@@ -538,14 +532,12 @@ const BackupSettings: React.FC<Props> = ({
     if (isCloudConnected) {
       try {
         await signOutGoogle();
-        localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
         setIsCloudConnected(false);
         setIsTokenValid(false);
         setGoogleAccountLabel("");
         setAutoBackup(false);
       } catch (e) {
         log.error(e);
-        localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
         setIsCloudConnected(false);
         setIsTokenValid(false);
         setGoogleAccountLabel("");
@@ -556,7 +548,6 @@ const BackupSettings: React.FC<Props> = ({
         await initGoogleAuth().catch(() => {});
         const user = await signInGoogle() as GoogleSignInResult;
         if (user && user.authentication?.accessToken) {
-          localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
           setIsCloudConnected(true);
           setIsTokenValid(true);
           const refreshedStatus = await getGoogleAuthStatus().catch(() => null) as GoogleAuthStatus | null;
@@ -591,19 +582,19 @@ const BackupSettings: React.FC<Props> = ({
     if (hasBackupFolder) {
       await clearBackupTarget();
       setHasBackupFolder(false);
-      localStorage.removeItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
+      await setSetting("local_backup_enabled", false);
       toast(t("settings.backup.toast.localDisconnected"));
     } else {
       try {
         const success = await selectBackupFolder();
         if (success) {
           setHasBackupFolder(true);
-          localStorage.setItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED, "true");
+          await setSetting("local_backup_enabled", true);
           if (!autoBackup) setAutoBackup(true);
           toast.success(t("settings.backup.toast.localActivated"));
         }
       } catch {
-        // Partiellen State bereinigen (dualWrite könnte BACKUP_TARGET bereits gesetzt haben)
+        // Partiellen State bereinigen (BACKUP_TARGET könnte bereits gesetzt sein)
         await clearBackupTarget();
         toast.error(t("settings.backup.toast.folderCancelled"));
       }
@@ -619,7 +610,6 @@ const BackupSettings: React.FC<Props> = ({
       if (result?.success) {
         const now = new Date().toISOString();
         setLastBackupDate(now);
-        localStorage.setItem(STORAGE_KEYS.LAST_BACKUP, now);
 
         // Differenzierte Erfolgsmeldung
         const localLabel = t("settings.backup.targetLocal");
@@ -911,9 +901,12 @@ const BackupSettings: React.FC<Props> = ({
                   setIsRetryingBackup(true);
                   try {
                     await onTriggerManualBackup();
-                    // Nach dem Retry Fail-Count/Error aus localStorage neu einlesen
-                    setBackupFailCount(parseInt(localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT) || "0", 10));
-                    setBackupLastError(localStorage.getItem(STORAGE_KEYS.BACKUP_LAST_ERROR) || "");
+                    const [failCount, lastError] = await Promise.all([
+                      getSetting("backup_fail_count"),
+                      getSetting("backup_last_error"),
+                    ]);
+                    setBackupFailCount(parseInt(String(failCount || "0"), 10));
+                    setBackupLastError(String(lastError || ""));
                   } finally {
                     setIsRetryingBackup(false);
                   }
@@ -944,8 +937,12 @@ const BackupSettings: React.FC<Props> = ({
                   setIsRetryingBackup(true);
                   try {
                     await onTriggerManualBackup();
-                    setNextcloudBackupFailCount(parseInt(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT) || "0", 10));
-                    setNextcloudBackupLastError(localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR) || "");
+                    const [failCount, lastError] = await Promise.all([
+                      getSetting("nextcloud_backup_fail_count"),
+                      getSetting("nextcloud_backup_last_error"),
+                    ]);
+                    setNextcloudBackupFailCount(parseInt(String(failCount || "0"), 10));
+                    setNextcloudBackupLastError(String(lastError || ""));
                   } finally {
                     setIsRetryingBackup(false);
                   }

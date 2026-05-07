@@ -19,9 +19,9 @@ vi.mock("@capacitor/haptics", () => ({
   ImpactStyle: { Light: 0, Medium: 1, Heavy: 2 },
 }));
 
-const mockDualWriteSync = vi.fn();
-vi.mock("../../../utils/dualWrite", () => ({
-  dualWriteSync: (...args: unknown[]) => mockDualWriteSync(...args),
+const mockSaveLastCode = vi.fn();
+vi.mock("../../../utils/lastCode", () => ({
+  saveLastCode: (...args: unknown[]) => mockSaveLastCode(...args),
 }));
 
 import toast from "react-hot-toast";
@@ -375,17 +375,13 @@ describe("useEntryActions", () => {
       expect(saved.code).toBeNull();
     });
 
-    it("persistiert last_code via dualWriteSync für Standard-Codes", async () => {
+    it("persistiert last_code via settingsRepo für Standard-Codes", async () => {
       const form = makeForm({ code: 5 });
       const { result } = renderActions({ form });
 
       await saveEntry(result);
 
-      expect(mockDualWriteSync).toHaveBeenCalledWith(
-        expect.any(String),
-        "last_code",
-        5,
-      );
+      expect(mockSaveLastCode).toHaveBeenCalledWith(5);
     });
 
     it("persistiert KEIN last_code für Drive-Code", async () => {
@@ -394,7 +390,7 @@ describe("useEntryActions", () => {
 
       await saveEntry(result);
 
-      expect(mockDualWriteSync).not.toHaveBeenCalled();
+      expect(mockSaveLastCode).not.toHaveBeenCalled();
     });
 
     it("setzt View nach erfolgreichem Speichern auf 'dashboard'", async () => {
@@ -430,7 +426,7 @@ describe("useEntryActions", () => {
       expect(setView).not.toHaveBeenCalledWith("dashboard");
       expect(form.setEditingEntry).not.toHaveBeenCalledWith(null);
       expect(form.setProject).not.toHaveBeenCalledWith("");
-      expect(mockDualWriteSync).not.toHaveBeenCalled();
+      expect(mockSaveLastCode).not.toHaveBeenCalled();
     });
 
     it("zeigt bei updateEntry-Fehler keinen Erfolg und verlässt die Bearbeitung nicht", async () => {

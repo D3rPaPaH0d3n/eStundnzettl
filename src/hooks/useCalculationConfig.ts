@@ -1,10 +1,8 @@
 /**
  * useCalculationConfig — Hook für die per-User Rechenkonfiguration.
  *
- * Folgt dem gleichen Dual-Layer-Persistenz-Pattern wie `useSettings`:
- *   - Initialer State aus localStorage (synchron, kein Flash)
- *   - Async-Hydrate aus SQLite nach Mount
- *   - Dual-Write auf beiden Layern bei Änderungen
+ * SQLite ist die Source of Truth. Der Hook startet mit Locale-Defaults und
+ * hydriert nach dem Mount aus SQLite.
  *
  * Bestehende User ohne Config bekommen beim ersten Load eine
  * Default-Config, die **exakt ihrem heutigen Locale-Verhalten
@@ -29,19 +27,6 @@ import {
 import { logger } from "../utils/logger";
 
 const SETTINGS_KEY = "calculationConfig";
-const LOCAL_STORAGE_KEY = "estundnzettl_calculation_config";
-
-function loadFromLS(fallback: CalculationConfig): CalculationConfig {
-  try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw || raw === "undefined") return fallback;
-    const parsed = JSON.parse(raw);
-    return coerceCalculationConfig(parsed, fallback);
-  } catch {
-    return fallback;
-  }
-}
-
 interface UseCalculationConfigArgs {
   /** Aktuelle Locale — für Defaults bei neuen Usern. */
   locale: Locale;
@@ -67,7 +52,7 @@ export function useCalculationConfig({
   );
 
   const [calcConfig, setCalcConfigState] = useState<CalculationConfig>(() =>
-    loadFromLS(initialDefault.current)
+    initialDefault.current
   );
 
   const sqliteReady = useRef<boolean>(false);
@@ -121,13 +106,8 @@ export function useCalculationConfig({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─── Dual-Write bei jeder Änderung ───────────────────────
+  // ─── SQLite-Write bei jeder Änderung ─────────────────────
   useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(calcConfig));
-    } catch (err) {
-      logger.error("[useCalculationConfig] localStorage-Write fehlgeschlagen:", err);
-    }
     if (sqliteReady.current) {
       setSetting(SETTINGS_KEY, calcConfig).catch((err) =>
         logger.error("[useCalculationConfig] SQLite-Write fehlgeschlagen:", err)

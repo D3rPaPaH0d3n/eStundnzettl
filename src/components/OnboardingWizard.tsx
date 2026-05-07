@@ -414,10 +414,11 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     
     // FIX: Zuerst direkt in SQLite schreiben, DANN State updaten
     try {
-      // Direkt in SQLite schreiben (synchronisiert mit localStorage via useSettings)
       await setSetting("user", userDataToSave);
+      await setSetting("cloud_sync_enabled", formData.autoBackup);
+      await setSetting("local_backup_enabled", formData.localBackupEnabled);
     } catch {
-      // Fortfahren, useSettings wird es in localStorage schreiben
+      // Fortfahren, State wird unten aktualisiert
     }
     
     // Nextcloud Credentials speichern
@@ -430,10 +431,6 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         await setSetting("nextcloud_url", ncCredentials.server);
         await setSetting("nextcloud_user", ncCredentials.userId);
         await setSetting("nextcloud_enabled", true);
-        // Auch in localStorage für sofortige Verfügbarkeit (Keys MÜSSEN mit STORAGE_KEYS übereinstimmen!)
-        localStorage.setItem("estundnzettl_nextcloud_url", ncCredentials.server);
-        localStorage.setItem("estundnzettl_nextcloud_user", ncCredentials.userId);
-        localStorage.setItem("estundnzettl_nextcloud_enabled", "true");
       } catch (err) {
         log.error("Nextcloud settings save failed:", err);
       }
@@ -445,7 +442,6 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     if (!isRestoreFlow) {
       try {
         await setSetting("calculationConfig", formData.calcConfig);
-        localStorage.setItem("estundnzettl_calculation_config", JSON.stringify(formData.calcConfig));
       } catch (err) {
         log.error("CalculationConfig save failed:", err);
       }
@@ -457,7 +453,6 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     if (!isRestoreFlow && formData.localeId) {
       try {
         await setSetting("locale", formData.localeId);
-        localStorage.setItem(STORAGE_KEYS.LOCALE, formData.localeId);
       } catch (err) {
         log.error("Locale setting save failed:", err);
       }
@@ -470,7 +465,6 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       if (preset) {
         try {
           await bulkReplaceWorkCodes(preset.codes);
-          localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(preset.codes));
           importWorkCodes?.(preset.codes);
         } catch (err) {
           log.error("Work code preset load failed:", err);
@@ -478,7 +472,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       }
     }
 
-    // Jetzt State updaten (useSettings wird auch in localStorage schreiben)
+    // Jetzt State updaten
     setUserData?.(userDataToSave);
     setCloudSyncEnabled?.(formData.autoBackup);
     setLocalBackupEnabled?.(formData.localBackupEnabled);

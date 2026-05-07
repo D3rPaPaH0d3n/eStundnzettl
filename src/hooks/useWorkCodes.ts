@@ -1,7 +1,7 @@
 // ============================================================
 // useWorkCodes.js - Hook für Tätigkeitscodes Verwaltung
 //
-// Welle 2: SQLite-primär mit Dual-Write auf localStorage.
+// SQLite ist die Source of Truth.
 // API für Consumer bleibt 100% identisch.
 // ============================================================
 
@@ -27,8 +27,7 @@ import {
  * (Kogler Aufzugsbau, Allgemein), aber jeder User kann seine eigenen
  * Codes anlegen.
  *
- * Persistenz: SQLite-primär (`workCodesRepo`) mit localStorage-Fallback
- * für Init-Speed und Rollback bei SQLite-Fehler.
+ * Persistenz: SQLite (`workCodesRepo`).
  *
  * ### Return
  * - `workCodes` — sortierte Liste aller aktiven Codes
@@ -51,69 +50,59 @@ export const useWorkCodes = () => {
   const sqliteReady = useRef<boolean>(false);
 
   // -------------------------------------------------------
-  // Laden beim Start: localStorage sofort, dann SQLite nachladen
+  // Laden beim Start: SQLite nachladen
   // -------------------------------------------------------
   useEffect(() => {
-    // 1) Sofort aus localStorage laden (für schnelle UI)
-    let initialCodes: WorkCode[] = [];
-    const stored = localStorage.getItem(STORAGE_KEYS.WORK_CODES);
-    if (stored) {
-      try {
-        initialCodes = JSON.parse(stored);
-      } catch (e) {
-        logger.error("Fehler beim Laden der Work Codes:", e);
-        initialCodes = [];
-      }
-    }
-
-    // Neue User: Default-Preset
-    if (initialCodes.length === 0 && !stored) {
-      const defaultPreset = WORK_CODE_PRESETS.allgemein;
-      if (defaultPreset) {
-        initialCodes = JSON.parse(JSON.stringify(defaultPreset.codes));
-        localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(initialCodes));
-      }
-    }
-
-    setWorkCodes(initialCodes);
-
-    // 2) SQLite nachladen wenn verfügbar
+    let cancelled = false;
     if (isSQLiteActive()) {
       sqliteReady.current = true;
       (async () => {
         try {
           const sqlCodes = await getAllWorkCodes();
+          if (cancelled) return;
           if (sqlCodes && sqlCodes.length > 0) {
             setWorkCodes(sqlCodes);
-            // Dual-Write: localStorage aktualisieren
-            localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(sqlCodes));
+          } else {
+            const defaultPreset = WORK_CODE_PRESETS.allgemein;
+            const defaultCodes = defaultPreset ? JSON.parse(JSON.stringify(defaultPreset.codes)) : [];
+            setWorkCodes(defaultCodes);
+            await bulkReplaceWorkCodes(defaultCodes);
           }
         } catch (err) {
-          logger.error("[useWorkCodes] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
+          logger.error("[useWorkCodes] SQLite-Load fehlgeschlagen:", err);
           sqliteReady.current = false;
+        } finally {
+          if (!cancelled) setIsLoading(false);
         }
       })();
+    } else {
+      const stored = localStorage.getItem(STORAGE_KEYS.WORK_CODES);
+      if (stored) {
+        try {
+          setWorkCodes(JSON.parse(stored));
+        } catch {
+          setWorkCodes([]);
+        }
+      } else {
+        const defaultPreset = WORK_CODE_PRESETS.allgemein;
+        setWorkCodes(defaultPreset ? JSON.parse(JSON.stringify(defaultPreset.codes)) : []);
+      }
+      setIsLoading(false);
     }
 
-    setIsLoading(false);
+    return () => { cancelled = true; };
   }, []);
 
   // -------------------------------------------------------
-  // Dual-Write: localStorage immer aktuell halten
+  // SQLite-Write Helper mit State-Rollback bei Persistenzfehler
   // -------------------------------------------------------
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(workCodes));
-  }, [workCodes]);
-
-  // -------------------------------------------------------
-  // SQLite-Write Helper (fire-and-forget)
-  // -------------------------------------------------------
-  const sqliteWrite = useCallback(async (operation: () => Promise<void>) => {
+  const sqliteWrite = useCallback(async (operation: () => Promise<void>, rollback?: () => void) => {
     if (!sqliteReady.current) return;
     try {
       await operation();
     } catch (err) {
       logger.error("[useWorkCodes] SQLite-Write fehlgeschlagen:", err);
+      rollback?.();
     }
   }, []);
 
@@ -122,10 +111,14 @@ export const useWorkCodes = () => {
   // -------------------------------------------------------
   const saveWorkCodes = useCallback(
     (codes: WorkCode[]) => {
+      const previousCodes = workCodes;
       setWorkCodes(codes);
-      sqliteWrite(() => bulkReplaceWorkCodes(codes));
+      if (!isSQLiteActive()) {
+        localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(codes));
+      }
+      sqliteWrite(() => bulkReplaceWorkCodes(codes), () => setWorkCodes(previousCodes));
     },
-    [sqliteWrite]
+    [workCodes, sqliteWrite]
   );
 
   // -------------------------------------------------------
@@ -141,7 +134,10 @@ export const useWorkCodes = () => {
 
       const updatedCodes = [...workCodes, newCode];
       setWorkCodes(updatedCodes);
-      sqliteWrite(() => insertWorkCode(newCode));
+      if (!isSQLiteActive()) {
+        localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(updatedCodes));
+      }
+      sqliteWrite(() => insertWorkCode(newCode), () => setWorkCodes(workCodes));
       return true;
     },
     [workCodes, sqliteWrite]
@@ -159,7 +155,10 @@ export const useWorkCodes = () => {
         code.id === id ? { ...code, label: trimmedLabel } : code
       );
       setWorkCodes(updatedCodes);
-      sqliteWrite(() => updateWorkCodeInDb(id, trimmedLabel));
+      if (!isSQLiteActive()) {
+        localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(updatedCodes));
+      }
+      sqliteWrite(() => updateWorkCodeInDb(id, trimmedLabel), () => setWorkCodes(workCodes));
       return true;
     },
     [workCodes, sqliteWrite]
@@ -172,7 +171,10 @@ export const useWorkCodes = () => {
     (id: number) => {
       const updatedCodes = workCodes.filter((code) => code.id !== id);
       setWorkCodes(updatedCodes);
-      sqliteWrite(() => deleteWorkCodeFromDb(id));
+      if (!isSQLiteActive()) {
+        localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(updatedCodes));
+      }
+      sqliteWrite(() => deleteWorkCodeFromDb(id), () => setWorkCodes(workCodes));
     },
     [workCodes, sqliteWrite]
   );

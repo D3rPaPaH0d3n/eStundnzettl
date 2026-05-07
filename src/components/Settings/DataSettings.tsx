@@ -111,13 +111,6 @@ const DataSettings: React.FC<Props> = ({
     const demoEntries = DEMO_DATA.generateEntries();
     const demoWorkCodes = DEMO_DATA.workCodes;
 
-    // Dual-Write: localStorage (für Web/Dev Fallback)
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
-    localStorage.setItem(STORAGE_KEYS.ENTRIES, JSON.stringify(demoEntries));
-    localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(demoWorkCodes));
-    localStorage.removeItem(STORAGE_KEYS.LAST_CODE);
-
-    // SQLite (für Android)
     if (isSQLiteActive()) {
       try {
         await Promise.all([

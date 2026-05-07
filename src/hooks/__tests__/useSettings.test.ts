@@ -194,7 +194,7 @@ describe("useSettings", () => {
     expect(setSetting).not.toHaveBeenCalledWith("user", expect.objectContaining({ name: "" }));
   });
 
-  it("lets SQLite values override localStorage only after the async DB read is ready", async () => {
+  it("hydrates domain settings from SQLite without using localStorage as source of truth", async () => {
     vi.mocked(isSQLiteActive).mockReturnValue(true);
 
     const localUser = {
@@ -231,7 +231,7 @@ describe("useSettings", () => {
 
     const { result } = renderHook(() => useSettings());
 
-    expect(result.current.userData.name).toBe("Local User");
+    expect(result.current.userData.name).toBe("");
     expect(result.current.theme).toBe("light");
     expect(setSetting).not.toHaveBeenCalled();
 
@@ -249,9 +249,7 @@ describe("useSettings", () => {
       expect(setSetting).toHaveBeenCalledWith("user", expect.objectContaining({ name: "SQLite User" }));
     });
 
-    const storedSqliteUser = localStorage.getItem("estundnzettl_user");
-    expect(storedSqliteUser).not.toBeNull();
-    expect(JSON.parse(storedSqliteUser ?? "{}").name).toBe("SQLite User");
+    expect(localStorage.getItem("estundnzettl_user")).toBe(JSON.stringify(localUser));
     expect(localStorage.getItem("estundnzettl_theme")).toBe("dark");
     expect(setSetting).not.toHaveBeenCalledWith("user", expect.objectContaining({ name: "Local User" }));
   });

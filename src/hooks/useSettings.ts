@@ -1,7 +1,7 @@
 /**
  * useSettings.js — Hook für App-Settings
  *
- * Welle 2: SQLite-primär mit Dual-Write auf localStorage als Sicherheitsnetz.
+ * SQLite ist die Source of Truth fuer Domain-Settings.
  * API für Consumer bleibt 100% identisch.
  *
  * Settings-Keys in SQLite (settings-Tabelle):
@@ -29,9 +29,8 @@ import {
 
 type SettingsStorageStatus = "fallback" | "loading" | "ready" | "failed";
 
-// ─── localStorage Helper (identisch zum Original) ───────────
-
 function loadUserDataFromLS(): UserData | null {
+  if (isSQLiteActive()) return null;
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.USER);
     if (stored && stored !== "undefined") {
@@ -59,13 +58,13 @@ function defaultUserData(): UserData {
 // ─── Hook ────────────────────────────────────────────────────
 
 /**
- * useSettings — Zentrale App-Einstellungen mit Dual-Layer-Persistenz.
+ * useSettings — Zentrale App-Einstellungen mit SQLite-Persistenz.
  *
  * Verwaltet alle persistierten User-Präferenzen in einem Hook:
  * Profil (userData), Theme, Backup-Targets (Google Drive, lokaler
- * Ordner, Nextcloud). Jede Änderung wird synchron in localStorage
- * geschrieben und asynchron zusätzlich in SQLite (`settingsRepo`),
- * mit Rollback bei SQLite-Fehler.
+ * Ordner, Nextcloud). Domain-Settings werden in SQLite (`settingsRepo`)
+ * gespeichert. localStorage bleibt nur fuer UI-/Legacy-Caches wie Theme-
+ * Prepaint oder alte Nextcloud-Secret-Migrationen relevant.
  *
  * ### Nextcloud-Sonderbehandlung
  * Neue Nextcloud-App-Passwörter werden in nativer Secure Storage
@@ -97,7 +96,6 @@ function defaultUserData(): UserData {
  * Hooks/Komponenten erhalten die Werte als Props durchgereicht.
  */
 export function useSettings() {
-  // --- Initialer State: immer sofort aus localStorage (kein async-Warten) ---
   const [userData, setUserData] = useState<UserData>(() => loadUserDataFromLS() || defaultUserData());
 
   const [theme, setTheme] = useState<Theme>(
@@ -105,11 +103,11 @@ export function useSettings() {
   );
 
   const [cloudSyncEnabled, setCloudSyncEnabled] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true"
+    () => !isSQLiteActive() && localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED) === "true"
   );
 
   const [localBackupEnabled, setLocalBackupEnabled] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true"
+    () => !isSQLiteActive() && localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED) === "true"
   );
 
   // Locale (länder-/regions-spezifische Berechnung)
@@ -123,13 +121,13 @@ export function useSettings() {
 
   // Nextcloud
   const [nextcloudEnabled, setNextcloudEnabled] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true"
+    () => !isSQLiteActive() && localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_ENABLED) === "true"
   );
   const [nextcloudUrl, setNextcloudUrl] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || ""
+    () => (!isSQLiteActive() && localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL)) || ""
   );
   const [nextcloudUser, setNextcloudUser] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || ""
+    () => (!isSQLiteActive() && localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER)) || ""
   );
   // Sync-Init nur für Legacy-"obf:"-Werte. "enc:v1:"-Werte werden im SQLite-Load-Effekt
   // asynchron entschlüsselt und setzen den State dann korrekt.
@@ -204,7 +202,7 @@ export function useSettings() {
         setSettingsStorageStatus("ready");
       } catch (err) {
         if (cancelled) return;
-        logger.error("[useSettings] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
+        logger.error("[useSettings] SQLite-Load fehlgeschlagen:", err);
         setSqliteReady(false);
         setSettingsStorageStatus("failed");
         setSettingsStorageError(err instanceof Error ? err.message : String(err));
@@ -237,13 +235,19 @@ export function useSettings() {
     }
   }, [sqliteReady]);
 
-  // ─── Persistenz: Dual-Write (localStorage + SQLite) ───
+  const localFallbackWrite = useCallback((key: string, value: string | null) => {
+    if (isSQLiteActive()) return;
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  }, []);
+
+  // ─── Persistenz: Domain-Settings nach SQLite ───
 
   // User Data
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+    localFallbackWrite(STORAGE_KEYS.USER, JSON.stringify(userData));
     sqliteWrite("user", userData);
-  }, [userData, sqliteWrite]);
+  }, [userData, sqliteWrite, localFallbackWrite]);
 
   // Theme (+ DOM-Klasse)
   useEffect(() => {
@@ -272,30 +276,28 @@ export function useSettings() {
 
   // Cloud Sync
   useEffect(() => {
-    if (cloudSyncEnabled) {
-      localStorage.setItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED, "true");
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
-    }
+    localFallbackWrite(
+      STORAGE_KEYS.CLOUD_SYNC_ENABLED,
+      cloudSyncEnabled ? "true" : null,
+    );
     sqliteWrite("cloud_sync_enabled", cloudSyncEnabled);
-  }, [cloudSyncEnabled, sqliteWrite]);
+  }, [cloudSyncEnabled, sqliteWrite, localFallbackWrite]);
 
   // Local Backup
   useEffect(() => {
-    if (localBackupEnabled) {
-      localStorage.setItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED, "true");
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
-    }
+    localFallbackWrite(
+      STORAGE_KEYS.LOCAL_BACKUP_ENABLED,
+      localBackupEnabled ? "true" : null,
+    );
     sqliteWrite("local_backup_enabled", localBackupEnabled);
-  }, [localBackupEnabled, sqliteWrite]);
+  }, [localBackupEnabled, sqliteWrite, localFallbackWrite]);
 
   // Locale (null = noch nicht gesetzt; skip initialen null-Write)
   useEffect(() => {
     if (locale === null) return;
-    localStorage.setItem(STORAGE_KEYS.LOCALE, locale);
+    localFallbackWrite(STORAGE_KEYS.LOCALE, locale);
     sqliteWrite("locale", locale);
-  }, [locale, sqliteWrite]);
+  }, [locale, sqliteWrite, localFallbackWrite]);
 
   const setLocale = useCallback((id: LocaleId) => {
     if (!(id in LOCALES)) {
@@ -307,23 +309,22 @@ export function useSettings() {
 
   // Nextcloud
   useEffect(() => {
-    if (nextcloudEnabled) {
-      localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_ENABLED, "true");
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.NEXTCLOUD_ENABLED);
-    }
+    localFallbackWrite(
+      STORAGE_KEYS.NEXTCLOUD_ENABLED,
+      nextcloudEnabled ? "true" : null,
+    );
     sqliteWrite("nextcloud_enabled", nextcloudEnabled);
-  }, [nextcloudEnabled, sqliteWrite]);
+  }, [nextcloudEnabled, sqliteWrite, localFallbackWrite]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_URL, nextcloudUrl);
+    localFallbackWrite(STORAGE_KEYS.NEXTCLOUD_URL, nextcloudUrl);
     sqliteWrite("nextcloud_url", nextcloudUrl);
-  }, [nextcloudUrl, sqliteWrite]);
+  }, [nextcloudUrl, sqliteWrite, localFallbackWrite]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.NEXTCLOUD_USER, nextcloudUser);
+    localFallbackWrite(STORAGE_KEYS.NEXTCLOUD_USER, nextcloudUser);
     sqliteWrite("nextcloud_user", nextcloudUser);
-  }, [nextcloudUser, sqliteWrite]);
+  }, [nextcloudUser, sqliteWrite, localFallbackWrite]);
 
   useEffect(() => {
     let cancelled = false;

@@ -21,7 +21,7 @@ vi.mock("../nextcloudSecret", () => ({
   getNextcloudAppPassword: vi.fn(),
 }));
 vi.mock("../../db/storageMode", () => ({
-  isSQLiteActive: () => false,
+  isSQLiteActive: vi.fn(() => true),
 }));
 vi.mock("../../db/repositories/settingsRepo", () => ({
   setSetting: vi.fn(),
@@ -49,6 +49,8 @@ import {
 } from "../storageBackup";
 import { uploadBackup } from "../nextcloudClient";
 import { getNextcloudAppPassword } from "../nextcloudSecret";
+import { getSetting } from "../../db/repositories/settingsRepo";
+import { getAllEntries } from "../../db/repositories/entriesRepo";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -178,10 +180,17 @@ describe("analyzeBackupData", () => {
 
 describe("triggerManualBackup", () => {
   it("liest das Nextcloud-App-Passwort aus Secure Storage statt aus Legacy-Storage", async () => {
-    localStorage.setItem("estundnzettl_nextcloud_enabled", "true");
-    localStorage.setItem("estundnzettl_nextcloud_url", "https://cloud.invalid/remote.php/dav/files/demo");
-    localStorage.setItem("estundnzettl_nextcloud_user", "demo-user");
-    localStorage.setItem("estundnzettl_entries", JSON.stringify([{ id: 1, date: "2024-01-01", type: "work" }]));
+    vi.mocked(getAllEntries).mockResolvedValue([{ id: 1, date: "2024-01-01", type: "work" } as never]);
+    vi.mocked(getSetting).mockImplementation(async (key: string) => {
+      const values: Record<string, unknown> = {
+        user: { name: "Demo", position: "", photo: null, workDays: [] },
+        calculationConfig: null,
+        nextcloud_enabled: true,
+        nextcloud_url: "https://cloud.invalid/remote.php/dav/files/demo",
+        nextcloud_user: "demo-user",
+      };
+      return values[key] ?? null;
+    });
     vi.mocked(getNextcloudAppPassword).mockResolvedValue("fixture-secure-pass");
     vi.mocked(uploadBackup).mockResolvedValue(undefined);
 

@@ -12,7 +12,7 @@ import { Capacitor } from "@capacitor/core";
 import { uploadBinaryToPath } from "./nextcloudClient";
 import { uploadPdfArchiveFile } from "./googleDrivePdfArchive";
 import { getNextcloudAppPassword } from "./nextcloudSecret";
-import { STORAGE_KEYS } from "../hooks/constants";
+import { getSetting } from "../db/repositories/settingsRepo";
 import { logger } from "./logger";
 import { getErrorMessage } from "./errorUtils";
 
@@ -117,8 +117,15 @@ export async function writeLocalArchive(filename: string, base64: string, blob?:
  * (gleicher Pfad wie `useAutoBackup`).
  */
 export async function uploadNextcloudArchive(filename: string, base64: string): Promise<ArchiveResult> {
-  const ncUrl = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_URL) || "";
-  const ncUser = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_USER) || "";
+  let ncUrl = "";
+  let ncUser = "";
+  try {
+    ncUrl = String(await getSetting("nextcloud_url") || "");
+    ncUser = String(await getSetting("nextcloud_user") || "");
+  } catch {
+    ncUrl = localStorage.getItem("estundnzettl_nextcloud_url") || "";
+    ncUser = localStorage.getItem("estundnzettl_nextcloud_user") || "";
+  }
   const ncPass = await getNextcloudAppPassword();
   if (!ncUrl || !ncUser || !ncPass) {
     return { ok: false, error: "Nextcloud nicht konfiguriert", target: "nextcloud" };

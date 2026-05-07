@@ -7,15 +7,15 @@ import type { Locale } from "../../locales/types";
 import { toLocalDateString } from "../../utils";
 import { parseTime, calculateEntryNetDuration, getTargetMinutesForDate } from "../../utils/timeCalculations";
 import { generateEntryId } from "../../utils/entryId";
-import { dualWriteSync } from "../../utils/dualWrite";
-import { STORAGE_KEYS, WORK_CODE } from "../constants";
+import { saveLastCode } from "../../utils/lastCode";
+import { WORK_CODE } from "../constants";
 
 /**
  * Handler rund um das Entry-Formular: Neu, Bearbeiten, Speichern.
  *
  * Die komplette Validierung (Start/End, Overlap) und die Logik zur
  * Ermittlung von netDuration und storedType bleibt hier zentralisiert,
- * genauso wie die "last code"-Persistenz über dualWriteSync.
+ * genauso wie die "last code"-Persistenz über settingsRepo.
  */
 interface UseEntryActionsProps {
   form: FormState;
@@ -235,7 +235,7 @@ export function useEntryActions({
         usedCode !== WORK_CODE.DRIVE &&
         usedCode !== WORK_CODE.ARRIVAL
       ) {
-        dualWriteSync(STORAGE_KEYS.LAST_CODE, "last_code", usedCode);
+        saveLastCode(usedCode);
       }
 
       toast.success(form.editingEntry ? t("toasts.entry.updated") : t("toasts.entry.saved"));

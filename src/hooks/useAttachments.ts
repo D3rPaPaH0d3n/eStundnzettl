@@ -2,14 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
 import type { Attachment } from '../types';
-import { STORAGE_KEYS } from "./constants";
 import { isSQLiteActive } from "../db/storageMode";
 import { logger } from "../utils/logger";
 import {
   getAllAttachments,
   insertAttachment,
   deleteAttachmentFromDb,
-  deleteAttachmentsByEntryId,
   getAllLabelSuggestions,
   pushLabelSuggestion,
 } from "../db/repositories/attachmentsRepo";
@@ -22,21 +20,6 @@ const ALLOWED_MIME_TYPES = [
   "image/png",
   "image/webp",
 ];
-
-// ─── localStorage Helpers (Dual-Write / Fallback) ────────────
-
-const readJson = <T>(key: string, fallback: T): T => {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-};
-
-const persistJson = (key: string, value: unknown): void => {
-  localStorage.setItem(key, JSON.stringify(value));
-};
 
 // ─── File Helpers ────────────────────────────────────────────
 
@@ -73,19 +56,19 @@ const fileToBase64 = (file: File): Promise<string> =>
   });
 
 /**
- * useAttachments — Welle 3: SQLite-primär mit Dual-Write auf localStorage.
+ * useAttachments — SQLite ist die Source of Truth fuer Attachment-Metadaten.
  *
  * Identische API wie bisher. Intern:
- * - Initialer State aus localStorage (sofortige UI)
+ * - Initialer leerer State
  * - SQLite-Daten nachladen wenn verfügbar
- * - Schreiboperationen: SQLite + localStorage (Dual-Write)
+ * - Schreiboperationen: SQLite + State
  */
 /**
  * useAttachments — Verwaltet Datei-Anhänge (PDF, Bilder) zu Einträgen.
  *
  * Anhänge werden in zwei Schichten gespeichert:
  * - **Metadata** (id, entryId, label, fileName, mimeType, fileSize) →
- *   SQLite (`attachmentsRepo`) mit localStorage-Fallback
+ *   SQLite (`attachmentsRepo`)
  * - **Dateiinhalte** → Capacitor Filesystem unter
  *   `Directory.Data/attachments/` als Base64
  *
@@ -117,9 +100,8 @@ const fileToBase64 = (file: File): Promise<string> =>
  * Datenquelle für Anhänge und wird einmal in `App.tsx` instanziiert.
  */
 export function useAttachments() {
-  // Sofort aus localStorage laden (schnelle UI, kein async-Warten)
-  const [attachments, setAttachments] = useState<Attachment[]>(() => readJson<Attachment[]>(STORAGE_KEYS.ATTACHMENTS, []));
-  const [labelSuggestions, setLabelSuggestions] = useState<string[]>(() => readJson<string[]>(STORAGE_KEYS.ATTACHMENT_LABELS, []));
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [labelSuggestions, setLabelSuggestions] = useState<string[]>([]);
 
   // ─── SQLite nachladen beim Start ───────────────────────────
   useEffect(() => {
@@ -136,34 +118,16 @@ export function useAttachments() {
 
         if (cancelled) return;
 
-        // SQLite-Daten haben Vorrang (sind die Source of Truth)
-        if (sqlAttachments.length > 0 || readJson(STORAGE_KEYS.ATTACHMENTS, []).length === 0) {
-          setAttachments(sqlAttachments);
-          // Dual-Write: localStorage aktualisieren
-          persistJson(STORAGE_KEYS.ATTACHMENTS, sqlAttachments);
-        }
-
-        if (sqlLabels.length > 0 || readJson(STORAGE_KEYS.ATTACHMENT_LABELS, []).length === 0) {
-          setLabelSuggestions(sqlLabels);
-          persistJson(STORAGE_KEYS.ATTACHMENT_LABELS, sqlLabels);
-        }
+        setAttachments(sqlAttachments);
+        setLabelSuggestions(sqlLabels);
       } catch (err) {
-        logger.error("[useAttachments] SQLite-Load fehlgeschlagen, behalte localStorage-Daten:", err);
+        logger.error("[useAttachments] SQLite-Load fehlgeschlagen:", err);
       }
     };
 
     loadFromSQLite();
     return () => { cancelled = true; };
   }, []);
-
-  // ─── Dual-Write: localStorage immer aktuell halten ─────────
-  useEffect(() => {
-    persistJson(STORAGE_KEYS.ATTACHMENTS, attachments);
-  }, [attachments]);
-
-  useEffect(() => {
-    persistJson(STORAGE_KEYS.ATTACHMENT_LABELS, labelSuggestions);
-  }, [labelSuggestions]);
 
   // ─── Label-Suggestion Update (SQLite + State) ─────────────
 
@@ -178,7 +142,7 @@ export function useAttachments() {
       return next.slice(0, 20);
     });
 
-    // SQLite (fire & forget, Dual-Write)
+    // SQLite (fire & forget)
     if (isSQLiteActive()) {
       pushLabelSuggestion(trimmed).catch((err) => {
         logger.error("[useAttachments] SQLite label-push fehlgeschlagen:", err);
@@ -229,15 +193,26 @@ export function useAttachments() {
       createdAt: new Date().toISOString(),
     };
 
+    // SQLite ist Source of Truth für Metadaten: erst persistieren,
+    // dann den UI-State aktualisieren. Wenn der DB-Write fehlschlägt,
+    // räumen wir die bereits geschriebene Datei wieder weg.
+    if (isSQLiteActive()) {
+      try {
+        await insertAttachment(attachment);
+      } catch (err) {
+        try {
+          await Filesystem.deleteFile({
+            path: storagePath,
+            directory: Directory.Data,
+          });
+        } catch { /* best effort cleanup */ }
+        logger.error("[useAttachments] SQLite-Insert fehlgeschlagen:", err);
+        throw new Error("Anhang konnte nicht gespeichert werden.");
+      }
+    }
+
     setAttachments((prev) => [attachment, ...prev]);
     updateSuggestions(trimmedLabel);
-
-    // SQLite-Write (fire & forget, localStorage hat die Daten bereits)
-    if (isSQLiteActive()) {
-      insertAttachment(attachment).catch((err) => {
-        logger.error("[useAttachments] SQLite-Insert fehlgeschlagen:", err);
-      });
-    }
 
     return attachment;
   }, [updateSuggestions]);
@@ -245,44 +220,38 @@ export function useAttachments() {
   // ─── Remove Attachment ────────────────────────────────────
 
   const removeAttachment = useCallback(async (attachmentId: string) => {
-    let removed: Attachment | null = null;
+    const removed = attachments.find((item) => item.id === attachmentId) || null;
+    if (!removed) return;
 
-    setAttachments((prev) => {
-      removed = prev.find((item) => item.id === attachmentId) || null;
-      return prev.filter((item) => item.id !== attachmentId);
-    });
-
-    // SQLite löschen (fire & forget)
+    // SQLite zuerst löschen; wenn das fehlschlägt, bleiben State und Datei konsistent.
     if (isSQLiteActive()) {
-      deleteAttachmentFromDb(attachmentId).catch((err) => {
+      try {
+        await deleteAttachmentFromDb(attachmentId);
+      } catch (err) {
         logger.error("[useAttachments] SQLite-Delete fehlgeschlagen:", err);
-      });
+        throw new Error("Anhang konnte nicht gelöscht werden.");
+      }
     }
 
-    if (removed && (removed as Attachment).storagePath) {
+    setAttachments((prev) => prev.filter((item) => item.id !== attachmentId));
+
+    if (removed.storagePath) {
       try {
         ensureNative();
         await Filesystem.deleteFile({
-          path: (removed as Attachment).storagePath,
+          path: removed.storagePath,
           directory: Directory.Data,
         });
       } catch {
         // Datei evtl. schon weg — Metadaten trotzdem entfernt.
       }
     }
-  }, []);
+  }, [attachments]);
 
   // ─── Remove all Attachments for an Entry ──────────────────
 
   const removeAttachmentsForEntry = useCallback(async (entryId: number | string) => {
     const matching = attachments.filter((item) => item.entryId === entryId);
-
-    // SQLite: Bulk-Delete per entryId (effizienter als einzeln)
-    if (isSQLiteActive()) {
-      deleteAttachmentsByEntryId(entryId).catch((err) => {
-        logger.error("[useAttachments] SQLite bulk-delete fehlgeschlagen:", err);
-      });
-    }
 
     for (const item of matching) {
       await removeAttachment(item.id);

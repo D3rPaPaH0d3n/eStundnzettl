@@ -34,6 +34,17 @@ vi.mock("../nextcloudSecret", () => ({
   getNextcloudAppPassword: vi.fn(async () => localStorage.getItem("estundnzettl_nextcloud_pass") || ""),
 }));
 
+vi.mock("../../db/repositories/settingsRepo", () => ({
+  getSetting: vi.fn(async (key: string) => {
+    const map: Record<string, string> = {
+      nextcloud_url: "estundnzettl_nextcloud_url",
+      nextcloud_user: "estundnzettl_nextcloud_user",
+    };
+    const lsKey = map[key];
+    return lsKey ? localStorage.getItem(lsKey) : null;
+  }),
+}));
+
 vi.mock("../logger", () => ({
   logger: { scope: () => ({ warn: vi.fn(), info: vi.fn(), error: vi.fn() }) },
 }));

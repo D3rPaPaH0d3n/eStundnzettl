@@ -12,8 +12,8 @@ vi.mock("../../db/repositories/settingsRepo", () => ({
 }));
 
 import { useLastCode } from "../useLastCode";
-import { isSQLiteActive } from "../../db/storageMode";
 import { getSetting } from "../../db/repositories/settingsRepo";
+import { isSQLiteActive } from "../../db/storageMode";
 
 // ─── Tests ──────────────────────────────────────────────────
 
@@ -21,11 +21,12 @@ describe("useLastCode", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    vi.mocked(isSQLiteActive).mockReturnValue(false);
     vi.mocked(getSetting).mockResolvedValue(null);
+    vi.mocked(isSQLiteActive).mockReturnValue(true);
   });
 
   it("returns WORK_CODE.DEFAULT (1) when nothing is stored and no codes exist", () => {
+    vi.mocked(isSQLiteActive).mockReturnValue(false);
     const { result } = renderHook(() =>
       useLastCode({ hasAnyCodes: false, workCodes: [] })
     );
@@ -34,18 +35,18 @@ describe("useLastCode", () => {
     expect(code).toBe(1); // WORK_CODE.DEFAULT
   });
 
-  it("returns last code from localStorage when available", () => {
-    localStorage.setItem("estundnzettl_last_code", "5");
+  it("returns last code from SQLite when available", async () => {
+    vi.mocked(getSetting).mockResolvedValue("5");
 
     const { result } = renderHook(() =>
       useLastCode({ hasAnyCodes: true, workCodes: [{ id: 1, label: "A" }] })
     );
 
-    const code = result.current();
-    expect(code).toBe(5);
+    await vi.waitFor(() => expect(result.current()).toBe(5));
   });
 
   it("returns first workCode id when no last code is stored but codes exist", () => {
+    vi.mocked(isSQLiteActive).mockReturnValue(false);
     const { result } = renderHook(() =>
       useLastCode({
         hasAnyCodes: true,
@@ -60,20 +61,21 @@ describe("useLastCode", () => {
     expect(code).toBe(7);
   });
 
-  it("returns numeric value even when localStorage stores a string", () => {
-    localStorage.setItem("estundnzettl_last_code", "19");
+  it("returns numeric value even when SQLite stores a string", async () => {
+    vi.mocked(getSetting).mockResolvedValue("19");
 
     const { result } = renderHook(() =>
       useLastCode({ hasAnyCodes: false, workCodes: [] })
     );
 
+    await vi.waitFor(() => expect(result.current()).toBe(19));
     const code = result.current();
     expect(code).toBe(19);
     expect(typeof code).toBe("number");
   });
 
-  it("prefers last code over first workCode when both exist", () => {
-    localStorage.setItem("estundnzettl_last_code", "42");
+  it("prefers last code over first workCode when both exist", async () => {
+    vi.mocked(getSetting).mockResolvedValue("42");
 
     const { result } = renderHook(() =>
       useLastCode({
@@ -82,12 +84,10 @@ describe("useLastCode", () => {
       })
     );
 
-    const code = result.current();
-    expect(code).toBe(42);
+    await vi.waitFor(() => expect(result.current()).toBe(42));
   });
 
   it("loads last code from SQLite when SQLite is active", async () => {
-    vi.mocked(isSQLiteActive).mockReturnValue(true);
     vi.mocked(getSetting).mockResolvedValue("99");
 
     const { result } = renderHook(() =>
@@ -95,18 +95,11 @@ describe("useLastCode", () => {
     );
 
     // Wait for the async SQLite load effect to settle
-    await vi.waitFor(() => {
-      expect(getSetting).toHaveBeenCalledWith("last_code");
-    });
-
-    const code = result.current();
-    expect(code).toBe(99);
+    await vi.waitFor(() => expect(result.current()).toBe(99));
   });
 
-  it("falls back to localStorage when SQLite getSetting fails", async () => {
-    vi.mocked(isSQLiteActive).mockReturnValue(true);
+  it("falls back to first workCode when SQLite getSetting fails", async () => {
     vi.mocked(getSetting).mockRejectedValue(new Error("db error"));
-    localStorage.setItem("estundnzettl_last_code", "15");
 
     const { result } = renderHook(() =>
       useLastCode({ hasAnyCodes: true, workCodes: [{ id: 1, label: "A" }] })
@@ -116,8 +109,19 @@ describe("useLastCode", () => {
       expect(getSetting).toHaveBeenCalled();
     });
 
-    const code = result.current();
-    expect(code).toBe(15);
+    expect(result.current()).toBe(1);
+  });
+
+  it("reads last code from localStorage when SQLite is inactive", async () => {
+    vi.mocked(isSQLiteActive).mockReturnValue(false);
+    localStorage.setItem("estundnzettl_last_code", "77");
+
+    const { result } = renderHook(() =>
+      useLastCode({ hasAnyCodes: true, workCodes: [{ id: 1, label: "A" }] })
+    );
+
+    await vi.waitFor(() => expect(result.current()).toBe(77));
+    expect(getSetting).not.toHaveBeenCalled();
   });
 
   it("getDefaultCode is a callable function", () => {

@@ -1,17 +1,13 @@
 import { useEffect, useRef, useCallback } from "react";
-import { STORAGE_KEYS, WORK_CODE } from "./constants";
-import { isSQLiteActive } from "../db/storageMode";
-import { getSetting } from "../db/repositories/settingsRepo";
+import { WORK_CODE } from "./constants";
+import { loadLastCode } from "../utils/lastCode";
 import type { WorkCode } from "../types";
 
 /**
  * useLastCode — Liefert eine stabile `getDefaultCode()`-Callback,
  * die den zuletzt vom User ausgewählten Work Code zurückgibt.
  *
- * Beim Mount wird der letzte Code aus localStorage
- * (`STORAGE_KEYS.LAST_CODE`) gelesen, bei aktivem SQLite zusätzlich
- * async aus der Settings-Tabelle (der SQLite-Wert überschreibt den
- * localStorage-Wert wenn er existiert).
+ * Beim Mount wird der letzte Code aus SQLite/settingsRepo gelesen.
  *
  * Reihenfolge der Fallbacks in `getDefaultCode()`:
  * 1. Der zuletzt verwendete Code (Ref)
@@ -31,26 +27,23 @@ export function useLastCode({
   hasAnyCodes: boolean;
   workCodes: WorkCode[];
 }): () => number {
-  const lastCodeRef = useRef(localStorage.getItem(STORAGE_KEYS.LAST_CODE));
+  const lastCodeRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    if (isSQLiteActive()) {
-      (async () => {
-        try {
-          const sqlVal = await getSetting("last_code");
-          if (!cancelled && sqlVal !== null) {
-            lastCodeRef.current = String(sqlVal);
-          }
-        } catch { /* keep localStorage value */ }
-      })();
-    }
+    loadLastCode()
+      .then((code) => {
+        if (!cancelled) lastCodeRef.current = code;
+      })
+      .catch(() => {
+        if (!cancelled) lastCodeRef.current = null;
+      });
     return () => { cancelled = true; };
   }, []);
 
   return useCallback(() => {
-    const lastCode = lastCodeRef.current || localStorage.getItem(STORAGE_KEYS.LAST_CODE);
-    if (lastCode) return Number(lastCode);
+    const lastCode = lastCodeRef.current;
+    if (lastCode !== null) return lastCode;
     if (hasAnyCodes) return workCodes[0].id;
     return WORK_CODE.DEFAULT;
   }, [hasAnyCodes, workCodes]);

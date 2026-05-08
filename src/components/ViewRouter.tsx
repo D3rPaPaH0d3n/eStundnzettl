@@ -68,7 +68,7 @@ interface ViewRouterProps {
   onEditEntry: (entry: Entry) => void;
   onDeleteEntry: (id: number | string) => void;
   onManageAttachments: (entry: Entry) => void;
-  getAttachmentsForEntry: (entryId: number | string) => Attachment[];
+  attachmentCountByEntryId?: Map<Entry["id"], number>;
   userData: UserData;
   workCodes: WorkCode[];
   // EntryForm props
@@ -109,7 +109,7 @@ export default function ViewRouter(props: ViewRouterProps) {
     currentDate, setCurrentDate, changeMonth,
     stats, overtime, progressPercent, groupedByWeek,
     viewMonth, viewYear,
-    onEditEntry, onDeleteEntry, onManageAttachments, getAttachmentsForEntry,
+    onEditEntry, onDeleteEntry, onManageAttachments, attachmentCountByEntryId,
     userData, workCodes,
     form, handleSaveEntry, setView,
     lastWorkEntry, uniqueProjects, entries,
@@ -140,7 +140,7 @@ export default function ViewRouter(props: ViewRouterProps) {
                 onEditEntry={onEditEntry}
                 onDeleteEntry={onDeleteEntry}
                 onManageAttachments={onManageAttachments}
-                getAttachmentsForEntry={getAttachmentsForEntry}
+                attachmentCountByEntryId={attachmentCountByEntryId}
                 userData={userData}
                 workCodes={workCodes}
                 locale={locale}

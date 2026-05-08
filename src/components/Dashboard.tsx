@@ -23,7 +23,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { de, enUS } from "date-fns/locale";
 import { getIntlLocale, getDatePickerLocale } from "../utils/formatLocale";
 
-import type { Entry, UserData, WorkCode, Attachment, CalculationConfig } from "../types";
+import type { Entry, UserData, WorkCode, CalculationConfig } from "../types";
 import type { PeriodStatsResult } from "../utils/timeCalculations";
 import type { Locale } from "../locales/types";
 
@@ -48,7 +48,7 @@ interface Props {
   onEditEntry: (entry: Entry) => void;
   onDeleteEntry: (id: Entry["id"]) => void;
   onManageAttachments?: (entry: Entry) => void;
-  getAttachmentsForEntry: (entryId: Entry["id"]) => Attachment[];
+  attachmentCountByEntryId?: Map<Entry["id"], number>;
   userData: UserData;
   workCodes?: WorkCode[];
   locale?: Locale;
@@ -91,7 +91,7 @@ function getEntryTypeLabel(type: Entry["type"], t: TFunction): string {
 const Dashboard: React.FC<Props> = ({
   currentDate, onSetCurrentDate, changeMonth,
   stats,
-  overtime, progressPercent, groupedByWeek, viewMonth: _viewMonth, viewYear: _viewYear, onEditEntry, onDeleteEntry, onManageAttachments, getAttachmentsForEntry, userData, workCodes = [],
+  overtime, progressPercent, groupedByWeek, viewMonth: _viewMonth, viewYear: _viewYear, onEditEntry, onDeleteEntry, onManageAttachments, attachmentCountByEntryId, userData, workCodes = [],
   locale,
   calculationConfig,
 }) => {
@@ -123,19 +123,6 @@ const Dashboard: React.FC<Props> = ({
     }),
     [groupedByWeek]
   );
-
-  const attachmentCountByEntryId = useMemo(() => {
-    const counts = new Map<Entry["id"], number>();
-    if (!getAttachmentsForEntry) return counts;
-
-    sortedWeeks.forEach(([, weekEntries]) => {
-      weekEntries.forEach((entry) => {
-        counts.set(entry.id, getAttachmentsForEntry(entry.id).length);
-      });
-    });
-
-    return counts;
-  }, [sortedWeeks, getAttachmentsForEntry]);
 
   return (
     <motion.main initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="w-full p-3 space-y-4">
@@ -384,7 +371,7 @@ const Dashboard: React.FC<Props> = ({
                                             );
                                           }
 
-                                          const attachmentCount = attachmentCountByEntryId.get(entry.id) || 0;
+                                          const attachmentCount = attachmentCountByEntryId?.get(entry.id) || 0;
 
                                           return ( 
                                             <div key={entry.id} className="relative overflow-hidden"> 

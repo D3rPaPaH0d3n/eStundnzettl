@@ -74,6 +74,7 @@ export default function App() {
   const {
     attachments, addAttachment, removeAttachment, removeAttachmentsForEntry,
     getAttachmentsForEntry, getLabelSuggestions, readAttachmentFile, formatFileSize,
+    attachmentCountByEntryId,
   } = useAttachments();
 
   const exportPayloadRef = useRef<BackupPayload | null>(null);
@@ -284,7 +285,7 @@ export default function App() {
         onEditEntry={startEdit}
         onDeleteEntry={handleRequestDeleteEntry}
         onManageAttachments={setAttachmentEntry}
-        getAttachmentsForEntry={getAttachmentsForEntry}
+        attachmentCountByEntryId={attachmentCountByEntryId}
         userData={userData}
         workCodes={workCodes}
         form={form}

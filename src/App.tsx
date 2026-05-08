@@ -29,7 +29,7 @@ import AppHeader from "./components/AppHeader";
 import ViewRouter from "./components/ViewRouter";
 import ConfirmModal from "./components/ConfirmModal";
 import SkeletonScreen from "./components/SkeletonScreen";
-import UpdateAvailableBanner from "./components/UpdateAvailableBanner";
+const UpdateAvailableBanner = React.lazy(() => import("./components/UpdateAvailableBanner"));
 
 const OnboardingWizard = React.lazy(() => import("./components/OnboardingWizard"));
 const ExportModal = React.lazy(() => import("./components/ExportModal"));
@@ -282,13 +282,15 @@ export default function App() {
         />
       )}
 
-      {!showOnboarding && view === "dashboard" && (
-        <UpdateAvailableBanner
-          show={updateInfo.available}
-          version={updateInfo.latestTag}
-          htmlUrl={updateInfo.htmlUrl}
-          onDismiss={updateInfo.dismiss}
-        />
+      {!showOnboarding && view === "dashboard" && updateInfo.available && (
+        <Suspense fallback={null}>
+          <UpdateAvailableBanner
+            show={updateInfo.available}
+            version={updateInfo.latestTag}
+            htmlUrl={updateInfo.htmlUrl}
+            onDismiss={updateInfo.dismiss}
+          />
+        </Suspense>
       )}
 
       <ViewRouter

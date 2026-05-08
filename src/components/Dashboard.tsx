@@ -1,4 +1,4 @@
-import React, { forwardRef, useMemo, useState } from "react";
+import React, { Suspense, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Paperclip, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -17,23 +17,13 @@ import { WORK_CODE } from "../hooks/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
-import DatePicker, { registerLocale } from "react-datepicker";
-// @ts-ignore
-import "react-datepicker/dist/react-datepicker.css";
-import { de, enUS } from "date-fns/locale";
-import { getIntlLocale, getDatePickerLocale } from "../utils/formatLocale";
+import { getIntlLocale } from "../utils/formatLocale";
 
 import type { Entry, UserData, WorkCode, CalculationConfig } from "../types";
 import type { PeriodStatsResult } from "../utils/timeCalculations";
 import type { Locale } from "../locales/types";
 
-registerLocale("de", de);
-registerLocale("en", enUS);
-
-interface CustomMonthInputProps {
-  value?: string;
-  onClick?: () => void;
-}
+const DashboardMonthPicker = React.lazy(() => import("./DashboardMonthPicker"));
 
 interface Props {
   currentDate: Date;
@@ -54,23 +44,6 @@ interface Props {
   locale?: Locale;
   calculationConfig?: CalculationConfig | null;
 }
-
-// Stylt den Monatsnamen jetzt etwas größer als Überschrift
-const CustomMonthInput = forwardRef<HTMLButtonElement, CustomMonthInputProps>(({ value, onClick }, ref) => {
-  const { t } = useTranslation();
-  return (
-    <button
-      type="button"
-      aria-label={t("dashboard.monthPickerAria", { value })}
-      className="font-bold text-zinc-800 dark:text-white text-lg hover:text-emerald-600 transition-colors capitalize"
-      onClick={onClick}
-      ref={ref}
-    >
-      {value}
-    </button>
-  );
-});
-CustomMonthInput.displayName = "CustomMonthInput";
 
 // Mappt einen Entry-Type auf das i18n-Label (genutzt in Dashboard-Einträgen).
 function getEntryTypeLabel(type: Entry["type"], t: TFunction): string {
@@ -100,6 +73,7 @@ const Dashboard: React.FC<Props> = ({
     const currentWeek = getWeekNumber(new Date());
     return { [currentWeek]: true };
   });
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
 
   const toggleWeek = (week: number) => {
     Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
@@ -108,6 +82,10 @@ const Dashboard: React.FC<Props> = ({
 
   const monthlyOvertimeSplit = stats.overtimeSplit || { mehrarbeit: 0, ueberstunden: 0 };
   const simpleMode = !!userData?.simpleMode;
+  const monthLabel = currentDate.toLocaleDateString(getIntlLocale(), {
+    month: "long",
+    year: "numeric",
+  });
 
   // FIX 1: Sortierung der Wochen nach Datum (Startdatum der Einträge), nicht nach KW-Nummer.
   const workCodeLabelMap = useMemo<Map<number, string>>(
@@ -142,15 +120,14 @@ const Dashboard: React.FC<Props> = ({
             </button>
             
             <div className="flex justify-center">
-                <DatePicker 
-                    selected={currentDate} 
-                    onChange={(date: Date | null) => { const d = new Date(date!); d.setDate(1); onSetCurrentDate(d); }} 
-                    dateFormat="MMMM yyyy" 
-                    showMonthYearPicker 
-                    locale={getDatePickerLocale()}
-                    withPortal 
-                    customInput={<CustomMonthInput />} 
-                />
+                <button
+                    type="button"
+                    aria-label={t("dashboard.monthPickerAria", { value: monthLabel })}
+                    className="font-bold text-zinc-800 dark:text-white text-lg hover:text-emerald-600 transition-colors capitalize"
+                    onClick={() => setIsMonthPickerOpen(true)}
+                >
+                    {monthLabel}
+                </button>
             </div>
 
             <button
@@ -162,6 +139,16 @@ const Dashboard: React.FC<Props> = ({
                 <ChevronRight size={24} />
             </button>
         </div>
+
+        {isMonthPickerOpen && (
+          <Suspense fallback={null}>
+            <DashboardMonthPicker
+              selectedDate={currentDate}
+              onSelectMonth={onSetCurrentDate}
+              onClose={() => setIsMonthPickerOpen(false)}
+            />
+          </Suspense>
+        )}
 
         {/* BODY: STATISTIKEN */}
         <div className="p-4 space-y-4">

@@ -96,12 +96,17 @@ export default defineConfig({
               return 'sentry';
             }
 
-            // 3. Animations-Bibliothek separat
+            // 3. Datepicker nur bei Formular/Monatswahl laden.
+            if (id.includes('react-datepicker') || id.includes('date-fns') || id.includes('@floating-ui')) {
+              return 'date-picker';
+            }
+
+            // 4. Animations-Bibliothek separat
             if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) {
               return 'animation';
             }
 
-            // 4. Icons separat (optional, da lucide recht groß sein kann)
+            // 5. Icons separat (optional, da lucide recht groß sein kann)
             if (id.includes('lucide-react')) {
               return 'icons';
             }

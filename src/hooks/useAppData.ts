@@ -35,6 +35,11 @@ import type { Locale } from "../locales/types";
  * - `lastWorkEntry` — letzter Work-Eintrag (für "Wie zuletzt"-Button)
  * - `uniqueProjects` — sortierte Liste aller Projekt-Namen (Autocomplete)
  */
+function parseEntryDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function useAppData({ entries, userData, viewMonth, viewYear, allEntries, locale, calculationConfig }: { entries: Entry[]; userData: UserData; viewMonth: number; viewYear: number; allEntries?: Entry[]; locale?: Locale; calculationConfig?: CalculationConfig | null }) {
   const todayTarget = useMemo(() => {
     const todayStr = toLocalDateString(new Date());
@@ -45,7 +50,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries,
     const holidayMap = getHolidayData(viewYear, locale, calculationConfig);
     const todayStr = toLocalDateString(new Date());
     const realEntries = entries.filter((entry) => {
-      const date = new Date(entry.date);
+      const date = parseEntryDate(entry.date);
       return date.getFullYear() === viewYear && date.getMonth() === viewMonth;
     });
 
@@ -70,7 +75,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries,
     }
 
     const merged = [...realEntries, ...holidayEntries].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      (a, b) => b.date.localeCompare(a.date)
     );
 
     // SINGLE SOURCE OF TRUTH: Krank-Korrektur einmal anwenden.
@@ -83,7 +88,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries,
   const weekNumbersInMonth = useMemo(() => {
     const weeks = new Set();
     entriesWithHolidays.forEach((entry) => {
-      weeks.add(getWeekNumber(new Date(entry.date)));
+      weeks.add(getWeekNumber(parseEntryDate(entry.date)));
     });
     return weeks;
   }, [entriesWithHolidays]);
@@ -101,7 +106,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries,
 
     // 1. Alle Einträge des aktuellen Monats gruppieren
     entriesWithHolidays.forEach((entry) => {
-      const week = getWeekNumber(new Date(entry.date));
+      const week = getWeekNumber(parseEntryDate(entry.date));
       if (!map.has(week)) map.set(week, []);
       map.get(week).push(entry);
     });
@@ -112,7 +117,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries,
 
       correctedAllEntries.forEach((entry) => {
         if (monthEntryIds.has(entry.id)) return; // Schon enthalten
-        const week = getWeekNumber(new Date(entry.date));
+        const week = getWeekNumber(parseEntryDate(entry.date));
         if (!weekNumbersInMonth.has(week)) return; // Woche nicht in diesem Monat
         if (!map.has(week)) map.set(week, []);
         map.get(week).push(entry);
@@ -121,7 +126,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries,
 
     const groupedEntries = Array.from(map.entries());
     groupedEntries.forEach(([, list]) =>
-      list.sort((a: Entry, b: Entry) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      list.sort((a: Entry, b: Entry) => b.date.localeCompare(a.date))
     );
 
     return groupedEntries.sort((a: [number, Entry[]], b: [number, Entry[]]) => b[0] - a[0]);

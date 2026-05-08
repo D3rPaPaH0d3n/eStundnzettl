@@ -64,7 +64,26 @@ export default defineConfig({
             //    statisch und zieht @react-pdf damit beim Start ein.
             //    pdfjs-dist (fuer die Canvas-Vorschau) ist nur in
             //    PrintReport gebraucht und damit lazy.
-            if (id.includes('@react-pdf') || id.includes('react-pdf') || id.includes('@fontsource')) {
+            if (
+              id.includes('@react-pdf') ||
+              id.includes('react-pdf') ||
+              id.includes('@fontsource') ||
+              id.includes('fontkit') ||
+              id.includes('yoga-layout') ||
+              id.includes('hyphen') ||
+              id.includes('linebreak') ||
+              id.includes('bidi-js') ||
+              id.includes('unicode-properties') ||
+              id.includes('unicode-trie') ||
+              id.includes('restructure') ||
+              id.includes('brotli') ||
+              id.includes('jay-peg') ||
+              id.includes('png-js') ||
+              id.includes('browserify-zlib') ||
+              id.includes('/pako/') ||
+              id.includes('pako') ||
+              id.includes('fflate')
+            ) {
               return 'pdf-libs';
             }
             if (id.includes('pdfjs-dist')) {
@@ -78,7 +97,7 @@ export default defineConfig({
             }
 
             // 3. Animations-Bibliothek separat
-            if (id.includes('framer-motion')) {
+            if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) {
               return 'animation';
             }
 

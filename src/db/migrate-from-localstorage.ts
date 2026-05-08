@@ -17,7 +17,6 @@ import { bulkWriteSettings } from "./repositories/settingsRepo";
 import { bulkReplaceWorkCodes } from "./repositories/workCodesRepo";
 import { bulkReplaceAttachments, bulkReplaceLabelSuggestions } from "./repositories/attachmentsRepo";
 import { logger } from "../utils/logger";
-import type { Entry, WorkCode, Attachment } from "../types";
 
 const readJsonSetting = (key: string): unknown => {
   try {
@@ -64,6 +63,8 @@ interface AllMigrationResults {
   workCodes: MigrationResult | MigrationError | null;
   attachments: AttachmentMigrationResult | MigrationError | null;
   backupMeta: MigrationResult | MigrationError | null;
+  finalSettingsBackfill: MigrationResult | MigrationError | null;
+  finalBackupMetaBackfill: MigrationResult | MigrationError | null;
 }
 
 // ─── Migration Flags ─────────────────────────────────────────
@@ -74,6 +75,8 @@ const MIGRATION_FLAGS: Record<string, string> = {
   WORK_CODES:  "estundnzettl_sqlite_workcodes_migration_done",
   ATTACHMENTS: "estundnzettl_sqlite_attachments_migration_done",
   BACKUP_META: "estundnzettl_sqlite_backup_meta_migration_done",
+  FINAL_SETTINGS_BACKFILL: "estundnzettl_sqlite_final_settings_backfill_done",
+  FINAL_BACKUP_META_BACKFILL: "estundnzettl_sqlite_final_backup_meta_backfill_done",
 };
 
 /**
@@ -82,6 +85,103 @@ const MIGRATION_FLAGS: Record<string, string> = {
  */
 export function isMigrationDone(): boolean {
   return localStorage.getItem(MIGRATION_FLAGS.ENTRIES) === "true";
+}
+
+function collectFinalSettingsBackfill(): Record<string, unknown> {
+  const settings: Record<string, unknown> = {};
+
+  const locale = readStringSetting(STORAGE_KEYS.LOCALE);
+  if (locale) settings.locale = locale;
+
+  const calculationConfig = readJsonSetting("estundnzettl_calculation_config");
+  if (calculationConfig && typeof calculationConfig === "object") {
+    settings.calculationConfig = calculationConfig;
+  }
+
+  // Nextcloud password is intentionally not copied in plain text. It remains
+  // handled by nextcloudSecret/useSettings.
+  const nextcloudEnabled = readBoolSetting(STORAGE_KEYS.NEXTCLOUD_ENABLED);
+  if (nextcloudEnabled !== undefined) settings.nextcloud_enabled = nextcloudEnabled;
+  const nextcloudUrl = readStringSetting(STORAGE_KEYS.NEXTCLOUD_URL);
+  if (nextcloudUrl) settings.nextcloud_url = nextcloudUrl;
+  const nextcloudUser = readStringSetting(STORAGE_KEYS.NEXTCLOUD_USER);
+  if (nextcloudUser) settings.nextcloud_user = nextcloudUser;
+
+  return settings;
+}
+
+function collectBackupMetaBackfill(): Record<string, unknown> {
+  const settings: Record<string, unknown> = {};
+
+  // LAST_CODE (number)
+  const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
+  if (lastCode) {
+    const num = Number(lastCode);
+    if (!isNaN(num)) settings.last_code = num;
+  }
+
+  // LAST_BACKUP (ISO-String)
+  const lastBackup = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
+  if (lastBackup) settings.last_backup = lastBackup;
+
+  // BACKUP_TARGET ("documents" | null)
+  const backupTarget = localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET);
+  if (backupTarget) settings.backup_target = backupTarget;
+
+  // BACKUP_FAIL_COUNT (number-as-string)
+  const failRaw = localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT);
+  if (failRaw) {
+    const failNum = parseInt(failRaw, 10);
+    if (!isNaN(failNum)) settings.backup_fail_count = failNum;
+  }
+
+  const backupLastError = readStringSetting(STORAGE_KEYS.BACKUP_LAST_ERROR);
+  if (backupLastError) settings.backup_last_error = backupLastError;
+  const backupBackoffUntil = readStringSetting(STORAGE_KEYS.BACKUP_BACKOFF_UNTIL);
+  if (backupBackoffUntil) settings.backup_backoff_until = backupBackoffUntil;
+
+  const nextcloudFailRaw = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT);
+  if (nextcloudFailRaw) {
+    const failNum = parseInt(nextcloudFailRaw, 10);
+    if (!isNaN(failNum)) settings.nextcloud_backup_fail_count = failNum;
+  }
+  const nextcloudLastError = readStringSetting(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR);
+  if (nextcloudLastError) settings.nextcloud_backup_last_error = nextcloudLastError;
+  const nextcloudBackoffUntil = readStringSetting(STORAGE_KEYS.NEXTCLOUD_BACKOFF_UNTIL);
+  if (nextcloudBackoffUntil) settings.nextcloud_backoff_until = nextcloudBackoffUntil;
+
+  const pdfArchiveBoolKeys: Array<[string, string]> = [
+    [STORAGE_KEYS.PDF_ARCHIVE_ENABLED, "pdf_archive_enabled"],
+    [STORAGE_KEYS.PDF_ARCHIVE_LOCAL, "pdf_archive_local"],
+    [STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD, "pdf_archive_nextcloud"],
+    [STORAGE_KEYS.PDF_ARCHIVE_GDRIVE, "pdf_archive_gdrive"],
+  ];
+  for (const [lsKey, sqlKey] of pdfArchiveBoolKeys) {
+    const value = readBoolSetting(lsKey);
+    if (value !== undefined) settings[sqlKey] = value;
+  }
+
+  const pdfArchiveStringKeys: Array<[string, string]> = [
+    [STORAGE_KEYS.PDF_ARCHIVE_LAST_RUN, "pdf_archive_last_run"],
+    [STORAGE_KEYS.PDF_ARCHIVE_LAST_MONTH, "pdf_archive_last_month"],
+    [STORAGE_KEYS.PDF_ARCHIVE_FAIL_COUNT, "pdf_archive_fail_count"],
+    [STORAGE_KEYS.PDF_ARCHIVE_LAST_ERROR, "pdf_archive_last_error"],
+  ];
+  for (const [lsKey, sqlKey] of pdfArchiveStringKeys) {
+    const value = readStringSetting(lsKey);
+    if (value) settings[sqlKey] = value;
+  }
+
+  // Monatsbezogene Hash-Keys behalten ihren vollständigen Key-Namen.
+  const pdfHashPrefix = `${STORAGE_KEYS.PDF_ARCHIVE_LAST_HASH}_`;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith(pdfHashPrefix)) continue;
+    const value = readStringSetting(key);
+    if (value) settings[key] = value;
+  }
+
+  return settings;
 }
 
 // ─── Welle 1: Entries ────────────────────────────────────────
@@ -159,15 +259,8 @@ export async function migrateSettingsToSQLite(): Promise<MigrationResult> {
   const theme = localStorage.getItem(STORAGE_KEYS.THEME);
   if (theme) settings.theme = theme;
 
-  // Locale
-  const locale = readStringSetting(STORAGE_KEYS.LOCALE);
-  if (locale) settings.locale = locale;
-
-  // Calculation config
-  const calculationConfig = readJsonSetting("estundnzettl_calculation_config");
-  if (calculationConfig && typeof calculationConfig === "object") {
-    settings.calculationConfig = calculationConfig;
-  }
+  // Locale, Calculation config and Nextcloud connection settings.
+  Object.assign(settings, collectFinalSettingsBackfill());
 
   // Cloud Sync
   const cloudSync = localStorage.getItem(STORAGE_KEYS.CLOUD_SYNC_ENABLED);
@@ -176,15 +269,6 @@ export async function migrateSettingsToSQLite(): Promise<MigrationResult> {
   // Local Backup
   const localBackup = localStorage.getItem(STORAGE_KEYS.LOCAL_BACKUP_ENABLED);
   if (localBackup === "true") settings.local_backup_enabled = true;
-
-  // Nextcloud connection settings (password is migrated separately by
-  // nextcloudSecret/useSettings and intentionally not copied in plain text).
-  const nextcloudEnabled = readBoolSetting(STORAGE_KEYS.NEXTCLOUD_ENABLED);
-  if (nextcloudEnabled !== undefined) settings.nextcloud_enabled = nextcloudEnabled;
-  const nextcloudUrl = readStringSetting(STORAGE_KEYS.NEXTCLOUD_URL);
-  if (nextcloudUrl) settings.nextcloud_url = nextcloudUrl;
-  const nextcloudUser = readStringSetting(STORAGE_KEYS.NEXTCLOUD_USER);
-  if (nextcloudUser) settings.nextcloud_user = nextcloudUser;
 
   const count = Object.keys(settings).length;
 
@@ -320,75 +404,7 @@ export async function migrateBackupMetaToSQLite(): Promise<MigrationResult> {
     return { migrated: 0, skipped: true };
   }
 
-  const settings: Record<string, unknown> = {};
-
-  // LAST_CODE (number)
-  const lastCode = localStorage.getItem(STORAGE_KEYS.LAST_CODE);
-  if (lastCode) {
-    const num = Number(lastCode);
-    if (!isNaN(num)) settings.last_code = num;
-  }
-
-  // LAST_BACKUP (ISO-String)
-  const lastBackup = localStorage.getItem(STORAGE_KEYS.LAST_BACKUP);
-  if (lastBackup) settings.last_backup = lastBackup;
-
-  // BACKUP_TARGET ("documents" | null)
-  const backupTarget = localStorage.getItem(STORAGE_KEYS.BACKUP_TARGET);
-  if (backupTarget) settings.backup_target = backupTarget;
-
-  // BACKUP_FAIL_COUNT (number-as-string)
-  const failRaw = localStorage.getItem(STORAGE_KEYS.BACKUP_FAIL_COUNT);
-  if (failRaw) {
-    const failNum = parseInt(failRaw, 10);
-    if (!isNaN(failNum)) settings.backup_fail_count = failNum;
-  }
-
-  const backupLastError = readStringSetting(STORAGE_KEYS.BACKUP_LAST_ERROR);
-  if (backupLastError) settings.backup_last_error = backupLastError;
-  const backupBackoffUntil = readStringSetting(STORAGE_KEYS.BACKUP_BACKOFF_UNTIL);
-  if (backupBackoffUntil) settings.backup_backoff_until = backupBackoffUntil;
-
-  const nextcloudFailRaw = localStorage.getItem(STORAGE_KEYS.NEXTCLOUD_BACKUP_FAIL_COUNT);
-  if (nextcloudFailRaw) {
-    const failNum = parseInt(nextcloudFailRaw, 10);
-    if (!isNaN(failNum)) settings.nextcloud_backup_fail_count = failNum;
-  }
-  const nextcloudLastError = readStringSetting(STORAGE_KEYS.NEXTCLOUD_BACKUP_LAST_ERROR);
-  if (nextcloudLastError) settings.nextcloud_backup_last_error = nextcloudLastError;
-  const nextcloudBackoffUntil = readStringSetting(STORAGE_KEYS.NEXTCLOUD_BACKOFF_UNTIL);
-  if (nextcloudBackoffUntil) settings.nextcloud_backoff_until = nextcloudBackoffUntil;
-
-  const pdfArchiveBoolKeys: Array<[string, string]> = [
-    [STORAGE_KEYS.PDF_ARCHIVE_ENABLED, "pdf_archive_enabled"],
-    [STORAGE_KEYS.PDF_ARCHIVE_LOCAL, "pdf_archive_local"],
-    [STORAGE_KEYS.PDF_ARCHIVE_NEXTCLOUD, "pdf_archive_nextcloud"],
-    [STORAGE_KEYS.PDF_ARCHIVE_GDRIVE, "pdf_archive_gdrive"],
-  ];
-  for (const [lsKey, sqlKey] of pdfArchiveBoolKeys) {
-    const value = readBoolSetting(lsKey);
-    if (value !== undefined) settings[sqlKey] = value;
-  }
-
-  const pdfArchiveStringKeys: Array<[string, string]> = [
-    [STORAGE_KEYS.PDF_ARCHIVE_LAST_RUN, "pdf_archive_last_run"],
-    [STORAGE_KEYS.PDF_ARCHIVE_LAST_MONTH, "pdf_archive_last_month"],
-    [STORAGE_KEYS.PDF_ARCHIVE_FAIL_COUNT, "pdf_archive_fail_count"],
-    [STORAGE_KEYS.PDF_ARCHIVE_LAST_ERROR, "pdf_archive_last_error"],
-  ];
-  for (const [lsKey, sqlKey] of pdfArchiveStringKeys) {
-    const value = readStringSetting(lsKey);
-    if (value) settings[sqlKey] = value;
-  }
-
-  // Monatsbezogene Hash-Keys behalten ihren vollständigen Key-Namen.
-  const pdfHashPrefix = `${STORAGE_KEYS.PDF_ARCHIVE_LAST_HASH}_`;
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (!key || !key.startsWith(pdfHashPrefix)) continue;
-    const value = readStringSetting(key);
-    if (value) settings[key] = value;
-  }
+  const settings = collectBackupMetaBackfill();
 
   const count = Object.keys(settings).length;
 
@@ -409,6 +425,60 @@ export async function migrateBackupMetaToSQLite(): Promise<MigrationResult> {
   }
 }
 
+// ─── Finale Backfills für direkte Upgrades ──────────────────
+
+/**
+ * Kopiert Settings-Keys, die in späteren Versionen ergänzt wurden, einmalig
+ * aus legacy localStorage nach SQLite. Unabhängig vom alten Settings-Flag.
+ */
+export async function finalBackfillSettingsToSQLite(): Promise<MigrationResult> {
+  if (localStorage.getItem(MIGRATION_FLAGS.FINAL_SETTINGS_BACKFILL) === "true") {
+    return { migrated: 0, skipped: true };
+  }
+
+  const settings = collectFinalSettingsBackfill();
+  const count = Object.keys(settings).length;
+
+  if (count > 0) {
+    try {
+      await bulkWriteSettings(settings);
+    } catch (err) {
+      logger.error("[migration] Finaler Settings-Backfill fehlgeschlagen:", err);
+      throw err;
+    }
+  }
+
+  localStorage.setItem(MIGRATION_FLAGS.FINAL_SETTINGS_BACKFILL, "true");
+  logger.info(`[migration] Finaler Settings-Backfill abgeschlossen (${count} Keys)`);
+  return { migrated: count, skipped: false };
+}
+
+/**
+ * Kopiert Backup-/PDF-Archiv-Meta-Keys einmalig aus legacy localStorage nach
+ * SQLite. Unabhängig vom alten Backup-Meta-Flag.
+ */
+export async function finalBackfillBackupMetaToSQLite(): Promise<MigrationResult> {
+  if (localStorage.getItem(MIGRATION_FLAGS.FINAL_BACKUP_META_BACKFILL) === "true") {
+    return { migrated: 0, skipped: true };
+  }
+
+  const settings = collectBackupMetaBackfill();
+  const count = Object.keys(settings).length;
+
+  if (count > 0) {
+    try {
+      await bulkWriteSettings(settings);
+    } catch (err) {
+      logger.error("[migration] Finaler Backup-Meta-Backfill fehlgeschlagen:", err);
+      throw err;
+    }
+  }
+
+  localStorage.setItem(MIGRATION_FLAGS.FINAL_BACKUP_META_BACKFILL, "true");
+  logger.info(`[migration] Finaler Backup-Meta-Backfill abgeschlossen (${count} Keys)`);
+  return { migrated: count, skipped: false };
+}
+
 // ─── Welle 2+3+4: Alles migrieren ───────────────────────────
 
 /**
@@ -418,7 +488,15 @@ export async function migrateBackupMetaToSQLite(): Promise<MigrationResult> {
  * @returns {Promise<{entries: Object, settings: Object, workCodes: Object, attachments: Object}>}
  */
 export async function migrateAllToSQLite(): Promise<AllMigrationResults> {
-  const results: AllMigrationResults = { entries: null, settings: null, workCodes: null, attachments: null, backupMeta: null };
+  const results: AllMigrationResults = {
+    entries: null,
+    settings: null,
+    workCodes: null,
+    attachments: null,
+    backupMeta: null,
+    finalSettingsBackfill: null,
+    finalBackupMetaBackfill: null,
+  };
 
   try {
     results.entries = await migrateEntriesToSQLite();
@@ -448,6 +526,18 @@ export async function migrateAllToSQLite(): Promise<AllMigrationResults> {
     results.backupMeta = await migrateBackupMetaToSQLite();
   } catch (err) {
     results.backupMeta = { error: (err as Error).message };
+  }
+
+  try {
+    results.finalSettingsBackfill = await finalBackfillSettingsToSQLite();
+  } catch (err) {
+    results.finalSettingsBackfill = { error: (err as Error).message };
+  }
+
+  try {
+    results.finalBackupMetaBackfill = await finalBackfillBackupMetaToSQLite();
+  } catch (err) {
+    results.finalBackupMetaBackfill = { error: (err as Error).message };
   }
 
   logger.info("[migration] Ergebnisse:", results);

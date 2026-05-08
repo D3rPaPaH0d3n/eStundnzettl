@@ -12,8 +12,8 @@
  * `pdfArchiveTargets` ihre API nicht aendern muessen.
  */
 
-import { generateHolidayEntries, renderMonthlyReportPdfBlob } from "./reportPdfRenderer";
 import { WORK_CODE } from "../hooks/constants";
+import { generateHolidayEntries } from "./holidayEntries";
 import type { Entry, UserData, WorkCode, Attachment, CalculationConfig } from '../types';
 import type { Locale } from '../locales/types';
 
@@ -104,6 +104,7 @@ export function buildArchiveFilename({ year, month, userData }: { year: number; 
 export async function generateMonthlyPdfBlob({ year, month, entries, userData, workCodes, attachments, locale, calculationConfig, currentDate }: { year: number; month: number; entries: Entry[]; userData: UserData | null; workCodes: WorkCode[]; attachments?: Attachment[]; locale?: Locale; calculationConfig?: CalculationConfig | null; currentDate?: Date }): Promise<Blob> {
   if (!year || !month) throw new Error("generateMonthlyPdfBlob: year/month fehlen");
 
+  const { renderMonthlyReportPdfBlob } = await import("./reportPdfRenderer");
   return renderMonthlyReportPdfBlob({
     year,
     month,

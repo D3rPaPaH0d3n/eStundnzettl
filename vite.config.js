@@ -106,12 +106,17 @@ export default defineConfig({
               return 'animation';
             }
 
-            // 5. Icons separat (optional, da lucide recht groß sein kann)
+            // 5. Zod nur fuer Import-/Validierungsflows laden.
+            if (id.includes('zod')) {
+              return 'validation';
+            }
+
+            // 6. Icons separat (optional, da lucide recht groß sein kann)
             if (id.includes('lucide-react')) {
               return 'icons';
             }
 
-            // 4. Alles andere kommt in den allgemeinen "vendor"-Chunk
+            // 7. Alles andere kommt in den allgemeinen "vendor"-Chunk
             return 'vendor';
           }
         }

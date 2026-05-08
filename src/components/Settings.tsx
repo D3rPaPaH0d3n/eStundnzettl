@@ -59,6 +59,15 @@ interface Props {
   calculationConfig?: CalculationConfig | null;
   setCalculationConfig?: (next: CalculationConfig | ((prev: CalculationConfig) => CalculationConfig)) => void;
   resetCalculationConfigToLocale?: (newLocale: Locale, workDays: number[]) => void;
+  workCodes: WorkCode[];
+  workCodesLoading: boolean;
+  hasAnyWorkCodes: boolean;
+  addWorkCode: (label: string) => boolean;
+  updateWorkCode: (id: number, label: string) => boolean;
+  deleteWorkCode: (id: number) => void;
+  loadWorkCodePreset: (presetId: string) => boolean;
+  availableWorkCodePresets: Array<{ id: string; name: string; description: string; codes: WorkCode[] }>;
+  clearAllWorkCodes: () => void;
 }
 
 const Settings: React.FC<Props> = ({
@@ -97,6 +106,15 @@ const Settings: React.FC<Props> = ({
   calculationConfig,
   setCalculationConfig,
   resetCalculationConfigToLocale,
+  workCodes,
+  workCodesLoading,
+  hasAnyWorkCodes,
+  addWorkCode,
+  updateWorkCode,
+  deleteWorkCode,
+  loadWorkCodePreset,
+  availableWorkCodePresets,
+  clearAllWorkCodes,
 }) => {
   const { t } = useTranslation();
   const [showChangelog, setShowChangelog] = useState(false);
@@ -226,6 +244,15 @@ const Settings: React.FC<Props> = ({
           <WorkCodeManager
             isOpen={showWorkCodeManager}
             onClose={() => setShowWorkCodeManager(false)}
+            workCodes={workCodes}
+            isLoading={workCodesLoading}
+            hasAnyCodes={hasAnyWorkCodes}
+            addCode={addWorkCode}
+            updateCode={updateWorkCode}
+            deleteCode={deleteWorkCode}
+            loadPreset={loadWorkCodePreset}
+            availablePresets={availableWorkCodePresets}
+            clearAllCodes={clearAllWorkCodes}
           />
         </Suspense>
       )}

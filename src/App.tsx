@@ -29,7 +29,7 @@ import AppHeader from "./components/AppHeader";
 import ViewRouter from "./components/ViewRouter";
 import ConfirmModal from "./components/ConfirmModal";
 import SkeletonScreen from "./components/SkeletonScreen";
-import UpdateAvailableBanner from "./components/UpdateAvailableBanner";
+const UpdateAvailableBanner = React.lazy(() => import("./components/UpdateAvailableBanner"));
 
 const OnboardingWizard = React.lazy(() => import("./components/OnboardingWizard"));
 const ExportModal = React.lazy(() => import("./components/ExportModal"));
@@ -62,7 +62,19 @@ export default function App() {
     setCalculationConfig,
     resetCalculationConfigToLocale,
   } = useCalculationConfig({ locale, localeId, userData });
-  const { workCodes, hasAnyCodes, loadWorkCodes } = useWorkCodes();
+  const workCodesApi = useWorkCodes();
+  const {
+    workCodes,
+    isLoading: workCodesLoading,
+    hasAnyCodes,
+    addCode,
+    updateCode: updateWorkCode,
+    deleteCode: deleteWorkCode,
+    loadPreset: loadWorkCodePreset,
+    availablePresets: availableWorkCodePresets,
+    clearAllCodes: clearAllWorkCodes,
+    loadWorkCodes,
+  } = workCodesApi;
   const getDefaultCode = useLastCode({ hasAnyCodes, workCodes });
   const form = useFormState({ getDefaultCode });
   const { timerState, autoCheckoutData, clearAutoCheckout, startTimer, pauseTimer, resumeTimer, stopTimer } = useLiveTimer();
@@ -74,6 +86,7 @@ export default function App() {
   const {
     attachments, addAttachment, removeAttachment, removeAttachmentsForEntry,
     getAttachmentsForEntry, getLabelSuggestions, readAttachmentFile, formatFileSize,
+    attachmentCountByEntryId,
   } = useAttachments();
 
   const exportPayloadRef = useRef<BackupPayload | null>(null);
@@ -169,6 +182,15 @@ export default function App() {
     setLocale,
     setCalculationConfig,
     resetCalculationConfigToLocale,
+    workCodes,
+    workCodesLoading,
+    hasAnyWorkCodes: hasAnyCodes,
+    addWorkCode: addCode,
+    updateWorkCode,
+    deleteWorkCode,
+    loadWorkCodePreset,
+    availableWorkCodePresets,
+    clearAllWorkCodes,
   };
 
   // --- RENDER ---
@@ -260,13 +282,15 @@ export default function App() {
         />
       )}
 
-      {!showOnboarding && view === "dashboard" && (
-        <UpdateAvailableBanner
-          show={updateInfo.available}
-          version={updateInfo.latestTag}
-          htmlUrl={updateInfo.htmlUrl}
-          onDismiss={updateInfo.dismiss}
-        />
+      {!showOnboarding && view === "dashboard" && updateInfo.available && (
+        <Suspense fallback={null}>
+          <UpdateAvailableBanner
+            show={updateInfo.available}
+            version={updateInfo.latestTag}
+            htmlUrl={updateInfo.htmlUrl}
+            onDismiss={updateInfo.dismiss}
+          />
+        </Suspense>
       )}
 
       <ViewRouter
@@ -284,9 +308,11 @@ export default function App() {
         onEditEntry={startEdit}
         onDeleteEntry={handleRequestDeleteEntry}
         onManageAttachments={setAttachmentEntry}
-        getAttachmentsForEntry={getAttachmentsForEntry}
+        attachmentCountByEntryId={attachmentCountByEntryId}
         userData={userData}
         workCodes={workCodes}
+        hasAnyCodes={hasAnyCodes}
+        addCode={addCode}
         form={form}
         handleSaveEntry={handleSaveEntry}
         setView={setView}

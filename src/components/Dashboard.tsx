@@ -1,4 +1,4 @@
-import React, { forwardRef, useMemo, useState } from "react";
+import React, { Suspense, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Paperclip, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -17,23 +17,13 @@ import { WORK_CODE } from "../hooks/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
-import DatePicker, { registerLocale } from "react-datepicker";
-// @ts-ignore
-import "react-datepicker/dist/react-datepicker.css";
-import { de, enUS } from "date-fns/locale";
-import { getIntlLocale, getDatePickerLocale } from "../utils/formatLocale";
+import { getIntlLocale } from "../utils/formatLocale";
 
-import type { Entry, UserData, WorkCode, Attachment, CalculationConfig } from "../types";
+import type { Entry, UserData, WorkCode, CalculationConfig } from "../types";
 import type { PeriodStatsResult } from "../utils/timeCalculations";
 import type { Locale } from "../locales/types";
 
-registerLocale("de", de);
-registerLocale("en", enUS);
-
-interface CustomMonthInputProps {
-  value?: string;
-  onClick?: () => void;
-}
+const DashboardMonthPicker = React.lazy(() => import("./DashboardMonthPicker"));
 
 interface Props {
   currentDate: Date;
@@ -48,29 +38,12 @@ interface Props {
   onEditEntry: (entry: Entry) => void;
   onDeleteEntry: (id: Entry["id"]) => void;
   onManageAttachments?: (entry: Entry) => void;
-  getAttachmentsForEntry: (entryId: Entry["id"]) => Attachment[];
+  attachmentCountByEntryId?: Map<Entry["id"], number>;
   userData: UserData;
   workCodes?: WorkCode[];
   locale?: Locale;
   calculationConfig?: CalculationConfig | null;
 }
-
-// Stylt den Monatsnamen jetzt etwas größer als Überschrift
-const CustomMonthInput = forwardRef<HTMLButtonElement, CustomMonthInputProps>(({ value, onClick }, ref) => {
-  const { t } = useTranslation();
-  return (
-    <button
-      type="button"
-      aria-label={t("dashboard.monthPickerAria", { value })}
-      className="font-bold text-zinc-800 dark:text-white text-lg hover:text-emerald-600 transition-colors capitalize"
-      onClick={onClick}
-      ref={ref}
-    >
-      {value}
-    </button>
-  );
-});
-CustomMonthInput.displayName = "CustomMonthInput";
 
 // Mappt einen Entry-Type auf das i18n-Label (genutzt in Dashboard-Einträgen).
 function getEntryTypeLabel(type: Entry["type"], t: TFunction): string {
@@ -91,7 +64,7 @@ function getEntryTypeLabel(type: Entry["type"], t: TFunction): string {
 const Dashboard: React.FC<Props> = ({
   currentDate, onSetCurrentDate, changeMonth,
   stats,
-  overtime, progressPercent, groupedByWeek, viewMonth: _viewMonth, viewYear: _viewYear, onEditEntry, onDeleteEntry, onManageAttachments, getAttachmentsForEntry, userData, workCodes = [],
+  overtime, progressPercent, groupedByWeek, viewMonth: _viewMonth, viewYear: _viewYear, onEditEntry, onDeleteEntry, onManageAttachments, attachmentCountByEntryId, userData, workCodes = [],
   locale,
   calculationConfig,
 }) => {
@@ -100,14 +73,20 @@ const Dashboard: React.FC<Props> = ({
     const currentWeek = getWeekNumber(new Date());
     return { [currentWeek]: true };
   });
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
 
   const toggleWeek = (week: number) => {
-    Haptics.impact({ style: ImpactStyle.Light }); 
+    Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
     setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] })); 
   };
 
   const monthlyOvertimeSplit = stats.overtimeSplit || { mehrarbeit: 0, ueberstunden: 0 };
   const simpleMode = !!userData?.simpleMode;
+  const intlLocale = getIntlLocale();
+  const monthLabel = currentDate.toLocaleDateString(intlLocale, {
+    month: "long",
+    year: "numeric",
+  });
 
   // FIX 1: Sortierung der Wochen nach Datum (Startdatum der Einträge), nicht nach KW-Nummer.
   const workCodeLabelMap = useMemo<Map<number, string>>(
@@ -123,19 +102,6 @@ const Dashboard: React.FC<Props> = ({
     }),
     [groupedByWeek]
   );
-
-  const attachmentCountByEntryId = useMemo(() => {
-    const counts = new Map<Entry["id"], number>();
-    if (!getAttachmentsForEntry) return counts;
-
-    sortedWeeks.forEach(([, weekEntries]) => {
-      weekEntries.forEach((entry) => {
-        counts.set(entry.id, getAttachmentsForEntry(entry.id).length);
-      });
-    });
-
-    return counts;
-  }, [sortedWeeks, getAttachmentsForEntry]);
 
   return (
     <motion.main initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="w-full p-3 space-y-4">
@@ -155,15 +121,14 @@ const Dashboard: React.FC<Props> = ({
             </button>
             
             <div className="flex justify-center">
-                <DatePicker 
-                    selected={currentDate} 
-                    onChange={(date: Date | null) => { const d = new Date(date!); d.setDate(1); onSetCurrentDate(d); }} 
-                    dateFormat="MMMM yyyy" 
-                    showMonthYearPicker 
-                    locale={getDatePickerLocale()}
-                    withPortal 
-                    customInput={<CustomMonthInput />} 
-                />
+                <button
+                    type="button"
+                    aria-label={t("dashboard.monthPickerAria", { value: monthLabel })}
+                    className="font-bold text-zinc-800 dark:text-white text-lg hover:text-emerald-600 transition-colors capitalize"
+                    onClick={() => setIsMonthPickerOpen(true)}
+                >
+                    {monthLabel}
+                </button>
             </div>
 
             <button
@@ -175,6 +140,16 @@ const Dashboard: React.FC<Props> = ({
                 <ChevronRight size={24} />
             </button>
         </div>
+
+        {isMonthPickerOpen && (
+          <Suspense fallback={null}>
+            <DashboardMonthPicker
+              selectedDate={currentDate}
+              onSelectMonth={onSetCurrentDate}
+              onClose={() => setIsMonthPickerOpen(false)}
+            />
+          </Suspense>
+        )}
 
         {/* BODY: STATISTIKEN */}
         <div className="p-4 space-y-4">
@@ -299,7 +274,7 @@ const Dashboard: React.FC<Props> = ({
                 <button className="w-full flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl px-3 py-2 transition-colors" onClick={() => toggleWeek(week)}>
                     <div className="flex flex-col text-left">
                         <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("dashboard.calendarWeek")}</span>
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200"> {t("dashboard.calendarWeekShort", { week })}{" "} <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">({clippedMonday.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" })} – {clippedSunday.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" })})</span> </span>
+                        <span className="font-bold text-zinc-800 dark:text-zinc-200"> {t("dashboard.calendarWeekShort", { week })}{" "} <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">({clippedMonday.toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" })} – {clippedSunday.toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" })})</span> </span>
                         
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <div className="text-sm flex gap-3">
@@ -331,7 +306,7 @@ const Dashboard: React.FC<Props> = ({
                 
                 <AnimatePresence> 
                   {expanded && ( 
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="overflow-hidden"> 
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: "easeOut" }} className="overflow-hidden"> 
                       <div className="mt-2 space-y-3"> 
                         {sortedDays.map(([dateStr, dayEntries]) => { 
                             const daySum = calculateDisplayedDayMinutes(dayEntries); 
@@ -342,8 +317,8 @@ const Dashboard: React.FC<Props> = ({
                               <motion.div key={dateStr} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden"> 
                                 <div className="flex"> 
                                   <div className="bg-zinc-800 dark:bg-zinc-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0 z-20 relative"> 
-                                    <span className="text-xs font-bold opacity-80">{d.toLocaleDateString(getIntlLocale(), { weekday: "short" }).slice(0, 2)}</span> 
-                                    <span className="text-sm font-bold">{d.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" })}</span> 
+                                    <span className="text-xs font-bold opacity-80">{d.toLocaleDateString(intlLocale, { weekday: "short" }).slice(0, 2)}</span> 
+                                    <span className="text-sm font-bold">{d.toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" })}</span> 
                                   </div> 
                                   <div className="flex-1 min-w-0"> 
                                     <AnimatePresence initial={false}> 
@@ -384,12 +359,12 @@ const Dashboard: React.FC<Props> = ({
                                             );
                                           }
 
-                                          const attachmentCount = attachmentCountByEntryId.get(entry.id) || 0;
+                                          const attachmentCount = attachmentCountByEntryId?.get(entry.id) || 0;
 
                                           return ( 
                                             <div key={entry.id} className="relative overflow-hidden"> 
                                               <div className="absolute inset-0 flex items-center justify-end pr-4 text-white bg-red-500"> <Trash2 size={20} /> </div> 
-                                              <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.5, right: 0.05 }} onDragEnd={(_, info) => { if (info.offset.x < -80) { Haptics.impact({ style: ImpactStyle.Heavy }); onDeleteEntry(entry.id); } }} onClick={() => onEditEntry(entry)} className={`relative z-10 bg-white dark:bg-zinc-800 overflow-hidden ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`} layout > 
+                                              <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.5, right: 0.05 }} onDragEnd={(_, info) => { if (info.offset.x < -80) { Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {}); onDeleteEntry(entry.id); } }} onClick={() => onEditEntry(entry)} className={`relative z-10 bg-white dark:bg-zinc-800 overflow-hidden ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`} layout={sortedEntries.length <= 12} > 
                                                 <div className={`p-3 flex justify-between items-start gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${isTimeComp ? "bg-purple-50/30 dark:bg-purple-900/10" : ""}`}> 
                                                   <div className="min-w-0 flex-1 flex flex-col gap-1"> 
                                                     <div className={`font-bold text-sm leading-none ${isTimeComp ? "text-purple-700 dark:text-purple-400" : "text-zinc-900 dark:text-zinc-100"}`}> {timeLabel} {pauseLabel && <span className="font-normal opacity-70">{pauseLabel}</span>} </div> 

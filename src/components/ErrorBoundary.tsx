@@ -1,6 +1,5 @@
 import React from "react";
-import * as Sentry from "@sentry/react";
-import { logger } from "../utils/logger";
+import { captureException, logger } from "../utils/logger";
 
 /**
  * Global Error Boundary - fängt unerwartete Render-Fehler ab
@@ -27,7 +26,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     logger.error("ErrorBoundary caught:", error, errorInfo);
-    Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
+    captureException(error, { extra: { componentStack: errorInfo.componentStack } });
   }
 
   handleReload = () => {

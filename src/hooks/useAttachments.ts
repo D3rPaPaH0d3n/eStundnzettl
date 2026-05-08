@@ -260,11 +260,33 @@ export function useAttachments() {
 
   // ─── Read Helpers (unverändert) ───────────────────────────
 
-  const getAttachmentsForEntry = useCallback((entryId: number | string) => {
-    return attachments
-      .filter((item) => item.entryId === entryId)
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const attachmentsByEntryId = useMemo(() => {
+    const grouped = new Map<number | string, Attachment[]>();
+
+    attachments.forEach((item) => {
+      const existing = grouped.get(item.entryId);
+      if (existing) existing.push(item);
+      else grouped.set(item.entryId, [item]);
+    });
+
+    grouped.forEach((items) => {
+      items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    });
+
+    return grouped;
   }, [attachments]);
+
+  const attachmentCountByEntryId = useMemo(() => {
+    const counts = new Map<number | string, number>();
+    attachmentsByEntryId.forEach((items, entryId) => {
+      counts.set(entryId, items.length);
+    });
+    return counts;
+  }, [attachmentsByEntryId]);
+
+  const getAttachmentsForEntry = useCallback((entryId: number | string) => {
+    return attachmentsByEntryId.get(entryId) || [];
+  }, [attachmentsByEntryId]);
 
   const getAttachmentsForEntries = useCallback((entryIds: (number | string)[]) => {
     const idSet = new Set(entryIds);
@@ -303,6 +325,8 @@ export function useAttachments() {
     attachments,
     labelSuggestions,
     attachmentStats,
+    attachmentsByEntryId,
+    attachmentCountByEntryId,
     addAttachment,
     removeAttachment,
     removeAttachmentsForEntry,

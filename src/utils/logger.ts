@@ -11,7 +11,7 @@
  */
 
 import toast from "react-hot-toast";
-import * as Sentry from "@sentry/react";
+import type * as SentryType from "@sentry/react";
 
 const isDev = (() => {
   try {
@@ -28,6 +28,27 @@ interface ScopedLogger {
   error: (...args: unknown[]) => void;
 }
 
+type SentryModule = typeof SentryType;
+
+const getSentryDsn = (): string => {
+  try {
+    return typeof __SENTRY_DSN__ !== "undefined" ? __SENTRY_DSN__ : "";
+  } catch {
+    return "";
+  }
+};
+
+let sentryModulePromise: Promise<SentryModule> | null = null;
+
+function shouldUseSentry(): boolean {
+  return !isDev && !!getSentryDsn();
+}
+
+function loadSentry(): Promise<SentryModule> {
+  sentryModulePromise ||= import("@sentry/react");
+  return sentryModulePromise;
+}
+
 function prefixArgs(scope: string, args: unknown[]): unknown[] {
   return scope ? [`[${scope}]`, ...args] : args;
 }
@@ -37,24 +58,29 @@ function prefixArgs(scope: string, args: unknown[]): unknown[] {
  * Called once from main.tsx.
  */
 export function initSentry(): void {
-  const dsn = typeof __SENTRY_DSN__ !== 'undefined' ? __SENTRY_DSN__ : '';
+  const dsn = getSentryDsn();
   if (!dsn || isDev) return;
 
-  Sentry.init({
-    dsn,
-    release: typeof __APP_VERSION__ !== 'undefined' ? `estundnzettl@${__APP_VERSION__}` : undefined,
-    environment: 'production',
-    // Only send 10% of transactions for performance monitoring
-    tracesSampleRate: 0.1,
-    // Don't send session replays
-    replaysSessionSampleRate: 0,
-    replaysOnErrorSampleRate: 0,
+  void loadSentry().then((Sentry) => {
+    Sentry.init({
+      dsn,
+      release: typeof __APP_VERSION__ !== 'undefined' ? `estundnzettl@${__APP_VERSION__}` : undefined,
+      environment: 'production',
+      // Only send 10% of transactions for performance monitoring
+      tracesSampleRate: 0.1,
+      // Don't send session replays
+      replaysSessionSampleRate: 0,
+      replaysOnErrorSampleRate: 0,
+    });
+  }).catch(() => {
+    // Sentry failed to load — app startup must stay unaffected.
   });
 }
 
 function sendToSentry(level: 'error' | 'warning', args: unknown[]): void {
-  if (isDev) return;
-  try {
+  if (!shouldUseSentry()) return;
+
+  void loadSentry().then((Sentry) => {
     const firstArg = args[0];
     if (level === 'error') {
       if (firstArg instanceof Error) {
@@ -65,9 +91,19 @@ function sendToSentry(level: 'error' | 'warning', args: unknown[]): void {
     } else {
       Sentry.captureMessage(args.map(String).join(' '), level);
     }
-  } catch {
+  }).catch(() => {
     // Sentry not initialized or failed — silently ignore
-  }
+  });
+}
+
+export function captureException(error: unknown, context?: Parameters<SentryModule["captureException"]>[1]): void {
+  if (!shouldUseSentry()) return;
+
+  void loadSentry().then((Sentry) => {
+    Sentry.captureException(error, context);
+  }).catch(() => {
+    // Sentry not initialized or failed — silently ignore
+  });
 }
 
 export const logger = {

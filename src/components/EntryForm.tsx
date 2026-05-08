@@ -2,7 +2,6 @@ import React, { forwardRef, useState, useEffect, useMemo, useCallback } from "re
 import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus, ChevronDown } from "lucide-react";
 import { Card, getHolidayData, toLocalDateString } from "../utils";
 import { WORK_CODE } from "../hooks/constants";
-import { useWorkCodes } from "../hooks/useWorkCodes";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -16,7 +15,7 @@ import { getDatePickerLocale } from "../utils/formatLocale";
 import TimePickerDrawer from "./TimePickerDrawer";
 import SelectionDrawer from "./SelectionDrawer";
 
-import type { Entry, EntryType, UserData } from "../types";
+import type { Entry, EntryType, UserData, WorkCode } from "../types";
 import type { Locale } from "../locales/types";
 import type { CalculationConfig } from "../types";
 
@@ -91,6 +90,9 @@ interface Props {
   setSpecialManualMode?: (mode: boolean) => void;
   locale?: Locale;
   calculationConfig?: CalculationConfig | null;
+  workCodes?: WorkCode[];
+  hasAnyCodes?: boolean;
+  addCode?: (label: string) => boolean;
 }
 
 const EntryForm: React.FC<Props> = ({
@@ -120,15 +122,15 @@ const EntryForm: React.FC<Props> = ({
   setSpecialManualMode = () => {},
   locale,
   calculationConfig,
+  workCodes = [],
+  hasAnyCodes = false,
+  addCode = () => false,
 }) => {
   const { t } = useTranslation();
   const isSpecialType =
     entryType === "vacation" || entryType === "sick" || entryType === "time_comp";
   const showTimeInputs =
     entryType === "work" || entryType === "drive" || (isSpecialType && specialManualMode);
-  
-  // Work Codes aus dem Hook laden
-  const { workCodes, hasAnyCodes, addCode } = useWorkCodes();
   
   const [activeTimeField, setActiveTimeField] = useState<string | null>(null);
 

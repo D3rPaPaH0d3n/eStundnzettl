@@ -2,7 +2,6 @@ import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import type { Entry, UserData, WorkCode } from "../types";
 import { verifyBackupIntegrity } from "../utils/storageBackup";
-import { filterValidEntries } from "../schemas/entry";
 import { getErrorMessage } from "../utils/errorUtils";
 
 interface UseImportProps {
@@ -69,7 +68,9 @@ export function useImport({ importEntries, setUserData, importWorkCodes }: UseIm
 
         if (d.entries) {
           if (!Array.isArray(d.entries)) throw new Error("entries is not an array");
-          // Zod-basierte Validierung (src/schemas/entry.ts)
+          // Zod-basierte Validierung nur bei tatsächlichem Import laden,
+          // damit das große Validierungs-Bundle nicht im Startpfad liegt.
+          const { filterValidEntries } = await import("../schemas/entry");
           const valid = filterValidEntries(d.entries);
           const skipped = d.entries.length - valid.length;
           if (valid.length > 0) {

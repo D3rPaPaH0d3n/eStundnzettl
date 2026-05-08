@@ -64,24 +64,59 @@ export default defineConfig({
             //    statisch und zieht @react-pdf damit beim Start ein.
             //    pdfjs-dist (fuer die Canvas-Vorschau) ist nur in
             //    PrintReport gebraucht und damit lazy.
-            if (id.includes('@react-pdf') || id.includes('react-pdf') || id.includes('@fontsource')) {
+            if (
+              id.includes('@react-pdf') ||
+              id.includes('react-pdf') ||
+              id.includes('@fontsource') ||
+              id.includes('fontkit') ||
+              id.includes('yoga-layout') ||
+              id.includes('hyphen') ||
+              id.includes('linebreak') ||
+              id.includes('bidi-js') ||
+              id.includes('unicode-properties') ||
+              id.includes('unicode-trie') ||
+              id.includes('restructure') ||
+              id.includes('brotli') ||
+              id.includes('jay-peg') ||
+              id.includes('png-js') ||
+              id.includes('browserify-zlib') ||
+              id.includes('/pako/') ||
+              id.includes('pako') ||
+              id.includes('fflate')
+            ) {
               return 'pdf-libs';
             }
             if (id.includes('pdfjs-dist')) {
               return 'pdfjs';
             }
             
-            // 2. Animations-Bibliothek separat
-            if (id.includes('framer-motion')) {
+            // 2. Sentry separat, damit das lazy geladene Monitoring nicht
+            //    im allgemeinen Start-vendor landet.
+            if (id.includes('@sentry')) {
+              return 'sentry';
+            }
+
+            // 3. Datepicker nur bei Formular/Monatswahl laden.
+            if (id.includes('react-datepicker') || id.includes('date-fns') || id.includes('@floating-ui')) {
+              return 'date-picker';
+            }
+
+            // 4. Animations-Bibliothek separat
+            if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) {
               return 'animation';
             }
 
-            // 3. Icons separat (optional, da lucide recht groß sein kann)
+            // 5. Zod nur fuer Import-/Validierungsflows laden.
+            if (id.includes('zod')) {
+              return 'validation';
+            }
+
+            // 6. Icons separat (optional, da lucide recht groß sein kann)
             if (id.includes('lucide-react')) {
               return 'icons';
             }
 
-            // 4. Alles andere kommt in den allgemeinen "vendor"-Chunk
+            // 7. Alles andere kommt in den allgemeinen "vendor"-Chunk
             return 'vendor';
           }
         }

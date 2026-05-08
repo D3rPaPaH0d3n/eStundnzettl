@@ -16,8 +16,8 @@ import {
   ChevronDown,
   ListChecks
 } from 'lucide-react';
-import { useWorkCodes } from '../hooks/useWorkCodes';
 import { ANIMATION } from '../hooks/constants';
+import type { WorkCode } from '../types';
 
 // -------------------------------------------------------
 // Hauptkomponente
@@ -25,21 +25,31 @@ import { ANIMATION } from '../hooks/constants';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  workCodes: WorkCode[];
+  isLoading: boolean;
+  hasAnyCodes: boolean;
+  addCode: (label: string) => boolean;
+  updateCode: (id: number, label: string) => boolean;
+  deleteCode: (id: number) => void;
+  loadPreset: (presetId: string) => boolean;
+  availablePresets: Array<{ id: string; name: string; description: string; codes: WorkCode[] }>;
+  clearAllCodes: () => void;
 }
 
-export const WorkCodeManager = ({ isOpen, onClose }: Props) => {
+export const WorkCodeManager = ({
+  isOpen,
+  onClose,
+  workCodes,
+  isLoading,
+  hasAnyCodes,
+  addCode,
+  updateCode,
+  deleteCode,
+  loadPreset,
+  availablePresets,
+  clearAllCodes,
+}: Props) => {
   const { t } = useTranslation();
-  const {
-    workCodes,
-    isLoading,
-    hasAnyCodes,
-    addCode,
-    updateCode,
-    deleteCode,
-    loadPreset,
-    availablePresets,
-    clearAllCodes,
-  } = useWorkCodes();
 
   // Local State
   const [newCodeLabel, setNewCodeLabel] = useState('');

@@ -68,9 +68,11 @@ interface ViewRouterProps {
   onEditEntry: (entry: Entry) => void;
   onDeleteEntry: (id: number | string) => void;
   onManageAttachments: (entry: Entry) => void;
-  getAttachmentsForEntry: (entryId: number | string) => Attachment[];
+  attachmentCountByEntryId?: Map<Entry["id"], number>;
   userData: UserData;
   workCodes: WorkCode[];
+  hasAnyCodes: boolean;
+  addCode: (label: string) => boolean;
   // EntryForm props
   form: FormState;
   handleSaveEntry: (e: React.FormEvent) => Promise<void>;
@@ -109,8 +111,8 @@ export default function ViewRouter(props: ViewRouterProps) {
     currentDate, setCurrentDate, changeMonth,
     stats, overtime, progressPercent, groupedByWeek,
     viewMonth, viewYear,
-    onEditEntry, onDeleteEntry, onManageAttachments, getAttachmentsForEntry,
-    userData, workCodes,
+    onEditEntry, onDeleteEntry, onManageAttachments, attachmentCountByEntryId,
+    userData, workCodes, hasAnyCodes, addCode,
     form, handleSaveEntry, setView,
     lastWorkEntry, uniqueProjects, entries,
     settings,
@@ -140,7 +142,7 @@ export default function ViewRouter(props: ViewRouterProps) {
                 onEditEntry={onEditEntry}
                 onDeleteEntry={onDeleteEntry}
                 onManageAttachments={onManageAttachments}
-                getAttachmentsForEntry={getAttachmentsForEntry}
+                attachmentCountByEntryId={attachmentCountByEntryId}
                 userData={userData}
                 workCodes={workCodes}
                 locale={locale}
@@ -179,6 +181,9 @@ export default function ViewRouter(props: ViewRouterProps) {
                   setSpecialManualMode={form.setSpecialManualMode}
                   locale={locale}
                   calculationConfig={calculationConfig}
+                  workCodes={workCodes}
+                  hasAnyCodes={hasAnyCodes}
+                  addCode={addCode}
                 />
               </Suspense>
             </motion.div>
@@ -200,7 +205,7 @@ export default function ViewRouter(props: ViewRouterProps) {
           {view === "report" && !showOnboarding && (
             <motion.div key="report" initial="initial" animate="in" exit="out" variants={reportVariants} transition={reportTransition} className="fixed inset-0 z-[200] w-full h-full">
               <Suspense fallback={
-                <div className="flex items-center justify-center h-full w-full bg-zinc-900/50 backdrop-blur-sm">
+                <div className="flex items-center justify-center h-full w-full bg-zinc-900/55">
                   <div className="bg-white dark:bg-zinc-800 p-4 rounded-xl shadow-xl flex items-center gap-3">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500"></div>
                     <span className="font-bold text-zinc-700 dark:text-white">{t("skeleton.pdfModule")}</span>
@@ -243,8 +248,8 @@ export default function ViewRouter(props: ViewRouterProps) {
           }}
           onStart={handleStartLive}
           onStop={handleStopLive}
-          onPause={() => { Haptics.impact({ style: ImpactStyle.Light }); pauseTimer(); }}
-          onResume={() => { Haptics.impact({ style: ImpactStyle.Light }); resumeTimer(); }}
+          onPause={() => { Haptics.impact({ style: ImpactStyle.Light }).catch(() => {}); pauseTimer(); }}
+          onResume={() => { Haptics.impact({ style: ImpactStyle.Light }).catch(() => {}); resumeTimer(); }}
           targetMinutes={todayTarget}
         />
       )}

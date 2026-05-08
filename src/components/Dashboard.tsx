@@ -82,7 +82,8 @@ const Dashboard: React.FC<Props> = ({
 
   const monthlyOvertimeSplit = stats.overtimeSplit || { mehrarbeit: 0, ueberstunden: 0 };
   const simpleMode = !!userData?.simpleMode;
-  const monthLabel = currentDate.toLocaleDateString(getIntlLocale(), {
+  const intlLocale = getIntlLocale();
+  const monthLabel = currentDate.toLocaleDateString(intlLocale, {
     month: "long",
     year: "numeric",
   });
@@ -273,7 +274,7 @@ const Dashboard: React.FC<Props> = ({
                 <button className="w-full flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl px-3 py-2 transition-colors" onClick={() => toggleWeek(week)}>
                     <div className="flex flex-col text-left">
                         <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("dashboard.calendarWeek")}</span>
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200"> {t("dashboard.calendarWeekShort", { week })}{" "} <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">({clippedMonday.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" })} – {clippedSunday.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" })})</span> </span>
+                        <span className="font-bold text-zinc-800 dark:text-zinc-200"> {t("dashboard.calendarWeekShort", { week })}{" "} <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">({clippedMonday.toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" })} – {clippedSunday.toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" })})</span> </span>
                         
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <div className="text-sm flex gap-3">
@@ -316,8 +317,8 @@ const Dashboard: React.FC<Props> = ({
                               <motion.div key={dateStr} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden"> 
                                 <div className="flex"> 
                                   <div className="bg-zinc-800 dark:bg-zinc-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0 z-20 relative"> 
-                                    <span className="text-xs font-bold opacity-80">{d.toLocaleDateString(getIntlLocale(), { weekday: "short" }).slice(0, 2)}</span> 
-                                    <span className="text-sm font-bold">{d.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" })}</span> 
+                                    <span className="text-xs font-bold opacity-80">{d.toLocaleDateString(intlLocale, { weekday: "short" }).slice(0, 2)}</span> 
+                                    <span className="text-sm font-bold">{d.toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" })}</span> 
                                   </div> 
                                   <div className="flex-1 min-w-0"> 
                                     <AnimatePresence initial={false}> 

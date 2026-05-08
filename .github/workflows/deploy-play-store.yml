@@ -11,8 +11,9 @@
 #   2. Node.js + Dependencies installieren
 #   3. Tests ausführen
 #   4. Version hochzählen:
-#      - Internal: Play Console abfragen → höchsten versionCode +1, optional Semver-Bump
-#      - Beta: lokales versionCode +1 (kein Commit)
+#      - Play Console abfragen → höchsten versionCode +1
+#      - Internal: optional Semver-Bump
+#      - Beta: kein Semver-Bump, aber ebenfalls Play-safe versionCode
 #   5. Frontend bauen (Vite — injiziert Version via __APP_VERSION__)
 #   6. Capacitor Sync + Proguard-Fix
 #   7. Release AAB bauen + signieren
@@ -116,9 +117,9 @@ jobs:
           echo "name=$NAME" >> $GITHUB_OUTPUT
           echo "📌 Lokale Version: $NAME (versionCode $CODE)"
 
-      # Play Console abfragen (nur bei Internal — bei Beta reicht lokales +1)
+      # Play Console immer abfragen: Google Play verbrennt versionCodes track-übergreifend.
+      # Auch Beta muss daher max(lokal, Play) + 1 verwenden.
       - name: Query highest versionCode from Play Console
-        if: github.event.inputs.track == 'internal'
         id: play_version
         env:
           PLAY_DEPLOY_KEY_BASE64: ${{ secrets.PLAY_DEPLOY_KEY_BASE64 }}
@@ -163,46 +164,47 @@ jobs:
           TRACK="${{ github.event.inputs.track }}"
           OLD_CODE=${{ steps.read_version.outputs.code }}
           OLD_NAME=${{ steps.read_version.outputs.name }}
+          PLAY_HIGHEST="${{ steps.play_version.outputs.highest }}"
+
+          if ! [[ "$PLAY_HIGHEST" =~ ^[0-9]+$ ]]; then
+            PLAY_HIGHEST=0
+          fi
+
+          if [ "$PLAY_HIGHEST" -gt "$OLD_CODE" ]; then
+            BASE_CODE=$PLAY_HIGHEST
+            echo "⚠️ Play Store hat höheren versionCode ($PLAY_HIGHEST) als lokal ($OLD_CODE)"
+          else
+            BASE_CODE=$OLD_CODE
+          fi
+
+          NEW_CODE=$((BASE_CODE + 1))
+          NEW_NAME="$OLD_NAME"
 
           if [ "$TRACK" = "internal" ]; then
-            # Internal: höchsten versionCode aus Play Console verwenden
             BUMP_TYPE=${{ github.event.inputs.version_bump || 'none' }}
-            PLAY_HIGHEST=${{ steps.play_version.outputs.highest || '0' }}
-
-            if [ "$PLAY_HIGHEST" -gt "$OLD_CODE" ]; then
-              BASE_CODE=$PLAY_HIGHEST
-              echo "⚠️ Play Store hat höheren versionCode ($PLAY_HIGHEST) als lokal ($OLD_CODE)"
-            else
-              BASE_CODE=$OLD_CODE
-            fi
-
-            NEW_CODE=$((BASE_CODE + 1))
-            NEW_NAME="$OLD_NAME"
-
-            if [ "$BUMP_TYPE" != "none" ]; then
-              IFS='.' read -r major minor patch <<< "$OLD_NAME"
-              case "$BUMP_TYPE" in
-                major) new_major=$((major + 1)); new_minor=0; new_patch=0 ;;
-                minor) new_major=$major; new_minor=$((minor + 1)); new_patch=0 ;;
-                patch) new_major=$major; new_minor=$minor; new_patch=$((patch + 1)) ;;
-              esac
-              NEW_NAME="${new_major}.${new_minor}.${new_patch}"
-            fi
-
-            # package.json nur bei echtem Semver-Bump anpassen
-            if [ "$BUMP_TYPE" != "none" ]; then
-              node -e "
-                const fs = require('fs');
-                const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-                pkg.version = '$NEW_NAME';
-                fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');
-              "
-            fi
           else
-            # Beta: einfach lokales +1, kein Semver-Bump
+            # Beta: kein Semver-Bump, aber Play-safe versionCode via max(lokal, Play) + 1
             BUMP_TYPE=none
-            NEW_CODE=$((OLD_CODE + 1))
-            NEW_NAME="$OLD_NAME"
+          fi
+
+          if [ "$BUMP_TYPE" != "none" ]; then
+            IFS='.' read -r major minor patch <<< "$OLD_NAME"
+            case "$BUMP_TYPE" in
+              major) new_major=$((major + 1)); new_minor=0; new_patch=0 ;;
+              minor) new_major=$major; new_minor=$((minor + 1)); new_patch=0 ;;
+              patch) new_major=$major; new_minor=$minor; new_patch=$((patch + 1)) ;;
+            esac
+            NEW_NAME="${new_major}.${new_minor}.${new_patch}"
+          fi
+
+          # package.json nur bei echtem Semver-Bump anpassen
+          if [ "$BUMP_TYPE" != "none" ]; then
+            node -e "
+              const fs = require('fs');
+              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+              pkg.version = '$NEW_NAME';
+              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            "
           fi
 
           # build.gradle aktualisieren

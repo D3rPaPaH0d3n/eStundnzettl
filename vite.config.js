@@ -71,12 +71,18 @@ export default defineConfig({
               return 'pdfjs';
             }
             
-            // 2. Animations-Bibliothek separat
+            // 2. Sentry separat, damit das lazy geladene Monitoring nicht
+            //    im allgemeinen Start-vendor landet.
+            if (id.includes('@sentry')) {
+              return 'sentry';
+            }
+
+            // 3. Animations-Bibliothek separat
             if (id.includes('framer-motion')) {
               return 'animation';
             }
 
-            // 3. Icons separat (optional, da lucide recht groß sein kann)
+            // 4. Icons separat (optional, da lucide recht groß sein kann)
             if (id.includes('lucide-react')) {
               return 'icons';
             }

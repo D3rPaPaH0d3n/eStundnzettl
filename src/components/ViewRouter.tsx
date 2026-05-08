@@ -71,6 +71,8 @@ interface ViewRouterProps {
   attachmentCountByEntryId?: Map<Entry["id"], number>;
   userData: UserData;
   workCodes: WorkCode[];
+  hasAnyCodes: boolean;
+  addCode: (label: string) => boolean;
   // EntryForm props
   form: FormState;
   handleSaveEntry: (e: React.FormEvent) => Promise<void>;
@@ -110,7 +112,7 @@ export default function ViewRouter(props: ViewRouterProps) {
     stats, overtime, progressPercent, groupedByWeek,
     viewMonth, viewYear,
     onEditEntry, onDeleteEntry, onManageAttachments, attachmentCountByEntryId,
-    userData, workCodes,
+    userData, workCodes, hasAnyCodes, addCode,
     form, handleSaveEntry, setView,
     lastWorkEntry, uniqueProjects, entries,
     settings,
@@ -179,6 +181,9 @@ export default function ViewRouter(props: ViewRouterProps) {
                   setSpecialManualMode={form.setSpecialManualMode}
                   locale={locale}
                   calculationConfig={calculationConfig}
+                  workCodes={workCodes}
+                  hasAnyCodes={hasAnyCodes}
+                  addCode={addCode}
                 />
               </Suspense>
             </motion.div>

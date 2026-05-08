@@ -62,7 +62,19 @@ export default function App() {
     setCalculationConfig,
     resetCalculationConfigToLocale,
   } = useCalculationConfig({ locale, localeId, userData });
-  const { workCodes, hasAnyCodes, loadWorkCodes } = useWorkCodes();
+  const workCodesApi = useWorkCodes();
+  const {
+    workCodes,
+    isLoading: workCodesLoading,
+    hasAnyCodes,
+    addCode,
+    updateCode: updateWorkCode,
+    deleteCode: deleteWorkCode,
+    loadPreset: loadWorkCodePreset,
+    availablePresets: availableWorkCodePresets,
+    clearAllCodes: clearAllWorkCodes,
+    loadWorkCodes,
+  } = workCodesApi;
   const getDefaultCode = useLastCode({ hasAnyCodes, workCodes });
   const form = useFormState({ getDefaultCode });
   const { timerState, autoCheckoutData, clearAutoCheckout, startTimer, pauseTimer, resumeTimer, stopTimer } = useLiveTimer();
@@ -170,6 +182,15 @@ export default function App() {
     setLocale,
     setCalculationConfig,
     resetCalculationConfigToLocale,
+    workCodes,
+    workCodesLoading,
+    hasAnyWorkCodes: hasAnyCodes,
+    addWorkCode: addCode,
+    updateWorkCode,
+    deleteWorkCode,
+    loadWorkCodePreset,
+    availableWorkCodePresets,
+    clearAllWorkCodes,
   };
 
   // --- RENDER ---
@@ -288,6 +309,8 @@ export default function App() {
         attachmentCountByEntryId={attachmentCountByEntryId}
         userData={userData}
         workCodes={workCodes}
+        hasAnyCodes={hasAnyCodes}
+        addCode={addCode}
         form={form}
         handleSaveEntry={handleSaveEntry}
         setView={setView}

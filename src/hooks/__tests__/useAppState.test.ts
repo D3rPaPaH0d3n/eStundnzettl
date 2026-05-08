@@ -48,6 +48,31 @@ describe("useAppState", () => {
     expect(SplashScreen.hide).toHaveBeenCalledOnce();
   });
 
+  it("waits for settings hydration before hiding SplashScreen or showing onboarding", () => {
+    const { result, rerender } = renderHook(
+      ({ status }) => useAppState({ userData: NEW_USER, settingsStorageStatus: status }),
+      { initialProps: { status: "loading" as const } },
+    );
+
+    expect(result.current.showOnboarding).toBe(false);
+    expect(SplashScreen.hide).not.toHaveBeenCalled();
+
+    rerender({ status: "ready" as const });
+
+    expect(result.current.showOnboarding).toBe(true);
+    expect(SplashScreen.hide).toHaveBeenCalledOnce();
+  });
+
+  it("continues startup on failed settings hydration", () => {
+    const { result } = renderHook(() => useAppState({
+      userData: NEW_USER,
+      settingsStorageStatus: "failed",
+    }));
+
+    expect(result.current.showOnboarding).toBe(true);
+    expect(SplashScreen.hide).toHaveBeenCalledOnce();
+  });
+
   it("initializes with view='dashboard'", () => {
     const { result } = renderHook(() => useAppState({ userData: COMPLETE_USER }));
     expect(result.current.view).toBe("dashboard");

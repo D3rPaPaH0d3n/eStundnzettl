@@ -27,7 +27,7 @@ import {
   type NextcloudSecretStatus,
 } from "../utils/nextcloudSecret";
 
-type SettingsStorageStatus = "fallback" | "loading" | "ready" | "failed";
+export type SettingsStorageStatus = "fallback" | "loading" | "ready" | "failed";
 
 function loadUserDataFromLS(): UserData | null {
   if (isSQLiteActive()) return null;
@@ -138,7 +138,9 @@ export function useSettings() {
   const [sqliteReady, setSqliteReady] = useState<boolean>(false);
   const sqliteLoadStarted = useRef<boolean>(false);
   const nextcloudPassUserWrite = useRef<boolean>(false);
-  const [settingsStorageStatus, setSettingsStorageStatus] = useState<SettingsStorageStatus>("fallback");
+  const [settingsStorageStatus, setSettingsStorageStatus] = useState<SettingsStorageStatus>(() => (
+    isSQLiteActive() ? "loading" : "fallback"
+  ));
   const [settingsStorageError, setSettingsStorageError] = useState<string | null>(null);
   const [nextcloudSecretStatus, setNextcloudSecretStatus] = useState<NextcloudSecretStatus>("missing");
   const [nextcloudSecretError, setNextcloudSecretError] = useState<string | null>(null);

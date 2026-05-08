@@ -52,6 +52,7 @@ export default function App() {
     autoBackup, setAutoBackup,
     nextcloudEnabled, nextcloudUrl, nextcloudUser, nextcloudPass,
     setNextcloudEnabled, setNextcloudUrl, setNextcloudUser, setNextcloudPass,
+    settingsStorageStatus,
   } = useSettings();
   // Locale-Objekt aus gespeicherter LocaleId auflösen (Fallback: AT)
   const locale = useMemo(() => getLocale(localeId), [localeId]);
@@ -95,7 +96,7 @@ export default function App() {
     handleCloseDeleteModal, handleCloseAttachmentModal,
     handleTourStart, handleTourClose,
     getHeaderTitle,
-  } = useAppState({ userData });
+  } = useAppState({ userData, settingsStorageStatus });
 
   // --- DERIVED DATA ---
   const viewYear = currentDate.getFullYear();

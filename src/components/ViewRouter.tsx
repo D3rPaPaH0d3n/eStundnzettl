@@ -200,7 +200,7 @@ export default function ViewRouter(props: ViewRouterProps) {
           {view === "report" && !showOnboarding && (
             <motion.div key="report" initial="initial" animate="in" exit="out" variants={reportVariants} transition={reportTransition} className="fixed inset-0 z-[200] w-full h-full">
               <Suspense fallback={
-                <div className="flex items-center justify-center h-full w-full bg-zinc-900/50 backdrop-blur-sm">
+                <div className="flex items-center justify-center h-full w-full bg-zinc-900/55">
                   <div className="bg-white dark:bg-zinc-800 p-4 rounded-xl shadow-xl flex items-center gap-3">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500"></div>
                     <span className="font-bold text-zinc-700 dark:text-white">{t("skeleton.pdfModule")}</span>
@@ -243,8 +243,8 @@ export default function ViewRouter(props: ViewRouterProps) {
           }}
           onStart={handleStartLive}
           onStop={handleStopLive}
-          onPause={() => { Haptics.impact({ style: ImpactStyle.Light }); pauseTimer(); }}
-          onResume={() => { Haptics.impact({ style: ImpactStyle.Light }); resumeTimer(); }}
+          onPause={() => { Haptics.impact({ style: ImpactStyle.Light }).catch(() => {}); pauseTimer(); }}
+          onResume={() => { Haptics.impact({ style: ImpactStyle.Light }).catch(() => {}); resumeTimer(); }}
           targetMinutes={todayTarget}
         />
       )}

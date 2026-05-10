@@ -118,7 +118,8 @@ export async function connectGoogleDrivePdf(): Promise<Record<string, unknown>> 
   }
   try {
     const nativeResult = await GoogleDriveBackupPlugin.connect({ scope: AUTH_SCOPE_PDF });
-    const accessToken = nativeResult?.accessToken || null;
+    const rawToken = nativeResult?.accessToken;
+    const accessToken = typeof rawToken === 'string' && rawToken ? rawToken : null;
     if (!accessToken) {
       throw new Error('GOOGLE_DRIVE_PDF_AUTH_NO_ACCESS_TOKEN');
     }
@@ -180,7 +181,8 @@ export async function getValidGoogleTokenPdf(): Promise<{ accessToken: string }>
 
   try {
     const nativeResult = await GoogleDriveBackupPlugin.refreshToken({ scope: AUTH_SCOPE_PDF });
-    const accessToken = nativeResult?.accessToken || null;
+    const rawToken = nativeResult?.accessToken;
+    const accessToken = typeof rawToken === 'string' && rawToken ? rawToken : null;
     if (!accessToken) {
       throw new Error('AUTH_REQUIRED');
     }

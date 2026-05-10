@@ -1,3 +1,4 @@
+/// <reference types="node" />
 /**
  * Integration-Smoke fuer ReportPdfDocument:
  * Ruft die ECHTE @react-pdf/renderer-Pipeline (`pdf().toBlob()`) auf und

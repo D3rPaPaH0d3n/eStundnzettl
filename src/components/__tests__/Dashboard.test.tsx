@@ -138,7 +138,7 @@ const renderDashboard = (opts: RenderOptions = {}) => {
       onEditEntry={onEditEntry}
       onDeleteEntry={onDeleteEntry}
       onManageAttachments={onManageAttachments}
-      getAttachmentsForEntry={() => []}
+      attachmentCountByEntryId={new Map()}
       userData={makeUser(opts.userData)}
       workCodes={[{ id: 1, label: "Standard" }]}
     />,

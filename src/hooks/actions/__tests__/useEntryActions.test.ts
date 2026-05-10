@@ -1,5 +1,5 @@
 import type React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 // ─── Module-Mocks (VOR Hook-Import) ───────────────────────────
@@ -95,19 +95,22 @@ const makeForm = (overrides: FormStateOverrides = {}): FormState => ({
   startEdit: vi.fn(),
 });
 
+type EntryAction = (entry: Entry) => Promise<void>;
+type EntryActionMock = Mock<EntryAction>;
+
 interface RenderOptions {
   form?: FormState;
   entries?: Entry[];
   userData?: UserData;
   workCodes?: WorkCode[];
-  addEntry?: ReturnType<typeof vi.fn>;
-  updateEntry?: ReturnType<typeof vi.fn>;
+  addEntry?: EntryActionMock;
+  updateEntry?: EntryActionMock;
 }
 
 const renderActions = (opts: RenderOptions = {}) => {
   const form = opts.form ?? makeForm();
-  const addEntry = opts.addEntry ?? vi.fn().mockResolvedValue(undefined);
-  const updateEntry = opts.updateEntry ?? vi.fn().mockResolvedValue(undefined);
+  const addEntry: EntryActionMock = opts.addEntry ?? vi.fn<EntryAction>().mockResolvedValue(undefined);
+  const updateEntry: EntryActionMock = opts.updateEntry ?? vi.fn<EntryAction>().mockResolvedValue(undefined);
   const setView = vi.fn();
   const getDefaultCode = vi.fn(() => 1);
 

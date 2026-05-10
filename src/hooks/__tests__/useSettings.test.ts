@@ -72,8 +72,10 @@ describe("useSettings", () => {
     vi.mocked(getSetting).mockResolvedValue(null);
     vi.mocked(setSetting).mockResolvedValue(undefined);
     vi.mocked(deleteSetting).mockResolvedValue(undefined);
-    vi.mocked(deobfuscate).mockImplementation((val: string) => Promise.resolve(val.startsWith("enc:") ? val.replace("enc:", "") : val));
-    vi.mocked(deobfuscateLegacySync).mockImplementation((val: string) => val);
+    vi.mocked(deobfuscate).mockImplementation((val: string | null | undefined) =>
+      Promise.resolve(typeof val === "string" && val.startsWith("enc:") ? val.replace("enc:", "") : (val ?? ""))
+    );
+    vi.mocked(deobfuscateLegacySync).mockImplementation((val: string | null | undefined) => val ?? "");
     secureSecretsMock.store.clear();
     secureSecretsMock.available = true;
     secureSecretsMock.failSet = false;

@@ -8,6 +8,7 @@ vi.mock("@capacitor/splash-screen", () => ({
 }));
 
 import { useAppState } from "../useAppState";
+import type { SettingsStorageStatus } from "../useSettings";
 import { SplashScreen } from "@capacitor/splash-screen";
 import type { UserData } from "../../types";
 
@@ -50,14 +51,15 @@ describe("useAppState", () => {
 
   it("waits for settings hydration before hiding SplashScreen or showing onboarding", () => {
     const { result, rerender } = renderHook(
-      ({ status }) => useAppState({ userData: NEW_USER, settingsStorageStatus: status }),
-      { initialProps: { status: "loading" as const } },
+      ({ status }: { status: SettingsStorageStatus }) =>
+        useAppState({ userData: NEW_USER, settingsStorageStatus: status }),
+      { initialProps: { status: "loading" } },
     );
 
     expect(result.current.showOnboarding).toBe(false);
     expect(SplashScreen.hide).not.toHaveBeenCalled();
 
-    rerender({ status: "ready" as const });
+    rerender({ status: "ready" });
 
     expect(result.current.showOnboarding).toBe(true);
     expect(SplashScreen.hide).toHaveBeenCalledOnce();

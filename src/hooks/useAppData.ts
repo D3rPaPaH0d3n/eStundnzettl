@@ -148,7 +148,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries,
     (stats.totalIst / (stats.totalTarget || 1)) * 100
   );
 
-  const lastWorkEntry = useMemo(() => {
+  const lastWorkEntry = useMemo<Entry | null>(() => {
     let latestEntry: Entry | null = null;
 
     entries.forEach((entry) => {

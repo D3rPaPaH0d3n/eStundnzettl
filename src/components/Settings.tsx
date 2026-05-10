@@ -14,7 +14,7 @@ import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBa
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
-import type { Entry, UserData, Theme, WorkCode, PdfArchiveRunOptions, CalculationConfig } from "../types";
+import type { Entry, UserData, Theme, WorkCode, PdfArchiveRunOptions, CalculationConfig, BackupAnalysisData } from "../types";
 import type { Locale, LocaleId } from "../locales/types";
 
 const ChangelogModal = React.lazy(() => import("./ChangelogModal"));
@@ -121,7 +121,7 @@ const Settings: React.FC<Props> = ({
   const [showHelp, setShowHelp] = useState(false);
   const [showWorkCodeManager, setShowWorkCodeManager] = useState(false);
 
-  const [pendingImport, setPendingImport] = useState<Record<string, unknown> | null>(null);
+  const [pendingImport, setPendingImport] = useState<BackupAnalysisData | null>(null);
 
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [pickerTargetIndex, setPickerTargetIndex] = useState<number | null>(null);

@@ -296,21 +296,35 @@ export interface GoogleSignInResult {
 
 // ─── Backup Analysis ────────────────────────────────────────
 
-export interface BackupAnalysisResult {
-  integrity: "ok" | "mismatch" | "missing";
+/**
+ * Concrete shape produced by `analyzeBackupData` for a valid backup.
+ * `applyBackup` consumes exactly this shape.
+ */
+export interface BackupAnalysisData {
+  valid: true;
+  entryCount: number;
+  hasSettings: boolean;
+  hasWorkCodes: boolean;
+  hasAttachments: boolean;
+  hasCalculationConfig: boolean;
   entries: Entry[];
+  settings: Record<string, unknown> | null;
   workCodes: WorkCode[];
   attachments: Attachment[];
   attachmentLabels: string[];
-  settings: Record<string, unknown> | null;
+  calculationConfig: Record<string, unknown> | null;
   timestamp: string | null;
-  newEntries: number;
-  updatedEntries: number;
-  unchangedEntries: number;
-  newCodes: number;
-  newAttachments: number;
-  conflicts: Entry[];
+  integrity: string; // "verified" | "unverified" | "mismatch" | "ok" | "missing"
 }
+
+/**
+ * Discriminated return type of `analyzeBackupData`.
+ * Use `if (result.isValid)` to narrow to the data-bearing branch.
+ * The valid branch carries the data both flattened (legacy) and as `data`.
+ */
+export type BackupAnalysisResult =
+  | { valid: false; isValid: false }
+  | (BackupAnalysisData & { isValid: true; data: BackupAnalysisData });
 
 // ─── PDF Archive ────────────────────────────────────────────
 

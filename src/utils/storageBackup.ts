@@ -10,7 +10,7 @@ import { getAllEntries } from "../db/repositories/entriesRepo";
 import { replaceFullSnapshot, type ImportSnapshot } from "../db/snapshot";
 import { logger } from "./logger";
 import { getErrorMessage } from "./errorUtils";
-import type { BackupAnalysisResult, CalculationConfig, UserData } from "../types";
+import type { BackupAnalysisResult, BackupAnalysisData, CalculationConfig, UserData, Entry, WorkCode, Attachment } from "../types";
 
 // =========================================================
 // BACKUP ORDNER
@@ -92,13 +92,14 @@ function redactBackupErrorMessage(error: unknown, fallback: string): string {
  *  - "mismatch":   Checksum vorhanden, aber inkorrekt (möglicher Tampering)
  *  - "unverified": Kein Checksum-Feld (Legacy-Backup)
  */
-export async function verifyBackupIntegrity(payload: Record<string, unknown> | null): Promise<"verified" | "mismatch" | "unverified"> {
-  if (!payload || typeof payload !== "object") return "unverified";
-  if (typeof payload.checksum !== "string" || payload.checksum.length === 0) {
+export async function verifyBackupIntegrity(payload: unknown): Promise<"verified" | "mismatch" | "unverified"> {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return "unverified";
+  const obj = payload as Record<string, unknown>;
+  if (typeof obj.checksum !== "string" || obj.checksum.length === 0) {
     return "unverified";
   }
-  const expected = payload.checksum;
-  const actual = await computeBackupChecksum(payload);
+  const expected = obj.checksum;
+  const actual = await computeBackupChecksum(obj);
   if (!actual) return "unverified";
   return actual === expected ? "verified" : "mismatch";
 }
@@ -332,14 +333,14 @@ const isValidEntry = (entry: unknown): boolean => {
   return true;
 };
 
-const normalizeEntries = (value: unknown): unknown[] => {
+const normalizeEntries = (value: unknown): Entry[] => {
   const v = value as Record<string, unknown> | undefined;
   let raw: unknown[] = [];
   if (Array.isArray(value)) raw = value;
   else if (Array.isArray(v?.entries)) raw = v.entries as unknown[];
   else if (v?.data && typeof v.data === "object" && Array.isArray((v.data as Record<string, unknown>)?.entries)) raw = (v.data as Record<string, unknown>).entries as unknown[];
   else if (Array.isArray(v?.items)) raw = v.items as unknown[];
-  return raw.filter(isValidEntry);
+  return raw.filter(isValidEntry) as Entry[];
 };
 
 const normalizeSettings = (value: unknown): Record<string, unknown> | null => {
@@ -348,18 +349,18 @@ const normalizeSettings = (value: unknown): Record<string, unknown> | null => {
   return (v.user || v.settings || v.profile || v.userData || v.employee || null) as Record<string, unknown> | null;
 };
 
-const normalizeWorkCodes = (value: unknown): unknown[] => {
+const normalizeWorkCodes = (value: unknown): WorkCode[] => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
   const v = value as Record<string, unknown>;
   const raw = v.workCodes || v.codes || v.workcodes || [];
-  return Array.isArray(raw) ? raw : [];
+  return (Array.isArray(raw) ? raw : []) as WorkCode[];
 };
 
-const normalizeAttachments = (value: unknown): unknown[] => {
+const normalizeAttachments = (value: unknown): Attachment[] => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
   const v = value as Record<string, unknown>;
   const raw = v.attachments || v.files || [];
-  return Array.isArray(raw) ? raw : [];
+  return (Array.isArray(raw) ? raw : []) as Attachment[];
 };
 
 const normalizeAttachmentLabels = (value: unknown): string[] => {
@@ -384,7 +385,7 @@ const normalizeCalculationConfig = (value: unknown): Record<string, unknown> | n
 
 // 1. ANALYSE - Schaut in die Daten, OHNE zu speichern.
 // Async, weil die Integritätsprüfung via SHA-256 (Web Crypto) asynchron ist.
-export const analyzeBackupData = async (data: unknown): Promise<Record<string, unknown>> => {
+export const analyzeBackupData = async (data: unknown): Promise<BackupAnalysisResult> => {
   if (!data) return { valid: false, isValid: false };
 
   const entries = normalizeEntries(data);
@@ -405,7 +406,7 @@ export const analyzeBackupData = async (data: unknown): Promise<Record<string, u
     logger.warn("[analyzeBackupData] Integritätsprüfung fehlgeschlagen:", err);
   }
 
-  const analysisResult = {
+  const analysisResult: BackupAnalysisData = {
     valid: true,
     entryCount: entries.length,
     hasSettings: !!settings,
@@ -419,13 +420,13 @@ export const analyzeBackupData = async (data: unknown): Promise<Record<string, u
     attachmentLabels,
     calculationConfig,
     timestamp: normalizeTimestamp(data),
-    integrity, // "verified" | "unverified" | "mismatch"
+    integrity,
   };
 
   return {
     isValid: true,
     data: analysisResult,
-    ...analysisResult
+    ...analysisResult,
   };
 };
 
@@ -437,7 +438,7 @@ export const analyzeBackupData = async (data: unknown): Promise<Record<string, u
 // eigenen Mini-Transaktion → bei Fehler in Schritt 3 von 6 blieben die
 // ersten beiden persistiert. Mit dem Snapshot-Approach kommt jetzt
 // entweder das ganze Backup an oder gar nichts.
-export const applyBackup = async (analyzedData: BackupAnalysisResult & Record<string, unknown>, mode: string = 'ALL'): Promise<boolean> => {
+export const applyBackup = async (analyzedData: BackupAnalysisData, mode: string = 'ALL'): Promise<boolean> => {
   if (!analyzedData || !analyzedData.valid) return false;
 
   try {
@@ -459,9 +460,9 @@ export const applyBackup = async (analyzedData: BackupAnalysisResult & Record<st
         snapshot.attachmentLabels = analyzedData.attachmentLabels;
       }
 
-      const calcConfig = (analyzedData as Record<string, unknown>).calculationConfig;
-      if (mode === 'ALL' && calcConfig && typeof calcConfig === 'object') {
-        snapshot.calculationConfig = calcConfig as CalculationConfig;
+      // CalculationConfig aus Backup übernehmen (wenn mode=ALL).
+      if (mode === 'ALL' && analyzedData.calculationConfig) {
+        snapshot.calculationConfig = analyzedData.calculationConfig as CalculationConfig;
       }
 
       await replaceFullSnapshot(snapshot);

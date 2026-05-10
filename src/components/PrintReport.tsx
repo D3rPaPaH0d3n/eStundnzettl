@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   X,
   Loader,
@@ -150,7 +150,7 @@ const PrintReport: React.FC<Props> = ({
     onMonthChange(newDate);
   };
 
-  const getWeekLabel = (week: number) => {
+  const getWeekLabel = useCallback((week: number) => {
     const year = monthDate.getFullYear();
     const simple = new Date(year, 0, 1 + (week - 1) * 7);
     const dow = simple.getDay();
@@ -163,7 +163,7 @@ const PrintReport: React.FC<Props> = ({
     const fmt = (d: Date) =>
       d.toLocaleDateString(getIntlLocale(), { day: "2-digit", month: "2-digit" });
     return `${fmt(monday)} - ${fmt(sunday)}`;
-  };
+  }, [monthDate]);
 
   const filteredEntries = useMemo(() => {
     const list =
@@ -189,7 +189,7 @@ const PrintReport: React.FC<Props> = ({
   const currentLabel = useMemo(() => {
     if (filterMode === "month") return t("reports.fullMonth");
     return `${t("dashboard.calendarWeekShort", { week: filterMode })} (${getWeekLabel(filterMode)})`;
-  }, [filterMode, availableWeeks, monthDate, t]);
+  }, [filterMode, getWeekLabel, t]);
 
   // --- STATISTIK ---
   const { periodStart, periodEnd } = useMemo(() => {

@@ -104,7 +104,9 @@ const ChangelogModal = ({ isOpen, onClose }: Props) => {
 
   const changelogData = useMemo(
     () => groupBugfixVersions(getChangelogData()),
-    // i18n.language triggers the recompute when the user switches language
+    // getChangelogData() reads i18n.language internally via the singleton,
+    // so the trigger-dep is intentional — ESLint can't see the dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [i18n.language],
   );
 

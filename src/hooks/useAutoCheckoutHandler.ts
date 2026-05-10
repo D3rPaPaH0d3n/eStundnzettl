@@ -74,5 +74,11 @@ export function useAutoCheckoutHandler({
 
       clearAutoCheckout();
     }
+    // Trigger-driven by autoCheckoutData. The form setters / setView /
+    // clearAutoCheckout / getDefaultCode are imperative side-effects fired
+    // once when the auto-checkout fires; including them as deps would cause
+    // duplicate toasts and form resets on every render where the parent
+    // recreates form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoCheckoutData, t]);
 }

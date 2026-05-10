@@ -296,7 +296,7 @@ export function useAutoPdfArchive(entries: Entry[], userData: UserData, workCode
     } finally {
       isRunning.current = false;
     }
-  }, []);
+  }, [locale, calculationConfig]);
 
   // Startup-Check (einmalig beim Mount, verzoegert damit DB-/Settings-Loads
   // abgeschlossen sind)

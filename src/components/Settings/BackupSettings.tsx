@@ -168,6 +168,10 @@ const BackupSettings: React.FC<Props> = ({
       log.debug('Cleaning up lifecycle listeners');
       cleanupLifecycle();
     };
+    // Mount-only setup: handlers read fresh component state via refs (e.g.
+    // appIsActive.current). Listing the handlers as deps would re-register
+    // the native listeners on every render and leak registrations.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync local UI state with props

@@ -111,7 +111,12 @@ export const useLiveTimer = () => {
         });
       }
     }
-  }, []); // Läuft nur einmal beim Mounten (App Start)
+    // Läuft nur einmal beim Mounten (App Start). Re-running this when
+    // timerState changes would risk re-triggering auto-checkout on a fresh
+    // timer start — we only want to detect the "started on a past day"
+    // case once, on hydration from localStorage.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startTimer = () => {
     setTimerState({

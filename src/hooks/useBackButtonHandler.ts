@@ -37,5 +37,10 @@ export function useBackButtonHandler({
       }
     });
     return () => { handler.then(h => h.remove()); };
+    // Re-registers when view changes so the closure sees the current view.
+    // setView and form are imperative callbacks the handler invokes once per
+    // back-press; including them would re-register on every parent render
+    // (form is recreated each render) and could drop back-presses.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 }

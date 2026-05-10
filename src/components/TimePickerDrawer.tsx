@@ -33,7 +33,10 @@ const WheelColumn = ({ items, selected, onSelect, align }: WheelColumnProps) => 
   const maxOffset = 0;
   const minOffset = -(items.length - 1) * ITEM_H;
 
-  const clamp = (v: number) => Math.max(minOffset, Math.min(maxOffset, v));
+  const clamp = useCallback(
+    (v: number) => Math.max(minOffset, Math.min(maxOffset, v)),
+    [minOffset],
+  );
   const getIndex = (off: number) => Math.round(-off / ITEM_H);
 
   // Snap to nearest item with spring animation
@@ -71,7 +74,7 @@ const WheelColumn = ({ items, selected, onSelect, align }: WheelColumnProps) => 
       animRef.current = requestAnimationFrame(animate);
     };
     animRef.current = requestAnimationFrame(animate);
-  }, [items, minOffset, onSelect]);
+  }, [items, clamp, onSelect]);
 
   // Momentum-Animation nach Touch-Ende
   const startMomentum = useCallback(() => {
@@ -94,7 +97,7 @@ const WheelColumn = ({ items, selected, onSelect, align }: WheelColumnProps) => 
       animRef.current = requestAnimationFrame(tick);
     };
     animRef.current = requestAnimationFrame(tick);
-  }, [items, minOffset, snapTo]);
+  }, [items, clamp, snapTo]);
 
   // Initialisierung wenn selected sich ändert (von außen)
   useEffect(() => {

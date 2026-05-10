@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -21,12 +21,12 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   
   const ITEM_HEIGHT = 64; 
 
-  const getInitialValues = (mins: number | null | undefined): { h: number; d: number } => {
+  const getInitialValues = useCallback((mins: number | null | undefined): { h: number; d: number } => {
     if (mins === undefined || mins === null) return { h: 8, d: 0 };
-    
+
     const h = Math.floor(mins / 60);
     const m = mins % 60;
-    
+
     let d = 0;
     if (minuteInterval === 1) {
       // 1-Minuten-Schritte: Minuten als Dezimalbruch (z.B. 30 Minuten = 0.5)
@@ -40,9 +40,9 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
       else if (m >= 30) d = 0.5;
       else if (m >= 15) d = 0.25;
     }
-    
+
     return { h, d };
-  };
+  }, [minuteInterval]);
 
   const [selectedHour, setSelectedHour] = useState(8);
   const [selectedDecimal, setSelectedDecimal] = useState(0);
@@ -58,7 +58,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
         scrollToValue(decimalsRef, d);
       }, 100);
     }
-  }, [isOpen, initialMinutes]);
+  }, [isOpen, initialMinutes, getInitialValues]);
 
   const scrollToValue = (ref: React.RefObject<HTMLDivElement | null>, val: number) => {
     if (ref.current) {

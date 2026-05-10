@@ -370,6 +370,9 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
         listenerHandle.current = null;
       }
     };
+    // Mount-only registration. performBackup reads latestDataRef.current
+    // internally, so the closure captured at mount stays correct.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Debounced Auto-Save bei Datenänderungen
@@ -382,6 +385,10 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
+    // performBackup is recreated each render but reads fresh data via
+    // latestDataRef. Adding it as a dep would reset the 2s debounce on
+    // every render and break the "wait until edits stop" behaviour.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries, userData, isEnabled]);
 
   const triggerManualBackup = () => performBackup("Manual");

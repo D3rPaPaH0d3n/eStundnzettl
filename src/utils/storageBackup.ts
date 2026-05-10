@@ -10,7 +10,7 @@ import { getAllEntries } from "../db/repositories/entriesRepo";
 import { replaceFullSnapshot, type ImportSnapshot } from "../db/snapshot";
 import { logger } from "./logger";
 import { getErrorMessage } from "./errorUtils";
-import type { BackupAnalysisResult, BackupAnalysisData, CalculationConfig, UserData, Entry, WorkCode, Attachment } from "../types";
+import type { BackupAnalysisResult, BackupAnalysisData, BackupPayload, CalculationConfig, UserData, Entry, WorkCode, Attachment } from "../types";
 
 // =========================================================
 // BACKUP ORDNER
@@ -67,11 +67,14 @@ export async function computeBackupChecksum(payload: Record<string, unknown> | n
  * Fügt einem Backup-Payload die Felder `formatVersion` und `checksum` hinzu.
  * Mutiert das Objekt und gibt es zur Verkettung zurück.
  */
-export async function attachBackupChecksum(payload: Record<string, unknown> | null): Promise<Record<string, unknown> | null> {
+export async function attachBackupChecksum<T extends BackupPayload | Record<string, unknown>>(
+  payload: T | null
+): Promise<T | null> {
   if (!payload || typeof payload !== "object") return payload;
-  payload.formatVersion = BACKUP_FORMAT_VERSION;
-  const checksum = await computeBackupChecksum(payload);
-  if (checksum) payload.checksum = checksum;
+  const mutable = payload as unknown as Record<string, unknown>;
+  mutable.formatVersion = BACKUP_FORMAT_VERSION;
+  const checksum = await computeBackupChecksum(mutable);
+  if (checksum) mutable.checksum = checksum;
   return payload;
 }
 

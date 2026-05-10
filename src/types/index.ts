@@ -58,6 +58,7 @@ export interface UserData {
   simpleMode?: boolean;     // nur Aufzeichnung, keine Soll/Ist-Berechnung
   expertMode?: boolean;     // Hausmasta-Modus: erweiterte Einstellungen sichtbar
   minuteInput?: boolean;    // Hausmasta: Zeitpicker auf Minutenraster (sonst 15-min)
+  workModelId?: string;     // Onboarding work-model preset (e.g. "38.5-classic")
 }
 
 // ─── Calculation Config ──────────────────────────────────────

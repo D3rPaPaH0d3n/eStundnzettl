@@ -50,6 +50,16 @@ interface SettingsRouteProps {
   setLocale: (id: LocaleId) => void;
   setCalculationConfig: (next: CalculationConfig | ((prev: CalculationConfig) => CalculationConfig)) => void;
   resetCalculationConfigToLocale: (newLocale: Locale, workDays: number[]) => void;
+  // Work codes (forwarded to <Settings>)
+  workCodes: WorkCode[];
+  workCodesLoading: boolean;
+  hasAnyWorkCodes: boolean;
+  addWorkCode: (label: string) => boolean;
+  updateWorkCode: (id: number, label: string) => boolean;
+  deleteWorkCode: (id: number) => void;
+  loadWorkCodePreset: (presetId: string) => boolean;
+  availableWorkCodePresets: Array<{ id: string; name: string; description: string; codes: WorkCode[] }>;
+  clearAllWorkCodes: () => void;
 }
 
 interface ViewRouterProps {
@@ -222,7 +232,7 @@ export default function ViewRouter(props: ViewRouterProps) {
                   userData={userData}
                   workCodes={workCodes}
                   attachments={attachments}
-                  readAttachmentFile={readAttachmentFile as (file: Attachment) => Promise<string>}
+                  readAttachmentFile={readAttachmentFile}
                   locale={locale}
                   calculationConfig={calculationConfig}
                   setCalculationConfig={settings.setCalculationConfig}

@@ -301,13 +301,15 @@ export function useAttachments() {
       .slice(0, 6);
   }, [labelSuggestions]);
 
-  const readAttachmentFile = useCallback(async (attachment: Attachment) => {
+  const readAttachmentFile = useCallback(async (attachment: Attachment): Promise<string> => {
     ensureNative();
     const result = await Filesystem.readFile({
       path: attachment.storagePath,
       directory: Directory.Data,
     });
-    return result.data;
+    // Capacitor docs: native returns a base64 string; Blob only happens on web,
+    // and ensureNative() above already excludes the web platform.
+    return result.data as string;
   }, []);
 
   const formatFileSize = useCallback((bytes: number) => {

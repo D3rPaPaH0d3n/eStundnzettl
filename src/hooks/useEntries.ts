@@ -156,6 +156,13 @@ export function useEntries() {
     }
   }, [t]);
 
+  // Pure-state-Setter für atomare Snapshot-Restores: Caller hat bereits
+  // (via replaceFullSnapshot) erfolgreich in die DB geschrieben und braucht
+  // nur einen React-State-Refresh ohne erneute DB-Schreiboperation.
+  const setEntriesFromSnapshot = useCallback((next: Entry[]) => {
+    setEntries(next);
+  }, []);
+
   return {
     entries,
     addEntry,
@@ -163,5 +170,6 @@ export function useEntries() {
     deleteEntry,
     deleteAllEntries,
     importEntries,
+    setEntriesFromSnapshot,
   };
 }

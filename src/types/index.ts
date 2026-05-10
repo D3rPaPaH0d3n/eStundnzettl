@@ -54,8 +54,10 @@ export interface UserData {
   position: string;
   photo: string | null;
   workDays: number[];       // 7 elements, index 0=Sunday, values in minutes
+  company?: string;         // shown in PDF header, optional profile field
   simpleMode?: boolean;     // nur Aufzeichnung, keine Soll/Ist-Berechnung
   expertMode?: boolean;     // Hausmasta-Modus: erweiterte Einstellungen sichtbar
+  minuteInput?: boolean;    // Hausmasta: Zeitpicker auf Minutenraster (sonst 15-min)
 }
 
 // ─── Calculation Config ──────────────────────────────────────
@@ -292,6 +294,7 @@ export interface GoogleSignInResult {
     accessToken?: string;
   };
   email?: string;
+  givenName?: string;       // optional display label from native Google sign-in
 }
 
 // ─── Backup Analysis ────────────────────────────────────────
@@ -332,6 +335,8 @@ export interface PdfArchiveRunOptions {
   month?: number;
   year?: number;
   force?: boolean;
+  /** Telemetry tag identifying which lifecycle hook triggered the run. */
+  source?: "manual" | "startup" | "resume" | "auto";
 }
 
 // ─── SQL Types ──────────────────────────────────────────────

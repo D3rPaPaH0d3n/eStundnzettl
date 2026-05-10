@@ -14,6 +14,7 @@ import PlayServicesBanner from "./PlayServicesBanner";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Browser } from "@capacitor/browser";
 import { App } from "@capacitor/app";
+import type { PluginListenerHandle } from "@capacitor/core";
 import CollapsibleCard from "./CollapsibleCard";
 import { isSQLiteActive } from "../../db/storageMode";
 import { getSetting, setSetting } from "../../db/repositories/settingsRepo";
@@ -114,8 +115,8 @@ const BackupSettings: React.FC<Props> = ({
   
   // Refs for lifecycle management
   const ncPollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
-  const browserFinishedListener = useRef<{ remove: () => void } | null>(null);
-  const appStateListener = useRef<{ remove: () => void } | null>(null);
+  const browserFinishedListener = useRef<Promise<PluginListenerHandle> | null>(null);
+  const appStateListener = useRef<Promise<PluginListenerHandle> | null>(null);
   const appIsActive = useRef(true);
   const loginAttemptId = useRef<string | null>(null);
 
@@ -257,14 +258,16 @@ const BackupSettings: React.FC<Props> = ({
       ncPollInterval.current = null;
     }
     
-    // Remove listeners
+    // Remove listeners — addListener returns Promise<PluginListenerHandle>,
+    // so the handle may not yet be resolved when cleanup fires. Await it
+    // before calling remove() so we don't leak the registration.
     if (browserFinishedListener.current) {
-      browserFinishedListener.current.remove();
+      void browserFinishedListener.current.then((h) => { void h.remove(); });
       browserFinishedListener.current = null;
     }
-    
+
     if (appStateListener.current) {
-      appStateListener.current.remove();
+      void appStateListener.current.then((h) => { void h.remove(); });
       appStateListener.current = null;
     }
     

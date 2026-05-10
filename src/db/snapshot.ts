@@ -12,13 +12,16 @@
  * Truth für "vollständigen Snapshot atomar einspielen".
  */
 
-import type { Entry, UserData, WorkCode } from "../types";
+import type { Attachment, CalculationConfig, Entry, UserData, WorkCode } from "../types";
 import { run, transaction } from "./database";
 
 export interface ImportSnapshot {
   entries?: Entry[];
   userData?: UserData;
   workCodes?: WorkCode[];
+  attachments?: Attachment[];
+  attachmentLabels?: string[];
+  calculationConfig?: CalculationConfig;
 }
 
 /**
@@ -67,6 +70,42 @@ export async function replaceFullSnapshot(snapshot: ImportSnapshot): Promise<voi
           [c.id, c.label || ""]
         );
       }
+    }
+
+    if (snapshot.attachments !== undefined) {
+      await run("DELETE FROM attachments");
+      for (const att of snapshot.attachments) {
+        await run(
+          "INSERT OR REPLACE INTO attachments (id, entryId, label, fileName, mimeType, storagePath, fileSize, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          [
+            att.id,
+            att.entryId,
+            att.label || "",
+            att.fileName || "",
+            att.mimeType || "",
+            att.storagePath || "",
+            att.fileSize ?? 0,
+            att.createdAt || "",
+          ]
+        );
+      }
+    }
+
+    if (snapshot.attachmentLabels !== undefined) {
+      await run("DELETE FROM attachment_labels");
+      for (let i = 0; i < snapshot.attachmentLabels.length; i++) {
+        await run(
+          "INSERT OR REPLACE INTO attachment_labels (label, position) VALUES (?, ?)",
+          [snapshot.attachmentLabels[i], i]
+        );
+      }
+    }
+
+    if (snapshot.calculationConfig !== undefined) {
+      await run(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+        ["calculationConfig", JSON.stringify(snapshot.calculationConfig)]
+      );
     }
   });
 }

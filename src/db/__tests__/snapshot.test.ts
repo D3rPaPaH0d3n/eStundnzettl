@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { Entry, UserData, WorkCode } from "../../types";
+import type { CalculationConfig, Entry, UserData, WorkCode } from "../../types";
 
 /**
  * Verifiziert, dass `replaceFullSnapshot` alle drei Sektionen (Entries,
@@ -176,5 +176,91 @@ describe("replaceFullSnapshot", () => {
 
     expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "COMMIT;"]);
     expect(runCalls).toHaveLength(0);
+  });
+
+  it("commits attachments and attachmentLabels atomically", async () => {
+    const { replaceFullSnapshot } = await import("../snapshot");
+
+    await replaceFullSnapshot({
+      attachments: [
+        {
+          id: "a1",
+          entryId: 1,
+          label: "Beleg",
+          fileName: "x.pdf",
+          mimeType: "application/pdf",
+          storagePath: "/tmp/x.pdf",
+          fileSize: 1234,
+          createdAt: "2025-01-02",
+        },
+      ],
+      attachmentLabels: ["Beleg", "Foto"],
+    });
+
+    expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "COMMIT;"]);
+    const stmts = runCalls.map((c) => c.statement);
+    expect(stmts.filter((s) => s.startsWith("DELETE FROM attachments"))).toHaveLength(1);
+    expect(stmts.filter((s) => s.startsWith("INSERT OR REPLACE INTO attachments"))).toHaveLength(1);
+    expect(stmts.filter((s) => s.startsWith("DELETE FROM attachment_labels"))).toHaveLength(1);
+    expect(stmts.filter((s) => s.startsWith("INSERT OR REPLACE INTO attachment_labels"))).toHaveLength(2);
+
+    // Position-Index muss für jedes Label vergeben werden (0, 1, …)
+    const labelInserts = runCalls.filter((c) =>
+      c.statement.startsWith("INSERT OR REPLACE INTO attachment_labels")
+    );
+    expect(labelInserts.map((c) => c.values[1])).toEqual([0, 1]);
+  });
+
+  it("commits calculationConfig as a settings key", async () => {
+    const { replaceFullSnapshot } = await import("../snapshot");
+
+    const calcConfig = { weekly: { mode: "fixed", hours: 38.5 } };
+    await replaceFullSnapshot({ calculationConfig: calcConfig as unknown as CalculationConfig });
+
+    expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "COMMIT;"]);
+    const calcWrite = runCalls.find(
+      (c) =>
+        c.statement.includes("INSERT OR REPLACE INTO settings") &&
+        Array.isArray(c.values) &&
+        c.values[0] === "calculationConfig"
+    );
+    expect(calcWrite).toBeDefined();
+    expect(JSON.parse(calcWrite!.values[1] as string)).toEqual(calcConfig);
+  });
+
+  it("rolls back attachments when calculationConfig write fails afterwards", async () => {
+    const { replaceFullSnapshot } = await import("../snapshot");
+
+    PLUGIN_MOCK.run.mockImplementation(async (opts: RunCall) => {
+      runCalls.push({ statement: opts.statement, values: opts.values });
+      if (
+        opts.statement.includes("INSERT OR REPLACE INTO settings") &&
+        Array.isArray(opts.values) &&
+        opts.values[0] === "calculationConfig"
+      ) {
+        throw new Error("calc write fail");
+      }
+      return { changes: { changes: 1 } };
+    });
+
+    await expect(
+      replaceFullSnapshot({
+        attachments: [
+          {
+            id: "a1",
+            entryId: 1,
+            label: "x",
+            fileName: "x",
+            mimeType: "x",
+            storagePath: "x",
+            fileSize: 0,
+            createdAt: "2025-01-02",
+          },
+        ],
+        calculationConfig: { weekly: { mode: "fixed", hours: 40 } } as unknown as CalculationConfig,
+      })
+    ).rejects.toThrow("calc write fail");
+
+    expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "ROLLBACK;"]);
   });
 });

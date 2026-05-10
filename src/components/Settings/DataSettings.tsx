@@ -11,9 +11,8 @@ import { useTranslation } from "react-i18next";
 import PresetModal from "../PresetModal";
 import ConfirmModal from "../ConfirmModal";
 import { isSQLiteActive } from "../../db/storageMode";
-import { setSetting, deleteSetting } from "../../db/repositories/settingsRepo";
-import { bulkInsertEntries } from "../../db/repositories/entriesRepo";
-import { bulkReplaceWorkCodes } from "../../db/repositories/workCodesRepo";
+import { deleteSetting } from "../../db/repositories/settingsRepo";
+import { replaceFullSnapshot } from "../../db/snapshot";
 import { logger } from "../../utils/logger";
 
 import type { Entry, UserData, WorkCode, WorkModel } from "../../types";
@@ -113,14 +112,23 @@ const DataSettings: React.FC<Props> = ({
 
     if (isSQLiteActive()) {
       try {
-        await Promise.all([
-          setSetting("user", demoUser),
-          bulkInsertEntries(demoEntries),
-          bulkReplaceWorkCodes(demoWorkCodes),
-          deleteSetting("last_code")
-        ]);
+        // Atomarer Demo-Load: Profil, Einträge und Codes in einer
+        // Transaktion. Vor dem Refactor liefen diese drei als
+        // Promise.all parallel — bei Teilfehler blieb ein Mischzustand.
+        await replaceFullSnapshot({
+          userData: demoUser,
+          entries: demoEntries,
+          workCodes: demoWorkCodes,
+        });
+        // Last-Code-Cache liegt außerhalb des Snapshots; ein Fehler hier
+        // ist unkritisch (User wählt eh gleich neu).
+        try { await deleteSetting("last_code"); } catch (e) {
+          logger.warn("[DataSettings] last_code-Reset nach Demo-Load fehlgeschlagen:", e);
+        }
       } catch (err) {
         logger.error("[DataSettings] SQLite-Demo-Daten schreiben fehlgeschlagen:", err);
+        toast.error(t("settings.data.toast.demoFailed", { defaultValue: "Demo-Daten konnten nicht geladen werden" }));
+        return;
       }
     }
 

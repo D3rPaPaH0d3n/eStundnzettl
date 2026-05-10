@@ -136,7 +136,8 @@ const connectGoogleDrive = async (): Promise<Record<string, unknown>> => {
       scope: AUTH_SCOPE,
     });
 
-    const accessToken = nativeResult?.accessToken || null;
+    const rawToken = nativeResult?.accessToken;
+    const accessToken = typeof rawToken === 'string' && rawToken ? rawToken : null;
     if (!accessToken) {
       throw new Error('GOOGLE_DRIVE_AUTH_NO_ACCESS_TOKEN');
     }
@@ -199,7 +200,8 @@ const getValidGoogleToken = async (): Promise<{ accessToken: string }> => {
       scope: AUTH_SCOPE,
     });
 
-    const accessToken = nativeResult?.accessToken || null;
+    const rawToken = nativeResult?.accessToken;
+    const accessToken = typeof rawToken === 'string' && rawToken ? rawToken : null;
     if (!accessToken) {
       throw new Error('AUTH_REQUIRED');
     }

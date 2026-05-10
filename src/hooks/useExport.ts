@@ -46,8 +46,8 @@ export function useExport({ entries, userData, workCodes, attachments = [], expo
   const { t } = useTranslation();
   const [showExportModal, setShowExportModal] = useState(false);
 
-  const buildPayload = async () => {
-    const payload: Record<string, unknown> = {
+  const buildPayload = async (): Promise<BackupPayload> => {
+    const payload: BackupPayload = {
       user: userData,
       entries,
       workCodes,

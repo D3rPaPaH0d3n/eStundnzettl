@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import type { Entry, UserData, WorkCode, FormState, CalculationConfig } from '../../types';
+import type { Entry, EntryType, UserData, WorkCode, FormState, CalculationConfig } from '../../types';
 import type { Locale } from "../../locales/types";
 import { toLocalDateString } from "../../utils";
 import { parseTime, calculateEntryNetDuration, getTargetMinutesForDate } from "../../utils/timeCalculations";
@@ -92,7 +92,7 @@ export function useEntryActions({
         form.setPauseDuration(isDrive ? 0 : entry.pause ?? 0);
         form.setCode(entry.code ?? getDefaultCode());
         form.setProject(entry.project || "");
-      } else if (specialManual) {
+      } else if (specialManual && entry.start && entry.end) {
         form.setStartTime(entry.start);
         form.setEndTime(entry.end);
         form.setPauseDuration(0);
@@ -203,7 +203,7 @@ export function useEntryActions({
         }
       }
 
-      const storedType = isDrive ? "work" : form.entryType;
+      const storedType: EntryType = isDrive ? "work" : (form.entryType as EntryType);
       const usedCode = isDrive ? WORK_CODE.DRIVE : form.code;
       const usedPause = storedType === "work" ? (isDrive ? 0 : form.pauseDuration) : 0;
       // Im Manual-Modus für Krank/Urlaub/ZA persistieren wir Start/Ende,

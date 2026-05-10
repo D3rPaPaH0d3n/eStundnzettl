@@ -577,7 +577,7 @@ export const recalculateAllEntries = async (
     const hasTime = entry.start && entry.end;
     let expected: number;
 
-    if ((entry.type === "work" || entry.type === "drive" || entry.code === WORK_CODE.DRIVE) && hasTime) {
+    if ((entry.type === "work" || entry.code === WORK_CODE.DRIVE) && hasTime) {
       expected = calculateEntryNetDuration({
         entryType: entry.type,
         startTime: entry.start!,

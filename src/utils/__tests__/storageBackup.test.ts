@@ -125,7 +125,7 @@ describe("analyzeBackupData", () => {
         { id: 1, date: "2024-01-01", type: "work" },
       ],
     });
-    expect(result.valid).toBe(true);
+    if (!result.isValid) throw new Error("expected valid result");
     expect(result.entryCount).toBe(1);
     expect(result.integrity).toBe("unverified");
   });
@@ -136,7 +136,7 @@ describe("analyzeBackupData", () => {
     };
     await attachBackupChecksum(payload);
     const result = await analyzeBackupData(payload);
-    expect(result.valid).toBe(true);
+    if (!result.isValid) throw new Error("expected valid result");
     expect(result.integrity).toBe("verified");
   });
 
@@ -147,7 +147,7 @@ describe("analyzeBackupData", () => {
     await attachBackupChecksum(payload);
     payload.entries[0].id = 999; // Manipulation
     const result = await analyzeBackupData(payload);
-    expect(result.valid).toBe(true);
+    if (!result.isValid) throw new Error("expected valid result");
     expect(result.integrity).toBe("mismatch");
   });
 
@@ -159,6 +159,7 @@ describe("analyzeBackupData", () => {
         null,
       ],
     });
+    if (!result.isValid) throw new Error("expected valid result");
     expect(result.entryCount).toBe(1);
   });
 
@@ -172,7 +173,7 @@ describe("analyzeBackupData", () => {
       ],
     });
 
-    expect(result.valid).toBe(true);
+    if (!result.isValid) throw new Error("expected valid result");
     expect((result.entries as Array<{ id: string }>)[0].id).toBe("legacy-301");
     expect((result.attachments as Array<{ entryId: string }>)[0].entryId).toBe("legacy-301");
   });

@@ -30,7 +30,7 @@ import {
   getBlankCalculationConfig,
 } from "../utils/calculationConfig";
 
-import type { Entry, UserData, WorkCode, Theme, WorkModel, GoogleSignInResult, BackupAnalysisResult, CalculationConfig } from "../types";
+import type { Entry, UserData, WorkCode, Theme, WorkModel, GoogleSignInResult, BackupAnalysisData, CalculationConfig } from "../types";
 
 const log = logger.scope("Onboarding");
 
@@ -101,7 +101,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     customCalc: false,
   });
   
-  const [restoreData, setRestoreData] = useState<Record<string, unknown> | null>(null);
+  const [restoreData, setRestoreData] = useState<BackupAnalysisData | null>(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
   
   const [showNcRestore, setShowNcRestore] = useState(false);
@@ -505,9 +505,9 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       const content = await downloadFileContent(token as string, file.id as string);
       if (!content) throw new Error(t("onboarding.toast.backupEmpty"));
 
-      const { isValid, data } = await analyzeBackupData(content);
-      if (isValid) {
-        setRestoreData(data);
+      const result = await analyzeBackupData(content);
+      if (result.isValid) {
+        setRestoreData(result.data);
         toast.success(t("onboarding.toast.backupLoaded"));
         setStep(7);
       } else {
@@ -526,9 +526,9 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       setLoading(true);
       const backupContent = await readBackupFromFolder();
       if (backupContent) {
-          const { isValid, data } = await analyzeBackupData(backupContent);
-          if (isValid) {
-              setRestoreData(data);
+          const result = await analyzeBackupData(backupContent);
+          if (result.isValid) {
+              setRestoreData(result.data);
               toast.success(t("onboarding.toast.backupLoaded"));
               setStep(7);
           } else {
@@ -550,12 +550,12 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     try {
       setLoading(true);
       const content = await readJsonFile(file);
-      const { isValid, data } = await analyzeBackupData(content);
-      if (isValid) {
-        if ((data as BackupAnalysisResult).integrity === "mismatch") {
+      const result = await analyzeBackupData(content);
+      if (result.isValid) {
+        if (result.data.integrity === "mismatch") {
           toast(t("onboarding.toast.integrityMismatch"), { duration: 6000 });
         }
-        setRestoreData(data);
+        setRestoreData(result.data);
         toast.success(t("onboarding.toast.backupLoaded"));
         setStep(7);
       } else {
@@ -618,9 +618,9 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                 setLoading(false);
                 return;
               }
-              const { isValid, data } = await analyzeBackupData(content);
-              if (isValid) {
-                setRestoreData(data);
+              const analysis = await analyzeBackupData(content);
+              if (analysis.isValid) {
+                setRestoreData(analysis.data);
                 toast.success(t("onboarding.toast.ncRestoreLoaded"));
                 setShowNcRestore(false);
                 setStep(7);

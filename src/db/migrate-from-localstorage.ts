@@ -17,6 +17,7 @@ import { bulkWriteSettings } from "./repositories/settingsRepo";
 import { bulkReplaceWorkCodes } from "./repositories/workCodesRepo";
 import { bulkReplaceAttachments, bulkReplaceLabelSuggestions } from "./repositories/attachmentsRepo";
 import { logger } from "../utils/logger";
+import type { Entry, WorkCode, Attachment } from "../types";
 
 const readJsonSetting = (key: string): unknown => {
   try {
@@ -213,7 +214,7 @@ export async function migrateEntriesToSQLite(): Promise<MigrationResult> {
   }
 
   try {
-    await bulkInsertEntries(entries);
+    await bulkInsertEntries(entries as Entry[]);
     localStorage.setItem(MIGRATION_FLAGS.ENTRIES, "true");
     logger.info(`[migration] ${entries.length} Entries erfolgreich nach SQLite migriert`);
     return { migrated: entries.length, skipped: false };
@@ -318,7 +319,7 @@ export async function migrateWorkCodesToSQLite(): Promise<MigrationResult> {
   }
 
   try {
-    await bulkReplaceWorkCodes(codes);
+    await bulkReplaceWorkCodes(codes as WorkCode[]);
     localStorage.setItem(MIGRATION_FLAGS.WORK_CODES, "true");
     logger.info(`[migration] ${codes.length} WorkCodes erfolgreich nach SQLite migriert`);
     return { migrated: codes.length, skipped: false };
@@ -375,7 +376,7 @@ export async function migrateAttachmentsToSQLite(): Promise<AttachmentMigrationR
 
   try {
     if (attachments.length > 0) {
-      await bulkReplaceAttachments(attachments);
+      await bulkReplaceAttachments(attachments as Attachment[]);
     }
     if (labels.length > 0) {
       await bulkReplaceLabelSuggestions(labels);

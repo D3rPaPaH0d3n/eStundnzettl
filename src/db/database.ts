@@ -7,7 +7,7 @@
  * eStundnzettl ist eine reine Android-App — SQLite ist IMMER verfügbar.
  */
 
-import { CapacitorSQLite } from "@capacitor-community/sqlite";
+import { CapacitorSQLite, type capSQLiteChanges } from "@capacitor-community/sqlite";
 import { DB_NAME } from "./schema";
 import { runMigrations } from "./migrations";
 import { logger } from "../utils/logger";
@@ -58,7 +58,7 @@ async function init(): Promise<boolean> {
     _dbOpen = true;
 
     // Schema über Migrations-Framework aktualisieren (idempotent + versioniert)
-    const executeFn = (sql: string): Promise<{ changes?: { changes: number } }> =>
+    const executeFn = (sql: string): Promise<capSQLiteChanges> =>
       CapacitorSQLite.execute({ database: DB_NAME, statements: sql });
     const queryFn = async (sql: string): Promise<Record<string, unknown>[]> => {
       // ACHTUNG: @capacitor-community/sqlite verlangt `values` als Pflichtfeld,
@@ -131,7 +131,7 @@ export async function closeDb(): Promise<void> {
 /**
  * Raw execute — führt beliebiges SQL aus (DDL, multi-statement).
  */
-export async function execute(sql: string): Promise<{ changes?: { changes: number } }> {
+export async function execute(sql: string): Promise<capSQLiteChanges> {
   const db = await getDb();
   return CapacitorSQLite.execute({ database: db!, statements: sql });
 }
@@ -139,7 +139,7 @@ export async function execute(sql: string): Promise<{ changes?: { changes: numbe
 /**
  * Raw run — einzelnes Statement mit Parametern (INSERT/UPDATE/DELETE).
  */
-export async function run(sql: string, values: SqlValue[] = []): Promise<{ changes?: { changes: number; lastId?: number } }> {
+export async function run(sql: string, values: SqlValue[] = []): Promise<capSQLiteChanges> {
   const db = await getDb();
   return CapacitorSQLite.run({ database: db!, statement: sql, values });
 }
@@ -149,7 +149,7 @@ export async function run(sql: string, values: SqlValue[] = []): Promise<{ chang
  * @param {Array<{statement: string, values: Array}>} set
  * @param {boolean} [transaction=true] — in Transaktion wrappen
  */
-export async function executeSet(set: Array<{ statement: string; values: SqlValue[] }>, transaction: boolean = true): Promise<{ changes?: { changes: number } } | void> {
+export async function executeSet(set: Array<{ statement: string; values: SqlValue[] }>, transaction: boolean = true): Promise<capSQLiteChanges | void> {
   if (!set || set.length === 0) return;
   const db = await getDb();
   return CapacitorSQLite.executeSet({ database: db!, set, transaction });

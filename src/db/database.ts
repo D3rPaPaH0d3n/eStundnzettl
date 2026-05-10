@@ -163,3 +163,30 @@ export async function query<T extends Record<string, unknown> = Record<string, u
   const result = await CapacitorSQLite.query({ database: db!, statement: sql, values });
   return (result.values || []) as T[];
 }
+
+/**
+ * Führt `fn` in einer SQLite-Transaktion aus.
+ *
+ * Erfolg → COMMIT. Throw aus `fn` → ROLLBACK + Re-Throw des Originalfehlers.
+ * Ein fehlgeschlagener ROLLBACK wird geloggt, aber verschluckt, damit der
+ * ursprüngliche Fehler den Caller erreicht.
+ *
+ * Verschachtelung wird NICHT unterstützt — SQLite kennt keine geschachtelten
+ * Transaktionen ohne SAVEPOINT.
+ */
+export async function transaction<T>(fn: () => Promise<T>): Promise<T> {
+  const db = await getDb();
+  await CapacitorSQLite.execute({ database: db!, statements: "BEGIN TRANSACTION;" });
+  try {
+    const result = await fn();
+    await CapacitorSQLite.execute({ database: db!, statements: "COMMIT;" });
+    return result;
+  } catch (err) {
+    try {
+      await CapacitorSQLite.execute({ database: db!, statements: "ROLLBACK;" });
+    } catch (rollbackErr) {
+      logger.error("[db] ROLLBACK fehlgeschlagen", rollbackErr);
+    }
+    throw err;
+  }
+}

@@ -193,7 +193,7 @@ describe("triggerManualBackup", () => {
       return values[key] ?? null;
     });
     vi.mocked(getNextcloudAppPassword).mockResolvedValue("fixture-secure-pass");
-    vi.mocked(uploadBackup).mockResolvedValue(undefined);
+    vi.mocked(uploadBackup).mockResolvedValue(true);
 
     const result = await triggerManualBackup();
 

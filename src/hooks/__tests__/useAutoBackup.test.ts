@@ -101,7 +101,7 @@ describe("useAutoBackup", () => {
     vi.clearAllMocks();
     vi.mocked(getValidToken).mockResolvedValue({ accessToken: "test-token" });
     vi.mocked(uploadOrUpdateFile).mockResolvedValue(undefined);
-    vi.mocked(writeBackupFile).mockResolvedValue(undefined);
+    vi.mocked(writeBackupFile).mockResolvedValue(true);
     vi.mocked(getNextcloudAppPassword).mockImplementation(async () => localStorage.getItem("estundnzettl_nextcloud_pass") || "");
     vi.useFakeTimers();
     localStorage.clear();
@@ -372,7 +372,7 @@ describe("useAutoBackup", () => {
 
   it("increments backupFailCount on cloud backup failure", async () => {
     localStorage.setItem("estundnzettl_cloud_sync_enabled", "true");
-    vi.mocked(getValidToken).mockResolvedValueOnce(null);
+    vi.mocked(getValidToken).mockRejectedValueOnce(new Error("AUTH_REQUIRED"));
     const entries = [makeEntry()];
     const { result } = renderHook(() => useAutoBackup(entries, USER, true));
 
@@ -387,7 +387,7 @@ describe("useAutoBackup", () => {
   it("shows error toast when cloud backup fails 5 times", async () => {
     localStorage.setItem("estundnzettl_cloud_sync_enabled", "true");
     localStorage.setItem("estundnzettl_backup_fail_count", "4"); // already 4 failures
-    vi.mocked(getValidToken).mockResolvedValue(null);
+    vi.mocked(getValidToken).mockRejectedValue(new Error("AUTH_REQUIRED"));
     const entries = [makeEntry()];
 
     renderHook(() => useAutoBackup(entries, USER, true));

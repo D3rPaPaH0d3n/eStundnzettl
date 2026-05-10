@@ -36,7 +36,7 @@ const log = logger.scope("Onboarding");
 
 interface Props {
   onComplete: () => void;
-  setUserData: (data: UserData | Record<string, unknown>) => void;
+  setUserData: React.Dispatch<React.SetStateAction<UserData>>;
   importEntries: (entries: Entry[]) => void;
   importWorkCodes: (codes: WorkCode[]) => void;
   setCloudSyncEnabled: (enabled: boolean) => void;
@@ -47,7 +47,7 @@ interface Props {
   setCalculationConfig?: (next: CalculationConfig) => void;
 }
 
-interface FormData {
+export interface WizardFormData {
   name: string;
   company: string;
   role: string;
@@ -86,7 +86,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
   const [loading, setLoading] = useState(false);
   const [isRestoreFlow, setIsRestoreFlow] = useState(false);
 
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<WizardFormData>({
     name: "",
     company: "",
     role: "",

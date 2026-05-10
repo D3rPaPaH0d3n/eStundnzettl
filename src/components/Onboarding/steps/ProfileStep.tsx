@@ -2,6 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { User, Camera, Upload, Building2, Lock } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
+import type { WizardFormData } from "../../OnboardingWizard";
 
 /**
  * Onboarding-Schritt 1: Profildaten des Users.
@@ -11,20 +12,9 @@ import { Trans, useTranslation } from "react-i18next";
  * das umgebende System via FileReader.
  */
 
-interface OnboardingFormData {
-  name: string;
-  company: string;
-  role: string;
-  photo: string | null;
-  workDays: number[];
-  autoBackup: boolean;
-  localBackupEnabled: boolean;
-  minuteInput: boolean;
-}
-
 interface Props {
-  formData: OnboardingFormData;
-  setFormData: (data: OnboardingFormData) => void;
+  formData: WizardFormData;
+  setFormData: React.Dispatch<React.SetStateAction<WizardFormData>>;
   photoInputRef: React.RefObject<HTMLInputElement | null>;
   onPhotoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }

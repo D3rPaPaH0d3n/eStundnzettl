@@ -464,8 +464,11 @@ export const applyBackup = async (analyzedData: BackupAnalysisData, mode: string
       }
 
       // CalculationConfig aus Backup übernehmen (wenn mode=ALL).
+      // analyzeBackupData liefert das Feld als Record<string, unknown> ohne
+      // strukturelle Validierung — replaceFullSnapshot erwartet CalculationConfig.
+      // Doppel-Cast macht das fehlende Schema-Verifying explizit.
       if (mode === 'ALL' && analyzedData.calculationConfig) {
-        snapshot.calculationConfig = analyzedData.calculationConfig as CalculationConfig;
+        snapshot.calculationConfig = analyzedData.calculationConfig as unknown as CalculationConfig;
       }
 
       await replaceFullSnapshot(snapshot);

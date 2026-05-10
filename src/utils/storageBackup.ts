@@ -6,12 +6,11 @@ import { uploadBackup as ncUploadBackup } from "./nextcloudClient";
 import { getNextcloudAppPassword } from "./nextcloudSecret";
 import { isSQLiteActive } from "../db/storageMode";
 import { setSetting, deleteSetting, getSetting } from "../db/repositories/settingsRepo";
-import { getAllEntries, bulkInsertEntries } from "../db/repositories/entriesRepo";
-import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
-import { bulkReplaceAttachments, bulkReplaceLabelSuggestions } from "../db/repositories/attachmentsRepo";
+import { getAllEntries } from "../db/repositories/entriesRepo";
+import { replaceFullSnapshot, type ImportSnapshot } from "../db/snapshot";
 import { logger } from "./logger";
 import { getErrorMessage } from "./errorUtils";
-import type { BackupAnalysisResult } from "../types";
+import type { BackupAnalysisResult, CalculationConfig, UserData } from "../types";
 
 // =========================================================
 // BACKUP ORDNER
@@ -431,34 +430,41 @@ export const analyzeBackupData = async (data: unknown): Promise<Record<string, u
 };
 
 // 2. ANWENDEN - Speichert die Daten basierend auf der Entscheidung
+//
+// Schreibt Entries, UserData, WorkCodes, Attachments + Labels und
+// optional CalculationConfig in einer einzigen SQLite-Transaktion via
+// `replaceFullSnapshot`. Vor dem Refactor lief jede Sektion in ihrer
+// eigenen Mini-Transaktion → bei Fehler in Schritt 3 von 6 blieben die
+// ersten beiden persistiert. Mit dem Snapshot-Approach kommt jetzt
+// entweder das ganze Backup an oder gar nichts.
 export const applyBackup = async (analyzedData: BackupAnalysisResult & Record<string, unknown>, mode: string = 'ALL'): Promise<boolean> => {
   if (!analyzedData || !analyzedData.valid) return false;
 
   try {
     if (isSQLiteActive()) {
-      await bulkInsertEntries(analyzedData.entries || []);
+      const snapshot: ImportSnapshot = {
+        entries: analyzedData.entries || [],
+      };
 
       if (mode === 'ALL' && analyzedData.hasSettings && analyzedData.settings) {
-        await setSetting('user', analyzedData.settings);
+        snapshot.userData = analyzedData.settings as unknown as UserData;
       }
-
       if (analyzedData.hasWorkCodes) {
-        await bulkReplaceWorkCodes(analyzedData.workCodes);
+        snapshot.workCodes = analyzedData.workCodes;
       }
-
       if (analyzedData.hasAttachments) {
-        await bulkReplaceAttachments(analyzedData.attachments);
+        snapshot.attachments = analyzedData.attachments;
       }
-
       if (analyzedData.attachmentLabels?.length) {
-        await bulkReplaceLabelSuggestions(analyzedData.attachmentLabels);
+        snapshot.attachmentLabels = analyzedData.attachmentLabels;
       }
 
-      // CalculationConfig aus Backup übernehmen (wenn mode=ALL).
       const calcConfig = (analyzedData as Record<string, unknown>).calculationConfig;
       if (mode === 'ALL' && calcConfig && typeof calcConfig === 'object') {
-        await setSetting("calculationConfig", calcConfig);
+        snapshot.calculationConfig = calcConfig as CalculationConfig;
       }
+
+      await replaceFullSnapshot(snapshot);
     }
 
     return true;

@@ -3,6 +3,7 @@ import { Toaster } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import type { BackupPayload } from "./types";
 import { getLocale } from "./locales";
+import { replaceFullSnapshot, type ImportSnapshot } from "./db/snapshot";
 
 import { STORAGE_KEYS, WORK_CODE } from "./hooks/constants";
 import { useWorkCodes } from "./hooks/useWorkCodes";
@@ -44,7 +45,10 @@ migrateStorageKeys();
 export default function App() {
   const { t } = useTranslation();
   // --- DATA HOOKS ---
-  const { entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries } = useEntries();
+  const {
+    entries, addEntry, updateEntry, deleteEntry, deleteAllEntries, importEntries,
+    setEntriesFromSnapshot,
+  } = useEntries();
   const {
     userData, setUserData,
     theme, setTheme,
@@ -74,6 +78,7 @@ export default function App() {
     availablePresets: availableWorkCodePresets,
     clearAllCodes: clearAllWorkCodes,
     loadWorkCodes,
+    setWorkCodesFromSnapshot,
   } = workCodesApi;
   const getDefaultCode = useLastCode({ hasAnyCodes, workCodes });
   const form = useFormState({ getDefaultCode });
@@ -93,9 +98,19 @@ export default function App() {
   const { showExportModal, setShowExportModal, exportData, handleExportToFolder, handleExportShare } = useExport({
     entries, userData, workCodes, attachments, exportPayloadRef, calculationConfig,
   });
-  const { handleImport } = useImport({
-    importEntries, setUserData, importWorkCodes: loadWorkCodes,
-  });
+
+  // Atomarer Restore: schreibt Entries + UserData + WorkCodes in einer
+  // einzigen SQLite-Transaktion. Erst nach erfolgreichem COMMIT wird der
+  // React-State refresht — bei Fehler bleibt sowohl DB als auch UI auf
+  // dem alten Stand.
+  const importSnapshot = useCallback(async (snapshot: ImportSnapshot) => {
+    await replaceFullSnapshot(snapshot);
+    if (snapshot.entries !== undefined) setEntriesFromSnapshot(snapshot.entries);
+    if (snapshot.userData !== undefined) setUserData(snapshot.userData);
+    if (snapshot.workCodes !== undefined) setWorkCodesFromSnapshot(snapshot.workCodes);
+  }, [setEntriesFromSnapshot, setUserData, setWorkCodesFromSnapshot]);
+
+  const { handleImport } = useImport({ importSnapshot });
 
   // --- UI STATE ---
   const {

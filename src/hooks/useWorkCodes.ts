@@ -265,6 +265,13 @@ export const useWorkCodes = () => {
   // -------------------------------------------------------
   const availablePresets = Object.values(WORK_CODE_PRESETS);
 
+  // Pure-state-Setter für atomare Snapshot-Restores: Caller hat bereits
+  // (via replaceFullSnapshot) erfolgreich in die DB geschrieben und braucht
+  // nur einen React-State-Refresh ohne erneute DB-Schreiboperation.
+  const setWorkCodesFromSnapshot = useCallback((codes: WorkCode[]) => {
+    setWorkCodes(codes);
+  }, []);
+
   return {
     // State
     workCodes,
@@ -285,6 +292,7 @@ export const useWorkCodes = () => {
     clearAllCodes,
     sortCodes,
     loadWorkCodes,
+    setWorkCodesFromSnapshot,
   };
 };
 

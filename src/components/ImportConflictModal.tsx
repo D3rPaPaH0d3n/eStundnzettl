@@ -1,6 +1,5 @@
-import React from "react";
-import { Import, AlertTriangle, Check, X, Calendar, User } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Import, AlertTriangle, Check, Calendar, User } from "lucide-react";
+import { motion } from "framer-motion";
 import { Trans, useTranslation } from "react-i18next";
 
 interface AnalysisData {

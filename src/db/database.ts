@@ -104,6 +104,12 @@ export async function getDb(): Promise<string | null> {
   return ok ? DB_NAME : null;
 }
 
+async function getDbOrThrow(): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("[db] SQLite ist nicht verfügbar – init() fehlgeschlagen oder noch nicht aufgerufen");
+  return db;
+}
+
 /**
  * Prüft ob SQLite bereits als verfügbar initialisiert wurde (synchron).
  * Gibt true/false/null zurück (null = noch nicht initialisiert).
@@ -132,16 +138,16 @@ export async function closeDb(): Promise<void> {
  * Raw execute — führt beliebiges SQL aus (DDL, multi-statement).
  */
 export async function execute(sql: string): Promise<capSQLiteChanges> {
-  const db = await getDb();
-  return CapacitorSQLite.execute({ database: db!, statements: sql });
+  const db = await getDbOrThrow();
+  return CapacitorSQLite.execute({ database: db, statements: sql });
 }
 
 /**
  * Raw run — einzelnes Statement mit Parametern (INSERT/UPDATE/DELETE).
  */
 export async function run(sql: string, values: SqlValue[] = []): Promise<capSQLiteChanges> {
-  const db = await getDb();
-  return CapacitorSQLite.run({ database: db!, statement: sql, values });
+  const db = await getDbOrThrow();
+  return CapacitorSQLite.run({ database: db, statement: sql, values });
 }
 
 /**
@@ -151,16 +157,16 @@ export async function run(sql: string, values: SqlValue[] = []): Promise<capSQLi
  */
 export async function executeSet(set: Array<{ statement: string; values: SqlValue[] }>, transaction: boolean = true): Promise<capSQLiteChanges | void> {
   if (!set || set.length === 0) return;
-  const db = await getDb();
-  return CapacitorSQLite.executeSet({ database: db!, set, transaction });
+  const db = await getDbOrThrow();
+  return CapacitorSQLite.executeSet({ database: db, set, transaction });
 }
 
 /**
  * Raw query — SELECT mit Parametern.
  */
 export async function query<T extends Record<string, unknown> = Record<string, unknown>>(sql: string, values: SqlValue[] = []): Promise<T[]> {
-  const db = await getDb();
-  const result = await CapacitorSQLite.query({ database: db!, statement: sql, values });
+  const db = await getDbOrThrow();
+  const result = await CapacitorSQLite.query({ database: db, statement: sql, values });
   return (result.values || []) as T[];
 }
 
@@ -175,15 +181,15 @@ export async function query<T extends Record<string, unknown> = Record<string, u
  * Transaktionen ohne SAVEPOINT.
  */
 export async function transaction<T>(fn: () => Promise<T>): Promise<T> {
-  const db = await getDb();
-  await CapacitorSQLite.execute({ database: db!, statements: "BEGIN TRANSACTION;" });
+  const db = await getDbOrThrow();
+  await CapacitorSQLite.execute({ database: db, statements: "BEGIN TRANSACTION;" });
   try {
     const result = await fn();
-    await CapacitorSQLite.execute({ database: db!, statements: "COMMIT;" });
+    await CapacitorSQLite.execute({ database: db, statements: "COMMIT;" });
     return result;
   } catch (err) {
     try {
-      await CapacitorSQLite.execute({ database: db!, statements: "ROLLBACK;" });
+      await CapacitorSQLite.execute({ database: db, statements: "ROLLBACK;" });
     } catch (rollbackErr) {
       logger.error("[db] ROLLBACK fehlgeschlagen", rollbackErr);
     }

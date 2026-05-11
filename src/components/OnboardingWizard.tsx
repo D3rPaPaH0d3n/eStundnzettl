@@ -337,7 +337,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       ncSetupPollRef.current = setInterval(async () => {
         attempts++;
         if (attempts > 100) {
-          clearInterval(ncSetupPollRef.current!);
+          if (ncSetupPollRef.current) clearInterval(ncSetupPollRef.current);
           ncSetupPollRef.current = null;
           setNcSetupConnecting(false);
           toast.error(t("onboarding.toast.ncTimeout"));

@@ -25,8 +25,13 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (event) => {
+        const result = event.target?.result;
+        if (typeof result !== "string") {
+          reject(new Error("FileReader result is not a string"));
+          return;
+        }
         const img = new Image();
-        img.src = event.target!.result as string;
+        img.src = result;
         img.onload = () => {
           const MAX_WIDTH = 1024;
           const MAX_HEIGHT = 1024;
@@ -40,7 +45,11 @@ const ProfileSettings: React.FC<Props> = ({ userData, setUserData }) => {
           const canvas = document.createElement("canvas");
           canvas.width = width;
           canvas.height = height;
-          const ctx = canvas.getContext("2d")!;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Canvas 2D context not available"));
+            return;
+          }
           ctx.drawImage(img, 0, 0, width, height);
           resolve(canvas.toDataURL("image/jpeg", 0.9));
         };

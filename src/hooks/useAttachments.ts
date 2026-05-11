@@ -30,7 +30,9 @@ const sanitizeFileName = (name: string = "dokument"): string => {
 
 const getExtension = (fileName: string = ""): string => {
   const parts = fileName.split(".");
-  return parts.length > 1 ? parts.pop()!.toLowerCase() : "bin";
+  if (parts.length <= 1) return "bin";
+  const ext = parts.pop();
+  return ext ? ext.toLowerCase() : "bin";
 };
 
 const ensureNative = (): void => {

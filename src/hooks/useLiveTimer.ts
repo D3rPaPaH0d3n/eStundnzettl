@@ -138,9 +138,9 @@ export const useLiveTimer = () => {
   };
 
   const resumeTimer = () => {
-    if (!timerState.isPaused) return;
+    if (!timerState.isPaused || !timerState.pauseStartTime) return;
     const now = new Date();
-    const pauseStart = new Date(timerState.pauseStartTime!);
+    const pauseStart = new Date(timerState.pauseStartTime);
     const pauseDiffMs = now.getTime() - pauseStart.getTime();
 
     setTimerState(prev => ({

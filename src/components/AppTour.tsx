@@ -14,6 +14,7 @@ import {
   ArrowUp,
   X,
   Hand,
+  type LucideIcon,
 } from "lucide-react";
 
 /**
@@ -38,7 +39,7 @@ import {
 interface TourStepDefinition {
   id: string;
   translationKey: string;      // passt auf appTour.steps.<key>
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   color: string;
   target: string | null;
   hasHint?: boolean;

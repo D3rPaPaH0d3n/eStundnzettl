@@ -574,14 +574,13 @@ export const recalculateAllEntries = async (
   let fixed = 0;
 
   for (const entry of entries) {
-    const hasTime = entry.start && entry.end;
     let expected: number;
 
-    if ((entry.type === "work" || entry.code === WORK_CODE.DRIVE) && hasTime) {
+    if ((entry.type === "work" || entry.code === WORK_CODE.DRIVE) && entry.start && entry.end) {
       expected = calculateEntryNetDuration({
         entryType: entry.type,
-        startTime: entry.start!,
-        endTime: entry.end!,
+        startTime: entry.start,
+        endTime: entry.end,
         pauseDuration: entry.pause ?? 0,
         formDate: entry.date,
         userData,
@@ -589,12 +588,12 @@ export const recalculateAllEntries = async (
         locale,
         config,
       });
-    } else if ((entry.type === "vacation" || entry.type === "sick" || entry.type === "time_comp") && hasTime) {
+    } else if ((entry.type === "vacation" || entry.type === "sick" || entry.type === "time_comp") && entry.start && entry.end) {
       // Special entries with manual start/end
       expected = calculateEntryNetDuration({
         entryType: entry.type,
-        startTime: entry.start!,
-        endTime: entry.end!,
+        startTime: entry.start,
+        endTime: entry.end,
         pauseDuration: 0,
         formDate: entry.date,
         userData,

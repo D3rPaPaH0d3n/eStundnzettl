@@ -35,9 +35,10 @@ export function useDeleteActions({
   const executeDelete = useCallback(
     async (deleteTarget: DeleteTarget | null) => {
       if (deleteTarget?.type === "single") {
-        await deleteEntry(deleteTarget.id!);
+        if (deleteTarget.id === undefined) return;
+        await deleteEntry(deleteTarget.id);
         if (removeAttachmentsForEntry) {
-          await removeAttachmentsForEntry(deleteTarget.id!);
+          await removeAttachmentsForEntry(deleteTarget.id);
         }
         toast.success(t("toasts.entry.deleted"));
       } else if (deleteTarget?.type === "all") {

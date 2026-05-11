@@ -311,9 +311,8 @@ export async function resolveUserId(serverUrl: string, loginName: string, appPas
 
 async function getDavUser(serverUrl: string, authUser: string, appPassword: string): Promise<string> {
   const cacheKey = getDavUserCacheKey(serverUrl, authUser);
-  if (resolvedDavUserCache.has(cacheKey)) {
-    return resolvedDavUserCache.get(cacheKey)!;
-  }
+  const cached = resolvedDavUserCache.get(cacheKey);
+  if (cached !== undefined) return cached;
 
   const davUser = await resolveUserId(serverUrl, authUser, appPassword);
   resolvedDavUserCache.set(cacheKey, davUser || authUser);

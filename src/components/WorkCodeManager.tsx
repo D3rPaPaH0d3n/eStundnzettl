@@ -74,7 +74,8 @@ export const WorkCodeManager = ({
   };
 
   const handleSaveEdit = () => {
-    if (updateCode(editingId!, editingLabel)) {
+    if (editingId === null) return;
+    if (updateCode(editingId, editingLabel)) {
       setEditingId(null);
       setEditingLabel('');
     }

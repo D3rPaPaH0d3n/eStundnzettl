@@ -339,7 +339,7 @@ const EntryForm: React.FC<Props> = ({
               <div className="flex-1">
                 <DatePicker
                   selected={new Date(formDate)}
-                  onChange={(date: Date | null) => setFormDate(toLocalDateString(date!))}
+                  onChange={(date: Date | null) => { if (date) setFormDate(toLocalDateString(date)); }}
                   onMonthChange={(date) => setViewYear(date.getFullYear())}
                   onYearChange={(date) => setViewYear(date.getFullYear())}
                   dateFormat="eee, dd.MM.yyyy" 

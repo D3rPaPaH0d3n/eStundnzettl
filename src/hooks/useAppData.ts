@@ -170,8 +170,8 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries,
 
   const uniqueProjects = useMemo(() => {
     const projects = entries
-      .filter((entry) => entry.type === "work" && entry.project?.trim())
-      .map((entry) => entry.project!.trim());
+      .filter((entry): entry is Entry & { project: string } => entry.type === "work" && !!entry.project?.trim())
+      .map((entry) => entry.project.trim());
 
     return [...new Set(projects)].sort();
   }, [entries]);

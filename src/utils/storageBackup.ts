@@ -316,7 +316,12 @@ export const readJsonFile = (file: File): Promise<unknown> => {
     const reader = new FileReader();
     reader.onload = (e: ProgressEvent<FileReader>) => {
       try {
-        const json = JSON.parse(e.target!.result as string);
+        const result = e.target?.result;
+        if (typeof result !== "string") {
+          reject(new Error("FileReader result is not a string"));
+          return;
+        }
+        const json = JSON.parse(result);
         resolve(json);
       } catch (err) {
         reject(err);

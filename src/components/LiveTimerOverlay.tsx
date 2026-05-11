@@ -36,11 +36,12 @@ const LiveTimerOverlay = ({
   const fabRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!timerState.isRunning) return;
+    if (!timerState.isRunning || !timerState.startTime) return;
 
+    const startTime = timerState.startTime;
     const update = () => {
       const now = new Date();
-      const start = new Date(timerState.startTime!);
+      const start = new Date(startTime);
 
       let currentPause = 0;
       if (timerState.isPaused && timerState.pauseStartTime) {

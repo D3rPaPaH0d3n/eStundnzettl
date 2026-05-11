@@ -31,6 +31,7 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
 
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- modal stays mounted, reset selection on reopen
       setSelectedId(currentModelId || 'custom');
     }
   }, [isOpen, currentModelId]);

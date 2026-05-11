@@ -54,13 +54,9 @@ const DataSettings: React.FC<Props> = ({
   const activeModelLabel =
     WORK_MODELS.find((m) => m.id === activeModelId)?.label || t("settings.data.workModel.defaultLabel");
 
-  useEffect(() => {
-    // Always expand initially so existing users see the content
-    setIsWorkModelExpanded(true);
-  }, []);
-
   // External trigger for demo data dialog (from Hausmasta card)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- counter-as-event from parent to open the dialog
     if (demoTrigger > 0) setShowDemoWarning(true);
   }, [demoTrigger]);
 

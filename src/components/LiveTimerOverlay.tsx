@@ -73,6 +73,7 @@ const LiveTimerOverlay = ({
 
   useEffect(() => {
     if (timerState.isRunning) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset swipe state + ref when timer starts (external trigger)
       setIsSwipeReady(false);
       gestureTriggeredRef.current = false;
     }

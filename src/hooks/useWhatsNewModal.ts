@@ -30,28 +30,28 @@ export interface WhatsNewState {
 }
 
 export function useWhatsNewModal(): WhatsNewState {
-  const [shouldShow, setShouldShow] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (APP_VERSION === "dev") return;
-    let lastSeen: string | null;
+  const [shouldShow, setShouldShow] = useState<boolean>(() => {
+    if (APP_VERSION === "dev") return false;
     try {
-      lastSeen = localStorage.getItem(STORAGE_KEY);
+      const lastSeen = localStorage.getItem(STORAGE_KEY);
+      // Erstinstallation oder gleiche Version → kein Popup
+      return lastSeen !== null && lastSeen !== APP_VERSION;
     } catch {
       // Quotabschuss / SSR — nichts zu tun.
-      return;
+      return false;
     }
-    if (lastSeen === null) {
-      // Erstinstallation: nur stumm registrieren.
-      try {
+  });
+
+  // Erstinstallation: Version stumm registrieren, damit das nächste Update
+  // den Vergleich oben gewinnt. Idempotent in StrictMode.
+  useEffect(() => {
+    if (APP_VERSION === "dev") return;
+    try {
+      if (localStorage.getItem(STORAGE_KEY) === null) {
         localStorage.setItem(STORAGE_KEY, APP_VERSION);
-      } catch {
-        /* ignore */
       }
-      return;
-    }
-    if (lastSeen !== APP_VERSION) {
-      setShouldShow(true);
+    } catch {
+      /* ignore */
     }
   }, []);
 

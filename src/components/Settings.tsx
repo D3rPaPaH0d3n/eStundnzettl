@@ -133,6 +133,7 @@ const Settings: React.FC<Props> = ({
   const activeModelId = safeUserData.workModelId || "custom";
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- relock UI whenever the active work model changes
     setIsLocked(true);
   }, [activeModelId]);
 

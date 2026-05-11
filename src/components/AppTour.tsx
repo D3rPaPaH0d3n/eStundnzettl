@@ -105,6 +105,7 @@ const useTargetRect = (selector: string | null): TargetRect | null => {
   }, [selector]);
 
   useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial DOM measurement must run before paint
     measure();
   }, [measure]);
 

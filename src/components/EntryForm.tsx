@@ -147,6 +147,7 @@ const EntryForm: React.FC<Props> = ({
   const [viewYear, setViewYear] = useState(new Date(formDate).getFullYear());
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- viewYear has two sources (formDate + DatePicker navigation), needs sync
     setViewYear(new Date(formDate).getFullYear());
   }, [formDate]);
 

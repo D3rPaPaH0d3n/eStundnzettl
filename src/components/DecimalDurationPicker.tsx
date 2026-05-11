@@ -57,6 +57,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   useEffect(() => {
     if (isOpen) {
       const { h, d } = getInitialValues(initialMinutes);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- modal stays mounted, reset wheels when reopened
       setSelectedHour(h);
       setSelectedDecimal(d);
 

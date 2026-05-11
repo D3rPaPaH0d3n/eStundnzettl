@@ -105,6 +105,7 @@ const WheelColumn = ({ items, selected, onSelect, align }: WheelColumnProps) => 
     if (idx >= 0) {
       const target = -idx * ITEM_H;
       offsetRef.current = target;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync scroll offset + refs to external `selected` prop
       setOffset(target);
       prevSelectedRef.current = selected;
     }
@@ -242,6 +243,7 @@ const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInter
   useEffect(() => {
     if (!isOpen) return;
     const [h, m] = value ? value.split(":").map(Number) : [6, 0];
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- drawer stays mounted, reset wheels on reopen from external `value`
     setSelectedHour(h);
     setSelectedMinute(m);
     selectedHourRef.current = h;

@@ -20,12 +20,13 @@ import {
   BookOpen,
   Layout,
   Palmtree,
+  type LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { getChangelogData } from "../data/changelog-data";
 
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   Zap,
   Bug,
   Shield,

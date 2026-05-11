@@ -100,7 +100,7 @@ export async function initiateLoginFlow(serverUrl: string): Promise<NcResult> {
 
   if (Capacitor.getPlatform() === 'android') {
     try {
-      return await NextcloudLoginFlow.startLoginFlow({ serverUrl: normalized.value as string } as any) as unknown as NcResult;
+      return await NextcloudLoginFlow.startLoginFlow({ serverUrl: normalized.value as string }) as unknown as NcResult;
     } catch (error) {
       return buildError('PLUGIN_ERROR', getErrorMessage(error, 'Native Android-Integration fehlgeschlagen'), undefined, true);
     }

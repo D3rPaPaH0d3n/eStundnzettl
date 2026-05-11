@@ -47,6 +47,13 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   const [selectedHour, setSelectedHour] = useState(8);
   const [selectedDecimal, setSelectedDecimal] = useState(0);
 
+  const scrollToValue = useCallback((ref: React.RefObject<HTMLDivElement | null>, val: number) => {
+    if (ref.current) {
+      const el = ref.current.querySelector(`[data-value="${val}"]`);
+      if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       const { h, d } = getInitialValues(initialMinutes);
@@ -58,14 +65,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
         scrollToValue(decimalsRef, d);
       }, 100);
     }
-  }, [isOpen, initialMinutes, getInitialValues]);
-
-  const scrollToValue = (ref: React.RefObject<HTMLDivElement | null>, val: number) => {
-    if (ref.current) {
-      const el = ref.current.querySelector(`[data-value="${val}"]`);
-      if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
-    }
-  };
+  }, [isOpen, initialMinutes, getInitialValues, scrollToValue]);
 
   const hours = Array.from({ length: 25 }, (_, i) => i);
   

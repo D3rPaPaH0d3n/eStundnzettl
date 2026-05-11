@@ -358,7 +358,7 @@ const BackupSettings: React.FC<Props> = ({
       
       if (attempts > maxAttempts) {
         log.debug('Polling timeout');
-        clearInterval(ncPollInterval.current!);
+        if (ncPollInterval.current) clearInterval(ncPollInterval.current);
         ncPollInterval.current = null;
         setNcConnecting(false);
         toast.error(t("settings.backup.toast.pollingTimeout"));
@@ -378,7 +378,7 @@ const BackupSettings: React.FC<Props> = ({
 
         if (result.status === 'complete') {
           log.debug('Login complete!');
-          clearInterval(ncPollInterval.current!);
+          if (ncPollInterval.current) clearInterval(ncPollInterval.current);
           ncPollInterval.current = null;
 
           const serverUrl = (result.server as string).replace(/\/+$/, '');
@@ -386,7 +386,7 @@ const BackupSettings: React.FC<Props> = ({
         }
       } catch (error) {
         log.error('Polling error:', error);
-        clearInterval(ncPollInterval.current!);
+        if (ncPollInterval.current) clearInterval(ncPollInterval.current);
         ncPollInterval.current = null;
         setNcConnecting(false);
         toast.error((error as Error)?.message || t("settings.backup.toast.nextcloudLoginFailed"));

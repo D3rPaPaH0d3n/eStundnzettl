@@ -76,13 +76,14 @@ const groupBugfixVersions = (data: ChangelogVersion[]): ChangelogVersion[] => {
       continue;
     }
 
-    const group: ChangelogVersion = { ...version, isBugfixGroup: true, groupedVersions: [version] };
+    const groupedVersions: ChangelogVersion[] = [version];
+    const group: ChangelogVersion = { ...version, isBugfixGroup: true, groupedVersions };
     let j = i + 1;
     while (j < data.length) {
       const next = data[j];
       const nextIsBugfixOnly = next.sections?.every((section) => section.iconName === "Bug");
       if (!nextIsBugfixOnly) break;
-      group.groupedVersions!.push(next);
+      groupedVersions.push(next);
       j += 1;
     }
 
@@ -137,8 +138,9 @@ const ChangelogModal = ({ isOpen, onClose }: Props) => {
   };
 
   const renderBugfixGroup = (group: ChangelogVersion, _isFirst: boolean) => {
+    const groupedVersions = group.groupedVersions ?? [];
     const isVersionOpen = !!openVersions[group.version];
-    const count = group.groupedVersions!.length;
+    const count = groupedVersions.length;
 
     return (
       <div key={group.version} className="mb-2">
@@ -176,7 +178,7 @@ const ChangelogModal = ({ isOpen, onClose }: Props) => {
               className="overflow-hidden"
             >
               <div className="pl-8 pt-3 space-y-4">
-                {group.groupedVersions!.map((groupedVersion, index) => (
+                {groupedVersions.map((groupedVersion, index) => (
                   <div key={groupedVersion.version} className={index > 0 ? "pt-2" : ""}>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">

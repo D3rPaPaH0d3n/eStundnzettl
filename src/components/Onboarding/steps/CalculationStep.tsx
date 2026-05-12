@@ -3,9 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sliders, Info, ChevronDown, Plus, X, Calendar, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import SelectionDrawer from "../../SelectionDrawer";
-import { getIntlLocale } from "../../../utils/formatLocale";
-import { getLocale, GERMAN_STATE_IDS, GERMAN_STATE_NAMES, SWISS_KANTON_IDS, SWISS_KANTON_NAMES } from "../../../locales";
+import { getLocale } from "../../../locales";
 import { getOrthodoxHolidays, getIslamicHolidays } from "../../../locales/holidays/religious";
+import {
+  displayToMmdd,
+  formatHours,
+  getHolidayImportOptions,
+  HOLIDAY_ON_WORK_OPTION_IDS,
+  mmddToDisplay,
+  OVERTIME_OPTION_IDS,
+  SICK_OPTION_IDS,
+} from "../../../utils/calculationUi";
 import type { CalculationConfig, OvertimeMode, SickOnWorkDayMode, HolidayOnWorkDayMode } from "../../../types";
 
 /**
@@ -33,36 +41,6 @@ interface Props {
   /** Aktuelle Arbeitstage aus Step 3 — für die Wochenstunden-Anzeige. */
   workDays: number[];
 }
-
-// Stabile IDs wiederverwenden wir aus settings.calc.*Options; die Labels
-// werden innerhalb des Component-Bodies via t() aufgelöst.
-const OVERTIME_OPTION_IDS: OvertimeMode[] = ["none", "split", "ueberstunden_only"];
-const SICK_OPTION_IDS: SickOnWorkDayMode[] = ["cap_to_target", "additive", "ignore"];
-const HOLIDAY_ON_WORK_OPTION_IDS: HolidayOnWorkDayMode[] = ["additive", "counts_as_overtime", "cap_to_target"];
-
-const formatHours = (minutes: number): string => {
-  if (!Number.isFinite(minutes)) return "0 h";
-  const hours = minutes / 60;
-  return hours.toLocaleString(getIntlLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 2 }) + " h";
-};
-
-/** Internes MM-DD-Format → deutsches DD.MM für die Anzeige. */
-const mmddToDisplay = (mmdd: string): string => {
-  const parts = mmdd.split("-");
-  if (parts.length !== 2) return mmdd;
-  return `${parts[1]}.${parts[0]}.`;
-};
-
-/** Deutsches DD.MM-Input → internes MM-DD. Akzeptiert "24.12", "24.12." etc. */
-const displayToMmdd = (input: string): string | null => {
-  const clean = input.replace(/\.$/, "").trim();
-  const parts = clean.split(".");
-  if (parts.length !== 2) return null;
-  const dd = parts[0].padStart(2, "0");
-  const mm = parts[1].padStart(2, "0");
-  if (!/^\d{2}$/.test(dd) || !/^\d{2}$/.test(mm)) return null;
-  return `${mm}-${dd}`;
-};
 
 const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
   const { t } = useTranslation();
@@ -270,22 +248,7 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
     });
   };
 
-  const importOptions = useMemo(
-    () => [
-      { id: "at", label: t("settings.calc.importOptions.austria") },
-      ...GERMAN_STATE_IDS.map((s) => ({
-        id: `de-${s}`,
-        label: t("settings.calc.importOptions.germanyState", { state: GERMAN_STATE_NAMES[s] }),
-      })),
-      ...SWISS_KANTON_IDS.map((k) => ({
-        id: `ch-${k}`,
-        label: t("settings.calc.importOptions.swissKanton", { kanton: SWISS_KANTON_NAMES[k] }),
-      })),
-      { id: "_orthodox", label: t("settings.calc.importOptions.orthodox") },
-      { id: "_islamic", label: t("settings.calc.importOptions.islamic") },
-    ],
-    [t]
-  );
+  const importOptions = useMemo(() => getHolidayImportOptions(t), [t]);
 
   const overtimeLabel =
     OVERTIME_OPTIONS.find((o) => o.id === config.overtimeMode)?.label ?? t("settings.calc.fallbackOvertime");

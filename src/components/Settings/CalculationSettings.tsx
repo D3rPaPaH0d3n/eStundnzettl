@@ -5,10 +5,18 @@ import { useTranslation } from "react-i18next";
 import { Card } from "../../utils";
 import SelectionDrawer from "../SelectionDrawer";
 import { recalculateAllEntries } from "../../utils/timeCalculations";
-import { getLocale, GERMAN_STATE_IDS, GERMAN_STATE_NAMES, SWISS_KANTON_IDS, SWISS_KANTON_NAMES } from "../../locales";
+import { getLocale } from "../../locales";
 import { getOrthodoxHolidays, getIslamicHolidays } from "../../locales/holidays/religious";
 import { logger } from "../../utils/logger";
-import { getIntlLocale } from "../../utils/formatLocale";
+import {
+  displayToMmdd,
+  formatHours,
+  getHolidayImportOptions,
+  HOLIDAY_ON_WORK_OPTION_IDS,
+  mmddToDisplay,
+  OVERTIME_OPTION_IDS,
+  SICK_OPTION_IDS,
+} from "../../utils/calculationUi";
 import type {
   CalculationConfig,
   OvertimeMode,
@@ -49,37 +57,6 @@ interface Props {
    */
   unwrapped?: boolean;
 }
-
-// Die Options-IDs sind stabil (Persistenz in CalculationConfig); die
-// Labels werden zur Laufzeit via i18n aus settings.calc.*Options
-// aufgelöst, siehe Aufruf im Component-Body.
-const OVERTIME_OPTION_IDS = ["none", "split", "ueberstunden_only"] as const;
-const SICK_OPTION_IDS = ["cap_to_target", "additive", "ignore"] as const;
-const HOLIDAY_ON_WORK_OPTION_IDS = ["additive", "counts_as_overtime", "cap_to_target"] as const;
-
-const formatHours = (minutes: number): string => {
-  if (!Number.isFinite(minutes)) return "0 h";
-  return (minutes / 60).toLocaleString(getIntlLocale(), {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 2,
-  }) + " h";
-};
-
-const mmddToDisplay = (mmdd: string): string => {
-  const parts = mmdd.split("-");
-  if (parts.length !== 2) return mmdd;
-  return `${parts[1]}.${parts[0]}.`;
-};
-
-const displayToMmdd = (input: string): string | null => {
-  const clean = input.replace(/\.$/, "").trim();
-  const parts = clean.split(".");
-  if (parts.length !== 2) return null;
-  const dd = parts[0].padStart(2, "0");
-  const mm = parts[1].padStart(2, "0");
-  if (!/^\d{2}$/.test(dd) || !/^\d{2}$/.test(mm)) return null;
-  return `${mm}-${dd}`;
-};
 
 const CalculationSettings: React.FC<Props> = ({
   userData,
@@ -151,22 +128,7 @@ const CalculationSettings: React.FC<Props> = ({
     [customHolidaysMemo]
   );
 
-  const importOptions = useMemo(
-    () => [
-      { id: "at", label: t("settings.calc.importOptions.austria") },
-      ...GERMAN_STATE_IDS.map((s) => ({
-        id: `de-${s}`,
-        label: t("settings.calc.importOptions.germanyState", { state: GERMAN_STATE_NAMES[s] }),
-      })),
-      ...SWISS_KANTON_IDS.map((k) => ({
-        id: `ch-${k}`,
-        label: t("settings.calc.importOptions.swissKanton", { kanton: SWISS_KANTON_NAMES[k] }),
-      })),
-      { id: "_orthodox", label: t("settings.calc.importOptions.orthodox") },
-      { id: "_islamic", label: t("settings.calc.importOptions.islamic") },
-    ],
-    [t]
-  );
+  const importOptions = useMemo(() => getHolidayImportOptions(t), [t]);
 
   if (!calculationConfig || !setCalculationConfig) return null;
 

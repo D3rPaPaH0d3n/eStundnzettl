@@ -82,10 +82,16 @@
 |---|---------|--------------|
 | 🎯 | **Flexible Arbeitszeitmodelle** | 38,5h, 40h, 4-Tage-Woche oder komplett individuell |
 | ⏱️ | **Live-Timer** | Lang drücken, nach oben wischen — Timer läuft |
+| 🎙️ | **Sprachsteuerung** | Eintrag per Spracheingabe diktieren — Deutsch-Parser inklusive |
 | 📊 | **Echtzeit-Saldo** | Überstunden, Mehrarbeit und Gleitzeit immer im Blick |
+| 🇦🇹 | **Lokale Feiertage** | Österreich, 16 deutsche Bundesländer und 26 Schweizer Kantone |
 | 📄 | **PDF-Export** | Professioneller Stundenzettel per Monats- oder Wochenansicht |
 | ☁️ | **Automatische Backups** | Google Drive, Nextcloud oder lokal — täglich gesichert |
 | 📎 | **Dokumente anhängen** | Regiescheine, Fotos und Lieferscheine direkt zum Eintrag |
+| 📴 | **Offline-fähig** | Funktioniert komplett ohne Internet — Cloud ist optional |
+| 🚫 | **Kein Tracking** | Keine Werbung, kein Analytics, keine Datensammlung |
+| 🌍 | **Bilingual** | Deutsch & Englisch — Sprache in den Einstellungen umschaltbar |
+| 🧭 | **Onboarding & Tour** | Geführter Einstieg + interaktive App-Tour beim ersten Start |
 | 🌙 | **Dark Mode** | Augenschonend, wenn's draußen schon finster ist |
 | 🔧 | **Hausmasta-Modus** | Erweiterte Einstellungen für Profis — bei Bedarf aktivierbar |
 
@@ -155,9 +161,18 @@ Für Profis, die mehr wollen! Aktiviere den **Hausmasta-Modus** in den Einstellu
 - 🖥️ **Nextcloud-Integration** — Backup auf deine eigene Cloud
 - 📦 **JSON Import/Export** — Daten manuell sichern und übertragen
 - 📄 **Automatisches PDF-Archiv** — monatliche PDF-Sicherung auf alle Ziele
+- 🎛️ **PDF-Layout-Toggles** — wähle, welche Felder im PDF erscheinen sollen
 - ⏱️ **Minuten-Modus** — 1-Minuten- statt 15-Minuten-Schritte
 - 🏷️ **Tätigkeitscodes** — Branchen-Presets oder eigene Codes verwalten
+- 🌍 **Locale-Picker** — Bundesland/Kanton für korrekte Feiertage & Berechnung
+- ⏸️ **Auto-Pausen-Regeln** — konfigurierbare Pausenlogik pro Arbeitstyp und Locale
 - 📋 **Nur Aufzeichnung** — Stundenerfassung ohne Soll/Ist-Berechnung
+
+---
+
+## 🌐 Sprachen
+
+Die App-Oberfläche gibt's vollständig auf **Deutsch und Englisch**. Unter **Einstellungen → Sprache** kannst du jederzeit umschalten; beim ersten Start wird die Geräte-Sprache automatisch erkannt.
 
 ---
 
@@ -175,7 +190,10 @@ Für Profis, die mehr wollen! Aktiviere den **Hausmasta-Modus** in den Einstellu
 
 - 🔒 **Lokal first:** Alle Daten bleiben auf deinem Gerät
 - 💾 **Backups:** Optional — lokal, Google Drive oder Nextcloud
+- 🔐 **Sichere Passwörter:** Nextcloud-Credentials liegen im Android Secure Storage, nicht in localStorage
+- 🩹 **Anonymes Crash-Reporting:** Sentry-Reports nur bei echten Abstürzen, deaktivierbar, ohne Eingaben oder Userdaten
 - 🚫 **Kein Tracking:** Keine Werbung, keine Analytics, keine Datensammlung
+- 📖 **Open Source:** Kompletter Code einsehbar, MIT-lizenziert
 - ✅ **Volle Kontrolle:** Du entscheidest, wohin deine Daten gehen
 
 ---
@@ -202,10 +220,14 @@ Wennst magst und dir die App wos wert is, freu i mi über a kloane Anerkennung v
 | | Technologie |
 |---|-------------|
 | 🖥️ Frontend | TypeScript, React, Vite |
-| 📱 Mobile | Capacitor (Android) |
+| 🎨 UI | Tailwind CSS 4, Framer Motion, Lucide Icons |
+| 📱 Mobile | Capacitor (Android), Capacitor Secure Storage |
 | 🗄️ Datenbank | SQLite (Domain-Daten), localStorage nur für UI-/Cache-/Legacy-Migration |
-| 📄 PDF | @react-pdf/renderer (Vektor, durchsuchbar) |
+| 📄 PDF | @react-pdf/renderer (Vektor, durchsuchbar), pdfjs-dist (Vorschau) |
 | ☁️ Cloud | Google Drive API, Nextcloud WebDAV |
+| 🌐 i18n | i18next + react-i18next (Deutsch & Englisch) |
+| 🔍 Validierung | Zod (Backup-Schemas, Import-Validierung) |
+| 🛡️ Monitoring | Sentry (anonymes Crash-Reporting, opt-out) |
 | 🧪 Tests | Vitest |
 
 ---

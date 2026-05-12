@@ -63,5 +63,3 @@ export function useLocaleSetting() {
 
   return { language, setLanguage, supportedLanguages: SUPPORTED_LANGUAGES };
 }
-
-export type UseLocaleSettingReturn = ReturnType<typeof useLocaleSetting>;

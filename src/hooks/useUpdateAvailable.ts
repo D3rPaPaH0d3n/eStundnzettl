@@ -54,7 +54,7 @@ interface ReleaseApiPayload {
   prerelease?: boolean;
 }
 
-export interface UpdateAvailableState {
+interface UpdateAvailableState {
   /** True when a newer-than-installed release was found AND not dismissed. */
   available: boolean;
   /** Tag string of the newer release ("v4.3.0"). */

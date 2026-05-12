@@ -4,6 +4,24 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/latest">
+    <img src="https://img.shields.io/github/v/release/D3rPaPaH0d3n/eStundnzettl?label=Version&color=10b981&style=for-the-badge&logo=github&logoColor=white" alt="Latest version" />
+  </a>
+  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases">
+    <img src="https://img.shields.io/github/downloads/D3rPaPaH0d3n/eStundnzettl/total?label=Downloads&color=8b5cf6&style=for-the-badge&logo=github&logoColor=white" alt="GitHub downloads" />
+  </a>
+  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License MIT" />
+  </a>
+  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/ci.yml">
+    <img src="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI Status" />
+  </a>
+  <a href="https://app.codacy.com/gh/D3rPaPaH0d3n/eStundnzettl/dashboard">
+    <img src="https://app.codacy.com/project/badge/Grade/85110d7924544b05a47c2dc3fada1371" alt="Codacy Code Quality" />
+  </a>
+</p>
+
+<p align="center">
   <img src="https://raw.githubusercontent.com/D3rPaPaH0d3n/eStundnzettl/main/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" width="120" alt="eStundnzettl logo" />
 </p>
 
@@ -13,18 +31,6 @@
   <strong>🏔️ Smart time tracking from Styria, Austria.</strong><br />
   No more paper slips — log hours, drives and vacation straight from your phone.<br />
   At the end of the month: one clean PDF. Done. ✅
-</p>
-
-<p align="center">
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/latest">
-    <img src="https://img.shields.io/github/v/release/D3rPaPaH0d3n/eStundnzettl?label=Version&color=10b981&style=for-the-badge&logo=github&logoColor=white" alt="Latest version" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases">
-    <img src="https://img.shields.io/github/downloads/D3rPaPaH0d3n/eStundnzettl/total?label=Downloads&color=8b5cf6&style=for-the-badge&logo=github&logoColor=white" alt="GitHub downloads" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/D3rPaPaH0d3n/eStundnzettl?label=License&color=64748b&style=for-the-badge" alt="License" />
-  </a>
 </p>
 
 <p align="center">

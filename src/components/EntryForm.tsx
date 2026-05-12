@@ -8,7 +8,6 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { useTranslation } from "react-i18next";
 
 import DatePicker, { registerLocale, CalendarContainer } from "react-datepicker";
-// @ts-ignore
 import "react-datepicker/dist/react-datepicker.css";
 import { de, enUS } from "date-fns/locale";
 import { getDatePickerLocale } from "../utils/formatLocale";

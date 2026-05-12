@@ -22,7 +22,7 @@ const STORAGE_KEY = "last_seen_app_version";
  *   - Dev-Builds (`APP_VERSION === 'dev'`): kein Popup, damit lokale
  *     Vite-Sessions nicht ständig auftauchen.
  */
-export interface WhatsNewState {
+interface WhatsNewState {
   /** True genau einmal: nach erfolgreicher Versionsänderung. */
   shouldShow: boolean;
   /** Aufrufen wenn der User das Modal geschlossen hat. */

@@ -82,13 +82,18 @@
 |---|---------|--------------|
 | 🎯 | **Flexible work schedules** | 38.5h, 40h, 4-day week or fully custom |
 | ⏱️ | **Live timer** | Long-press, swipe up — timer running |
+| 🎙️ | **Voice input** | Dictate entries — German speech parser included |
 | 📊 | **Real-time balance** | Overtime, extra hours and flex-time always in view |
+| 🇦🇹 | **Regional holidays** | Austria, 16 German states and 26 Swiss cantons |
 | 📄 | **PDF export** | Professional timesheet by month or week |
 | ☁️ | **Automatic backups** | Google Drive, Nextcloud or local — daily |
 | 📎 | **Attach documents** | Delivery notes, photos and receipts straight on the entry |
+| 📴 | **Offline-capable** | Works fully without internet — cloud is optional |
+| 🚫 | **No tracking** | No ads, no analytics, no data collection |
+| 🌍 | **Bilingual** | German & English UI — language switchable in Settings |
+| 🧭 | **Onboarding & tour** | Guided setup + interactive in-app tour on first launch |
 | 🌙 | **Dark mode** | Easy on the eyes when it's dark outside |
 | 🔧 | **Power-user mode** | Advanced settings for pros — opt-in |
-| 🌐 | **Bilingual** | Full German and English UI — picker in settings |
 
 ---
 
@@ -156,8 +161,11 @@ For pros who want more! Enable **power-user mode** in settings to unlock extra f
 - 🖥️ **Nextcloud integration** — back up to your own cloud
 - 📦 **JSON import / export** — back up and move data manually
 - 📄 **Automatic PDF archive** — monthly PDF backups to every target
+- 🎛️ **PDF layout toggles** — choose which fields appear in the exported PDF
 - ⏱️ **Minute mode** — 1-minute instead of 15-minute steps
 - 🏷️ **Activity codes** — industry presets or your own codes
+- 🌍 **Locale picker** — state/canton for correct holidays & calculation
+- ⏸️ **Auto-break rules** — configurable break logic per work type and locale
 - 📋 **Record only** — hour tracking without target/actual calculation
 
 ---
@@ -182,7 +190,10 @@ The app UI ships with full **German and English** translations. Settings → **L
 
 - 🔒 **Local first:** All data stays on your device
 - 💾 **Backups:** Optional — local, Google Drive or Nextcloud
+- 🔐 **Secure passwords:** Nextcloud credentials live in Android Secure Storage, not in localStorage
+- 🩹 **Anonymous crash reporting:** Sentry only reports actual crashes, opt-out, no input or user data
 - 🚫 **No tracking:** No ads, no analytics, no data collection
+- 📖 **Open source:** Full source code available, MIT-licensed
 - ✅ **Full control:** You decide where your data goes
 
 ---
@@ -209,11 +220,14 @@ If you find it useful and feel like saying thanks, a small tip via Revolut is al
 | | Technology |
 |---|-------------|
 | 🖥️ Frontend | TypeScript, React, Vite |
-| 📱 Mobile | Capacitor (Android) |
+| 🎨 UI | Tailwind CSS 4, Framer Motion, Lucide Icons |
+| 📱 Mobile | Capacitor (Android), Capacitor Secure Storage |
 | 🗄️ Database | SQLite (domain data), localStorage only for UI/cache/legacy migration |
-| 📄 PDF | @react-pdf/renderer (vector, searchable) |
+| 📄 PDF | @react-pdf/renderer (vector, searchable), pdfjs-dist (preview) |
 | ☁️ Cloud | Google Drive API, Nextcloud WebDAV |
-| 🌐 i18n | i18next + react-i18next |
+| 🌐 i18n | i18next + react-i18next (German & English) |
+| 🔍 Validation | Zod (backup schemas, import validation) |
+| 🛡️ Monitoring | Sentry (anonymous crash reporting, opt-out) |
 | 🧪 Tests | Vitest |
 
 ---

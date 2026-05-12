@@ -295,5 +295,3 @@ export const useWorkCodes = () => {
     setWorkCodesFromSnapshot,
   };
 };
-
-export default useWorkCodes;

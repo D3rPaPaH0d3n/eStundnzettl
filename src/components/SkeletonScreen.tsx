@@ -1,5 +1,3 @@
-import React from "react";
-
 /**
  * Einfacher Skeleton-Fallback für React.lazy / Suspense.
  * Respektiert das aktuelle Theme (die .dark-Klasse wird auf <html> gesetzt).

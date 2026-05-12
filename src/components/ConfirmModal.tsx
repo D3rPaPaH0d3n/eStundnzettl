@@ -1,6 +1,6 @@
 import React from "react";
-import { AlertTriangle, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AlertTriangle } from "lucide-react";
+import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
 interface Props {

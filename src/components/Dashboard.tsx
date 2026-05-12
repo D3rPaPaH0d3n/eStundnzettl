@@ -61,6 +61,158 @@ function getEntryTypeLabel(type: Entry["type"], t: TFunction): string {
   }
 }
 
+interface EntryRowProps {
+  entry: Entry;
+  index: number;
+  totalEntries: number;
+  t: TFunction;
+  workCodeLabelMap: Map<number, string>;
+  onEditEntry: (entry: Entry) => void;
+  onDeleteEntry: (id: Entry["id"]) => void;
+  onManageAttachments?: (entry: Entry) => void;
+  attachmentCountByEntryId?: Map<Entry["id"], number>;
+}
+
+export const EntryRow: React.FC<EntryRowProps> = ({
+  entry,
+  index,
+  totalEntries,
+  t,
+  workCodeLabelMap,
+  onEditEntry,
+  onDeleteEntry,
+  onManageAttachments,
+  attachmentCountByEntryId,
+}) => {
+  const isHoliday = entry.type === "public_holiday";
+  const isTimeComp = entry.type === "time_comp";
+  const timeLabel = entry.type === "work"
+    ? `${entry.start} - ${entry.end}`
+    : (isHoliday ? t("entryTypes.holiday") : t("entryTypes.allDay"));
+
+  let codeLabel = "";
+  if(entry.type === "work") codeLabel = entry.code == null ? "" : workCodeLabelMap.get(entry.code) || "";
+  else codeLabel = getEntryTypeLabel(entry.type, t);
+
+  let pauseLabel = "";
+  if (entry.type === "work" && entry.code !== WORK_CODE.DRIVE) {
+    pauseLabel = entry.pause > 0
+      ? ` - ${t("dashboard.pause", { minutes: entry.pause })}`
+      : ` - ${t("dashboard.noPause")}`;
+  }
+  
+  let rowClass = `p-3 flex justify-between items-start gap-3 transition-colors cursor-pointer bg-white dark:bg-zinc-800 ${index < totalEntries - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`; 
+  if(isHoliday) rowClass = `p-3 flex justify-between items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 ${index < totalEntries - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`; 
+  if(isTimeComp) rowClass = `p-3 flex justify-between items-start gap-3 bg-purple-50/50 dark:bg-purple-900/20 ${index < totalEntries - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`; 
+  
+  if (isHoliday) { 
+    return ( 
+      <div key={entry.id} className={rowClass}> 
+        <div className="min-w-0 flex-1 flex flex-col gap-1"> 
+          <div className="font-bold text-sm leading-none text-blue-600 dark:text-blue-400">{timeLabel}</div> 
+          <div className="text-sm text-zinc-700 dark:text-zinc-300 font-medium leading-tight">{entry.project}</div> 
+          <div className="text-xs text-zinc-500 dark:text-zinc-400 leading-tight">{codeLabel}</div> 
+        </div> 
+        <div className="flex items-center gap-2 pl-2 border-l border-zinc-100 dark:border-zinc-700 ml-1"> 
+          <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span>
+        </div>
+      </div>
+    );
+  }
+
+  const attachmentCount = attachmentCountByEntryId?.get(entry.id) || 0;
+
+  return ( 
+    <div key={entry.id} className="relative overflow-hidden"> 
+      <div className="absolute inset-0 flex items-center justify-end pr-4 text-white bg-red-500"> <Trash2 size={20} /> </div> 
+      <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.5, right: 0.05 }} onDragEnd={(_, info) => { if (info.offset.x < -80) { Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {}); onDeleteEntry(entry.id); } }} onClick={() => onEditEntry(entry)} className={`relative z-10 bg-white dark:bg-zinc-800 overflow-hidden ${index < totalEntries - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`} layout={totalEntries <= 12} > 
+        <div className={`p-3 flex justify-between items-start gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${isTimeComp ? "bg-purple-50/30 dark:bg-purple-900/10" : ""}`}> 
+          <div className="min-w-0 flex-1 flex flex-col gap-1"> 
+            <div className={`font-bold text-sm leading-none ${isTimeComp ? "text-purple-700 dark:text-purple-400" : "text-zinc-900 dark:text-zinc-100"}`}> {timeLabel} {pauseLabel && <span className="font-normal opacity-70">{pauseLabel}</span>} </div> 
+            <div className="text-sm text-zinc-700 dark:text-zinc-300 font-medium leading-tight">{entry.project}</div> 
+            <div className="flex items-center flex-wrap gap-2 text-xs text-zinc-500 dark:text-zinc-400 leading-tight"> {codeLabel && <span>{codeLabel}</span>} </div> 
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onManageAttachments?.(entry);
+                }}
+                className="inline-flex items-center gap-1 rounded-full bg-zinc-100 dark:bg-zinc-700 px-2 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+              >
+                <Paperclip size={12} />
+                <span>{attachmentCount > 0 ? t("dashboard.documentsCount", { count: attachmentCount }) : t("dashboard.documentsLabel")}</span>
+              </button>
+            </div>
+          </div> 
+          <div className="flex items-center gap-2 pl-2 border-l border-zinc-100 dark:border-zinc-700 ml-1"> <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span> </div> 
+        </div> 
+      </motion.div> 
+    </div> 
+  ); 
+};
+
+interface DayCardProps {
+  dateStr: string;
+  dayEntries: Entry[];
+  intlLocale: string;
+  t: TFunction;
+  workCodeLabelMap: Map<number, string>;
+  onEditEntry: (entry: Entry) => void;
+  onDeleteEntry: (id: Entry["id"]) => void;
+  onManageAttachments?: (entry: Entry) => void;
+  attachmentCountByEntryId?: Map<Entry["id"], number>;
+}
+
+export const DayCard: React.FC<DayCardProps> = ({
+  dateStr,
+  dayEntries,
+  intlLocale,
+  t,
+  workCodeLabelMap,
+  onEditEntry,
+  onDeleteEntry,
+  onManageAttachments,
+  attachmentCountByEntryId,
+}) => {
+  const daySum = calculateDisplayedDayMinutes(dayEntries); 
+  const d = new Date(dateStr); 
+  const sortedEntries = [...dayEntries].sort((a, b) => (a.start || "").localeCompare(b.start || "")); 
+
+  return ( 
+    <motion.div key={dateStr} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden"> 
+      <div className="flex"> 
+        <div className="bg-zinc-800 dark:bg-zinc-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0 z-20 relative"> 
+          <span className="text-xs font-bold opacity-80">{d.toLocaleDateString(intlLocale, { weekday: "short" }).slice(0, 2)}</span> 
+          <span className="text-sm font-bold">{d.toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" })}</span> 
+        </div> 
+        <div className="flex-1 min-w-0"> 
+          <AnimatePresence initial={false}> 
+            {sortedEntries.map((entry, idx) => (
+              <EntryRow
+                key={entry.id}
+                entry={entry}
+                index={idx}
+                totalEntries={sortedEntries.length}
+                t={t}
+                workCodeLabelMap={workCodeLabelMap}
+                onEditEntry={onEditEntry}
+                onDeleteEntry={onDeleteEntry}
+                onManageAttachments={onManageAttachments}
+                attachmentCountByEntryId={attachmentCountByEntryId}
+              />
+            ))} 
+          </AnimatePresence> 
+        </div> 
+        <div className="bg-zinc-50 dark:bg-zinc-700/50 w-20 border-l border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center flex-shrink-0 px-1 z-20 relative"> 
+          <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-400 uppercase tracking-wide mb-0.5">{t("dashboard.total")}</span>
+          <span className="font-bold text-zinc-800 dark:text-zinc-200 whitespace-nowrap text-sm">{formatTime(daySum)}</span> 
+        </div> 
+      </div> 
+    </motion.div> 
+  ); 
+};
+
 const Dashboard: React.FC<Props> = ({
   currentDate, onSetCurrentDate, changeMonth,
   stats,
@@ -309,95 +461,19 @@ const Dashboard: React.FC<Props> = ({
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: "easeOut" }} className="overflow-hidden"> 
                       <div className="mt-2 space-y-3"> 
                         {sortedDays.map(([dateStr, dayEntries]) => { 
-                            const daySum = calculateDisplayedDayMinutes(dayEntries); 
-                            const d = new Date(dateStr); 
-                            const sortedEntries = [...dayEntries].sort((a, b) => (a.start || "").localeCompare(b.start || "")); 
-                            
                             return ( 
-                              <motion.div key={dateStr} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden"> 
-                                <div className="flex"> 
-                                  <div className="bg-zinc-800 dark:bg-zinc-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0 z-20 relative"> 
-                                    <span className="text-xs font-bold opacity-80">{d.toLocaleDateString(intlLocale, { weekday: "short" }).slice(0, 2)}</span> 
-                                    <span className="text-sm font-bold">{d.toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" })}</span> 
-                                  </div> 
-                                  <div className="flex-1 min-w-0"> 
-                                    <AnimatePresence initial={false}> 
-                                      {sortedEntries.map((entry, idx) => { 
-                                          const isHoliday = entry.type === "public_holiday";
-                                          const isTimeComp = entry.type === "time_comp";
-                                          const timeLabel = entry.type === "work"
-                                            ? `${entry.start} - ${entry.end}`
-                                            : (isHoliday ? t("entryTypes.holiday") : t("entryTypes.allDay"));
-
-                                          let codeLabel = "";
-                                          if(entry.type === "work") codeLabel = workCodeLabelMap.get(entry.code) || "";
-                                          else codeLabel = getEntryTypeLabel(entry.type, t);
-
-                                          let pauseLabel = "";
-                                          if (entry.type === "work" && entry.code !== WORK_CODE.DRIVE) {
-                                            pauseLabel = entry.pause > 0
-                                              ? ` - ${t("dashboard.pause", { minutes: entry.pause })}`
-                                              : ` - ${t("dashboard.noPause")}`;
-                                          }
-                                          
-                                          let rowClass = `p-3 flex justify-between items-start gap-3 transition-colors cursor-pointer bg-white dark:bg-zinc-800 ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`; 
-                                          if(isHoliday) rowClass = `p-3 flex justify-between items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`; 
-                                          if(isTimeComp) rowClass = `p-3 flex justify-between items-start gap-3 bg-purple-50/50 dark:bg-purple-900/20 ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`; 
-                                          
-                                          if (isHoliday) { 
-                                            return ( 
-                                              <div key={entry.id} className={rowClass}> 
-                                                <div className="min-w-0 flex-1 flex flex-col gap-1"> 
-                                                  <div className="font-bold text-sm leading-none text-blue-600 dark:text-blue-400">{timeLabel}</div> 
-                                                  <div className="text-sm text-zinc-700 dark:text-zinc-300 font-medium leading-tight">{entry.project}</div> 
-                                                  <div className="text-xs text-zinc-500 dark:text-zinc-400 leading-tight">{codeLabel}</div> 
-                                                </div> 
-                                                <div className="flex items-center gap-2 pl-2 border-l border-zinc-100 dark:border-zinc-700 ml-1"> 
-                                                  <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span>
-                                                </div>
-                                              </div>
-                                            );
-                                          }
-
-                                          const attachmentCount = attachmentCountByEntryId?.get(entry.id) || 0;
-
-                                          return ( 
-                                            <div key={entry.id} className="relative overflow-hidden"> 
-                                              <div className="absolute inset-0 flex items-center justify-end pr-4 text-white bg-red-500"> <Trash2 size={20} /> </div> 
-                                              <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.5, right: 0.05 }} onDragEnd={(_, info) => { if (info.offset.x < -80) { Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {}); onDeleteEntry(entry.id); } }} onClick={() => onEditEntry(entry)} className={`relative z-10 bg-white dark:bg-zinc-800 overflow-hidden ${idx < sortedEntries.length - 1 ? "border-b border-zinc-100 dark:border-zinc-700" : ""}`} layout={sortedEntries.length <= 12} > 
-                                                <div className={`p-3 flex justify-between items-start gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${isTimeComp ? "bg-purple-50/30 dark:bg-purple-900/10" : ""}`}> 
-                                                  <div className="min-w-0 flex-1 flex flex-col gap-1"> 
-                                                    <div className={`font-bold text-sm leading-none ${isTimeComp ? "text-purple-700 dark:text-purple-400" : "text-zinc-900 dark:text-zinc-100"}`}> {timeLabel} {pauseLabel && <span className="font-normal opacity-70">{pauseLabel}</span>} </div> 
-                                                    <div className="text-sm text-zinc-700 dark:text-zinc-300 font-medium leading-tight">{entry.project}</div> 
-                                                    <div className="flex items-center flex-wrap gap-2 text-xs text-zinc-500 dark:text-zinc-400 leading-tight"> {codeLabel && <span>{codeLabel}</span>} </div> 
-                                                    <div className="flex items-center gap-2 pt-1">
-                                                      <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          onManageAttachments?.(entry);
-                                                        }}
-                                                        className="inline-flex items-center gap-1 rounded-full bg-zinc-100 dark:bg-zinc-700 px-2 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-                                                      >
-                                                        <Paperclip size={12} />
-                                                        <span>{attachmentCount > 0 ? t("dashboard.documentsCount", { count: attachmentCount }) : t("dashboard.documentsLabel")}</span>
-                                                      </button>
-                                                    </div>
-                                                  </div> 
-                                                  <div className="flex items-center gap-2 pl-2 border-l border-zinc-100 dark:border-zinc-700 ml-1"> <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 whitespace-nowrap">{formatTime(entry.netDuration)}</span> </div> 
-                                                </div> 
-                                              </motion.div> 
-                                            </div> 
-                                          ); 
-                                      })} 
-                                    </AnimatePresence> 
-                                  </div> 
-                                  <div className="bg-zinc-50 dark:bg-zinc-700/50 w-20 border-l border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center flex-shrink-0 px-1 z-20 relative"> 
-                                    <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-400 uppercase tracking-wide mb-0.5">{t("dashboard.total")}</span>
-                                    <span className="font-bold text-zinc-800 dark:text-zinc-200 whitespace-nowrap text-sm">{formatTime(daySum)}</span> 
-                                  </div> 
-                                </div> 
-                              </motion.div> 
+                              <DayCard
+                                key={dateStr}
+                                dateStr={dateStr}
+                                dayEntries={dayEntries}
+                                intlLocale={intlLocale}
+                                t={t}
+                                workCodeLabelMap={workCodeLabelMap}
+                                onEditEntry={onEditEntry}
+                                onDeleteEntry={onDeleteEntry}
+                                onManageAttachments={onManageAttachments}
+                                attachmentCountByEntryId={attachmentCountByEntryId}
+                              />
                             ); 
                         })} 
                       </div> 

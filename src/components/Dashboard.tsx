@@ -12,6 +12,7 @@ import {
   calculateWeekStats,
   calculatePeriodStats,
   calculateDisplayedDayMinutes,
+  getTargetMinutesForDate,
 } from "../utils/timeCalculations";
 import { WORK_CODE } from "../hooks/constants";
 import { motion, AnimatePresence } from "framer-motion";
@@ -162,6 +163,10 @@ interface DayCardProps {
   onDeleteEntry: (id: Entry["id"]) => void;
   onManageAttachments?: (entry: Entry) => void;
   attachmentCountByEntryId?: Map<Entry["id"], number>;
+  simpleMode?: boolean;
+  userData: UserData;
+  locale?: Locale;
+  calculationConfig?: CalculationConfig | null;
 }
 
 export const DayCard: React.FC<DayCardProps> = ({
@@ -174,8 +179,19 @@ export const DayCard: React.FC<DayCardProps> = ({
   onDeleteEntry,
   onManageAttachments,
   attachmentCountByEntryId,
+  simpleMode = false,
+  userData,
+  locale,
+  calculationConfig,
 }) => {
-  const daySum = calculateDisplayedDayMinutes(dayEntries); 
+  const daySum = calculateDisplayedDayMinutes(dayEntries);
+  const dayTarget = !simpleMode
+    ? getTargetMinutesForDate(dateStr, userData?.workDays, locale, calculationConfig)
+    : 0;
+  const dayBalance = dayTarget > 0 ? daySum - dayTarget : null;
+  const dayBalanceClass = dayBalance !== null && dayBalance > 0
+    ? "text-emerald-500 dark:text-emerald-400"
+    : "text-orange-500 dark:text-orange-400";
   const d = new Date(dateStr); 
   const sortedEntries = [...dayEntries].sort((a, b) => (a.start || "").localeCompare(b.start || "")); 
 
@@ -206,7 +222,12 @@ export const DayCard: React.FC<DayCardProps> = ({
         </div> 
         <div className="bg-zinc-50 dark:bg-zinc-700/50 w-20 border-l border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center flex-shrink-0 px-1 z-20 relative"> 
           <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-400 uppercase tracking-wide mb-0.5">{t("dashboard.total")}</span>
-          <span className="font-bold text-zinc-800 dark:text-zinc-200 whitespace-nowrap text-sm">{formatTime(daySum)}</span> 
+          <span className="font-bold text-zinc-800 dark:text-zinc-200 whitespace-nowrap text-sm">{formatTime(daySum)}</span>
+          {dayBalance !== null && dayBalance !== 0 && (
+            <span className={`text-[9px] font-medium leading-none mt-0.5 ${dayBalanceClass}`}>
+              {formatSignedTime(dayBalance)}
+            </span>
+          )}
         </div> 
       </div> 
     </motion.div> 
@@ -473,6 +494,10 @@ const Dashboard: React.FC<Props> = ({
                                 onDeleteEntry={onDeleteEntry}
                                 onManageAttachments={onManageAttachments}
                                 attachmentCountByEntryId={attachmentCountByEntryId}
+                                simpleMode={simpleMode}
+                                userData={userData}
+                                locale={locale}
+                                calculationConfig={calculationConfig}
                               />
                             ); 
                         })} 

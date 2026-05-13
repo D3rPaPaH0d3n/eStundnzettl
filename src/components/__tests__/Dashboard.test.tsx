@@ -208,6 +208,25 @@ describe("Dashboard", () => {
     expect(queryByText("Saldo")).toBeNull();
   });
 
+  it("zeigt den Tages-Saldo subtil unter der Tages-Gesamtzeit", () => {
+    const entry = makeEntry({ netDuration: 480 });
+    const { getByText } = renderDashboard({
+      groupedByWeek: [[15, [entry]]],
+    });
+
+    expect(getByText("-0h 30m")).toBeTruthy();
+  });
+
+  it("versteckt den Tages-Saldo im Simple-Modus", () => {
+    const entry = makeEntry({ netDuration: 480 });
+    const { queryByText } = renderDashboard({
+      groupedByWeek: [[15, [entry]]],
+      userData: { simpleMode: true },
+    });
+
+    expect(queryByText("-0h 30m")).toBeNull();
+  });
+
   it("ruft onEditEntry mit dem richtigen Entry bei Click auf einen Eintrag", () => {
     const entry = makeEntry({ id: 42, project: "Projekt Alpha" });
     const onEditEntry = vi.fn();

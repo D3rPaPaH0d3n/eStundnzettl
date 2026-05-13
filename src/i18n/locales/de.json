@@ -1052,5 +1052,14 @@
       "download": "Zum Download",
       "dismiss": "Später"
     }
+  },
+  "settingsUxMigration": {
+    "title": "Die Einstellungen wurden aufgeräumt",
+    "body": "Wir haben eStundnzettl übersichtlicher sortiert. Deine Daten und bisherigen Einstellungen bleiben unverändert.",
+    "pointData": "Deine Einträge, Tätigkeiten, Backups und Berechnungsregeln bleiben erhalten.",
+    "pointMode": "Deine Aufzeichnungsart wurde übernommen und kann nun direkt oben in den Einstellungen geprüft werden.",
+    "pointAdvanced": "Profi-Funktionen findest du unter „Erweiterte Einstellungen“.",
+    "close": "Verstanden",
+    "reviewMode": "Aufzeichnungsart prüfen"
   }
 }

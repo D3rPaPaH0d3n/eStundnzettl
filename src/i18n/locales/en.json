@@ -1052,5 +1052,14 @@
       "download": "Download",
       "dismiss": "Later"
     }
+  },
+  "settingsUxMigration": {
+    "title": "Settings have been reorganized",
+    "body": "We made eStundnzettl easier to navigate. Your data and existing settings stay unchanged.",
+    "pointData": "Your entries, activities, backups and calculation rules are preserved.",
+    "pointMode": "Your recording mode was kept and can now be reviewed at the top of settings.",
+    "pointAdvanced": "Pro features are available under “Advanced settings”.",
+    "close": "Got it",
+    "reviewMode": "Review recording mode"
   }
 }

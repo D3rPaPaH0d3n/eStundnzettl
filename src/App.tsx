@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useMemo, Suspense } from "react";
+import React, { useRef, useCallback, useMemo, Suspense, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import type { BackupPayload } from "./types";
@@ -37,6 +37,7 @@ const ExportModal = React.lazy(() => import("./components/ExportModal"));
 const AttachmentManager = React.lazy(() => import("./components/AttachmentManager"));
 const LocaleMigrationModal = React.lazy(() => import("./components/LocaleMigrationModal"));
 const ChangelogModal = React.lazy(() => import("./components/ChangelogModal"));
+const SettingsUxMigrationModal = React.lazy(() => import("./components/SettingsUxMigrationModal"));
 
 // MIGRATION — run once on module import
 import { migrateStorageKeys } from "./utils/migration";
@@ -149,22 +150,33 @@ export default function App() {
     calculationConfig,
   });
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const settingsUxMigrationSeenKey = "estundnzettl_settings_ux_migration_seen_v1";
+  const [settingsUxMigrationSeen, setSettingsUxMigrationSeen] = useState(
+    () => localStorage.getItem(settingsUxMigrationSeenKey) === "true",
+  );
+
   // --- EFFECTS ---
   useAutoCheckoutHandler({ autoCheckoutData, form, setView, clearAutoCheckout, getDefaultCode });
   useBackButtonHandler({ view, setView, form });
 
   const handleOnboardingFinishWithTour = useCallback(() => {
+    localStorage.setItem(settingsUxMigrationSeenKey, "true");
+    setSettingsUxMigrationSeen(true);
     handleOnboardingFinish();
     handleTourStart();
-  }, [handleOnboardingFinish, handleTourStart]);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  }, [handleOnboardingFinish, handleTourStart, settingsUxMigrationSeenKey]);
 
   // "Was ist neu" — zeigt das ChangelogModal automatisch beim ersten
   // App-Start nach einem Update. Wird unterdrückt während Onboarding,
   // damit Erstinstallation nicht direkt mit Versionshistorie kommt.
   const whatsNew = useWhatsNewModal();
   const showWhatsNew = whatsNew.shouldShow && !showOnboarding && localeId !== null;
+  const showSettingsUxMigration =
+    !settingsUxMigrationSeen &&
+    !showOnboarding &&
+    settingsStorageStatus !== "loading" &&
+    !!userData?.name;
 
   // Update-Verfügbar — nur für Sideload-Installs, prüft GitHub Releases
   // einmal pro Tag. Play Store / Amazon / Huawei sehen das nie.
@@ -245,6 +257,23 @@ export default function App() {
           <LocaleMigrationModal
             isOpen={true}
             onChoose={(id) => setLocale(id)}
+          />
+        </Suspense>
+      )}
+
+      {showSettingsUxMigration && (
+        <Suspense fallback={null}>
+          <SettingsUxMigrationModal
+            isOpen={true}
+            onClose={() => {
+              localStorage.setItem(settingsUxMigrationSeenKey, "true");
+              setSettingsUxMigrationSeen(true);
+            }}
+            onReviewMode={() => {
+              localStorage.setItem(settingsUxMigrationSeenKey, "true");
+              setSettingsUxMigrationSeen(true);
+              setView("settings");
+            }}
           />
         </Suspense>
       )}

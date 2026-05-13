@@ -646,7 +646,7 @@
       "imprint": "Impressum",
       "license": "Lizenz",
       "contact": "Kontakt",
-      "donate": "A Scherzl spendier'n",
+      "donate": "Kaffee spendieren",
       "expertTitle": "Hausmasta-Modus",
       "expertOn": "Alle Einstellungen sichtbar",
       "expertOff": "Erweiterte Einstellungen ausgeblendet",
@@ -664,6 +664,14 @@
       "recalcFixed": "{{fixed}} von {{total}} Einträgen korrigiert",
       "recalcAllCorrect": "Alle {{total}} Einträge sind korrekt",
       "recalcError": "Fehler bei der Neuberechnung"
+    },
+    "supportPrompt": {
+      "title": "Gefällt dir eStundnzettl?",
+      "body": "Wenn dir die App im Alltag hilft, freue ich mich über eine kurze Bewertung – oder über einen Kaffee als kleines Danke.",
+      "rate": "Bewerten",
+      "coffee": "Kaffee",
+      "noThanks": "Nein danke",
+      "linkError": "Link konnte nicht geöffnet werden"
     },
     "backup": {
       "header": "Backup & Export",

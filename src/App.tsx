@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useMemo, Suspense, useState } from "react";
+import React, { useRef, useCallback, useMemo, Suspense, useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import type { BackupPayload } from "./types";
@@ -38,8 +38,12 @@ const AttachmentManager = React.lazy(() => import("./components/AttachmentManage
 const LocaleMigrationModal = React.lazy(() => import("./components/LocaleMigrationModal"));
 const ChangelogModal = React.lazy(() => import("./components/ChangelogModal"));
 const SettingsUxMigrationModal = React.lazy(() => import("./components/SettingsUxMigrationModal"));
+const SupportPromptModal = React.lazy(() => import("./components/SupportPromptModal"));
 
 const SETTINGS_UX_MIGRATION_SEEN_KEY = "estundnzettl_settings_ux_migration_seen_v1";
+const SUPPORT_PROMPT_FIRST_ELIGIBLE_KEY = "estundnzettl_support_prompt_first_eligible_v1";
+const SUPPORT_PROMPT_DISMISSED_KEY = "estundnzettl_support_prompt_dismissed_v1";
+const SUPPORT_PROMPT_MIN_AGE_MS = 5 * 24 * 60 * 60 * 1000;
 
 // MIGRATION — run once on module import
 import { migrateStorageKeys } from "./utils/migration";
@@ -156,6 +160,7 @@ export default function App() {
   const [settingsUxMigrationSeen, setSettingsUxMigrationSeen] = useState(
     () => localStorage.getItem(SETTINGS_UX_MIGRATION_SEEN_KEY) === "true",
   );
+  const [showSupportPrompt, setShowSupportPrompt] = useState(false);
 
   // --- EFFECTS ---
   useAutoCheckoutHandler({ autoCheckoutData, form, setView, clearAutoCheckout, getDefaultCode });
@@ -178,6 +183,39 @@ export default function App() {
     settingsStorageStatus !== "loading" &&
     !!userData?.name;
   const showWhatsNew = whatsNew.shouldShow && !showOnboarding && !showSettingsUxMigration && localeId !== null;
+
+  useEffect(() => {
+    if (
+      showOnboarding ||
+      showSettingsUxMigration ||
+      showWhatsNew ||
+      settingsStorageStatus === "loading" ||
+      !userData?.name ||
+      entries.length === 0 ||
+      localStorage.getItem(SUPPORT_PROMPT_DISMISSED_KEY) === "true"
+    ) {
+      return;
+    }
+
+    const now = Date.now();
+    const firstEligibleRaw = localStorage.getItem(SUPPORT_PROMPT_FIRST_ELIGIBLE_KEY);
+    const firstEligible = firstEligibleRaw ? Number(firstEligibleRaw) : 0;
+
+    if (!firstEligible || Number.isNaN(firstEligible)) {
+      localStorage.setItem(SUPPORT_PROMPT_FIRST_ELIGIBLE_KEY, String(now));
+      return;
+    }
+
+    if (now - firstEligible < SUPPORT_PROMPT_MIN_AGE_MS) return;
+
+    const timer = window.setTimeout(() => setShowSupportPrompt(true), 0);
+    return () => window.clearTimeout(timer);
+  }, [entries.length, settingsStorageStatus, showOnboarding, showSettingsUxMigration, showWhatsNew, userData?.name]);
+
+  const dismissSupportPrompt = useCallback(() => {
+    localStorage.setItem(SUPPORT_PROMPT_DISMISSED_KEY, "true");
+    setShowSupportPrompt(false);
+  }, []);
 
   // Update-Verfügbar — nur für Sideload-Installs, prüft GitHub Releases
   // einmal pro Tag. Play Store / Amazon / Huawei sehen das nie.
@@ -284,6 +322,15 @@ export default function App() {
           <ChangelogModal
             isOpen={true}
             onClose={whatsNew.markSeen}
+          />
+        </Suspense>
+      )}
+
+      {showSupportPrompt && !showOnboarding && !showSettingsUxMigration && !showWhatsNew && (
+        <Suspense fallback={null}>
+          <SupportPromptModal
+            isOpen={true}
+            onClose={dismissSupportPrompt}
           />
         </Suspense>
       )}

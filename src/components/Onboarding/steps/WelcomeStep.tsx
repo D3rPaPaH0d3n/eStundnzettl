@@ -1,25 +1,27 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Play, RefreshCw, FlaskConical, Smartphone, WifiOff, Lock } from "lucide-react";
+import { Calculator, ClipboardList, FlaskConical, Lock, RefreshCw, Smartphone, WifiOff } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import AppLogo from "../../../assets/logo.png";
 
 /**
  * Onboarding-Schritt 0: Willkommen.
  *
- * Dreiwege-Abzweigung in den Wizard:
- *  - Neu starten         → Setup-Flow ab Schritt 1
- *  - Backup laden        → Restore-Flow direkt bei Schritt 3
- *  - Demo-Daten testen   → lädt Demo-Daten und schließt den Wizard sofort
+ * Klare Startpfade:
+ *  - Nur Arbeitszeiten eintragen -> Fast Path mit Profil, danach fertig
+ *  - Mit Berechnung & Auswertung -> voller Setup-Flow
+ *  - Backup wiederherstellen     -> Restore-Flow
+ *  - Demo ansehen                -> kleiner Nebenlink
  */
 
 interface Props {
+  onStartSimple: () => void;
   onStartNew: () => void;
   onStartRestore: () => void;
   onDemoMode: () => void;
 }
 
-const WelcomeStep: React.FC<Props> = ({ onStartNew, onStartRestore, onDemoMode }) => {
+const WelcomeStep: React.FC<Props> = ({ onStartSimple, onStartNew, onStartRestore, onDemoMode }) => {
   const { t } = useTranslation();
   return (
     <motion.div
@@ -72,11 +74,26 @@ const WelcomeStep: React.FC<Props> = ({ onStartNew, onStartRestore, onDemoMode }
       <div className="w-full space-y-2.5">
         <button
           type="button"
-          onClick={onStartNew}
-          className="w-full p-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-bold text-base shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+          onClick={onStartSimple}
+          className="w-full p-4 bg-emerald-600 text-white rounded-2xl font-bold text-base shadow-xl shadow-emerald-900/10 hover:bg-emerald-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-start gap-3 text-left"
         >
-          <Play size={18} fill="currentColor" />
-          {t("onboarding.welcome.startNew")}
+          <ClipboardList size={22} className="shrink-0 mt-0.5" />
+          <span>
+            <span className="block">{t("onboarding.welcome.simpleStart")}</span>
+            <span className="block text-xs font-medium text-emerald-50/90 mt-0.5">{t("onboarding.welcome.simpleStartHint")}</span>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onStartNew}
+          className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-zinc-100 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-2xl font-bold text-sm hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all flex items-start gap-3 text-left"
+        >
+          <Calculator size={20} className="text-blue-600 shrink-0 mt-0.5" />
+          <span>
+            <span className="block">{t("onboarding.welcome.calculatedStart")}</span>
+            <span className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{t("onboarding.welcome.calculatedStartHint")}</span>
+          </span>
         </button>
 
         <button
@@ -91,9 +108,9 @@ const WelcomeStep: React.FC<Props> = ({ onStartNew, onStartRestore, onDemoMode }
         <button
           type="button"
           onClick={onDemoMode}
-          className="w-full p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-300 rounded-2xl font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all flex items-center justify-center gap-2"
+          className="w-full p-2 text-emerald-700 dark:text-emerald-300 rounded-xl font-bold text-xs hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all flex items-center justify-center gap-2"
         >
-          <FlaskConical size={16} />
+          <FlaskConical size={14} />
           {t("onboarding.welcome.demo")}
         </button>
       </div>

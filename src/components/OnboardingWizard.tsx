@@ -142,8 +142,24 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
   // Für Restore-User wird die Locale nach dem Finish via LocaleMigrationModal
   // abgefragt (siehe App.tsx), weil sie aus dem Backup restored werden und
   // Locale dort (noch) nicht enthalten ist.
+  const handleStartSimple = () => {
+    setIsRestoreFlow(false);
+    setFormData((p) => ({
+      ...p,
+      simpleMode: true,
+      workDays: [0, 0, 0, 0, 0, 0, 0],
+      customCalc: false,
+    }));
+    setStep(1);
+  };
+
   const handleStartNew = () => {
     setIsRestoreFlow(false);
+    setFormData((p) => ({
+      ...p,
+      simpleMode: false,
+      customCalc: false,
+    }));
     setStep(1);
   };
 
@@ -184,6 +200,10 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
   const nextStep = () => {
     if (step === 1 && !formData.name.trim()) {
       toast.error(t("onboarding.toast.nameRequired"));
+      return;
+    }
+    if (step === 1 && formData.simpleMode) {
+      setStep(7);
       return;
     }
     if (step === 2 && !formData.localeId) {
@@ -385,14 +405,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
   };
 
   const handleSimpleModeToggle = () => {
-    setFormData(p => {
-      const newSimple = !p.simpleMode;
-      return {
-        ...p,
-        simpleMode: newSimple,
-        workDays: newSimple ? [0, 0, 0, 0, 0, 0, 0] : WORK_MODELS[0].days,
-      };
-    });
+    setFormData(p => ({ ...p, simpleMode: !p.simpleMode }));
   };
 
   // --- FINISH (BUGFIX: Persistenz korrigiert) ---
@@ -438,8 +451,8 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
     // CalculationConfig persistieren — unabhängig davon ob customCalc
     // oder Locale-Default-Config. Bestehende User im Restore-Flow
-    // überspringen das (ihre Config kommt aus dem Backup oder der Migration).
-    if (!isRestoreFlow) {
+    // und reine Aufzeichnungsnutzer überspringen das.
+    if (!isRestoreFlow && !formData.simpleMode) {
       try {
         await setSetting("calculationConfig", formData.calcConfig);
       } catch (err) {
@@ -459,8 +472,8 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       setLocale?.(formData.localeId);
     }
 
-    // Work-Code-Preset laden (nur wenn neuer User)
-    if (!isRestoreFlow) {
+    // Work-Code-Preset laden (nur wenn neuer User mit Auswertungsmodus)
+    if (!isRestoreFlow && !formData.simpleMode) {
       const preset = WORK_CODE_PRESETS[formData.workCodePresetId];
       if (preset) {
         try {
@@ -664,7 +677,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
               animate={{
                 // Gesamte Schrittzahl hängt davon ab, ob der User einen
                 // Eigenen Plan konfiguriert (→ +1 Step für CalculationStep).
-                width: `${(step / (formData.customCalc ? 7 : 6)) * 100}%`,
+                width: step === 7 ? "100%" : `${(step / (formData.customCalc ? 7 : 6)) * 100}%`,
               }}
             />
           </div>
@@ -676,6 +689,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
             {/* SCHRITT 0 */}
             {step === 0 && (
               <WelcomeStep
+                onStartSimple={handleStartSimple}
                 onStartNew={handleStartNew}
                 onStartRestore={handleStartRestore}
                 onDemoMode={handleDemoMode}

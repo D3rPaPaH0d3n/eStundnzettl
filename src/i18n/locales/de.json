@@ -251,7 +251,11 @@
       "badgePrivate": "Daten bleiben bei dir",
       "startNew": "Los geht's — neu einrichten",
       "restore": "Ich hab schon ein Backup",
-      "demo": "Nur mal reinschnuppern (Demo)"
+      "demo": "Nur mal reinschnuppern (Demo)",
+      "simpleStart": "Nur Arbeitszeiten eintragen",
+      "simpleStartHint": "Schnellstart: Profil ausfüllen und loslegen.",
+      "calculatedStart": "Mit Berechnung & Auswertung",
+      "calculatedStartHint": "Für Soll/Ist, Saldo, Überstunden und Berichte."
     },
     "profile": {
       "title": "Sag uns wer du bist",

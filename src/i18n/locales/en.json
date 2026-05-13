@@ -251,7 +251,11 @@
       "badgePrivate": "Your data stays yours",
       "startNew": "Let's go — fresh setup",
       "restore": "I already have a backup",
-      "demo": "Just take a look (demo)"
+      "demo": "Just take a look (demo)",
+      "simpleStart": "Only record working hours",
+      "simpleStartHint": "Quick start: fill in your profile and start.",
+      "calculatedStart": "With calculation & reports",
+      "calculatedStartHint": "For target/actual time, balance, overtime and reports."
     },
     "profile": {
       "title": "Tell us who you are",

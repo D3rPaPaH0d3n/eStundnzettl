@@ -33,6 +33,7 @@ import ExportModal from "./ExportModal";
 import ReportPdfDocument from "./ReportPdfDocument";
 import PdfBlobPreview from "./PdfBlobPreview";
 import PdfDisplayToggles from "./Settings/PdfDisplayToggles";
+import FirstOpenHint from "./FirstOpenHint";
 
 import type {
   Entry,
@@ -437,9 +438,14 @@ const PrintReport: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="flex gap-2 items-center">
-          <button
-            onClick={() => setIsNoteModalOpen(true)}
+        <div className="space-y-2">
+          <FirstOpenHint storageKey="estundnzettl_hint_report_seen_v1">
+            {t("hints.report")}
+          </FirstOpenHint>
+
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={() => setIsNoteModalOpen(true)}
             aria-label={t("reports.noteModal.title")}
             className={`p-2 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
               customNote
@@ -524,6 +530,7 @@ const PrintReport: React.FC<Props> = ({
                 </>
               )}
             </AnimatePresence>
+          </div>
           </div>
         </div>
       </div>

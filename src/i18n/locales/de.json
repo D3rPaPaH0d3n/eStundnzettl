@@ -503,35 +503,39 @@
     "next": "Weiter",
     "steps": {
       "welcome": {
-        "title": "Kurze Tour gefällig?",
-        "body": "Servus! Lass uns in ein paar kleinen Schritten durchgehen, wo du was findest. Du kannst jederzeit auf das X tippen und überspringen."
+        "title": "Servus, schön dass du da bist!",
+        "body": "30 Sekunden Führung — dann weißt du, wo alles ist. Tippe auf Weiter oder überspring's mit dem X."
       },
       "dashboard": {
-        "title": "Deine Übersicht",
-        "body": "Hier siehst du auf einen Blick: Ist-Stunden, Soll-Stunden und deine Überstunden für den gewählten Monat. Wochen kannst du antippen zum Auf- und Zuklappen."
+        "title": "Deine Stunden auf einen Blick",
+        "body": "Hier siehst du sofort, ob du im Plus oder Minus bist. Tippe auf eine Woche, um einzelne Einträge aufzuklappen."
       },
       "fabTap": {
-        "title": "Manueller Eintrag",
-        "body": "Der grüne Knopf rechts unten ist dein Hauptwerkzeug. Ein kurzes Tippen öffnet sofort das Formular für einen neuen Eintrag — perfekt zum Nachtragen."
+        "title": "Eintrag nachtragen?",
+        "body": "Kurz auf den grünen Knopf tippen — das Formular öffnet sich sofort. Start, Ende, fertig."
       },
       "fabTimer": {
-        "title": "Live-Timer starten",
-        "body": "Derselbe Knopf startet den Live-Timer: einfach lang draufdrücken, bis er grün wird, und dann nach oben wischen. Nochmal tippen stoppt den Timer und legt den Eintrag automatisch an.",
+        "title": "Schon am Arbeiten? Timer starten!",
+        "body": "Lang drücken und nach oben wischen: der Timer läuft mit. Nochmal tippen — er stoppt und trägt alles automatisch ein.",
         "hint": "Lang drücken + hochwischen"
       },
       "report": {
-        "title": "Stundenzettel als PDF",
-        "body": "Oben rechts der grüne Button: dein fertiger Stundenzettel zum Anschauen, Teilen oder Ausdrucken. Mit Unterschrift, Notizen und deinem Logo."
+        "title": "Stundenzettel fertig?",
+        "body": "Tippe hier für deinen PDF-Bericht — unterschriftsreif und direkt teilbar per Mail oder WhatsApp."
       },
       "settings": {
-        "title": "Einstellungen & mehr",
-        "body": "Das Zahnrad ist deine Schaltzentrale: Profil, Arbeitszeit, eigene Tätigkeits-Codes, Backup, Theme und die Hilfe. Alles lässt sich jederzeit ändern."
+        "title": "Alles nach deinem Gusto",
+        "body": "Arbeitszeiten, Name, eigene Tätigkeits-Codes — alles hier. Und wenn du nicht weiterweißt: unten ist der Hilfe-Bereich."
       },
       "done": {
-        "title": "Das war's schon!",
-        "body": "Du kennst jetzt alle wichtigen Ecken. Falls du was nochmal nachlesen willst: Einstellungen → Hilfe. Viel Spaß mit dem eStundnzettl!"
+        "title": "Los geht's!",
+        "body": "Das war alles — probier's einfach aus. Hilfe findest du jederzeit in den Einstellungen."
       }
     }
+  },
+  "hints": {
+    "settings": "Hier richtest du einmalig ein, wie du arbeitest. Manches ist schon vorbelegt — schau einfach kurz durch.",
+    "report": "Das ist dein Stundenzettel für den Monat. Zeitraum wählen, optional eine Notiz ergänzen, dann teilen."
   },
   "skeleton": {
     "default": "Lädt...",

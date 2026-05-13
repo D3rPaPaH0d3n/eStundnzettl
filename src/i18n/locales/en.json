@@ -503,35 +503,39 @@
     "next": "Next",
     "steps": {
       "welcome": {
-        "title": "Quick tour?",
-        "body": "Hello! Let's walk through a few quick steps to show you where things live. You can tap the X and skip at any time."
+        "title": "Hi, glad you're here!",
+        "body": "A 30-second tour — then you'll know where everything is. Tap Next or skip with the X."
       },
       "dashboard": {
-        "title": "Your overview",
-        "body": "Here you see at a glance: actual hours, target hours and your overtime for the selected month. Tap a week to expand or collapse it."
+        "title": "Your hours at a glance",
+        "body": "Here you instantly see whether you're in plus or minus. Tap a week to expand the individual entries."
       },
       "fabTap": {
-        "title": "Manual entry",
-        "body": "The green button in the bottom right is your main tool. A short tap opens the new-entry form right away — perfect for filling things in later."
+        "title": "Need to add an entry?",
+        "body": "Tap the green button — the form opens right away. Start, end, done."
       },
       "fabTimer": {
-        "title": "Start the live timer",
-        "body": "The same button also starts the live timer: press and hold until it turns green, then swipe up. Tap again to stop the timer and the entry is created automatically.",
+        "title": "Already working? Start the timer!",
+        "body": "Press and hold, then swipe up: the timer runs with you. Tap again — it stops and creates the entry automatically.",
         "hint": "Press & hold, then swipe up"
       },
       "report": {
-        "title": "Timesheet as PDF",
-        "body": "The green button in the top right: your finished timesheet, ready to view, share or print. With signature, notes and your logo."
+        "title": "Timesheet ready?",
+        "body": "Tap here for your PDF report — ready to sign and share by email or WhatsApp."
       },
       "settings": {
-        "title": "Settings & more",
-        "body": "The gear icon is your control center: profile, work schedule, activity codes, backup, theme and help. Everything can be changed at any time."
+        "title": "Make it fit your work",
+        "body": "Work hours, name, your own activity codes — it's all here. And if you're stuck: the Help section is at the bottom."
       },
       "done": {
-        "title": "That's it!",
-        "body": "You now know all the important spots. If you want to read up on something later: Settings → Help. Have fun with eStundnzettl!"
+        "title": "Let's go!",
+        "body": "That's it — just try it out. You can find help anytime in Settings."
       }
     }
+  },
+  "hints": {
+    "settings": "This is where you set up how you work. Some things are already prefilled — just take a quick look through.",
+    "report": "This is your timesheet for the month. Choose the period, add an optional note, then share it."
   },
   "skeleton": {
     "default": "Loading...",

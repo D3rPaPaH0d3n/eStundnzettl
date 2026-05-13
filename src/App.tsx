@@ -39,6 +39,8 @@ const LocaleMigrationModal = React.lazy(() => import("./components/LocaleMigrati
 const ChangelogModal = React.lazy(() => import("./components/ChangelogModal"));
 const SettingsUxMigrationModal = React.lazy(() => import("./components/SettingsUxMigrationModal"));
 
+const SETTINGS_UX_MIGRATION_SEEN_KEY = "estundnzettl_settings_ux_migration_seen_v1";
+
 // MIGRATION — run once on module import
 import { migrateStorageKeys } from "./utils/migration";
 migrateStorageKeys();
@@ -151,9 +153,8 @@ export default function App() {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const settingsUxMigrationSeenKey = "estundnzettl_settings_ux_migration_seen_v1";
   const [settingsUxMigrationSeen, setSettingsUxMigrationSeen] = useState(
-    () => localStorage.getItem(settingsUxMigrationSeenKey) === "true",
+    () => localStorage.getItem(SETTINGS_UX_MIGRATION_SEEN_KEY) === "true",
   );
 
   // --- EFFECTS ---
@@ -161,22 +162,22 @@ export default function App() {
   useBackButtonHandler({ view, setView, form });
 
   const handleOnboardingFinishWithTour = useCallback(() => {
-    localStorage.setItem(settingsUxMigrationSeenKey, "true");
+    localStorage.setItem(SETTINGS_UX_MIGRATION_SEEN_KEY, "true");
     setSettingsUxMigrationSeen(true);
     handleOnboardingFinish();
     handleTourStart();
-  }, [handleOnboardingFinish, handleTourStart, settingsUxMigrationSeenKey]);
+  }, [handleOnboardingFinish, handleTourStart]);
 
   // "Was ist neu" — zeigt das ChangelogModal automatisch beim ersten
   // App-Start nach einem Update. Wird unterdrückt während Onboarding,
   // damit Erstinstallation nicht direkt mit Versionshistorie kommt.
   const whatsNew = useWhatsNewModal();
-  const showWhatsNew = whatsNew.shouldShow && !showOnboarding && localeId !== null;
   const showSettingsUxMigration =
     !settingsUxMigrationSeen &&
     !showOnboarding &&
     settingsStorageStatus !== "loading" &&
     !!userData?.name;
+  const showWhatsNew = whatsNew.shouldShow && !showOnboarding && !showSettingsUxMigration && localeId !== null;
 
   // Update-Verfügbar — nur für Sideload-Installs, prüft GitHub Releases
   // einmal pro Tag. Play Store / Amazon / Huawei sehen das nie.
@@ -266,11 +267,11 @@ export default function App() {
           <SettingsUxMigrationModal
             isOpen={true}
             onClose={() => {
-              localStorage.setItem(settingsUxMigrationSeenKey, "true");
+              localStorage.setItem(SETTINGS_UX_MIGRATION_SEEN_KEY, "true");
               setSettingsUxMigrationSeen(true);
             }}
             onReviewMode={() => {
-              localStorage.setItem(settingsUxMigrationSeenKey, "true");
+              localStorage.setItem(SETTINGS_UX_MIGRATION_SEEN_KEY, "true");
               setSettingsUxMigrationSeen(true);
               setView("settings");
             }}

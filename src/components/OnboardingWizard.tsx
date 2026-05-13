@@ -148,6 +148,9 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       ...p,
       simpleMode: true,
       workDays: [0, 0, 0, 0, 0, 0, 0],
+      localeId: "neutral",
+      workCodePresetId: "allgemein",
+      calcConfig: getBlankCalculationConfig([0, 0, 0, 0, 0, 0, 0]),
       customCalc: false,
     }));
     setStep(1);
@@ -472,8 +475,8 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       setLocale?.(formData.localeId);
     }
 
-    // Work-Code-Preset laden (nur wenn neuer User mit Auswertungsmodus)
-    if (!isRestoreFlow && !formData.simpleMode) {
+    // Work-Code-Preset laden (auch im einfachen Modus: Basis-Tätigkeiten bleiben optional nutzbar)
+    if (!isRestoreFlow) {
       const preset = WORK_CODE_PRESETS[formData.workCodePresetId];
       if (preset) {
         try {
@@ -677,7 +680,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
               animate={{
                 // Gesamte Schrittzahl hängt davon ab, ob der User einen
                 // Eigenen Plan konfiguriert (→ +1 Step für CalculationStep).
-                width: step === 7 ? "100%" : `${(step / (formData.customCalc ? 7 : 6)) * 100}%`,
+                width: step === 7 ? "100%" : (step === 1 && formData.simpleMode) ? "50%" : `${(step / (formData.customCalc ? 7 : 6)) * 100}%`,
               }}
             />
           </div>
@@ -1047,7 +1050,11 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
             {/* SCHRITT 7: FERTIG */}
             {step === 7 && (
-              <SummaryStep hasRestoreData={!!restoreData} onFinish={finishSetup} />
+              <SummaryStep
+                hasRestoreData={!!restoreData}
+                onFinish={finishSetup}
+                onBack={formData.simpleMode && !isRestoreFlow ? () => setStep(1) : undefined}
+              />
             )}
 
           </AnimatePresence>

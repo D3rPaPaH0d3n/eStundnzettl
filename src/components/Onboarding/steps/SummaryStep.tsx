@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Check, Play, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Play, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 /**
@@ -13,9 +13,10 @@ import { useTranslation } from "react-i18next";
 interface Props {
   hasRestoreData: boolean;
   onFinish: () => void;
+  onBack?: () => void;
 }
 
-const SummaryStep: React.FC<Props> = ({ hasRestoreData, onFinish }) => {
+const SummaryStep: React.FC<Props> = ({ hasRestoreData, onFinish, onBack }) => {
   const { t } = useTranslation();
   return (
     <motion.div
@@ -40,7 +41,16 @@ const SummaryStep: React.FC<Props> = ({ hasRestoreData, onFinish }) => {
         <span>{t("onboarding.summary.tourHint")}</span>
       </div>
 
-      <div className="pt-2">
+      <div className="pt-2 space-y-2">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-full py-3 text-zinc-500 dark:text-zinc-400 font-bold rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-700/50 transition-colors flex items-center justify-center gap-2"
+          >
+            <ArrowLeft size={18} /> {t("onboarding.nav.back")}
+          </button>
+        )}
         <button
           type="button"
           onClick={onFinish}

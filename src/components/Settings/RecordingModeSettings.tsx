@@ -4,6 +4,7 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { Card } from "../../utils";
+import { WORK_MODELS } from "../../hooks/constants";
 
 import type { UserData } from "../../types";
 
@@ -22,6 +23,9 @@ const RecordingModeSettings: React.FC<Props> = ({ userData, setUserData }) => {
     setUserData((prev: UserData) => ({
       ...prev,
       simpleMode: nextSimpleMode,
+      workDays: !nextSimpleMode && !prev.workDays?.some((day) => day > 0)
+        ? [...WORK_MODELS[0].days]
+        : prev.workDays,
     }));
     toast.success(
       nextSimpleMode

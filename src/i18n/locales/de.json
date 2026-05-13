@@ -534,7 +534,10 @@
     }
   },
   "hints": {
+    "gotIt": "Verstanden",
+    "settingsTitle": "Kurz zu den Einstellungen",
     "settings": "Hier richtest du einmalig ein, wie du arbeitest. Manches ist schon vorbelegt — schau einfach kurz durch.",
+    "reportTitle": "Kurz zur PDF-Vorschau",
     "report": "Das ist dein Stundenzettel für den Monat. Zeitraum wählen, optional eine Notiz ergänzen, dann teilen."
   },
   "skeleton": {

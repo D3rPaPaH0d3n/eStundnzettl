@@ -439,7 +439,10 @@ const PrintReport: React.FC<Props> = ({
         </div>
 
         <div className="space-y-2">
-          <FirstOpenHint storageKey="estundnzettl_hint_report_seen_v1">
+          <FirstOpenHint
+            storageKey="estundnzettl_hint_report_seen_v2"
+            title={t("hints.reportTitle")}
+          >
             {t("hints.report")}
           </FirstOpenHint>
 

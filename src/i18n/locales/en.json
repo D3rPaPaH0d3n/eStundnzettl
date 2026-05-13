@@ -534,7 +534,10 @@
     }
   },
   "hints": {
+    "gotIt": "Got it",
+    "settingsTitle": "Quick note about settings",
     "settings": "This is where you set up how you work. Some things are already prefilled — just take a quick look through.",
+    "reportTitle": "Quick note about the PDF preview",
     "report": "This is your timesheet for the month. Choose the period, add an optional note, then share it."
   },
   "skeleton": {

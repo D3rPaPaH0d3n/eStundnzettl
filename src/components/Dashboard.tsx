@@ -87,9 +87,12 @@ export const EntryRow: React.FC<EntryRowProps> = ({
 }) => {
   const isHoliday = entry.type === "public_holiday";
   const isTimeComp = entry.type === "time_comp";
+  const hasExplicitTime = !!entry.start && !!entry.end;
   const timeLabel = entry.type === "work"
-    ? `${entry.start} - ${entry.end}`
-    : (isHoliday ? t("entryTypes.holiday") : t("entryTypes.allDay"));
+    ? `${entry.start || ""} - ${entry.end || ""}`
+    : hasExplicitTime
+      ? `${entry.start} - ${entry.end}`
+      : (isHoliday ? t("entryTypes.holiday") : t("entryTypes.allDay"));
 
   let codeLabel = "";
   if(entry.type === "work") codeLabel = entry.code == null ? "" : workCodeLabelMap.get(entry.code) || "";

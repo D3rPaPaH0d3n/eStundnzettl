@@ -1,0 +1,7 @@
+Settings & Simple Mode feel smoother 🌸
+• First-use hints now appear as clear popups
+• Settings tour highlights the current section
+• Simple Mode stays record-only without automatic special entries
+• Switching back to calculated tracking restores sensible defaults
+• Manual special-entry times now show in dashboard and PDF
+• Backup import/export is directly reachable again

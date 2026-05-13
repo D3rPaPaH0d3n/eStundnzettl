@@ -5,27 +5,50 @@ import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { Card } from "../../utils";
 import { WORK_MODELS } from "../../hooks/constants";
+import { DEFAULT_LOCALE_ID, getLocale } from "../../locales";
 
 import type { UserData } from "../../types";
+import type { Locale, LocaleId } from "../../locales/types";
 
 interface Props {
   userData: UserData;
   setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
+  locale?: Locale;
+  setLocale?: (id: LocaleId) => void;
+  resetCalculationConfigToLocale?: (newLocale: Locale, workDays: number[]) => void;
 }
 
-const RecordingModeSettings: React.FC<Props> = ({ userData, setUserData }) => {
+const RecordingModeSettings: React.FC<Props> = ({
+  userData,
+  setUserData,
+  locale,
+  setLocale,
+  resetCalculationConfigToLocale,
+}) => {
   const { t } = useTranslation();
   const simpleMode = !!userData?.simpleMode;
 
   const setSimpleMode = (nextSimpleMode: boolean) => {
     if (nextSimpleMode === simpleMode) return;
     Haptics.impact({ style: ImpactStyle.Light });
+    const targetLocale = !nextSimpleMode && (!locale || locale.id === "neutral")
+      ? getLocale(DEFAULT_LOCALE_ID)
+      : locale;
+    const nextWorkDays = !nextSimpleMode && !userData.workDays?.some((day) => day > 0)
+      ? [...(targetLocale?.defaultWorkDays ?? WORK_MODELS[0].days)]
+      : userData.workDays;
+
+    if (!nextSimpleMode && targetLocale && targetLocale.id !== locale?.id) {
+      setLocale?.(targetLocale.id);
+    }
+    if (!nextSimpleMode && targetLocale) {
+      resetCalculationConfigToLocale?.(targetLocale, nextWorkDays);
+    }
+
     setUserData((prev: UserData) => ({
       ...prev,
       simpleMode: nextSimpleMode,
-      workDays: !nextSimpleMode && !prev.workDays?.some((day) => day > 0)
-        ? [...WORK_MODELS[0].days]
-        : prev.workDays,
+      workDays: nextWorkDays,
     }));
     toast.success(
       nextSimpleMode

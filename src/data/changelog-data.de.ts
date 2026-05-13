@@ -1,6 +1,52 @@
 export const CHANGELOG_DATA_DE = [
 
   {
+    version: "4.3.4",
+    date: "13.05.2026",
+    title: "Settings & Simple Mode gschmeidiger 🌸",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Sparkles",
+        title: "Hinweise, die man wirklich sieht",
+        items: [
+          "Erste Hinweise erscheinen jetzt als klare Popups statt als leicht übersehbare Karten im Dashboard.",
+          "Die Einstellungen führen dich mit einer kleinen Tour durch die wichtigsten Bereiche — inklusive hervorgehobener Stelle, um die es gerade geht.",
+          "Tour-Spots sind besser geschützt, damit ein Tipp auf den markierten Bereich nicht versehentlich eine echte App-Aktion auslöst."
+        ]
+      },
+      {
+        iconName: "Calculator",
+        title: "Simple Mode sauber getrennt",
+        items: [
+          "Im Nur-Aufzeichnung-Modus bleiben Urlaub, Krank und Zeitausgleich bewusst manuell — ohne automatische Soll-/Ist-Berechnung.",
+          "Beim Wechsel zurück zur Stundenberechnung setzt die App wieder passende Standardregeln statt im neutralen Simple-Mode hängen zu bleiben.",
+          "Die Texte rund um Aufzeichnung und Berechnung sind klarer, damit du sofort weißt, welcher Modus was macht."
+        ]
+      },
+      {
+        iconName: "FileText",
+        title: "Einträge & Berichte stimmiger",
+        items: [
+          "Sonderzeiten mit eigener Start- und Endzeit werden im Dashboard jetzt auch wirklich mit dieser Zeit angezeigt.",
+          "Der PDF-Bericht übernimmt diese manuellen Zeiten ebenfalls sauber, statt sie nur als ganztägig wirken zu lassen.",
+          "Kleine Anzeige- und Abstandskorrekturen machen Settings, Dashboard und Tour ruhiger."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Backup wieder griffbereit",
+        items: [
+          "JSON-Export und Import sind wieder direkt in den Backup-Einstellungen sichtbar — nicht nur im Hausmasta-Modus.",
+          "Damit bleibt eine manuelle Sicherung auch im normalen Modus schnell erreichbar.",
+          "Zusätzliche Tests sichern die wichtigsten neuen Pfade gegen Rückfälle ab."
+        ]
+      }
+    ]
+  },
+
+
+  {
     version: "4.3.2",
     date: "07.05.2026",
     title: "PDF-Archiv & Tätigkeitscodes gschmeidiger 🔧",

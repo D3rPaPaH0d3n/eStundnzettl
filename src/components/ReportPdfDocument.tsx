@@ -454,20 +454,24 @@ const Row: React.FC<RowProps> = ({
 
   // ── Zeit-Zelle ──────────────────────────────────────────────
   let timeCell: React.ReactNode;
-  if (e.type === "work") {
-    const pauseText =
-      (e.pause ?? 0) > 0
-        ? t("reports.pauseMin", { minutes: e.pause })
-        : t("reports.noPauseUpper");
-    const pauseStyle = (e.pause ?? 0) > 0 ? styles.pause : styles.pauseNone;
-    timeCell = (
-      <View>
-        <Text style={styles.timeRange}>
-          {e.start || ""} – {e.end || ""}
-        </Text>
-        <Text style={pauseStyle}>{pauseText}</Text>
-      </View>
-    );
+  if (e.start && e.end) {
+    if (e.type === "work") {
+      const pauseText =
+        (e.pause ?? 0) > 0
+          ? t("reports.pauseMin", { minutes: e.pause })
+          : t("reports.noPauseUpper");
+      const pauseStyle = (e.pause ?? 0) > 0 ? styles.pause : styles.pauseNone;
+      timeCell = (
+        <View>
+          <Text style={styles.timeRange}>
+            {e.start} – {e.end}
+          </Text>
+          <Text style={pauseStyle}>{pauseText}</Text>
+        </View>
+      );
+    } else {
+      timeCell = <Text style={styles.timeRange}>{e.start} – {e.end}</Text>;
+    }
   } else if (e.type === "public_holiday") {
     timeCell = <Text style={styles.timeRange}>{t("entryTypes.holiday")}</Text>;
   } else {

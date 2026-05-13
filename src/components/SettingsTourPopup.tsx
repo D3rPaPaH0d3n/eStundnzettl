@@ -273,6 +273,16 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
           )}
 
           {highlightStyle && (
+            <button
+              type="button"
+              aria-label={t("appTour.next")}
+              className="fixed z-[268] bg-transparent pointer-events-auto"
+              style={highlightStyle}
+              onClick={handleNext}
+            />
+          )}
+
+          {highlightStyle && (
             <motion.div
               key={`${step.key}-highlight`}
               initial={{ opacity: 0, scale: 0.96 }}

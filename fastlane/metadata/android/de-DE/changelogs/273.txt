@@ -1,0 +1,7 @@
+Settings & Simple Mode gschmeidiger 🌸
+• Erste Hinweise erscheinen jetzt als klare Popups
+• Settings-Tour hebt den aktuellen Bereich sichtbar hervor
+• Simple Mode bleibt reine Zeiterfassung ohne automatische Sonderzeiten
+• Wechsel zurück zur Berechnung setzt passende Standardregeln
+• Manuelle Sonderzeiten erscheinen sauber in Dashboard und PDF
+• Backup Import/Export ist wieder direkt erreichbar

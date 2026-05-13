@@ -1025,32 +1025,30 @@ const BackupSettings: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Export/Import Buttons — nur im Hausmasta-Modus */}
-        {expertMode && (
-          <div className="grid grid-cols-2 gap-2 pt-2">
-            <button
-              onClick={onExport}
-              className="w-full py-3 bg-zinc-900 dark:bg-zinc-700 text-white font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-600 flex items-center justify-center gap-2 transition-colors"
-            >
-              <Upload size={18} className="rotate-180" /> {t("settings.backup.export")}
-            </button>
+        {/* Basis-Export/Import ist absichtlich immer sichtbar: Backup ist kein Expert-Feature. */}
+        <div className="grid grid-cols-2 gap-2 pt-2">
+          <button
+            onClick={onExport}
+            className="w-full py-3 bg-zinc-900 dark:bg-zinc-700 text-white font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-600 flex items-center justify-center gap-2 transition-colors"
+          >
+            <Upload size={18} className="rotate-180" /> {t("settings.backup.export")}
+          </button>
 
-            <button
-              onClick={() => importInputRef.current?.click()}
-              className="w-full py-3 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors"
-            >
-              <Upload size={18} /> {t("settings.backup.import")}
-            </button>
+          <button
+            onClick={() => importInputRef.current?.click()}
+            className="w-full py-3 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors"
+          >
+            <Upload size={18} /> {t("settings.backup.import")}
+          </button>
 
-            <input
-              type="file"
-              ref={importInputRef}
-              className="hidden"
-              accept="application/json"
-              onChange={handleFileImportInternal}
-            />
-          </div>
-        )}
+          <input
+            type="file"
+            ref={importInputRef}
+            className="hidden"
+            accept="application/json"
+            onChange={handleFileImportInternal}
+          />
+        </div>
       </div>
 
       {extraContent}

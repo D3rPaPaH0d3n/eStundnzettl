@@ -263,6 +263,24 @@ describe("ReportPdfDocument", () => {
       expect(getAllByText(/Krank/).length).toBeGreaterThan(0);
     });
 
+    it("zeigt manuelle Zeiten bei Sondertypen in der Zeitspalte", () => {
+      const { getByText } = renderReport({
+        entries: [
+          makeEntry({
+            id: 201,
+            type: "vacation",
+            start: "08:00",
+            end: "12:00",
+            pause: 0,
+            netDuration: 240,
+            project: "",
+          }),
+        ],
+      });
+
+      expect(getByText("08:00 – 12:00")).toBeTruthy();
+    });
+
     it("rendert leeren Monat ohne Crash und ohne Daten-Zeilen", () => {
       const { container } = renderReport({ entries: [] });
       // Tabellenkopf existiert, aber keine Datenzeilen

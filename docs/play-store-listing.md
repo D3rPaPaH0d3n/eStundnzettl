@@ -103,6 +103,20 @@ Fragen, Bug-Reports, Lizenzanfragen: project@kainer.co.at
 
 ### Release Notes
 
+#### v4.3.4 (≤ 500 Zeichen)
+
+```
+Settings & Simple Mode gschmeidiger 🌸
+• Erste Hinweise erscheinen jetzt als klare Popups
+• Settings-Tour hebt den aktuellen Bereich sichtbar hervor
+• Simple Mode bleibt reine Zeiterfassung ohne automatische Sonderzeiten
+• Wechsel zurück zur Berechnung setzt passende Standardregeln
+• Manuelle Sonderzeiten erscheinen sauber in Dashboard und PDF
+• Backup Import/Export ist wieder direkt erreichbar
+```
+
+*Gespiegelt in `fastlane/metadata/android/de-DE/changelogs/273.txt`.*
+
 #### v4.3.2 (≤ 500 Zeichen)
 
 ```
@@ -244,6 +258,20 @@ Questions, bug reports, licensing: project@kainer.co.at
 *2310 characters ✓ (limit 4000)*
 
 ### Release notes
+
+#### v4.3.4 (≤ 500 characters)
+
+```
+Settings & Simple Mode feel smoother 🌸
+• First-use hints now appear as clear popups
+• Settings tour highlights the current section
+• Simple Mode stays record-only without automatic special entries
+• Switching back to calculated tracking restores sensible defaults
+• Manual special-entry times now show in dashboard and PDF
+• Backup import/export is directly reachable again
+```
+
+*Mirrored in `fastlane/metadata/android/en-US/changelogs/273.txt`.*
 
 #### v4.3.2 (≤ 500 characters)
 

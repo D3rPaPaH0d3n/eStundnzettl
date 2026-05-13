@@ -227,6 +227,23 @@ describe("Dashboard", () => {
     expect(queryByText("-0h 30m")).toBeNull();
   });
 
+  it("zeigt manuelle Zeiten bei Sondertypen statt Ganztägig", () => {
+    const entry = makeEntry({
+      type: "vacation",
+      start: "08:00",
+      end: "12:00",
+      project: "Urlaub Vormittag",
+      netDuration: 240,
+    });
+    const { getByText, queryByText } = renderDashboard({
+      groupedByWeek: [[15, [entry]]],
+      userData: { simpleMode: true },
+    });
+
+    expect(getByText("08:00 - 12:00")).toBeTruthy();
+    expect(queryByText("Ganztägig")).toBeNull();
+  });
+
   it("ruft onEditEntry mit dem richtigen Entry bei Click auf einen Eintrag", () => {
     const entry = makeEntry({ id: 42, project: "Projekt Alpha" });
     const onEditEntry = vi.fn();

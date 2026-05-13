@@ -264,6 +264,17 @@ const AppTour = ({ onClose }: Props) => {
         />
       )}
 
+      {/* Klickfänger im Spotlight-Loch: Tour geht weiter, echte App-Aktion wird nicht ausgelöst. */}
+      {pointerStyle && (
+        <button
+          type="button"
+          aria-label={t("appTour.next")}
+          className="fixed z-[305] bg-transparent pointer-events-auto"
+          style={pointerStyle}
+          onClick={handleNext}
+        />
+      )}
+
       {/* Pointer — pulsiert exakt über dem echten Button */}
       <AnimatePresence mode="wait">
         {pointerStyle && (

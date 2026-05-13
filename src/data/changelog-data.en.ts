@@ -19,6 +19,52 @@ import { CHANGELOG_DATA_DE } from "./changelog-data.de";
 const TRANSLATED_EN = [
 
   {
+    version: "4.3.4",
+    date: "13.05.2026",
+    title: "Settings & Simple Mode feel smoother 🌸",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Sparkles",
+        title: "Hints you can actually see",
+        items: [
+          "First-use hints now appear as clear popups instead of easy-to-miss dashboard cards.",
+          "Settings now guide you through the most important areas with a small tour, including a highlighted section for the current step.",
+          "Tour spotlights are safer now, so tapping a highlighted area does not accidentally trigger a real app action."
+        ]
+      },
+      {
+        iconName: "Calculator",
+        title: "Simple Mode is cleaner",
+        items: [
+          "In record-only mode, vacation, sick leave and time off stay manual on purpose — without automatic target/actual calculations.",
+          "When switching back to calculated time tracking, the app restores sensible default rules instead of staying stuck in neutral Simple Mode.",
+          "Texts around recording and calculation are clearer, so it is easier to understand what each mode does."
+        ]
+      },
+      {
+        iconName: "FileText",
+        title: "Entries & reports line up better",
+        items: [
+          "Special entries with their own start and end time now show that time correctly on the dashboard.",
+          "The PDF report also keeps these manual times instead of making them look like full-day entries.",
+          "Small spacing and display fixes make Settings, the dashboard and tours feel calmer."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Backups are easier to reach again",
+        items: [
+          "JSON export and import are visible directly in Backup settings again — not only in Power-user mode.",
+          "That keeps manual backups quick to reach in normal mode too.",
+          "Additional tests protect the most important new paths from regressions."
+        ]
+      }
+    ]
+  },
+
+
+  {
     version: "4.3.2",
     date: "07.05.2026",
     title: "PDF archive & activity codes cleaned up 🔧",

@@ -306,6 +306,9 @@ const Settings: React.FC<Props> = ({
         <RecordingModeSettings
           userData={userData}
           setUserData={setUserData}
+          locale={locale}
+          setLocale={setLocale}
+          resetCalculationConfigToLocale={resetCalculationConfigToLocale}
         />
       </div>
 

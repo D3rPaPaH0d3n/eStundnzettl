@@ -415,7 +415,7 @@ const Settings: React.FC<Props> = ({
       />
 
       {/* 9. App Info & Danger Zone */}
-      <div data-settings-tour="help">
+      <div data-settings-tour="help" className="space-y-6">
         <AppInfoSettings
           onCheckUpdate={onCheckUpdate}
           onDeleteAll={onDeleteAll}

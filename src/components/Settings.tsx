@@ -230,7 +230,7 @@ const Settings: React.FC<Props> = ({
 
   return (
     <main className="w-full p-4 space-y-6 pb-6">
-      <SettingsTourPopup storageKey="estundnzettl_settings_tour_seen_v1" />
+      <SettingsTourPopup storageKey="estundnzettl_settings_tour_seen_v2" />
       {/* Modals */}
       {showChangelog && (
         <Suspense fallback={null}>

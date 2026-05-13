@@ -73,6 +73,8 @@ interface TargetRect {
 }
 
 const HIGHLIGHT_PADDING = 8;
+const CARD_GAP = 18;
+const ESTIMATED_CARD_HEIGHT = 236;
 
 const colorMap = {
   emerald: {
@@ -193,13 +195,38 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
       }
     : null;
 
-  const cardPositionClass = (() => {
-    if (!targetRect) return "top-1/2 -translate-y-1/2";
+  const spotlight = targetRect
+    ? {
+        top: Math.max(0, targetRect.top - HIGHLIGHT_PADDING),
+        left: Math.max(0, targetRect.left - HIGHLIGHT_PADDING),
+        right: Math.max(0, window.innerWidth - targetRect.left - targetRect.width - HIGHLIGHT_PADDING),
+        bottom: Math.max(0, window.innerHeight - targetRect.top - targetRect.height - HIGHLIGHT_PADDING),
+      }
+    : null;
+
+  const cardContainerStyle = (() => {
+    if (!targetRect) return undefined;
     const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-    return targetRect.top + targetRect.height / 2 < vh / 2
-      ? "bottom-6"
-      : "top-[calc(env(safe-area-inset-top)+5.5rem)]";
+    const safeTop = 24;
+    const safeBottom = 24;
+    const spaceAbove = targetRect.top - CARD_GAP - safeTop;
+    const spaceBelow = vh - (targetRect.top + targetRect.height) - CARD_GAP - safeBottom;
+
+    if (spaceBelow >= ESTIMATED_CARD_HEIGHT || spaceBelow >= spaceAbove) {
+      return {
+        top: Math.min(
+          targetRect.top + targetRect.height + CARD_GAP,
+          vh - ESTIMATED_CARD_HEIGHT - safeBottom,
+        ),
+      };
+    }
+
+    return {
+      bottom: Math.min(vh - targetRect.top + CARD_GAP, vh - ESTIMATED_CARD_HEIGHT - safeTop),
+    };
   })();
+
+  const cardPositionClass = targetRect ? "" : "top-1/2 -translate-y-1/2";
 
   const handleNext = () => {
     if (isLast) {
@@ -217,12 +244,33 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
     <AnimatePresence>
       {visible && (
         <div className="fixed inset-0 z-[260] pointer-events-none">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/55 backdrop-blur-[2px] pointer-events-auto"
-          />
+          {spotlight ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div
+                className="fixed left-0 right-0 top-0 bg-black/55 backdrop-blur-[2px] pointer-events-auto"
+                style={{ height: spotlight.top }}
+              />
+              <div
+                className="fixed left-0 right-0 bottom-0 bg-black/55 backdrop-blur-[2px] pointer-events-auto"
+                style={{ height: spotlight.bottom }}
+              />
+              <div
+                className="fixed left-0 bg-black/55 backdrop-blur-[2px] pointer-events-auto"
+                style={{ top: spotlight.top, bottom: spotlight.bottom, width: spotlight.left }}
+              />
+              <div
+                className="fixed right-0 bg-black/55 backdrop-blur-[2px] pointer-events-auto"
+                style={{ top: spotlight.top, bottom: spotlight.bottom, width: spotlight.right }}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/55 backdrop-blur-[2px] pointer-events-auto"
+            />
+          )}
 
           {highlightStyle && (
             <motion.div
@@ -239,7 +287,10 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
             </motion.div>
           )}
 
-          <div className={`absolute left-4 right-4 ${cardPositionClass} flex justify-center`}>
+          <div
+            className={`absolute left-4 right-4 ${cardPositionClass} flex justify-center`}
+            style={cardContainerStyle}
+          >
             <motion.div
             key={step.key}
             initial={{ opacity: 0, y: 18, scale: 0.96 }}

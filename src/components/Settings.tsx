@@ -2,7 +2,9 @@ import React, { Suspense, useState, useEffect } from "react";
 import { Calculator } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import ProfileSettings from "./Settings/ProfileSettings";
+import RecordingModeSettings from "./Settings/RecordingModeSettings";
 import DataSettings from "./Settings/DataSettings";
+import WorkCodesSettings from "./Settings/WorkCodesSettings";
 import ThemeSettings from "./Settings/ThemeSettings";
 import LocaleSettings from "./Settings/LocaleSettings";
 import CalculationSettings from "./Settings/CalculationSettings";
@@ -294,11 +296,16 @@ const Settings: React.FC<Props> = ({
       {/* 1. Profile Settings */}
       <ProfileSettings userData={userData} setUserData={setUserData} />
 
-      {/* 2. Data Settings (includes WorkModel, Data, and Demo-Daten) */}
+      {/* 2. Aufzeichnungsart — wichtigste Modusentscheidung, immer sichtbar */}
+      <RecordingModeSettings
+        userData={userData}
+        setUserData={setUserData}
+      />
+
+      {/* 3. Arbeitszeitmodell */}
       <DataSettings
         userData={userData}
         setUserData={setUserData}
-        setShowWorkCodeManager={setShowWorkCodeManager}
         isLocked={isLocked}
         onToggleLock={toggleLock}
         onOpenDayPicker={openDayPicker}
@@ -308,7 +315,10 @@ const Settings: React.FC<Props> = ({
         demoTrigger={demoTrigger}
       />
 
-      {/* 3. Stundenberechnung (Locale + Berechnungsregeln in EINER
+      {/* 4. Tätigkeiten / Work Codes */}
+      <WorkCodesSettings onManage={() => setShowWorkCodeManager(true)} />
+
+      {/* 5. Stundenberechnung (Locale + Berechnungsregeln in EINER
           Card). Im Hausmasta-Modus enthält sie zusätzlich den Locale-
           Picker. Default zugeklappt, da sehr viel Inhalt. */}
       <CollapsibleCard

@@ -869,8 +869,8 @@
       "toast": "Language changed"
     },
     "data": {
-      "cardTitle": "Recording",
-      "cardSubtitle": "Mode, schedule, and work codes",
+      "cardTitle": "My work schedule",
+      "cardSubtitle": "Weekly model, daily hours and input precision",
       "workModel": {
         "heading": "Work schedule",
         "currentLabel": "Current: ",
@@ -912,7 +912,8 @@
         "customActivated": "Custom mode activated",
         "templateApplied": "Template applied",
         "demoLoaded": "Demo data loaded!"
-      }
+      },
+      "simpleWorkScheduleHint": "For simple recording, you do not need a work schedule. Your previous work schedule stays saved in case you enable calculation & reports later."
     },
     "pdfArchive": {
       "header": "Automatic PDF archive",
@@ -976,6 +977,23 @@
       "showWorkCodeColumnDesc": "The work-code column in the table",
       "showCustomNote": "Show notes",
       "showCustomNoteDesc": "Optional notes block at the end of the report"
+    },
+    "recordingMode": {
+      "title": "Recording mode",
+      "subtitleSimple": "You use eStundnzettl as a simple time list.",
+      "subtitleCalculated": "You use eStundnzettl with target/actual time, balance and reports.",
+      "simpleTitle": "Only record working hours",
+      "simpleDescription": "Counts the hours you enter. No target time, no balance, no overtime calculation.",
+      "calculatedTitle": "With calculation & reports",
+      "calculatedDescription": "Compares your times with your work schedule and shows balance, extra time and overtime.",
+      "noDataLossHint": "Note: This choice does not delete entries and does not overwrite your work schedule.",
+      "toastSimple": "Simple recording activated",
+      "toastCalculated": "Calculation & reports activated"
+    },
+    "workCodesCard": {
+      "title": "Activities",
+      "subtitle": "Categories for your entries, e.g. installation, travel, office work or project work.",
+      "manageButton": "Manage"
     }
   },
   "attachments": {

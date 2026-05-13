@@ -869,8 +869,8 @@
       "toast": "Sprache geändert"
     },
     "data": {
-      "cardTitle": "Erfassung",
-      "cardSubtitle": "Modell, Modus und Tätigkeitscodes",
+      "cardTitle": "Meine Arbeitszeit",
+      "cardSubtitle": "Wochenmodell, Tagesstunden und Eingaberaster",
       "workModel": {
         "heading": "Arbeitszeit Modell",
         "currentLabel": "Aktuell: ",
@@ -912,7 +912,8 @@
         "customActivated": "Benutzerdefiniert aktiviert",
         "templateApplied": "Vorlage übernommen",
         "demoLoaded": "Demo-Daten geladen!"
-      }
+      },
+      "simpleWorkScheduleHint": "Für reine Aufzeichnung brauchst du kein Arbeitszeitmodell. Deine bisherigen Arbeitszeiten bleiben gespeichert, falls du später wieder Berechnung & Auswertung aktivierst."
     },
     "pdfArchive": {
       "header": "Automatisches PDF-Archiv",
@@ -976,6 +977,23 @@
       "showWorkCodeColumnDesc": "Die Tätigkeitscode-Spalte in der Tabelle",
       "showCustomNote": "Notizen anzeigen",
       "showCustomNoteDesc": "Optionaler Notiz-Block am Ende des Berichts"
+    },
+    "recordingMode": {
+      "title": "Aufzeichnungsart",
+      "subtitleSimple": "Du nutzt eStundnzettl als einfache Stundenliste.",
+      "subtitleCalculated": "Du nutzt eStundnzettl mit Soll/Ist, Saldo und Auswertung.",
+      "simpleTitle": "Nur Arbeitszeiten eintragen",
+      "simpleDescription": "Zählt deine erfassten Stunden. Keine Sollzeit, kein Saldo, keine Überstundenberechnung.",
+      "calculatedTitle": "Mit Berechnung & Auswertung",
+      "calculatedDescription": "Vergleicht deine Zeiten mit deinem Arbeitszeitmodell und zeigt Saldo, Mehrarbeit und Überstunden.",
+      "noDataLossHint": "Hinweis: Diese Auswahl löscht keine Einträge und überschreibt dein Arbeitszeitmodell nicht.",
+      "toastSimple": "Nur Arbeitszeiten eintragen aktiviert",
+      "toastCalculated": "Berechnung & Auswertung aktiviert"
+    },
+    "workCodesCard": {
+      "title": "Tätigkeiten",
+      "subtitle": "Kategorien für deine Einträge, z.B. Montage, Fahrt, Büro oder Projektarbeit.",
+      "manageButton": "Verwalten"
     }
   },
   "attachments": {

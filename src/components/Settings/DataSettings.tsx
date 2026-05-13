@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Settings as SettingsIcon, ListChecks, Calendar, Lock, Unlock, List, ChevronDown, ChevronRight, ClipboardList, Calculator } from "lucide-react";
+import { Calendar, Lock, Unlock, List, ChevronDown, ChevronRight } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { Card } from "../../utils";
 import CollapsibleCard from "./CollapsibleCard";
 import { getIntlLocale } from "../../utils/formatLocale";
 import { WORK_MODELS, STORAGE_KEYS } from "../../hooks/constants";
@@ -20,7 +19,6 @@ import type { Entry, UserData, WorkCode, WorkModel } from "../../types";
 interface Props {
   userData: UserData & { workModelId?: string; minuteInput?: boolean };
   setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
-  setShowWorkCodeManager: (show: boolean) => void;
   isLocked: boolean;
   onToggleLock: () => void;
   onOpenDayPicker: (index: number) => void;
@@ -33,7 +31,6 @@ interface Props {
 const DataSettings: React.FC<Props> = ({
   userData,
   setUserData,
-  setShowWorkCodeManager,
   isLocked,
   onToggleLock,
   onOpenDayPicker,
@@ -136,8 +133,6 @@ const DataSettings: React.FC<Props> = ({
     toast.success(t("settings.data.toast.demoLoaded"));
   };
 
-  // Card bleibt sichtbar, weil Tätigkeitscodes auch ohne Hausmasta-Modus verwaltbar sein sollen.
-
   return (
     <>
       <CollapsibleCard
@@ -145,52 +140,17 @@ const DataSettings: React.FC<Props> = ({
         subtitle={t("settings.data.cardSubtitle")}
         icon={
           <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
-            <ClipboardList size={20} />
+            <Calendar size={20} />
           </div>
         }
         defaultExpanded={false}
         bodyClassName="px-5 pb-5 pt-0 space-y-4"
       >
-        {/* Nur Aufzeichnung Toggle — nur im Hausmasta-Modus */}
-        {expertMode && (
-          <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">
-            <div className="flex items-center gap-3">
-              {safeUserData.simpleMode
-                ? <ClipboardList size={20} className="text-emerald-500" />
-                : <Calculator size={20} className="text-blue-500" />
-              }
-              <div>
-                <div className="font-bold text-sm text-zinc-800 dark:text-white">
-                  {t("settings.data.simpleMode.title")}
-                </div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {safeUserData.simpleMode ? t("settings.data.simpleMode.on") : t("settings.data.simpleMode.off")}
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              aria-label={t("settings.data.simpleMode.toggleAria")}
-              onClick={() => {
-                Haptics.impact({ style: ImpactStyle.Light });
-                const newSimple = !safeUserData.simpleMode;
-                setUserData((prev: UserData) => ({
-                  ...prev,
-                  simpleMode: newSimple,
-                  workDays: newSimple ? [0, 0, 0, 0, 0, 0, 0] : (prev.workDays?.some((d: number) => d > 0) ? prev.workDays : WORK_MODELS[0].days),
-                }));
-                toast.success(newSimple ? t("settings.data.simpleMode.toastOn") : t("settings.data.simpleMode.toastOff"));
-              }}
-              className={`relative w-12 h-7 rounded-full transition-colors duration-200 shrink-0 ${
-                safeUserData.simpleMode ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-600"
-              }`}
-            >
-              <div
-                className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                  safeUserData.simpleMode ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
+        {safeUserData.simpleMode && (
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
+            <p className="text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">
+              {t("settings.data.simpleWorkScheduleHint")}
+            </p>
           </div>
         )}
 
@@ -366,31 +326,7 @@ const DataSettings: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Tätigkeitscodes — unabhängig vom Hausmasta-Modus */}
-        <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <ListChecks size={18} className="text-sky-500" />
-                <div>
-                  <div className="font-medium text-zinc-700 dark:text-white">
-                    {t("settings.data.workCodes.title")}
-                  </div>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    {t("settings.data.workCodes.subtitle")}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  Haptics.impact({ style: ImpactStyle.Light });
-                  setShowWorkCodeManager(true);
-                }}
-                className="px-4 py-2 bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-300 font-medium rounded-lg hover:bg-sky-200 dark:hover:bg-sky-900/40 transition-colors flex items-center gap-2"
-              >
-                <ListChecks size={16} /> {t("settings.data.workCodes.manageButton")}
-              </button>
-            </div>
-          </div>
+
 
       </CollapsibleCard>
 

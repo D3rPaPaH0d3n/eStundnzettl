@@ -125,6 +125,8 @@ interface RenderOptions {
   setFormDate?: (date: string) => void;
   code?: number;
   project?: string;
+  specialManualMode?: boolean;
+  userData?: Partial<UserData>;
 }
 
 const renderForm = (opts: RenderOptions = {}) => {
@@ -161,8 +163,8 @@ const renderForm = (opts: RenderOptions = {}) => {
       allEntries={[]}
       isEditing={false}
       isLiveEntry={false}
-      userData={makeUser()}
-      specialManualMode={false}
+      userData={makeUser(opts.userData)}
+      specialManualMode={opts.specialManualMode ?? false}
     />,
   );
 
@@ -265,6 +267,25 @@ describe("EntryForm", () => {
     const { getByText, setEntryType } = renderForm();
     fireEvent.click(getByText("Urlaub"));
     expect(setEntryType).toHaveBeenCalledWith("vacation");
+  });
+
+  it("zeigt im Normalmodus Automatisch/Manuell für Sondertypen", () => {
+    const { getByText } = renderForm({ entryType: "sick" });
+    expect(getByText("Automatisch")).toBeTruthy();
+    expect(getByText("Manuell")).toBeTruthy();
+  });
+
+  it("erzwingt im Simple Mode manuelle Zeiten für Sondertypen", () => {
+    const { queryByText, getByText } = renderForm({
+      entryType: "sick",
+      specialManualMode: false,
+      userData: { simpleMode: true },
+    });
+
+    expect(queryByText("Automatisch")).toBeNull();
+    expect(queryByText("Manuell")).toBeNull();
+    expect(getByText("Start")).toBeTruthy();
+    expect(getByText("Ende")).toBeTruthy();
   });
 
   it("zeigt 'Wie zuletzt' nur wenn lastWorkEntry existiert", () => {

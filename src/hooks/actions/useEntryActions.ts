@@ -115,7 +115,7 @@ export function useEntryActions({
         form.entryType === "vacation" ||
         form.entryType === "sick" ||
         form.entryType === "time_comp";
-      const isManualSpecial = isSpecial && !!form.specialManualMode;
+      const isManualSpecial = isSpecial && !!(form.specialManualMode || userData?.simpleMode);
       const hasTimeInputs = form.entryType === "work" || isDrive || isManualSpecial;
       let net = 0;
       let label = "";
@@ -198,7 +198,7 @@ export function useEntryActions({
           .reduce((sum, ex) => sum + (ex.netDuration || 0), 0);
 
         if (existingWork > 0) {
-          const dayTarget = getTargetMinutesForDate(form.formDate, userData?.workDays, locale);
+          const dayTarget = getTargetMinutesForDate(form.formDate, userData?.workDays, locale, calculationConfig);
           net = Math.max(0, dayTarget - existingWork);
         }
       }

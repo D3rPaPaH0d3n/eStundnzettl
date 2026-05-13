@@ -128,8 +128,9 @@ const EntryForm: React.FC<Props> = ({
   const { t } = useTranslation();
   const isSpecialType =
     entryType === "vacation" || entryType === "sick" || entryType === "time_comp";
+  const effectiveSpecialManualMode = userData?.simpleMode && isSpecialType ? true : specialManualMode;
   const showTimeInputs =
-    entryType === "work" || entryType === "drive" || (isSpecialType && specialManualMode);
+    entryType === "work" || entryType === "drive" || (isSpecialType && effectiveSpecialManualMode);
   
   const [activeTimeField, setActiveTimeField] = useState<string | null>(null);
 
@@ -297,7 +298,7 @@ const EntryForm: React.FC<Props> = ({
             
           {isSpecialType && (
             <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-              {!specialManualMode && (
+              {!userData?.simpleMode && !specialManualMode && (
                 <div className={`border rounded-lg p-3 flex items-start gap-3 ${entryType === "sick" ? "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800 text-red-800 dark:text-red-300" : entryType === "vacation" ? "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-300" : "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800 text-purple-800 dark:text-purple-300"}`}>
                   {entryType === "time_comp" ? <Hourglass size={18} className="mt-0.5" /> : <Info size={18} className="mt-0.5" />}
                   <div className="text-sm">
@@ -313,22 +314,24 @@ const EntryForm: React.FC<Props> = ({
                   </div>
                 </div>
               )}
-              <div className="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-2 gap-1">
-                <button
-                  type="button"
-                  onClick={() => setSpecialManualMode(false)}
-                  className={`py-2 rounded-lg text-xs font-bold transition-all ${!specialManualMode ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}
-                >
-                  {t("entryForm.mode.auto")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSpecialManualMode(true)}
-                  className={`py-2 rounded-lg text-xs font-bold transition-all ${specialManualMode ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}
-                >
-                  {t("entryForm.mode.manual")}
-                </button>
-              </div>
+              {!userData?.simpleMode && (
+                <div className="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-2 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSpecialManualMode(false)}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${!specialManualMode ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}
+                  >
+                    {t("entryForm.mode.auto")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSpecialManualMode(true)}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${specialManualMode ? "bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}
+                  >
+                    {t("entryForm.mode.manual")}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

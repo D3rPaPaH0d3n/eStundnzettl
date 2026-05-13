@@ -364,7 +364,7 @@ describe("useEntryActions", () => {
       expect(saved.pause).toBe(0);
     });
 
-    it("speichert simplen vacation-Eintrag ohne Zeiten", async () => {
+    it("speichert automatischen vacation-Eintrag im Normalmodus ohne Zeiten", async () => {
       const form = makeForm({ entryType: "vacation", specialManualMode: false });
       const { result, addEntry } = renderActions({ form });
 
@@ -376,6 +376,35 @@ describe("useEntryActions", () => {
       expect(saved.end).toBeNull();
       expect(saved.pause).toBe(0);
       expect(saved.code).toBeNull();
+    });
+
+    it.each([
+      ["sick", "Krank"],
+      ["vacation", "Urlaub"],
+      ["time_comp", "Zeitausgleich"],
+    ])("speichert %s im Simple Mode immer mit manuellen Zeiten", async (entryType, label) => {
+      const form = makeForm({
+        entryType,
+        specialManualMode: false,
+        startTime: "08:00",
+        endTime: "16:00",
+        pauseDuration: 30,
+      });
+      const { result, addEntry } = renderActions({
+        form,
+        userData: makeUser({ simpleMode: true }),
+      });
+
+      await saveEntry(result);
+
+      const saved = addEntry.mock.calls[0][0];
+      expect(saved.type).toBe(entryType);
+      expect(saved.start).toBe("08:00");
+      expect(saved.end).toBe("16:00");
+      expect(saved.pause).toBe(0);
+      expect(saved.code).toBeNull();
+      expect(saved.project).toBe(label);
+      expect(saved.netDuration).toBe(480);
     });
 
     it("persistiert last_code via settingsRepo für Standard-Codes", async () => {

@@ -13,7 +13,7 @@ import CollapsibleCard from "./Settings/CollapsibleCard";
 import BackupSettings from "./Settings/BackupSettings";
 import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
-import FirstOpenHint from "./FirstOpenHint";
+import SettingsTourPopup from "./SettingsTourPopup";
 import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
@@ -230,13 +230,7 @@ const Settings: React.FC<Props> = ({
 
   return (
     <main className="w-full p-4 space-y-6 pb-6">
-      <FirstOpenHint
-        storageKey="estundnzettl_hint_settings_seen_v2"
-        title={t("hints.settingsTitle")}
-        tone="emerald"
-      >
-        {t("hints.settings")}
-      </FirstOpenHint>
+      <SettingsTourPopup storageKey="estundnzettl_settings_tour_seen_v1" />
       {/* Modals */}
       {showChangelog && (
         <Suspense fallback={null}>

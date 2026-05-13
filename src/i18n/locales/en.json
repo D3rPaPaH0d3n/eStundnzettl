@@ -535,10 +535,44 @@
   },
   "hints": {
     "gotIt": "Got it",
-    "settingsTitle": "Quick note about settings",
-    "settings": "This is where you set up how you work. Some things are already prefilled — just take a quick look through.",
     "reportTitle": "Quick note about the PDF preview",
     "report": "This is your timesheet for the month. Choose the period, add an optional note, then share it."
+  },
+  "settingsTour": {
+    "steps": {
+      "overview": {
+        "title": "Quick note about settings",
+        "body": "This is where you adapt eStundnzettl to the way you work. You can come back and adjust things anytime."
+      },
+      "profile": {
+        "title": "Profile & signature",
+        "body": "Name, position, logo or signature live here — everything that should look clean on your PDF later."
+      },
+      "recording": {
+        "title": "Simple or Hausmasta?",
+        "body": "In recording mode you choose: just track times, or work with target hours, balance and advanced calculations."
+      },
+      "codes": {
+        "title": "Activity codes",
+        "body": "Manage your own codes for work, projects or tasks here. Useful when the timesheet needs to be clear."
+      },
+      "calculation": {
+        "title": "Hours calculation",
+        "body": "Work model, public holidays and calculation rules live here. If your schedule changes, this is the right place."
+      },
+      "backup": {
+        "title": "Backup & export",
+        "body": "Back up your data, import backups or enable automatic backup here. Important before anything gets lost."
+      },
+      "appearanceHelp": {
+        "title": "Appearance & help",
+        "body": "Theme, language and help are further down. If you're unsure, Help is the quickest guide."
+      },
+      "done": {
+        "title": "You can change it later",
+        "body": "None of this is set in stone. When your work changes, just come back here and adjust it."
+      }
+    }
   },
   "skeleton": {
     "default": "Loading...",

@@ -535,10 +535,44 @@
   },
   "hints": {
     "gotIt": "Verstanden",
-    "settingsTitle": "Kurz zu den Einstellungen",
-    "settings": "Hier richtest du einmalig ein, wie du arbeitest. Manches ist schon vorbelegt — schau einfach kurz durch.",
     "reportTitle": "Kurz zur PDF-Vorschau",
     "report": "Das ist dein Stundenzettel für den Monat. Zeitraum wählen, optional eine Notiz ergänzen, dann teilen."
+  },
+  "settingsTour": {
+    "steps": {
+      "overview": {
+        "title": "Kurz zu den Einstellungen",
+        "body": "Hier passt du eStundnzettl an deine Arbeit an. Du kannst jederzeit zurückkommen und nachjustieren."
+      },
+      "profile": {
+        "title": "Profil & Unterschrift",
+        "body": "Hier landen Name, Position, Logo oder Unterschrift — also alles, was später auf deinem PDF sauber aussehen soll."
+      },
+      "recording": {
+        "title": "Simple oder Hausmasta?",
+        "body": "Beim Aufzeichnungsmodus entscheidest du: nur Zeiten festhalten oder mit Soll/Ist, Saldo und erweiterten Berechnungen arbeiten."
+      },
+      "codes": {
+        "title": "Tätigkeits-Codes",
+        "body": "Hier pflegst du deine eigenen Codes für Arbeit, Projekte oder Tätigkeiten. Praktisch, wenn der Stundenzettel eindeutig sein soll."
+      },
+      "calculation": {
+        "title": "Stundenberechnung",
+        "body": "Hier sitzen Arbeitsmodell, Feiertage und Berechnungsregeln. Wenn sich dein Dienstmodell ändert, ist das der richtige Ort."
+      },
+      "backup": {
+        "title": "Backup & Export",
+        "body": "Hier sicherst du deine Daten, importierst Backups oder aktivierst automatische Sicherung. Wichtig, bevor etwas verloren geht."
+      },
+      "appearanceHelp": {
+        "title": "Darstellung & Hilfe",
+        "body": "Theme, Sprache und Hilfe findest du weiter unten. Wenn du unsicher bist, ist die Hilfe der schnellste Wegweiser."
+      },
+      "done": {
+        "title": "Alles kann später geändert werden",
+        "body": "Nichts davon ist in Stein gemeißelt. Wenn sich deine Arbeit ändert, kommst du einfach wieder hierher."
+      }
+    }
   },
   "skeleton": {
     "default": "Lädt...",

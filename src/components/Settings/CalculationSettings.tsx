@@ -103,6 +103,7 @@ const CalculationSettings: React.FC<Props> = ({
   const [newPauseInput, setNewPauseInput] = useState({ fromHours: "6", pauseMinutes: "30" });
   const [recalcRunning, setRecalcRunning] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   // Local string buffers for vacation inputs so users can clear the field
   // while typing. Without this, a controlled number input with a NaN-guard
   // in onChange would refuse empty input and keep showing the old value.
@@ -377,7 +378,48 @@ const CalculationSettings: React.FC<Props> = ({
         </div>
       )}
 
-      {(unwrapped || isExpanded) && (<>
+      {unwrapped && !editOpen && (
+        <div className="space-y-3">
+          <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-700 space-y-2">
+            <div>
+              <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
+                {t("settings.calc.contractedHours")}
+              </div>
+              <div className="text-lg font-bold text-zinc-800 dark:text-white">
+                {t("settings.calc.hoursPerWeek", { hours: formatHours(config.weeklyTargetMinutes) })}
+              </div>
+            </div>
+            <div className="grid gap-2 text-sm">
+              <div>
+                <span className="text-zinc-500 dark:text-zinc-400">{t("settings.calc.overtimeRule")}: </span>
+                <span className="font-semibold text-zinc-800 dark:text-white">{overtimeLabel}</span>
+              </div>
+              <div>
+                <span className="text-zinc-500 dark:text-zinc-400">{t("settings.calc.sickOnWorkDay")}: </span>
+                <span className="font-semibold text-zinc-800 dark:text-white">{sickLabel}</span>
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEditOpen(true)}
+            className="w-full p-3 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+          >
+            {t("settings.calc.editRules")}
+          </button>
+        </div>
+      )}
+
+      {((unwrapped && editOpen) || (!unwrapped && isExpanded)) && (<>
+      {unwrapped && (
+        <button
+          type="button"
+          onClick={() => setEditOpen(false)}
+          className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 font-bold text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+        >
+          {t("settings.calc.showLess")}
+        </button>
+      )}
       {/* Vertragsstunden (Readonly) */}
       <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-700">
         <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">

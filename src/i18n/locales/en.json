@@ -682,6 +682,12 @@
       "badge": {
         "connected": "Connected"
       },
+      "status": {
+        "title": "Status",
+        "targets": "Active targets: {{targets}}",
+        "noTargets": "None",
+        "last": "Last backup: {{time}}"
+      },
       "gdrive": {
         "connectedAs": "Connected as {{label}}",
         "activeAppData": "Active (Google Drive app data)",
@@ -764,6 +770,8 @@
       "combinedTitle": "Calculation",
       "combinedSubtitle": "Locale & rules",
       "teaser": "{{overtime}} · Sick: {{sick}}",
+      "editRules": "Edit calculation rules",
+      "showLess": "Show less",
       "contractedHours": "Contracted hours",
       "hoursPerWeek": "{{hours}} / week",
       "overtimeRule": "Overtime rule",

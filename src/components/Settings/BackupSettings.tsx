@@ -660,6 +660,13 @@ const BackupSettings: React.FC<Props> = ({
     e.target.value = "";
   };
 
+  const activeBackupTargets = [
+    !gdriveDisabled && isCloudConnected ? "Google Drive" : null,
+    nextcloudEnabled ? "Nextcloud" : null,
+    hasBackupFolder ? t("settings.backup.targetLocal") : null,
+  ].filter((target): target is string => Boolean(target));
+  const lastBackupLabel = lastBackupDate ? formatLastBackup(lastBackupDate) : null;
+
   // =====================
   // RENDER
   // =====================
@@ -679,6 +686,105 @@ const BackupSettings: React.FC<Props> = ({
       <PlayServicesBanner show={gdriveDisabled} />
 
       <div className="space-y-3">
+        <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700">
+          <div className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
+            {t("settings.backup.status.title")}
+          </div>
+          <div className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
+            {t("settings.backup.status.targets", {
+              targets:
+                activeBackupTargets.length > 0
+                  ? activeBackupTargets.join(", ")
+                  : t("settings.backup.status.noTargets"),
+            })}
+          </div>
+          <div className="text-xs text-zinc-500 dark:text-zinc-400">
+            {t("settings.backup.status.last", {
+              time: lastBackupLabel ?? t("settings.backup.last.never"),
+            })}
+          </div>
+        </div>
+
+        {/* Warning for failed backups */}
+        {!gdriveDisabled && isCloudConnected && (!isTokenValid || backupFailCount >= 3) && (
+          <div className="flex flex-col gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
+              <div className="flex flex-col gap-1 min-w-0">
+                <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                  {isTokenValid
+                    ? t("settings.backup.warning.gdriveFailed")
+                    : t("settings.backup.warning.gdriveReconnect")}
+                </span>
+                {backupLastError && (
+                  <span className="text-[11px] text-amber-600 dark:text-amber-400 break-words">
+                    {backupLastError}
+                  </span>
+                )}
+              </div>
+            </div>
+            {isTokenValid && onTriggerManualBackup && (
+              <button
+                type="button"
+                disabled={isRetryingBackup}
+                onClick={async () => {
+                  setIsRetryingBackup(true);
+                  try {
+                    await onTriggerManualBackup();
+                    const [failCount, lastError] = await Promise.all([
+                      getSetting("backup_fail_count"),
+                      getSetting("backup_last_error"),
+                    ]);
+                    setBackupFailCount(parseInt(String(failCount || "0"), 10));
+                    setBackupLastError(String(lastError || ""));
+                  } finally {
+                    setIsRetryingBackup(false);
+                  }
+                }}
+                className="self-start px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-bold rounded-md transition-colors"
+              >
+                {isRetryingBackup ? t("settings.backup.warning.retrying") : t("settings.backup.warning.retryNow")}
+              </button>
+            )}
+          </div>
+        )}
+
+        {nextcloudEnabled && nextcloudBackupFailCount > 0 && (
+          <div className="flex flex-col gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
+              <span className="text-xs font-medium text-amber-700 dark:text-amber-300 break-words">
+                {nextcloudBackupLastError
+                  ? t("settings.backup.warning.nextcloudWithError", { error: nextcloudBackupLastError })
+                  : t("settings.backup.warning.nextcloudGeneric")}
+              </span>
+            </div>
+            {onTriggerManualBackup && nextcloudBackupFailCount >= 3 && (
+              <button
+                type="button"
+                disabled={isRetryingBackup}
+                onClick={async () => {
+                  setIsRetryingBackup(true);
+                  try {
+                    await onTriggerManualBackup();
+                    const [failCount, lastError] = await Promise.all([
+                      getSetting("nextcloud_backup_fail_count"),
+                      getSetting("nextcloud_backup_last_error"),
+                    ]);
+                    setNextcloudBackupFailCount(parseInt(String(failCount || "0"), 10));
+                    setNextcloudBackupLastError(String(lastError || ""));
+                  } finally {
+                    setIsRetryingBackup(false);
+                  }
+                }}
+                className="self-start px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-bold rounded-md transition-colors"
+              >
+                {isRetryingBackup ? t("settings.backup.warning.retrying") : t("settings.backup.warning.retryNow")}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Google Drive */}
         <div
           className={`flex items-center justify-between p-3 rounded-xl ${
@@ -881,86 +987,6 @@ const BackupSettings: React.FC<Props> = ({
             {hasBackupFolder ? t("settings.backup.local.disconnect") : t("settings.backup.local.select")}
           </button>
         </div>
-
-        {/* Warning for failed backups */}
-        {!gdriveDisabled && isCloudConnected && (!isTokenValid || backupFailCount >= 3) && (
-          <div className="flex flex-col gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
-            <div className="flex items-start gap-3">
-              <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
-              <div className="flex flex-col gap-1 min-w-0">
-                <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                  {isTokenValid
-                    ? t("settings.backup.warning.gdriveFailed")
-                    : t("settings.backup.warning.gdriveReconnect")}
-                </span>
-                {backupLastError && (
-                  <span className="text-[11px] text-amber-600 dark:text-amber-400 break-words">
-                    {backupLastError}
-                  </span>
-                )}
-              </div>
-            </div>
-            {isTokenValid && onTriggerManualBackup && (
-              <button
-                type="button"
-                disabled={isRetryingBackup}
-                onClick={async () => {
-                  setIsRetryingBackup(true);
-                  try {
-                    await onTriggerManualBackup();
-                    const [failCount, lastError] = await Promise.all([
-                      getSetting("backup_fail_count"),
-                      getSetting("backup_last_error"),
-                    ]);
-                    setBackupFailCount(parseInt(String(failCount || "0"), 10));
-                    setBackupLastError(String(lastError || ""));
-                  } finally {
-                    setIsRetryingBackup(false);
-                  }
-                }}
-                className="self-start px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-bold rounded-md transition-colors"
-              >
-                {isRetryingBackup ? t("settings.backup.warning.retrying") : t("settings.backup.warning.retryNow")}
-              </button>
-            )}
-          </div>
-        )}
-
-        {nextcloudEnabled && nextcloudBackupFailCount > 0 && (
-          <div className="flex flex-col gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl">
-            <div className="flex items-start gap-3">
-              <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
-              <span className="text-xs font-medium text-amber-700 dark:text-amber-300 break-words">
-                {nextcloudBackupLastError
-                  ? t("settings.backup.warning.nextcloudWithError", { error: nextcloudBackupLastError })
-                  : t("settings.backup.warning.nextcloudGeneric")}
-              </span>
-            </div>
-            {onTriggerManualBackup && nextcloudBackupFailCount >= 3 && (
-              <button
-                type="button"
-                disabled={isRetryingBackup}
-                onClick={async () => {
-                  setIsRetryingBackup(true);
-                  try {
-                    await onTriggerManualBackup();
-                    const [failCount, lastError] = await Promise.all([
-                      getSetting("nextcloud_backup_fail_count"),
-                      getSetting("nextcloud_backup_last_error"),
-                    ]);
-                    setNextcloudBackupFailCount(parseInt(String(failCount || "0"), 10));
-                    setNextcloudBackupLastError(String(lastError || ""));
-                  } finally {
-                    setIsRetryingBackup(false);
-                  }
-                }}
-                className="self-start px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-bold rounded-md transition-colors"
-              >
-                {isRetryingBackup ? t("settings.backup.warning.retrying") : t("settings.backup.warning.retryNow")}
-              </button>
-            )}
-          </div>
-        )}
 
         {/* Manual Backup */}
         {(isCloudConnected || hasBackupFolder || nextcloudEnabled) && (

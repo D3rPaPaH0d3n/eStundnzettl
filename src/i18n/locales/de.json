@@ -682,6 +682,12 @@
       "badge": {
         "connected": "Verbunden"
       },
+      "status": {
+        "title": "Status",
+        "targets": "Aktive Ziele: {{targets}}",
+        "noTargets": "Keine",
+        "last": "Letztes Backup: {{time}}"
+      },
       "gdrive": {
         "connectedAs": "Verbunden als {{label}}",
         "activeAppData": "Aktiv (Google Drive App-Daten)",
@@ -764,6 +770,8 @@
       "combinedTitle": "Berechnung",
       "combinedSubtitle": "Stundenberechnung & Regeln",
       "teaser": "{{overtime}} · Krank: {{sick}}",
+      "editRules": "Berechnungsregeln bearbeiten",
+      "showLess": "Weniger anzeigen",
       "contractedHours": "Vertragsstunden",
       "hoursPerWeek": "{{hours}} / Woche",
       "overtimeRule": "Überstunden-Regel",

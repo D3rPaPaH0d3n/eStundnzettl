@@ -5,7 +5,8 @@ import ProfileSettings from "./Settings/ProfileSettings";
 import RecordingModeSettings from "./Settings/RecordingModeSettings";
 import DataSettings from "./Settings/DataSettings";
 import WorkCodesSettings from "./Settings/WorkCodesSettings";
-import ThemeSettings from "./Settings/ThemeSettings";
+import ExpertModeSettings from "./Settings/ExpertModeSettings";
+import AppearanceSettings from "./Settings/AppearanceSettings";
 import LocaleSettings from "./Settings/LocaleSettings";
 import CalculationSettings from "./Settings/CalculationSettings";
 import CollapsibleCard from "./Settings/CollapsibleCard";
@@ -380,29 +381,31 @@ const Settings: React.FC<Props> = ({
         }
       />
 
-      {/* 5. Sprache (kosmetisch, weiter unten) */}
-      <LocaleSettings
-        mode="language"
+      {/* 7. Darstellung */}
+      <AppearanceSettings
+        theme={theme}
+        setTheme={setTheme}
         locale={locale}
         setLocale={setLocale}
         workDays={userData?.workDays}
         onAfterLocaleChange={resetCalculationConfigToLocale}
       />
 
-      {/* 6. Design (kosmetisch, weiter unten) */}
-      <ThemeSettings theme={theme} setTheme={setTheme} />
+      {/* 8. Erweiterte Einstellungen */}
+      <ExpertModeSettings
+        userData={userData}
+        setUserData={setUserData}
+        onLoadDemoData={() => setDemoTrigger((n) => n + 1)}
+        locale={locale}
+        calculationConfig={calculationConfig}
+      />
 
-      {/* 7. App Info & Danger Zone */}
+      {/* 9. App Info & Danger Zone */}
       <AppInfoSettings
         onCheckUpdate={onCheckUpdate}
         onDeleteAll={onDeleteAll}
         onShowHelp={() => setShowHelp(true)}
         onShowChangelog={() => setShowChangelog(true)}
-        onLoadDemoData={() => setDemoTrigger((n) => n + 1)}
-        userData={userData}
-        setUserData={setUserData}
-        locale={locale}
-        calculationConfig={calculationConfig}
       />
     </main>
   );

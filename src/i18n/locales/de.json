@@ -994,6 +994,16 @@
       "title": "Tätigkeiten",
       "subtitle": "Kategorien für deine Einträge, z.B. Montage, Fahrt, Büro oder Projektarbeit.",
       "manageButton": "Verwalten"
+    },
+    "appearance": {
+      "title": "Darstellung",
+      "subtitle": "Sprache und Design"
+    },
+    "expertMode": {
+      "title": "Erweiterte Einstellungen",
+      "off": "Zusätzliche Optionen sind ausgeblendet, damit die App übersichtlich bleibt.",
+      "on": "Zusätzliche Optionen sind sichtbar.",
+      "description": "Für Nextcloud, PDF-Archiv, Spezialregeln, Demo-Daten und technische Werkzeuge."
     }
   },
   "attachments": {

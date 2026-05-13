@@ -994,6 +994,16 @@
       "title": "Activities",
       "subtitle": "Categories for your entries, e.g. installation, travel, office work or project work.",
       "manageButton": "Manage"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "subtitle": "Language and theme"
+    },
+    "expertMode": {
+      "title": "Advanced settings",
+      "off": "Additional options are hidden to keep the app simple.",
+      "on": "Additional options are visible.",
+      "description": "For Nextcloud, PDF archive, special rules, demo data and technical tools."
     }
   },
   "attachments": {

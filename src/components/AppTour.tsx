@@ -55,6 +55,10 @@ const STEP_DEFINITIONS: TourStepDefinition[] = [
   { id: "done", translationKey: "done", icon: Check, color: "emerald", target: null },
 ];
 
+const SPOTLIGHT_PADDING = 10;
+const CARD_GAP = 18;
+const ESTIMATED_CARD_HEIGHT = 236;
+
 const colorMap: Record<string, { bg: string; text: string; ring: string; btn: string }> = {
   emerald: {
     bg: "bg-emerald-100 dark:bg-emerald-900/40",
@@ -179,44 +183,86 @@ const AppTour = ({ onClose }: Props) => {
   };
 
   // Pointer-Box berechnen: um den Button herum mit etwas Luft.
-  const pointerPadding = 10;
   const pointerStyle = rect
     ? {
         position: "fixed" as const,
-        top: rect.top - pointerPadding,
-        left: rect.left - pointerPadding,
-        width: rect.width + pointerPadding * 2,
-        height: rect.height + pointerPadding * 2,
+        top: rect.top - SPOTLIGHT_PADDING,
+        left: rect.left - SPOTLIGHT_PADDING,
+        width: rect.width + SPOTLIGHT_PADDING * 2,
+        height: rect.height + SPOTLIGHT_PADDING * 2,
         borderRadius: "9999px",
         pointerEvents: "none" as const,
       }
     : null;
 
-  // Karte so positionieren, dass sie das Target nicht überdeckt.
-  // Wenn Target in der oberen Bildschirmhälfte → Karte unten, sonst oben.
-  const cardAnchor = (() => {
-    if (!rect) return "center";
+  const spotlight = rect
+    ? {
+        top: Math.max(0, rect.top - SPOTLIGHT_PADDING),
+        left: Math.max(0, rect.left - SPOTLIGHT_PADDING),
+        right: Math.max(0, window.innerWidth - rect.left - rect.width - SPOTLIGHT_PADDING),
+        bottom: Math.max(0, window.innerHeight - rect.top - rect.height - SPOTLIGHT_PADDING),
+      }
+    : null;
+
+  const cardContainerStyle = (() => {
+    if (!rect) return undefined;
     const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-    return rect.top + rect.height / 2 < vh / 2 ? "bottom" : "top";
+    const safeTop = 24;
+    const safeBottom = 24;
+    const spaceAbove = rect.top - CARD_GAP - safeTop;
+    const spaceBelow = vh - (rect.top + rect.height) - CARD_GAP - safeBottom;
+
+    if (spaceBelow >= ESTIMATED_CARD_HEIGHT || spaceBelow >= spaceAbove) {
+      return {
+        top: Math.min(
+          rect.top + rect.height + CARD_GAP,
+          vh - ESTIMATED_CARD_HEIGHT - safeBottom,
+        ),
+      };
+    }
+
+    return {
+      bottom: Math.min(vh - rect.top + CARD_GAP, vh - ESTIMATED_CARD_HEIGHT - safeTop),
+    };
   })();
 
-  const cardPositionClass =
-    cardAnchor === "top"
-      ? "top-[calc(env(safe-area-inset-top)+5.5rem)]"
-      : cardAnchor === "bottom"
-      ? "bottom-6"
-      : "top-1/2 -translate-y-1/2";
+  const cardPositionClass = rect ? "" : "top-1/2 -translate-y-1/2";
 
   return (
     <div className="fixed inset-0 z-[300] pointer-events-none">
-      {/* Backdrop — klickbar zum Weiterspringen */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto"
-        onClick={handleNext}
-      />
+      {/* Backdrop — bei Target als Spotlight ausgeschnitten, damit das markierte Element scharf bleibt. */}
+      {spotlight ? (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <div
+            className="fixed left-0 right-0 top-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto"
+            style={{ height: spotlight.top }}
+            onClick={handleNext}
+          />
+          <div
+            className="fixed left-0 right-0 bottom-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto"
+            style={{ height: spotlight.bottom }}
+            onClick={handleNext}
+          />
+          <div
+            className="fixed left-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto"
+            style={{ top: spotlight.top, bottom: spotlight.bottom, width: spotlight.left }}
+            onClick={handleNext}
+          />
+          <div
+            className="fixed right-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto"
+            style={{ top: spotlight.top, bottom: spotlight.bottom, width: spotlight.right }}
+            onClick={handleNext}
+          />
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto"
+          onClick={handleNext}
+        />
+      )}
 
       {/* Pointer — pulsiert exakt über dem echten Button */}
       <AnimatePresence mode="wait">
@@ -241,7 +287,10 @@ const AppTour = ({ onClose }: Props) => {
       </AnimatePresence>
 
       {/* Karte */}
-      <div className={`absolute left-4 right-4 ${cardPositionClass} flex justify-center pointer-events-none`}>
+      <div
+        className={`absolute left-4 right-4 ${cardPositionClass} flex justify-center pointer-events-none`}
+        style={cardContainerStyle}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={step.id}

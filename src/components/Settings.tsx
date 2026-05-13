@@ -297,13 +297,17 @@ const Settings: React.FC<Props> = ({
       )}
 
       {/* 1. Profile Settings */}
-      <ProfileSettings userData={userData} setUserData={setUserData} />
+      <div data-settings-tour="profile">
+        <ProfileSettings userData={userData} setUserData={setUserData} />
+      </div>
 
       {/* 2. Aufzeichnungsart — wichtigste Modusentscheidung, immer sichtbar */}
-      <RecordingModeSettings
-        userData={userData}
-        setUserData={setUserData}
-      />
+      <div data-settings-tour="recording">
+        <RecordingModeSettings
+          userData={userData}
+          setUserData={setUserData}
+        />
+      </div>
 
       {/* 3. Arbeitszeitmodell */}
       <DataSettings
@@ -319,12 +323,15 @@ const Settings: React.FC<Props> = ({
       />
 
       {/* 4. Tätigkeiten / Work Codes */}
-      <WorkCodesSettings onManage={() => setShowWorkCodeManager(true)} />
+      <div data-settings-tour="codes">
+        <WorkCodesSettings onManage={() => setShowWorkCodeManager(true)} />
+      </div>
 
       {/* 5. Stundenberechnung (Locale + Berechnungsregeln in EINER
           Card). Im Hausmasta-Modus enthält sie zusätzlich den Locale-
           Picker. Default zugeklappt, da sehr viel Inhalt. */}
-      <CollapsibleCard
+      <div data-settings-tour="calculation">
+        <CollapsibleCard
         title={t("settings.locale.header")}
         subtitle={t("settings.locale.subtitle")}
         icon={
@@ -351,11 +358,13 @@ const Settings: React.FC<Props> = ({
           calculationConfig={calculationConfig}
           setCalculationConfig={setCalculationConfig}
         />
-      </CollapsibleCard>
+        </CollapsibleCard>
+      </div>
 
       {/* 4. Backup & Export — inkl. integriertem PDF-Archiv im
           Hausmasta-Modus. Beide zusammen in einer einklappbaren Karte. */}
-      <BackupSettings
+      <div data-settings-tour="backup">
+        <BackupSettings
         autoBackup={autoBackup}
         setAutoBackup={setAutoBackup}
         onExport={onExport}
@@ -381,17 +390,20 @@ const Settings: React.FC<Props> = ({
             />
           ) : null
         }
-      />
+        />
+      </div>
 
       {/* 7. Darstellung */}
-      <AppearanceSettings
+      <div data-settings-tour="appearanceHelp">
+        <AppearanceSettings
         theme={theme}
         setTheme={setTheme}
         locale={locale}
         setLocale={setLocale}
         workDays={userData?.workDays}
         onAfterLocaleChange={resetCalculationConfigToLocale}
-      />
+        />
+      </div>
 
       {/* 8. Erweiterte Einstellungen */}
       <ExpertModeSettings
@@ -403,12 +415,14 @@ const Settings: React.FC<Props> = ({
       />
 
       {/* 9. App Info & Danger Zone */}
-      <AppInfoSettings
-        onCheckUpdate={onCheckUpdate}
-        onDeleteAll={onDeleteAll}
-        onShowHelp={() => setShowHelp(true)}
-        onShowChangelog={() => setShowChangelog(true)}
-      />
+      <div data-settings-tour="help">
+        <AppInfoSettings
+          onCheckUpdate={onCheckUpdate}
+          onDeleteAll={onDeleteAll}
+          onShowHelp={() => setShowHelp(true)}
+          onShowChangelog={() => setShowChangelog(true)}
+        />
+      </div>
     </main>
   );
 };

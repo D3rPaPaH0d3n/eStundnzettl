@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -21,18 +21,58 @@ interface TourStepDefinition {
   key: string;
   icon: LucideIcon;
   color: "emerald" | "blue" | "amber" | "violet" | "zinc";
+  target?: string;
 }
 
 const STEPS: TourStepDefinition[] = [
   { key: "overview", icon: Settings2, color: "emerald" },
-  { key: "profile", icon: UserRound, color: "blue" },
-  { key: "recording", icon: BriefcaseBusiness, color: "emerald" },
-  { key: "codes", icon: BriefcaseBusiness, color: "amber" },
-  { key: "calculation", icon: Calculator, color: "violet" },
-  { key: "backup", icon: DatabaseBackup, color: "blue" },
-  { key: "appearanceHelp", icon: Palette, color: "zinc" },
-  { key: "done", icon: HelpCircle, color: "emerald" },
+  {
+    key: "profile",
+    icon: UserRound,
+    color: "blue",
+    target: '[data-settings-tour="profile"]',
+  },
+  {
+    key: "recording",
+    icon: BriefcaseBusiness,
+    color: "emerald",
+    target: '[data-settings-tour="recording"]',
+  },
+  {
+    key: "codes",
+    icon: BriefcaseBusiness,
+    color: "amber",
+    target: '[data-settings-tour="codes"]',
+  },
+  {
+    key: "calculation",
+    icon: Calculator,
+    color: "violet",
+    target: '[data-settings-tour="calculation"]',
+  },
+  {
+    key: "backup",
+    icon: DatabaseBackup,
+    color: "blue",
+    target: '[data-settings-tour="backup"]',
+  },
+  {
+    key: "appearanceHelp",
+    icon: Palette,
+    color: "zinc",
+    target: '[data-settings-tour="appearanceHelp"]',
+  },
+  { key: "done", icon: HelpCircle, color: "emerald", target: '[data-settings-tour="help"]' },
 ];
+
+interface TargetRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+const HIGHLIGHT_PADDING = 8;
 
 const colorMap = {
   emerald: {
@@ -40,30 +80,35 @@ const colorMap = {
     text: "text-emerald-600 dark:text-emerald-300",
     btn: "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800",
     dot: "bg-emerald-500",
+    ring: "ring-emerald-400",
   },
   blue: {
     bg: "bg-blue-100 dark:bg-blue-900/40",
     text: "text-blue-600 dark:text-blue-300",
     btn: "bg-blue-600 hover:bg-blue-700 active:bg-blue-800",
     dot: "bg-blue-500",
+    ring: "ring-blue-400",
   },
   amber: {
     bg: "bg-amber-100 dark:bg-amber-900/40",
     text: "text-amber-600 dark:text-amber-300",
     btn: "bg-amber-600 hover:bg-amber-700 active:bg-amber-800",
     dot: "bg-amber-500",
+    ring: "ring-amber-400",
   },
   violet: {
     bg: "bg-violet-100 dark:bg-violet-900/40",
     text: "text-violet-600 dark:text-violet-300",
     btn: "bg-violet-600 hover:bg-violet-700 active:bg-violet-800",
     dot: "bg-violet-500",
+    ring: "ring-violet-400",
   },
   zinc: {
     bg: "bg-zinc-200 dark:bg-zinc-700",
     text: "text-zinc-700 dark:text-zinc-200",
     btn: "bg-zinc-800 hover:bg-zinc-900 dark:bg-zinc-200 dark:hover:bg-white dark:text-zinc-900",
     dot: "bg-zinc-500",
+    ring: "ring-zinc-400",
   },
 };
 
@@ -75,6 +120,7 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
   const { t } = useTranslation();
   const { visible, dismiss } = useFirstOpenHint(storageKey);
   const [index, setIndex] = useState(0);
+  const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
 
   const steps = useMemo(
     () =>
@@ -92,14 +138,68 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
   const isFirst = index === 0;
   const isLast = index === steps.length - 1;
 
+  const measureTarget = useCallback(() => {
+    if (!step.target) {
+      setTargetRect(null);
+      return;
+    }
+
+    const element = document.querySelector(step.target);
+    if (!element) {
+      setTargetRect(null);
+      return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    setTargetRect({
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    });
+  }, [step.target]);
+
   useEffect(() => {
-    if (!visible) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (!visible || !step.target) {
+      const timeout = window.setTimeout(() => setTargetRect(null), 0);
+      return () => window.clearTimeout(timeout);
+    }
+
+    const element = document.querySelector(step.target);
+    element?.scrollIntoView({ block: "center", behavior: "smooth" });
+
+    const timeouts = [window.setTimeout(measureTarget, 80), window.setTimeout(measureTarget, 320)];
+    window.addEventListener("resize", measureTarget);
+    window.addEventListener("orientationchange", measureTarget);
+    window.addEventListener("scroll", measureTarget, true);
+
     return () => {
-      document.body.style.overflow = prev;
+      timeouts.forEach((timeout) => window.clearTimeout(timeout));
+      window.removeEventListener("resize", measureTarget);
+      window.removeEventListener("orientationchange", measureTarget);
+      window.removeEventListener("scroll", measureTarget, true);
     };
-  }, [visible]);
+  }, [measureTarget, step.target, visible]);
+
+  const highlightStyle = targetRect
+    ? {
+        position: "fixed" as const,
+        top: targetRect.top - HIGHLIGHT_PADDING,
+        left: targetRect.left - HIGHLIGHT_PADDING,
+        width: targetRect.width + HIGHLIGHT_PADDING * 2,
+        height: targetRect.height + HIGHLIGHT_PADDING * 2,
+        borderRadius: "1.25rem",
+        pointerEvents: "none" as const,
+      }
+    : null;
+
+  const cardPositionClass = (() => {
+    if (!targetRect) return "top-1/2 -translate-y-1/2";
+    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+    return targetRect.top + targetRect.height / 2 < vh / 2
+      ? "bottom-6"
+      : "top-[calc(env(safe-area-inset-top)+5.5rem)]";
+  })();
 
   const handleNext = () => {
     if (isLast) {
@@ -116,7 +216,7 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
   return (
     <AnimatePresence>
       {visible && (
-        <div className="fixed inset-0 z-[260] flex items-center justify-center p-4 pointer-events-none">
+        <div className="fixed inset-0 z-[260] pointer-events-none">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -124,7 +224,23 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
             className="absolute inset-0 bg-black/55 backdrop-blur-[2px] pointer-events-auto"
           />
 
-          <motion.div
+          {highlightStyle && (
+            <motion.div
+              key={`${step.key}-highlight`}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.2 }}
+              className="z-[265]"
+              style={highlightStyle}
+            >
+              <span className={`absolute inset-0 rounded-[1.25rem] ring-4 ${colors.ring} opacity-80`} />
+              <span className={`absolute inset-0 rounded-[1.25rem] ring-4 ${colors.ring} animate-ping opacity-40`} />
+            </motion.div>
+          )}
+
+          <div className={`absolute left-4 right-4 ${cardPositionClass} flex justify-center`}>
+            <motion.div
             key={step.key}
             initial={{ opacity: 0, y: 18, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -202,7 +318,8 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
                 {isLast ? <Check size={14} /> : <ArrowRight size={14} />}
               </button>
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       )}
     </AnimatePresence>

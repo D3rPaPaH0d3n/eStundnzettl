@@ -95,9 +95,12 @@ class Material3DatePickerActivity : ComponentActivity() {
                     ) {
                         DatePicker(
                             state = state,
-                            title = { Text(title) },
-                            headline = null,
-                            showModeToggle = false,
+                            title = {
+                                Text(
+                                    text = title,
+                                    modifier = Modifier.padding(top = 12.dp),
+                                )
+                            },
                         )
                     }
                 }

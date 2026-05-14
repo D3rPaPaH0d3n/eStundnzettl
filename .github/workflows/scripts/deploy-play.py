@@ -39,6 +39,7 @@ AAB_PATH = "android/app/build/outputs/bundle/release/app-release.aab"
 TRACK = os.environ.get("PLAY_TRACK", "internal")
 ALL_TRACKS = ("internal", "alpha", "beta", "production")
 RELEASE_NOTES_LIMIT = 500
+RELEASE_NAME_LIMIT = 50
 
 # ── Versionsinfo aus Repo lesen ──────────────────────────────────────────
 build_gradle = pathlib.Path("android/app/build.gradle").read_text()
@@ -77,7 +78,19 @@ derived_name = (
     f"v{VERSION_NAME} — {derived_title}" if derived_title else f"v{VERSION_NAME}"
 )
 
-RELEASE_NAME = os.environ.get("RELEASE_NAME") or derived_name
+
+def fit_release_name(name: str) -> str:
+    """Google Play erlaubt maximal 50 Zeichen im Release-Namen."""
+    name = name.strip()
+    if len(name) <= RELEASE_NAME_LIMIT:
+        return name
+    fallback = f"v{VERSION_NAME} ({VERSION_CODE})"
+    if len(fallback) <= RELEASE_NAME_LIMIT:
+        return fallback
+    return name[: RELEASE_NAME_LIMIT - 3].rstrip() + "..."
+
+
+RELEASE_NAME = fit_release_name(os.environ.get("RELEASE_NAME") or derived_name)
 
 # ── Release-Notes ableiten (multi-locale) ────────────────────────────────
 release_notes_list = []

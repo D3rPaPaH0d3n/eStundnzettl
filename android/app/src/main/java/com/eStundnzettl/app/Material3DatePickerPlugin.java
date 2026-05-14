@@ -17,13 +17,24 @@ public class Material3DatePickerPlugin extends Plugin {
 
     @PluginMethod
     public void pickDate(PluginCall call) {
+        startPicker(call, Material3DatePickerActivity.MODE_DATE);
+    }
+
+    @PluginMethod
+    public void pickMonth(PluginCall call) {
+        startPicker(call, Material3DatePickerActivity.MODE_MONTH);
+    }
+
+    private void startPicker(PluginCall call, String defaultMode) {
         String value = call.getString("value", "");
+        String mode = call.getString("mode", defaultMode);
         String title = call.getString("title", "Datum auswählen");
         String confirmText = call.getString("confirmText", "OK");
         String dismissText = call.getString("dismissText", "Abbrechen");
 
         Intent intent = new Intent(getContext(), Material3DatePickerActivity.class);
         intent.putExtra(Material3DatePickerActivity.EXTRA_INITIAL_DATE, value);
+        intent.putExtra(Material3DatePickerActivity.EXTRA_MODE, mode);
         intent.putExtra(Material3DatePickerActivity.EXTRA_TITLE, title);
         intent.putExtra(Material3DatePickerActivity.EXTRA_CONFIRM_TEXT, confirmText);
         intent.putExtra(Material3DatePickerActivity.EXTRA_DISMISS_TEXT, dismissText);

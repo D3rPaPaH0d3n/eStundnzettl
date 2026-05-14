@@ -16,6 +16,7 @@ import i18n from "../i18n";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
+import { Material3DatePicker } from "../plugins/Material3DatePickerPlugin";
 import { useAttachmentShare } from "../hooks/useAttachmentShare";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,6 +35,7 @@ import ReportPdfDocument from "./ReportPdfDocument";
 import PdfBlobPreview from "./PdfBlobPreview";
 import PdfDisplayToggles from "./Settings/PdfDisplayToggles";
 import FirstOpenHint from "./FirstOpenHint";
+import DashboardMonthPicker from "./DashboardMonthPicker";
 
 import type {
   Entry,
@@ -117,6 +119,7 @@ const PrintReport: React.FC<Props> = ({
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
   const [customNote, setCustomNote] = useState("");
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -150,6 +153,34 @@ const PrintReport: React.FC<Props> = ({
     setFilterMode("month");
     onMonthChange(newDate);
   };
+
+  const handleOpenMonthPicker = useCallback(async () => {
+    setFilterMode("month");
+
+    if (!Capacitor.isNativePlatform()) {
+      setIsMonthPickerOpen(true);
+      return;
+    }
+
+    try {
+      const value = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}-01`;
+      const result = await Material3DatePicker.pickMonth({
+        value,
+        title: t("reports.preview"),
+        confirmText: "OK",
+        dismissText: "Abbrechen",
+      });
+
+      if (!result.cancelled && result.value) {
+        const next = new Date(`${result.value}T00:00:00`);
+        next.setDate(1);
+        onMonthChange(next);
+      }
+    } catch (err) {
+      logger.warn("Native month picker unavailable:", err);
+      setIsMonthPickerOpen(true);
+    }
+  }, [monthDate, onMonthChange, t]);
 
   const getWeekLabel = useCallback((week: number) => {
     const year = monthDate.getFullYear();
@@ -417,12 +448,16 @@ const PrintReport: React.FC<Props> = ({
             >
               <ChevronLeft size={18} />
             </button>
-            <span className="px-2 text-sm font-bold w-24 text-center tabular-nums">
+            <button
+              type="button"
+              onClick={handleOpenMonthPicker}
+              className="px-2 text-sm font-bold w-24 text-center tabular-nums rounded-md hover:bg-zinc-700 active:bg-zinc-600"
+            >
               {monthDate.toLocaleDateString(getIntlLocale(), {
                 month: "short",
                 year: "2-digit",
               })}
-            </span>
+            </button>
             <button
               onClick={() => handleMonthChange(1)}
               className="p-1.5 hover:bg-zinc-700 rounded-md text-zinc-300"
@@ -537,6 +572,17 @@ const PrintReport: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      {isMonthPickerOpen && (
+        <DashboardMonthPicker
+          selectedDate={monthDate}
+          onSelectMonth={(date) => {
+            setFilterMode("month");
+            onMonthChange(date);
+          }}
+          onClose={() => setIsMonthPickerOpen(false)}
+        />
+      )}
 
       {/* Inline-PDF-Vorschau via pdfjs-dist (Canvas-Render).
           Bewusst NICHT <PDFViewer>: dessen iframe mit blob:-URL wird

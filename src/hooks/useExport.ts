@@ -1,5 +1,4 @@
 import { useState, MutableRefObject } from "react";
-import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import toast from "react-hot-toast";
@@ -22,11 +21,10 @@ interface UseExportProps {
 /**
  * useExport — Kapselt die Export-Logik für Backup-JSON-Dateien.
  *
- * Unterstützt drei Export-Wege:
- * 1. **Web-Download** — Browser blob download (für PWA/Dev)
- * 2. **Ordner-Export** — Capacitor Filesystem schreibt in einen
- *    vom User via SAF ausgewählten Ordner (für Android)
- * 3. **Native Share** — Capacitor Share API öffnet das native
+ * Unterstützt zwei native Android-Export-Wege:
+ * 1. **Ordner-Export** — Capacitor Filesystem schreibt in einen
+ *    vom User via SAF ausgewählten Ordner
+ * 2. **Native Share** — Capacitor Share API öffnet das native
  *    Share-Sheet mit der temporären Cache-Datei
  *
  * Der Payload wird in `buildPayload()` zusammengestellt
@@ -38,7 +36,7 @@ interface UseExportProps {
  *
  * @returns
  * - `showExportModal` / `setShowExportModal` — Modal-Sichtbarkeit
- * - `exportData()` — trigger für Export-Flow (Web oder Modal öffnen)
+ * - `exportData()` — baut den Payload und öffnet das Export-Modal
  * - `handleExportToFolder()` — schreibt in SAF-Ordner
  * - `handleExportShare()` — öffnet natives Share-Sheet
  */
@@ -61,51 +59,10 @@ export function useExport({ entries, userData, workCodes, attachments = [], expo
     return payload;
   };
 
-  // --- Web fallback: download as file ---
-  const handleWebExport = async () => {
-    const toastId = toast.loading(t("toasts.export.exporting"));
-    try {
-      const dateStr = toLocalDateString(new Date());
-      const fileName = `estundnzettl_${dateStr}.json`;
-      const payload = await buildPayload();
-      const json = JSON.stringify(payload, null, 2);
-
-      const file = new File([json], fileName, { type: "application/json" });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: "eStundnzettl Backup", text: "Backup meiner Stunden" });
-          toast.success(t("toasts.export.success"), { id: toastId });
-          return;
-        } catch (shareError: unknown) {
-          if ((shareError as DOMException).name === "AbortError") {
-            toast.dismiss(toastId);
-            return;
-          }
-        }
-      }
-      const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success(t("toasts.export.downloadStarted"), { id: toastId });
-    } catch (e) {
-      toast.error(t("toasts.export.error", { message: (e as Error).message }), { id: toastId, duration: 5000 });
-    }
-  };
-
   // --- Main entry point ---
   const exportData = async () => {
-    if (Capacitor.isNativePlatform()) {
-      exportPayloadRef.current = await buildPayload();
-      setShowExportModal(true);
-    } else {
-      await handleWebExport();
-    }
+    exportPayloadRef.current = await buildPayload();
+    setShowExportModal(true);
   };
 
   // --- Capacitor: save to selected folder ---

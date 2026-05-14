@@ -87,3 +87,26 @@ Checks run:
 
 Manual Android picker tests:
 - Not run in this environment. Must be checked on a device/emulator once Java/JDK is available.
+
+## Phase 4 — Browser export/download fallback removal
+
+Status: completed; local commit pending at time of writing.
+
+Changes:
+- Removed JSON export web share/blob download fallback from `src/hooks/useExport.ts`; `exportData()` now always builds the backup payload and opens the native export modal.
+- Removed PDF browser Blob download branch from `src/components/PrintReport.tsx`; PDF export/share now uses the native Filesystem/Share flow only.
+- Removed web Blob download fallback from `writeLocalArchive()` in `src/utils/pdfArchiveTargets.ts`; the native three-stage Filesystem fallback chain remains intact.
+- Adjusted `useAutoPdfArchive` and `pdfArchiveTargets` tests for native-only local archive behavior.
+- Also removed the remaining PrintReport browser month-picker fallback while touching the same native-only export surface.
+
+Checks run:
+- Guard grep for `handleWebExport`, `navigator.share`, export/download `createObjectURL`/`URL.revokeObjectURL`, `local-web`, and web-download error text in Phase 4 target files ✅ no matches
+- `npm run typecheck` ✅
+- `npm run lint` ✅
+- `npm test` ✅ 65 files / 781 tests passed
+- `npm run build` ✅
+- `npx cap sync android` ✅; still 9 Capacitor plugins
+- `cd android && ./gradlew assembleDebug` ⚠️ same environment blocker: Java/JAVA_HOME unavailable
+
+Manual Android export tests:
+- Not run in this environment. Still needs device/emulator checks for JSON folder export, JSON share, PDF export/share, and archive targets.

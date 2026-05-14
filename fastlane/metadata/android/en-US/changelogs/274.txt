@@ -1,0 +1,7 @@
+Pickers, minutes & a bit of polish 🕰️
+• Time entry is now minute-accurate instead of using the old 15-minute grid
+• Live timer no longer rounds to quarter hours
+• Android date picker now follows the app theme
+• Time picker keeps light/dark surfaces with green/orange accents
+• Wizard, Settings and Help no longer mention the old minute mode
+• Cleaned up and ready for the beta channel

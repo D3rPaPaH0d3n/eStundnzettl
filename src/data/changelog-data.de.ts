@@ -1,6 +1,43 @@
 export const CHANGELOG_DATA_DE = [
 
   {
+    version: "4.3.5",
+    date: "14.05.2026",
+    title: "Picker, Minuten & a bisserl Feinschliff 🕰️",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Clock",
+        title: "Zeiten jetzt gscheit minutengenau",
+        items: [
+          "Start, Ende und Pause lassen sich jetzt ohne 15-Minuten-Raster einstellen — genau so, wie’s in der Praxis halt passiert.",
+          "Auch der Live-Timer übernimmt Zeiten minutengenau und rundet nicht mehr auf Viertelstunden herum.",
+          "Die alte Minutenmodus-Umschaltung ist raus, weil minutengenau jetzt einfach der Standard ist. Weniger Schalter, weniger Grübeln."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Native Picker schöner eingebaut",
+        items: [
+          "Der Android-DatePicker passt farblich sauber zur App und schaltet mit Hell/Dunkel mit.",
+          "Der Android-TimePicker bleibt beim gewohnten hellen oder dunklen Hintergrund und setzt nur passende grüne bzw. orange Akzente.",
+          "Pausen und normale Zeiten sind farblich klarer getrennt — schaut ruhiger aus und fühlt sich runder an."
+        ]
+      },
+      {
+        iconName: "Wrench",
+        title: "Aufgeräumt für die Beta",
+        items: [
+          "Wizard, Einstellungen, Hilfe, README und Changelog sprechen jetzt dieselbe Sprache — keine alten 15-Minuten-Hinweise mehr.",
+          "Ungenutzte alte Android-Styles und Picker-Reste sind entfernt.",
+          "Tests, Typecheck, Build und Lint sind durchgelaufen. Passt — ab in den Beta-Kanal, würd i sagen."
+        ]
+      }
+    ]
+  },
+
+
+  {
     version: "4.3.4",
     date: "13.05.2026",
     title: "Settings & Simple Mode gschmeidiger 🌸",

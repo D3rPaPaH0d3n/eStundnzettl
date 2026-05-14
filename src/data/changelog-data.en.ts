@@ -19,6 +19,43 @@ import { CHANGELOG_DATA_DE } from "./changelog-data.de";
 const TRANSLATED_EN = [
 
   {
+    version: "4.3.5",
+    date: "14.05.2026",
+    title: "Pickers, minutes & a bit of polish 🕰️",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Clock",
+        title: "Time entry is now truly minute-accurate",
+        items: [
+          "Start, end and break times can now be set without the old 15-minute grid — matching real workdays more closely.",
+          "The live timer now keeps minute-accurate times too and no longer rounds to quarter hours.",
+          "The old minute-mode toggle is gone because minute-accurate entry is now the default. Fewer switches, less confusion."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Native pickers feel more at home",
+        items: [
+          "The Android date picker now follows the app colors and switches properly between light and dark mode.",
+          "The Android time picker keeps its familiar light or dark surface while using green or orange accents where they belong.",
+          "Breaks and regular times are visually clearer now, making the picker feel calmer and more consistent."
+        ]
+      },
+      {
+        iconName: "Wrench",
+        title: "Cleaned up for beta",
+        items: [
+          "Wizard, Settings, Help, README and changelog now agree — no old 15-minute hints left behind.",
+          "Unused old Android styles and picker leftovers were removed.",
+          "Tests, typecheck, build and lint passed. This one is ready for the beta channel."
+        ]
+      }
+    ]
+  },
+
+
+  {
     version: "4.3.4",
     date: "13.05.2026",
     title: "Settings & Simple Mode feel smoother 🌸",

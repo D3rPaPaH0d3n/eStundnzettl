@@ -1,0 +1,7 @@
+Picker, Minuten & a bisserl Feinschliff 🕰️
+• Zeiten jetzt minutengenau statt im alten 15-Minuten-Raster
+• Live-Timer rundet nicht mehr auf Viertelstunden
+• Android-DatePicker passt jetzt sauber zum App-Theme
+• TimePicker bleibt hell/dunkel wie gewohnt, nur mit grünen/orangen Akzenten
+• Wizard, Einstellungen und Hilfe sind von alten Minutenmodus-Texten befreit
+• Aufgeräumt und bereit für den Beta-Kanal

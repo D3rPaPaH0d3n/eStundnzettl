@@ -136,6 +136,12 @@ const EntryForm: React.FC<Props> = ({
     entryType === "work" || entryType === "drive" || (isSpecialType && effectiveSpecialManualMode);
   
   const [activeTimeField, setActiveTimeField] = useState<string | null>(null);
+  const [isWorkCodeOpen, setIsWorkCodeOpen] = useState(false);
+  const [showPausePicker, setShowPausePicker] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickAddValue, setQuickAddValue] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const isNativePlatform = Capacitor.isNativePlatform();
 
   const formattedFormDate = useMemo(() => {
@@ -196,12 +202,34 @@ const EntryForm: React.FC<Props> = ({
       setActiveTimeField(field);
     }
   }, [endTime, isNativePlatform, setEndTime, setStartTime, startTime, t]);
-  const [isWorkCodeOpen, setIsWorkCodeOpen] = useState(false);
-  const [showPausePicker, setShowPausePicker] = useState(false);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [quickAddValue, setQuickAddValue] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const openPausePicker = useCallback(async () => {
+    if (!isNativePlatform) {
+      setShowPausePicker(true);
+      return;
+    }
+
+    const minutes = pauseDuration || 30;
+    const value = `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+
+    try {
+      const result = await Material3TimePicker.pickTime({
+        value,
+        title: t("entryForm.pause"),
+        confirmText: "OK",
+        dismissText: "Abbrechen",
+        is24Hour: true,
+      });
+
+      if (!result.cancelled && result.value) {
+        const [hours, mins] = result.value.split(":").map(Number);
+        setPauseDuration(hours * 60 + mins);
+      }
+    } catch {
+      // Fallback for unsupported native/dev environments.
+      setShowPausePicker(true);
+    }
+  }, [isNativePlatform, pauseDuration, setPauseDuration, t]);
 
   const [viewYear, setViewYear] = useState(new Date(formDate).getFullYear());
 
@@ -450,7 +478,7 @@ const EntryForm: React.FC<Props> = ({
                     <button type="button" onClick={() => setPauseDuration(0)} className={`flex-1 p-3 rounded-lg border text-sm font-bold ${pauseDuration === 0 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300"}`}>{t("entryForm.noPause")}</button>
                     <button
                       type="button"
-                      onClick={() => setShowPausePicker(true)}
+                      onClick={openPausePicker}
                       className={`flex-1 p-3 rounded-lg border text-sm font-bold flex items-center justify-center gap-1 ${pauseDuration > 0 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300"}`}
                     >
                       {pauseDuration > 0

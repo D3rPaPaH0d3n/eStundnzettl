@@ -232,13 +232,13 @@ const getValidGoogleToken = async (): Promise<{ accessToken: string }> => {
   }
 };
 
-const assertGoogleApiUrl = (url: string): void => {
+function assertGoogleApiUrl(url: string): void {
   const parsed = new URL(url);
   const allowedHosts = new Set(['www.googleapis.com']);
   if (parsed.protocol !== 'https:' || !allowedHosts.has(parsed.hostname)) {
     throw new Error('Ungültige Google-Drive-API-URL');
   }
-};
+}
 
 const authFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
   assertGoogleApiUrl(url);

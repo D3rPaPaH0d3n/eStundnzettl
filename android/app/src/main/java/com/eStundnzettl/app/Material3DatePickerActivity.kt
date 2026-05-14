@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -98,7 +99,7 @@ class Material3DatePickerActivity : ComponentActivity() {
                             title = {
                                 Text(
                                     text = title,
-                                    modifier = Modifier.padding(top = 12.dp),
+                                    modifier = Modifier.padding(start = 24.dp, top = 12.dp),
                                 )
                             },
                         )
@@ -189,11 +190,14 @@ private fun MonthPickerDialog(
                             TextButton(
                                 onClick = { selectedMonth = month },
                                 modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.textButtonColors(
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                ),
                             ) {
                                 Text(
                                     text = java.time.Month.of(month)
                                         .getDisplayName(TextStyle.SHORT, locale),
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 )
                             }

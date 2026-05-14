@@ -70,7 +70,7 @@ format.*          any format helpers needing translated text
 - [x] B16: Onboarding WorkCodesStep
 
 ## Phase C — Locale-sensitive formatting
-- [x] C1: `src/utils/formatLocale.ts` + swap all `de-DE` usages, register `enUS` for date-fns
+- [x] C1: `src/utils/formatLocale.ts` + swap all `de-DE` usages to centralized Intl locale lookup
 
 ## Phase D — Hooks & utility toasts
 - [x] D1: migrate toast strings in `src/hooks/*` and `src/utils/*`
@@ -180,9 +180,8 @@ format.*          any format helpers needing translated text
   dependency arrays.
   Tests 630/630 green; TS error count unchanged at 59.
 - **Session C1** (2026-04-13): introduced dynamic format-locale.
-  - New `src/utils/formatLocale.ts` exporting `getCurrentLanguage()`,
-    `getIntlLocale()` (-> "de-DE" | "en-US") and
-    `getDatePickerLocale()` (-> "de" | "en"). All read from
+  - New `src/utils/formatLocale.ts` exporting `getCurrentLanguage()`
+    and `getIntlLocale()` (-> "de-DE" | "en-US"). Both read from
     `i18n.language` at call-time, so a language switch via the
     Settings picker affects every formatter on the next render.
   - Replaced all hard-coded `toLocaleDateString("de-DE", …)` and
@@ -192,12 +191,8 @@ format.*          any format helpers needing translated text
     Settings/CalculationSettings, Onboarding/CalculationStep,
     hooks/useExport. The remaining `de-DE` strings in the repo
     are all in TRANSLATION_STATUS.md historical notes.
-  - Registered `enUS` from `date-fns/locale` in Dashboard and
-    EntryForm alongside `de`. The `react-datepicker` `locale` prop
-    in both is now driven by `getDatePickerLocale()`. Existing
-    `registerLocale` mocks in Dashboard.test.tsx /
-    EntryForm.test.tsx already accept any string, so tests remain
-    untouched.
+  - Historical note: browser picker locale wiring was later removed
+    when the app became native-Android-only.
   Total TS error count unchanged at 59 (pre-existing only).
 - **Session B16** (2026-04-13): migrated `Onboarding/steps/WorkCodesStep.tsx`.
   Small step (142 lines): step title/subtitle, two basic preset

@@ -63,3 +63,27 @@ Checks run:
 
 Manual Android picker tests:
 - Not run in this environment.
+
+## Phase 3 — Web datepicker fallback removal
+
+Status: completed; local commit pending at time of writing.
+
+Changes:
+- Removed `react-datepicker` UI/imports from `EntryForm.tsx`; the date field now uses the Material3 native date picker trigger only.
+- Reduced `DashboardMonthPicker.tsx` to a native Material3 month picker wrapper and removed the browser modal fallback.
+- Removed all `.react-datepicker*` CSS from `src/index.css`.
+- Removed the date-picker manual chunk from `vite.config.js`.
+- Removed stale test mocks and translation-status references to the old browser picker.
+- Removed `react-datepicker` and `date-fns` from `package.json`/`package-lock.json` because no app/source imports remain.
+
+Checks run:
+- Guard grep for `react-datepicker`, `react-datepicker__`, `getDatePickerLocale`, `date-fns`, `@floating-ui` in `src`, `vite.config.js`, `package.json`, `package-lock.json` ✅ no matches
+- `npm run typecheck` ✅
+- `npm run lint` ✅
+- `npm test` ✅ 65 files / 783 tests passed
+- `npm run build` ✅; date-picker chunk disappeared and transformed modules dropped from 3709 to 2871
+- `npx cap sync android` ✅; still 9 Capacitor plugins
+- `cd android && ./gradlew assembleDebug` ⚠️ same environment blocker: Java/JAVA_HOME unavailable
+
+Manual Android picker tests:
+- Not run in this environment. Must be checked on a device/emulator once Java/JDK is available.

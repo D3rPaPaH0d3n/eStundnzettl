@@ -56,19 +56,6 @@ vi.mock("framer-motion", () => {
   };
 });
 
-// react-datepicker Stub
-vi.mock("react-datepicker", () => {
-  const DatePicker = ({ customInput }: { customInput?: React.ReactElement }) => {
-    return customInput ?? <div data-testid="datepicker-stub" />;
-  };
-  return {
-    __esModule: true,
-    default: DatePicker,
-    registerLocale: vi.fn(),
-    CalendarContainer: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  };
-});
-
 // TimePickerDrawer + SelectionDrawer als Passthrough-Dummies,
 // damit wir sie bei Bedarf anhand ihrer Buttons testen können.
 vi.mock("../TimePickerDrawer", () => ({

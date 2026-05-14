@@ -1,9 +1,8 @@
 /**
- * formatLocale — Dynamischer Intl/date-fns-Locale-Helper.
+ * formatLocale — Dynamischer Intl-Locale-Helper.
  *
  * Mappt die aktuelle UI-Sprache aus i18next auf die passenden
- * Locale-Tags für Intl (`toLocaleDateString` / `toLocaleString`) und
- * für react-datepicker (registrierter date-fns-Locale-Key).
+ * Locale-Tags für Intl (`toLocaleDateString` / `toLocaleString`).
  *
  * Wird als Runtime-Lookup verwendet, damit ein Language-Switch
  * (Settings → Sprache) sofort in allen Datums-Formatierungen sichtbar
@@ -29,14 +28,4 @@ export function getCurrentLanguage(): SupportedLanguage {
  */
 export function getIntlLocale(): "de-DE" | "en-US" {
   return getCurrentLanguage() === "en" ? "en-US" : "de-DE";
-}
-
-/**
- * Locale-Key, wie er an `react-datepicker`'s `locale`-Prop übergeben
- * wird. Voraussetzung: der entsprechende date-fns-Locale wurde vorher
- * per `registerLocale(...)` registriert. Siehe Aufruf in Dashboard und
- * EntryForm.
- */
-export function getDatePickerLocale(): SupportedLanguage {
-  return getCurrentLanguage();
 }

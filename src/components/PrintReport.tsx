@@ -15,7 +15,6 @@ import { pdf } from "@react-pdf/renderer";
 import i18n from "../i18n";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
-import { Capacitor } from "@capacitor/core";
 import { Material3DatePicker } from "../plugins/Material3DatePickerPlugin";
 import { useAttachmentShare } from "../hooks/useAttachmentShare";
 import toast from "react-hot-toast";
@@ -35,7 +34,6 @@ import ReportPdfDocument from "./ReportPdfDocument";
 import PdfBlobPreview from "./PdfBlobPreview";
 import PdfDisplayToggles from "./Settings/PdfDisplayToggles";
 import FirstOpenHint from "./FirstOpenHint";
-import DashboardMonthPicker from "./DashboardMonthPicker";
 
 import type {
   Entry,
@@ -119,7 +117,6 @@ const PrintReport: React.FC<Props> = ({
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
   const [customNote, setCustomNote] = useState("");
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -157,11 +154,6 @@ const PrintReport: React.FC<Props> = ({
   const handleOpenMonthPicker = useCallback(async () => {
     setFilterMode("month");
 
-    if (!Capacitor.isNativePlatform()) {
-      setIsMonthPickerOpen(true);
-      return;
-    }
-
     try {
       const value = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}-01`;
       const result = await Material3DatePicker.pickMonth({
@@ -178,7 +170,6 @@ const PrintReport: React.FC<Props> = ({
       }
     } catch (err) {
       logger.warn("Native month picker unavailable:", err);
-      setIsMonthPickerOpen(true);
     }
   }, [monthDate, onMonthChange, t]);
 
@@ -360,53 +351,40 @@ const PrintReport: React.FC<Props> = ({
       const filename = buildFilename();
       const pdfBlob = await buildExportBlob();
 
-      if (!Capacitor.isNativePlatform()) {
-        // Web: Download via Blob-URL
-        const url = URL.createObjectURL(pdfBlob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.success(t("reports.toast.downloadStarted"));
-      } else {
-        const base64 = await blobToBase64(pdfBlob);
+      const base64 = await blobToBase64(pdfBlob);
 
-        if (actionType === "share") {
-          await Filesystem.writeFile({
-            path: filename,
-            data: base64,
-            directory: Directory.Cache,
-            recursive: true,
-          });
-          const uriResult = await Filesystem.getUri({
-            path: filename,
-            directory: Directory.Cache,
-          });
+      if (actionType === "share") {
+        await Filesystem.writeFile({
+          path: filename,
+          data: base64,
+          directory: Directory.Cache,
+          recursive: true,
+        });
+        const uriResult = await Filesystem.getUri({
+          path: filename,
+          directory: Directory.Cache,
+        });
 
-          if (reportAttachments.length === 0) {
-            await Share.share({ title: t("reports.title"), url: uriResult.uri });
-            toast.success(t("reports.toast.readyToShare"));
-          } else {
-            await shareReportBundle({
-              pdfFile: {
-                storagePath: filename,
-                mimeType: "application/pdf",
-              },
-              attachments: reportAttachments,
-            });
-          }
+        if (reportAttachments.length === 0) {
+          await Share.share({ title: t("reports.title"), url: uriResult.uri });
+          toast.success(t("reports.toast.readyToShare"));
         } else {
-          await Filesystem.writeFile({
-            path: `eStundnzettl/${filename}`,
-            data: base64,
-            directory: Directory.Documents,
-            recursive: true,
+          await shareReportBundle({
+            pdfFile: {
+              storagePath: filename,
+              mimeType: "application/pdf",
+            },
+            attachments: reportAttachments,
           });
-          toast.success(t("reports.toast.savedToDocuments"), { icon: "📂" });
         }
+      } else {
+        await Filesystem.writeFile({
+          path: `eStundnzettl/${filename}`,
+          data: base64,
+          directory: Directory.Documents,
+          recursive: true,
+        });
+        toast.success(t("reports.toast.savedToDocuments"), { icon: "📂" });
       }
 
       setIsGenerating(false);
@@ -572,17 +550,6 @@ const PrintReport: React.FC<Props> = ({
           </div>
         </div>
       </div>
-
-      {isMonthPickerOpen && (
-        <DashboardMonthPicker
-          selectedDate={monthDate}
-          onSelectMonth={(date) => {
-            setFilterMode("month");
-            onMonthChange(date);
-          }}
-          onClose={() => setIsMonthPickerOpen(false)}
-        />
-      )}
 
       {/* Inline-PDF-Vorschau via pdfjs-dist (Canvas-Render).
           Bewusst NICHT <PDFViewer>: dessen iframe mit blob:-URL wird

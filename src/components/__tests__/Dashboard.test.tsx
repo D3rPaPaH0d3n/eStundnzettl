@@ -48,19 +48,6 @@ vi.mock("framer-motion", () => {
   };
 });
 
-// react-datepicker in jsdom vereinfacht: nur Custom-Input rendern,
-// damit wir den Header nicht brauchen (wir testen ihn nicht).
-vi.mock("react-datepicker", () => {
-  const DatePicker = ({ customInput }: { customInput?: React.ReactElement }) => {
-    return customInput ?? <div data-testid="datepicker-stub" />;
-  };
-  return {
-    __esModule: true,
-    default: DatePicker,
-    registerLocale: vi.fn(),
-  };
-});
-
 // Importe NACH den Mocks
 import Dashboard from "../Dashboard";
 import type { Entry, UserData } from "../../types";

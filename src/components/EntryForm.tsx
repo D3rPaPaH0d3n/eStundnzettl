@@ -1,16 +1,13 @@
-import React, { forwardRef, useState, useEffect, useMemo, useCallback } from "react";
+import React, { forwardRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus, ChevronDown } from "lucide-react";
-import { Card, getHolidayData, toLocalDateString } from "../utils";
+import { Card, toLocalDateString } from "../utils";
 import { WORK_CODE } from "../hooks/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { useTranslation } from "react-i18next";
 
-import DatePicker, { registerLocale, CalendarContainer } from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { de, enUS } from "date-fns/locale";
-import { getDatePickerLocale } from "../utils/formatLocale";
+import { getIntlLocale } from "../utils/formatLocale";
 import TimePickerDrawer from "./TimePickerDrawer";
 import SelectionDrawer from "./SelectionDrawer";
 import { Capacitor } from "@capacitor/core";
@@ -21,8 +18,6 @@ import type { Entry, EntryType, UserData, WorkCode } from "../types";
 import type { Locale } from "../locales/types";
 import type { CalculationConfig } from "../types";
 
-registerLocale("de", de);
-registerLocale("en", enUS);
 
 interface CustomInputProps {
   value?: string;
@@ -42,28 +37,6 @@ const CustomInput = forwardRef<HTMLButtonElement, CustomInputProps>(({ value, on
   </button>
 ));
 CustomInput.displayName = "CustomInput";
-
-interface CalendarContainerAnimationProps {
-  className?: string;
-  children: React.ReactNode;
-}
-
-const CalendarContainerAnimation: React.FC<CalendarContainerAnimationProps> = ({ className, children }) => {
-  return (
-    <div className={className} style={{ background: "transparent", border: "none", padding: 0 }}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: -10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ type: "spring", duration: 0.3, bounce: 0.3 }}
-      >
-        <CalendarContainer className={className}>
-          {children}
-        </CalendarContainer>
-      </motion.div>
-    </div>
-  );
-};
 
 interface Props {
   onCancel: () => void;
@@ -122,8 +95,6 @@ const EntryForm: React.FC<Props> = ({
   userData,
   specialManualMode = false,
   setSpecialManualMode = () => {},
-  locale,
-  calculationConfig,
   workCodes = [],
   hasAnyCodes = false,
   addCode = () => false,
@@ -142,23 +113,18 @@ const EntryForm: React.FC<Props> = ({
   const [quickAddValue, setQuickAddValue] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showDateFallback, setShowDateFallback] = useState(false);
   const isNativePlatform = Capacitor.isNativePlatform();
 
-  const formattedFormDate = useMemo(() => {
-    const date = new Date(`${formDate}T00:00:00`);
-    const formatterLocale = getDatePickerLocale() === "de" ? "de-DE" : "en-US";
-
-    return new Intl.DateTimeFormat(formatterLocale, {
-      weekday: "short",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(date);
-  }, [formDate]);
+  const date = new Date(`${formDate}T00:00:00`);
+  const formattedFormDate = new Intl.DateTimeFormat(getIntlLocale(), {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 
   const openDatePicker = useCallback(async () => {
-    if (!isNativePlatform) return;
-
     try {
       const result = await Material3DatePicker.pickDate({
         value: formDate,
@@ -169,11 +135,14 @@ const EntryForm: React.FC<Props> = ({
 
       if (!result.cancelled && result.value) {
         setFormDate(result.value);
+        setShowDateFallback(false);
       }
     } catch {
-      // Keep the current date when the native picker is unavailable.
+      // Fallback for unsupported native/dev environments.
+      setShowDateFallback(true);
+      toast.error(t("entryForm.datePickerFallback", { defaultValue: "Datumsauswahl konnte nicht geöffnet werden." }));
     }
-  }, [formDate, isNativePlatform, setFormDate, t]);
+  }, [formDate, setFormDate, t]);
 
   const openTimePicker = useCallback(async (field: string) => {
     if (!isNativePlatform) {
@@ -233,13 +202,6 @@ const EntryForm: React.FC<Props> = ({
     }
   }, [isNativePlatform, pauseDuration, setPauseDuration, t]);
 
-  const [viewYear, setViewYear] = useState(new Date(formDate).getFullYear());
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- viewYear has two sources (formDate + DatePicker navigation), needs sync
-    setViewYear(new Date(formDate).getFullYear());
-  }, [formDate]);
-
   useEffect(() => {
     if (isEditing || isLiveEntry) return; 
     if (entryType !== 'work' && entryType !== 'drive') return;
@@ -259,14 +221,6 @@ const EntryForm: React.FC<Props> = ({
     setStartTime("06:00");
     setEndTime("16:30");
   }, [formDate, allEntries, entryType, isEditing, isLiveEntry, setStartTime, setEndTime]); 
-
-  const holidayData = useMemo(() => {
-      return {
-        ...getHolidayData(viewYear - 1, locale, calculationConfig),
-        ...getHolidayData(viewYear, locale, calculationConfig),
-        ...getHolidayData(viewYear + 1, locale, calculationConfig)
-      };
-  }, [viewYear, locale, calculationConfig]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -428,28 +382,26 @@ const EntryForm: React.FC<Props> = ({
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => changeDate(-1)} className="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"><ChevronLeft size={20} /></button>
               <div className="flex-1">
-                {isNativePlatform ? (
-                  <CustomInput value={formattedFormDate} onClick={openDatePicker} icon={CalIcon} />
-                ) : (
-                  <DatePicker
-                    selected={new Date(formDate)}
-                    onChange={(date: Date | null) => { if (date) setFormDate(toLocalDateString(date)); }}
-                    onMonthChange={(date) => setViewYear(date.getFullYear())}
-                    onYearChange={(date) => setViewYear(date.getFullYear())}
-                    dateFormat="eee, dd.MM.yyyy"
-                    locale={getDatePickerLocale()}
-                    withPortal
-                    calendarContainer={CalendarContainerAnimation}
-                    customInput={<CustomInput icon={CalIcon} />}
-                    dayClassName={(date: Date) => {
-                      const dateStr = toLocalDateString(date);
-                      return holidayData[dateStr] ? "!text-red-600 !font-bold" : "";
-                    }}
-                  />
-                )}
+                <CustomInput value={formattedFormDate} onClick={openDatePicker} icon={CalIcon} />
               </div>
               <button type="button" onClick={() => changeDate(1)} className="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"><ChevronRight size={20} /></button>
             </div>
+            {showDateFallback && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
+                <p className="mb-2 text-xs font-semibold text-amber-800 dark:text-amber-200">
+                  {t("entryForm.datePickerFallbackHint", { defaultValue: "Native Datumsauswahl nicht verfügbar – bitte Datum manuell wählen." })}
+                </p>
+                <input
+                  type="date"
+                  value={formDate}
+                  onChange={(event) => {
+                    setFormDate(event.target.value);
+                    setShowDateFallback(false);
+                  }}
+                  className="w-full rounded-lg border border-zinc-300 bg-white p-3 font-bold text-zinc-900 outline-none focus:border-emerald-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white"
+                />
+              </div>
+            )}
           </div>
 
           {showTimeInputs && (

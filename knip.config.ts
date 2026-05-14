@@ -6,7 +6,6 @@ const config: KnipConfig = {
   ignoreDependencies: [
     // Capacitor plugins are used at runtime via native bridge
     '@capacitor/android',
-    '@capacitor-community/date-picker',
     '@capgo/capacitor-social-login',
     // PostCSS integration handled by Tailwind
     'autoprefixer',

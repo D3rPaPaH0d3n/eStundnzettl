@@ -22,6 +22,7 @@
     "nextMonth": "Next month",
     "selectMonth": "Select month",
     "monthPickerAria": "Select month (currently {{value}})",
+    "monthPickerFallback": "Month picker could not be opened.",
     "actual": "ACTUAL",
     "target": "TARGET",
     "balance": "Balance",
@@ -84,6 +85,8 @@
       "manual": "Manual"
     },
     "date": "Date",
+    "datePickerFallback": "Date picker could not be opened.",
+    "datePickerFallbackHint": "Native date picker unavailable – please choose the date manually.",
     "start": "Start",
     "end": "End",
     "pause": "Break",
@@ -575,7 +578,9 @@
     "settings": "Loading settings...",
     "entryForm": "Loading entry form...",
     "onboarding": "Loading setup wizard...",
-    "pdfModule": "Loading PDF module..."
+    "pdfModule": "Loading PDF module...",
+    "preparing": "Preparing view...",
+    "preparingPdf": "Preparing preview..."
   },
   "backup": {
     "integrityMismatch": "Checksum mismatch — backup may have been tampered with",

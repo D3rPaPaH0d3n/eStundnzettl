@@ -8,7 +8,6 @@
  */
 
 import { Filesystem, Directory } from "@capacitor/filesystem";
-import { Capacitor } from "@capacitor/core";
 import { uploadBinaryToPath } from "./nextcloudClient";
 import { uploadPdfArchiveFile } from "./googleDrivePdfArchive";
 import { getNextcloudAppPassword } from "./nextcloudSecret";
@@ -36,23 +35,8 @@ const log = logger.scope("PdfArchive");
  * tatsaechlich verwendet wurde, damit die UI dem Nutzer die richtige Stelle
  * anzeigen kann.
  *
- * Web-Fallback: Download via Blob-URL.
  */
-export async function writeLocalArchive(filename: string, base64: string, blob?: Blob | null): Promise<ArchiveResult> {
-  if (!Capacitor.isNativePlatform()) {
-    // Web: schlichter Download als Fallback
-    if (!blob) return { ok: false, error: "Kein Blob fuer Web-Download" };
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    return { ok: true, target: "local-web" };
-  }
-
+export async function writeLocalArchive(filename: string, base64: string): Promise<ArchiveResult> {
   // Stufe 1: Documents/eStundnzettl/Archiv/ (idealer Pfad, im Dateimanager
   // unter "Dokumente" sichtbar)
   try {

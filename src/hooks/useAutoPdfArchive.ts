@@ -148,7 +148,7 @@ async function runForMonth({ entries, userData, workCodes, year, month, targets,
 
   const results = [];
   if (targets.local) {
-    results.push(await writeLocalArchive(filename, base64, blob));
+    results.push(await writeLocalArchive(filename, base64));
   }
   if (targets.nextcloud) {
     results.push(await uploadNextcloudArchive(filename, base64));

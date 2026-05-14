@@ -68,20 +68,6 @@ beforeEach(() => {
 });
 
 describe("writeLocalArchive", () => {
-  it("triggers blob download on web platform", async () => {
-    // jsdom has document, so we can test the web path
-    const blob = new Blob(["test"], { type: "application/pdf" });
-    const result = await writeLocalArchive("test.pdf", "base64data", blob);
-    expect(result.ok).toBe(true);
-    expect(result.target).toBe("local-web");
-  });
-
-  it("returns error on web when no blob is provided", async () => {
-    const result = await writeLocalArchive("test.pdf", "base64data");
-    expect(result.ok).toBe(false);
-    expect(result.error).toContain("Blob");
-  });
-
   it("writes to Documents/eStundnzettl/Archiv on native (stage 1)", async () => {
     mockIsNative.mockReturnValue(true);
     vi.mocked(Filesystem.writeFile).mockResolvedValueOnce({ uri: "file://ok" });

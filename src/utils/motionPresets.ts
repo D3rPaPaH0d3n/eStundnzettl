@@ -22,8 +22,8 @@
 // ─── Easing & Duration Tokens ─────────────────────────────
 
 export const EASING = {
-  /** Standard-Page-Transition (leicht federnd via "anticipate"). */
-  page: "anticipate" as const,
+  /** Ruhige App-Page-Transition ohne spielerisches Federn. */
+  page: "easeOut" as const,
   /** Standard-In-Out für Modals/Drawer. */
   modal: "easeInOut" as const,
   /** Listen-Einträge / Subtile Dekoration. */
@@ -31,19 +31,19 @@ export const EASING = {
 };
 
 export const DURATION = {
-  quick: 0.2,
-  base: 0.3,
+  quick: 0.18,
+  base: 0.24,
   slow: 0.5,
   progress: 0.8,
 };
 
 // ─── Page Transitions ─────────────────────────────────────
 
-/** Horizontale Page-Transition (Dashboard ↔ Formular ↔ Settings). */
+/** Dezente Page-Transition (Dashboard ↔ Formular ↔ Settings). */
 export const pageVariants = {
-  initial: { opacity: 0, x: 20 },
-  in:      { opacity: 1, x: 0 },
-  out:     { opacity: 0, x: -20 },
+  initial: { opacity: 0, y: 8 },
+  in:      { opacity: 1, y: 0 },
+  out:     { opacity: 0, y: -6 },
 };
 
 export const pageTransition = {
@@ -52,17 +52,17 @@ export const pageTransition = {
   duration: DURATION.base,
 };
 
-/** Full-Screen-Report als Bottom-Sheet-Style. */
+/** Full-Screen-Report: ruhig einblenden statt sichtbar aufzubauen. */
 export const reportVariants = {
-  initial: { y: "100%", opacity: 0 },
-  in:      { y: 0,      opacity: 1 },
-  out:     { y: "100%", opacity: 0 },
+  initial: { opacity: 0, y: 16 },
+  in:      { opacity: 1, y: 0 },
+  out:     { opacity: 0, y: 12 },
 };
 
 export const reportTransition = {
-  type: "spring" as const,
-  damping: 25,
-  stiffness: 200,
+  type: "tween" as const,
+  ease: EASING.page,
+  duration: DURATION.base,
 };
 
 // ─── Fade (Sub-Views innerhalb einer Page) ────────────────

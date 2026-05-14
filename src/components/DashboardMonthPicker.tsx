@@ -1,14 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import DatePicker, { registerLocale } from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { de, enUS } from "date-fns/locale";
-import { Capacitor } from "@capacitor/core";
+import toast from "react-hot-toast";
 import { Material3DatePicker } from "../plugins/Material3DatePickerPlugin";
-import { getDatePickerLocale } from "../utils/formatLocale";
-
-registerLocale("de", de);
-registerLocale("en", enUS);
 
 interface Props {
   selectedDate: Date;
@@ -18,24 +11,13 @@ interface Props {
 
 export default function DashboardMonthPicker({ selectedDate, onSelectMonth, onClose }: Props) {
   const { t } = useTranslation();
-  const isNativePlatform = Capacitor.isNativePlatform();
+  const initialValue = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}`;
+  const [fallbackOpen, setFallbackOpen] = useState(false);
+  const [fallbackValue, setFallbackValue] = useState(initialValue);
 
   useEffect(() => {
-    if (isNativePlatform) return;
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isNativePlatform, onClose]);
-
-  useEffect(() => {
-    if (!isNativePlatform) return;
-
     let cancelled = false;
-    const value = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-01`;
+    const value = `${initialValue}-01`;
 
     Material3DatePicker.pickMonth({
       value,
@@ -44,51 +26,56 @@ export default function DashboardMonthPicker({ selectedDate, onSelectMonth, onCl
       dismissText: "Abbrechen",
     })
       .then((result) => {
-        if (cancelled || result.cancelled || !result.value) return;
-        const next = new Date(`${result.value}T00:00:00`);
-        next.setDate(1);
-        onSelectMonth(next);
+        if (cancelled) return;
+        if (!result.cancelled && result.value) {
+          const next = new Date(`${result.value}T00:00:00`);
+          next.setDate(1);
+          onSelectMonth(next);
+        }
+        onClose();
       })
-      .finally(() => {
-        if (!cancelled) onClose();
+      .catch(() => {
+        if (cancelled) return;
+        setFallbackOpen(true);
+        toast.error(t("dashboard.monthPickerFallback", { defaultValue: "Monatsauswahl konnte nicht geöffnet werden." }));
       });
 
     return () => {
       cancelled = true;
     };
-  }, [isNativePlatform, onClose, onSelectMonth, selectedDate, t]);
+  }, [initialValue, onClose, onSelectMonth, selectedDate, t]);
 
-  if (isNativePlatform) return null;
+  const applyFallback = () => {
+    if (!/^\d{4}-\d{2}$/.test(fallbackValue)) return;
+    const next = new Date(`${fallbackValue}-01T00:00:00`);
+    next.setDate(1);
+    onSelectMonth(next);
+    onClose();
+  };
+
+  if (!fallbackOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 bg-black/45" onClick={onClose}>
-      <div
-        className="rounded-2xl bg-white dark:bg-zinc-900 p-3 shadow-2xl border border-zinc-200 dark:border-zinc-700"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <DatePicker
-          selected={selectedDate}
-          onChange={(date: Date | null) => {
-            if (!date) return;
-            const next = new Date(date);
-            next.setDate(1);
-            onSelectMonth(next);
-            onClose();
-          }}
-          dateFormat="MMMM yyyy"
-          showMonthYearPicker
-          locale={getDatePickerLocale()}
-          inline
-          ariaLabelledBy="dashboard-month-picker-title"
-        />
-        <button
-          id="dashboard-month-picker-title"
-          type="button"
-          className="sr-only"
-          onClick={onClose}
-        >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl dark:bg-zinc-800">
+        <label className="mb-2 block text-sm font-bold text-zinc-700 dark:text-zinc-200">
           {t("dashboard.monthPickerAria", { value: selectedDate.toLocaleDateString() })}
-        </button>
+        </label>
+        <input
+          type="month"
+          value={fallbackValue}
+          onChange={(event) => setFallbackValue(event.target.value)}
+          className="w-full rounded-lg border border-zinc-300 bg-white p-3 font-bold text-zinc-900 outline-none focus:border-emerald-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white"
+          autoFocus
+        />
+        <div className="mt-4 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-bold text-zinc-600 dark:text-zinc-300">
+            {t("common.cancel")}
+          </button>
+          <button type="button" onClick={applyFallback} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white">
+            {t("common.apply")}
+          </button>
+        </div>
       </div>
     </div>
   );

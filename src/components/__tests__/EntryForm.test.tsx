@@ -56,19 +56,6 @@ vi.mock("framer-motion", () => {
   };
 });
 
-// react-datepicker Stub
-vi.mock("react-datepicker", () => {
-  const DatePicker = ({ customInput }: { customInput?: React.ReactElement }) => {
-    return customInput ?? <div data-testid="datepicker-stub" />;
-  };
-  return {
-    __esModule: true,
-    default: DatePicker,
-    registerLocale: vi.fn(),
-    CalendarContainer: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  };
-});
-
 // TimePickerDrawer + SelectionDrawer als Passthrough-Dummies,
 // damit wir sie bei Bedarf anhand ihrer Buttons testen können.
 vi.mock("../TimePickerDrawer", () => ({
@@ -81,6 +68,12 @@ vi.mock("../SelectionDrawer", () => ({
   __esModule: true,
   default: ({ isOpen, title }: { isOpen: boolean; title: string }) =>
     isOpen ? <div data-testid="selection-drawer">{title}</div> : null,
+}));
+
+vi.mock("../../plugins/Material3DatePickerPlugin", () => ({
+  Material3DatePicker: {
+    pickDate: vi.fn(),
+  },
 }));
 
 // useWorkCodes: minimal-Mock mit einem Code
@@ -99,6 +92,7 @@ vi.mock("../../hooks/useWorkCodes", () => ({
 
 // Importe NACH den Mocks
 import EntryForm from "../EntryForm";
+import { Material3DatePicker } from "../../plugins/Material3DatePickerPlugin";
 import type { Entry, UserData } from "../../types";
 
 // ─── Test-Helpers ───────────────────────────────────────────
@@ -317,5 +311,17 @@ describe("EntryForm", () => {
     expect(startButton).toBeTruthy();
     if (startButton) fireEvent.click(startButton);
     expect(queryByTestId("time-picker-drawer")).not.toBeNull();
+  });
+
+  it("zeigt einen manuellen Datums-Fallback, wenn der native Picker fehlschlägt", async () => {
+    vi.mocked(Material3DatePicker.pickDate).mockRejectedValueOnce(new Error("native picker unavailable"));
+    const { getByText, findByText, container } = renderForm();
+
+    const dateButton = getByText(/07\.04\.2026/).closest("button");
+    expect(dateButton).toBeTruthy();
+    if (dateButton) fireEvent.click(dateButton);
+
+    expect(await findByText("Native Datumsauswahl nicht verfügbar – bitte Datum manuell wählen.")).toBeTruthy();
+    expect(container.querySelector('input[type="date"]')).toBeTruthy();
   });
 });

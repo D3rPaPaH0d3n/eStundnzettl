@@ -43,3 +43,23 @@ Checks run:
 
 Manual Android smoke tests:
 - Not run in this environment.
+
+## Phase 2 — unused `@capacitor-community/date-picker` removal
+
+Status: completed; local commit pending at time of writing.
+
+Changes:
+- Removed `@capacitor-community/date-picker` from `package.json` and `package-lock.json` via `npm uninstall`.
+- Removed the matching Knip ignore entry from `knip.config.ts`.
+- Ran `npx cap sync android`; Capacitor plugin list dropped from 10 to 9 plugins and no longer includes the community date picker.
+
+Checks run:
+- Dependency grep for `@capacitor-community/date-picker` in package/config/source targets ✅ no matches
+- `npx cap sync android` ✅
+- `npm run typecheck` ✅
+- `npm test` ✅ 65 files / 783 tests passed
+- `npm run build` ✅
+- `cd android && ./gradlew assembleDebug` ⚠️ same environment blocker: Java/JAVA_HOME unavailable
+
+Manual Android picker tests:
+- Not run in this environment.

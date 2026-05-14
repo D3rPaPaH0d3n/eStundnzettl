@@ -38,7 +38,6 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@capacitor-community/date-picker": "^7.1.0",
     "@capacitor-community/sqlite": "^8.1.0",
     "@capacitor/android": "^8.3.0",
     "@capacitor/app": "^8.1.0",

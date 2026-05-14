@@ -14,6 +14,7 @@ import { getDatePickerLocale } from "../utils/formatLocale";
 import TimePickerDrawer from "./TimePickerDrawer";
 import SelectionDrawer from "./SelectionDrawer";
 import { Capacitor } from "@capacitor/core";
+import { Material3DatePicker } from "../plugins/Material3DatePickerPlugin";
 import { Material3TimePicker } from "../plugins/Material3TimePickerPlugin";
 
 import type { Entry, EntryType, UserData, WorkCode } from "../types";
@@ -135,9 +136,41 @@ const EntryForm: React.FC<Props> = ({
     entryType === "work" || entryType === "drive" || (isSpecialType && effectiveSpecialManualMode);
   
   const [activeTimeField, setActiveTimeField] = useState<string | null>(null);
+  const isNativePlatform = Capacitor.isNativePlatform();
+
+  const formattedFormDate = useMemo(() => {
+    const date = new Date(`${formDate}T00:00:00`);
+    const formatterLocale = getDatePickerLocale() === "de" ? "de-DE" : "en-US";
+
+    return new Intl.DateTimeFormat(formatterLocale, {
+      weekday: "short",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
+  }, [formDate]);
+
+  const openDatePicker = useCallback(async () => {
+    if (!isNativePlatform) return;
+
+    try {
+      const result = await Material3DatePicker.pickDate({
+        value: formDate,
+        title: t("entryForm.date"),
+        confirmText: "OK",
+        dismissText: "Abbrechen",
+      });
+
+      if (!result.cancelled && result.value) {
+        setFormDate(result.value);
+      }
+    } catch {
+      // Keep the current date when the native picker is unavailable.
+    }
+  }, [formDate, isNativePlatform, setFormDate, t]);
 
   const openTimePicker = useCallback(async (field: string) => {
-    if (!Capacitor.isNativePlatform()) {
+    if (!isNativePlatform) {
       setActiveTimeField(field);
       return;
     }
@@ -162,7 +195,7 @@ const EntryForm: React.FC<Props> = ({
       // Fallback for unsupported native/dev environments.
       setActiveTimeField(field);
     }
-  }, [endTime, setEndTime, setStartTime, startTime, t]);
+  }, [endTime, isNativePlatform, setEndTime, setStartTime, startTime, t]);
   const [isWorkCodeOpen, setIsWorkCodeOpen] = useState(false);
   const [showPausePicker, setShowPausePicker] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -366,21 +399,25 @@ const EntryForm: React.FC<Props> = ({
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => changeDate(-1)} className="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"><ChevronLeft size={20} /></button>
               <div className="flex-1">
-                <DatePicker
-                  selected={new Date(formDate)}
-                  onChange={(date: Date | null) => { if (date) setFormDate(toLocalDateString(date)); }}
-                  onMonthChange={(date) => setViewYear(date.getFullYear())}
-                  onYearChange={(date) => setViewYear(date.getFullYear())}
-                  dateFormat="eee, dd.MM.yyyy" 
-                  locale={getDatePickerLocale()}
-                  withPortal
-                  calendarContainer={CalendarContainerAnimation}
-                  customInput={<CustomInput icon={CalIcon} />}
-                  dayClassName={(date: Date) => {
-                    const dateStr = toLocalDateString(date);
-                    return holidayData[dateStr] ? "!text-red-600 !font-bold" : "";
-                  }}
-                />
+                {isNativePlatform ? (
+                  <CustomInput value={formattedFormDate} onClick={openDatePicker} icon={CalIcon} />
+                ) : (
+                  <DatePicker
+                    selected={new Date(formDate)}
+                    onChange={(date: Date | null) => { if (date) setFormDate(toLocalDateString(date)); }}
+                    onMonthChange={(date) => setViewYear(date.getFullYear())}
+                    onYearChange={(date) => setViewYear(date.getFullYear())}
+                    dateFormat="eee, dd.MM.yyyy"
+                    locale={getDatePickerLocale()}
+                    withPortal
+                    calendarContainer={CalendarContainerAnimation}
+                    customInput={<CustomInput icon={CalIcon} />}
+                    dayClassName={(date: Date) => {
+                      const dateStr = toLocalDateString(date);
+                      return holidayData[dateStr] ? "!text-red-600 !font-bold" : "";
+                    }}
+                  />
+                )}
               </div>
               <button type="button" onClick={() => changeDate(1)} className="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"><ChevronRight size={20} /></button>
             </div>

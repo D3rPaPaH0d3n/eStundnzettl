@@ -21,6 +21,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(PlayServicesAvailabilityPlugin.class);
         registerPlugin(InstallSourcePlugin.class);
         registerPlugin(Material3TimePickerPlugin.class);
+        registerPlugin(Material3DatePickerPlugin.class);
 
         super.onCreate(savedInstanceState);
         // Enable edge-to-edge display for Android 15+ compatibility

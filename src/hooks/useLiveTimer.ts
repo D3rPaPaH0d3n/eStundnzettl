@@ -2,21 +2,9 @@ import { useState, useEffect } from "react";
 import type { TimerState, AutoCheckoutData } from '../types';
 import { STORAGE_KEYS } from "./constants";
 
-// Hilfsfunktion: Runden auf 15 Minuten
-const roundToNearest15Minutes = (dateStrOrObj: string | Date | null): Date | null => {
+const toMinutePrecision = (dateStrOrObj: string | Date | null): Date | null => {
   if (!dateStrOrObj) return null;
   const date = new Date(dateStrOrObj);
-  const minutes = date.getMinutes();
-  const remainder = minutes % 15;
-  
-  let roundedMinutes = minutes;
-  if (remainder < 8) {
-    roundedMinutes = minutes - remainder;
-  } else {
-    roundedMinutes = minutes + (15 - remainder);
-  }
-
-  date.setMinutes(roundedMinutes);
   date.setSeconds(0);
   date.setMilliseconds(0);
   return date; 
@@ -28,7 +16,7 @@ const roundToNearest15Minutes = (dateStrOrObj: string | Date | null): Date | nul
  * Verwaltet den Zustand einer laufenden Arbeitszeitmessung (Start/Pause/Stopp)
  * und persistiert ihn in localStorage unter `STORAGE_KEYS.LIVE_TIMER`, damit
  * ein App-Restart den Timer nicht vergisst. Start- und End-Zeit werden beim
- * Abschluss auf die nächste 15-Minuten-Grenze gerundet.
+ * Abschluss minutengenau gespeichert.
  *
  * ### Auto-Checkout
  * Wird die App über mehrere Tage vergessen (Timer läuft noch), erzeugt
@@ -160,8 +148,8 @@ export const useLiveTimer = () => {
     }
     const pauseMinutes = Math.round(finalAccumulatedPauseMs / 1000 / 60);
 
-    const roundedStart = roundToNearest15Minutes(timerState.startTime);
-    const roundedEnd = roundToNearest15Minutes(now);
+    const roundedStart = toMinutePrecision(timerState.startTime);
+    const roundedEnd = toMinutePrecision(now);
 
     const result = {
       start: roundedStart, 

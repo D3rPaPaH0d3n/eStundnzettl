@@ -218,7 +218,6 @@
       "nextcloud": "<b>Nextcloud-Backup</b> — für deine eigene Cloud",
       "jsonIO": "<b>JSON Import/Export</b> — Daten manuell sichern",
       "pdfArchive": "<b>PDF-Archiv</b> — automatische monatliche PDF-Sicherung",
-      "minuteMode": "<b>Minuten-Modus</b> — 1-Minuten statt 15-Minuten-Schritte",
       "codes": "<b>Tätigkeitscodes</b> — Branchen-Presets oder eigene Codes, auch ohne Hausmasta-Modus",
       "recordOnly": "<b>Nur Aufzeichnung</b> — ohne Soll/Ist-Berechnung"
     },
@@ -337,10 +336,7 @@
       "customInfo": "Stell deine Stunden pro Tag direkt ein. Unten findest du optionale Presets, die du bei Bedarf übernehmen kannst — später in den Einstellungen ebenfalls jederzeit änderbar.",
       "dailyHoursTitle": "Tagesstunden (benutzerdefiniert)",
       "weeklyHours": "Wochenstunden:",
-      "presetsTitle": "Presets (optional übernehmen)",
-      "minuteInputTitle": "Minutengenau erfassen",
-      "minuteInputHint": "Sonst in praktischen 15-Min-Schritten",
-      "minuteInputAria": "Minütige Zeiteingabe umschalten"
+      "presetsTitle": "Presets (optional übernehmen)"
     },
     "workCodes": {
       "title": "Tätigkeiten",
@@ -946,11 +942,6 @@
         "toggleAria": "Erfassungsmodus umschalten",
         "toastOn": "Nur Aufzeichnung aktiviert",
         "toastOff": "Soll/Ist-Berechnung aktiviert"
-      },
-      "minuteInput": {
-        "title": "Minütige Zeiteingabe",
-        "on": "1-Minuten-Modus",
-        "off": "15-Minuten-Schritte"
       },
       "workCodes": {
         "title": "Tätigkeitscodes",

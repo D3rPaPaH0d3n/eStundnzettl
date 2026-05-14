@@ -9,7 +9,7 @@ The original core use case is simple time recording. The app now also supports t
 
 ## Non-negotiables
 - Existing users must not lose entries, settings, work codes, attachments, backups, or calculation rules.
-- Existing `simpleMode`, `expertMode`, `minuteInput`, `workModelId`, `workDays`, `locale`, and `calculationConfig` values remain valid.
+- Existing `simpleMode`, `expertMode`, `workModelId`, `workDays`, `locale`, and `calculationConfig` values remain valid.
 - Do not silently reset custom work schedules.
 - Do not remove features; move advanced features behind clearer sections/details.
 - Old backups/imports must remain compatible.
@@ -22,7 +22,7 @@ The original core use case is simple time recording. The app now also supports t
    - Always-visible choice: simple recording vs calculation/evaluation.
    - Uses existing `userData.simpleMode` initially.
 3. My work schedule
-   - Weekly model, day hours, templates, lock/unlock, minute input.
+   - Weekly model, day hours, templates, lock/unlock.
    - Hidden or summarized when simple recording is active.
 4. Activities / work codes
    - Separate card for work code management.

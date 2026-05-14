@@ -87,7 +87,7 @@ interface Props {
   allEntries?: Entry[];
   isEditing?: boolean;
   isLiveEntry?: boolean;
-  userData: UserData & { minuteInput?: boolean };
+  userData: UserData;
   specialManualMode?: boolean;
   setSpecialManualMode?: (mode: boolean) => void;
   locale?: Locale;
@@ -327,7 +327,6 @@ const EntryForm: React.FC<Props> = ({
         title={activeTimeField === 'start' ? t("entryForm.startTime") : t("entryForm.endTime")}
         value={activeTimeField === 'start' ? startTime : endTime}
         onChange={(val) => activeTimeField === 'start' ? setStartTime(val) : setEndTime(val)}
-        minuteInterval={userData?.minuteInput ? 1 : 15}
       />
 
       <SelectionDrawer
@@ -500,7 +499,6 @@ const EntryForm: React.FC<Props> = ({
                       const [h, m] = val.split(":").map(Number);
                       setPauseDuration(h * 60 + m);
                     }}
-                    minuteInterval={userData?.minuteInput ? 1 : 15}
                   />
                 </div>
               )}

@@ -334,7 +334,7 @@ const TRANSLATED_EN = [
         title: "Settings & UI improvements",
         items: [
           "New \"Calculation\" settings section — visible to all users, collapsible. Lets you change the overtime rule, sick mode, holidays, half-days, auto-breaks and vacation allowance later.",
-          "Break input: the 30-min button now opens a real time picker (same look as start/end) with 15-minute steps or minute-accurate in power-user mode.",
+          "Break input: the 30-min button now opens a real time picker (same look as start/end) with minute-accurate selection.",
           "Holidays and half-days are now shown in the German DD.MM. format in the UI (internally still MM-DD).",
           "\"Standard hours\" removed from the PDF — it was redundant with actual minus extra/overtime.",
           "Changing the locale in settings now asks via dialog whether the calculation rules should be reset."

@@ -10,10 +10,9 @@ interface Props {
   initialMinutes?: number | null;
   onConfirm: (totalMinutes: number) => void;
   title?: string;
-  minuteInterval?: number;
 }
 
-const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, title, minuteInterval = 15 }: Props) => {
+const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, title }: Props) => {
   const { t } = useTranslation();
   const hoursRef = useRef<HTMLDivElement>(null);
   const decimalsRef = useRef<HTMLDivElement>(null);
@@ -27,22 +26,12 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
     const h = Math.floor(mins / 60);
     const m = mins % 60;
 
-    let d = 0;
-    if (minuteInterval === 1) {
-      // 1-Minuten-Schritte: Minuten als Dezimalbruch (z.B. 30 Minuten = 0.5)
-      d = m / 60;
-      // Auf nächsten Schritt runden
-      const step = 1 / 60; // 1 Minute = 0.016666...
-      d = Math.round(d / step) * step;
-    } else {
-      // 15-Minuten-Schritte (default)
-      if (m >= 45) d = 0.75;
-      else if (m >= 30) d = 0.5;
-      else if (m >= 15) d = 0.25;
-    }
+    // 1-Minuten-Schritte: Minuten als Dezimalbruch (z.B. 30 Minuten = 0.5)
+    const step = 1 / 60; // 1 Minute = 0.016666...
+    const d = Math.round((m / 60) / step) * step;
 
     return { h, d };
-  }, [minuteInterval]);
+  }, []);
 
   const [selectedHour, setSelectedHour] = useState(8);
   const [selectedDecimal, setSelectedDecimal] = useState(0);
@@ -70,18 +59,8 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
 
   const hours = Array.from({ length: 25 }, (_, i) => i);
   
-  // Dezimalwerte basierend auf minuteInterval
-  const getDecimals = (): number[] => {
-    if (minuteInterval === 1) {
-      // 1-Minuten-Schritte: 0 bis 59 Minuten als Dezimalbruch
-      return Array.from({ length: 60 }, (_, i) => i / 60);
-    } else {
-      // 15-Minuten-Schritte (default)
-      return [0, 0.25, 0.5, 0.75];
-    }
-  };
-  
-  const decimals = getDecimals(); 
+  // 1-Minuten-Schritte: 0 bis 59 Minuten als Dezimalbruch
+  const decimals = Array.from({ length: 60 }, (_, i) => i / 60);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>, type: string) => {
     const scrollTop = (e.target as HTMLDivElement).scrollTop;
@@ -109,18 +88,8 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   };
 
   const formatDecimal = (d: number): string => {
-    if (minuteInterval === 1) {
-      // 1-Minuten-Schritte: Minuten als zweistellige Zahl
-      const minutes = Math.round(d * 60);
-      return `, ${minutes.toString().padStart(2, '0')}`;
-    } else {
-      // 15-Minuten-Schritte
-      if (d === 0) return ", 00";
-      if (d === 0.25) return ", 25";
-      if (d === 0.5) return ", 50";
-      if (d === 0.75) return ", 75";
-      return String(d).replace("0.", ", ");
-    }
+    const minutes = Math.round(d * 60);
+    return `, ${minutes.toString().padStart(2, '0')}`;
   };
 
   return (

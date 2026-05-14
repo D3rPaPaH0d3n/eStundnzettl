@@ -19,7 +19,6 @@ import type { WorkModel } from "../../../types";
  *   ein Preset als Ausgangswert einspielen kann. Der "Benutzerdefiniert"-
  *   Eintrag aus WORK_MODELS wird hier ausgeblendet, weil die Slider
  *   bereits die aktive Custom-Ansicht sind.
- * - Zusätzlich der "Minütige Zeiteingabe"-Toggle.
  */
 
 interface OnboardingFormData {
@@ -30,7 +29,6 @@ interface OnboardingFormData {
   workDays: number[];
   autoBackup: boolean;
   localBackupEnabled: boolean;
-  minuteInput: boolean;
   simpleMode?: boolean;
 }
 
@@ -41,7 +39,6 @@ interface Props {
   isSelected: (days: number[] | undefined) => boolean;
   totalWeeklyMinutes: number;
   minToHours: (m: number) => string;
-  onMinuteInputToggle: () => void;
   onSimpleModeToggle: () => void;
 }
 
@@ -52,7 +49,6 @@ const WorkScheduleStep: React.FC<Props> = ({
   isSelected,
   totalWeeklyMinutes,
   minToHours,
-  onMinuteInputToggle,
   onSimpleModeToggle,
 }) => {
   const { t } = useTranslation();
@@ -160,7 +156,7 @@ const WorkScheduleStep: React.FC<Props> = ({
                       type="range"
                       min="0"
                       max="720"
-                      step="15"
+                      step="1"
                       value={formData.workDays[idx]}
                       onChange={(e) => onCustomDayChange(idx, e.target.value)}
                       className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
@@ -220,32 +216,6 @@ const WorkScheduleStep: React.FC<Props> = ({
         </>
       )}
 
-      {/* Minütige Zeiteingabe Toggle */}
-      <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">
-        <div className="flex items-center gap-3">
-          <div className="text-2xl">⏱️</div>
-          <div>
-            <div className="font-bold text-sm text-zinc-800 dark:text-white">
-              {t("onboarding.workSchedule.minuteInputTitle")}
-            </div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">{t("onboarding.workSchedule.minuteInputHint")}</div>
-          </div>
-        </div>
-        <button
-          type="button"
-          aria-label={t("onboarding.workSchedule.minuteInputAria")}
-          onClick={onMinuteInputToggle}
-          className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
-            formData.minuteInput ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-600"
-          }`}
-        >
-          <div
-            className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-              formData.minuteInput ? "translate-x-6" : "translate-x-1"
-            }`}
-          />
-        </button>
-      </div>
     </motion.div>
   );
 };

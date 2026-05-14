@@ -162,7 +162,6 @@ For pros who want more! Enable **power-user mode** in settings to unlock extra f
 - 📦 **JSON import / export** — back up and move data manually
 - 📄 **Automatic PDF archive** — monthly PDF backups to every target
 - 🎛️ **PDF layout toggles** — choose which fields appear in the exported PDF
-- ⏱️ **Minute mode** — 1-minute instead of 15-minute steps
 - 🏷️ **Activity codes** — industry presets or your own codes
 - 🌍 **Locale picker** — state/canton for correct holidays & calculation
 - ⏸️ **Auto-break rules** — configurable break logic per work type and locale

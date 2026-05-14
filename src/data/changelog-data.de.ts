@@ -318,7 +318,7 @@ export const CHANGELOG_DATA_DE = [
         title: "Settings & UI-Verbesserungen",
         items: [
           "Neuer Settings-Bereich \"Berechnung\" — sichtbar für alle User, einklappbar. Dort lassen sich Überstunden-Regel, Krank-Modus, Feiertage, Halbtage, Auto-Pausen und Urlaubsanspruch nachträglich ändern.",
-          "Pausen-Eingabe: Der 30-Min-Button öffnet jetzt einen echten Time-Picker (gleiche Optik wie Start/Ende) mit 15-Minuten-Schritten oder minutengenau im Hausmasta-Modus.",
+          "Pausen-Eingabe: Der 30-Min-Button öffnet jetzt einen echten Time-Picker (gleiche Optik wie Start/Ende) mit minutengenauer Auswahl.",
           "Feiertage und Halbtage werden in der UI jetzt im deutschen Format DD.MM. angezeigt (intern bleibt MM-DD).",
           "\"Normalstunden\" aus dem PDF entfernt — war redundant zu IST minus MA/ÜS.",
           "Locale-Wechsel in den Settings fragt jetzt per Dialog, ob die Berechnungsregeln zurückgesetzt werden sollen."

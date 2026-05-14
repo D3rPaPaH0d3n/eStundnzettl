@@ -17,7 +17,7 @@ import { logger } from "../../utils/logger";
 import type { Entry, UserData, WorkCode, WorkModel } from "../../types";
 
 interface Props {
-  userData: UserData & { workModelId?: string; minuteInput?: boolean };
+  userData: UserData & { workModelId?: string };
   setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
   isLocked: boolean;
   onToggleLock: () => void;
@@ -292,41 +292,6 @@ const DataSettings: React.FC<Props> = ({
         {expertMode && !safeUserData.simpleMode && (
           <div className="border-t border-zinc-100 dark:border-zinc-700" />
         )}
-
-        {/* Minütige Zeiteingabe — nur im Hausmasta-Modus */}
-        {expertMode && (
-          <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-            <div className="flex items-center gap-3">
-              <div className="text-xl">⏱️</div>
-              <div>
-                <div className="font-medium text-zinc-700 dark:text-white">
-                  {t("settings.data.minuteInput.title")}
-                </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {userData?.minuteInput ? t("settings.data.minuteInput.on") : t("settings.data.minuteInput.off")}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() =>
-                setUserData((p: UserData) => ({ ...p, minuteInput: !p?.minuteInput }))
-              }
-              className={`relative w-12 h-7 rounded-full transition-colors duration-200 shrink-0 ${
-                userData?.minuteInput
-                  ? "bg-emerald-500"
-                  : "bg-zinc-300 dark:bg-zinc-600"
-              }`}
-            >
-              <div
-                className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                  userData?.minuteInput ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </div>
-        )}
-
-
 
       </CollapsibleCard>
 

@@ -162,7 +162,6 @@ Für Profis, die mehr wollen! Aktiviere den **Hausmasta-Modus** in den Einstellu
 - 📦 **JSON Import/Export** — Daten manuell sichern und übertragen
 - 📄 **Automatisches PDF-Archiv** — monatliche PDF-Sicherung auf alle Ziele
 - 🎛️ **PDF-Layout-Toggles** — wähle, welche Felder im PDF erscheinen sollen
-- ⏱️ **Minuten-Modus** — 1-Minuten- statt 15-Minuten-Schritte
 - 🏷️ **Tätigkeitscodes** — Branchen-Presets oder eigene Codes verwalten
 - 🌍 **Locale-Picker** — Bundesland/Kanton für korrekte Feiertage & Berechnung
 - ⏸️ **Auto-Pausen-Regeln** — konfigurierbare Pausenlogik pro Arbeitstyp und Locale

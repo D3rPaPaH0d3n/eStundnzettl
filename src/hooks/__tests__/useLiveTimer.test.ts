@@ -89,7 +89,7 @@ describe("useLiveTimer", () => {
     expect(result.current.timerState.isPaused).toBe(false);
   });
 
-  it("stopTimer returns rounded start/end/pause and resets state", () => {
+  it("stopTimer returns minute-accurate start/end/pause and resets state", () => {
     const { result } = renderHook(() => useLiveTimer());
 
     act(() => result.current.startTimer());

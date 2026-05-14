@@ -218,7 +218,6 @@
       "nextcloud": "<b>Nextcloud backup</b> — for your own cloud",
       "jsonIO": "<b>JSON import/export</b> — back up data manually",
       "pdfArchive": "<b>PDF archive</b> — automatic monthly PDF backup",
-      "minuteMode": "<b>Minute mode</b> — 1-minute instead of 15-minute steps",
       "codes": "<b>Activity codes</b> — industry presets or your own codes, even without Power-user mode",
       "recordOnly": "<b>Record only</b> — without target/actual calculation"
     },
@@ -337,10 +336,7 @@
       "customInfo": "Set your hours per day directly. Below you'll find optional presets you can apply if you want — later also changeable at any time in settings.",
       "dailyHoursTitle": "Daily hours (custom)",
       "weeklyHours": "Weekly hours:",
-      "presetsTitle": "Presets (optional)",
-      "minuteInputTitle": "Track to the minute",
-      "minuteInputHint": "Otherwise in practical 15-min steps",
-      "minuteInputAria": "Toggle minute-level time entry"
+      "presetsTitle": "Presets (optional)"
     },
     "workCodes": {
       "title": "Activities",
@@ -946,11 +942,6 @@
         "toggleAria": "Toggle recording mode",
         "toastOn": "Record-only mode enabled",
         "toastOff": "Target/actual calculation enabled"
-      },
-      "minuteInput": {
-        "title": "Minute-level time entry",
-        "on": "1-minute mode",
-        "off": "15-minute steps"
       },
       "workCodes": {
         "title": "Activity codes",

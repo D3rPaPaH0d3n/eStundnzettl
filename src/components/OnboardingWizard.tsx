@@ -55,7 +55,6 @@ export interface WizardFormData {
   workDays: number[];
   autoBackup: boolean;
   localBackupEnabled: boolean;
-  minuteInput: boolean;
   simpleMode?: boolean;
   localeId: LocaleId | null;
   workCodePresetId: WorkCodePresetId;
@@ -94,7 +93,6 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     workDays: WORK_MODELS[0].days,
     autoBackup: false,
     localBackupEnabled: false,
-    minuteInput: false,
     localeId: null,
     workCodePresetId: "allgemein",
     calcConfig: getDefaultCalculationConfig(getLocale(undefined), WORK_MODELS[0].days),
@@ -403,10 +401,6 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     }
   };
 
-  const handleMinuteInputToggle = () => {
-    setFormData(p => ({...p, minuteInput: !p.minuteInput}));
-  };
-
   const handleSimpleModeToggle = () => {
     setFormData(p => ({ ...p, simpleMode: !p.simpleMode }));
   };
@@ -421,7 +415,6 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
       photo: formData.photo,
       workDays: formData.workDays,
       simpleMode: formData.simpleMode || false,
-      minuteInput: formData.minuteInput,
       settings: {
         autoBackup: formData.autoBackup,
         theme: 'system'
@@ -744,7 +737,6 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                 isSelected={isSelected}
                 totalWeeklyMinutes={totalWeeklyMinutes}
                 minToHours={minToHours}
-                onMinuteInputToggle={handleMinuteInputToggle}
                 onSimpleModeToggle={handleSimpleModeToggle}
               />
             )}

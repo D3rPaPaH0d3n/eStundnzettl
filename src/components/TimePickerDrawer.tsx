@@ -213,20 +213,16 @@ interface Props {
   value: string | null;
   onChange: (time: string) => void;
   title?: string;
-  minuteInterval?: number;
 }
 
-const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title, minuteInterval = 15 }: Props) => {
+const TimePickerDrawer = ({ isOpen, onClose, value, onChange, title }: Props) => {
   const { t } = useTranslation();
   const resolvedTitle = title || t("drawers.timePicker.title");
   const dragControls = useDragControls();
   const selectedHourRef = useRef<number>(6);
   const selectedMinuteRef = useRef<number>(0);
 
-  const minutes = useMemo(
-    () => (minuteInterval === 1 ? Array.from({ length: 60 }, (_, i) => i) : [0, 15, 30, 45]),
-    [minuteInterval],
-  );
+  const minutes = useMemo(() => Array.from({ length: 60 }, (_, i) => i), []);
   const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
 
   const [selectedHour, setSelectedHour] = useState(6);

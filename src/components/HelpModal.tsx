@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import {
-  X, Rocket, Play, Wand2, Fingerprint, Hourglass, FileText, Clock,
+  X, Rocket, Play, Wand2, Fingerprint, Hourglass, FileText,
   Briefcase, Tag, Cloud, ShieldCheck, Car, Wrench, Trash2,
   Upload, ServerCog, FolderOpen, Paperclip, Sun, Moon, Monitor,
 } from "lucide-react";
@@ -275,10 +275,6 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
                     <li className="flex items-center gap-2">
                       <FileText size={14} className="text-amber-500 shrink-0" />
                       <span><Trans i18nKey="helpModal.step7.pdfArchive" components={boldSlot} /></span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Clock size={14} className="text-amber-500 shrink-0" />
-                      <span><Trans i18nKey="helpModal.step7.minuteMode" components={boldSlot} /></span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Tag size={14} className="text-amber-500 shrink-0" />

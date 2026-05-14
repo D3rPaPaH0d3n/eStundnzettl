@@ -136,7 +136,7 @@ const AttachmentManager = ({
                   {new Date(entry.date).toLocaleDateString(getIntlLocale(), { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
                 </p>
               </div>
-              <button onClick={handleClose} className="p-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
+              <button type="button" onClick={handleClose} className="p-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
                 <X size={20} className="text-zinc-500" />
               </button>
             </div>
@@ -148,8 +148,9 @@ const AttachmentManager = ({
               <Card>
                 <div className="p-4 space-y-3">
                   <div>
-                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("attachments.fieldDocument")}</label>
+                    <label htmlFor="attachment-file" className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("attachments.fieldDocument")}</label>
                     <input
+                      id="attachment-file"
                       ref={fileInputRef}
                       type="file"
                       accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -164,8 +165,9 @@ const AttachmentManager = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("attachments.fieldLabel")}</label>
+                    <label htmlFor="attachment-label" className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("attachments.fieldLabel")}</label>
                     <input
+                      id="attachment-label"
                       type="text"
                       value={label}
                       onChange={(e) => setLabel(e.target.value)}

@@ -65,21 +65,21 @@ const ImportConflictModal = ({ analysisData, onConfirm, onCancel }: Props) => {
 
         {/* Actions */}
         <div className="p-4 bg-zinc-50 dark:bg-zinc-900/30 flex flex-col gap-3">
-          <button
+          <button type="button"
             onClick={() => onConfirm('ALL')}
             className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all active:scale-95"
           >
             <Check size={18} /> {t("modals.importConflict.importAll")}
           </button>
 
-          <button
+          <button type="button"
             onClick={() => onConfirm('ENTRIES_ONLY')}
             className="w-full py-3 bg-white dark:bg-zinc-700 border-2 border-zinc-200 dark:border-zinc-600 text-zinc-700 dark:text-zinc-200 font-bold rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-600 transition-all active:scale-95"
           >
             {t("modals.importConflict.entriesOnly")}
           </button>
 
-          <button
+          <button type="button"
             onClick={onCancel}
             className="w-full py-2 text-zinc-400 font-medium text-sm hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
           >

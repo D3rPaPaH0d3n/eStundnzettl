@@ -367,7 +367,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
               </div>
             </div>
             {gdriveDisabled ? (
-              <button
+              <button type="button"
                 disabled
                 title={t("settings.backup.unavailable.hint")}
                 className="px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-200 bg-zinc-100 text-zinc-400 cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
@@ -385,7 +385,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
                   />
                   <div className="w-11 h-6 bg-zinc-200 dark:bg-zinc-600 peer-checked:bg-indigo-500 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" />
                 </label>
-                <button
+                <button type="button"
                   onClick={handleGdriveDisconnect}
                   disabled={gdriveBusy}
                   className="px-2 py-1 text-[10px] font-bold rounded border border-red-200 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800 disabled:opacity-50"
@@ -394,7 +394,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
                 </button>
               </div>
             ) : (
-              <button
+              <button type="button"
                 onClick={handleGdriveConnect}
                 disabled={gdriveBusy}
                 className="px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-600 disabled:opacity-50 flex items-center gap-1.5"
@@ -419,7 +419,7 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
                 </div>
               )}
             </div>
-            <button
+            <button type="button"
               onClick={handleRunNow}
               disabled={isRunning}
               className="px-3 py-1.5 text-xs font-bold rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700 disabled:opacity-50 flex items-center gap-1.5"

@@ -179,7 +179,7 @@ const DataSettings: React.FC<Props> = ({
 
             <div className="flex gap-2">
               {isCustomMode && (
-                <button
+                <button type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleLock();
@@ -194,7 +194,7 @@ const DataSettings: React.FC<Props> = ({
                 </button>
               )}
 
-              <button
+              <button type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleShowPresetWarning();
@@ -204,7 +204,7 @@ const DataSettings: React.FC<Props> = ({
                 <List size={14} /> {t("settings.data.workModel.templatesButton")}
               </button>
 
-              <button
+              <button type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleWorkModelExpanded();
@@ -247,7 +247,7 @@ const DataSettings: React.FC<Props> = ({
 
                   return (
                     <div key={dayIndex} className="flex flex-col gap-1">
-                      <label
+                      <div
                         className={`text-[10px] font-bold text-center uppercase ${
                           dayIndex === 0 || dayIndex === 6
                             ? "text-red-400"
@@ -255,9 +255,11 @@ const DataSettings: React.FC<Props> = ({
                         }`}
                       >
                         {label}
-                      </label>
-                      <div
-                        onClick={() => isInteractive && onOpenDayPicker(dayIndex)}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onOpenDayPicker(dayIndex)}
+                        disabled={!isInteractive}
                         className={`w-full text-center p-2 rounded-lg text-xs font-bold border transition-colors relative h-[34px] flex items-center justify-center
                           ${isInteractive
                             ? "bg-white dark:bg-zinc-700 border-zinc-300 dark:border-zinc-600 text-zinc-800 dark:text-white shadow-sm cursor-pointer hover:border-emerald-500"
@@ -270,7 +272,7 @@ const DataSettings: React.FC<Props> = ({
                           : "-"}
 
                         {safeUserData.workDays[dayIndex] > 0 && (
-                          <div
+                          <span
                             className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${
                               isInteractive
                                 ? "bg-emerald-500"
@@ -278,7 +280,7 @@ const DataSettings: React.FC<Props> = ({
                             }`}
                           />
                         )}
-                      </div>
+                      </button>
                     </div>
                   );
                 })}

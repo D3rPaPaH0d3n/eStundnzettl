@@ -17,8 +17,8 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   const hoursRef = useRef<HTMLDivElement>(null);
   const decimalsRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
-  
-  const ITEM_HEIGHT = 64; 
+
+  const ITEM_HEIGHT = 64;
 
   const getInitialValues = useCallback((mins: number | null | undefined): { h: number; d: number } => {
     if (mins === undefined || mins === null) return { h: 8, d: 0 };
@@ -58,14 +58,14 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
   }, [isOpen, initialMinutes, getInitialValues, scrollToValue]);
 
   const hours = Array.from({ length: 25 }, (_, i) => i);
-  
+
   // 1-Minuten-Schritte: 0 bis 59 Minuten als Dezimalbruch
   const decimals = Array.from({ length: 60 }, (_, i) => i / 60);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>, type: string) => {
     const scrollTop = (e.target as HTMLDivElement).scrollTop;
     const index = Math.round(scrollTop / ITEM_HEIGHT);
-    
+
     if (type === 'hour') {
       const val = hours[index];
       if (val !== undefined && val !== selectedHour) {
@@ -96,11 +96,11 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
     <AnimatePresence>
       {isOpen && (
         <>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]" 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]"
             onClick={onClose}
           />
 
@@ -112,7 +112,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
             drag="y"
             dragConstraints={{ top: 0 }}
             dragElastic={0.2}
-            dragListener={false} 
+            dragListener={false}
             dragControls={dragControls}
             onDragEnd={(_, info) => {
               if (info.offset.y > 100) onClose();
@@ -121,7 +121,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
           >
             <div className="absolute inset-0 bg-white dark:bg-zinc-900 rounded-t-3xl shadow-2xl z-0" style={{ bottom: "-100px" }} />
 
-            <div 
+            <div
               className="relative z-10 w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing touch-none"
               onPointerDown={(e) => dragControls.start(e)}
             >
@@ -129,8 +129,8 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
             </div>
 
             <div className="relative z-20 flex justify-between items-center px-5 pb-4 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-t-3xl">
-              <button 
-                onClick={onClose} 
+              <button type="button"
+                onClick={onClose}
                 className="p-3 text-red-500 bg-red-100 dark:bg-red-900/20 dark:text-red-400 rounded-full transition-transform active:scale-95"
               >
                 <X size={24} />
@@ -141,11 +141,11 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
               </span>
 
               {/* CHANGE: text-green-600 -> text-emerald-600 */}
-              <button 
+              <button type="button"
                 onClick={() => {
                   Haptics.impact({ style: ImpactStyle.Medium });
                   handleConfirm();
-                }} 
+                }}
                 className="p-3 text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full font-bold transition-transform active:scale-95"
               >
                 <Check size={24} />
@@ -153,10 +153,10 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
             </div>
 
             <div className="relative z-10 h-[280px] w-full select-none pb-safe overflow-hidden">
-              
+
               <div className="absolute top-1/2 left-4 right-4 h-[64px] -mt-[36px] bg-zinc-100 dark:bg-zinc-800 pointer-events-none z-0 border border-zinc-200 dark:border-zinc-700 rounded-xl" />
 
-              <div 
+              <div
                 className="relative z-10 h-full w-full flex justify-center items-center"
                 style={{
                   maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)',
@@ -164,15 +164,15 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                 }}
               >
                   <div className="flex items-center justify-center">
-                      
+
                       {/* SPALTE 1: STUNDEN */}
-                      <div 
+                      <div
                         ref={hoursRef}
                         onScroll={(e) => handleScroll(e, 'hour')}
                         className="h-[280px] w-[80px] overflow-y-auto snap-y snap-mandatory scrollbar-hide py-[108px]"
                       >
                         {hours.map((h) => (
-                          <div 
+                          <div
                             key={h}
                             data-value={h}
                             onClick={() => {
@@ -180,8 +180,8 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                                 scrollToValue(hoursRef, h);
                             }}
                             className={`h-[64px] flex items-center justify-end pr-2 snap-center cursor-pointer transition-all duration-150 pt-1 ${
-                              h === selectedHour 
-                                ? "font-bold text-4xl text-zinc-800 dark:text-white scale-110" 
+                              h === selectedHour
+                                ? "font-bold text-4xl text-zinc-800 dark:text-white scale-110"
                                 : "text-zinc-300 dark:text-zinc-600 text-2xl scale-90"
                             }`}
                           >
@@ -191,13 +191,13 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                       </div>
 
                       {/* SPALTE 2: DEZIMAL */}
-                      <div 
+                      <div
                         ref={decimalsRef}
                         onScroll={(e) => handleScroll(e, 'decimal')}
                         className="h-[280px] w-[90px] overflow-y-auto snap-y snap-mandatory scrollbar-hide py-[108px]"
                       >
                         {decimals.map((d) => (
-                          <div 
+                          <div
                             key={d}
                             data-value={d}
                             onClick={() => {
@@ -206,8 +206,8 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                             }}
                             /* CHANGE: text-orange-500 -> text-emerald-500 */
                             className={`h-[64px] flex items-center justify-start pl-0 snap-center cursor-pointer transition-all duration-150 pt-1 ${
-                              d === selectedDecimal 
-                                ? "font-bold text-4xl text-emerald-500 scale-110" 
+                              d === selectedDecimal
+                                ? "font-bold text-4xl text-emerald-500 scale-110"
                                 : "text-zinc-300 dark:text-zinc-600 text-2xl scale-90"
                             }`}
                           >

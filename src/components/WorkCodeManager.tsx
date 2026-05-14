@@ -138,7 +138,7 @@ export const WorkCodeManager = ({
                 {t("workCodes.title")}
               </h2>
             </div>
-            <button
+            <button type="button"
               onClick={onClose}
               className="p-2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl transition-colors"
             >
@@ -149,7 +149,7 @@ export const WorkCodeManager = ({
           {/* Preset Dropdown */}
           <div className="p-4 border-b border-zinc-200 dark:border-zinc-700">
             <div className="relative">
-              <button
+              <button type="button"
                 onClick={() => setShowPresetDropdown(!showPresetDropdown)}
                 className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-zinc-100 dark:bg-zinc-700 rounded-xl text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors"
               >
@@ -169,7 +169,7 @@ export const WorkCodeManager = ({
                     className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-700 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-600 overflow-hidden z-10"
                   >
                     {availablePresets.map((preset) => (
-                      <button
+                      <button type="button"
                         key={preset.id}
                         onClick={() => handleLoadPreset(preset.id)}
                         className="w-full px-4 py-3 text-left hover:bg-zinc-100 dark:hover:bg-zinc-600 transition-colors"
@@ -217,15 +217,14 @@ export const WorkCodeManager = ({
                             if (e.key === 'Escape') handleCancelEdit();
                           }}
                           className="flex-1 px-3 py-2 bg-white dark:bg-zinc-600 border border-zinc-300 dark:border-zinc-500 rounded-lg text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                          autoFocus
                         />
-                        <button
+                        <button type="button"
                           onClick={handleSaveEdit}
                           className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
                         >
                           <Check className="w-5 h-5" />
                         </button>
-                        <button
+                        <button type="button"
                           onClick={handleCancelEdit}
                           className="p-2 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                         >
@@ -238,13 +237,13 @@ export const WorkCodeManager = ({
                         <span className="flex-1 text-zinc-700 dark:text-zinc-200">
                           {code.label}
                         </span>
-                        <button
+                        <button type="button"
                           onClick={() => handleStartEdit(code)}
                           className="p-2 text-zinc-500 hover:text-sky-600 hover:bg-sky-100 dark:hover:bg-sky-900/30 rounded-lg transition-colors"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button
+                        <button type="button"
                           onClick={() => deleteCode(code.id)}
                           className="p-2 text-zinc-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                         >
@@ -271,7 +270,7 @@ export const WorkCodeManager = ({
                 placeholder={t("workCodes.newCodePlaceholder")}
                 className="flex-1 px-4 py-3 bg-zinc-100 dark:bg-zinc-700 border-0 rounded-xl text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
-              <button
+              <button type="button"
                 onClick={handleAddCode}
                 disabled={!newCodeLabel.trim()}
                 className="px-4 py-3 bg-sky-500 text-white rounded-xl hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -282,7 +281,7 @@ export const WorkCodeManager = ({
 
             {/* Alle löschen Button */}
             {hasAnyCodes && (
-              <button
+              <button type="button"
                 onClick={() => setShowDeleteAllConfirm(true)}
                 className="w-full mt-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
               >
@@ -317,13 +316,13 @@ export const WorkCodeManager = ({
                   {t("workCodes.presetReplaceWarning.message")}
                 </p>
                 <div className="flex gap-3">
-                  <button
+                  <button type="button"
                     onClick={() => setShowPresetConfirm(null)}
                     className="flex-1 px-4 py-2 bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-xl hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
                   >
                     {t("common.cancel")}
                   </button>
-                  <button
+                  <button type="button"
                     onClick={confirmLoadPreset}
                     className="flex-1 px-4 py-2 bg-sky-500 text-white rounded-xl hover:bg-sky-600 transition-colors"
                   >
@@ -360,13 +359,13 @@ export const WorkCodeManager = ({
                   {t("workCodes.deleteAllWarning.message")}
                 </p>
                 <div className="flex gap-3">
-                  <button
+                  <button type="button"
                     onClick={() => setShowDeleteAllConfirm(false)}
                     className="flex-1 px-4 py-2 bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-xl hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
                   >
                     {t("common.cancel")}
                   </button>
-                  <button
+                  <button type="button"
                     onClick={handleDeleteAll}
                     className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
                   >

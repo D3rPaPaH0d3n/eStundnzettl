@@ -13,7 +13,6 @@
  */
 
 import { z } from "zod";
-import type { Entry } from "../types";
 
 const DATE_RE: RegExp = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE: RegExp = /^\d{2}:\d{2}$/;

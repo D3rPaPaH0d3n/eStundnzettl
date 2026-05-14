@@ -85,14 +85,21 @@ jobs:
 
       - name: Pull latest changes
         id: git_info
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          DEPLOY_TRACK: ${{ github.event.inputs.track }}
         run: |
-          git pull origin "${{ github.ref_name }}" --ff-only
+          git pull origin "$REF_NAME" --ff-only
           SHORT_SHA=$(git rev-parse --short HEAD)
           SUBJECT=$(git log -1 --format='%s')
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
-          echo "subject=$SUBJECT" >> $GITHUB_OUTPUT
+          {
+            echo "subject<<EOF"
+            echo "$SUBJECT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
           echo "📌 HEAD ist jetzt: $(git log --oneline -1)"
-          echo "📌 Track: ${{ github.event.inputs.track }}"
+          echo "📌 Track: $DEPLOY_TRACK"
 
       # ── 2. Node.js Setup + Dependencies ──────────────────────────────
       - name: Set up Node.js
@@ -422,19 +429,28 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DEPLOY_TRACK: ${{ github.event.inputs.track }}
+          JOB_STATUS: ${{ job.status }}
+          VERSION_NAME: ${{ steps.bump.outputs.new_name || 'unbekannt' }}
+          VERSION_CODE: ${{ steps.bump.outputs.new_code || 'unbekannt' }}
+          COMMIT_SHA: ${{ steps.git_info.outputs.short_sha || 'unbekannt' }}
+          COMMIT_SUBJECT: ${{ steps.git_info.outputs.subject || '' }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          TRACK="${{ github.event.inputs.track }}"
+          TRACK="$DEPLOY_TRACK"
           TRACK_LABEL=$( [ "$TRACK" = "beta" ] && echo "Open Beta" || echo "Internal Testing" )
 
-          if [ "${{ job.status }}" = "success" ]; then
-            MSG="✅ *eStundnzettl Deploy erfolgreich*%0A%0AVersion: v${{ steps.bump.outputs.new_name }} (Code ${{ steps.bump.outputs.new_code }})%0ACommit: \`${{ steps.git_info.outputs.short_sha }}\` — ${{ steps.git_info.outputs.subject }}%0ATrack: $TRACK_LABEL%0AStatus: Hochgeladen"
+          if [ "$JOB_STATUS" = "success" ]; then
+            printf -v MSG '✅ *eStundnzettl Deploy erfolgreich*\n\nVersion: v%s (Code %s)\nCommit: `%s` — %s\nTrack: %s\nStatus: Hochgeladen' \
+              "$VERSION_NAME" "$VERSION_CODE" "$COMMIT_SHA" "$COMMIT_SUBJECT" "$TRACK_LABEL"
             if [ "$TRACK" = "beta" ]; then
-              MSG="${MSG}%0A%0A⏳ Beta-Tester bekommen das Update in ca. 1-3h."
+              MSG="${MSG}"$'\n\n⏳ Beta-Tester bekommen das Update in ca. 1-3h.'
             else
-              MSG="${MSG} und verifiziert%0A%0A⏳ Download in ca. 10-30 Min im Play Store verfügbar."
+              MSG="${MSG}"$' und verifiziert\n\n⏳ Download in ca. 10-30 Min im Play Store verfügbar.'
             fi
           else
-            MSG="❌ *eStundnzettl Deploy fehlgeschlagen*%0A%0AVersion: v${{ steps.bump.outputs.new_name || 'unbekannt' }}%0ATrack: $TRACK_LABEL%0ACommit: \`${{ steps.git_info.outputs.short_sha || 'unbekannt' }}\`%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            printf -v MSG '❌ *eStundnzettl Deploy fehlgeschlagen*\n\nVersion: v%s\nTrack: %s\nCommit: `%s`\nWorkflow: %s' \
+              "$VERSION_NAME" "$TRACK_LABEL" "$COMMIT_SHA" "$WORKFLOW_URL"
           fi
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \

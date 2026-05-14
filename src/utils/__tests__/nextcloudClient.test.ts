@@ -19,7 +19,6 @@ import {
   initiateLoginFlow,
   pollLoginResult,
   uploadBackup,
-  testConnection,
   getNextcloudErrorMessage,
 } from "../nextcloudClient";
 

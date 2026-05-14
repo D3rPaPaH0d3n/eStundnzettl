@@ -420,7 +420,7 @@ const PrintReport: React.FC<Props> = ({
             <span className="truncate">{t("reports.preview")}</span>
           </h2>
           <div className="flex items-center bg-zinc-800 rounded-lg p-0.5 border border-zinc-700">
-            <button
+            <button type="button"
               onClick={() => handleMonthChange(-1)}
               className="p-1.5 hover:bg-zinc-700 rounded-md text-zinc-300"
             >
@@ -436,14 +436,14 @@ const PrintReport: React.FC<Props> = ({
                 year: "2-digit",
               })}
             </button>
-            <button
+            <button type="button"
               onClick={() => handleMonthChange(1)}
               className="p-1.5 hover:bg-zinc-700 rounded-md text-zinc-300"
             >
               <ChevronRight size={18} />
             </button>
           </div>
-          <button
+          <button type="button"
             onClick={onClose}
             className="p-2 bg-zinc-800 rounded-full hover:bg-zinc-700 transition-colors shrink-0"
           >
@@ -460,7 +460,7 @@ const PrintReport: React.FC<Props> = ({
           </FirstOpenHint>
 
           <div className="flex gap-2 items-center">
-            <button
+            <button type="button"
               onClick={() => setIsNoteModalOpen(true)}
             aria-label={t("reports.noteModal.title")}
             className={`p-2 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
@@ -472,7 +472,7 @@ const PrintReport: React.FC<Props> = ({
             <MessageSquarePlus size={20} />
           </button>
           {layoutTogglesAvailable && (
-            <button
+            <button type="button"
               onClick={() => setIsLayoutPanelOpen(true)}
               aria-label={t("reports.layoutPanel.title")}
               className={`p-2 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
@@ -485,7 +485,7 @@ const PrintReport: React.FC<Props> = ({
             </button>
           )}
           <div className="relative flex-1 min-w-0">
-            <button
+            <button type="button"
               onClick={() => setIsPickerOpen(!isPickerOpen)}
               className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg py-2 pl-3 pr-8 text-sm font-medium flex items-center justify-between transition-colors hover:border-emerald-500/50 active:bg-zinc-700"
             >
@@ -585,13 +585,13 @@ const PrintReport: React.FC<Props> = ({
                 onChange={(e) => setCustomNote(e.target.value)}
               />
               <div className="flex justify-end gap-2 mt-4">
-                <button
+                <button type="button"
                   onClick={() => setCustomNote("")}
                   className="text-red-500 text-sm font-medium px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                 >
                   {t("common.delete")}
                 </button>
-                <button
+                <button type="button"
                   onClick={() => setIsNoteModalOpen(false)}
                   className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold px-4 py-2 rounded-lg"
                 >
@@ -639,7 +639,7 @@ const PrintReport: React.FC<Props> = ({
                     </p>
                   </div>
                 </div>
-                <button
+                <button type="button"
                   onClick={() => setIsLayoutPanelOpen(false)}
                   aria-label={t("common.close")}
                   className="p-2 -mr-1 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 shrink-0"

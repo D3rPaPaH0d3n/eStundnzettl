@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import {
   X, Rocket, Play, Wand2, Fingerprint, Hourglass, FileText,
-  Briefcase, Tag, Cloud, ShieldCheck, Car, Wrench, Trash2,
-  Upload, ServerCog, FolderOpen, Paperclip, Sun, Moon, Monitor,
+  Briefcase, Tag, Cloud, ShieldCheck, Wrench,
+  Upload, ServerCog, FolderOpen, Paperclip, Sun, Moon,
 } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Trans, useTranslation } from "react-i18next";
@@ -83,7 +83,7 @@ const HelpModal = ({ isOpen, onClose }: Props) => {
                 <h2 className="text-2xl font-black text-zinc-800 dark:text-white tracking-tight">{t("helpModal.title")}</h2>
                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{t("helpModal.subtitle")}</p>
               </div>
-              <button
+              <button type="button"
                 onClick={onClose}
                 className="p-2 -mr-2 -mt-2 bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors"
               >

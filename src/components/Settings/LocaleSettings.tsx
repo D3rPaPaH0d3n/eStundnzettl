@@ -294,9 +294,9 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
 
       {currentGroup === "de" && (
         <div>
-          <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
+          <div className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
             {t("settings.locale.stateLabel")}
-          </label>
+          </div>
           <button
             type="button"
             onClick={() => setStateDrawerOpen(true)}
@@ -312,9 +312,9 @@ const LocaleSettings: React.FC<Props> = ({ locale, setLocale, workDays, onAfterL
 
       {currentGroup === "ch" && (
         <div>
-          <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
+          <div className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
             {t("settings.locale.kantonLabel")}
-          </label>
+          </div>
           <button
             type="button"
             onClick={() => setKantonDrawerOpen(true)}

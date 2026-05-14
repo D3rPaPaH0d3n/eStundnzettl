@@ -62,7 +62,7 @@ const AppInfoSettings: React.FC<Props> = ({
           {t("settings.appInfo.sectionInfoTitle")}
         </h3>
 
-        <button
+        <button type="button"
           onClick={() => {
             Haptics.impact({ style: ImpactStyle.Light });
             onCheckUpdate?.();
@@ -72,7 +72,7 @@ const AppInfoSettings: React.FC<Props> = ({
           <RefreshCw size={18} /> {t("settings.appInfo.playStore")}
         </button>
 
-        <button
+        <button type="button"
           onClick={() => {
             Haptics.impact({ style: ImpactStyle.Light });
             onShowHelp?.();
@@ -82,7 +82,7 @@ const AppInfoSettings: React.FC<Props> = ({
           <BookOpen size={18} /> {t("settings.appInfo.help")}
         </button>
 
-        <button
+        <button type="button"
           onClick={() => {
             Haptics.impact({ style: ImpactStyle.Light });
             onShowChangelog?.();
@@ -99,21 +99,21 @@ const AppInfoSettings: React.FC<Props> = ({
           {t("settings.appInfo.sectionAboutTitle")}
         </h3>
 
-        <button
+        <button type="button"
           onClick={() => openExternalLink("https://d3rpapah0d3n.github.io/eStundnzettl/privacy.html")}
           className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
         >
           <Shield size={18} /> {t("settings.appInfo.privacy")}
         </button>
 
-        <button
+        <button type="button"
           onClick={() => openExternalLink("https://d3rpapah0d3n.github.io/eStundnzettl/")}
           className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
         >
           <Globe size={18} /> {t("settings.appInfo.website")}
         </button>
 
-        <button
+        <button type="button"
           onClick={() => openExternalLink("https://github.com/D3rPaPaH0d3n/eStundnzettl")}
           className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
         >
@@ -122,7 +122,7 @@ const AppInfoSettings: React.FC<Props> = ({
 
         {/* Rechtliches & Kontakt — kompakter 3-Spalten-Grid */}
         <div className="grid grid-cols-3 gap-2 pt-1">
-          <button
+          <button type="button"
             onClick={() => openExternalLink("https://d3rpapah0d3n.github.io/eStundnzettl/impressum.html")}
             className="py-2 px-1 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
           >
@@ -130,7 +130,7 @@ const AppInfoSettings: React.FC<Props> = ({
             <span>{t("settings.appInfo.imprint")}</span>
           </button>
 
-          <button
+          <button type="button"
             onClick={() => openExternalLink("https://github.com/D3rPaPaH0d3n/eStundnzettl/blob/main/LICENSE")}
             className="py-2 px-1 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
           >
@@ -138,7 +138,7 @@ const AppInfoSettings: React.FC<Props> = ({
             <span>{t("settings.appInfo.license")}</span>
           </button>
 
-          <button
+          <button type="button"
             onClick={() => openMailto("project@kainer.co.at")}
             className="py-2 px-1 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
           >
@@ -147,7 +147,7 @@ const AppInfoSettings: React.FC<Props> = ({
           </button>
         </div>
 
-        <button
+        <button type="button"
           onClick={() => openExternalLink("https://revolut.me/mkainer/pocket/QAt1Q0Ntsb")}
           className="w-full py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors border border-amber-200 dark:border-amber-800"
         >
@@ -171,7 +171,7 @@ const AppInfoSettings: React.FC<Props> = ({
           {t("settings.appInfo.dangerBody")}
         </p>
 
-        <button
+        <button type="button"
           onClick={() => {
             Haptics.impact({ style: ImpactStyle.Medium });
             onDeleteAll?.();

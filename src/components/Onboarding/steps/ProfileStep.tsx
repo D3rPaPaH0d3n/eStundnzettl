@@ -46,9 +46,11 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
 
       <div className="space-y-4">
         <div className="flex flex-col items-center gap-3">
-          <div
+          <button
+            type="button"
             onClick={() => photoInputRef.current?.click()}
             className="w-24 h-24 rounded-full bg-zinc-100 dark:bg-zinc-700 border-2 border-dashed border-zinc-300 dark:border-zinc-600 flex items-center justify-center cursor-pointer overflow-hidden relative group"
+            aria-label={t("onboarding.profile.photoLabel")}
           >
             {formData.photo ? (
               <img src={formData.photo} alt={t("onboarding.profile.photoAlt")} className="w-full h-full object-cover" />
@@ -58,7 +60,7 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               <Upload size={20} className="text-white" />
             </div>
-          </div>
+          </button>
           <span className="text-xs text-zinc-400">{t("onboarding.profile.photoLabel")}</span>
           <input
             type="file"
@@ -71,10 +73,11 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">
+            <label htmlFor="onboarding-profile-name" className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">
               {t("onboarding.profile.nameLabel")}
             </label>
             <input
+              id="onboarding-profile-name"
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -84,11 +87,12 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">
+            <label htmlFor="onboarding-profile-company" className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">
               {t("onboarding.profile.companyLabel")}
             </label>
             <div className="relative">
               <input
+                id="onboarding-profile-company"
                 type="text"
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
@@ -103,10 +107,11 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">
+            <label htmlFor="onboarding-profile-role" className="block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1">
               {t("onboarding.profile.roleLabel")}
             </label>
             <input
+              id="onboarding-profile-role"
               type="text"
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}

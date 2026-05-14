@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   X,
   ChevronDown,
@@ -146,7 +146,7 @@ const ChangelogModal = ({ isOpen, onClose }: Props) => {
       <div key={group.version} className="mb-2">
         <div className="border-t border-zinc-100 dark:border-zinc-800 mb-4" />
 
-        <button
+        <button type="button"
           onClick={() => toggleVersion(group.version)}
           className="w-full flex items-center gap-3 text-left group"
         >
@@ -214,7 +214,7 @@ const ChangelogModal = ({ isOpen, onClose }: Props) => {
       <div key={version.version} className="mb-2">
         {!isFirst && <div className="border-t border-zinc-100 dark:border-zinc-800 mb-4" />}
 
-        <button
+        <button type="button"
           onClick={() => toggleVersion(version.version)}
           className="w-full flex items-center gap-3 text-left group"
         >
@@ -327,7 +327,7 @@ const ChangelogModal = ({ isOpen, onClose }: Props) => {
                 <div className="text-lg">📋</div>
                 <h2 className="font-bold text-zinc-800 dark:text-white">{t("changelogModal.title")}</h2>
               </div>
-              <button
+              <button type="button"
                 onClick={onClose}
                 className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
               >

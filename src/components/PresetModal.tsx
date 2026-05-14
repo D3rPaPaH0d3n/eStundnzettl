@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { X, Check, Calendar, Save, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { WORK_MODELS } from "../hooks/constants";
@@ -50,7 +50,7 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       {/* CHANGE: bg-white dark:bg-slate-800 -> bg-white dark:bg-zinc-800 */}
       <div className="bg-white dark:bg-zinc-800 w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
-        
+
         {/* Header - CHANGE: border-slate -> border-zinc, bg-slate -> bg-zinc */}
         <div className="p-4 border-b border-zinc-100 dark:border-zinc-700 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800 rounded-t-2xl">
             {/* CHANGE: text-slate -> text-zinc */}
@@ -58,7 +58,7 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
                 <Calendar size={20} className="text-zinc-600 dark:text-zinc-400" />
                 {t("modals.preset.title")}
             </h3>
-            <button 
+            <button type="button"
                 onClick={onClose}
                 className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors text-zinc-500 dark:text-zinc-400"
             >
@@ -71,12 +71,12 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
             {WORK_MODELS.map((model) => {
                 const isSelected = selectedId === model.id;
                 return (
-                    <div 
+                    <div
                         key={model.id}
                         onClick={() => setSelectedId(model.id)}
                         className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between group
-                            ${isSelected 
-                                ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" 
+                            ${isSelected
+                                ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
                                 : "border-zinc-100 dark:border-zinc-700 hover:border-emerald-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-700/50"
                             }
                         `}
@@ -90,7 +90,7 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
                                 {model.description}
                             </div>
                         </div>
-                        
+
                         {isSelected && (
                             <Check size={22} strokeWidth={3} className="text-emerald-500" />
                         )}
@@ -112,13 +112,13 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
         {/* Footer */}
         {/* CHANGE: border-slate -> border-zinc, bg-slate -> bg-zinc */}
         <div className="p-4 border-t border-zinc-100 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/50 rounded-b-2xl flex gap-3">
-            <button
+            <button type="button"
                 onClick={onClose}
                 className="px-4 py-3 rounded-xl text-zinc-500 font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
             >
                 {t("common.cancel")}
             </button>
-            <button
+            <button type="button"
                 onClick={handleSave}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center gap-2"
             >

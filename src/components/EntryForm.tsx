@@ -13,6 +13,7 @@ import { de, enUS } from "date-fns/locale";
 import { getDatePickerLocale } from "../utils/formatLocale";
 import TimePickerDrawer from "./TimePickerDrawer";
 import SelectionDrawer from "./SelectionDrawer";
+import { Capacitor } from "@capacitor/core";
 import { Material3TimePicker } from "../plugins/Material3TimePickerPlugin";
 
 import type { Entry, EntryType, UserData, WorkCode } from "../types";
@@ -136,6 +137,11 @@ const EntryForm: React.FC<Props> = ({
   const [activeTimeField, setActiveTimeField] = useState<string | null>(null);
 
   const openTimePicker = useCallback(async (field: string) => {
+    if (!Capacitor.isNativePlatform()) {
+      setActiveTimeField(field);
+      return;
+    }
+
     const currentValue = field === "start" ? startTime : endTime;
     const title = field === "start" ? t("entryForm.startTime") : t("entryForm.endTime");
 
@@ -153,7 +159,7 @@ const EntryForm: React.FC<Props> = ({
         else setEndTime(result.value);
       }
     } catch {
-      // Browser/dev fallback for the PoC. Android should use the native Material 3 picker.
+      // Fallback for unsupported native/dev environments.
       setActiveTimeField(field);
     }
   }, [endTime, setEndTime, setStartTime, startTime, t]);

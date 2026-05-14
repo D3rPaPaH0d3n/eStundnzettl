@@ -28,6 +28,8 @@ import re
 import sys
 
 from google.oauth2 import service_account
+import httplib2
+from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
@@ -104,7 +106,8 @@ SCOPES = ["https://www.googleapis.com/auth/androidpublisher"]
 creds = service_account.Credentials.from_service_account_file(
     "/tmp/play-key.json", scopes=SCOPES
 )
-service = build("androidpublisher", "v3", credentials=creds)
+http = AuthorizedHttp(creds, http=httplib2.Http(timeout=300))
+service = build("androidpublisher", "v3", http=http, cache_discovery=False)
 
 
 def snapshot_tracks(edit_id: str) -> dict[str, list[int]]:
@@ -143,7 +146,7 @@ bundle = (
     service.edits()
     .bundles()
     .upload(packageName=PACKAGE, editId=edit_id, media_body=media)
-    .execute()
+    .execute(num_retries=5)
 )
 vc = bundle["versionCode"]
 print(f"Bundle uploaded: versionCode {vc}")
@@ -161,9 +164,9 @@ service.edits().tracks().update(
     editId=edit_id,
     track=TRACK,
     body={"releases": [new_release]},
-).execute()
+).execute(num_retries=5)
 
-service.edits().commit(packageName=PACKAGE, editId=edit_id).execute()
+service.edits().commit(packageName=PACKAGE, editId=edit_id).execute(num_retries=5)
 print(f"✅ Deployed versionCode {vc} to track '{TRACK}'!")
 
 # ── Post-Snapshot + Cross-Track-Sanity-Check ─────────────────────────────

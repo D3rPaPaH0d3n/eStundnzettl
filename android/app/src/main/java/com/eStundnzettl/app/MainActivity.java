@@ -20,6 +20,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(GoogleDriveBackupPlugin.class);
         registerPlugin(PlayServicesAvailabilityPlugin.class);
         registerPlugin(InstallSourcePlugin.class);
+        registerPlugin(Material3TimePickerPlugin.class);
 
         super.onCreate(savedInstanceState);
         // Enable edge-to-edge display for Android 15+ compatibility

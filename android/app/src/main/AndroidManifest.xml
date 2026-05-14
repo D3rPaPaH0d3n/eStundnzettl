@@ -27,6 +27,11 @@
             android:exported="false"
             android:theme="@style/AppTheme.NoActionBarLaunch" />
 
+        <activity
+            android:name=".Material3TimePickerActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

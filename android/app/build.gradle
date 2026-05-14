@@ -1,4 +1,6 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 android {
     namespace "com.estundnzettl.app"
@@ -35,6 +37,10 @@ android {
         }
     }
 
+    buildFeatures {
+        compose true
+    }
+
 
 }
 
@@ -60,6 +66,8 @@ dependencies {
     implementation 'com.google.mlkit:genai-prompt:1.0.0-beta2'
     // Guava ListenableFuture (needed by GenerativeModelFutures)
     implementation 'com.google.guava:guava:33.0.0-android'
+    implementation 'androidx.activity:activity-compose:1.11.0'
+    implementation 'androidx.compose.material3:material3:1.4.0'
 }
 
 apply from: 'capacitor.build.gradle'

@@ -13,6 +13,7 @@ import { de, enUS } from "date-fns/locale";
 import { getDatePickerLocale } from "../utils/formatLocale";
 import TimePickerDrawer from "./TimePickerDrawer";
 import SelectionDrawer from "./SelectionDrawer";
+import { Material3TimePicker } from "../plugins/Material3TimePickerPlugin";
 
 import type { Entry, EntryType, UserData, WorkCode } from "../types";
 import type { Locale } from "../locales/types";
@@ -134,9 +135,28 @@ const EntryForm: React.FC<Props> = ({
   
   const [activeTimeField, setActiveTimeField] = useState<string | null>(null);
 
-  const openTimePicker = useCallback((field: string) => {
-    setActiveTimeField(field);
-  }, []);
+  const openTimePicker = useCallback(async (field: string) => {
+    const currentValue = field === "start" ? startTime : endTime;
+    const title = field === "start" ? t("entryForm.startTime") : t("entryForm.endTime");
+
+    try {
+      const result = await Material3TimePicker.pickTime({
+        value: currentValue,
+        title,
+        confirmText: "OK",
+        dismissText: "Abbrechen",
+        is24Hour: true,
+      });
+
+      if (!result.cancelled && result.value) {
+        if (field === "start") setStartTime(result.value);
+        else setEndTime(result.value);
+      }
+    } catch {
+      // Browser/dev fallback for the PoC. Android should use the native Material 3 picker.
+      setActiveTimeField(field);
+    }
+  }, [endTime, setEndTime, setStartTime, startTime, t]);
   const [isWorkCodeOpen, setIsWorkCodeOpen] = useState(false);
   const [showPausePicker, setShowPausePicker] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);

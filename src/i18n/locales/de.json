@@ -578,7 +578,9 @@
     "settings": "Lade Einstellungen...",
     "entryForm": "Lade Eingabeformular...",
     "onboarding": "Einrichtung wird geladen...",
-    "pdfModule": "Lade PDF-Modul..."
+    "pdfModule": "Lade PDF-Modul...",
+    "preparing": "Ansicht wird vorbereitet...",
+    "preparingPdf": "Vorschau wird vorbereitet..."
   },
   "backup": {
     "integrityMismatch": "Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",

@@ -14,7 +14,6 @@ import {
 
 import Dashboard from "./Dashboard";
 import LiveTimerOverlay from "./LiveTimerOverlay";
-import SkeletonScreen from "./SkeletonScreen";
 
 // LAZY LOADING
 const PrintReport = React.lazy(() => import("./PrintReport"));
@@ -114,6 +113,47 @@ interface ViewRouterProps {
 
 const AppTour = React.lazy(() => import("./AppTour"));
 
+function RouteLoadingFallback({ label, hint, fullscreen = false }: { label: string; hint: string; fullscreen?: boolean }) {
+  const body = (
+    <motion.div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label={label}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
+      className="flex min-h-[55vh] w-full items-center justify-center px-4"
+    >
+      <div className="w-full max-w-md rounded-3xl border border-zinc-200/80 bg-white/90 p-5 shadow-xl shadow-zinc-900/5 backdrop-blur dark:border-zinc-700/80 dark:bg-zinc-900/90">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="h-9 w-9 rounded-2xl border-2 border-zinc-200 border-t-emerald-500 animate-spin dark:border-zinc-700 dark:border-t-emerald-400" />
+          <div>
+            <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{label}</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">{hint}</p>
+          </div>
+        </div>
+        <div className="space-y-3 animate-pulse" aria-hidden="true">
+          <div className="h-5 w-2/3 rounded-lg bg-zinc-200 dark:bg-zinc-700" />
+          <div className="h-20 w-full rounded-2xl bg-zinc-200 dark:bg-zinc-700" />
+          <div className="h-4 w-1/2 rounded bg-zinc-200 dark:bg-zinc-700" />
+          <div className="h-4 w-1/3 rounded bg-zinc-200 dark:bg-zinc-700" />
+        </div>
+      </div>
+      <span className="sr-only">{label}</span>
+    </motion.div>
+  );
+
+  if (!fullscreen) return body;
+
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-zinc-950/70 backdrop-blur-sm">
+      {body}
+    </div>
+  );
+}
+
 export default function ViewRouter(props: ViewRouterProps) {
   const { t } = useTranslation();
   const {
@@ -163,7 +203,7 @@ export default function ViewRouter(props: ViewRouterProps) {
 
           {view === "add" && !showOnboarding && (
             <motion.div key="add" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
-              <Suspense fallback={<SkeletonScreen label={t("skeleton.entryForm")} />}>
+              <Suspense fallback={<RouteLoadingFallback label={t("skeleton.entryForm")} hint={t("skeleton.preparing")} />}>
                 <EntryForm
                   onCancel={() => { setView("dashboard"); form.setEditingEntry(null); }}
                   onSubmit={handleSaveEntry}
@@ -201,7 +241,7 @@ export default function ViewRouter(props: ViewRouterProps) {
 
           {view === "settings" && !showOnboarding && (
             <motion.div key="settings" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full">
-              <Suspense fallback={<SkeletonScreen label={t("skeleton.settings")} />}>
+              <Suspense fallback={<RouteLoadingFallback label={t("skeleton.settings")} hint={t("skeleton.preparing")} />}>
                 <Settings
                   userData={userData}
                   {...settings}
@@ -214,14 +254,7 @@ export default function ViewRouter(props: ViewRouterProps) {
 
           {view === "report" && !showOnboarding && (
             <motion.div key="report" initial="initial" animate="in" exit="out" variants={reportVariants} transition={reportTransition} className="fixed inset-0 z-[200] w-full h-full">
-              <Suspense fallback={
-                <div className="flex items-center justify-center h-full w-full bg-zinc-900/55">
-                  <div className="bg-white dark:bg-zinc-800 p-4 rounded-xl shadow-xl flex items-center gap-3">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500"></div>
-                    <span className="font-bold text-zinc-700 dark:text-white">{t("skeleton.pdfModule")}</span>
-                  </div>
-                </div>
-              }>
+              <Suspense fallback={<RouteLoadingFallback label={t("skeleton.pdfModule")} hint={t("skeleton.preparingPdf")} fullscreen />}>
                 <PrintReport
                   entries={entriesWithHolidays}
                   allEntries={entries}

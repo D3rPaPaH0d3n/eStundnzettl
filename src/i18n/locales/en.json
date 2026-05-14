@@ -578,7 +578,9 @@
     "settings": "Loading settings...",
     "entryForm": "Loading entry form...",
     "onboarding": "Loading setup wizard...",
-    "pdfModule": "Loading PDF module..."
+    "pdfModule": "Loading PDF module...",
+    "preparing": "Preparing view...",
+    "preparingPdf": "Preparing preview..."
   },
   "backup": {
     "integrityMismatch": "Checksum mismatch — backup may have been tampered with",

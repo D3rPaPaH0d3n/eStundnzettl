@@ -5,6 +5,9 @@ import { useTranslation } from "react-i18next";
 import AppLogo from "../assets/logo.png";
 import type { Entry } from "../types";
 
+const preloadSettings = () => { void import("./Settings"); };
+const preloadReport = () => { void import("./PrintReport"); };
+
 interface AppHeaderProps {
   view: string;
   editingEntry: Entry | null;
@@ -61,6 +64,9 @@ export default function AppHeader({
               type="button"
               data-tour="settings"
               aria-label={t("header.settings")}
+              onPointerEnter={preloadSettings}
+              onFocus={preloadSettings}
+              onTouchStart={preloadSettings}
               onClick={onOpenSettings}
               className="p-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors active:scale-95"
             >
@@ -71,7 +77,10 @@ export default function AppHeader({
               data-tour="report"
               aria-label={t("header.report")}
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.97 }}
+              onPointerEnter={preloadReport}
+              onFocus={preloadReport}
+              onTouchStart={preloadReport}
               onClick={onOpenReport}
               className="bg-emerald-600 hover:bg-emerald-700 p-2.5 rounded-xl transition-colors shadow-lg shadow-emerald-900/20"
             >

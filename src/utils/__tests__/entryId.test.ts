@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { generateEntryId, _resetEntryIdCounterForTests } from "../entryId";
 
 describe("generateEntryId", () => {
@@ -22,6 +22,17 @@ describe("generateEntryId", () => {
   it("produziert keine Duplikate bei 1000 schnellen Aufrufen", () => {
     const ids = new Set(Array.from({ length: 1000 }, () => generateEntryId()));
     expect(ids.size).toBe(1000);
+  });
+
+  it("nutzt einen Crypto-Offset, um Kollisionen zwischen Geraeten zu reduzieren", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
+    const cryptoSpy = vi.spyOn(globalThis.crypto, "getRandomValues");
+
+    const id = generateEntryId();
+
+    expect(cryptoSpy).toHaveBeenCalled();
+    expect(id).toBeGreaterThanOrEqual(1_700_000_000_000_000);
+    expect(id).toBeLessThan(1_700_000_000_001_000);
   });
 
   it("bleibt innerhalb von Number.MAX_SAFE_INTEGER", () => {

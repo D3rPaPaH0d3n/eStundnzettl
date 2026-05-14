@@ -21,6 +21,7 @@ public class Material3TimePickerPlugin extends Plugin {
         String title = call.getString("title", "Uhrzeit auswählen");
         String confirmText = call.getString("confirmText", "OK");
         String dismissText = call.getString("dismissText", "Abbrechen");
+        String accent = call.getString("accent", Material3TimePickerActivity.ACCENT_GREEN);
         Boolean is24Hour = call.getBoolean("is24Hour", true);
 
         int hour = 6;
@@ -42,6 +43,7 @@ public class Material3TimePickerPlugin extends Plugin {
         intent.putExtra(Material3TimePickerActivity.EXTRA_TITLE, title);
         intent.putExtra(Material3TimePickerActivity.EXTRA_CONFIRM_TEXT, confirmText);
         intent.putExtra(Material3TimePickerActivity.EXTRA_DISMISS_TEXT, dismissText);
+        intent.putExtra(Material3TimePickerActivity.EXTRA_ACCENT, accent);
         intent.putExtra(Material3TimePickerActivity.EXTRA_IS_24_HOUR, is24Hour != null ? is24Hour : true);
 
         startActivityForResult(call, intent, "handleTimePickerResult");

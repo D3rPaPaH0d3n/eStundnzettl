@@ -31,6 +31,7 @@ public class Material3DatePickerPlugin extends Plugin {
         String title = call.getString("title", "Datum auswählen");
         String confirmText = call.getString("confirmText", "OK");
         String dismissText = call.getString("dismissText", "Abbrechen");
+        String accent = call.getString("accent", Material3DatePickerActivity.ACCENT_GREEN);
 
         Intent intent = new Intent(getContext(), Material3DatePickerActivity.class);
         intent.putExtra(Material3DatePickerActivity.EXTRA_INITIAL_DATE, value);
@@ -38,6 +39,7 @@ public class Material3DatePickerPlugin extends Plugin {
         intent.putExtra(Material3DatePickerActivity.EXTRA_TITLE, title);
         intent.putExtra(Material3DatePickerActivity.EXTRA_CONFIRM_TEXT, confirmText);
         intent.putExtra(Material3DatePickerActivity.EXTRA_DISMISS_TEXT, dismissText);
+        intent.putExtra(Material3DatePickerActivity.EXTRA_ACCENT, accent);
 
         startActivityForResult(call, intent, "handleDatePickerResult");
     }

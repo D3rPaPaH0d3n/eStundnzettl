@@ -7,6 +7,7 @@ export interface Material3DatePickerOptions {
   title?: string;
   confirmText?: string;
   dismissText?: string;
+  accent?: "green" | "orange";
 }
 
 export interface Material3DatePickerResult {

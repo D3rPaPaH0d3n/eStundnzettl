@@ -191,6 +191,7 @@ const EntryForm: React.FC<Props> = ({
         confirmText: "OK",
         dismissText: "Abbrechen",
         is24Hour: true,
+        accent: "green",
       });
 
       if (!result.cancelled && result.value) {
@@ -219,6 +220,7 @@ const EntryForm: React.FC<Props> = ({
         confirmText: "OK",
         dismissText: "Abbrechen",
         is24Hour: true,
+        accent: "orange",
       });
 
       if (!result.cancelled && result.value) {

@@ -110,3 +110,30 @@ Checks run:
 
 Manual Android export tests:
 - Not run in this environment. Still needs device/emulator checks for JSON folder export, JSON share, PDF export/share, and archive targets.
+
+## Phase 5 — StorageMode/SQLite no-op cleanup (slice 1: lastCode)
+
+Status: partially completed; local commit pending at time of writing.
+
+Changes:
+- Simplified `src/utils/lastCode.ts` to SQLite/settingsRepo-only behavior.
+- Removed dead `isSQLiteActive()` / `localStorage` branches for last-code load/save/delete.
+- Updated `src/hooks/__tests__/useLastCode.test.ts` to remove inactive-storage/localStorage expectations.
+
+Not changed in this slice:
+- `src/db/storageMode.ts` remains in place for compatibility.
+- No migrations, legacy localStorage migration, Nextcloud/Google token logic, or Secret migration code were removed.
+- Remaining Phase 5 consumers still need separate cautious slices.
+
+Checks run:
+- Guard grep for `isSQLiteActive`, `storageMode`, `estundnzettl_last_code` in the changed lastCode files ✅ no matches
+- `npm run typecheck` ✅
+- `npm run lint` ✅
+- targeted `npm test -- src/hooks/__tests__/useLastCode.test.ts src/utils/__tests__/storageBackup.test.ts` ✅ 2 files / 23 tests passed
+- full `npm test` ✅ 65 files / 780 tests passed
+- `npm run build` ✅
+- `npx cap sync android` ✅; still 9 Capacitor plugins
+- `cd android && ./gradlew assembleDebug` ⚠️ same environment blocker: Java/JAVA_HOME unavailable
+
+Manual Android tests:
+- Not run in this environment. Last-code/default-code behavior should be included in the next device smoke pass.

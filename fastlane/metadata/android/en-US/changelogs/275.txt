@@ -1,7 +1,7 @@
 Pickers, minutes & a bit of polish 🕰️
-• Time entry is now minute-accurate instead of using the old 15-minute grid
-• Live timer no longer rounds to quarter hours
-• Android date picker now follows the app theme
-• Time picker keeps light/dark surfaces with green/orange accents
-• Wizard, Settings and Help no longer mention the old minute mode
-• Cleaned up and ready for the beta channel
+Time entry is now truly minute-accurate
+• Start, end and break times can now be set without the old 15-minute grid — matching real workdays more closely.
+• The live timer now keeps minute-accurate times too and no longer rounds to quarter hours.
+• The old minute-mode toggle is gone because minute-accurate entry is now the default. Fewer switches, less confusion.
+Native pickers feel more at home
+• The Android date picker now follows the app...

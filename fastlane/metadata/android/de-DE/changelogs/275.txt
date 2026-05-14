@@ -1,7 +1,7 @@
 Picker, Minuten & a bisserl Feinschliff 🕰️
-• Zeiten jetzt minutengenau statt im alten 15-Minuten-Raster
-• Live-Timer rundet nicht mehr auf Viertelstunden
-• Android-DatePicker passt jetzt sauber zum App-Theme
-• TimePicker bleibt hell/dunkel wie gewohnt, nur mit grünen/orangen Akzenten
-• Wizard, Einstellungen und Hilfe sind von alten Minutenmodus-Texten befreit
-• Aufgeräumt und bereit für den Beta-Kanal
+Zeiten jetzt gscheit minutengenau
+• Start, Ende und Pause lassen sich jetzt ohne 15-Minuten-Raster einstellen — genau so, wie’s in der Praxis halt passiert.
+• Auch der Live-Timer übernimmt Zeiten minutengenau und rundet nicht mehr auf Viertelstunden herum.
+• Die alte Minutenmodus-Umschaltung ist raus, weil minutengenau jetzt einfach der Standard ist. Weniger Schalter, weniger Grübeln.
+Native Picker schöner eingebaut
+• Der Android-...

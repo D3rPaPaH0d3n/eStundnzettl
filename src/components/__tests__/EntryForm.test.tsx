@@ -70,6 +70,12 @@ vi.mock("../SelectionDrawer", () => ({
     isOpen ? <div data-testid="selection-drawer">{title}</div> : null,
 }));
 
+vi.mock("../../plugins/Material3DatePickerPlugin", () => ({
+  Material3DatePicker: {
+    pickDate: vi.fn(),
+  },
+}));
+
 // useWorkCodes: minimal-Mock mit einem Code
 vi.mock("../../hooks/useWorkCodes", () => ({
   useWorkCodes: vi.fn(() => ({
@@ -86,6 +92,7 @@ vi.mock("../../hooks/useWorkCodes", () => ({
 
 // Importe NACH den Mocks
 import EntryForm from "../EntryForm";
+import { Material3DatePicker } from "../../plugins/Material3DatePickerPlugin";
 import type { Entry, UserData } from "../../types";
 
 // ─── Test-Helpers ───────────────────────────────────────────
@@ -304,5 +311,17 @@ describe("EntryForm", () => {
     expect(startButton).toBeTruthy();
     if (startButton) fireEvent.click(startButton);
     expect(queryByTestId("time-picker-drawer")).not.toBeNull();
+  });
+
+  it("zeigt einen manuellen Datums-Fallback, wenn der native Picker fehlschlägt", async () => {
+    vi.mocked(Material3DatePicker.pickDate).mockRejectedValueOnce(new Error("native picker unavailable"));
+    const { getByText, findByText, container } = renderForm();
+
+    const dateButton = getByText(/07\.04\.2026/).closest("button");
+    expect(dateButton).toBeTruthy();
+    if (dateButton) fireEvent.click(dateButton);
+
+    expect(await findByText("Native Datumsauswahl nicht verfügbar – bitte Datum manuell wählen.")).toBeTruthy();
+    expect(container.querySelector('input[type="date"]')).toBeTruthy();
   });
 });

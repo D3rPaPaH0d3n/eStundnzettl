@@ -22,6 +22,7 @@
     "nextMonth": "Nächster Monat",
     "selectMonth": "Monat wählen",
     "monthPickerAria": "Monat wählen (aktuell {{value}})",
+    "monthPickerFallback": "Monatsauswahl konnte nicht geöffnet werden.",
     "actual": "IST",
     "target": "SOLL",
     "balance": "Saldo",
@@ -84,6 +85,8 @@
       "manual": "Manuell"
     },
     "date": "Datum",
+    "datePickerFallback": "Datumsauswahl konnte nicht geöffnet werden.",
+    "datePickerFallbackHint": "Native Datumsauswahl nicht verfügbar – bitte Datum manuell wählen.",
     "start": "Start",
     "end": "Ende",
     "pause": "Pause",

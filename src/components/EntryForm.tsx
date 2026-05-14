@@ -113,6 +113,7 @@ const EntryForm: React.FC<Props> = ({
   const [quickAddValue, setQuickAddValue] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showDateFallback, setShowDateFallback] = useState(false);
   const isNativePlatform = Capacitor.isNativePlatform();
 
   const date = new Date(`${formDate}T00:00:00`);
@@ -134,9 +135,12 @@ const EntryForm: React.FC<Props> = ({
 
       if (!result.cancelled && result.value) {
         setFormDate(result.value);
+        setShowDateFallback(false);
       }
     } catch {
-      // Keep the current date when the native picker is unavailable.
+      // Fallback for unsupported native/dev environments.
+      setShowDateFallback(true);
+      toast.error(t("entryForm.datePickerFallback", { defaultValue: "Datumsauswahl konnte nicht geöffnet werden." }));
     }
   }, [formDate, setFormDate, t]);
 
@@ -382,6 +386,22 @@ const EntryForm: React.FC<Props> = ({
               </div>
               <button type="button" onClick={() => changeDate(1)} className="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"><ChevronRight size={20} /></button>
             </div>
+            {showDateFallback && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
+                <p className="mb-2 text-xs font-semibold text-amber-800 dark:text-amber-200">
+                  {t("entryForm.datePickerFallbackHint", { defaultValue: "Native Datumsauswahl nicht verfügbar – bitte Datum manuell wählen." })}
+                </p>
+                <input
+                  type="date"
+                  value={formDate}
+                  onChange={(event) => {
+                    setFormDate(event.target.value);
+                    setShowDateFallback(false);
+                  }}
+                  className="w-full rounded-lg border border-zinc-300 bg-white p-3 font-bold text-zinc-900 outline-none focus:border-emerald-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white"
+                />
+              </div>
+            )}
           </div>
 
           {showTimeInputs && (

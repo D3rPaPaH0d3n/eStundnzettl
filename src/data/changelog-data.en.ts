@@ -19,6 +19,52 @@ import { CHANGELOG_DATA_DE } from "./changelog-data.de";
 const TRANSLATED_EN = [
 
   {
+    version: "4.4.0",
+    date: "15.05.2026",
+    title: "Android app cleaner, steadier & lighter 🛠️",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Smartphone",
+        title: "Native Android app cleaned up",
+        items: [
+          "Old PWA and browser leftovers were removed so the app stays clearly focused on Android.",
+          "Unused web date pickers and export fallbacks are gone — the important flows now lean more consistently on native Android.",
+          "The app build is lighter because unused packages and old template files are no longer carried along."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Pickers & interaction feel smoother",
+        items: [
+          "Date, month, time and break selection now run cleanly through the native Material 3 pickers.",
+          "The pickers follow the selected app appearance better now — light, dark or system.",
+          "If a native picker is unavailable, the app falls back more deliberately instead of failing silently."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Saving, backup & export are more robust",
+        items: [
+          "PDF export and archiving are now more strongly aligned with Android's native file and share flow.",
+          "Old SQLite and localStorage fallbacks were removed where they are no longer needed.",
+          "Nextcloud secret migration and backup paths are covered more carefully."
+        ]
+      },
+      {
+        iconName: "Wrench",
+        title: "Quality under the hood",
+        items: [
+          "GitHub Actions, CodeQL, SonarQube, Dependabot and coverage reporting were expanded.",
+          "Android, Gradle, Kotlin, OkHttp and Vite tooling have been updated.",
+          "More tests protect pickers, keyboard interaction, backups and secret migration from regressions."
+        ]
+      }
+    ]
+  },
+
+
+  {
     version: "4.3.5",
     date: "14.05.2026",
     title: "Pickers, minutes & a bit of polish 🕰️",

@@ -103,6 +103,18 @@ Fragen, Bug-Reports, Lizenzanfragen: project@kainer.co.at
 
 ### Release Notes
 
+#### v4.4.0 (≤ 500 Zeichen)
+
+```
+Android-App sauberer, stabiler & leichter 🛠️
+• Alte PWA-/Browser-Reste und ungenutzte Web-DatePicker sind entfernt.
+• Datum, Monat, Zeit und Pause laufen konsequenter über native Material-3-Picker.
+• PDF-Export und Archivierung nutzen stärker den nativen Android-Datei-/Teilen-Flow.
+• Backup-, Nextcloud- und Qualitätschecks wurden weiter gehärtet.
+```
+
+*Gespiegelt in `fastlane/metadata/android/de-DE/changelogs/277.txt`.*
+
 #### v4.3.4 (≤ 500 Zeichen)
 
 ```
@@ -258,6 +270,18 @@ Questions, bug reports, licensing: project@kainer.co.at
 *2310 characters ✓ (limit 4000)*
 
 ### Release notes
+
+#### v4.4.0 (≤ 500 characters)
+
+```
+Android app cleaner, steadier & lighter 🛠️
+• Old PWA/browser leftovers and unused web date pickers were removed.
+• Date, month, time and break selection now lean more consistently on native Material 3 pickers.
+• PDF export and archiving use Android's native file/share flow more clearly.
+• Backup, Nextcloud and quality checks were hardened further.
+```
+
+*Mirrored in `fastlane/metadata/android/en-US/changelogs/277.txt`.*
 
 #### v4.3.4 (≤ 500 characters)
 

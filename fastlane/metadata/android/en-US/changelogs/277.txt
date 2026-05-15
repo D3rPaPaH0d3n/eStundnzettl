@@ -1,0 +1,5 @@
+Android app cleaner, steadier & lighter 🛠️
+• Old PWA/browser leftovers and unused web date pickers were removed.
+• Date, month, time and break selection now lean more consistently on native Material 3 pickers.
+• PDF export and archiving use Android's native file/share flow more clearly.
+• Backup, Nextcloud and quality checks were hardened further.

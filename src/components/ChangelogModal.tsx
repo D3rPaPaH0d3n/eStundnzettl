@@ -20,6 +20,7 @@ import {
   BookOpen,
   Layout,
   Palmtree,
+  Smartphone,
   type LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
@@ -45,6 +46,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   BookOpen,
   Layout,
   Palmtree,
+  Smartphone,
 };
 
 interface ChangelogSection {

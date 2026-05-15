@@ -1,6 +1,52 @@
 export const CHANGELOG_DATA_DE = [
 
   {
+    version: "4.4.0",
+    date: "15.05.2026",
+    title: "Android-App sauberer, stabiler & leichter 🛠️",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Smartphone",
+        title: "Native Android-App aufgeräumt",
+        items: [
+          "Alte PWA- und Browser-Reste sind entfernt, damit die App klar auf Android ausgerichtet bleibt.",
+          "Nicht mehr genutzte Web-DatePicker und Export-Fallbacks sind raus — die wichtigen Abläufe laufen jetzt konsequenter nativ.",
+          "Der App-Build ist leichter geworden, weil unnötige Pakete und alte Vorlage-Dateien nicht mehr mitgeschleppt werden."
+        ]
+      },
+      {
+        iconName: "Sparkles",
+        title: "Picker & Bedienung runder",
+        items: [
+          "Datum, Monat, Zeit und Pause laufen sauber über die nativen Material-3-Picker.",
+          "Die Picker folgen dem gewählten App-Design jetzt besser — Hell, Dunkel oder System.",
+          "Wenn ein nativer Picker einmal nicht verfügbar ist, fällt die App kontrollierter zurück statt still zu stolpern."
+        ]
+      },
+      {
+        iconName: "Shield",
+        title: "Speichern, Backup & Export robuster",
+        items: [
+          "PDF-Export und Archivierung sind stärker auf den nativen Android-Datei- und Teilen-Flow ausgerichtet.",
+          "Alte SQLite- und localStorage-Fallbacks wurden dort entfernt, wo sie nicht mehr gebraucht wurden.",
+          "Nextcloud-Secret-Migration und Backup-Pfade sind zusätzlich abgesichert."
+        ]
+      },
+      {
+        iconName: "Wrench",
+        title: "Qualität unter der Haube",
+        items: [
+          "GitHub Actions, CodeQL, SonarQube, Dependabot und Coverage-Auswertung wurden ausgebaut.",
+          "Android-, Gradle-, Kotlin-, OkHttp- und Vite-Werkzeuge sind aktualisiert.",
+          "Mehr Tests sichern Picker, Tastaturbedienung, Backups und Secret-Migration gegen Rückfälle ab."
+        ]
+      }
+    ]
+  },
+
+
+  {
     version: "4.3.5",
     date: "14.05.2026",
     title: "Picker, Minuten & a bisserl Feinschliff 🕰️",

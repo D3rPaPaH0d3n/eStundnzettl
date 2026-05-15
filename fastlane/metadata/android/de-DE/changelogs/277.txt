@@ -1,0 +1,5 @@
+Android-App sauberer, stabiler & leichter 🛠️
+• Alte PWA-/Browser-Reste und ungenutzte Web-DatePicker sind entfernt.
+• Datum, Monat, Zeit und Pause laufen konsequenter über native Material-3-Picker.
+• PDF-Export und Archivierung nutzen stärker den nativen Android-Datei-/Teilen-Flow.
+• Backup-, Nextcloud- und Qualitätschecks wurden weiter gehärtet.

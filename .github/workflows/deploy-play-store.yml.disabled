@@ -64,13 +64,13 @@ jobs:
     steps:
       # ── 1. Code auschecken ───────────────────────────────────────────
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Brauchen wir für git log (Changelog) und Tags
 
       # ── 2. Node.js Setup + Dependencies ──────────────────────────────
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'

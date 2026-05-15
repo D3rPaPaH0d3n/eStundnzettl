@@ -27,7 +27,7 @@ jobs:
     steps:
       # ── 1. Code auschecken (vom gewählten Branch) ────────────────────
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # ── 1.5 Build-Kennung generieren ─────────────────────────────────
       - name: Generate build ID

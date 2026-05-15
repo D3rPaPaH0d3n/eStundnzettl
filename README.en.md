@@ -20,8 +20,8 @@
   <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/ci.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/ci.yml?branch=main&label=CI&color=2ea44f&style=for-the-badge&logo=githubactions&logoColor=white" alt="CI Status" />
   </a>
-  <a href="https://app.codacy.com/gh/D3rPaPaH0d3n/eStundnzettl/dashboard">
-    <img src="https://img.shields.io/codacy/grade/85110d7924544b05a47c2dc3fada1371?label=Code%20Quality&style=for-the-badge&logo=codacy&logoColor=white" alt="Codacy Code Quality" />
+  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/codeql.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/codeql.yml?branch=main&label=CodeQL&color=2563eb&style=for-the-badge&logo=github&logoColor=white" alt="CodeQL Security Analysis" />
   </a>
 </p>
 

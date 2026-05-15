@@ -1,0 +1,7 @@
+Android app cleaner, steadier & lighter 🛠️
+Native Android app cleaned up
+• Old PWA and browser leftovers were removed so the app stays clearly focused on Android.
+• Unused web date pickers and export fallbacks are gone — the important flows now lean more consistently on native Android.
+• The app build is lighter because unused packages and old template files are no longer carried along.
+Pickers & interaction feel smoother
+• Date, month, time and break selection now run cleanly...

@@ -1,0 +1,7 @@
+Android-App sauberer, stabiler & leichter 🛠️
+Native Android-App aufgeräumt
+• Alte PWA- und Browser-Reste sind entfernt, damit die App klar auf Android ausgerichtet bleibt.
+• Nicht mehr genutzte Web-DatePicker und Export-Fallbacks sind raus — die wichtigen Abläufe laufen jetzt konsequenter nativ.
+• Der App-Build ist leichter geworden, weil unnötige Pakete und alte Vorlage-Dateien nicht mehr mitgeschleppt werden.
+Picker & Bedienung runder
+• Datum, Monat, Zeit und Pause laufen...

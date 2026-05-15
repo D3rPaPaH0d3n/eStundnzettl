@@ -60,7 +60,7 @@ import { isSQLiteActive } from "../../db/storageMode";
 import { getSetting, setSetting, deleteSetting } from "../../db/repositories/settingsRepo";
 import { deobfuscate, deobfuscateLegacySync } from "../../utils/obfuscate";
 import { getSecret, setSecret } from "../../utils/secureSecrets";
-import { NEXTCLOUD_APP_PASSWORD_SECRET_KEY } from "../../utils/nextcloudSecret";
+import { NEXTCLOUD_APP_SECRET_KEY } from "../../utils/nextcloudSecret";
 
 // ─── Tests ──────────────────────────────────────────────────
 
@@ -400,8 +400,8 @@ describe("useSettings", () => {
       expect(result.current.nextcloudSecretStatus).toBe("migrated");
     });
 
-    expect(setSecret).toHaveBeenCalledWith(NEXTCLOUD_APP_PASSWORD_SECRET_KEY, "fixture-legacy-pass");
-    expect(getSecret).toHaveBeenCalledWith(NEXTCLOUD_APP_PASSWORD_SECRET_KEY);
+    expect(setSecret).toHaveBeenCalledWith(NEXTCLOUD_APP_SECRET_KEY, "fixture-legacy-pass");
+    expect(getSecret).toHaveBeenCalledWith(NEXTCLOUD_APP_SECRET_KEY);
     expect(localStorage.getItem("estundnzettl_nextcloud_pass")).toBeNull();
     expect(result.current.nextcloudPass).toBe("fixture-legacy-pass");
   });
@@ -430,7 +430,7 @@ describe("useSettings", () => {
     });
 
     await waitFor(() => {
-      expect(setSecret).toHaveBeenCalledWith(NEXTCLOUD_APP_PASSWORD_SECRET_KEY, "fixture-new-pass");
+      expect(setSecret).toHaveBeenCalledWith(NEXTCLOUD_APP_SECRET_KEY, "fixture-new-pass");
       expect(result.current.nextcloudSecretStatus).toBe("ready");
     });
 

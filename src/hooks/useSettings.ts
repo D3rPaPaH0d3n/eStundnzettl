@@ -138,6 +138,7 @@ export function useSettings() {
   const [sqliteReady, setSqliteReady] = useState<boolean>(false);
   const sqliteLoadStarted = useRef<boolean>(false);
   const nextcloudPassUserWrite = useRef<boolean>(false);
+  const nextcloudPassTouched = useRef<boolean>(false);
   const [settingsStorageStatus, setSettingsStorageStatus] = useState<SettingsStorageStatus>(() => (
     isSQLiteActive() ? "loading" : "fallback"
   ));
@@ -147,6 +148,7 @@ export function useSettings() {
 
   const setNextcloudPass = useCallback((pass: string) => {
     nextcloudPassUserWrite.current = true;
+    nextcloudPassTouched.current = true;
     setNextcloudPassState(pass);
   }, []);
 
@@ -332,7 +334,7 @@ export function useSettings() {
     let cancelled = false;
     (async () => {
       const secretResult = await loadOrMigrateNextcloudAppPassword();
-      if (cancelled) return;
+      if (cancelled || nextcloudPassTouched.current) return;
       setNextcloudSecretStatus(secretResult.status);
       setNextcloudSecretError(secretResult.message || null);
       if (secretResult.password) setNextcloudPassState(secretResult.password);

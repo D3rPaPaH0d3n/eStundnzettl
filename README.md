@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/D3rPaPaH0d3n/eStundnzettl/main/docs/banner.png" alt="eStundnzettl — Der digitale Stundenzettel aus der Steiermark" width="100%" />
+  <img src="./docs/readme-banner-2026-05-15.png" alt="eStundnzettl — Der digitale Stundenzettel aus der Steiermark" width="100%" />
 </p>
 
 <p align="center">

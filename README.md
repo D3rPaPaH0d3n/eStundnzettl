@@ -1,6 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/🇩🇪_Deutsch-aktiv-1e40af?style=for-the-badge" alt="Aktive Sprache: Deutsch" />
-  <a href="./README.en.md"><img src="https://img.shields.io/badge/🇬🇧_English-→-64748b?style=for-the-badge" alt="Switch to English" /></a>
+  <img src="https://img.shields.io/badge/🇬🇧_English-→-64748b?style=for-the-badge" alt="Switch to English" />
 </p>
 
 <p align="center">
@@ -8,31 +8,20 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/latest">
-    <img src="https://img.shields.io/github/v/release/D3rPaPaH0d3n/eStundnzettl?label=Version&color=10b981&style=for-the-badge&logo=github&logoColor=white" alt="Aktuelle Version" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases">
-    <img src="https://img.shields.io/github/downloads/D3rPaPaH0d3n/eStundnzettl/total?label=Downloads&color=8b5cf6&style=for-the-badge&logo=github&logoColor=white" alt="GitHub-Downloads" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/Lizenz-MIT-blue?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="Lizenz MIT" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/ci.yml?branch=main&label=CI&color=2ea44f&style=for-the-badge&logo=githubactions&logoColor=white" alt="CI Status" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/codeql.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/codeql.yml?branch=main&label=CodeQL&color=2563eb&style=for-the-badge&logo=github&logoColor=white" alt="CodeQL Security Analysis" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/coverage-badge.yml">
-    <img src="./badges/coverage.svg" alt="Test Coverage" />
-  </a>
-  <a href="https://sonarcloud.io/summary/new_code?id=D3rPaPaH0d3n_eStundnzettl">
-    <img src="https://sonarcloud.io/api/project_badges/quality_gate?project=D3rPaPaH0d3n_eStundnzettl" alt="SonarQube Cloud Quality Gate" />
-  </a>
+  <img src="https://img.shields.io/github/v/release/D3rPaPaH0d3n/eStundnzettl?label=Version&color=10b981&style=for-the-badge&logo=github&logoColor=white" alt="Aktuelle Version" />
+  <img src="https://img.shields.io/github/downloads/D3rPaPaH0d3n/eStundnzettl/total?label=Downloads&color=8b5cf6&style=for-the-badge&logo=github&logoColor=white" alt="GitHub-Downloads" />
+  <img src="https://img.shields.io/badge/Lizenz-MIT-blue?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="Lizenz MIT" />
+  <img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/ci.yml?branch=main&label=CI&color=2ea44f&style=for-the-badge&logo=githubactions&logoColor=white" alt="CI Status" />
+  <img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/codeql.yml?branch=main&label=CodeQL&color=2563eb&style=for-the-badge&logo=github&logoColor=white" alt="CodeQL Security Analysis" />
+  <img src="./badges/coverage.svg" alt="Test Coverage" />
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/D3rPaPaH0d3n/eStundnzettl/main/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" width="120" alt="eStundnzettl Logo" />
+  <img src="https://sonarcloud.io/api/project_badges/quality_gate?project=D3rPaPaH0d3n_eStundnzettl" alt="SonarQube Cloud Quality Gate" />
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/D3rPaPaH0d3n/eStundnzettl/main/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" width="160" alt="eStundnzettl Logo" />
 </p>
 
 <h1 align="center">eStundnzettl</h1>

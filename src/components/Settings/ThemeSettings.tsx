@@ -27,7 +27,7 @@ const ThemeSettings: React.FC<Props> = ({ theme, setTheme }) => {
       </h3>
       <div className="grid grid-cols-3 gap-2">
         {(["light", "dark", "system"] as const).map((mode) => (
-          <button
+          <button type="button"
             key={mode}
             onClick={() => handleThemeChange(mode as Theme)}
             className={`py-2 px-2 rounded-xl text-sm font-bold border transition-colors capitalize

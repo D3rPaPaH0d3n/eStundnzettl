@@ -1,6 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
 import React from "react";
-import { APP_VERSION } from "./hooks/constants";
 import {
   parseTime,
   getTargetMinutesForDate,

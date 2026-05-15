@@ -70,7 +70,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
             )}
           </div>
           )}
-          <button
+          <button type="button"
             onClick={this.handleReload}
             className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg hover:bg-emerald-700 transition-colors"
           >

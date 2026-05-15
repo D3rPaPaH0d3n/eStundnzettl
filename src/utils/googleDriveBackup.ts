@@ -232,7 +232,17 @@ const getValidGoogleToken = async (): Promise<{ accessToken: string }> => {
   }
 };
 
+function assertGoogleApiUrl(url: string): void {
+  const parsed = new URL(url);
+  const allowedHosts = new Set(['www.googleapis.com']);
+  if (parsed.protocol !== 'https:' || !allowedHosts.has(parsed.hostname)) {
+    throw new Error('Ungültige Google-Drive-API-URL');
+  }
+}
+
 const authFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  assertGoogleApiUrl(url);
+
   const executeFetch = async (accessToken: string): Promise<Response> => fetch(url, {
     ...options,
     headers: {
@@ -296,9 +306,9 @@ const uploadBackupFile = async (fileName: string, jsonContent: unknown): Promise
     ? { name: fileName, mimeType: BACKUP_CONFIG.MIME_TYPE }
     : { name: fileName, mimeType: BACKUP_CONFIG.MIME_TYPE, parents: ['appDataFolder'] };
 
-  const url = existingFileId
-    ? `https://www.googleapis.com/upload/drive/v3/files/${existingFileId}?uploadType=multipart`
-    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+	const url = existingFileId
+		? `https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(existingFileId)}?uploadType=multipart`
+		: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
 
   const response = await authFetch(url, {
     method: existingFileId ? 'PATCH' : 'POST',
@@ -346,7 +356,7 @@ const findLatestBackupFile = async (): Promise<Record<string, unknown> | null> =
 };
 
 const downloadBackupFileContent = async (fileId: string): Promise<unknown> => {
-  const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+	const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`;
   const response = await authFetch(url, { method: 'GET' });
   if (!response.ok) {
     throw new Error('Fehler beim Download');

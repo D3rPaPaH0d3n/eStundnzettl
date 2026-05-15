@@ -317,11 +317,12 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
 
         {config.overtimeMode === "split" && (
           <div className="p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10">
-            <label className="block text-xs font-bold text-zinc-600 dark:text-zinc-300 mb-2">
+            <label htmlFor="onboarding-overtime-threshold" className="block text-xs font-bold text-zinc-600 dark:text-zinc-300 mb-2">
               {t("settings.calc.overtimeThresholdLabel")}
             </label>
             <div className="flex items-center gap-2">
               <input
+                id="onboarding-overtime-threshold"
                 type="number"
                 min={1}
                 max={80}
@@ -434,8 +435,9 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
                 </div>
                 <div className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 space-y-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.dateLabel")}</label>
+                    <label htmlFor="onboarding-custom-holiday-date" className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.dateLabel")}</label>
                     <input
+                      id="onboarding-custom-holiday-date"
                       type="text"
                       placeholder={t("settings.calc.dateFormatPlaceholder")}
                       value={customHolidayInput.display}
@@ -446,8 +448,9 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.nameLabel")}</label>
+                    <label htmlFor="onboarding-custom-holiday-name" className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.nameLabel")}</label>
                     <input
+                      id="onboarding-custom-holiday-name"
                       type="text"
                       placeholder={t("settings.calc.customHolidayPlaceholder")}
                       value={customHolidayInput.name}
@@ -506,6 +509,7 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
 
               <div className="flex gap-2">
                 <input
+                  aria-label={t("settings.calc.dateLabel")}
                   type="text"
                   placeholder={t("settings.calc.dateFormatPlaceholder")}
                   value={customHalfDayInput}
@@ -544,9 +548,10 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
                 {t("onboarding.calc.vacationTitle")}
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.yearlyAllowance")}</label>
+                <label htmlFor="onboarding-vacation-allowance" className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.yearlyAllowance")}</label>
                 <div className="flex items-center gap-2">
                   <input
+                    id="onboarding-vacation-allowance"
                     type="number"
                     min={0}
                     max={365}
@@ -561,9 +566,10 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.remainingCarryover")}</label>
+                <label htmlFor="onboarding-vacation-carryover" className="text-xs font-bold text-zinc-500 dark:text-zinc-400">{t("settings.calc.remainingCarryover")}</label>
                 <div className="flex items-center gap-2">
                   <input
+                    id="onboarding-vacation-carryover"
                     type="number"
                     min={-365}
                     max={365}

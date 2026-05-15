@@ -827,7 +827,7 @@ const BackupSettings: React.FC<Props> = ({
               </span>
             </div>
           </div>
-          <button
+          <button type="button"
             onClick={handleGoogleToggle}
             disabled={gdriveDisabled}
             title={gdriveDisabled ? t("settings.backup.unavailable.hint") : undefined}
@@ -878,7 +878,7 @@ const BackupSettings: React.FC<Props> = ({
               </span>
             </div>
           </div>
-          <button
+          <button type="button"
             onClick={nextcloudEnabled ? handleNcDisconnect : () => setNcExpanded(!ncExpanded)}
             disabled={ncConnecting}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${
@@ -903,7 +903,7 @@ const BackupSettings: React.FC<Props> = ({
                 <span className="text-xs text-zinc-400">
                   {t("settings.backup.nextcloud.pollingHint")}
                 </span>
-                <button
+                <button type="button"
                   onClick={() => {
                     cleanupLifecycle();
                     setNcConnecting(false);
@@ -916,8 +916,9 @@ const BackupSettings: React.FC<Props> = ({
             ) : (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 mb-1">{t("settings.backup.nextcloud.serverUrlLabel")}</label>
+                  <label htmlFor="nextcloud-server-url" className="block text-xs font-bold text-zinc-500 mb-1">{t("settings.backup.nextcloud.serverUrlLabel")}</label>
                   <input
+                    id="nextcloud-server-url"
                     type="url"
                     value={nextcloudUrl}
                     onChange={(e) => setNextcloudUrl(e.target.value)}
@@ -925,7 +926,7 @@ const BackupSettings: React.FC<Props> = ({
                     className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none focus:border-orange-400"
                   />
                 </div>
-                <button
+                <button type="button"
                   onClick={handleNcConnect}
                   className="w-full py-2.5 text-sm font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-2"
                 >
@@ -933,7 +934,7 @@ const BackupSettings: React.FC<Props> = ({
                   {t("settings.backup.nextcloud.connectButton")}
                 </button>
                 {nextcloudUrl && nextcloudUser && nextcloudPass && (
-                  <button
+                  <button type="button"
                     onClick={handleNcTest}
                     className="w-full py-2 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors"
                   >
@@ -976,7 +977,7 @@ const BackupSettings: React.FC<Props> = ({
               </span>
             </div>
           </div>
-          <button
+          <button type="button"
             onClick={handleLocalToggle}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] ${
               hasBackupFolder
@@ -1010,7 +1011,7 @@ const BackupSettings: React.FC<Props> = ({
                 </span>
               </div>
             </div>
-            <button
+            <button type="button"
               onClick={handleManualBackup}
               disabled={isBackingUp}
               className="px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5"
@@ -1027,14 +1028,14 @@ const BackupSettings: React.FC<Props> = ({
 
         {/* Basis-Export/Import ist absichtlich immer sichtbar: Backup ist kein Expert-Feature. */}
         <div className="grid grid-cols-2 gap-2 pt-2">
-          <button
+          <button type="button"
             onClick={onExport}
             className="w-full py-3 bg-zinc-900 dark:bg-zinc-700 text-white font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-600 flex items-center justify-center gap-2 transition-colors"
           >
             <Upload size={18} className="rotate-180" /> {t("settings.backup.export")}
           </button>
 
-          <button
+          <button type="button"
             onClick={() => importInputRef.current?.click()}
             className="w-full py-3 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors"
           >

@@ -1,4 +1,4 @@
-import React from "react";
+
 import { ArrowLeft, Settings as SettingsIcon, FileBarChart } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";

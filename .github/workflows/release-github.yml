@@ -206,12 +206,16 @@ jobs:
       #      als Fallback, falls die Version nicht im App-Changelog steht.
       - name: Build release notes
         id: notes
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          RELEASE_NOTES_OVERRIDE: ${{ github.event.inputs.release_notes_override }}
         run: |
-          CODE="${{ steps.version.outputs.code }}"
-          NAME="${{ steps.version.outputs.name }}"
+          CODE="$VERSION_CODE"
+          NAME="$VERSION_NAME"
           DE_FALLBACK="fastlane/metadata/android/de-DE/changelogs/${CODE}.txt"
           EN_FALLBACK="fastlane/metadata/android/en-US/changelogs/${CODE}.txt"
-          OVERRIDE='${{ github.event.inputs.release_notes_override }}'
+          OVERRIDE="$RELEASE_NOTES_OVERRIDE"
 
           NOTES_FILE="$(mktemp)"
 

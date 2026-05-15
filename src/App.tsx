@@ -5,7 +5,6 @@ import type { BackupPayload } from "./types";
 import { getLocale } from "./locales";
 import { replaceFullSnapshot, type ImportSnapshot } from "./db/snapshot";
 
-import { STORAGE_KEYS, WORK_CODE } from "./hooks/constants";
 import { useWorkCodes } from "./hooks/useWorkCodes";
 import { useEntries } from "./hooks/useEntries";
 import { useSettings } from "./hooks/useSettings";

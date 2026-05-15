@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import {
   Sparkles,
-  Play,
   Plus,
   FileBarChart,
   Settings as SettingsIcon,

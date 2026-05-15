@@ -899,7 +899,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                               <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
                                 {t("onboarding.backup.nextcloud.awaiting")}
                               </span>
-                              <button
+                              <button type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (ncSetupPollRef.current) {
@@ -923,7 +923,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                 placeholder={t("onboarding.backup.nextcloud.urlPlaceholder")}
                                 className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
                               />
-                              <button
+                              <button type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleNextcloudSetup();
@@ -944,7 +944,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                  {isRestoreFlow && (
                     <div className="grid grid-cols-1 gap-2">
                         {!gdriveDisabled && (
-                        <button
+                        <button type="button"
                           onClick={handleGoogleDriveRestore}
                           disabled={loading}
                           className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors group"
@@ -958,7 +958,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                         </button>
                         )}
 
-                        <button
+                        <button type="button"
                           onClick={() => setShowNcRestore(!showNcRestore)}
                           disabled={loading}
                           className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors group"
@@ -979,7 +979,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                 <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
                                   {t("onboarding.backup.nextcloud.awaiting")}
                                 </span>
-                                <button
+                                <button type="button"
                                   onClick={() => {
                                     if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
                                     setNcRestoreConnecting(false);
@@ -998,7 +998,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                   placeholder={t("onboarding.backup.nextcloud.urlPlaceholder")}
                                   className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
                                 />
-                                <button
+                                <button type="button"
                                   onClick={handleNextcloudRestore}
                                   disabled={loading}
                                   className="w-full py-2 text-sm font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-1.5"
@@ -1012,7 +1012,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                         )}
 
                         <div className="grid grid-cols-2 gap-2">
-                            <button
+                            <button type="button"
                             onClick={handleFolderRestore}
                             disabled={loading}
                             className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
@@ -1023,7 +1023,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
                             <div className="relative">
                                 <input type="file" ref={fileInputRef} onChange={handleLocalFileRestore} className="hidden" accept=".json" />
-                                <button
+                                <button type="button"
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={loading}
                                 className="w-full h-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
@@ -1056,7 +1056,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         {step > 0 && step < 7 && (
           <div className="p-4 border-t border-zinc-100 dark:border-zinc-700 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800/50 backdrop-blur-sm">
 
-            <button
+            <button type="button"
               onClick={prevStep}
               className="px-4 py-2 font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors flex items-center gap-1"
             >
@@ -1064,7 +1064,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
             </button>
 
             {!isRestoreFlow && (
-              <button
+              <button type="button"
                 onClick={nextStep}
                 className="px-6 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl flex items-center gap-2 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-lg shadow-zinc-900/10"
               >

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Entry, EntryType } from '../types';
+import type { Entry, } from '../types';
 import { WORK_CODE } from "./constants";
 import { toLocalDateString } from "../utils";
 

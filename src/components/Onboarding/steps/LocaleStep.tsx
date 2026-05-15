@@ -174,9 +174,9 @@ const LocaleStep: React.FC<Props> = ({
         {/* Bundesland-Picker (Deutschland) */}
         {topChoice === "de" && (
           <div className="pl-4 border-l-2 border-blue-300 dark:border-blue-700 ml-2">
-            <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
+            <div className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
               {t("onboarding.locale.stateLabel")}
-            </label>
+            </div>
             <button
               type="button"
               onClick={() => setStateDrawerOpen(true)}
@@ -214,9 +214,9 @@ const LocaleStep: React.FC<Props> = ({
         {/* Kantons-Picker (Schweiz) */}
         {topChoice === "ch" && (
           <div className="pl-4 border-l-2 border-red-300 dark:border-red-700 ml-2">
-            <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
+            <div className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
               {t("onboarding.locale.kantonLabel")}
-            </label>
+            </div>
             <button
               type="button"
               onClick={() => setKantonDrawerOpen(true)}

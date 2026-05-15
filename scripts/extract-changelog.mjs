@@ -15,15 +15,15 @@
  *   0  Markdown wurde geschrieben (oder: Eintrag nicht gefunden, leerer Output)
  *   1  Fatal-Error (Datei nicht lesbar / nicht parsebar)
  *
- * Hinweis: Die Changelog-Dateien enthalten kein TypeScript ausser dem
- * `export const` — wir lesen die Datei als Text, isolieren das Array
- * und werten es via Function() aus. Vertrauen ist OK weil es nur unsere
- * eigene Source ist; nichts User-Generated.
+ * Hinweis: Die Changelog-Dateien enthalten nur statische Daten. Wir parsen
+ * sie bewusst als TypeScript-AST und akzeptieren nur Literal-Strukturen,
+ * damit Release-Workflows keinen Source-Code ausführen müssen.
  */
 
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(SCRIPT_DIR, "..");
@@ -40,72 +40,81 @@ function parseArgs(argv) {
 
 function loadChangelog(lang) {
   if (lang === "de") {
-    return loadArrayLiteral(
-      resolve(REPO_ROOT, "src/data/changelog-data.de.ts"),
-      /export\s+const\s+CHANGELOG_DATA_DE\s*=\s*/,
-    );
+    return loadArrayLiteral(resolve(REPO_ROOT, "src/data/changelog-data.de.ts"), "CHANGELOG_DATA_DE");
   }
   if (lang === "en") {
     // EN file declares only the translated entries, then maps them
     // onto the DE list with DE as fallback. We replicate that here.
-    const translatedEn = loadArrayLiteral(
-      resolve(REPO_ROOT, "src/data/changelog-data.en.ts"),
-      /\bconst\s+TRANSLATED_EN\s*=\s*/,
-    );
-    const baseDe = loadArrayLiteral(
-      resolve(REPO_ROOT, "src/data/changelog-data.de.ts"),
-      /export\s+const\s+CHANGELOG_DATA_DE\s*=\s*/,
-    );
+    const translatedEn = loadArrayLiteral(resolve(REPO_ROOT, "src/data/changelog-data.en.ts"), "TRANSLATED_EN");
+    const baseDe = loadArrayLiteral(resolve(REPO_ROOT, "src/data/changelog-data.de.ts"), "CHANGELOG_DATA_DE");
     return baseDe.map((de) => translatedEn.find((en) => en && en.version === de.version) || de);
   }
   throw new Error(`Unsupported lang: ${lang} (supported: de, en)`);
 }
 
 /**
- * Reads a file and extracts a single array literal that starts after
- * `prefixRegex`, parses it via Function() as a JS expression. The array
- * literal must end at the matching `]` followed by `;` at column 0 of
- * its own line — which is how Prettier writes the changelog files.
+ * Reads a file, finds a variable declaration, and converts its initializer
+ * only if it is made of safe literals: arrays, objects, strings, numbers,
+ * booleans and null. Calls, identifiers, spreads, templates, and functions
+ * are rejected instead of being evaluated.
  */
-function loadArrayLiteral(path, prefixRegex) {
+function loadArrayLiteral(path, variableName) {
   const text = readFileSync(path, "utf8");
-  const match = text.match(prefixRegex);
-  if (!match) throw new Error(`Could not find prefix in ${path}`);
-  const start = match.index + match[0].length;
-  // Walk forward, count brackets to find the matching close.
-  let depth = 0;
-  let inString = null;
-  let escape = false;
-  let end = -1;
-  for (let i = start; i < text.length; i++) {
-    const c = text[i];
-    if (escape) {
-      escape = false;
-      continue;
+  const sourceFile = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  let initializer = null;
+
+  function visit(node) {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === variableName) {
+      initializer = node.initializer;
+      return;
     }
-    if (inString) {
-      if (c === "\\") escape = true;
-      else if (c === inString) inString = null;
-      continue;
-    }
-    if (c === '"' || c === "'" || c === "`") {
-      inString = c;
-      continue;
-    }
-    if (c === "[") depth++;
-    else if (c === "]") {
-      depth--;
-      if (depth === 0) {
-        end = i + 1;
-        break;
-      }
-    }
+    ts.forEachChild(node, visit);
   }
-  if (end < 0) throw new Error(`Unbalanced array literal in ${path}`);
-  const body = text.slice(start, end);
-  const arr = new Function(`return ${body};`)();
+
+  visit(sourceFile);
+  if (!initializer) throw new Error(`Could not find ${variableName} in ${path}`);
+
+  const arr = literalToValue(initializer, path);
   if (!Array.isArray(arr)) throw new Error(`Parsed value is not an array in ${path}`);
   return arr;
+}
+
+function literalToValue(node, path) {
+  if (ts.isArrayLiteralExpression(node)) {
+    return node.elements.map((element) => {
+      if (ts.isSpreadElement(element)) throw new Error(`Spread elements are not supported in ${path}`);
+      return literalToValue(element, path);
+    });
+  }
+
+  if (ts.isObjectLiteralExpression(node)) {
+    const out = {};
+    for (const property of node.properties) {
+      if (!ts.isPropertyAssignment(property)) {
+        throw new Error(`Only plain object properties are supported in ${path}`);
+      }
+      out[propertyNameToString(property.name, path)] = literalToValue(property.initializer, path);
+    }
+    return out;
+  }
+
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
+  if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
+  if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
+  if (node.kind === ts.SyntaxKind.NullKeyword) return null;
+  if (ts.isNumericLiteral(node)) return Number(node.text);
+  if (ts.isPrefixUnaryExpression(node) && ts.isNumericLiteral(node.operand)) {
+    const value = Number(node.operand.text);
+    if (node.operator === ts.SyntaxKind.MinusToken) return -value;
+    if (node.operator === ts.SyntaxKind.PlusToken) return value;
+  }
+
+  throw new Error(`Unsupported non-literal changelog expression in ${path}: ${node.getText()}`);
+}
+
+function propertyNameToString(name, path) {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text;
+  throw new Error(`Unsupported object property name in ${path}: ${name.getText()}`);
 }
 
 function findEntry(entries, version) {

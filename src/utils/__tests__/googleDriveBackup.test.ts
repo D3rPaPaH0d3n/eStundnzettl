@@ -23,11 +23,13 @@ import {
   getValidGoogleToken,
   clearStoredAuth,
   getStoredAuth,
-  ensureGoogleAuthInitialized,
   AUTH_SCOPE,
+  uploadBackupFile,
+  downloadBackupFileContent,
 } from "../googleDriveBackup";
 
 beforeEach(() => {
+  vi.unstubAllGlobals();
   vi.clearAllMocks();
   localStorage.clear();
   clearStoredAuth();
@@ -179,5 +181,38 @@ describe("clearStoredAuth / getStoredAuth", () => {
   it("handles corrupted JSON in localStorage gracefully", () => {
     localStorage.setItem("google_auth_state", "not-json{{{");
     expect(getStoredAuth()).toBeNull();
+  });
+});
+
+describe("Google Drive API requests", () => {
+  it("encodes file IDs before using them in Google Drive URLs", async () => {
+    mockRefreshToken.mockResolvedValue({ accessToken: "tok123" });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await downloadBackupFileContent("file/id with spaces");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://www.googleapis.com/drive/v3/files/file%2Fid%20with%20spaces?alt=media",
+      expect.objectContaining({ method: "GET" }),
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps backup upload requests on the Google API host", async () => {
+    mockRefreshToken.mockResolvedValue({ accessToken: "tok123" });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ files: [{ id: "existing/id" }] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await uploadBackupFile("backup.json", { entries: [] });
+
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "https://www.googleapis.com/upload/drive/v3/files/existing%2Fid?uploadType=multipart",
+      expect.objectContaining({ method: "PATCH" }),
+    );
+    vi.unstubAllGlobals();
   });
 });

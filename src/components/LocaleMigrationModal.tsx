@@ -128,9 +128,9 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
             {/* Bundesland-Picker nur wenn DE gewählt */}
             {choice === "de" && (
               <div className="pl-4 border-l-2 border-blue-300 dark:border-blue-700 ml-2">
-                <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
+                <div className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
                   {t("modals.localeMigration.stateLabel")}
-                </label>
+                </div>
                 <button
                   type="button"
                   onClick={() => setStateDrawerOpen(true)}
@@ -172,7 +172,7 @@ const LocaleMigrationModal: React.FC<Props> = ({ isOpen, onChoose }) => {
         </div>
 
         <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-200 dark:border-zinc-700">
-          <button
+          <button type="button"
             onClick={handleConfirm}
             disabled={!choice}
             className="w-full py-3 px-4 rounded-xl font-bold transition-colors shadow-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-300 dark:disabled:bg-zinc-700 text-white shadow-emerald-900/20"

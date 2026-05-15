@@ -26,7 +26,6 @@ vi.mock("../googleDriveBackup", () => ({
 import {
   initGoogleAuth,
   signInGoogle,
-  getGoogleAuthStatus,
   getValidToken,
   refreshGoogleToken,
   isGoogleLoggedIn,
@@ -35,7 +34,6 @@ import {
   uploadOrUpdateFile,
   findLatestBackup,
   downloadFileContent,
-  getStoredGoogleAuth,
 } from "../googleDrive";
 
 beforeEach(() => {

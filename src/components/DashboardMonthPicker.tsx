@@ -58,15 +58,15 @@ export default function DashboardMonthPicker({ selectedDate, onSelectMonth, onCl
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl dark:bg-zinc-800">
-        <label className="mb-2 block text-sm font-bold text-zinc-700 dark:text-zinc-200">
+        <label htmlFor="dashboard-month-picker" className="mb-2 block text-sm font-bold text-zinc-700 dark:text-zinc-200">
           {t("dashboard.monthPickerAria", { value: selectedDate.toLocaleDateString() })}
         </label>
         <input
+          id="dashboard-month-picker"
           type="month"
           value={fallbackValue}
           onChange={(event) => setFallbackValue(event.target.value)}
           className="w-full rounded-lg border border-zinc-300 bg-white p-3 font-bold text-zinc-900 outline-none focus:border-emerald-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white"
-          autoFocus
         />
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-bold text-zinc-600 dark:text-zinc-300">

@@ -14,7 +14,7 @@ import { Capacitor } from "@capacitor/core";
 import { Material3DatePicker } from "../plugins/Material3DatePickerPlugin";
 import { Material3TimePicker } from "../plugins/Material3TimePickerPlugin";
 
-import type { Entry, EntryType, UserData, WorkCode } from "../types";
+import type { Entry, UserData, WorkCode } from "../types";
 import type { Locale } from "../locales/types";
 import type { CalculationConfig } from "../types";
 
@@ -378,7 +378,7 @@ const EntryForm: React.FC<Props> = ({
           )}
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.date")}</label>
+            <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.date")}</div>
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => changeDate(-1)} className="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"><ChevronLeft size={20} /></button>
               <div className="flex-1">
@@ -392,6 +392,7 @@ const EntryForm: React.FC<Props> = ({
                   {t("entryForm.datePickerFallbackHint", { defaultValue: "Native Datumsauswahl nicht verfügbar – bitte Datum manuell wählen." })}
                 </p>
                 <input
+                  aria-label={t("entryForm.date")}
                   type="date"
                   value={formDate}
                   onChange={(event) => {
@@ -408,7 +409,7 @@ const EntryForm: React.FC<Props> = ({
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.start")}</label>
+                  <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.start")}</div>
 
                   <button type="button" onClick={() => openTimePicker('start')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
                     <span className="flex-1 text-center text-lg">{startTime}</span>
@@ -416,7 +417,7 @@ const EntryForm: React.FC<Props> = ({
                   </button>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.end")}</label>
+                  <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.end")}</div>
                   <button type="button" onClick={() => openTimePicker('end')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
                     <span className="flex-1 text-center text-lg">{endTime}</span>
                     <Clock size={18} className="text-zinc-400 ml-2" />
@@ -426,7 +427,7 @@ const EntryForm: React.FC<Props> = ({
 
               {entryType === "work" && code !== WORK_CODE.ARRIVAL && (
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.pause")}</label>
+                  <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.pause")}</div>
                   <div className="flex gap-2">
                     <button type="button" onClick={() => setPauseDuration(0)} className={`flex-1 p-3 rounded-lg border text-sm font-bold ${pauseDuration === 0 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300"}`}>{t("entryForm.noPause")}</button>
                     <button
@@ -458,7 +459,7 @@ const EntryForm: React.FC<Props> = ({
               {entryType === "work" && code !== WORK_CODE.ARRIVAL && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.activity")}</label>
+                    <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.activity")}</div>
                     <button
                       type="button"
                       onClick={() => setQuickAddOpen(!quickAddOpen)}
@@ -479,6 +480,7 @@ const EntryForm: React.FC<Props> = ({
                       >
                         <div className="flex gap-2 mb-2">
                           <input
+                            aria-label={t("entryForm.newActivity")}
                             type="text"
                             value={quickAddValue}
                             onChange={(e) => setQuickAddValue(e.target.value)}
@@ -517,8 +519,9 @@ const EntryForm: React.FC<Props> = ({
 
               {(entryType === "work" || entryType === "drive") && (
                 <div className="space-y-1 relative">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{entryType === "drive" || code === WORK_CODE.ARRIVAL ? t("entryForm.distanceOrNote") : t("entryForm.project")}</label>
+                  <label htmlFor="entry-form-project" className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{entryType === "drive" || code === WORK_CODE.ARRIVAL ? t("entryForm.distanceOrNote") : t("entryForm.project")}</label>
                   <input
+                    id="entry-form-project"
                     type="text"
                     value={project}
                     onChange={handleProjectChange}

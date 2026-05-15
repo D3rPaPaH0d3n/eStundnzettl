@@ -1,4 +1,4 @@
-import React from "react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { X, FolderUp, Share2, HardDrive, FileText } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -66,7 +66,7 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
                     </p>
                   </div>
                 </div>
-                <button
+                <button type="button"
                   onClick={onClose}
                   className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full transition-colors"
                 >
@@ -79,7 +79,7 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
             {/* Options */}
             <div className="p-4 space-y-3">
               {/* Option 1: Ordner / Documents */}
-              <button
+              <button type="button"
                 onClick={() => handleChoice('folder')}
                 className="w-full flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl border border-zinc-200 dark:border-zinc-600 transition-all active:scale-[0.98]"
               >
@@ -102,7 +102,7 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
               </button>
 
               {/* Option 2: Teilen */}
-              <button
+              <button type="button"
                 onClick={() => handleChoice('share')}
                 className="w-full flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl border border-zinc-200 dark:border-zinc-600 transition-all active:scale-[0.98]"
               >
@@ -124,7 +124,7 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
 
             {/* Footer */}
             <div className="px-4 pb-4">
-              <button
+              <button type="button"
                 onClick={onClose}
                 className="w-full py-3 text-zinc-500 dark:text-zinc-400 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-700/50 rounded-xl transition-colors"
               >

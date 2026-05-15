@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { X, Check } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { useTranslation } from "react-i18next";

@@ -15,6 +15,7 @@ import {
   Hand,
   type LucideIcon,
 } from "lucide-react";
+import { activateOnEnterOrSpace } from "../utils/keyboardActivation";
 
 /**
  * AppTour
@@ -233,24 +234,40 @@ const AppTour = ({ onClose }: Props) => {
       {spotlight ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <div
+            role="button"
+            tabIndex={0}
+            aria-label={t("tour.next")}
             className="fixed left-0 right-0 top-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto"
             style={{ height: spotlight.top }}
             onClick={handleNext}
+            onKeyDown={(event) => activateOnEnterOrSpace(event, handleNext)}
           />
           <div
+            role="button"
+            tabIndex={0}
+            aria-label={t("tour.next")}
             className="fixed left-0 right-0 bottom-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto"
             style={{ height: spotlight.bottom }}
             onClick={handleNext}
+            onKeyDown={(event) => activateOnEnterOrSpace(event, handleNext)}
           />
           <div
+            role="button"
+            tabIndex={0}
+            aria-label={t("tour.next")}
             className="fixed left-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto"
             style={{ top: spotlight.top, bottom: spotlight.bottom, width: spotlight.left }}
             onClick={handleNext}
+            onKeyDown={(event) => activateOnEnterOrSpace(event, handleNext)}
           />
           <div
+            role="button"
+            tabIndex={0}
+            aria-label={t("tour.next")}
             className="fixed right-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto"
             style={{ top: spotlight.top, bottom: spotlight.bottom, width: spotlight.right }}
             onClick={handleNext}
+            onKeyDown={(event) => activateOnEnterOrSpace(event, handleNext)}
           />
         </motion.div>
       ) : (

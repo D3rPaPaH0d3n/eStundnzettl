@@ -13,6 +13,7 @@ import { isSQLiteActive } from "../../db/storageMode";
 import { deleteSetting } from "../../db/repositories/settingsRepo";
 import { replaceFullSnapshot } from "../../db/snapshot";
 import { logger } from "../../utils/logger";
+import { activateOnEnterOrSpace } from "../../utils/keyboardActivation";
 
 import type { Entry, UserData, WorkCode, WorkModel } from "../../types";
 
@@ -159,7 +160,11 @@ const DataSettings: React.FC<Props> = ({
         <div className="space-y-3">
           {/* Collapsible Header */}
           <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={isWorkModelExpanded}
             onClick={toggleWorkModelExpanded}
+            onKeyDown={(event) => activateOnEnterOrSpace(event, toggleWorkModelExpanded)}
             className="flex justify-between items-start gap-4 cursor-pointer select-none"
           >
             <div>

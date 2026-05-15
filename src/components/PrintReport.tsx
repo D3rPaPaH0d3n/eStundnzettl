@@ -18,6 +18,7 @@ import { Share } from "@capacitor/share";
 import { Material3DatePicker } from "../plugins/Material3DatePickerPlugin";
 import { getNativePickerThemeMode } from "../utils/nativePickerTheme";
 import { useAttachmentShare } from "../hooks/useAttachmentShare";
+import { activateOnEnterOrSpace } from "../utils/keyboardActivation";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -501,8 +502,12 @@ const PrintReport: React.FC<Props> = ({
               {isPickerOpen && (
                 <>
                   <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t("common.close")}
                     className="fixed inset-0 z-40"
                     onClick={() => setIsPickerOpen(false)}
+                    onKeyDown={(event) => activateOnEnterOrSpace(event, () => setIsPickerOpen(false))}
                   />
                   <motion.div
                     initial={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -512,10 +517,16 @@ const PrintReport: React.FC<Props> = ({
                     className="absolute top-full left-0 mt-1 w-full max-h-64 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl z-50 py-1"
                   >
                     <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => {
                         setFilterMode("month");
                         setIsPickerOpen(false);
                       }}
+                      onKeyDown={(event) => activateOnEnterOrSpace(event, () => {
+                        setFilterMode("month");
+                        setIsPickerOpen(false);
+                      })}
                       className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-zinc-700/50 ${
                         filterMode === "month"
                           ? "text-emerald-500 bg-zinc-700/50"
@@ -528,10 +539,16 @@ const PrintReport: React.FC<Props> = ({
                     {availableWeeks.map((w) => (
                       <div
                         key={w}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => {
                           setFilterMode(w);
                           setIsPickerOpen(false);
                         }}
+                        onKeyDown={(event) => activateOnEnterOrSpace(event, () => {
+                          setFilterMode(w);
+                          setIsPickerOpen(false);
+                        })}
                         className={`px-4 py-3 text-sm font-medium flex items-center justify-between cursor-pointer border-b border-zinc-700/50 last:border-0 ${
                           Number(filterMode) === w
                             ? "text-emerald-500 bg-zinc-700/50"

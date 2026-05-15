@@ -173,7 +173,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries,
       .filter((entry): entry is Entry & { project: string } => entry.type === "work" && !!entry.project?.trim())
       .map((entry) => entry.project.trim());
 
-    return [...new Set(projects)].sort();
+    return [...new Set(projects)].sort((a, b) => a.localeCompare(b));
   }, [entries]);
 
   return {

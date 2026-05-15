@@ -137,7 +137,7 @@ export const useWorkCodes = () => {
       if (!isSQLiteActive()) {
         localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(updatedCodes));
       }
-      sqliteWrite(() => insertWorkCode(newCode), () => setWorkCodes(workCodes));
+      sqliteWrite(() => insertWorkCode(newCode), () => setWorkCodes([...workCodes]));
       return true;
     },
     [workCodes, sqliteWrite]
@@ -158,7 +158,7 @@ export const useWorkCodes = () => {
       if (!isSQLiteActive()) {
         localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(updatedCodes));
       }
-      sqliteWrite(() => updateWorkCodeInDb(id, trimmedLabel), () => setWorkCodes(workCodes));
+      sqliteWrite(() => updateWorkCodeInDb(id, trimmedLabel), () => setWorkCodes([...workCodes]));
       return true;
     },
     [workCodes, sqliteWrite]
@@ -174,7 +174,7 @@ export const useWorkCodes = () => {
       if (!isSQLiteActive()) {
         localStorage.setItem(STORAGE_KEYS.WORK_CODES, JSON.stringify(updatedCodes));
       }
-      sqliteWrite(() => deleteWorkCodeFromDb(id), () => setWorkCodes(workCodes));
+      sqliteWrite(() => deleteWorkCodeFromDb(id), () => setWorkCodes([...workCodes]));
     },
     [workCodes, sqliteWrite]
   );

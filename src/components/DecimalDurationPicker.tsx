@@ -3,6 +3,7 @@ import { Check, X } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { useTranslation } from "react-i18next";
+import { activateOnEnterOrSpace } from "../utils/keyboardActivation";
 
 interface Props {
   isOpen: boolean;
@@ -174,11 +175,18 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                         {hours.map((h) => (
                           <div
                             key={h}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`${h} ${t("common.hours", { defaultValue: "Stunden" })}`}
                             data-value={h}
                             onClick={() => {
                                 setSelectedHour(h);
                                 scrollToValue(hoursRef, h);
                             }}
+                            onKeyDown={(event) => activateOnEnterOrSpace(event, () => {
+                                setSelectedHour(h);
+                                scrollToValue(hoursRef, h);
+                            })}
                             className={`h-[64px] flex items-center justify-end pr-2 snap-center cursor-pointer transition-all duration-150 pt-1 ${
                               h === selectedHour
                                 ? "font-bold text-4xl text-zinc-800 dark:text-white scale-110"
@@ -199,11 +207,18 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                         {decimals.map((d) => (
                           <div
                             key={d}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`0,${d}`}
                             data-value={d}
                             onClick={() => {
                                 setSelectedDecimal(d);
                                 scrollToValue(decimalsRef, d);
                             }}
+                            onKeyDown={(event) => activateOnEnterOrSpace(event, () => {
+                                setSelectedDecimal(d);
+                                scrollToValue(decimalsRef, d);
+                            })}
                             /* CHANGE: text-orange-500 -> text-emerald-500 */
                             className={`h-[64px] flex items-center justify-start pl-0 snap-center cursor-pointer transition-all duration-150 pt-1 ${
                               d === selectedDecimal

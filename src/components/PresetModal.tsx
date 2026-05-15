@@ -3,6 +3,7 @@ import { X, Check, Calendar, Save, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { WORK_MODELS } from "../hooks/constants";
 import type { WorkModel } from "../types";
+import { activateOnEnterOrSpace } from "../utils/keyboardActivation";
 
 interface Props {
   isOpen: boolean;
@@ -73,7 +74,11 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
                 return (
                     <div
                         key={model.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={isSelected}
                         onClick={() => setSelectedId(model.id)}
+                        onKeyDown={(event) => activateOnEnterOrSpace(event, () => setSelectedId(model.id))}
                         className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between group
                             ${isSelected
                                 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"

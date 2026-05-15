@@ -34,7 +34,7 @@ function canonicalJsonStringify(value: unknown): string {
     return "[" + value.map((v: unknown) => canonicalJsonStringify(v)).join(",") + "]";
   }
   const obj = value as Record<string, unknown>;
-  const keys = Object.keys(obj).filter((k) => k !== "checksum").sort();
+  const keys = Object.keys(obj).filter((k) => k !== "checksum").sort((a, b) => a.localeCompare(b));
   return "{" + keys.map((k) => JSON.stringify(k) + ":" + canonicalJsonStringify(obj[k])).join(",") + "}";
 }
 

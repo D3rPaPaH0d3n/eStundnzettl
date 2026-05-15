@@ -18,6 +18,7 @@ import { analyzeBackupData, applyBackup, readJsonFile, readBackupFromFolder, sel
 import ImportConflictModal from "./ImportConflictModal";
 import { WORK_MODELS, WORK_CODE_PRESETS, STORAGE_KEYS } from "../hooks/constants";
 import { DEMO_DATA } from "../utils/demoData";
+import { activateOnEnterOrSpace } from "../utils/keyboardActivation";
 import { setSetting } from "../db/repositories/settingsRepo";
 import { storeNextcloudAppPassword } from "../utils/nextcloudSecret";
 import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
@@ -804,7 +805,11 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                      {/* 1. CLOUD BACKUP — versteckt wenn Google Play Services fehlen */}
                      {!gdriveDisabled && (
                      <div
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={formData.autoBackup}
                         onClick={handleAutoBackupToggle}
+                        onKeyDown={(event) => activateOnEnterOrSpace(event, handleAutoBackupToggle)}
                         className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
                           formData.autoBackup
                               ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm"
@@ -830,7 +835,11 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
                       {/* 2. LOKALES BACKUP */}
                       <div 
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={formData.localBackupEnabled}
                         onClick={handleLocalBackupToggle}
+                        onKeyDown={(event) => activateOnEnterOrSpace(event, handleLocalBackupToggle)}
                         className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
                           formData.localBackupEnabled 
                               ? "border-green-500 bg-green-50 dark:bg-green-900/20 shadow-sm" 
@@ -855,7 +864,14 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
                       {/* 3. NEXTCLOUD BACKUP */}
                       <div 
+                        role="button"
+                        tabIndex={ncSetupConnecting ? -1 : 0}
+                        aria-pressed={ncSetupConnected}
+                        aria-disabled={ncSetupConnecting}
                         onClick={!ncSetupConnecting ? handleNextcloudSetupToggle : undefined}
+                        onKeyDown={(event) => {
+                          if (!ncSetupConnecting) activateOnEnterOrSpace(event, handleNextcloudSetupToggle);
+                        }}
                         className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
                           ncSetupConnected 
                               ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-sm" 

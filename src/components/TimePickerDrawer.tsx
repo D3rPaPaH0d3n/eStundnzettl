@@ -3,6 +3,7 @@ import { Check, X } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { useTranslation } from "react-i18next";
+import { activateOnEnterOrSpace } from "../utils/keyboardActivation";
 
 const ITEM_H = 56;
 const VISIBLE = 5;
@@ -179,7 +180,11 @@ const WheelColumn = ({ items, selected, onSelect, align }: WheelColumnProps) => 
           return (
             <div
               key={val}
+              role="button"
+              tabIndex={0}
+              aria-pressed={isSelected}
               onClick={() => handleClick(val)}
+              onKeyDown={(event) => activateOnEnterOrSpace(event, () => handleClick(val))}
               className={`flex items-center cursor-pointer ${justifyClass}`}
               style={{
                 height: ITEM_H,

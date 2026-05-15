@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { X, Check } from "lucide-react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { activateOnEnterOrSpace } from "../utils/keyboardActivation";
 
 interface SelectionOption {
   id: string | number;
@@ -79,8 +80,12 @@ const SelectionDrawer = ({ isOpen, onClose, title, options, value, onChange }: P
                 return (
                   <div
                     key={option.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
                     data-selected={isSelected}
                     onClick={() => { onChange(option.id); onClose(); }}
+                    onKeyDown={(event) => activateOnEnterOrSpace(event, () => { onChange(option.id); onClose(); })}
                     /* CHANGE: bg-white -> zinc, border-orange -> border-emerald, text-orange -> text-emerald */
                     className={`p-4 rounded-2xl flex items-center justify-between cursor-pointer transition-all border ${isSelected ? "bg-white dark:bg-zinc-800 border-emerald-500 shadow-md transform scale-[1.01]" : "bg-white dark:bg-zinc-800 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-700"}`}
                   >

@@ -37,10 +37,9 @@ import { useTranslation } from "react-i18next";
 import { logger } from "../../utils/logger";
 import { getErrorMessage } from "../../utils/errorUtils";
 import type { GoogleAuthStatus, GoogleSignInResult } from "../../types";
+import { isGoogleConnectionReady } from "./backupSettingsUtils";
 
 const log = logger.scope("Nextcloud");
-
-const isGoogleConnectionReady = (status: GoogleAuthStatus | null) => !!(status?.hasToken || (status?.connected && !status?.reauthRequired));
 const connectionBadgeClassName = "flex items-center px-1.5 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full";
 
 interface Props {

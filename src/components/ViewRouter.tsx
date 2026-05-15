@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import type { SyntheticEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { useTranslation } from "react-i18next";
@@ -84,7 +85,7 @@ interface ViewRouterProps {
   addCode: (label: string) => boolean;
   // EntryForm props
   form: FormState;
-  handleSaveEntry: (e: React.FormEvent) => Promise<void>;
+  handleSaveEntry: (e: SyntheticEvent) => Promise<void>;
   setView: (view: string) => void;
   lastWorkEntry: Entry | null;
   uniqueProjects: string[];

@@ -1,4 +1,5 @@
 import React from "react";
+import type { SyntheticEvent } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, fireEvent, cleanup } from "@testing-library/react";
 
@@ -108,7 +109,7 @@ const makeUser = (overrides: Partial<UserData> = {}): UserData => ({
 interface RenderOptions {
   entryType?: string;
   lastWorkEntry?: Entry | null;
-  onSubmit?: (e: React.FormEvent) => void;
+  onSubmit?: (e: SyntheticEvent) => void;
   onCancel?: () => void;
   setEntryType?: (type: string) => void;
   setCode?: (code: number) => void;

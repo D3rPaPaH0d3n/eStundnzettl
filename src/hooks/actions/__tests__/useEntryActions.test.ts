@@ -1,4 +1,4 @@
-import type React from "react";
+import type { SyntheticEvent } from "react";
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
@@ -130,7 +130,7 @@ const renderActions = (opts: RenderOptions = {}) => {
   return { result, form, addEntry, updateEntry, setView, getDefaultCode };
 };
 
-const fakeEvent = () => ({ preventDefault: vi.fn() }) as unknown as React.FormEvent;
+const fakeEvent = () => ({ preventDefault: vi.fn() }) as unknown as SyntheticEvent;
 
 const saveEntry = async (result: ReturnType<typeof renderActions>["result"]) => {
   await act(async () => {

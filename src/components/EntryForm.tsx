@@ -1,4 +1,5 @@
 import React, { forwardRef, useState, useEffect, useCallback } from "react";
+import type { SyntheticEvent } from "react";
 import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus, ChevronDown } from "lucide-react";
 import { Card, toLocalDateString } from "../utils";
 import { WORK_CODE } from "../hooks/constants";
@@ -41,7 +42,7 @@ CustomInput.displayName = "CustomInput";
 
 interface Props {
   onCancel: () => void;
-  onSubmit: (e: React.FormEvent) => Promise<void> | void;
+  onSubmit: (e: SyntheticEvent) => Promise<void> | void;
   entryType: string;
   setEntryType: (type: string) => void;
   code: number;
@@ -226,7 +227,7 @@ const EntryForm: React.FC<Props> = ({
     setEndTime("16:30");
   }, [formDate, allEntries, entryType, isEditing, isLiveEntry, setStartTime, setEndTime]); 
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
     onSubmit(e);
     Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});

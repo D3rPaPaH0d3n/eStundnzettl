@@ -1,4 +1,5 @@
-import React, { useCallback } from "react";
+import { useCallback } from "react";
+import type { SyntheticEvent } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -108,7 +109,7 @@ export function useEntryActions({
   );
 
   const handleSaveEntry = useCallback(
-    async (e: React.FormEvent): Promise<void> => {
+    async (e: SyntheticEvent): Promise<void> => {
       e.preventDefault();
       const isDrive = form.entryType === "drive";
       const isSpecial =

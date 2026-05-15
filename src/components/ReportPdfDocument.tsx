@@ -444,8 +444,8 @@ const Row: React.FC<RowProps> = ({
   showBalance,
   showAttachmentsList,
 }) => {
-  const sameDay = prev && prev.date === e.date;
-  const lastOfDay = !next || next.date !== e.date;
+  const sameDay = prev?.date === e.date;
+  const lastOfDay = next?.date !== e.date;
 
   const rowStyle: Style[] = [styles.tr];
   if (e.type === "public_holiday") rowStyle.push(styles.trHoliday);

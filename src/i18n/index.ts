@@ -61,7 +61,7 @@ if (!i18n.isInitialized) {
     },
     lng: initial,
     fallbackLng: "de",
-    supportedLngs: SUPPORTED_LANGUAGES as unknown as string[],
+    supportedLngs: [...SUPPORTED_LANGUAGES],
     interpolation: {
       escapeValue: false, // React schützt bereits
     },

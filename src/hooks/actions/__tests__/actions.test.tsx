@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { renderHook, act } from "@testing-library/react";
 import type { Entry, FormState, UserData, WorkCode } from "../../../types";
 
@@ -179,7 +179,7 @@ describe("useEntryActions", () => {
 
   async function saveEntry(result: ReturnType<typeof mount>["result"]) {
     await act(async () => {
-      await result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as FormEvent);
+      await result.current.handleSaveEntry({ preventDefault: vi.fn() } as unknown as SyntheticEvent);
     });
   }
 

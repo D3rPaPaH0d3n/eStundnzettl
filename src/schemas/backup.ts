@@ -15,7 +15,7 @@ const workCodeSchema = z.object({
 });
 
 const attachmentMetaSchema = z
-  .object({
+  .looseObject({
     id: z.string(),
     entryId: z.union([z.number(), z.string()]),
     label: z.string().optional().default(""),
@@ -23,11 +23,10 @@ const attachmentMetaSchema = z
     mimeType: z.string().optional().default(""),
     fileSize: z.number().int().optional().default(0),
     createdAt: z.string().optional().default(""),
-  })
-  .passthrough();
+  });
 
 export const backupPayloadSchema = z
-  .object({
+  .looseObject({
     // Meta (Welle 3.1.0)
     formatVersion: z.number().int().optional(),
     checksum: z.string().optional(),
@@ -43,8 +42,7 @@ export const backupPayloadSchema = z
     workCodes: z.array(workCodeSchema).optional().default([]),
     attachments: z.array(attachmentMetaSchema).optional().default([]),
     attachmentLabels: z.array(z.string()).optional().default([]),
-  })
-  .passthrough();
+  });
 
 export function parseBackupPayloadSafe(value: unknown) {
   return backupPayloadSchema.safeParse(value);

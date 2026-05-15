@@ -15,7 +15,7 @@ export const nextcloudConfigSchema = z.object({
   enabled: z.boolean(),
   url: z
     .string()
-    .url("Bitte eine vollständige URL eingeben (z. B. https://cloud.example.com)")
+    .check(z.url({ error: "Bitte eine vollständige URL eingeben (z. B. https://cloud.example.com)" }))
     .refine((u) => /^https?:\/\//i.test(u), {
       message: "URL muss mit http:// oder https:// beginnen",
     }),
@@ -31,7 +31,7 @@ export const nextcloudConfigSchema = z.object({
 export const nextcloudUrlOnlySchema = z.object({
   url: z
     .string()
-    .url("Bitte eine vollständige URL eingeben")
+    .check(z.url({ error: "Bitte eine vollständige URL eingeben" }))
     .refine((u) => /^https?:\/\//i.test(u), {
       message: "URL muss mit http:// oder https:// beginnen",
     }),

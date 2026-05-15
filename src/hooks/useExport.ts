@@ -1,4 +1,5 @@
-import { useState, MutableRefObject } from "react";
+import { useState } from "react";
+import type { RefObject } from "react";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import toast from "react-hot-toast";
@@ -14,7 +15,7 @@ interface UseExportProps {
   userData: UserData;
   workCodes: WorkCode[];
   attachments?: Attachment[];
-  exportPayloadRef: MutableRefObject<BackupPayload | null>;
+  exportPayloadRef: RefObject<BackupPayload | null>;
   calculationConfig?: CalculationConfig | null;
 }
 

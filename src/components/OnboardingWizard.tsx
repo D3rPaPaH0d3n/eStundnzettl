@@ -697,7 +697,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
               <ProfileStep
                 formData={formData}
                 setFormData={setFormData}
-                photoInputRef={photoInputRef as React.RefObject<HTMLInputElement>}
+                photoInputRef={photoInputRef}
                 onPhotoUpload={handlePhotoUpload}
               />
             )}

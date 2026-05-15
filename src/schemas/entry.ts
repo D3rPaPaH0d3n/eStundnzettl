@@ -54,7 +54,7 @@ export const entrySchema = z
     if (entry.type === "work") {
       if (!entry.start || !entry.end) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["start"],
           message: "Arbeitseinträge benötigen Start- und Endzeit",
         });

@@ -23,6 +23,9 @@
   <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/codeql.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/codeql.yml?branch=main&label=CodeQL&color=2563eb&style=for-the-badge&logo=github&logoColor=white" alt="CodeQL Security Analysis" />
   </a>
+  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/coverage-badge.yml">
+    <img src="./badges/coverage.svg" alt="Test Coverage" />
+  </a>
 </p>
 
 <p align="center">

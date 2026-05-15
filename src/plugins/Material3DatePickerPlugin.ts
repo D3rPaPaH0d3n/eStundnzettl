@@ -8,6 +8,7 @@ export interface Material3DatePickerOptions {
   confirmText?: string;
   dismissText?: string;
   accent?: "green" | "orange";
+  themeMode?: "light" | "dark" | "system";
 }
 
 export interface Material3DatePickerResult {

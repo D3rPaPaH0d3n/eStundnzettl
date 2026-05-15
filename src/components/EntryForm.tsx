@@ -13,6 +13,7 @@ import SelectionDrawer from "./SelectionDrawer";
 import { Capacitor } from "@capacitor/core";
 import { Material3DatePicker } from "../plugins/Material3DatePickerPlugin";
 import { Material3TimePicker } from "../plugins/Material3TimePickerPlugin";
+import { getNativePickerThemeMode } from "../utils/nativePickerTheme";
 
 import type { Entry, UserData, WorkCode } from "../types";
 import type { Locale } from "../locales/types";
@@ -131,6 +132,7 @@ const EntryForm: React.FC<Props> = ({
         title: t("entryForm.date"),
         confirmText: "OK",
         dismissText: "Abbrechen",
+        themeMode: getNativePickerThemeMode(),
       });
 
       if (!result.cancelled && result.value) {
@@ -161,6 +163,7 @@ const EntryForm: React.FC<Props> = ({
         dismissText: "Abbrechen",
         is24Hour: true,
         accent: "green",
+        themeMode: getNativePickerThemeMode(),
       });
 
       if (!result.cancelled && result.value) {
@@ -190,6 +193,7 @@ const EntryForm: React.FC<Props> = ({
         dismissText: "Abbrechen",
         is24Hour: true,
         accent: "orange",
+        themeMode: getNativePickerThemeMode(),
       });
 
       if (!result.cancelled && result.value) {

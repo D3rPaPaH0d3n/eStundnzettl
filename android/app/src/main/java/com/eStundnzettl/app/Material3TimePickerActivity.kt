@@ -37,9 +37,10 @@ class Material3TimePickerActivity : ComponentActivity() {
         val dismissText = intent.getStringExtra(EXTRA_DISMISS_TEXT) ?: "Abbrechen"
         val is24Hour = intent.getBooleanExtra(EXTRA_IS_24_HOUR, true)
         val accent = intent.getStringExtra(EXTRA_ACCENT) ?: ACCENT_GREEN
+        val themeMode = intent.getStringExtra(EXTRA_THEME_MODE) ?: THEME_SYSTEM
 
         setContent {
-            EstundnzettlMaterialTheme(accent = accent) {
+            EstundnzettlMaterialTheme(accent = accent, themeMode = themeMode) {
                 val state = rememberTimePickerState(
                     initialHour = initialHour,
                     initialMinute = initialMinute,
@@ -90,17 +91,25 @@ class Material3TimePickerActivity : ComponentActivity() {
         const val EXTRA_DISMISS_TEXT = "dismissText"
         const val EXTRA_IS_24_HOUR = "is24Hour"
         const val EXTRA_ACCENT = "accent"
+        const val EXTRA_THEME_MODE = "themeMode"
         const val EXTRA_RESULT_HOUR = "hour"
         const val EXTRA_RESULT_MINUTE = "minute"
         const val ACCENT_GREEN = "green"
         const val ACCENT_ORANGE = "orange"
+        const val THEME_LIGHT = "light"
+        const val THEME_DARK = "dark"
+        const val THEME_SYSTEM = "system"
     }
 }
 
 @Composable
-private fun EstundnzettlMaterialTheme(accent: String, content: @Composable () -> Unit) {
+private fun EstundnzettlMaterialTheme(accent: String, themeMode: String, content: @Composable () -> Unit) {
     val context = LocalContext.current
-    val dark = isSystemInDarkTheme()
+    val dark = when (themeMode) {
+        Material3TimePickerActivity.THEME_LIGHT -> false
+        Material3TimePickerActivity.THEME_DARK -> true
+        else -> isSystemInDarkTheme()
+    }
     val baseColorScheme = when {
         android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S && dark -> dynamicDarkColorScheme(context)
         android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S -> dynamicLightColorScheme(context)

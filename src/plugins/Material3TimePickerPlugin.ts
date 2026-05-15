@@ -8,6 +8,7 @@ export interface Material3TimePickerOptions {
   dismissText?: string;
   is24Hour?: boolean;
   accent?: "green" | "orange";
+  themeMode?: "light" | "dark" | "system";
 }
 
 export interface Material3TimePickerResult {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Material3DatePicker } from "../plugins/Material3DatePickerPlugin";
+import { getNativePickerThemeMode } from "../utils/nativePickerTheme";
 
 interface Props {
   selectedDate: Date;
@@ -24,6 +25,7 @@ export default function DashboardMonthPicker({ selectedDate, onSelectMonth, onCl
       title: t("dashboard.monthPickerAria", { value: selectedDate.toLocaleDateString() }),
       confirmText: "OK",
       dismissText: "Abbrechen",
+      themeMode: getNativePickerThemeMode(),
     })
       .then((result) => {
         if (cancelled) return;

@@ -52,9 +52,10 @@ class Material3DatePickerActivity : ComponentActivity() {
         val dismissText = intent.getStringExtra(EXTRA_DISMISS_TEXT) ?: "Abbrechen"
         val mode = intent.getStringExtra(EXTRA_MODE) ?: MODE_DATE
         val accent = intent.getStringExtra(EXTRA_ACCENT) ?: ACCENT_GREEN
+        val themeMode = intent.getStringExtra(EXTRA_THEME_MODE) ?: THEME_SYSTEM
 
         setContent {
-            EstundnzettlMaterialTheme(accent = accent) {
+            EstundnzettlMaterialTheme(accent = accent, themeMode = themeMode) {
                 if (mode == MODE_MONTH) {
                     MonthPickerDialog(
                         initialDate = initialDate,
@@ -136,6 +137,7 @@ class Material3DatePickerActivity : ComponentActivity() {
         const val EXTRA_CONFIRM_TEXT = "confirmText"
         const val EXTRA_DISMISS_TEXT = "dismissText"
         const val EXTRA_ACCENT = "accent"
+        const val EXTRA_THEME_MODE = "themeMode"
         const val EXTRA_RESULT_DATE = "date"
         const val EXTRA_RESULT_YEAR = "year"
         const val EXTRA_RESULT_MONTH = "month"
@@ -144,6 +146,9 @@ class Material3DatePickerActivity : ComponentActivity() {
         const val MODE_MONTH = "month"
         const val ACCENT_GREEN = "green"
         const val ACCENT_ORANGE = "orange"
+        const val THEME_LIGHT = "light"
+        const val THEME_DARK = "dark"
+        const val THEME_SYSTEM = "system"
     }
 }
 
@@ -222,8 +227,12 @@ private fun MonthPickerDialog(
 }
 
 @Composable
-private fun EstundnzettlMaterialTheme(accent: String, content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
+private fun EstundnzettlMaterialTheme(accent: String, themeMode: String, content: @Composable () -> Unit) {
+    val dark = when (themeMode) {
+        Material3DatePickerActivity.THEME_LIGHT -> false
+        Material3DatePickerActivity.THEME_DARK -> true
+        else -> isSystemInDarkTheme()
+    }
     val colorScheme = estundnzettlColorScheme(dark = dark, accent = accent)
 
     MaterialTheme(

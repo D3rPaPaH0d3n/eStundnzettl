@@ -16,6 +16,7 @@ import i18n from "../i18n";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { Material3DatePicker } from "../plugins/Material3DatePickerPlugin";
+import { getNativePickerThemeMode } from "../utils/nativePickerTheme";
 import { useAttachmentShare } from "../hooks/useAttachmentShare";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -161,6 +162,7 @@ const PrintReport: React.FC<Props> = ({
         title: t("reports.preview"),
         confirmText: "OK",
         dismissText: "Abbrechen",
+        themeMode: getNativePickerThemeMode(),
       });
 
       if (!result.cancelled && result.value) {

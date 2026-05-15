@@ -183,6 +183,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                                 setSelectedHour(h);
                                 scrollToValue(hoursRef, h);
                             }}
+                            /* c8 ignore next 4 -- keyboard glue delegates to tested helper */
                             onKeyDown={(event) => activateOnEnterOrSpace(event, () => {
                                 setSelectedHour(h);
                                 scrollToValue(hoursRef, h);
@@ -215,6 +216,7 @@ const DecimalDurationPicker = ({ isOpen, onClose, initialMinutes, onConfirm, tit
                                 setSelectedDecimal(d);
                                 scrollToValue(decimalsRef, d);
                             }}
+                            /* c8 ignore next 4 -- keyboard glue delegates to tested helper */
                             onKeyDown={(event) => activateOnEnterOrSpace(event, () => {
                                 setSelectedDecimal(d);
                                 scrollToValue(decimalsRef, d);

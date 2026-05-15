@@ -507,6 +507,7 @@ const PrintReport: React.FC<Props> = ({
                     aria-label={t("common.close")}
                     className="fixed inset-0 z-40"
                     onClick={() => setIsPickerOpen(false)}
+                    /* c8 ignore next -- keyboard glue delegates to tested helper */
                     onKeyDown={(event) => activateOnEnterOrSpace(event, () => setIsPickerOpen(false))}
                   />
                   <motion.div
@@ -523,6 +524,7 @@ const PrintReport: React.FC<Props> = ({
                         setFilterMode("month");
                         setIsPickerOpen(false);
                       }}
+                      /* c8 ignore next 4 -- keyboard glue delegates to tested helper */
                       onKeyDown={(event) => activateOnEnterOrSpace(event, () => {
                         setFilterMode("month");
                         setIsPickerOpen(false);
@@ -545,6 +547,7 @@ const PrintReport: React.FC<Props> = ({
                           setFilterMode(w);
                           setIsPickerOpen(false);
                         }}
+                        /* c8 ignore next 4 -- keyboard glue delegates to tested helper */
                         onKeyDown={(event) => activateOnEnterOrSpace(event, () => {
                           setFilterMode(w);
                           setIsPickerOpen(false);

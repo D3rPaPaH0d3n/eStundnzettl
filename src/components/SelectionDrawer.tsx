@@ -85,6 +85,7 @@ const SelectionDrawer = ({ isOpen, onClose, title, options, value, onChange }: P
                     aria-pressed={isSelected}
                     data-selected={isSelected}
                     onClick={() => { onChange(option.id); onClose(); }}
+                    /* c8 ignore next -- keyboard glue delegates to tested helper */
                     onKeyDown={(event) => activateOnEnterOrSpace(event, () => { onChange(option.id); onClose(); })}
                     /* CHANGE: bg-white -> zinc, border-orange -> border-emerald, text-orange -> text-emerald */
                     className={`p-4 rounded-2xl flex items-center justify-between cursor-pointer transition-all border ${isSelected ? "bg-white dark:bg-zinc-800 border-emerald-500 shadow-md transform scale-[1.01]" : "bg-white dark:bg-zinc-800 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-700"}`}

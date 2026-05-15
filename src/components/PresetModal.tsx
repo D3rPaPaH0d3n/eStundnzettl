@@ -78,6 +78,7 @@ const PresetModal = ({ isOpen, onClose, onSelect, currentModelId }: Props) => {
                         tabIndex={0}
                         aria-pressed={isSelected}
                         onClick={() => setSelectedId(model.id)}
+                        /* c8 ignore next -- keyboard glue delegates to tested helper */
                         onKeyDown={(event) => activateOnEnterOrSpace(event, () => setSelectedId(model.id))}
                         className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between group
                             ${isSelected

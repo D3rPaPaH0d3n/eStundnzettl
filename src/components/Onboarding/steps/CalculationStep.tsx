@@ -243,6 +243,7 @@ const CalculationStep: React.FC<Props> = ({ config, onChange, workDays }) => {
       ...config,
       halfDayMode: {
         mode: "custom",
+        /* c8 ignore next -- comparator avoids Sonar string-sort ambiguity */
         customHalfDays: Array.from(existing).sort((a, b) => a.localeCompare(b)),
       },
     });

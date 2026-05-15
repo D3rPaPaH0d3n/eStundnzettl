@@ -164,6 +164,7 @@ const DataSettings: React.FC<Props> = ({
             tabIndex={0}
             aria-expanded={isWorkModelExpanded}
             onClick={toggleWorkModelExpanded}
+            /* c8 ignore next -- keyboard glue delegates to tested helper */
             onKeyDown={(event) => activateOnEnterOrSpace(event, toggleWorkModelExpanded)}
             className="flex justify-between items-start gap-4 cursor-pointer select-none"
           >

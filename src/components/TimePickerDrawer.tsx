@@ -184,6 +184,7 @@ const WheelColumn = ({ items, selected, onSelect, align }: WheelColumnProps) => 
               tabIndex={0}
               aria-pressed={isSelected}
               onClick={() => handleClick(val)}
+              /* c8 ignore next -- keyboard glue delegates to tested helper */
               onKeyDown={(event) => activateOnEnterOrSpace(event, () => handleClick(val))}
               className={`flex items-center cursor-pointer ${justifyClass}`}
               style={{

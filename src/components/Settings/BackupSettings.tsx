@@ -276,11 +276,9 @@ const BackupSettings: React.FC<Props> = ({
     }
     
     // Try to close browser (best effort)
-    try {
-      Browser.close();
-    } catch {
+    void Browser.close().catch(() => {
       // Ignore errors - browser might already be closed
-    }
+    });
   };
 
   const handleBrowserFinished = () => {

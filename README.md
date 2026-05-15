@@ -27,7 +27,7 @@
     <img src="./badges/coverage.svg" alt="Test Coverage" />
   </a>
   <a href="https://sonarcloud.io/summary/new_code?id=D3rPaPaH0d3n_eStundnzettl">
-    <img src="https://sonarcloud.io/api/project_badges/measure?project=D3rPaPaH0d3n_eStundnzettl&metric=alert_status" alt="SonarQube Cloud Quality Gate" />
+    <img src="https://sonarcloud.io/api/project_badges/quality_gate?project=D3rPaPaH0d3n_eStundnzettl" alt="SonarQube Cloud Quality Gate" />
   </a>
 </p>
 

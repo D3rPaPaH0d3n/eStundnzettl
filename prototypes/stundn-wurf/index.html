@@ -10,18 +10,18 @@
     <main class="game-shell">
       <section class="hud" aria-label="Spielstand">
         <div>
-          <span>Stundn</span>
+          <span>Minuten</span>
           <strong id="score">0</strong>
+        </div>
+        <div>
+          <span>Plausibel</span>
+          <strong id="trust">100%</strong>
         </div>
         <div>
           <span>Highscore</span>
           <strong id="highscore">0</strong>
         </div>
       </section>
-
-      <p id="hint" class="hint sr-only" aria-live="polite">Tippen zum Werfen</p>
-
-      <button id="muteButton" class="mute" type="button" aria-label="Sound an/aus">&#128266;</button>
 
       <canvas id="game" width="960" height="540" aria-label="Stundn-Wurf Spielfeld"></canvas>
 

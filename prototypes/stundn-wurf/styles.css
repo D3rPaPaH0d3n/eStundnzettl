@@ -99,10 +99,38 @@ canvas {
   font: inherit;
   font-weight: 900;
   cursor: pointer;
+  display: none;
+}
+
+.restart.is-visible {
+  display: block;
 }
 
 .restart:active {
   transform: translateX(-50%) translateY(1px);
+}
+
+.mute {
+  position: fixed;
+  z-index: 4;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  left: max(14px, env(safe-area-inset-left));
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgb(245 240 232 / 0.16);
+  border-radius: 8px;
+  background: rgb(16 20 20 / 0.78);
+  color: #fff7de;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  padding: 0;
+}
+
+.mute:active {
+  transform: translateY(1px);
 }
 
 @media (min-width: 780px) {

@@ -1,13 +1,10 @@
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.querySelector("#score");
-const trustEl = document.querySelector("#trust");
 const highscoreEl = document.querySelector("#highscore");
+const hintEl = document.querySelector("#hint");
 const restartButton = document.querySelector("#restartButton");
 const muteButton = document.querySelector("#muteButton");
-
-const logo = new Image();
-logo.src = "../../src/assets/logo.png";
 
 const HIGH_SCORE_KEY = "estundnzettl_stundn_wurf_highscore_v1";
 const AUDIO_MUTE_KEY = "estundnzettl_stundn_wurf_audio_v1";
@@ -15,76 +12,54 @@ const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twe
 
 const SPRITES = {
   worker: "\u{1F477}",
-  workerSwing: "\u{1F93E}",
-  bat: "\u{1F3CF}",
   pile: "\u{1F4A9}",
   chef: "\u{1F468}‍\u{1F4BC}",
-  chefAngry: "\u{1F621}",
-  finger: "☝️",
-  wc: "\u{1F6BD}",
-  flush: "\u{1F300}",
   paper: "\u{1F9FB}",
-  boost: "⭐",
-  wind: "\u{1F4A8}",
-  sweat: "\u{1F4A6}",
-  fly: "\u{1FAB0}",
+  soap: "\u{1F9FC}",
+  drop: "\u{1F4A7}",
+  brush: "\u{1F9FD}",
+  bubble: "\u{1F4AC}",
+  starHit: "\u{1F4A2}",
 };
 
-const AIM_SWEET = { lo: 0.62, hi: 0.82, center: 0.72 };
-const LAUNCH_DURATION = 0.46;
+const CHEF_LINES = [
+  "Wieder Pause?",
+  "Wo ist die Stundn-Liste?",
+  "Das wird nachgetragen!",
+  "Schnell zurueck an die Arbeit!",
+  "Ich seh das alles!",
+  "Stundnkonto - leer!",
+];
+
+const PHASES = { READY: "ready", WIND_UP: "windup", AIRBORNE: "airborne", FLIGHT: "flight", ENDED: "ended" };
 
 const state = {
-  phase: "aim",
-  distance: 0,
-  elapsedSeconds: 0,
-  trust: 100,
-  highscore: Number(localStorage.getItem(HIGH_SCORE_KEY) || 0),
-  lastTime: 0,
+  phase: PHASES.READY,
   now: 0,
-  worldX: 0,
-  meter: 0,
-  meterDirection: 1,
-  launchTimer: 0,
-  launchQuality: 0,
+  lastTime: 0,
+  score: 0,
+  highscore: Number(localStorage.getItem(HIGH_SCORE_KEY) || 0),
+  hint: "Tippen zum Werfen",
+  message: "",
   shake: 0,
-  worker: {
-    bob: 0,
-    sweatTimer: 0,
-    swingTrail: [],
-  },
-  wind: {
-    timer: 2.8,
-    duration: 0,
-    force: 0,
-    label: "",
-    gusts: [],
-  },
-  message: "Im richtigen Moment tippen",
-  flyer: {
-    x: 170,
-    y: 330,
-    vx: 0,
-    vy: 0,
-    rotation: 0,
-    width: 64,
-    height: 78,
-    squashTimer: 0,
-    hitShake: 0,
-    paperTrail: [],
-  },
-  boosters: [],
+  worldX: 0,
+  worker: { bob: 0, throwAnim: 0, drillSpin: 0, drillFire: 0, lean: 0 },
+  pile: { x: 0, y: 0, vx: 0, vy: 0, rotation: 0, scaleX: 1, scaleY: 1, squashTimer: 0, alive: true },
+  boostCount: 0,
+  windUpStart: 0,
   hazards: [],
   particles: [],
-  rings: [],
-  dust: [],
+  chefBubble: { text: "", life: 0, x: 0, y: 0 },
+  chefBubbleTimer: 0,
+  drillReady: false,
 };
 
 const audio = {
   ctx: null,
   master: null,
   muted: localStorage.getItem(AUDIO_MUTE_KEY) === "1",
-  whoosh: null,
-  whooshGain: null,
+  drillNode: null,
+  drillGain: null,
 };
 
 function ensureAudio() {
@@ -159,65 +134,59 @@ function noise({ duration = 0.2, filterType = "bandpass", filterFreq = 800, filt
   src.stop(t + duration + 0.05);
 }
 
-function startFlightWhoosh() {
-  if (!audio.ctx || audio.muted || audio.whoosh) return;
+function startDrill() {
+  if (!audio.ctx || audio.muted || audio.drillNode) return;
   const t = audio.ctx.currentTime;
-  const length = Math.floor(audio.ctx.sampleRate * 0.5);
-  const buffer = audio.ctx.createBuffer(1, length, audio.ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
-  const src = audio.ctx.createBufferSource();
-  src.buffer = buffer;
-  src.loop = true;
-  const filter = audio.ctx.createBiquadFilter();
-  filter.type = "bandpass";
-  filter.frequency.value = 700;
-  filter.Q.value = 0.8;
+  const osc = audio.ctx.createOscillator();
+  osc.type = "sawtooth";
+  osc.frequency.value = 180;
   const g = audio.ctx.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.07, t + 0.2);
-  src.connect(filter).connect(g).connect(audio.master);
-  src.start(t);
-  audio.whoosh = src;
-  audio.whooshGain = g;
+  g.gain.linearRampToValueAtTime(0.13, t + 0.08);
+  osc.connect(g).connect(audio.master);
+  osc.start(t);
+  audio.drillNode = osc;
+  audio.drillGain = g;
 }
 
-function stopFlightWhoosh() {
-  if (!audio.whoosh || !audio.ctx) return;
+function stopDrill(impactQuality = 0.6) {
+  if (!audio.drillNode || !audio.ctx) return;
   const t = audio.ctx.currentTime;
   try {
-    audio.whooshGain.gain.cancelScheduledValues(t);
-    audio.whooshGain.gain.setValueAtTime(audio.whooshGain.gain.value, t);
-    audio.whooshGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    audio.whoosh.stop(t + 0.22);
+    audio.drillGain.gain.cancelScheduledValues(t);
+    audio.drillGain.gain.setValueAtTime(audio.drillGain.gain.value, t);
+    audio.drillGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+    audio.drillNode.frequency.exponentialRampToValueAtTime(60, t + 0.15);
+    audio.drillNode.stop(t + 0.2);
   } catch (_) {}
-  audio.whoosh = null;
-  audio.whooshGain = null;
+  audio.drillNode = null;
+  audio.drillGain = null;
+  noise({ duration: 0.12, filterType: "lowpass", filterFreq: 1200, filterFreqEnd: 180, gain: 0.3 + impactQuality * 0.15 });
+  blip({ freq: 110 + impactQuality * 100, freqEnd: 40, type: "square", duration: 0.18, gain: 0.22 + impactQuality * 0.1, release: 0.16 });
 }
 
 const sfx = {
   uiTap: () => blip({ freq: 880, type: "square", duration: 0.04, attack: 0.002, release: 0.04, gain: 0.08 }),
-  meterTick: () => blip({ freq: 660, duration: 0.025, attack: 0.001, release: 0.022, gain: 0.05 }),
-  windUp: () => blip({ freq: 200, freqEnd: 110, type: "sine", duration: 0.26, attack: 0.01, release: 0.22, gain: 0.18 }),
-  impact: () => {
-    noise({ duration: 0.09, filterType: "lowpass", filterFreq: 1400, filterFreqEnd: 200, gain: 0.35 });
-    blip({ freq: 90, freqEnd: 38, type: "square", duration: 0.18, attack: 0.002, release: 0.16, gain: 0.28 });
+  throwUp: () => {
+    noise({ duration: 0.18, filterType: "bandpass", filterFreq: 1800, filterFreqEnd: 700, filterQ: 0.7, gain: 0.12 });
+    blip({ freq: 240, freqEnd: 480, type: "sine", duration: 0.22, attack: 0.01, release: 0.2, gain: 0.12 });
   },
-  boostTap: () => blip({ freq: 420, freqEnd: 820, type: "square", duration: 0.1, attack: 0.003, release: 0.09, gain: 0.16 }),
-  boostCollect: () => {
-    blip({ freq: 660, freqEnd: 990, type: "triangle", duration: 0.15, attack: 0.003, release: 0.13, gain: 0.18 });
-    blip({ freq: 1320, type: "triangle", duration: 0.12, attack: 0.04, release: 0.1, gain: 0.1 });
+  boost: (qualityFactor = 1) => blip({ freq: 420, freqEnd: 820, type: "square", duration: 0.1, attack: 0.003, release: 0.09, gain: 0.1 + qualityFactor * 0.1 }),
+  paperHit: () => {
+    noise({ duration: 0.7, filterType: "bandpass", filterFreq: 900, filterFreqEnd: 220, filterQ: 1.6, gain: 0.28 });
+    blip({ freq: 320, freqEnd: 80, type: "sine", duration: 0.55, attack: 0.02, release: 0.5, gain: 0.16 });
   },
-  chefHit: () => blip({ freq: 300, freqEnd: 90, type: "sawtooth", duration: 0.28, attack: 0.003, release: 0.25, gain: 0.22 }),
-  wcHit: () => {
-    noise({ duration: 0.55, filterType: "bandpass", filterFreq: 900, filterFreqEnd: 220, filterQ: 1.6, gain: 0.22 });
-    blip({ freq: 320, freqEnd: 140, type: "sine", duration: 0.4, attack: 0.02, release: 0.35, gain: 0.12 });
+  brushHit: () => blip({ freq: 220, freqEnd: 110, type: "sawtooth", duration: 0.18, release: 0.16, gain: 0.18, vibrato: 18, vibratoRate: 22 }),
+  soapHit: () => {
+    blip({ freq: 660, freqEnd: 1320, type: "triangle", duration: 0.18, release: 0.16, gain: 0.18 });
+    blip({ freq: 990, type: "triangle", duration: 0.16, attack: 0.05, release: 0.14, gain: 0.1 });
   },
-  paperHit: () => blip({ freq: 220, type: "square", duration: 0.22, attack: 0.003, release: 0.2, gain: 0.16, vibrato: 24, vibratoRate: 14 }),
-  windGust: () => noise({ duration: 1.0, filterType: "bandpass", filterFreq: 600, filterFreqEnd: 1200, filterQ: 0.7, gain: 0.18 }),
+  dropHit: () => noise({ duration: 0.18, filterType: "bandpass", filterFreq: 2200, filterFreqEnd: 600, filterQ: 1.4, gain: 0.18 }),
+  chefHit: () => blip({ freq: 300, freqEnd: 90, type: "sawtooth", duration: 0.28, release: 0.25, gain: 0.2 }),
+  chefBubble: () => blip({ freq: 520, freqEnd: 240, type: "triangle", duration: 0.18, release: 0.16, gain: 0.1 }),
   landing: () => {
-    noise({ duration: 0.22, filterType: "lowpass", filterFreq: 500, filterFreqEnd: 120, gain: 0.32 });
-    blip({ freq: 70, type: "sine", duration: 0.25, attack: 0.005, release: 0.22, gain: 0.2 });
+    noise({ duration: 0.22, filterType: "lowpass", filterFreq: 500, filterFreqEnd: 120, gain: 0.3 });
+    blip({ freq: 70, type: "sine", duration: 0.25, attack: 0.005, release: 0.22, gain: 0.18 });
   },
   gameOver: () => {
     [659, 523, 440].forEach((f, i) => setTimeout(() => blip({ freq: f, type: "triangle", duration: 0.22, attack: 0.005, release: 0.2, gain: 0.16 }), i * 160));
@@ -245,151 +214,181 @@ function resizeCanvas() {
   const width = Math.round(canvas.clientWidth * ratio);
   const height = Math.round(canvas.clientHeight * ratio);
   if (canvas.width !== width || canvas.height !== height) {
-    const oldGround = groundY();
     canvas.width = width;
     canvas.height = height;
-    const newGround = groundY();
-    if (state.phase === "aim") {
-      state.flyer.x = canvas.width * 0.19;
-      state.flyer.y = newGround - state.flyer.height / 2;
-    } else {
-      state.flyer.y += newGround - oldGround;
+    if (state.phase === PHASES.READY || state.phase === PHASES.ENDED) {
+      resetPilePosition();
     }
   }
 }
 
 function groundY() {
-  return canvas.height * 0.78;
+  return canvas.height * 0.82;
+}
+
+function workerAnchor() {
+  return { x: canvas.width * 0.18, y: groundY() - canvas.height * 0.06 };
+}
+
+function resetPilePosition() {
+  const w = workerAnchor();
+  state.pile.x = w.x + canvas.width * 0.04;
+  state.pile.y = w.y - canvas.height * 0.04;
+  state.pile.vx = 0;
+  state.pile.vy = 0;
+  state.pile.rotation = 0;
+  state.pile.scaleX = 1;
+  state.pile.scaleY = 1;
+  state.pile.squashTimer = 0;
+  state.pile.alive = true;
 }
 
 function reset() {
   resizeCanvas();
-  state.phase = "aim";
-  state.distance = 0;
-  state.elapsedSeconds = 0;
-  state.trust = 100;
+  state.phase = PHASES.READY;
+  state.score = 0;
   state.lastTime = 0;
-  state.worldX = 0;
-  state.meter = 0;
-  state.meterDirection = 1;
-  state.launchTimer = 0;
-  state.launchQuality = 0;
   state.shake = 0;
+  state.worldX = 0;
   state.worker.bob = 0;
-  state.worker.sweatTimer = 0;
-  state.worker.swingTrail = [];
-  state.wind.timer = 2.4 + Math.random() * 2.2;
-  state.wind.duration = 0;
-  state.wind.force = 0;
-  state.wind.label = "";
-  state.wind.gusts = [];
-  state.message = "Im richtigen Moment tippen";
-  state.flyer.x = canvas.width * 0.19;
-  state.flyer.y = groundY() - state.flyer.height / 2;
-  state.flyer.vx = 0;
-  state.flyer.vy = 0;
-  state.flyer.rotation = 0;
-  state.flyer.squashTimer = 0;
-  state.flyer.hitShake = 0;
-  state.flyer.paperTrail = [];
-  state.boosters = [];
+  state.worker.throwAnim = 0;
+  state.worker.drillSpin = 0;
+  state.worker.drillFire = 0;
+  state.worker.lean = 0;
+  state.hint = "Tippen zum Werfen";
+  state.message = "";
+  state.boostCount = 0;
+  state.windUpStart = 0;
   state.hazards = [];
   state.particles = [];
-  state.rings = [];
-  state.dust = [];
-  stopFlightWhoosh();
-  if (restartButton) restartButton.classList.remove("is-visible");
+  state.chefBubble.life = 0;
+  state.chefBubbleTimer = 1.5;
+  state.drillReady = false;
+  resetPilePosition();
   seedCourse();
+  stopDrill();
+  if (restartButton) restartButton.classList.remove("is-visible");
   updateHud();
 }
 
 function seedCourse() {
-  state.boosters = [];
   state.hazards = [];
-  for (let i = 0; i < 44; i += 1) {
-    const x = 760 + i * 390 + Math.random() * 210;
-    const y = canvas.height * (0.32 + Math.random() * 0.28);
-    state.boosters.push({ x, y, radius: 34, used: false, pulse: Math.random() * Math.PI });
-  }
-
-  for (let i = 0; i < 30; i += 1) {
-    const x = 1120 + i * 540 + Math.random() * 260;
-    const roll = Math.random();
-    const type = roll > 0.66 ? "paper" : roll > 0.33 ? "chef" : "wc";
+  const types = ["paper", "brush", "soap", "drop"];
+  for (let i = 0; i < 60; i += 1) {
+    const x = canvas.width * 0.55 + i * 320 + Math.random() * 160;
+    const lane = Math.random();
+    const y = canvas.height * (0.22 + lane * 0.5);
+    const weight = Math.random();
+    let type;
+    if (weight < 0.36) type = "paper";
+    else if (weight < 0.55) type = "brush";
+    else if (weight < 0.78) type = "soap";
+    else type = "drop";
     state.hazards.push({
-      x,
-      y: type === "paper" ? canvas.height * (0.32 + Math.random() * 0.28) : groundY() - 42,
-      baseX: x,
-      baseY: type === "paper" ? canvas.height * (0.32 + Math.random() * 0.28) : groundY() - 42,
-      width: type === "chef" ? 74 : type === "paper" ? 104 : 88,
-      height: type === "chef" ? 92 : type === "paper" ? 46 : 64,
+      x, y, baseY: y,
       type,
       phase: Math.random() * Math.PI * 2,
-      amp: canvas.height * (0.035 + Math.random() * 0.035),
+      amp: canvas.height * (0.02 + Math.random() * 0.04),
       hit: false,
-      hitTime: 0,
-      paperTrail: [],
     });
   }
 }
 
 function updateHud() {
-  scoreEl.textContent = Math.max(0, Math.floor(state.elapsedSeconds));
-  trustEl.textContent = `${Math.max(0, Math.round(state.trust))}%`;
+  scoreEl.textContent = Math.floor(state.score);
   highscoreEl.textContent = Math.floor(state.highscore);
+  if (hintEl) hintEl.textContent = state.hint;
 }
 
 function tap() {
   ensureAudio();
-  if (state.phase === "ended") {
+
+  if (state.phase === PHASES.ENDED) {
     sfx.uiTap();
     reset();
     return;
   }
 
-  if (state.phase === "aim") {
-    const distFromCenter = Math.abs(state.meter - AIM_SWEET.center);
-    const inSweet = state.meter >= AIM_SWEET.lo && state.meter <= AIM_SWEET.hi;
-    const quality = inSweet ? Math.max(0.65, 1 - distFromCenter / 0.4) : Math.max(0.18, 1 - distFromCenter / 0.72);
-    state.phase = "launch";
-    state.launchTimer = 0;
-    state.launchQuality = quality;
-    state.message = quality > 0.82 ? "Volltreffer!" : "Abschlag!";
-    sfx.windUp();
+  if (state.phase === PHASES.READY) {
+    state.phase = PHASES.WIND_UP;
+    state.worker.throwAnim = 0;
+    state.windUpStart = state.now;
+    state.hint = "Schlagen wenn der Haufen unten ankommt!";
+    sfx.throwUp();
     return;
   }
 
-  if (state.phase === "flight") {
-    const nearBoost = state.boosters.find((boost) => {
-      if (boost.used) return false;
-      const dx = boost.x - state.flyer.x;
-      const dy = boost.y - state.flyer.y;
-      return Math.hypot(dx, dy) < 150;
-    });
+  if (state.phase === PHASES.WIND_UP) {
+    return;
+  }
 
-    if (nearBoost) {
-      nearBoost.used = true;
-      state.flyer.vy = -canvas.height * 0.5;
-      state.flyer.vx += canvas.width * 0.055;
-      state.trust = Math.min(100, state.trust + 9);
-      state.particles.push({ x: state.flyer.x - state.worldX - 48, y: state.flyer.y - 42, life: 0.8, text: "+Schuss!" });
-      state.rings.push({ x: nearBoost.x, y: nearBoost.y, life: 0.4, max: 0.4 });
-      for (let i = 0; i < 6; i += 1) {
-        const ang = (Math.PI * 2 * i) / 6 + Math.random() * 0.4;
-        state.dust.push({
-          x: nearBoost.x, y: nearBoost.y,
-          vx: Math.cos(ang) * canvas.width * 0.18, vy: Math.sin(ang) * canvas.width * 0.18,
-          life: 0.55, max: 0.55, size: 6, sparkle: true,
-        });
-      }
-      sfx.boostCollect();
-    } else {
-      state.flyer.vy = Math.min(state.flyer.vy, canvas.height * 0.08) - canvas.height * 0.39;
-      state.flyer.vx += canvas.width * 0.028;
-      state.trust -= 2.4;
-      state.particles.push({ x: state.flyer.x - state.worldX - 58, y: state.flyer.y - 36, life: 0.48, text: "Nachschuss!" });
-      sfx.boostTap();
-    }
+  if (state.phase === PHASES.AIRBORNE) {
+    fireDrill();
+    return;
+  }
+
+  if (state.phase === PHASES.FLIGHT) {
+    applyBoost();
+  }
+}
+
+function fireDrill() {
+  const w = workerAnchor();
+  const drillHeadY = w.y - canvas.height * 0.04;
+  const drillHeadX = w.x + canvas.width * 0.06;
+  const dx = state.pile.x - drillHeadX;
+  const dy = state.pile.y - drillHeadY;
+  const distance = Math.hypot(dx, dy);
+  const reach = canvas.height * 0.16;
+  const proximityQuality = Math.max(0, 1 - distance / reach);
+  const fallingBonus = state.pile.vy > 0 ? Math.min(1, state.pile.vy / (canvas.height * 0.55)) : 0.15;
+  const quality = Math.max(0.18, proximityQuality * 0.7 + fallingBonus * 0.3);
+
+  state.phase = PHASES.FLIGHT;
+  state.worker.drillFire = 0.25;
+  state.pile.squashTimer = 0.18;
+  const launchSpeed = canvas.width * (0.5 + quality * 0.55);
+  const upwardKick = canvas.height * (0.16 + quality * 0.22);
+  state.pile.vx = launchSpeed;
+  state.pile.vy = -upwardKick;
+  state.pile.rotation = 0;
+  state.shake = Math.max(state.shake, 0.22);
+  state.hint = quality > 0.75 ? "Volltreffer! Tippen fuer Boost." : "Treffer! Tippen fuer Boost.";
+  spawnImpactBurst(drillHeadX, drillHeadY);
+  state.message = "";
+  stopDrill(quality);
+}
+
+function applyBoost() {
+  state.boostCount += 1;
+  const decay = Math.pow(0.78, state.boostCount - 1);
+  const timingQuality = Math.max(0.2, Math.min(1, state.pile.vy / (canvas.height * 0.45)));
+  const horizontalKick = canvas.width * 0.18 * decay * (0.55 + timingQuality * 0.55);
+  const verticalKick = canvas.height * 0.34 * decay * (0.45 + timingQuality * 0.6);
+  state.pile.vx += horizontalKick;
+  state.pile.vy = Math.min(state.pile.vy, 0) - verticalKick;
+  state.particles.push({
+    x: state.pile.x - state.worldX,
+    y: state.pile.y - canvas.height * 0.05,
+    life: 0.55,
+    text: timingQuality > 0.7 ? "+Wumms!" : "+",
+  });
+  sfx.boost(timingQuality);
+}
+
+function spawnImpactBurst(x, y) {
+  for (let i = 0; i < 8; i += 1) {
+    const ang = -Math.PI * Math.random();
+    const sp = canvas.width * (0.1 + Math.random() * 0.14);
+    state.particles.push({
+      x: x + Math.cos(ang) * 8,
+      y: y + Math.sin(ang) * 8,
+      life: 0.5 + Math.random() * 0.2,
+      maxLife: 0.7,
+      vx: Math.cos(ang) * sp,
+      vy: Math.sin(ang) * sp,
+      dust: true,
+    });
   }
 }
 
@@ -399,619 +398,606 @@ function handleGameInput(event) {
   if (event.target === restartButton || event.target === muteButton) return;
   event.preventDefault();
   const now = performance.now();
-  if (now - lastTapAt < 105) return;
+  if (now - lastTapAt < 80) return;
   lastTapAt = now;
   tap();
 }
 
-function updateWind(delta) {
-  if (state.phase !== "flight") return;
-
-  if (state.wind.duration > 0) {
-    state.wind.duration -= delta;
-    state.wind.gusts.forEach((g) => {
-      g.x += g.vx * delta;
-      g.y += g.vy * delta;
-      g.life -= delta;
-    });
-    state.wind.gusts = state.wind.gusts.filter((g) => g.life > 0);
-    if (state.wind.gusts.length < 3 && Math.random() < delta * 6) {
-      const dir = Math.sign(state.wind.force) || 1;
-      state.wind.gusts.push({
-        x: dir > 0 ? -40 : canvas.width + 40,
-        y: canvas.height * (0.18 + Math.random() * 0.5),
-        vx: dir * canvas.width * (0.6 + Math.random() * 0.4),
-        vy: (Math.random() - 0.5) * canvas.width * 0.08,
-        life: 1.0,
-        max: 1.0,
-      });
-    }
-    if (state.wind.duration <= 0) {
-      state.wind.duration = 0;
-      state.wind.force = 0;
-      state.wind.label = "";
-      state.wind.timer = 2.6 + Math.random() * 3.4;
-    }
-    return;
-  }
-
-  state.wind.timer -= delta;
-  if (state.wind.timer <= 0) {
-    const direction = Math.random() > 0.5 ? 1 : -1;
-    const strength = canvas.width * (0.12 + Math.random() * 0.11);
-    state.wind.force = direction * strength;
-    state.wind.duration = 0.9 + Math.random() * 0.9;
-    state.wind.label = direction > 0 ? "Rueckenwind" : "Gegenwind";
-    state.particles.push({
-      x: canvas.width * 0.38,
-      y: canvas.height * 0.24,
-      life: 0.7,
-      text: state.wind.label,
-    });
-    state.shake = Math.max(state.shake, 0.2);
-    sfx.windGust();
-  }
-}
-
-function endRun() {
-  state.phase = "ended";
-  state.message = "Gelandet. Tippen fuer neuen Wurf.";
-  stopFlightWhoosh();
-  const isNewHighscore = state.elapsedSeconds > state.highscore;
-  if (isNewHighscore) {
-    state.highscore = Math.floor(state.elapsedSeconds);
+function endRun(reason) {
+  state.phase = PHASES.ENDED;
+  stopDrill();
+  state.hint = reason === "paper" ? "Runtergespuelt! Tippen fuer neuen Wurf." : "Gelandet. Tippen fuer neuen Wurf.";
+  state.message = reason === "paper" ? "RUNTERGESPUELT" : "Gelandet";
+  const newScore = Math.floor(state.score);
+  const isNew = newScore > state.highscore;
+  if (isNew) {
+    state.highscore = newScore;
     localStorage.setItem(HIGH_SCORE_KEY, String(state.highscore));
     sfx.highscore();
   } else {
     sfx.gameOver();
   }
-  sfx.landing();
+  if (reason !== "paper") sfx.landing();
   if (restartButton) restartButton.classList.add("is-visible");
   updateHud();
+}
+
+function updateChefBubble(delta) {
+  if (state.chefBubble.life > 0) {
+    state.chefBubble.life -= delta;
+    if (state.chefBubble.life <= 0) state.chefBubble.text = "";
+  }
+  if (state.phase === PHASES.ENDED) return;
+  state.chefBubbleTimer -= delta;
+  if (state.chefBubbleTimer <= 0) {
+    state.chefBubbleTimer = 5 + Math.random() * 4;
+    state.chefBubble.text = CHEF_LINES[Math.floor(Math.random() * CHEF_LINES.length)];
+    state.chefBubble.life = 2.4;
+    sfx.chefBubble();
+  }
 }
 
 function update(delta) {
   state.now += delta;
   if (state.shake > 0) state.shake = Math.max(0, state.shake - delta);
-  if (state.flyer.hitShake > 0) state.flyer.hitShake = Math.max(0, state.flyer.hitShake - delta);
-  if (state.flyer.squashTimer > 0) state.flyer.squashTimer = Math.max(0, state.flyer.squashTimer - delta);
+  if (state.pile.squashTimer > 0) state.pile.squashTimer = Math.max(0, state.pile.squashTimer - delta);
+  if (state.worker.drillFire > 0) state.worker.drillFire = Math.max(0, state.worker.drillFire - delta);
+  state.worker.drillSpin += delta * (state.phase === PHASES.AIRBORNE ? 38 : 8);
 
-  if (state.phase === "aim") {
+  updateChefBubble(delta);
+
+  if (state.phase === PHASES.READY) {
     state.worker.bob += delta;
-    const prevMeter = state.meter;
-    state.meter += state.meterDirection * delta * 1.45;
-    if (state.meter >= 1) { state.meter = 1; state.meterDirection = -1; }
-    if (state.meter <= 0) { state.meter = 0; state.meterDirection = 1; }
-    const wasInSweet = prevMeter >= AIM_SWEET.lo && prevMeter <= AIM_SWEET.hi;
-    const isInSweet = state.meter >= AIM_SWEET.lo && state.meter <= AIM_SWEET.hi;
-    if (isInSweet && !wasInSweet) sfx.meterTick();
     return;
   }
 
-  if (state.phase === "launch") {
-    state.launchTimer += delta;
-    state.worker.sweatTimer += delta;
-    if (state.worker.sweatTimer > 0.12) {
-      state.worker.sweatTimer = 0;
-      const baseX = canvas.width * 0.17;
-      const baseY = groundY() - canvas.height * 0.13;
-      state.dust.push({
-        x: baseX + (Math.random() - 0.5) * 30, y: baseY,
-        vx: (Math.random() - 0.5) * 30, vy: canvas.height * 0.06,
-        life: 0.6, max: 0.6, size: 0, sweat: true,
-      });
-    }
-    if (state.launchTimer >= LAUNCH_DURATION) {
-      const quality = state.launchQuality;
-      state.phase = "flight";
-      state.message = "";
-      state.flyer.vx = canvas.width * (0.48 + quality * 0.22);
-      state.flyer.vy = -canvas.height * (0.3 + quality * 0.18);
-      state.flyer.squashTimer = 0.18;
-      state.particles.push({
-        x: state.flyer.x - state.worldX - 18,
-        y: state.flyer.y - 48,
-        life: 0.65,
-        text: quality > 0.82 ? "perfekt!" : "los!",
-      });
-      const baseX = canvas.width * 0.22;
-      const baseY = groundY() - canvas.height * 0.05;
-      for (let i = 0; i < 10; i += 1) {
-        const ang = -Math.PI * Math.random();
-        const sp = canvas.width * (0.12 + Math.random() * 0.16);
-        state.dust.push({
-          x: baseX, y: baseY,
-          vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
-          life: 0.5 + Math.random() * 0.3, max: 0.7,
-          size: 8 + Math.random() * 6, dust: true,
-        });
-      }
-      state.shake = 0.18;
-      sfx.impact();
-      startFlightWhoosh();
+  if (state.phase === PHASES.WIND_UP) {
+    state.worker.throwAnim = Math.min(1, state.worker.throwAnim + delta / 0.35);
+    if (state.worker.throwAnim >= 1) {
+      state.phase = PHASES.AIRBORNE;
+      const w = workerAnchor();
+      state.pile.x = w.x + canvas.width * 0.025;
+      state.pile.y = w.y - canvas.height * 0.08;
+      state.pile.vx = canvas.width * 0.04;
+      state.pile.vy = -canvas.height * 0.95;
+      startDrill();
+      state.drillReady = true;
     }
     return;
   }
 
-  if (state.phase !== "flight") return;
+  if (state.phase === PHASES.AIRBORNE) {
+    state.pile.vy += canvas.height * 1.05 * delta;
+    state.pile.x += state.pile.vx * delta;
+    state.pile.y += state.pile.vy * delta;
+    state.pile.rotation += delta * 4;
 
-  const flyer = state.flyer;
-  updateWind(delta);
-  state.elapsedSeconds += delta;
-  flyer.vy += canvas.height * 0.46 * delta;
-  flyer.vx += state.wind.force * delta;
-  flyer.vx *= 1 - delta * 0.028;
-  flyer.x += flyer.vx * delta;
-  flyer.y += flyer.vy * delta;
-  flyer.rotation += (flyer.vx * 0.00045 + flyer.vy * 0.0002) * delta * 60;
-
-  if (flyer.y < canvas.height * 0.16) {
-    flyer.y = canvas.height * 0.16;
-    flyer.vy = Math.max(flyer.vy, canvas.height * 0.04);
+    const w = workerAnchor();
+    const groundLine = groundY() - canvas.height * 0.02;
+    if (state.pile.y > groundLine && state.pile.vy > 0) {
+      state.pile.y = groundLine;
+      state.phase = PHASES.ENDED;
+      state.hint = "Verfehlt! Tippen fuer neuen Wurf.";
+      state.message = "Verfehlt";
+      stopDrill(0);
+      sfx.landing();
+      if (restartButton) restartButton.classList.add("is-visible");
+      updateHud();
+    }
+    return;
   }
 
-  const cameraTarget = Math.max(0, flyer.x - canvas.width * 0.34);
+  if (state.phase !== PHASES.FLIGHT) return;
+
+  const pile = state.pile;
+  pile.vy += canvas.height * 0.62 * delta;
+  pile.vx *= 1 - delta * 0.16;
+  pile.x += pile.vx * delta;
+  pile.y += pile.vy * delta;
+  pile.rotation += (pile.vx * 0.0006 + 0.4) * delta * 60;
+
+  if (pile.y < canvas.height * 0.14) {
+    pile.y = canvas.height * 0.14;
+    pile.vy = Math.max(pile.vy, 0);
+  }
+
+  const cameraTarget = Math.max(0, pile.x - canvas.width * 0.32);
   state.worldX += (cameraTarget - state.worldX) * Math.min(1, delta * 6);
-  state.distance = Math.max(state.distance, state.worldX / 8);
-  state.highscore = Math.max(state.highscore, Math.floor(state.elapsedSeconds));
-  state.trust -= delta * 0.52;
+  state.score = Math.max(state.score, state.worldX / 10);
+  state.highscore = Math.max(state.highscore, Math.floor(state.score));
 
-  const flyerBounds = {
-    x: flyer.x - state.worldX - flyer.width / 2,
-    y: flyer.y - flyer.height / 2,
-    width: flyer.width,
-    height: flyer.height,
+  const pileBounds = {
+    x: pile.x - state.worldX - canvas.width * 0.035,
+    y: pile.y - canvas.height * 0.05,
+    width: canvas.width * 0.07,
+    height: canvas.height * 0.08,
   };
 
   for (const hazard of state.hazards) {
-    if (hazard.type === "chef") {
-      const t = state.now + hazard.phase;
-      hazard.y = hazard.baseY + Math.sin(t * 5) * 4;
-      hazard.x = hazard.baseX + Math.sin(t * 2.4) * 8;
-    }
-    if (hazard.type === "paper") {
-      hazard.y = hazard.baseY + Math.sin(state.distance * 0.08 + hazard.phase) * hazard.amp;
-      const sx = hazard.x - state.worldX;
-      if (sx > -200 && sx < canvas.width + 200 && !hazard.hit) {
-        hazard.paperTrail.push({ x: hazard.x, y: hazard.y, life: 0.7 });
-        if (hazard.paperTrail.length > 10) hazard.paperTrail.shift();
-      }
-      hazard.paperTrail.forEach((p) => { p.life -= delta; });
-      hazard.paperTrail = hazard.paperTrail.filter((p) => p.life > 0);
-    }
-    if (hazard.hit) {
-      hazard.hitTime += delta;
-      continue;
-    }
-    const sx = hazard.x - state.worldX;
+    hazard.y = hazard.baseY + Math.sin((state.now + hazard.phase) * 1.4) * hazard.amp;
+    if (hazard.hit) continue;
+    const hx = hazard.x - state.worldX;
+    if (hx < -200 || hx > canvas.width + 200) continue;
+    const half = canvas.width * 0.04;
     const hazardBounds = {
-      x: sx - hazard.width / 2,
-      y: hazard.y - hazard.height / 2,
-      width: hazard.width,
-      height: hazard.height,
+      x: hx - half,
+      y: hazard.y - half,
+      width: half * 2,
+      height: half * 2,
     };
-    if (rectsOverlap(flyerBounds, hazardBounds)) {
+    if (rectsOverlap(pileBounds, hazardBounds)) {
       hazard.hit = true;
-      hazard.hitTime = 0;
-      state.flyer.hitShake = 0.22;
-      state.shake = Math.max(state.shake, 0.22);
-      if (hazard.type === "paper") {
-        state.flyer.vx *= 0.58;
-        state.flyer.vy += canvas.height * 0.1;
-        state.trust -= 18;
-        sfx.paperHit();
-      } else if (hazard.type === "chef") {
-        state.flyer.vx *= 0.72;
-        state.flyer.vy -= canvas.height * 0.12;
-        state.trust -= 20;
-        sfx.chefHit();
-      } else {
-        state.flyer.vx *= 0.72;
-        state.flyer.vy -= canvas.height * 0.12;
-        state.trust -= 14;
-        sfx.wcHit();
-      }
-      const hitText = hazard.type === "chef" ? "Chef!" : hazard.type === "paper" ? "weggewischt!" : "WC-Zeit";
-      state.particles.push({ x: flyerBounds.x - 30, y: flyer.y - 60, life: 0.65, text: hitText });
+      handleHazardCollision(hazard);
+      if (state.phase === PHASES.ENDED) return;
     }
   }
-
-  for (const boost of state.boosters) {
-    boost.pulse += delta * 6;
-  }
-
-  state.rings.forEach((r) => { r.life -= delta; });
-  state.rings = state.rings.filter((r) => r.life > 0);
-
-  state.dust.forEach((d) => {
-    d.life -= delta;
-    d.x += (d.vx || 0) * delta;
-    d.y += (d.vy || 0) * delta;
-    if (!d.sweat) d.vy += canvas.height * 0.15 * delta;
-  });
-  state.dust = state.dust.filter((d) => d.life > 0);
 
   state.particles = state.particles
-    .map((particle) => ({ ...particle, y: particle.y - 42 * delta, life: particle.life - delta }))
-    .filter((particle) => particle.life > 0);
+    .map((p) => ({
+      ...p,
+      life: p.life - delta,
+      x: p.x + (p.vx || 0) * delta,
+      y: p.y + (p.vy || 0) * delta - (p.dust ? 0 : 38 * delta),
+      vy: p.vy !== undefined ? p.vy + canvas.height * 0.4 * delta : undefined,
+    }))
+    .filter((p) => p.life > 0);
 
-  if (flyer.y + flyer.height / 2 >= groundY() || state.trust <= 0 || flyer.vx < canvas.width * 0.08) {
-    flyer.y = Math.min(flyer.y, groundY() - flyer.height / 2);
-    endRun();
+  if ((pile.y + canvas.height * 0.05 >= groundY() && pile.vy > 0) || pile.vx < canvas.width * 0.06) {
+    pile.y = Math.min(pile.y, groundY() - canvas.height * 0.04);
+    endRun("ground");
   }
 
   updateHud();
 }
 
+function handleHazardCollision(hazard) {
+  const pile = state.pile;
+  const sx = hazard.x - state.worldX;
+  switch (hazard.type) {
+    case "paper":
+      state.shake = 0.4;
+      state.particles.push({ x: sx, y: hazard.y, life: 0.9, text: "Runtergespuelt!" });
+      sfx.paperHit();
+      endRun("paper");
+      break;
+    case "brush":
+      pile.vx *= 0.42;
+      pile.vy += canvas.height * 0.05;
+      state.shake = Math.max(state.shake, 0.18);
+      state.particles.push({ x: sx, y: hazard.y - 30, life: 0.6, text: "Bremse!" });
+      sfx.brushHit();
+      break;
+    case "soap":
+      pile.vx += canvas.width * 0.22;
+      pile.vy -= canvas.height * 0.18;
+      state.particles.push({ x: sx, y: hazard.y - 30, life: 0.6, text: "Boost!" });
+      sfx.soapHit();
+      break;
+    case "drop":
+      pile.vx *= 0.7;
+      pile.vy -= canvas.height * 0.08;
+      state.particles.push({ x: sx, y: hazard.y - 30, life: 0.55, text: "Spritz!" });
+      sfx.dropHit();
+      break;
+    default:
+      break;
+  }
+}
+
 function rectsOverlap(a, b) {
-  return a.x < b.x + b.width &&
-    a.x + a.width > b.x &&
-    a.y < b.y + b.height &&
-    a.y + a.height > b.y;
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
 function applyShake() {
   if (state.shake <= 0) return { x: 0, y: 0 };
-  const amp = state.shake * canvas.width * 0.008;
+  const amp = state.shake * canvas.width * 0.007;
   return { x: (Math.random() - 0.5) * amp, y: (Math.random() - 0.5) * amp };
 }
 
 function drawBackground() {
-  const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  sky.addColorStop(0, "#182321");
-  sky.addColorStop(0.5, "#23322c");
-  sky.addColorStop(1, "#101414");
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const tileH = canvas.height * 0.07;
+  const wallEnd = canvas.height * 0.66;
 
-  const parallax = state.worldX * 0.18;
-  ctx.fillStyle = "rgba(245, 240, 232, 0.07)";
-  for (let x = -200 - (parallax % 260); x < canvas.width + 260; x += 260) {
-    ctx.fillRect(x, canvas.height * 0.25, 96, 10);
-    ctx.fillRect(x + 130, canvas.height * 0.18, 58, 8);
+  const wall = ctx.createLinearGradient(0, 0, 0, wallEnd);
+  wall.addColorStop(0, "#e6eef0");
+  wall.addColorStop(1, "#c9d6dc");
+  ctx.fillStyle = wall;
+  ctx.fillRect(0, 0, canvas.width, wallEnd);
+
+  ctx.strokeStyle = "rgba(110, 130, 140, 0.35)";
+  ctx.lineWidth = 1.5;
+  for (let y = 0; y < wallEnd; y += tileH) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+  const tileW = canvas.width * 0.08;
+  const tileOffset = (state.worldX * 0.2) % tileW;
+  for (let x = -tileOffset; x < canvas.width + tileW; x += tileW) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, wallEnd);
+    ctx.stroke();
   }
 
-  ctx.fillStyle = "#2d4038";
-  ctx.fillRect(0, groundY(), canvas.width, canvas.height - groundY());
-  ctx.fillStyle = "#f0c36a";
-  ctx.fillRect(0, groundY(), canvas.width, 5);
+  const floor = ctx.createLinearGradient(0, wallEnd, 0, canvas.height);
+  floor.addColorStop(0, "#8a9aa3");
+  floor.addColorStop(1, "#5a6770");
+  ctx.fillStyle = floor;
+  ctx.fillRect(0, wallEnd, canvas.width, canvas.height - wallEnd);
 
-  const groundOffset = state.worldX % 140;
-  ctx.fillStyle = "#17201d";
-  for (let x = -groundOffset; x < canvas.width + 140; x += 140) {
-    ctx.fillRect(x, groundY() + 54, 84, 9);
+  ctx.strokeStyle = "rgba(20, 30, 35, 0.25)";
+  ctx.lineWidth = 1.5;
+  const floorTileW = canvas.width * 0.12;
+  const floorOffset = (state.worldX * 0.4) % floorTileW;
+  for (let x = -floorOffset; x < canvas.width + floorTileW; x += floorTileW) {
+    ctx.beginPath();
+    ctx.moveTo(x, wallEnd);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(20, 30, 35, 0.15)";
+  for (let y = wallEnd + canvas.height * 0.04; y < canvas.height; y += canvas.height * 0.06) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
   }
 
-  ctx.fillStyle = "#d7e8dc";
-  ctx.font = `900 ${Math.max(22, canvas.width * 0.028)}px system-ui`;
-  ctx.fillText("eStundnzettl", canvas.width * 0.055, canvas.height * 0.18);
-  if (logo.complete) {
-    const size = Math.max(48, canvas.width * 0.052);
-    ctx.globalAlpha = 0.9;
-    ctx.drawImage(logo, canvas.width * 0.058, canvas.height * 0.2, size, size);
-    ctx.globalAlpha = 1;
-  }
+  drawBgToilet();
+  drawBgSink();
+  drawBgPaperHolder();
+  drawBgChef();
 }
 
-function drawWindGusts() {
-  if (state.phase !== "flight") return;
-  const size = Math.max(28, canvas.width * 0.05);
-  for (const g of state.wind.gusts) {
-    const alpha = Math.max(0, Math.min(1, g.life / g.max));
-    drawEmoji(SPRITES.wind, g.x, g.y, size, 0, alpha * 0.85);
-  }
-  if (state.wind.duration > 0 && state.wind.label) {
-    ctx.save();
-    ctx.fillStyle = "#fff7de";
-    ctx.font = `900 ${Math.max(18, canvas.width * 0.023)}px system-ui`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.globalAlpha = 0.8;
-    ctx.fillText(state.wind.label, canvas.width * 0.82, canvas.height * 0.2);
-    ctx.restore();
-  }
-}
-
-function drawAimMeter() {
-  if (state.phase !== "aim" && state.phase !== "launch") return;
-
-  const width = Math.min(canvas.width * 0.68, 560);
-  const height = 28;
-  const x = (canvas.width - width) / 2;
-  const y = canvas.height * 0.68;
-
-  ctx.fillStyle = "rgba(16, 20, 20, 0.78)";
-  roundRect(x - 18, y - 54, width + 36, 112, 8);
+function drawBgToilet() {
+  const cx = canvas.width * 0.36 - state.worldX * 0.12;
+  const cy = canvas.height * 0.6;
+  const w = canvas.width * 0.12;
+  const h = canvas.height * 0.12;
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = "#f5f7f9";
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, w * 0.55, h * 0.32, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.fillStyle = "#dde4e8";
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, w * 0.42, h * 0.22, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#f5f7f9";
+  ctx.fillRect(cx - w * 0.45, cy + h * 0.18, w * 0.9, h * 0.32);
+  ctx.fillStyle = "#aab6bd";
+  ctx.fillRect(cx - w * 0.18, cy - h * 0.32, w * 0.36, h * 0.18);
+  ctx.restore();
+}
 
-  ctx.fillStyle = "#fff7de";
-  ctx.font = `900 ${Math.max(28, canvas.width * 0.042)}px system-ui`;
+function drawBgSink() {
+  const cx = canvas.width * 0.78 - state.worldX * 0.12;
+  const cy = canvas.height * 0.52;
+  const w = canvas.width * 0.13;
+  const h = canvas.height * 0.08;
+  ctx.save();
+  ctx.globalAlpha = 0.8;
+  ctx.fillStyle = "#eef2f4";
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, w * 0.55, h * 0.55, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#d0d8dd";
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, w * 0.42, h * 0.42, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#9aa6ad";
+  ctx.fillRect(cx - 3, cy - h * 0.9, 6, h * 0.7);
+  ctx.fillRect(cx - 10, cy - h * 0.95, 20, 6);
+  ctx.restore();
+}
+
+function drawBgPaperHolder() {
+  const x = canvas.width * 0.5 - state.worldX * 0.12;
+  const y = canvas.height * 0.32;
+  ctx.save();
+  ctx.globalAlpha = 0.75;
+  ctx.fillStyle = "#a8b4bb";
+  ctx.fillRect(x - 4, y, 8, canvas.height * 0.04);
+  ctx.fillStyle = "#fdfdfd";
+  ctx.beginPath();
+  ctx.arc(x, y + canvas.height * 0.045, canvas.height * 0.025, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#c0c8cd";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawBgChef() {
+  const x = canvas.width * 0.92 - state.worldX * 0.05;
+  const y = groundY() - canvas.height * 0.08;
+  if (x < -120 || x > canvas.width + 120) return;
+  const size = Math.max(64, canvas.width * 0.06);
+  drawEmoji(SPRITES.chef, x, y, size);
+  if (state.chefBubble.life > 0 && state.chefBubble.text) {
+    drawSpeechBubble(state.chefBubble.text, x - size * 0.7, y - size * 0.95, Math.min(1, state.chefBubble.life / 0.6));
+  }
+}
+
+function drawSpeechBubble(text, anchorX, anchorY, alpha = 1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = `800 ${Math.max(15, canvas.width * 0.018)}px system-ui`;
+  const padX = 12;
+  const padY = 8;
+  const w = ctx.measureText(text).width + padX * 2;
+  const h = Math.max(28, canvas.width * 0.025);
+  const x = anchorX - w;
+  const y = anchorY - h;
+  ctx.fillStyle = "#fff";
+  ctx.strokeStyle = "#36404a";
+  ctx.lineWidth = 2;
+  roundRect(x, y, w, h, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + w - 14, y + h);
+  ctx.lineTo(x + w + 6, y + h + 12);
+  ctx.lineTo(x + w - 4, y + h - 1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#1c252c";
   ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText(state.phase === "launch" ? state.message : "Stundn-Wurf", x, y - 22);
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + padX, y + h / 2);
+  ctx.restore();
+}
 
-  const barGradient = ctx.createLinearGradient(x, y, x + width, y);
-  barGradient.addColorStop(0, "#3a2520");
-  barGradient.addColorStop(AIM_SWEET.lo, "#3a2520");
-  barGradient.addColorStop(AIM_SWEET.lo + 0.001, "#f5b342");
-  barGradient.addColorStop(AIM_SWEET.center, "#fff2c0");
-  barGradient.addColorStop(AIM_SWEET.hi, "#f5b342");
-  barGradient.addColorStop(AIM_SWEET.hi + 0.001, "#3a2520");
-  barGradient.addColorStop(1, "#3a2520");
-  ctx.fillStyle = barGradient;
-  roundRect(x, y, width, height, 8);
+function drawDrill(x, y, rotation, spin, fire = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotation);
+  const bodyW = canvas.width * 0.06;
+  const bodyH = canvas.width * 0.035;
+  const recoil = fire > 0 ? -canvas.width * 0.012 : 0;
+  ctx.translate(recoil, 0);
+  ctx.fillStyle = "#d68a1a";
+  roundRect(-bodyW * 0.4, -bodyH / 2, bodyW * 0.8, bodyH, 4);
   ctx.fill();
+  ctx.fillStyle = "#3b3b3b";
+  roundRect(-bodyW * 0.15, bodyH / 2 - 2, bodyW * 0.18, bodyH * 0.8, 3);
+  ctx.fill();
+  ctx.fillStyle = "#bbbdbf";
+  roundRect(bodyW * 0.4, -bodyH * 0.25, bodyW * 0.18, bodyH * 0.5, 3);
+  ctx.fill();
+  ctx.save();
+  ctx.translate(bodyW * 0.65, 0);
+  ctx.rotate(spin);
+  ctx.fillStyle = "#7b7e82";
+  for (let i = 0; i < 6; i += 1) {
+    const seg = i / 6;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(bodyW * 0.4 - seg * bodyW * 0.05, bodyH * 0.12);
+    ctx.lineTo(bodyW * 0.4 - seg * bodyW * 0.05, -bodyH * 0.12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.rotate(Math.PI / 3);
+  }
+  ctx.restore();
+  ctx.fillStyle = "#5a5d61";
+  ctx.beginPath();
+  ctx.moveTo(bodyW * 0.55, 0);
+  ctx.lineTo(bodyW * 0.95, bodyH * 0.06);
+  ctx.lineTo(bodyW * 0.95, -bodyH * 0.06);
+  ctx.closePath();
+  ctx.fill();
+  if (fire > 0) {
+    ctx.globalAlpha = fire * 3;
+    ctx.fillStyle = "#fff2c0";
+    ctx.beginPath();
+    ctx.arc(bodyW * 0.95, 0, bodyW * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawWorker() {
+  const w = workerAnchor();
+  const workerSize = Math.max(64, canvas.width * 0.075);
+  const bobY = state.phase === PHASES.READY ? Math.sin(state.worker.bob * 2.4) * 2 : 0;
+  let lean = 0;
+
+  if (state.phase === PHASES.WIND_UP) {
+    const t = state.worker.throwAnim;
+    lean = Math.sin(t * Math.PI) * -0.18;
+  }
+
+  drawEmoji(SPRITES.worker, w.x, w.y + bobY, workerSize, lean);
+
+  const throwingArmX = w.x - workerSize * 0.25;
+  const throwingArmY = w.y - workerSize * 0.35;
+  if (state.phase === PHASES.WIND_UP) {
+    const t = state.worker.throwAnim;
+    const armAngle = -1.6 + t * 2.6;
+    const handX = throwingArmX + Math.cos(armAngle) * workerSize * 0.45;
+    const handY = throwingArmY + Math.sin(armAngle) * workerSize * 0.45;
+    ctx.save();
+    ctx.strokeStyle = "#f3c285";
+    ctx.lineWidth = workerSize * 0.13;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(throwingArmX, throwingArmY);
+    ctx.lineTo(handX, handY);
+    ctx.stroke();
+    ctx.restore();
+    const pileSize = workerSize * 0.4;
+    drawEmoji(SPRITES.pile, handX, handY, pileSize);
+  }
+
+  const drillBaseX = w.x + workerSize * 0.35;
+  const drillBaseY = w.y - workerSize * 0.05;
+  let drillTipAngle = 0.18;
+  if (state.phase === PHASES.AIRBORNE) {
+    const dx = state.pile.x - drillBaseX;
+    const dy = state.pile.y - drillBaseY;
+    drillTipAngle = Math.atan2(dy, dx);
+    drillTipAngle = Math.max(-Math.PI * 0.55, Math.min(Math.PI * 0.05, drillTipAngle));
+  } else if (state.phase === PHASES.FLIGHT) {
+    drillTipAngle = -0.4 + Math.min(0.6, state.worker.drillFire * 2);
+  }
 
   ctx.save();
-  ctx.strokeStyle = "rgba(255, 247, 222, 0.65)";
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#f3c285";
+  ctx.lineWidth = workerSize * 0.13;
+  ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.moveTo(x + width * AIM_SWEET.lo, y - 4);
-  ctx.lineTo(x + width * AIM_SWEET.lo, y + height + 4);
-  ctx.moveTo(x + width * AIM_SWEET.hi, y - 4);
-  ctx.lineTo(x + width * AIM_SWEET.hi, y + height + 4);
+  const handX = drillBaseX + Math.cos(drillTipAngle) * workerSize * 0.2;
+  const handY = drillBaseY + Math.sin(drillTipAngle) * workerSize * 0.2;
+  ctx.moveTo(drillBaseX, drillBaseY);
+  ctx.lineTo(handX, handY);
   ctx.stroke();
   ctx.restore();
 
-  ctx.fillStyle = "#101414";
-  const markerX = x + width * state.meter;
-  roundRect(markerX - 7, y - 10, 14, height + 20, 6);
-  ctx.fill();
-
-  ctx.fillStyle = "#c8d7ce";
-  ctx.font = `800 ${Math.max(17, canvas.width * 0.024)}px system-ui`;
-  ctx.fillText("Tipp im hellen Bereich → Boni im Flug einsammeln.", x, y + 62);
+  drawDrill(handX, handY, drillTipAngle, state.worker.drillSpin, state.worker.drillFire);
 }
 
-function drawWorkerLaunch() {
-  if (state.phase !== "aim" && state.phase !== "launch") return;
-
-  const baseX = canvas.width * 0.17;
-  const groundLineY = groundY();
-  const workerSize = Math.max(72, canvas.width * 0.085);
-  const batSize = Math.max(56, canvas.width * 0.06);
-
-  let workerY = groundLineY - workerSize * 0.55;
-  let workerEmoji = SPRITES.worker;
-  let leanAngle = 0;
-  let batAngle = -0.85;
-  let batOffsetX = workerSize * 0.5;
-  let batOffsetY = -workerSize * 0.05;
-
-  if (state.phase === "aim") {
-    workerY += Math.sin(state.worker.bob * 2.4) * 2;
-  } else {
-    const progress = Math.min(1, state.launchTimer / LAUNCH_DURATION);
-    if (progress < 0.25) {
-      const p = progress / 0.25;
-      batAngle = -0.85 - p * 0.6;
-      leanAngle = -p * 0.18;
-      workerEmoji = SPRITES.worker;
-    } else if (progress < 0.55) {
-      const p = (progress - 0.25) / 0.3;
-      batAngle = -1.45 + p * 2.6;
-      leanAngle = -0.18 + p * 0.5;
-      workerEmoji = SPRITES.workerSwing;
-    } else {
-      const p = (progress - 0.55) / 0.45;
-      batAngle = 1.15 + p * 0.7;
-      leanAngle = 0.32 - p * 0.3;
-      workerEmoji = SPRITES.workerSwing;
-    }
-    state.worker.swingTrail.unshift({ angle: batAngle, offsetX: batOffsetX, offsetY: batOffsetY });
-    if (state.worker.swingTrail.length > 6) state.worker.swingTrail.pop();
-  }
-
-  drawEmoji(workerEmoji, baseX, workerY, workerSize, leanAngle, 1);
-
-  const shoulderX = baseX + workerSize * 0.18;
-  const shoulderY = workerY - workerSize * 0.05;
-
-  if (state.phase === "launch" && state.worker.swingTrail.length > 1) {
-    state.worker.swingTrail.forEach((trail, i) => {
-      if (i === 0) return;
-      const alpha = (1 - i / state.worker.swingTrail.length) * 0.35;
-      ctx.save();
-      ctx.translate(shoulderX, shoulderY);
-      ctx.rotate(trail.angle);
-      drawEmoji(SPRITES.bat, batSize * 0.65, 0, batSize, 0, alpha);
-      ctx.restore();
-    });
-  }
-
-  ctx.save();
-  ctx.translate(shoulderX, shoulderY);
-  ctx.rotate(batAngle);
-  drawEmoji(SPRITES.bat, batSize * 0.65, 0, batSize, 0, 1);
-  ctx.restore();
-
-  if (state.phase === "aim") {
-    const meterPulse = state.meter >= AIM_SWEET.lo && state.meter <= AIM_SWEET.hi;
-    if (meterPulse && Math.floor(state.now * 4) % 2 === 0) {
-      drawEmoji(SPRITES.boost, baseX, workerY - workerSize * 0.85, workerSize * 0.4);
-    }
-  }
-}
-
-function drawFlyer() {
-  const flyer = state.flyer;
-  const sx = flyer.x - state.worldX + (flyer.hitShake > 0 ? (Math.random() - 0.5) * 6 : 0);
-  const sy = flyer.y + (flyer.hitShake > 0 ? (Math.random() - 0.5) * 6 : 0);
-  const size = Math.max(56, canvas.width * 0.07);
-
+function drawPile() {
+  if (state.phase === PHASES.READY || state.phase === PHASES.WIND_UP) return;
+  const pile = state.pile;
+  const isFlight = state.phase === PHASES.FLIGHT;
+  const sx = isFlight ? pile.x - state.worldX : pile.x;
+  const sy = pile.y;
+  const size = Math.max(54, canvas.width * 0.065);
   let scaleX = 1;
   let scaleY = 1;
-  if (flyer.squashTimer > 0) {
-    const t = flyer.squashTimer / 0.18;
+  if (pile.squashTimer > 0) {
+    const t = pile.squashTimer / 0.18;
     scaleX = 1 + 0.4 * t;
     scaleY = 1 - 0.3 * t;
   }
-
-  if (state.phase === "flight") {
-    ctx.save();
-    ctx.globalAlpha = 0.45;
-    ctx.strokeStyle = "#b8c6bc";
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 3; i += 1) {
-      const phase = state.now * 6 + i * 0.7;
-      const stinkX = sx + (Math.random() - 0.5) * 4 - 2;
-      const stinkY = sy - size * 0.6 - i * 8;
-      ctx.beginPath();
-      ctx.arc(stinkX, stinkY, 5 + Math.sin(phase) * 2, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  drawEmoji(SPRITES.pile, sx, sy, size, flyer.rotation, 1, scaleX, scaleY);
-}
-
-function drawBoosters() {
-  const size = Math.max(36, canvas.width * 0.05);
-  for (const boost of state.boosters) {
-    if (boost.used) continue;
-    const sx = boost.x - state.worldX;
-    if (sx < -120 || sx > canvas.width + 120) continue;
-    const pulse = 1 + Math.sin(boost.pulse) * 0.12;
-    drawEmoji(SPRITES.boost, sx, boost.y, size * pulse, boost.pulse * 0.4);
-  }
+  drawEmoji(SPRITES.pile, sx, sy, size, pile.rotation, 1, scaleX, scaleY);
 }
 
 function drawHazards() {
-  const chefSize = Math.max(64, canvas.width * 0.075);
-  const wcSize = Math.max(60, canvas.width * 0.07);
-  const paperSize = Math.max(50, canvas.width * 0.06);
-
+  if (state.phase !== PHASES.FLIGHT && state.phase !== PHASES.ENDED) return;
+  const size = Math.max(48, canvas.width * 0.06);
   for (const hazard of state.hazards) {
+    if (hazard.hit) continue;
     const sx = hazard.x - state.worldX;
-    if (sx < -200 || sx > canvas.width + 200) continue;
-
-    if (hazard.type === "chef") {
-      if (hazard.hit) {
-        const fade = Math.max(0, 1 - hazard.hitTime / 0.6);
-        drawEmoji(SPRITES.chefAngry, sx, hazard.y - chefSize * 0.85, chefSize * 0.5, 0, fade);
-        drawEmoji(SPRITES.chef, sx, hazard.y, chefSize, 0.6, fade);
-        continue;
-      }
-      const distToFlyer = state.flyer.x - hazard.x;
-      const approaching = distToFlyer < 600 && distToFlyer > -200;
-      if (approaching && Math.floor(state.now * 4) % 2 === 0) {
-        drawEmoji(SPRITES.finger, sx + chefSize * 0.4, hazard.y - chefSize * 0.6, chefSize * 0.45);
-      }
-      const walkAngle = Math.sin(state.now * 8 + hazard.phase) * 0.05;
-      drawEmoji(SPRITES.chef, sx, hazard.y, chefSize, walkAngle);
-    } else if (hazard.type === "wc") {
-      if (hazard.hit && hazard.hitTime < 0.7) {
-        const flushPulse = 1 + Math.sin(hazard.hitTime * 30) * 0.1;
-        drawEmoji(SPRITES.flush, sx, hazard.y - wcSize * 0.4, wcSize * 0.7 * flushPulse, hazard.hitTime * 8);
-        ctx.save();
-        ctx.strokeStyle = "rgba(150, 200, 240, 0.7)";
-        ctx.lineWidth = 3;
-        for (let i = 0; i < 3; i += 1) {
-          const yo = -wcSize * 0.2 + i * 8;
-          ctx.beginPath();
-          ctx.moveTo(sx - wcSize * 0.4, hazard.y + yo);
-          for (let dx = -wcSize * 0.4; dx <= wcSize * 0.4; dx += 4) {
-            ctx.lineTo(sx + dx, hazard.y + yo + Math.sin(dx * 0.15 + hazard.hitTime * 20) * 3);
-          }
-          ctx.stroke();
-        }
-        ctx.restore();
-      }
-      drawEmoji(SPRITES.wc, sx, hazard.y, wcSize);
-    } else if (hazard.type === "paper") {
-      if (hazard.paperTrail.length > 1) {
-        ctx.save();
-        ctx.strokeStyle = "rgba(247, 242, 232, 0.55)";
-        ctx.lineWidth = Math.max(3, paperSize * 0.18);
-        ctx.lineCap = "round";
+    if (sx < -100 || sx > canvas.width + 100) continue;
+    const emoji = hazard.type === "paper" ? SPRITES.paper
+      : hazard.type === "brush" ? SPRITES.brush
+      : hazard.type === "soap" ? SPRITES.soap
+      : SPRITES.drop;
+    if (hazard.type === "paper") {
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.strokeStyle = "#a8c4dc";
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 2; i += 1) {
         ctx.beginPath();
-        let first = true;
-        for (const p of hazard.paperTrail) {
-          const psx = p.x - state.worldX;
-          if (first) { ctx.moveTo(psx, p.y); first = false; }
-          else ctx.lineTo(psx, p.y);
-        }
+        ctx.moveTo(sx - size * 0.4, hazard.y + size * 0.4 + i * 6);
+        ctx.lineTo(sx + size * 0.4, hazard.y + size * 0.4 + i * 6 + 8);
         ctx.stroke();
-        ctx.restore();
       }
-      if (hazard.hit) continue;
-      const rot = Math.sin(state.distance * 0.12 + hazard.phase) * 0.25 + state.now * 2.5;
-      drawEmoji(SPRITES.paper, sx, hazard.y, paperSize, rot);
-    }
-  }
-}
-
-function drawRings() {
-  for (const r of state.rings) {
-    const sx = r.x - state.worldX;
-    const t = 1 - r.life / r.max;
-    for (let i = 0; i < 3; i += 1) {
-      const radius = (15 + i * 12) + t * 40;
-      const alpha = (1 - t) * (1 - i * 0.25);
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, alpha);
-      ctx.strokeStyle = "#fff7de";
-      ctx.lineWidth = 3 - i * 0.7;
-      ctx.beginPath();
-      ctx.arc(sx, r.y, radius, 0, Math.PI * 2);
-      ctx.stroke();
       ctx.restore();
     }
-  }
-}
-
-function drawDust() {
-  for (const d of state.dust) {
-    const sx = d.x - (d.world ? state.worldX : 0);
-    const alpha = Math.max(0, d.life / d.max);
-    if (d.sparkle) {
-      drawEmoji(SPRITES.boost, sx, d.y, 14, d.life * 8, alpha);
-    } else if (d.sweat) {
-      drawEmoji(SPRITES.sweat, sx, d.y, 18, 0, alpha);
-    } else {
-      ctx.save();
-      ctx.globalAlpha = alpha * 0.55;
-      ctx.fillStyle = "#c8b88a";
-      ctx.beginPath();
-      ctx.arc(sx, d.y, d.size * (0.6 + alpha * 0.4), 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
+    drawEmoji(emoji, sx, hazard.y, size, state.now * (hazard.type === "soap" ? 0.5 : 1.6) + hazard.phase);
   }
 }
 
 function drawParticles() {
-  ctx.font = `900 ${Math.max(20, canvas.width * 0.026)}px system-ui`;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  for (const particle of state.particles) {
-    ctx.globalAlpha = Math.max(0, particle.life);
-    ctx.fillStyle = "#fff7de";
-    ctx.fillText(particle.text, particle.x, particle.y);
+  for (const p of state.particles) {
+    if (p.dust) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.life / (p.maxLife || 0.7)) * 0.55;
+      ctx.fillStyle = "#c8b88a";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    } else if (p.text) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = "#fff7de";
+      ctx.font = `900 ${Math.max(20, canvas.width * 0.028)}px system-ui`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(p.text, p.x, p.y);
+      ctx.restore();
+    }
   }
-  ctx.globalAlpha = 1;
+}
+
+function drawHud() {
+  if (state.phase === PHASES.READY || state.phase === PHASES.WIND_UP || state.phase === PHASES.AIRBORNE) {
+    const text = state.hint;
+    if (!text) return;
+    ctx.save();
+    ctx.font = `900 ${Math.max(20, canvas.width * 0.034)}px system-ui`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const padX = 22;
+    const padY = 14;
+    const w = ctx.measureText(text).width + padX * 2;
+    const h = Math.max(46, canvas.width * 0.055);
+    const x = (canvas.width - w) / 2;
+    const y = canvas.height * 0.18;
+    ctx.fillStyle = "rgba(20, 30, 38, 0.78)";
+    roundRect(x, y, w, h, 12);
+    ctx.fill();
+    ctx.fillStyle = "#fff7de";
+    ctx.fillText(text, canvas.width / 2, y + h / 2);
+    ctx.restore();
+  }
+
+  if (state.phase === PHASES.AIRBORNE) {
+    drawTimingHint();
+  }
+}
+
+function drawTimingHint() {
+  const w = workerAnchor();
+  const drillHeadX = w.x + canvas.width * 0.06;
+  const drillHeadY = w.y - canvas.height * 0.04;
+  const dx = state.pile.x - drillHeadX;
+  const dy = state.pile.y - drillHeadY;
+  const distance = Math.hypot(dx, dy);
+  const reach = canvas.height * 0.16;
+  if (distance < reach * 1.4) {
+    const intensity = Math.max(0, 1 - distance / (reach * 1.4));
+    ctx.save();
+    ctx.globalAlpha = intensity;
+    ctx.strokeStyle = "#fff2c0";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.arc(drillHeadX, drillHeadY, reach, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawOverlay() {
-  if (!state.message || state.phase === "aim") return;
-  if (state.phase === "flight") return;
-  const width = Math.min(canvas.width * 0.76, 620);
-  const height = Math.min(canvas.height * 0.22, 150);
+  if (state.phase !== PHASES.ENDED) return;
+  const text = state.message || "Gelandet";
+  ctx.save();
+  ctx.fillStyle = "rgba(20, 30, 38, 0.85)";
+  const width = Math.min(canvas.width * 0.7, 540);
+  const height = canvas.height * 0.18;
   const x = (canvas.width - width) / 2;
-  const y = canvas.height * 0.32;
-
-  ctx.fillStyle = "rgba(16, 20, 20, 0.82)";
-  roundRect(x, y, width, height, 8);
+  const y = canvas.height * 0.34;
+  roundRect(x, y, width, height, 14);
   ctx.fill();
   ctx.fillStyle = "#fff7de";
-  ctx.font = `900 ${Math.max(30, canvas.width * 0.04)}px system-ui`;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText("Pausenlandung", x + width * 0.09, y + height * 0.38);
+  ctx.font = `900 ${Math.max(28, canvas.width * 0.05)}px system-ui`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, canvas.width / 2, y + height * 0.42);
+  ctx.font = `800 ${Math.max(16, canvas.width * 0.022)}px system-ui`;
   ctx.fillStyle = "#c8d7ce";
-  ctx.font = `800 ${Math.max(18, canvas.width * 0.024)}px system-ui`;
-  ctx.fillText(state.message, x + width * 0.09, y + height * 0.68);
+  ctx.fillText(`${Math.floor(state.score)} Stundn`, canvas.width / 2, y + height * 0.76);
+  ctx.restore();
 }
 
 function roundRect(x, y, width, height, radius) {
@@ -1029,16 +1015,12 @@ function draw() {
   const shake = applyShake();
   ctx.save();
   ctx.translate(shake.x, shake.y);
-  drawBoosters();
   drawHazards();
-  drawDust();
-  drawWorkerLaunch();
-  drawFlyer();
-  drawRings();
-  drawWindGusts();
+  drawWorker();
+  drawPile();
   drawParticles();
   ctx.restore();
-  drawAimMeter();
+  drawHud();
   drawOverlay();
 }
 

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <title>Stundn-Wurf - eStundnzettl Prototyp</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <section class="hud" aria-label="Spielstand">
+        <div>
+          <span>Minuten</span>
+          <strong id="score">0</strong>
+        </div>
+        <div>
+          <span>Plausibel</span>
+          <strong id="trust">100%</strong>
+        </div>
+        <div>
+          <span>Highscore</span>
+          <strong id="highscore">0</strong>
+        </div>
+      </section>
+
+      <canvas id="game" width="960" height="540" aria-label="Stundn-Wurf Spielfeld"></canvas>
+
+      <button id="restartButton" class="restart" type="button">Neu werfen</button>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

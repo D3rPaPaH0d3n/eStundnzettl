@@ -4,6 +4,59 @@
 @variant dark (&:where(.dark, .dark *));
 
 /* ============================================================
+   MATERIAL YOU — OPTIONAL ANDROID DYNAMIC COLOR
+   ============================================================ */
+
+.material-you {
+  --my-surface-light: #f8fafc;
+  --my-container-light: #ffffff;
+  --my-surface-dark: #09090b;
+  --my-container-dark: #27272a;
+  --my-outline-light: #e4e4e7;
+  --my-outline-dark: #3f3f46;
+  --my-accent-container-light: #d1fae5;
+  --my-accent-container-dark: #065f46;
+}
+
+.material-you .bg-zinc-50 {
+  background-color: var(--my-surface-light) !important;
+}
+
+.material-you .bg-white,
+.material-you .bg-zinc-100 {
+  background-color: var(--my-container-light) !important;
+}
+
+.material-you .border-zinc-100,
+.material-you .border-zinc-200 {
+  border-color: var(--my-outline-light) !important;
+}
+
+.material-you .bg-emerald-50 {
+  background-color: color-mix(in srgb, var(--my-accent-container-light) 55%, white) !important;
+}
+
+.dark.material-you .dark\:bg-zinc-950 {
+  background-color: var(--my-surface-dark) !important;
+}
+
+.dark.material-you .dark\:bg-zinc-900,
+.dark.material-you .dark\:bg-zinc-800 {
+  background-color: var(--my-container-dark) !important;
+}
+
+.dark.material-you .dark\:border-zinc-700,
+.dark.material-you .dark\:border-zinc-800 {
+  border-color: var(--my-outline-dark) !important;
+}
+
+.dark.material-you .dark\:bg-emerald-900\/20,
+.dark.material-you .dark\:bg-emerald-900\/30,
+.dark.material-you .dark\:bg-emerald-900\/40 {
+  background-color: color-mix(in srgb, var(--my-accent-container-dark) 55%, transparent) !important;
+}
+
+/* ============================================================
    SAFE AREA UTILITIES
    ============================================================ */
 

@@ -27,6 +27,7 @@ export const STORAGE_KEYS = {
   ENTRIES: "estundnzettl_entries",
   USER: "estundnzettl_user",
   THEME: "estundnzettl_theme",
+  MATERIAL_YOU_ENABLED: "estundnzettl_material_you_enabled",
   WORK_CODES: "estundnzettl_work_codes",
   LOCALE: "estundnzettl_locale", // LocaleId: "neutral" | "at" | "de-by" | ...
   LANGUAGE: "estundnzettl_language", // UI language: "de" | "en"

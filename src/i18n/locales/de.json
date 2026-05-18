@@ -644,7 +644,9 @@
       "fileReadError": "Fehler beim Lesen der Datei",
       "restoreSuccess": "Erfolgreich wiederhergestellt!",
       "expertOn": "Hausmasta-Modus aktiviert",
-      "expertOff": "Hausmasta-Modus deaktiviert"
+      "expertOff": "Hausmasta-Modus deaktiviert",
+      "materialYouOn": "Android-Systemfarben aktiviert",
+      "materialYouOff": "Android-Systemfarben deaktiviert"
     },
     "weekdays": {
       "sun": "So",
@@ -675,6 +677,10 @@
       "light": "Hell",
       "dark": "Dunkel",
       "system": "System"
+    },
+    "materialYou": {
+      "title": "Android-Systemfarben verwenden",
+      "description": "Passt neutrale Flächen und Container an dein Android-Design an. Hauptaktionen und eStundnzettl-Grün bleiben unverändert."
     },
     "appInfo": {
       "sectionInfoTitle": "App & Informationen",

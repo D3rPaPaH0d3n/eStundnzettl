@@ -26,6 +26,8 @@ import type { TimerState } from "../types";
 interface SettingsRouteProps {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  materialYouEnabled: boolean;
+  setMaterialYouEnabled: (enabled: boolean) => void;
   autoBackup: boolean;
   setAutoBackup: (enabled: boolean) => void;
   onTriggerManualBackup: () => Promise<void> | void;

@@ -7,6 +7,7 @@
  * Settings-Keys in SQLite (settings-Tabelle):
  *   "user"                → { name, position, photo, workDays }
  *   "theme"               → "system" | "dark" | "light"
+ *   "material_you_enabled"→ true | false
  *   "cloud_sync_enabled"  → true | false
  *   "local_backup_enabled"→ true | false
  */
@@ -82,6 +83,7 @@ function defaultUserData(): UserData {
  *
  * - `userData` / `setUserData` — Profil (name, position, photo, workDays)
  * - `theme` / `setTheme` — "system" | "dark" | "light"
+ * - `materialYouEnabled` / `setMaterialYouEnabled` — optionale Android-Systemfarben
  * - `autoBackup` / `setAutoBackup` — Alias für cloudSyncEnabled
  * - `cloudSyncEnabled` / `setCloudSyncEnabled` — Google-Drive-Auto-Sync
  * - `localBackupEnabled` / `setLocalBackupEnabled` — lokaler Ordner
@@ -100,6 +102,10 @@ export function useSettings() {
 
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(STORAGE_KEYS.THEME) as Theme) || "system"
+  );
+
+  const [materialYouEnabled, setMaterialYouEnabled] = useState(
+    () => !isSQLiteActive() && localStorage.getItem(STORAGE_KEYS.MATERIAL_YOU_ENABLED) === "true"
   );
 
   const [cloudSyncEnabled, setCloudSyncEnabled] = useState(
@@ -164,9 +170,10 @@ export function useSettings() {
 
       try {
         // Settings aus SQLite laden — nur überschreiben wenn vorhanden
-        const [sqlUser, sqlTheme, sqlCloud, sqlLocal, sqlLocale, sqlNcEnabled, sqlNcUrl, sqlNcUser, sqlNcPass] = await Promise.all([
+        const [sqlUser, sqlTheme, sqlMaterialYou, sqlCloud, sqlLocal, sqlLocale, sqlNcEnabled, sqlNcUrl, sqlNcUser, sqlNcPass] = await Promise.all([
           getSetting("user"),
           getSetting("theme"),
+          getSetting("material_you_enabled"),
           getSetting("cloud_sync_enabled"),
           getSetting("local_backup_enabled"),
           getSetting("locale"),
@@ -186,6 +193,7 @@ export function useSettings() {
           setUserData(u as unknown as UserData);
         }
         if (sqlTheme) setTheme(sqlTheme as Theme);
+        if (sqlMaterialYou !== null) setMaterialYouEnabled(!!sqlMaterialYou);
         if (sqlCloud !== null) setCloudSyncEnabled(!!sqlCloud);
         if (sqlLocal !== null) setLocalBackupEnabled(!!sqlLocal);
         if (typeof sqlLocale === "string" && sqlLocale in LOCALES) {
@@ -278,6 +286,12 @@ export function useSettings() {
     }
   }, [theme, sqliteWrite]);
 
+  // Material You / Dynamic Color (default: aus)
+  useEffect(() => {
+    localFallbackWrite(STORAGE_KEYS.MATERIAL_YOU_ENABLED, materialYouEnabled ? "true" : null);
+    sqliteWrite("material_you_enabled", materialYouEnabled);
+  }, [materialYouEnabled, sqliteWrite, localFallbackWrite]);
+
   // Cloud Sync
   useEffect(() => {
     localFallbackWrite(
@@ -364,6 +378,8 @@ export function useSettings() {
     setUserData,
     theme,
     setTheme,
+    materialYouEnabled,
+    setMaterialYouEnabled,
 
     // Locale (länderspezifische Berechnung)
     locale,

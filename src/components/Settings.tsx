@@ -32,6 +32,8 @@ interface Props {
   setUserData: (data: UserData | ((prev: UserData) => UserData)) => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  materialYouEnabled: boolean;
+  setMaterialYouEnabled: (enabled: boolean) => void;
   autoBackup: boolean;
   setAutoBackup: (enabled: boolean) => void;
   onTriggerManualBackup?: () => Promise<void> | void;
@@ -79,6 +81,8 @@ const Settings: React.FC<Props> = ({
   setUserData,
   theme,
   setTheme,
+  materialYouEnabled,
+  setMaterialYouEnabled,
   autoBackup,
   setAutoBackup,
   onTriggerManualBackup,
@@ -412,6 +416,8 @@ const Settings: React.FC<Props> = ({
       <ExpertModeSettings
         userData={userData}
         setUserData={setUserData}
+        materialYouEnabled={materialYouEnabled}
+        setMaterialYouEnabled={setMaterialYouEnabled}
         onLoadDemoData={() => setDemoTrigger((n) => n + 1)}
         locale={locale}
         calculationConfig={calculationConfig}

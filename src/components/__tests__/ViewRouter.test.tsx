@@ -154,6 +154,8 @@ const makeProps = (view: string) => ({
   settings: {
     theme: "system" as const,
     setTheme: vi.fn(),
+    materialYouEnabled: false,
+    setMaterialYouEnabled: vi.fn(),
     autoBackup: false,
     setAutoBackup: vi.fn(),
     onTriggerManualBackup: vi.fn(),

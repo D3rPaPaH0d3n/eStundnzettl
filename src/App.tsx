@@ -24,6 +24,7 @@ import { useBackButtonHandler } from "./hooks/useBackButtonHandler";
 import { useLastCode } from "./hooks/useLastCode";
 import { useWhatsNewModal } from "./hooks/useWhatsNewModal";
 import { useUpdateAvailable } from "./hooks/useUpdateAvailable";
+import { DynamicColors, type DynamicColorPalette } from "./plugins/DynamicColorsPlugin";
 
 import AppHeader from "./components/AppHeader";
 import ViewRouter from "./components/ViewRouter";
@@ -58,6 +59,7 @@ export default function App() {
   const {
     userData, setUserData,
     theme, setTheme,
+    materialYouEnabled, setMaterialYouEnabled,
     locale: localeId, setLocale,
     autoBackup, setAutoBackup,
     nextcloudEnabled, nextcloudUrl, nextcloudUser, nextcloudPass,
@@ -220,9 +222,70 @@ export default function App() {
   // einmal pro Tag. Play Store / Amazon / Huawei sehen das nie.
   const updateInfo = useUpdateAvailable();
 
+  useEffect(() => {
+    let cancelled = false;
+    const root = document.documentElement;
+
+    const clearMaterialYou = () => {
+      root.classList.remove("material-you");
+      [
+        "--my-surface-light",
+        "--my-container-light",
+        "--my-surface-dark",
+        "--my-container-dark",
+        "--my-outline-light",
+        "--my-outline-dark",
+        "--my-accent-container-light",
+        "--my-accent-container-dark",
+      ].forEach((name) => root.style.removeProperty(name));
+    };
+
+    if (settingsStorageStatus === "loading") {
+      return;
+    }
+
+    if (!materialYouEnabled) {
+      clearMaterialYou();
+      return;
+    }
+
+    DynamicColors.getPalette()
+      .then((palette: DynamicColorPalette) => {
+        if (cancelled) return;
+
+        if (!palette.supported) {
+          clearMaterialYou();
+          return;
+        }
+
+        const setColor = (name: string, value?: string) => {
+          if (value) root.style.setProperty(name, value);
+        };
+
+        setColor("--my-surface-light", palette.surfaceLight);
+        setColor("--my-container-light", palette.surfaceContainerLight);
+        setColor("--my-surface-dark", palette.surfaceDark);
+        setColor("--my-container-dark", palette.surfaceContainerDark);
+        setColor("--my-outline-light", palette.outlineLight);
+        setColor("--my-outline-dark", palette.outlineDark);
+        setColor("--my-accent-container-light", palette.accentContainerLight);
+        setColor("--my-accent-container-dark", palette.accentContainerDark);
+        root.classList.add("material-you");
+      })
+      .catch(() => {
+        if (!cancelled) clearMaterialYou();
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [materialYouEnabled, settingsStorageStatus]);
+
   const settingsRouteProps = {
     theme,
     setTheme,
+    materialYouEnabled,
+    setMaterialYouEnabled,
     autoBackup,
     setAutoBackup,
     onTriggerManualBackup: triggerManualBackup,

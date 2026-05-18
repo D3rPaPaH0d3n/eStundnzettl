@@ -644,7 +644,9 @@
       "fileReadError": "Couldn't read the file",
       "restoreSuccess": "Successfully restored!",
       "expertOn": "Power-user mode on",
-      "expertOff": "Power-user mode off"
+      "expertOff": "Power-user mode off",
+      "materialYouOn": "Android system colors enabled",
+      "materialYouOff": "Android system colors disabled"
     },
     "weekdays": {
       "sun": "Sun",
@@ -675,6 +677,10 @@
       "light": "Light",
       "dark": "Dark",
       "system": "System"
+    },
+    "materialYou": {
+      "title": "Use Android system colors",
+      "description": "Adapts neutral surfaces and containers to your Android theme. Primary actions and eStundnzettl green stay unchanged."
     },
     "appInfo": {
       "sectionInfoTitle": "App & information",

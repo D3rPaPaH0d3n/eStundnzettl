@@ -17,6 +17,8 @@ public class SystemBarsPlugin extends Plugin {
     @PluginMethod
     public void setTheme(PluginCall call) {
         boolean dark = Boolean.TRUE.equals(call.getBoolean("dark", false));
+        boolean statusBarDark = Boolean.TRUE.equals(call.getBoolean("statusBarDark", true));
+        boolean navigationBarDark = Boolean.TRUE.equals(call.getBoolean("navigationBarDark", dark));
 
         getActivity().runOnUiThread(() -> {
             Window window = getActivity().getWindow();
@@ -30,11 +32,13 @@ public class SystemBarsPlugin extends Plugin {
 
             WindowInsetsControllerCompat controller =
                 WindowCompat.getInsetsController(window, window.getDecorView());
-            controller.setAppearanceLightStatusBars(!dark);
-            controller.setAppearanceLightNavigationBars(!dark);
+            controller.setAppearanceLightStatusBars(!statusBarDark);
+            controller.setAppearanceLightNavigationBars(!navigationBarDark);
 
             JSObject result = new JSObject();
             result.put("dark", dark);
+            result.put("statusBarDark", statusBarDark);
+            result.put("navigationBarDark", navigationBarDark);
             call.resolve(result);
         });
     }

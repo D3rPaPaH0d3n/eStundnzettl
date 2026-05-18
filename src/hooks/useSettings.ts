@@ -274,7 +274,11 @@ export function useSettings() {
       const dark = theme === "dark" || (theme === "system" && systemQuery.matches);
 
       root.classList.toggle("dark", dark);
-      SystemBars.setTheme({ dark }).catch(() => {
+      SystemBars.setTheme({
+        dark,
+        statusBarDark: true,
+        navigationBarDark: dark,
+      }).catch(() => {
         // Web/dev fallback: native plugin exists only inside the Android app.
       });
     };

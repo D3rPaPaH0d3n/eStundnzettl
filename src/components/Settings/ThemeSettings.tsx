@@ -62,9 +62,6 @@ const ThemeSettings: React.FC<Props> = ({ theme, setTheme, materialYouEnabled, s
             <div className="text-sm font-bold text-zinc-800 dark:text-white">
               {t("settings.materialYou.title")}
             </div>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              {t("settings.materialYou.description")}
-            </p>
           </div>
         </div>
         <label className="relative inline-flex items-center cursor-pointer shrink-0">

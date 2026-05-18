@@ -31,8 +31,7 @@ describe("AppearanceSettings", () => {
 
     fireEvent.click(getByRole("button", { name: /Darstellung/ }));
 
-    expect(getByText("Android-Systemfarben verwenden")).toBeTruthy();
-    expect(getByText(/Header, Wochentage und wichtige Aktionen/)).toBeTruthy();
+    expect(getByText("Material You verwenden")).toBeTruthy();
 
     fireEvent.click(getByRole("checkbox"));
 

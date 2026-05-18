@@ -19,6 +19,7 @@ import { isSQLiteActive, subscribeStorageMode } from "../db/storageMode";
 import { getSetting, setSetting, deleteSetting } from "../db/repositories/settingsRepo";
 import type { LocaleId } from "../locales/types";
 import { LOCALES } from "../locales";
+import { SystemBars } from "../plugins/SystemBarsPlugin";
 
 import { deobfuscateLegacySync } from "../utils/obfuscate";
 import { logger } from "../utils/logger";
@@ -270,12 +271,12 @@ export function useSettings() {
     const systemQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
     const applyTheme = () => {
-      if (theme === "dark") root.classList.add("dark");
-      else if (theme === "light") root.classList.remove("dark");
-      else if (theme === "system") {
-        if (systemQuery.matches) root.classList.add("dark");
-        else root.classList.remove("dark");
-      }
+      const dark = theme === "dark" || (theme === "system" && systemQuery.matches);
+
+      root.classList.toggle("dark", dark);
+      SystemBars.setTheme({ dark }).catch(() => {
+        // Web/dev fallback: native plugin exists only inside the Android app.
+      });
     };
 
     applyTheme();

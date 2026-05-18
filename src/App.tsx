@@ -24,8 +24,8 @@ import { useBackButtonHandler } from "./hooks/useBackButtonHandler";
 import { useLastCode } from "./hooks/useLastCode";
 import { useWhatsNewModal } from "./hooks/useWhatsNewModal";
 import { useUpdateAvailable } from "./hooks/useUpdateAvailable";
-import { DynamicColors, type DynamicColorPalette } from "./plugins/DynamicColorsPlugin";
-import { SystemBars } from "./plugins/SystemBarsPlugin";
+import { useMaterialYouPalette } from "./hooks/useMaterialYouPalette";
+import { useSystemBarsTheme } from "./hooks/useSystemBarsTheme";
 
 import AppHeader from "./components/AppHeader";
 import ViewRouter from "./components/ViewRouter";
@@ -167,29 +167,7 @@ export default function App() {
   // --- EFFECTS ---
   useAutoCheckoutHandler({ autoCheckoutData, form, setView, clearAutoCheckout, getDefaultCode });
   useBackButtonHandler({ view, setView, form });
-
-  useEffect(() => {
-    const systemQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const applySystemBars = () => {
-      const dark = theme === "dark" || (theme === "system" && systemQuery.matches);
-
-      SystemBars.setTheme({
-        dark,
-        statusBarDark: showOnboarding ? dark : true,
-        navigationBarDark: dark,
-      }).catch(() => {
-        // Web/dev fallback: native plugin exists only inside the Android app.
-      });
-    };
-
-    applySystemBars();
-
-    if (theme === "system") {
-      systemQuery.addEventListener("change", applySystemBars);
-      return () => systemQuery.removeEventListener("change", applySystemBars);
-    }
-  }, [showOnboarding, theme]);
+  useSystemBarsTheme({ theme, showOnboarding });
 
   const handleOnboardingFinishWithTour = useCallback(() => {
     localStorage.setItem(SETTINGS_UX_MIGRATION_SEEN_KEY, "true");
@@ -245,57 +223,7 @@ export default function App() {
   // Update-Verfügbar — nur für Sideload-Installs, prüft GitHub Releases
   // einmal pro Tag. Play Store / Amazon / Huawei sehen das nie.
   const updateInfo = useUpdateAvailable();
-
-  useEffect(() => {
-    let cancelled = false;
-    const root = document.documentElement;
-
-    const clearMaterialYou = () => {
-      root.classList.remove("material-you");
-      [
-        "--my-accent-light",
-        "--my-accent-dark",
-        "--my-accent-container-light",
-        "--my-accent-container-dark",
-      ].forEach((name) => root.style.removeProperty(name));
-    };
-
-    if (settingsStorageStatus === "loading") {
-      return;
-    }
-
-    if (!materialYouEnabled) {
-      clearMaterialYou();
-      return;
-    }
-
-    DynamicColors.getPalette()
-      .then((palette: DynamicColorPalette) => {
-        if (cancelled) return;
-
-        if (!palette.supported) {
-          clearMaterialYou();
-          return;
-        }
-
-        const setColor = (name: string, value?: string) => {
-          if (value) root.style.setProperty(name, value);
-        };
-
-        setColor("--my-accent-light", palette.accentLight);
-        setColor("--my-accent-dark", palette.accentDark);
-        setColor("--my-accent-container-light", palette.accentContainerLight);
-        setColor("--my-accent-container-dark", palette.accentContainerDark);
-        root.classList.add("material-you");
-      })
-      .catch(() => {
-        if (!cancelled) clearMaterialYou();
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [materialYouEnabled, settingsStorageStatus]);
+  useMaterialYouPalette({ enabled: materialYouEnabled, settingsStorageStatus });
 
   const settingsRouteProps = {
     theme,

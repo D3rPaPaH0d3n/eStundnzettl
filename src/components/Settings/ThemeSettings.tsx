@@ -53,13 +53,13 @@ const ThemeSettings: React.FC<Props> = ({ theme, setTheme, materialYouEnabled, s
           </button>
         ))}
       </div>
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/70">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="p-2 rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300 shrink-0">
+      <div className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-800/70">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
             <Palette size={18} />
           </div>
-          <div className="min-w-0">
-            <div className="text-sm font-bold text-zinc-800 dark:text-white">
+          <div className="min-w-0 leading-snug">
+            <div className="text-[13px] font-normal text-zinc-700 dark:text-zinc-200 sm:text-sm">
               {t("settings.materialYou.title")}
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -62,7 +62,7 @@ const STEPS: TourStepDefinition[] = [
     color: "zinc",
     target: '[data-settings-tour="appearanceHelp"]',
   },
-  { key: "done", icon: HelpCircle, color: "emerald", target: '[data-settings-tour="help"]' },
+  { key: "done", icon: HelpCircle, color: "emerald", target: '[data-settings-tour="help-card"]' },
 ];
 
 interface TargetRect {
@@ -73,6 +73,7 @@ interface TargetRect {
 }
 
 const HIGHLIGHT_PADDING = 8;
+const VIEWPORT_MARGIN = 12;
 const CARD_GAP = 18;
 const ESTIMATED_CARD_HEIGHT = 236;
 
@@ -117,6 +118,33 @@ const colorMap = {
 interface Props {
   storageKey: string;
 }
+
+const getViewportSize = () => ({
+  width: typeof window !== "undefined" ? window.innerWidth : 390,
+  height: typeof window !== "undefined" ? window.innerHeight : 800,
+});
+
+const clampTargetRect = (rect: TargetRect): TargetRect => {
+  const viewport = getViewportSize();
+  const maxWidth = Math.max(1, viewport.width - VIEWPORT_MARGIN * 2);
+  const maxHeight = Math.max(1, viewport.height - VIEWPORT_MARGIN * 2);
+  const paddedTop = rect.top - HIGHLIGHT_PADDING;
+  const paddedLeft = rect.left - HIGHLIGHT_PADDING;
+  const paddedRight = rect.left + rect.width + HIGHLIGHT_PADDING;
+  const paddedBottom = rect.top + rect.height + HIGHLIGHT_PADDING;
+
+  const top = Math.min(Math.max(paddedTop, VIEWPORT_MARGIN), viewport.height - VIEWPORT_MARGIN);
+  const left = Math.min(Math.max(paddedLeft, VIEWPORT_MARGIN), viewport.width - VIEWPORT_MARGIN);
+  const right = Math.min(Math.max(paddedRight, VIEWPORT_MARGIN), viewport.width - VIEWPORT_MARGIN);
+  const bottom = Math.min(Math.max(paddedBottom, VIEWPORT_MARGIN), viewport.height - VIEWPORT_MARGIN);
+
+  return {
+    top,
+    left,
+    width: Math.min(Math.max(right - left, 1), maxWidth),
+    height: Math.min(Math.max(bottom - top, 1), maxHeight),
+  };
+};
 
 const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
   const { t } = useTranslation();
@@ -184,49 +212,46 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
   }, [measureTarget, step.target, visible]);
 
   const highlightStyle = targetRect
-    ? {
-        position: "fixed" as const,
-        top: targetRect.top - HIGHLIGHT_PADDING,
-        left: targetRect.left - HIGHLIGHT_PADDING,
-        width: targetRect.width + HIGHLIGHT_PADDING * 2,
-        height: targetRect.height + HIGHLIGHT_PADDING * 2,
-        borderRadius: "1.25rem",
-        pointerEvents: "none" as const,
-      }
-    : null;
-
-  const spotlight = targetRect
-    ? {
-        top: Math.max(0, targetRect.top - HIGHLIGHT_PADDING),
-        left: Math.max(0, targetRect.left - HIGHLIGHT_PADDING),
-        right: Math.max(0, window.innerWidth - targetRect.left - targetRect.width - HIGHLIGHT_PADDING),
-        bottom: Math.max(0, window.innerHeight - targetRect.top - targetRect.height - HIGHLIGHT_PADDING),
-      }
+    ? (() => {
+        const rect = clampTargetRect(targetRect);
+        return {
+          position: "fixed" as const,
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+          borderRadius: "1.25rem",
+          pointerEvents: "none" as const,
+        };
+      })()
     : null;
 
   const cardContainerStyle = (() => {
-    if (!targetRect) return undefined;
-    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+    if (!highlightStyle) return undefined;
+    const vh = getViewportSize().height;
     const safeTop = 24;
     const safeBottom = 24;
-    const spaceAbove = targetRect.top - CARD_GAP - safeTop;
-    const spaceBelow = vh - (targetRect.top + targetRect.height) - CARD_GAP - safeBottom;
+    const highlightTop = Number(highlightStyle.top);
+    const highlightHeight = Number(highlightStyle.height);
+    const spaceAbove = highlightTop - CARD_GAP - safeTop;
+    const spaceBelow = vh - (highlightTop + highlightHeight) - CARD_GAP - safeBottom;
 
     if (spaceBelow >= ESTIMATED_CARD_HEIGHT || spaceBelow >= spaceAbove) {
       return {
         top: Math.min(
-          targetRect.top + targetRect.height + CARD_GAP,
+          highlightTop + highlightHeight + CARD_GAP,
           vh - ESTIMATED_CARD_HEIGHT - safeBottom,
         ),
       };
     }
 
     return {
-      bottom: Math.min(vh - targetRect.top + CARD_GAP, vh - ESTIMATED_CARD_HEIGHT - safeTop),
+      bottom: Math.min(vh - highlightTop + CARD_GAP, vh - ESTIMATED_CARD_HEIGHT - safeTop),
     };
   })();
 
-  const cardPositionClass = targetRect ? "" : "top-1/2 -translate-y-1/2";
+  const cardPositionClass = highlightStyle ? "" : "top-1/2 -translate-y-1/2";
+  const overlayMaskId = `settings-tour-spotlight-${useId().replace(/:/g, "")}`;
 
   const handleNext = () => {
     if (isLast) {
@@ -244,24 +269,36 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
     <AnimatePresence>
       {visible && (
         <div className="fixed inset-0 z-[260] pointer-events-none">
-          {spotlight ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div
-                className="fixed left-0 right-0 top-0 bg-black/55 backdrop-blur-[2px] pointer-events-auto"
-                style={{ height: spotlight.top }}
-              />
-              <div
-                className="fixed left-0 right-0 bottom-0 bg-black/55 backdrop-blur-[2px] pointer-events-auto"
-                style={{ height: spotlight.bottom }}
-              />
-              <div
-                className="fixed left-0 bg-black/55 backdrop-blur-[2px] pointer-events-auto"
-                style={{ top: spotlight.top, bottom: spotlight.bottom, width: spotlight.left }}
-              />
-              <div
-                className="fixed right-0 bg-black/55 backdrop-blur-[2px] pointer-events-auto"
-                style={{ top: spotlight.top, bottom: spotlight.bottom, width: spotlight.right }}
-              />
+          {highlightStyle ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 pointer-events-auto"
+              onClick={handleNext}
+            >
+              <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
+                <defs>
+                  <mask id={overlayMaskId}>
+                    <rect width="100%" height="100%" fill="white" />
+                    <rect
+                      x={Number(highlightStyle.left)}
+                      y={Number(highlightStyle.top)}
+                      width={Number(highlightStyle.width)}
+                      height={Number(highlightStyle.height)}
+                      rx="20"
+                      ry="20"
+                      fill="black"
+                    />
+                  </mask>
+                </defs>
+                <rect
+                  width="100%"
+                  height="100%"
+                  fill="rgba(0,0,0,0.55)"
+                  mask={`url(#${overlayMaskId})`}
+                />
+              </svg>
             </motion.div>
           ) : (
             <motion.div

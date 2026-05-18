@@ -57,7 +57,8 @@ const AppInfoSettings: React.FC<Props> = ({
 
   return (
     <>
-      <Card className="p-5 space-y-3">
+      <div data-settings-tour="help-card">
+        <Card className="p-5 space-y-3">
         <h3 className="font-bold text-zinc-700 dark:text-white">
           {t("settings.appInfo.sectionInfoTitle")}
         </h3>
@@ -91,7 +92,8 @@ const AppInfoSettings: React.FC<Props> = ({
         >
           <History size={18} /> {t("settings.appInfo.changelog")}
         </button>
-      </Card>
+        </Card>
+      </div>
 
       {/* Über — Links zu Datenschutz, Website, GitHub */}
       <Card className="p-5 space-y-3">

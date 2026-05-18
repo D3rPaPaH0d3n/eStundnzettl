@@ -680,7 +680,7 @@
     },
     "materialYou": {
       "title": "Use Android system colors",
-      "description": "Adapts neutral surfaces and containers to your Android theme. Primary actions and eStundnzettl green stay unchanged."
+      "description": "Subtly adapts the header, weekdays, and key actions to your Android theme. The eStundnzettl identity stays intact."
     },
     "appInfo": {
       "sectionInfoTitle": "App & information",

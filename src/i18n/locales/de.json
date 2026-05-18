@@ -680,7 +680,7 @@
     },
     "materialYou": {
       "title": "Android-Systemfarben verwenden",
-      "description": "Passt neutrale Flächen und Container an dein Android-Design an. Hauptaktionen und eStundnzettl-Grün bleiben unverändert."
+      "description": "Passt Header, Wochentage und wichtige Aktionen dezent an dein Android-Design an. Die eStundnzettl-Identität bleibt erhalten."
     },
     "appInfo": {
       "sectionInfoTitle": "App & Informationen",

@@ -24,12 +24,8 @@ public class DynamicColorsPlugin extends Plugin {
         }
 
         Resources resources = getActivity().getResources();
-        result.put("surfaceLight", readSystemColor(resources, "system_neutral1_10", "#F8FAFC"));
-        result.put("surfaceContainerLight", readSystemColor(resources, "system_neutral1_50", "#FFFFFF"));
-        result.put("surfaceDark", readSystemColor(resources, "system_neutral1_900", "#09090B"));
-        result.put("surfaceContainerDark", readSystemColor(resources, "system_neutral1_800", "#27272A"));
-        result.put("outlineLight", readSystemColor(resources, "system_neutral2_200", "#E4E4E7"));
-        result.put("outlineDark", readSystemColor(resources, "system_neutral2_700", "#3F3F46"));
+        result.put("accentLight", readSystemColor(resources, "system_accent1_600", "#059669"));
+        result.put("accentDark", readSystemColor(resources, "system_accent1_300", "#34D399"));
         result.put("accentContainerLight", readSystemColor(resources, "system_accent1_100", "#D1FAE5"));
         result.put("accentContainerDark", readSystemColor(resources, "system_accent1_700", "#065F46"));
         call.resolve(result);

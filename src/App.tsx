@@ -253,12 +253,8 @@ export default function App() {
     const clearMaterialYou = () => {
       root.classList.remove("material-you");
       [
-        "--my-surface-light",
-        "--my-container-light",
-        "--my-surface-dark",
-        "--my-container-dark",
-        "--my-outline-light",
-        "--my-outline-dark",
+        "--my-accent-light",
+        "--my-accent-dark",
         "--my-accent-container-light",
         "--my-accent-container-dark",
       ].forEach((name) => root.style.removeProperty(name));
@@ -286,12 +282,8 @@ export default function App() {
           if (value) root.style.setProperty(name, value);
         };
 
-        setColor("--my-surface-light", palette.surfaceLight);
-        setColor("--my-container-light", palette.surfaceContainerLight);
-        setColor("--my-surface-dark", palette.surfaceDark);
-        setColor("--my-container-dark", palette.surfaceContainerDark);
-        setColor("--my-outline-light", palette.outlineLight);
-        setColor("--my-outline-dark", palette.outlineDark);
+        setColor("--my-accent-light", palette.accentLight);
+        setColor("--my-accent-dark", palette.accentDark);
         setColor("--my-accent-container-light", palette.accentContainerLight);
         setColor("--my-accent-container-dark", palette.accentContainerDark);
         root.classList.add("material-you");

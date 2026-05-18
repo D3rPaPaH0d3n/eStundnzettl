@@ -2,12 +2,8 @@ import { registerPlugin } from "@capacitor/core";
 
 export interface DynamicColorPalette {
   supported: boolean;
-  surfaceLight?: string;
-  surfaceContainerLight?: string;
-  surfaceDark?: string;
-  surfaceContainerDark?: string;
-  outlineLight?: string;
-  outlineDark?: string;
+  accentLight?: string;
+  accentDark?: string;
   accentContainerLight?: string;
   accentContainerDark?: string;
 }

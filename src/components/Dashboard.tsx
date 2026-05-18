@@ -201,7 +201,7 @@ export const DayCard: React.FC<DayCardProps> = ({
   return ( 
     <motion.div key={dateStr} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden"> 
       <div className="flex"> 
-        <div className="bg-zinc-800 dark:bg-zinc-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0 z-20 relative"> 
+        <div className="material-you-day-strip bg-zinc-800 dark:bg-zinc-900 w-12 flex flex-col items-center justify-center text-white flex-shrink-0 z-20 relative"> 
           <span className="text-xs font-bold opacity-80">{d.toLocaleDateString(intlLocale, { weekday: "short" }).slice(0, 2)}</span> 
           <span className="text-sm font-bold">{d.toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" })}</span> 
         </div> 
@@ -447,7 +447,7 @@ const Dashboard: React.FC<Props> = ({
 
             return (
               <div key={week} className="mb-3">
-                <button type="button" className="w-full flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl px-3 py-2 transition-colors" onClick={() => toggleWeek(week)}>
+                <button type="button" className="material-you-week-button w-full flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl px-3 py-2 transition-colors" onClick={() => toggleWeek(week)}>
                     <div className="flex flex-col text-left">
                         <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("dashboard.calendarWeek")}</span>
                         <span className="font-bold text-zinc-800 dark:text-zinc-200"> {t("dashboard.calendarWeekShort", { week })}{" "} <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">({clippedMonday.toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" })} – {clippedSunday.toLocaleDateString(intlLocale, { day: "2-digit", month: "2-digit" })})</span> </span>

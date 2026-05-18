@@ -28,7 +28,7 @@ export default function AppHeader({
   const { t } = useTranslation();
   return (
     <header
-      className="fixed top-0 left-0 right-0 bg-zinc-900 text-white p-4 pb-6 shadow-xl z-50 w-full transition-all"
+      className="material-you-header fixed top-0 left-0 right-0 bg-zinc-900 text-white p-4 pb-6 shadow-xl z-50 w-full transition-all"
       style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
     >
       <div className="flex items-center justify-between w-full">
@@ -43,7 +43,7 @@ export default function AppHeader({
               <ArrowLeft size={24} />
             </button>
           ) : (
-            <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-zinc-800 shadow-inner">
+            <div className="material-you-header-control w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-zinc-800 shadow-inner">
               <img src={AppLogo} alt={t("header.logoAlt")} className="w-full h-full object-contain" />
             </div>
           )}
@@ -68,7 +68,7 @@ export default function AppHeader({
               onFocus={preloadSettings}
               onTouchStart={preloadSettings}
               onClick={onOpenSettings}
-              className="p-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors active:scale-95"
+              className="material-you-header-control p-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors active:scale-95"
             >
               <SettingsIcon size={20} className="text-zinc-300" />
             </button>

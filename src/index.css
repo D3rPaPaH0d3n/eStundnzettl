@@ -8,52 +8,60 @@
    ============================================================ */
 
 .material-you {
-  --my-surface-light: #f8fafc;
-  --my-container-light: #ffffff;
-  --my-surface-dark: #09090b;
-  --my-container-dark: #27272a;
-  --my-outline-light: #e4e4e7;
-  --my-outline-dark: #3f3f46;
+  --my-accent-light: #059669;
+  --my-accent-dark: #34d399;
   --my-accent-container-light: #d1fae5;
   --my-accent-container-dark: #065f46;
 }
 
-.material-you .bg-zinc-50 {
-  background-color: var(--my-surface-light) !important;
+.material-you .material-you-header {
+  background-color: color-mix(in srgb, var(--my-accent-light) 58%, #18181b) !important;
 }
 
-.material-you .bg-white,
-.material-you .bg-zinc-100 {
-  background-color: var(--my-container-light) !important;
+.material-you .material-you-header-control {
+  background-color: color-mix(in srgb, var(--my-accent-light) 35%, #27272a) !important;
 }
 
-.material-you .border-zinc-100,
-.material-you .border-zinc-200 {
-  border-color: var(--my-outline-light) !important;
+.material-you .material-you-header-control:hover {
+  background-color: color-mix(in srgb, var(--my-accent-light) 45%, #3f3f46) !important;
 }
 
-.material-you .bg-emerald-50 {
-  background-color: color-mix(in srgb, var(--my-accent-container-light) 55%, white) !important;
+.material-you .material-you-day-strip {
+  background-color: color-mix(in srgb, var(--my-accent-light) 48%, #27272a) !important;
 }
 
-.dark.material-you .dark\:bg-zinc-950 {
-  background-color: var(--my-surface-dark) !important;
+.material-you .material-you-week-button,
+.material-you .material-you-weekday-cell {
+  background-color: color-mix(in srgb, var(--my-accent-container-light) 46%, white) !important;
 }
 
-.dark.material-you .dark\:bg-zinc-900,
-.dark.material-you .dark\:bg-zinc-800 {
-  background-color: var(--my-container-dark) !important;
+.material-you .material-you-week-button:hover {
+  background-color: color-mix(in srgb, var(--my-accent-container-light) 62%, white) !important;
 }
 
-.dark.material-you .dark\:border-zinc-700,
-.dark.material-you .dark\:border-zinc-800 {
-  border-color: var(--my-outline-dark) !important;
+.material-you .material-you-accent-dot {
+  background-color: var(--my-accent-light) !important;
 }
 
-.dark.material-you .dark\:bg-emerald-900\/20,
-.dark.material-you .dark\:bg-emerald-900\/30,
-.dark.material-you .dark\:bg-emerald-900\/40 {
-  background-color: color-mix(in srgb, var(--my-accent-container-dark) 55%, transparent) !important;
+.dark.material-you .material-you-header {
+  background-color: color-mix(in srgb, var(--my-accent-dark) 28%, #18181b) !important;
+}
+
+.dark.material-you .material-you-day-strip {
+  background-color: color-mix(in srgb, var(--my-accent-dark) 24%, #18181b) !important;
+}
+
+.dark.material-you .material-you-week-button,
+.dark.material-you .material-you-weekday-cell {
+  background-color: color-mix(in srgb, var(--my-accent-container-dark) 42%, #27272a) !important;
+}
+
+.dark.material-you .material-you-week-button:hover {
+  background-color: color-mix(in srgb, var(--my-accent-container-dark) 56%, #3f3f46) !important;
+}
+
+.dark.material-you .material-you-accent-dot {
+  background-color: var(--my-accent-dark) !important;
 }
 
 /* ============================================================

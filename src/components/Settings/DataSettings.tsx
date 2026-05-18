@@ -268,7 +268,7 @@ const DataSettings: React.FC<Props> = ({
                         disabled={!isInteractive}
                         className={`w-full text-center p-2 rounded-lg text-xs font-bold border transition-colors relative h-[34px] flex items-center justify-center
                           ${isInteractive
-                            ? "bg-white dark:bg-zinc-700 border-zinc-300 dark:border-zinc-600 text-zinc-800 dark:text-white shadow-sm cursor-pointer hover:border-emerald-500"
+                            ? "material-you-weekday-cell bg-white dark:bg-zinc-700 border-zinc-300 dark:border-zinc-600 text-zinc-800 dark:text-white shadow-sm cursor-pointer hover:border-emerald-500"
                             : "bg-transparent border-transparent text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-80"
                           }
                         `}
@@ -281,7 +281,7 @@ const DataSettings: React.FC<Props> = ({
                           <span
                             className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${
                               isInteractive
-                                ? "bg-emerald-500"
+                                ? "material-you-accent-dot bg-emerald-500"
                                 : "bg-zinc-300 dark:bg-zinc-600"
                             }`}
                           />

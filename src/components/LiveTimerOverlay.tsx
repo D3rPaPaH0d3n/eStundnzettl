@@ -189,7 +189,7 @@ const LiveTimerOverlay = ({
             ? "bg-white dark:bg-zinc-800 border-red-500 text-red-500"
             : isSwipeReady
               ? "bg-emerald-600 border-emerald-400 text-white"
-              : "bg-zinc-900 dark:bg-emerald-600 border-transparent text-white"}
+              : "material-you-primary-action bg-zinc-900 dark:bg-emerald-600 border-transparent text-white"}
         `}
       >
         {timerState.isRunning ? (

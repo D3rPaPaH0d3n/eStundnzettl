@@ -43,6 +43,23 @@
   background-color: var(--my-accent-light) !important;
 }
 
+.material-you .material-you-primary-action {
+  background-color: color-mix(in srgb, var(--my-accent-light) 72%, #18181b) !important;
+}
+
+.material-you .material-you-primary-action:hover {
+  background-color: color-mix(in srgb, var(--my-accent-light) 82%, #18181b) !important;
+}
+
+.material-you .material-you-secondary-action {
+  background-color: color-mix(in srgb, var(--my-accent-container-light) 46%, white) !important;
+  color: color-mix(in srgb, var(--my-accent-light) 62%, #3f3f46) !important;
+}
+
+.material-you .material-you-secondary-action:hover {
+  background-color: color-mix(in srgb, var(--my-accent-container-light) 62%, white) !important;
+}
+
 .dark.material-you .material-you-header {
   background-color: color-mix(in srgb, var(--my-accent-dark) 28%, #18181b) !important;
 }
@@ -62,6 +79,23 @@
 
 .dark.material-you .material-you-accent-dot {
   background-color: var(--my-accent-dark) !important;
+}
+
+.dark.material-you .material-you-primary-action {
+  background-color: color-mix(in srgb, var(--my-accent-dark) 34%, #059669) !important;
+}
+
+.dark.material-you .material-you-primary-action:hover {
+  background-color: color-mix(in srgb, var(--my-accent-dark) 42%, #059669) !important;
+}
+
+.dark.material-you .material-you-secondary-action {
+  background-color: color-mix(in srgb, var(--my-accent-container-dark) 44%, #27272a) !important;
+  color: color-mix(in srgb, var(--my-accent-dark) 72%, #e4e4e7) !important;
+}
+
+.dark.material-you .material-you-secondary-action:hover {
+  background-color: color-mix(in srgb, var(--my-accent-container-dark) 58%, #3f3f46) !important;
 }
 
 /* ============================================================

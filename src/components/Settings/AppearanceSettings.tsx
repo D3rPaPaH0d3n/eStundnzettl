@@ -11,6 +11,8 @@ import type { Locale, LocaleId } from "../../locales/types";
 interface Props {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  materialYouEnabled: boolean;
+  setMaterialYouEnabled: (enabled: boolean) => void;
   locale?: Locale;
   setLocale?: (id: LocaleId) => void;
   workDays?: number[];
@@ -20,6 +22,8 @@ interface Props {
 const AppearanceSettings: React.FC<Props> = ({
   theme,
   setTheme,
+  materialYouEnabled,
+  setMaterialYouEnabled,
   locale,
   setLocale,
   workDays,
@@ -46,7 +50,12 @@ const AppearanceSettings: React.FC<Props> = ({
         workDays={workDays}
         onAfterLocaleChange={onAfterLocaleChange}
       />
-      <ThemeSettings theme={theme} setTheme={setTheme} />
+      <ThemeSettings
+        theme={theme}
+        setTheme={setTheme}
+        materialYouEnabled={materialYouEnabled}
+        setMaterialYouEnabled={setMaterialYouEnabled}
+      />
     </CollapsibleCard>
   );
 };

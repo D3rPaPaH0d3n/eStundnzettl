@@ -405,6 +405,8 @@ const Settings: React.FC<Props> = ({
         <AppearanceSettings
         theme={theme}
         setTheme={setTheme}
+        materialYouEnabled={materialYouEnabled}
+        setMaterialYouEnabled={setMaterialYouEnabled}
         locale={locale}
         setLocale={setLocale}
         workDays={userData?.workDays}
@@ -416,8 +418,6 @@ const Settings: React.FC<Props> = ({
       <ExpertModeSettings
         userData={userData}
         setUserData={setUserData}
-        materialYouEnabled={materialYouEnabled}
-        setMaterialYouEnabled={setMaterialYouEnabled}
         onLoadDemoData={() => setDemoTrigger((n) => n + 1)}
         locale={locale}
         calculationConfig={calculationConfig}

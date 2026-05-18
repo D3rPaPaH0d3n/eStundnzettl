@@ -104,7 +104,7 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
               {/* Option 2: Teilen */}
               <button type="button"
                 onClick={() => handleChoice('share')}
-                className="w-full flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl border border-zinc-200 dark:border-zinc-600 transition-all active:scale-[0.98]"
+                className="material-you-secondary-action w-full flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-xl border border-zinc-200 dark:border-zinc-600 transition-all active:scale-[0.98]"
               >
                 <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
                   <Share2 size={24} className="text-green-600 dark:text-green-400" />
@@ -126,7 +126,7 @@ const ExportModal = ({ isOpen, onClose, onSelectFolder, onSelectShare, isPdf = f
             <div className="px-4 pb-4">
               <button type="button"
                 onClick={onClose}
-                className="w-full py-3 text-zinc-500 dark:text-zinc-400 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-700/50 rounded-xl transition-colors"
+                className="material-you-secondary-action w-full py-3 text-zinc-500 dark:text-zinc-400 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-700/50 rounded-xl transition-colors"
               >
                 {t("common.cancel")}
               </button>

@@ -565,9 +565,9 @@ const EntryForm: React.FC<Props> = ({
           )}
 
           <div className="pt-2 flex gap-3">
-            <button type="button" onClick={onCancel} className="flex-1 py-3 font-bold text-zinc-500 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-xl">{t("common.cancel")}</button>
+            <button type="button" onClick={onCancel} className="material-you-secondary-action flex-1 py-3 font-bold text-zinc-500 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-xl">{t("common.cancel")}</button>
 
-            <button type="submit" className="flex-[2] py-3 font-bold text-white bg-zinc-900 dark:bg-emerald-600 hover:bg-zinc-800 dark:hover:bg-emerald-700 rounded-xl shadow-lg flex items-center justify-center gap-2"><Save size={18} /> {t("common.save")}</button>
+            <button type="submit" className="material-you-primary-action flex-[2] py-3 font-bold text-white bg-zinc-900 dark:bg-emerald-600 hover:bg-zinc-800 dark:hover:bg-emerald-700 rounded-xl shadow-lg flex items-center justify-center gap-2"><Save size={18} /> {t("common.save")}</button>
           </div>
         </form>
       </Card>

@@ -692,7 +692,7 @@ const PrintReport: React.FC<Props> = ({
         onClick={() => setShowExportModal(true)}
         disabled={isGenerating}
         style={{ bottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
-        className="fixed right-6 z-[80] bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-full shadow-2xl shadow-emerald-900/40 ring-2 ring-emerald-400/50 disabled:opacity-50 flex items-center justify-center gap-2 px-5 py-3.5 font-bold"
+        className="material-you-primary-action fixed right-6 z-[80] bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-full shadow-2xl shadow-emerald-900/40 ring-2 ring-emerald-400/50 disabled:opacity-50 flex items-center justify-center gap-2 px-5 py-3.5 font-bold"
       >
         {isGenerating ? (
           <Loader className="animate-spin" size={20} />

@@ -25,6 +25,7 @@ import { useLastCode } from "./hooks/useLastCode";
 import { useWhatsNewModal } from "./hooks/useWhatsNewModal";
 import { useUpdateAvailable } from "./hooks/useUpdateAvailable";
 import { DynamicColors, type DynamicColorPalette } from "./plugins/DynamicColorsPlugin";
+import { SystemBars } from "./plugins/SystemBarsPlugin";
 
 import AppHeader from "./components/AppHeader";
 import ViewRouter from "./components/ViewRouter";
@@ -166,6 +167,29 @@ export default function App() {
   // --- EFFECTS ---
   useAutoCheckoutHandler({ autoCheckoutData, form, setView, clearAutoCheckout, getDefaultCode });
   useBackButtonHandler({ view, setView, form });
+
+  useEffect(() => {
+    const systemQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const applySystemBars = () => {
+      const dark = theme === "dark" || (theme === "system" && systemQuery.matches);
+
+      SystemBars.setTheme({
+        dark,
+        statusBarDark: showOnboarding ? dark : true,
+        navigationBarDark: dark,
+      }).catch(() => {
+        // Web/dev fallback: native plugin exists only inside the Android app.
+      });
+    };
+
+    applySystemBars();
+
+    if (theme === "system") {
+      systemQuery.addEventListener("change", applySystemBars);
+      return () => systemQuery.removeEventListener("change", applySystemBars);
+    }
+  }, [showOnboarding, theme]);
 
   const handleOnboardingFinishWithTour = useCallback(() => {
     localStorage.setItem(SETTINGS_UX_MIGRATION_SEEN_KEY, "true");

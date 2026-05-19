@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { CalculationConfig, Entry, UserData, WorkCode } from "../../types";
 
 /**
- * Verifiziert, dass `replaceFullSnapshot` alle drei Sektionen (Entries,
- * UserData, WorkCodes) innerhalb einer einzigen Transaktion schreibt und bei
- * Fehlern atomar zurückrollt.
+ * Verifiziert, dass `replaceFullSnapshot` alle Snapshot-Sektionen als einen
+ * nativen SQLite-Batch schreibt. Das vermeidet manuelle JS-Transaktionen um
+ * einzelne `run()`-Calls und passt zum Capacitor-SQLite-Pfad in der App.
  */
 
 interface ExecuteCall {
@@ -17,8 +17,15 @@ interface RunCall {
   values: unknown[];
 }
 
+interface ExecuteSetCall {
+  database?: string;
+  set?: Array<{ statement: string; values: unknown[] }>;
+  transaction?: boolean;
+}
+
 const executeCalls: ExecuteCall[] = [];
 const runCalls: RunCall[] = [];
+const executeSetCalls: ExecuteSetCall[] = [];
 
 const PLUGIN_MOCK = {
   checkConnectionsConsistency: vi.fn(async () => ({ result: true })),
@@ -33,7 +40,10 @@ const PLUGIN_MOCK = {
     runCalls.push({ statement: opts.statement, values: opts.values });
     return { changes: { changes: 1 } };
   }),
-  executeSet: vi.fn(async () => ({ changes: { changes: 0 } })),
+  executeSet: vi.fn(async (opts: ExecuteSetCall) => {
+    executeSetCalls.push(opts);
+    return { changes: { changes: 0 } };
+  }),
   query: vi.fn(async () => ({ values: [] })),
 };
 
@@ -55,6 +65,12 @@ const txMarkers = (): string[] =>
   executeCalls
     .map((c) => (c.statements || "").trim())
     .filter((s) => /^BEGIN TRANSACTION|^COMMIT|^ROLLBACK/.test(s));
+
+const snapshotSet = (): Array<{ statement: string; values: unknown[] }> => {
+  expect(executeSetCalls).toHaveLength(1);
+  expect(executeSetCalls[0].transaction).toBe(true);
+  return executeSetCalls[0].set || [];
+};
 
 const sampleEntry = (id: number, date: string): Entry => ({
   id,
@@ -82,14 +98,15 @@ describe("replaceFullSnapshot", () => {
     vi.resetModules();
     executeCalls.length = 0;
     runCalls.length = 0;
+    executeSetCalls.length = 0;
     Object.values(PLUGIN_MOCK).forEach((fn) => fn.mockClear?.());
-    PLUGIN_MOCK.run.mockImplementation(async (opts: RunCall) => {
-      runCalls.push({ statement: opts.statement, values: opts.values });
-      return { changes: { changes: 1 } };
+    PLUGIN_MOCK.executeSet.mockImplementation(async (opts: ExecuteSetCall) => {
+      executeSetCalls.push(opts);
+      return { changes: { changes: 0 } };
     });
   });
 
-  it("commits all three sections in a single transaction", async () => {
+  it("commits all three sections in a single native executeSet transaction", async () => {
     const { replaceFullSnapshot } = await import("../snapshot");
 
     await replaceFullSnapshot({
@@ -98,33 +115,29 @@ describe("replaceFullSnapshot", () => {
       workCodes: sampleCodes,
     });
 
-    expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "COMMIT;"]);
+    expect(txMarkers()).toEqual([]);
+    expect(runCalls).toHaveLength(0);
 
-    const stmts = runCalls.map((c) => c.statement);
+    const set = snapshotSet();
+    const stmts = set.map((c) => c.statement);
     expect(stmts.filter((s) => s.startsWith("DELETE FROM entries"))).toHaveLength(1);
     expect(stmts.filter((s) => s.startsWith("INSERT OR REPLACE INTO entries"))).toHaveLength(2);
     expect(stmts.filter((s) => s.startsWith("DELETE FROM work_codes"))).toHaveLength(1);
     expect(stmts.filter((s) => s.startsWith("INSERT INTO work_codes"))).toHaveLength(2);
 
-    const userWrite = runCalls.find((c) =>
-      c.statement.includes("INSERT OR REPLACE INTO settings") &&
-      Array.isArray(c.values) && c.values[0] === "user"
+    const userWrite = set.find(
+      (c) => c.statement.includes("INSERT OR REPLACE INTO settings") && c.values[0] === "user"
     );
     expect(userWrite).toBeDefined();
     expect(JSON.parse(userWrite!.values[1] as string)).toEqual(sampleUser);
   });
 
-  it("rolls back ALL writes when a later step fails", async () => {
+  it("propagates native executeSet errors", async () => {
     const { replaceFullSnapshot } = await import("../snapshot");
 
-    // Lass den ersten work_codes-INSERT scheitern → entries und user wurden
-    // schon geschrieben, müssen aber durch ROLLBACK zurückgenommen werden.
-    PLUGIN_MOCK.run.mockImplementation(async (opts: RunCall) => {
-      runCalls.push({ statement: opts.statement, values: opts.values });
-      if (opts.statement.startsWith("INSERT INTO work_codes")) {
-        throw new Error("simulated work_codes insert failure");
-      }
-      return { changes: { changes: 1 } };
+    PLUGIN_MOCK.executeSet.mockImplementation(async (opts: ExecuteSetCall) => {
+      executeSetCalls.push(opts);
+      throw new Error("simulated native batch failure");
     });
 
     await expect(
@@ -133,10 +146,11 @@ describe("replaceFullSnapshot", () => {
         userData: sampleUser,
         workCodes: sampleCodes,
       })
-    ).rejects.toThrow("simulated work_codes insert failure");
+    ).rejects.toThrow("simulated native batch failure");
 
-    expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "ROLLBACK;"]);
-    expect(txMarkers()).not.toContain("COMMIT;");
+    expect(executeSetCalls).toHaveLength(1);
+    expect(executeSetCalls[0].transaction).toBe(true);
+    expect(txMarkers()).toEqual([]);
   });
 
   it("does not touch a section that is omitted (undefined)", async () => {
@@ -144,17 +158,12 @@ describe("replaceFullSnapshot", () => {
 
     await replaceFullSnapshot({ entries: [sampleEntry(1, "2025-01-02")] });
 
-    expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "COMMIT;"]);
-
-    const stmts = runCalls.map((c) => c.statement);
+    const stmts = snapshotSet().map((c) => c.statement);
     expect(stmts.some((s) => s.startsWith("DELETE FROM work_codes"))).toBe(false);
     expect(stmts.some((s) => s.startsWith("INSERT INTO work_codes"))).toBe(false);
     expect(
-      stmts.some(
-        (s) =>
-          s.includes("INSERT OR REPLACE INTO settings") &&
-          runCalls.find((c) => c.values[0] === "user")
-      )
+      stmts.some((s) => s.includes("INSERT OR REPLACE INTO settings")) &&
+        snapshotSet().some((c) => c.values[0] === "user")
     ).toBe(false);
   });
 
@@ -163,19 +172,19 @@ describe("replaceFullSnapshot", () => {
 
     await replaceFullSnapshot({ entries: [] });
 
-    expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "COMMIT;"]);
-    const stmts = runCalls.map((c) => c.statement);
+    const stmts = snapshotSet().map((c) => c.statement);
     expect(stmts.filter((s) => s.startsWith("DELETE FROM entries"))).toHaveLength(1);
     expect(stmts.filter((s) => s.startsWith("INSERT OR REPLACE INTO entries"))).toHaveLength(0);
   });
 
-  it("empty snapshot ({}) is a no-op (still wrapped in tx, but no writes)", async () => {
+  it("empty snapshot ({}) is a no-op", async () => {
     const { replaceFullSnapshot } = await import("../snapshot");
 
     await replaceFullSnapshot({});
 
-    expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "COMMIT;"]);
+    expect(executeSetCalls).toHaveLength(0);
     expect(runCalls).toHaveLength(0);
+    expect(txMarkers()).toEqual([]);
   });
 
   it("commits attachments and attachmentLabels atomically", async () => {
@@ -197,15 +206,14 @@ describe("replaceFullSnapshot", () => {
       attachmentLabels: ["Beleg", "Foto"],
     });
 
-    expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "COMMIT;"]);
-    const stmts = runCalls.map((c) => c.statement);
+    const set = snapshotSet();
+    const stmts = set.map((c) => c.statement);
     expect(stmts.filter((s) => s.startsWith("DELETE FROM attachments"))).toHaveLength(1);
     expect(stmts.filter((s) => s.startsWith("INSERT OR REPLACE INTO attachments"))).toHaveLength(1);
     expect(stmts.filter((s) => s.startsWith("DELETE FROM attachment_labels"))).toHaveLength(1);
     expect(stmts.filter((s) => s.startsWith("INSERT OR REPLACE INTO attachment_labels"))).toHaveLength(2);
 
-    // Position-Index muss für jedes Label vergeben werden (0, 1, …)
-    const labelInserts = runCalls.filter((c) =>
+    const labelInserts = set.filter((c) =>
       c.statement.startsWith("INSERT OR REPLACE INTO attachment_labels")
     );
     expect(labelInserts.map((c) => c.values[1])).toEqual([0, 1]);
@@ -217,50 +225,10 @@ describe("replaceFullSnapshot", () => {
     const calcConfig = { weekly: { mode: "fixed", hours: 38.5 } };
     await replaceFullSnapshot({ calculationConfig: calcConfig as unknown as CalculationConfig });
 
-    expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "COMMIT;"]);
-    const calcWrite = runCalls.find(
-      (c) =>
-        c.statement.includes("INSERT OR REPLACE INTO settings") &&
-        Array.isArray(c.values) &&
-        c.values[0] === "calculationConfig"
+    const calcWrite = snapshotSet().find(
+      (c) => c.statement.includes("INSERT OR REPLACE INTO settings") && c.values[0] === "calculationConfig"
     );
     expect(calcWrite).toBeDefined();
     expect(JSON.parse(calcWrite!.values[1] as string)).toEqual(calcConfig);
-  });
-
-  it("rolls back attachments when calculationConfig write fails afterwards", async () => {
-    const { replaceFullSnapshot } = await import("../snapshot");
-
-    PLUGIN_MOCK.run.mockImplementation(async (opts: RunCall) => {
-      runCalls.push({ statement: opts.statement, values: opts.values });
-      if (
-        opts.statement.includes("INSERT OR REPLACE INTO settings") &&
-        Array.isArray(opts.values) &&
-        opts.values[0] === "calculationConfig"
-      ) {
-        throw new Error("calc write fail");
-      }
-      return { changes: { changes: 1 } };
-    });
-
-    await expect(
-      replaceFullSnapshot({
-        attachments: [
-          {
-            id: "a1",
-            entryId: 1,
-            label: "x",
-            fileName: "x",
-            mimeType: "x",
-            storagePath: "x",
-            fileSize: 0,
-            createdAt: "2025-01-02",
-          },
-        ],
-        calculationConfig: { weekly: { mode: "fixed", hours: 40 } } as unknown as CalculationConfig,
-      })
-    ).rejects.toThrow("calc write fail");
-
-    expect(txMarkers()).toEqual(["BEGIN TRANSACTION;", "ROLLBACK;"]);
   });
 });

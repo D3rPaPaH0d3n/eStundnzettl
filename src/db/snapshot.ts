@@ -12,8 +12,8 @@
  * Truth für "vollständigen Snapshot atomar einspielen".
  */
 
-import type { Attachment, CalculationConfig, Entry, UserData, WorkCode } from "../types";
-import { run, transaction } from "./database";
+import type { Attachment, CalculationConfig, Entry, SqlValue, UserData, WorkCode } from "../types";
+import { executeSet } from "./database";
 
 export interface ImportSnapshot {
   entries?: Entry[];
@@ -24,6 +24,8 @@ export interface ImportSnapshot {
   calculationConfig?: CalculationConfig;
 }
 
+type SnapshotStatement = { statement: string; values: SqlValue[] };
+
 /**
  * Spielt den übergebenen Snapshot atomar ein. Felder, die nicht gesetzt sind,
  * werden NICHT angefasst (kein implizites Löschen).
@@ -32,80 +34,84 @@ export interface ImportSnapshot {
  * Throw wird an den Caller weitergereicht.
  */
 export async function replaceFullSnapshot(snapshot: ImportSnapshot): Promise<void> {
-  await transaction(async () => {
-    if (snapshot.entries !== undefined) {
-      await run("DELETE FROM entries");
-      for (const e of snapshot.entries) {
-        await run(
+  const set: SnapshotStatement[] = [];
+
+  if (snapshot.entries !== undefined) {
+    set.push({ statement: "DELETE FROM entries;", values: [] });
+    set.push(
+      ...snapshot.entries.map((e) => ({
+        statement:
           "INSERT OR REPLACE INTO entries (id, type, date, start, end, pause, project, code, netDuration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [
-            e.id,
-            e.type || "work",
-            e.date,
-            e.start ?? null,
-            e.end ?? null,
-            e.pause ?? 0,
-            e.project ?? null,
-            e.code ?? null,
-            e.netDuration ?? 0,
-          ]
-        );
-      }
-    }
+        values: [
+          e.id,
+          e.type || "work",
+          e.date,
+          e.start ?? null,
+          e.end ?? null,
+          e.pause ?? 0,
+          e.project ?? null,
+          e.code ?? null,
+          e.netDuration ?? 0,
+        ],
+      }))
+    );
+  }
 
-    if (snapshot.userData !== undefined) {
-      // UserData wird als ein einziger Settings-Key "user" persistiert
-      // (siehe useSettings.ts → sqliteWrite("user", userData)).
-      await run(
-        "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-        ["user", JSON.stringify(snapshot.userData)]
-      );
-    }
+  if (snapshot.userData !== undefined) {
+    // UserData wird als ein einziger Settings-Key "user" persistiert
+    // (siehe useSettings.ts → sqliteWrite("user", userData)).
+    set.push({
+      statement: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+      values: ["user", JSON.stringify(snapshot.userData)],
+    });
+  }
 
-    if (snapshot.workCodes !== undefined) {
-      await run("DELETE FROM work_codes");
-      for (const c of snapshot.workCodes) {
-        await run(
-          "INSERT INTO work_codes (id, label) VALUES (?, ?)",
-          [c.id, c.label || ""]
-        );
-      }
-    }
+  if (snapshot.workCodes !== undefined) {
+    set.push({ statement: "DELETE FROM work_codes;", values: [] });
+    set.push(
+      ...snapshot.workCodes.map((c) => ({
+        statement: "INSERT INTO work_codes (id, label) VALUES (?, ?)",
+        values: [c.id, c.label || ""],
+      }))
+    );
+  }
 
-    if (snapshot.attachments !== undefined) {
-      await run("DELETE FROM attachments");
-      for (const att of snapshot.attachments) {
-        await run(
+  if (snapshot.attachments !== undefined) {
+    set.push({ statement: "DELETE FROM attachments;", values: [] });
+    set.push(
+      ...snapshot.attachments.map((att) => ({
+        statement:
           "INSERT OR REPLACE INTO attachments (id, entryId, label, fileName, mimeType, storagePath, fileSize, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-          [
-            att.id,
-            att.entryId,
-            att.label || "",
-            att.fileName || "",
-            att.mimeType || "",
-            att.storagePath || "",
-            att.fileSize ?? 0,
-            att.createdAt || "",
-          ]
-        );
-      }
-    }
+        values: [
+          att.id,
+          att.entryId,
+          att.label || "",
+          att.fileName || "",
+          att.mimeType || "",
+          att.storagePath || "",
+          att.fileSize ?? 0,
+          att.createdAt || "",
+        ],
+      }))
+    );
+  }
 
-    if (snapshot.attachmentLabels !== undefined) {
-      await run("DELETE FROM attachment_labels");
-      for (let i = 0; i < snapshot.attachmentLabels.length; i++) {
-        await run(
-          "INSERT OR REPLACE INTO attachment_labels (label, position) VALUES (?, ?)",
-          [snapshot.attachmentLabels[i], i]
-        );
-      }
-    }
+  if (snapshot.attachmentLabels !== undefined) {
+    set.push({ statement: "DELETE FROM attachment_labels;", values: [] });
+    set.push(
+      ...snapshot.attachmentLabels.map((label, i) => ({
+        statement: "INSERT OR REPLACE INTO attachment_labels (label, position) VALUES (?, ?)",
+        values: [label, i],
+      }))
+    );
+  }
 
-    if (snapshot.calculationConfig !== undefined) {
-      await run(
-        "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-        ["calculationConfig", JSON.stringify(snapshot.calculationConfig)]
-      );
-    }
-  });
+  if (snapshot.calculationConfig !== undefined) {
+    set.push({
+      statement: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+      values: ["calculationConfig", JSON.stringify(snapshot.calculationConfig)],
+    });
+  }
+
+  await executeSet(set, true);
 }

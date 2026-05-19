@@ -87,6 +87,53 @@ export const toAbsoluteRange = (
   return [s, e];
 };
 
+// YYYY-MM-DD eines Folgetags. Nutzt UTC-arithmetik, damit Sommer-/
+// Winterzeit den Tag nicht versehentlich verschiebt.
+const addDayToDateString = (dateStr: string, days: number): string => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+};
+
+/**
+ * Liefert das Mapping `{date: minutes}`, wie ein Eintrag bei der
+ * Aggregation auf Kalendertage verteilt werden soll.
+ *
+ * - Ohne Split (oder kein over-Mitternacht): voller Beitrag am Beginn-Tag.
+ * - Mit Split UND Nachtschicht: netDuration wird proportional zur
+ *   Roh-Dauer auf Beginn-Tag und Folgetag verteilt. Der erste Tag wird
+ *   per Math.floor gerundet, der Rest geht an den Folgetag — so bleibt
+ *   die Summe exakt gleich der ursprünglichen netDuration.
+ */
+export const getEntryDayContributions = (
+  entry: Pick<Entry, "date" | "start" | "end" | "netDuration">,
+  splitEnabled: boolean
+): Record<string, number> => {
+  const dur = entry.netDuration || 0;
+  if (
+    !splitEnabled ||
+    !entry.start ||
+    !entry.end ||
+    !isOvernightShift(entry.start, entry.end)
+  ) {
+    return { [entry.date]: dur };
+  }
+  const minutesUntilMidnight = 24 * 60 - parseTime(entry.start);
+  const [s, e] = toAbsoluteRange(entry.start, entry.end);
+  const rawTotal = e - s;
+  if (rawTotal <= 0) return { [entry.date]: dur };
+  const firstShare = Math.floor((dur * minutesUntilMidnight) / rawTotal);
+  const secondShare = dur - firstShare;
+  return {
+    [entry.date]: firstShare,
+    [addDayToDateString(entry.date, 1)]: secondShare,
+  };
+};
+
 export const getDayOfWeek = (dateStr: string): number => {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y, m - 1, d).getDay();
@@ -339,10 +386,18 @@ export const buildDayBalanceMetaMap = (
   let currentDateStr = "";
   let dayIndex = 0;
 
+  // Wenn Saldo-/Überstunden-Berechnung aktiv ist, werden Nachtschichten
+  // bei der Tages-Aggregation auf Beginn- und Folgetag aufgeteilt — der
+  // Eintrag selbst bleibt sichtbar am Beginn-Tag (siehe entry.date).
+  const loc = locale ?? getLocale(undefined);
+  const effective = resolveEffectiveRules(loc, config);
+  const splitOvernight = effective.overtimeMode !== "none";
+
   entries.forEach((entry) => {
-    dayTotals[entry.date] = (dayTotals[entry.date] || 0);
-    if (!(entry.type === "work" && entry.code === WORK_CODE.DRIVE)) {
-      dayTotals[entry.date] += entry.netDuration || 0;
+    if (entry.type === "work" && entry.code === WORK_CODE.DRIVE) return;
+    const contributions = getEntryDayContributions(entry, splitOvernight);
+    for (const [date, minutes] of Object.entries(contributions)) {
+      dayTotals[date] = (dayTotals[date] || 0) + minutes;
     }
   });
 
@@ -360,8 +415,8 @@ export const buildDayBalanceMetaMap = (
       dayIndex,
       isEvenDay: dayIndex % 2 === 0,
       showBalance: isLastOfDay && target > 0,
-      balance: dayTotals[entry.date] - target,
-      totalMinutes: dayTotals[entry.date],
+      balance: (dayTotals[entry.date] || 0) - target,
+      totalMinutes: dayTotals[entry.date] || 0,
     };
   });
 
@@ -411,6 +466,10 @@ export const calculatePeriodStats = (
   // ─── Entry-Aggregation (Entries haben bereits korrigierte netDuration
   //     via applyEffectiveDurations — keine Krank-Sonderlogik nötig) ────
   const dayActualMap: Record<string, number> = {};
+  // Nachtschichten werden bei der Wochen-Aggregation auf Beginn- und
+  // Folgetag aufgeteilt, sobald die App MA/ÜS überhaupt berechnet
+  // (overtimeMode !== "none") — sonst landet alles am Beginn-Tag.
+  const splitOvernight = effective.overtimeMode !== "none";
 
   entries.forEach((e) => {
     if (e.date < startStr || e.date > endStr) return;
@@ -426,7 +485,10 @@ export const calculatePeriodStats = (
 
     // dayActualMap für Wochen-Berechnung (exkl. Fahrzeit)
     if (!(e.type === "work" && e.code === WORK_CODE.DRIVE)) {
-      dayActualMap[e.date] = (dayActualMap[e.date] || 0) + dur;
+      const contributions = getEntryDayContributions(e, splitOvernight);
+      for (const [date, minutes] of Object.entries(contributions)) {
+        dayActualMap[date] = (dayActualMap[date] || 0) + minutes;
+      }
     }
   });
 

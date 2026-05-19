@@ -13,6 +13,7 @@ import {
   calculateRawDuration,
   isOvernightShift,
   toAbsoluteRange,
+  getEntryDayContributions,
 } from "../timeCalculations";
 import type { Entry, UserData } from "../../types";
 import { WORK_CODE } from "../../hooks/constants";
@@ -70,6 +71,50 @@ describe("toAbsoluteRange", () => {
 
   it("verschiebt Ende auch wenn Endzeit == Startzeit (24h-Schicht)", () => {
     expect(toAbsoluteRange("08:00", "08:00")).toEqual([8 * 60, 32 * 60]);
+  });
+});
+
+describe("getEntryDayContributions", () => {
+  const entry = {
+    date: "2026-01-04", // Sonntag
+    start: "22:00",
+    end: "06:00",
+    netDuration: 450, // 8h Roh, 30min Pause
+  };
+
+  it("schreibt ohne Split alles dem Beginn-Tag zu", () => {
+    expect(getEntryDayContributions(entry, false)).toEqual({
+      "2026-01-04": 450,
+    });
+  });
+
+  it("schreibt ohne Nachtschicht (end > start) alles dem Beginn-Tag zu, auch mit splitEnabled", () => {
+    const dayShift = { date: "2026-01-04", start: "08:00", end: "17:00", netDuration: 510 };
+    expect(getEntryDayContributions(dayShift, true)).toEqual({
+      "2026-01-04": 510,
+    });
+  });
+
+  it("splittet Nachtschicht proportional zur Roh-Dauer auf Beginn- und Folgetag", () => {
+    // 22-24 = 120min von 480min Roh = 25% → 112min, Folgetag bekommt 338min
+    const contrib = getEntryDayContributions(entry, true);
+    expect(contrib).toEqual({
+      "2026-01-04": 112,
+      "2026-01-05": 338,
+    });
+    expect(contrib["2026-01-04"] + contrib["2026-01-05"]).toBe(450);
+  });
+
+  it("rollt über Monatsgrenzen korrekt", () => {
+    const overMonth = {
+      date: "2026-01-31",
+      start: "22:00",
+      end: "06:00",
+      netDuration: 480,
+    };
+    const contrib = getEntryDayContributions(overMonth, true);
+    expect(Object.keys(contrib).sort()).toEqual(["2026-01-31", "2026-02-01"]);
+    expect(contrib["2026-01-31"] + contrib["2026-02-01"]).toBe(480);
   });
 });
 
@@ -429,6 +474,53 @@ describe("calculatePeriodStats", () => {
     // + KW14 tägliche ÜS: Mo (600-510=90) + Di (600-510=90) = 180
     expect(stats.overtimeSplit.ueberstunden).toBe(1080 + 180);
   });
+
+  it("splittet Nachtschicht über ISO-Wochengrenze auf beide Wochen (overtimeMode=split)", () => {
+    // KW8-2026 = Mo 2026-02-16 bis So 2026-02-22
+    // KW9-2026 = Mo 2026-02-23 bis So 2026-03-01
+    // Nachtschicht So 22:00 → Mo 06:00 = 480min Roh, davon 120min am
+    // Sonntag (KW8) und 360min am Montag (KW9).
+    const userData = { workDays: null } as unknown as UserData;
+    const entries = [
+      // KW8 Mo-Fr volle Arbeit (Mo-Do 510 = 8.5h, Fr 270 = 4.5h)
+      { id: "a", date: "2026-02-16", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "b", date: "2026-02-17", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "c", date: "2026-02-18", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "d", date: "2026-02-19", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "e", date: "2026-02-20", type: "work", code: WORK_CODE.OFFICE, netDuration: 270 },
+      // Sonntags-Nachtschicht über Wochengrenze (Roh 480min, ohne Pause)
+      {
+        id: "night",
+        date: "2026-02-22",
+        type: "work",
+        code: WORK_CODE.OFFICE,
+        start: "22:00",
+        end: "06:00",
+        netDuration: 480,
+      },
+      // KW9 Mo-Fr volle Arbeit
+      { id: "f", date: "2026-02-23", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "g", date: "2026-02-24", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "h", date: "2026-02-25", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "i", date: "2026-02-26", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "j", date: "2026-02-27", type: "work", code: WORK_CODE.OFFICE, netDuration: 270 },
+    ] as unknown as Entry[];
+    const stats = calculatePeriodStats(
+      entries,
+      userData,
+      new Date(2026, 1, 16),
+      new Date(2026, 2, 1)
+    );
+    // Beide Wochen sind voll im Zeitraum, kein Halbtag.
+    // weekTarget = 2310min für beide Wochen.
+    // KW8: 4*510 + 270 + 120 = 2430min Ist → +120 → 90 MA + 30 ÜS
+    // KW9: 4*510 + 270 + 360 = 2670min Ist → +360 → 90 MA + 270 ÜS
+    expect(stats.overtimeSplit.mehrarbeit).toBe(180);
+    expect(stats.overtimeSplit.ueberstunden).toBe(300);
+    // Gesamtwerk-Stunden bleiben unverändert (8x510 + 2x270 + 480)
+    expect(stats.work).toBe(8 * 510 + 2 * 270 + 480);
+  });
+
 });
 
 describe("adjustSickDuration", () => {

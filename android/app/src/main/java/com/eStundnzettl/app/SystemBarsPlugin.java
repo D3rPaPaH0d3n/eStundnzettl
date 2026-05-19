@@ -1,5 +1,6 @@
 package com.estundnzettl.app;
 
+import android.app.Activity;
 import android.graphics.Color;
 import android.os.Build;
 import android.view.Window;
@@ -20,8 +21,18 @@ public class SystemBarsPlugin extends Plugin {
         boolean statusBarDark = Boolean.TRUE.equals(call.getBoolean("statusBarDark", true));
         boolean navigationBarDark = Boolean.TRUE.equals(call.getBoolean("navigationBarDark", dark));
 
-        getActivity().runOnUiThread(() -> {
-            Window window = getActivity().getWindow();
+        Activity activity = getActivity();
+        if (activity == null) {
+            call.reject("Activity not available");
+            return;
+        }
+
+        activity.runOnUiThread(() -> {
+            Window window = activity.getWindow();
+            if (window == null) {
+                call.reject("Window not available");
+                return;
+            }
             window.setStatusBarColor(Color.TRANSPARENT);
             window.setNavigationBarColor(Color.TRANSPARENT);
 

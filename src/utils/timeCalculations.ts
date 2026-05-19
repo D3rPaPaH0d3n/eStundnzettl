@@ -472,6 +472,13 @@ export const calculatePeriodStats = (
   const splitOvernight = effective.overtimeMode !== "none";
 
   entries.forEach((e) => {
+    // TODO(nightshift edge case): Dieser Filter sortiert Einträge nach
+    // `entry.date`. Eine Nachtschicht So 22 → Mo 06 hat `date = So`. Wenn
+    // die angezeigte Periode erst ab Mo beginnt (z.B. "nur KW2"), fällt
+    // der Eintrag ganz raus und der Mo-Anteil (per getEntryDayContributions)
+    // fehlt in dayActualMap. Späterer Fix: zusätzlich Einträge mit
+    // `e.date = startStr - 1 Tag` aus `allEntries` einbeziehen, falls es
+    // Nachtschichten sind, und nur deren Folgetags-Anteil addieren.
     if (e.date < startStr || e.date > endStr) return;
     const dur = e.netDuration || 0;
     if (e.type === "work") {

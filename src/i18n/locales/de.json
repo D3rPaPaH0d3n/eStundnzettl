@@ -57,6 +57,7 @@
     "codePlaceholder": "Bitte wählen",
     "startTime": "Startzeit",
     "endTime": "Endzeit",
+    "nextDay": "+1 Tag",
     "selectActivity": "Tätigkeit wählen",
     "entryTypeLabel": "Eintragstyp",
     "asLast": "Wie zuletzt",
@@ -422,6 +423,7 @@
       "deleteAllFailed": "Einträge konnten nicht gelöscht werden",
       "importFailed": "Import fehlgeschlagen",
       "endBeforeStart": "⚠️ Endzeit muss nach Startzeit liegen!",
+      "startEqualsEnd": "⚠️ Start- und Endzeit dürfen nicht gleich sein!",
       "overlap": "⚠️ Zeitüberschneidung!"
     },
     "appReset": "🧹 App vollständig zurückgesetzt",

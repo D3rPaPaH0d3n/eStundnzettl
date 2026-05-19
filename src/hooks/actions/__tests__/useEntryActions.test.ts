@@ -253,14 +253,27 @@ describe("useEntryActions", () => {
   });
 
   describe("handleSaveEntry — Validierung", () => {
-    it("verweigert Speichern wenn end <= start (toast, kein addEntry)", async () => {
-      const form = makeForm({ startTime: "10:00", endTime: "09:00" });
+    it("verweigert Speichern wenn start == end (toast, kein addEntry)", async () => {
+      const form = makeForm({ startTime: "10:00", endTime: "10:00" });
       const { result, addEntry } = renderActions({ form });
 
       await saveEntry(result);
 
       expect(toast.error).toHaveBeenCalled();
       expect(addEntry).not.toHaveBeenCalled();
+    });
+
+    it("speichert Nachtschicht 22:00-06:00 als 8h-Eintrag", async () => {
+      const form = makeForm({ startTime: "22:00", endTime: "06:00", pauseDuration: 0 });
+      const { result, addEntry } = renderActions({ form });
+
+      await saveEntry(result);
+
+      expect(addEntry).toHaveBeenCalledOnce();
+      const saved = addEntry.mock.calls[0][0];
+      expect(saved.start).toBe("22:00");
+      expect(saved.end).toBe("06:00");
+      expect(saved.netDuration).toBe(8 * 60);
     });
 
     it("verweigert Speichern bei Überlappung mit existierendem Eintrag", async () => {

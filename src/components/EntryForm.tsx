@@ -9,6 +9,7 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { useTranslation } from "react-i18next";
 
 import { getIntlLocale } from "../utils/formatLocale";
+import { isOvernightShift } from "../utils/timeCalculations";
 import TimePickerDrawer from "./TimePickerDrawer";
 import SelectionDrawer from "./SelectionDrawer";
 import { Capacitor } from "@capacitor/core";
@@ -440,7 +441,14 @@ const EntryForm: React.FC<Props> = ({
                   </button>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.end")}</div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">{t("entryForm.end")}</div>
+                    {isOvernightShift(startTime, endTime) && (
+                      <span className="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400">
+                        {t("entryForm.nextDay")}
+                      </span>
+                    )}
+                  </div>
                   <button type="button" onClick={() => openTimePicker('end')} className="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors">
                     <span className="flex-1 text-center text-lg">{endTime}</span>
                     <Clock size={18} className="text-zinc-400 ml-2" />

@@ -57,6 +57,7 @@
     "codePlaceholder": "Please select",
     "startTime": "Start time",
     "endTime": "End time",
+    "nextDay": "+1 day",
     "selectActivity": "Select activity",
     "entryTypeLabel": "Entry type",
     "asLast": "Same as last",
@@ -422,6 +423,7 @@
       "deleteAllFailed": "Couldn't delete entries",
       "importFailed": "Import failed",
       "endBeforeStart": "⚠️ End time must be after start time!",
+      "startEqualsEnd": "⚠️ Start and end time must not be equal!",
       "overlap": "⚠️ Time overlap!"
     },
     "appReset": "🧹 App fully reset",

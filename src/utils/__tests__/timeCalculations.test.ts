@@ -10,6 +10,9 @@ import {
   calculateEntryNetDuration,
   calculateDisplayedDayMinutes,
   calculatePeriodStats,
+  calculateRawDuration,
+  isOvernightShift,
+  toAbsoluteRange,
 } from "../timeCalculations";
 import type { Entry, UserData } from "../../types";
 import { WORK_CODE } from "../../hooks/constants";
@@ -20,6 +23,53 @@ describe("parseTime", () => {
     expect(parseTime("01:30")).toBe(90);
     expect(parseTime("08:45")).toBe(525);
     expect(parseTime("23:59")).toBe(23 * 60 + 59);
+  });
+});
+
+describe("calculateRawDuration", () => {
+  it("berechnet normale Dauer (Endzeit > Startzeit)", () => {
+    expect(calculateRawDuration("08:00", "17:00")).toBe(9 * 60);
+    expect(calculateRawDuration("00:00", "12:00")).toBe(12 * 60);
+  });
+
+  it("liefert 0 wenn Start- und Endzeit gleich sind", () => {
+    expect(calculateRawDuration("08:00", "08:00")).toBe(0);
+  });
+
+  it("erkennt Nachtschicht (Endzeit < Startzeit) und rechnet über Mitternacht", () => {
+    expect(calculateRawDuration("22:00", "06:00")).toBe(8 * 60);
+    expect(calculateRawDuration("23:00", "00:00")).toBe(60);
+    expect(calculateRawDuration("18:00", "02:30")).toBe(8 * 60 + 30);
+  });
+});
+
+describe("isOvernightShift", () => {
+  it("ist false für normale Schichten", () => {
+    expect(isOvernightShift("08:00", "17:00")).toBe(false);
+    expect(isOvernightShift("00:00", "23:59")).toBe(false);
+  });
+
+  it("ist false bei gleicher Start- und Endzeit", () => {
+    expect(isOvernightShift("12:00", "12:00")).toBe(false);
+  });
+
+  it("ist true wenn Endzeit numerisch vor Startzeit liegt", () => {
+    expect(isOvernightShift("22:00", "06:00")).toBe(true);
+    expect(isOvernightShift("23:30", "00:30")).toBe(true);
+  });
+});
+
+describe("toAbsoluteRange", () => {
+  it("liefert unveränderte Range bei normaler Schicht", () => {
+    expect(toAbsoluteRange("08:00", "17:00")).toEqual([8 * 60, 17 * 60]);
+  });
+
+  it("verschiebt Ende um 24h bei Nachtschicht", () => {
+    expect(toAbsoluteRange("22:00", "06:00")).toEqual([22 * 60, 30 * 60]);
+  });
+
+  it("verschiebt Ende auch wenn Endzeit == Startzeit (24h-Schicht)", () => {
+    expect(toAbsoluteRange("08:00", "08:00")).toEqual([8 * 60, 32 * 60]);
   });
 });
 
@@ -116,7 +166,8 @@ describe("calculateEntryNetDuration", () => {
     expect(mins).toBe(120);
   });
 
-  it("liefert 0 statt negativer Dauer", () => {
+  it("interpretiert end < start als Nachtschicht über Mitternacht", () => {
+    // 10:00 → 09:00 = 23h Nachtschicht
     const mins = calculateEntryNetDuration({
       entryType: "work",
       startTime: "10:00",
@@ -126,7 +177,33 @@ describe("calculateEntryNetDuration", () => {
       userData: null,
       code: WORK_CODE.OFFICE,
     });
+    expect(mins).toBe(23 * 60);
+  });
+
+  it("liefert 0 wenn Start- und Endzeit gleich sind", () => {
+    const mins = calculateEntryNetDuration({
+      entryType: "work",
+      startTime: "10:00",
+      endTime: "10:00",
+      pauseDuration: 0,
+      formDate: "2026-04-04",
+      userData: null,
+      code: WORK_CODE.OFFICE,
+    });
     expect(mins).toBe(0);
+  });
+
+  it("berechnet Nachtschicht 22:00–06:00 mit 30min Pause korrekt", () => {
+    const mins = calculateEntryNetDuration({
+      entryType: "work",
+      startTime: "22:00",
+      endTime: "06:00",
+      pauseDuration: 30,
+      formDate: "2026-04-04",
+      userData: null,
+      code: WORK_CODE.OFFICE,
+    });
+    expect(mins).toBe(8 * 60 - 30);
   });
 
   it("nutzt für Nicht-Arbeit (Urlaub/Krank) das Tagessoll", () => {

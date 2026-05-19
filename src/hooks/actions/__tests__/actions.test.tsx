@@ -226,13 +226,25 @@ describe("useEntryActions", () => {
     expect(form.setProject).toHaveBeenCalledWith("Projekt X");
   });
 
-  it("handleSaveEntry: Endzeit <= Startzeit → Fehler-Toast, kein Add", async () => {
+  it("handleSaveEntry: Endzeit == Startzeit → Fehler-Toast, kein Add", async () => {
     const addEntry = vi.fn();
-    const form = makeForm({ startTime: "10:00", endTime: "09:00" });
+    const form = makeForm({ startTime: "10:00", endTime: "10:00" });
     const { result } = mount({ form, addEntry });
     await saveEntry(result);
-    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("Endzeit"));
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("Start"));
     expect(addEntry).not.toHaveBeenCalled();
+  });
+
+  it("handleSaveEntry: Nachtschicht 22:00-06:00 wird gespeichert (8h minus 30min Default-Pause)", async () => {
+    const addEntry = vi.fn();
+    const form = makeForm({ startTime: "22:00", endTime: "06:00" });
+    const { result } = mount({ form, addEntry });
+    await saveEntry(result);
+    expect(addEntry).toHaveBeenCalledOnce();
+    const saved = addEntry.mock.calls[0][0];
+    expect(saved.start).toBe("22:00");
+    expect(saved.end).toBe("06:00");
+    expect(saved.netDuration).toBe(8 * 60 - 30);
   });
 
   it("handleSaveEntry: erkennt Zeitüberschneidung und blockiert Speichern", async () => {

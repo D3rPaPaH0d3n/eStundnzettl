@@ -54,6 +54,39 @@ export const parseTime = (timeStr: string): number => {
   return h * 60 + m;
 };
 
+// Wenn endMinutes <= startMinutes geht die Schicht über Mitternacht
+// (Nachtschicht). Die Gesamtdauer wird dem Beginn-Tag zugerechnet.
+export const calculateRawDuration = (
+  startTime: string,
+  endTime: string
+): number => {
+  const s = parseTime(startTime);
+  const e = parseTime(endTime);
+  if (e === s) return 0;
+  return e > s ? e - s : (e + 24 * 60) - s;
+};
+
+export const isOvernightShift = (
+  startTime: string,
+  endTime: string
+): boolean => {
+  const s = parseTime(startTime);
+  const e = parseTime(endTime);
+  return e < s;
+};
+
+// Eindeutige Minuten-Range relativ zum Beginn-Tag. Bei Nachtschicht wird
+// das Ende um 24h verschoben, damit Overlap-Checks funktionieren.
+export const toAbsoluteRange = (
+  startTime: string,
+  endTime: string
+): [number, number] => {
+  const s = parseTime(startTime);
+  let e = parseTime(endTime);
+  if (e <= s) e += 24 * 60;
+  return [s, e];
+};
+
 export const getDayOfWeek = (dateStr: string): number => {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y, m - 1, d).getDay();
@@ -199,9 +232,7 @@ export const calculateEntryNetDuration = ({
     entryType === "vacation" || entryType === "sick" || entryType === "time_comp";
 
   if (entryType === "work" || isDrive) {
-    const startMinutes = parseTime(startTime);
-    const endMinutes = parseTime(endTime);
-    const rawDuration = Math.max(0, endMinutes - startMinutes);
+    const rawDuration = calculateRawDuration(startTime, endTime);
     let usedPause = isDrive ? 0 : pauseDuration;
 
     // Auto-Pause greift nur bei echter Arbeit (kein Drive) und nur wenn
@@ -218,9 +249,7 @@ export const calculateEntryNetDuration = ({
   // Krank/Urlaub/ZA im Manual-Modus: Stunden werden direkt aus Start/Ende
   // berechnet, genau wie bei einem normalen Eintrag (ohne Pause-Abzug).
   if (isSpecial && specialManualMode && startTime && endTime) {
-    const startMinutes = parseTime(startTime);
-    const endMinutes = parseTime(endTime);
-    return Math.max(0, endMinutes - startMinutes);
+    return calculateRawDuration(startTime, endTime);
   }
 
   return Math.max(

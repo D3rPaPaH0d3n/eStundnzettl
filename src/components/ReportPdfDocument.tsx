@@ -48,7 +48,7 @@ Font.register({
 });
 import { formatTime, formatSignedTime } from "../utils";
 import { getIntlLocale } from "../utils/formatLocale";
-import { buildDayBalanceMetaMap } from "../utils/timeCalculations";
+import { buildDayBalanceMetaMap, isOvernightShift } from "../utils/timeCalculations";
 import { resolveEffectiveRules, getEffectivePdfDisplay } from "../utils/calculationConfig";
 import { WORK_CODE } from "../hooks/constants";
 
@@ -455,6 +455,7 @@ const Row: React.FC<RowProps> = ({
   // ── Zeit-Zelle ──────────────────────────────────────────────
   let timeCell: React.ReactNode;
   if (e.start && e.end) {
+    const endSuffix = isOvernightShift(e.start, e.end) ? "⁺¹" : "";
     if (e.type === "work") {
       const pauseText =
         (e.pause ?? 0) > 0
@@ -464,13 +465,13 @@ const Row: React.FC<RowProps> = ({
       timeCell = (
         <View>
           <Text style={styles.timeRange}>
-            {e.start} – {e.end}
+            {e.start} – {e.end}{endSuffix}
           </Text>
           <Text style={pauseStyle}>{pauseText}</Text>
         </View>
       );
     } else {
-      timeCell = <Text style={styles.timeRange}>{e.start} – {e.end}</Text>;
+      timeCell = <Text style={styles.timeRange}>{e.start} – {e.end}{endSuffix}</Text>;
     }
   } else if (e.type === "public_holiday") {
     timeCell = <Text style={styles.timeRange}>{t("entryTypes.holiday")}</Text>;

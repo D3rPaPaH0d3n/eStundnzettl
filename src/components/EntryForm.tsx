@@ -125,6 +125,15 @@ const EntryForm: React.FC<Props> = ({
     month: "2-digit",
     year: "numeric",
   }).format(date);
+  const dateHeaderWeekday = new Intl.DateTimeFormat(getIntlLocale(), {
+    weekday: "long",
+  }).format(date);
+  const dateHeaderTitle = dateHeaderWeekday.charAt(0).toUpperCase() + dateHeaderWeekday.slice(1);
+  const dateHeaderSubtitle = new Intl.DateTimeFormat(getIntlLocale(), {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(date);
 
   const openDatePicker = useCallback(async () => {
     try {
@@ -278,7 +287,7 @@ const EntryForm: React.FC<Props> = ({
   const defaultCode = hasAnyCodes ? workCodes[0].id : 1;
 
   return (
-    <main className="w-full p-3 pb-20">
+    <main className="flex min-h-[calc(100dvh-14rem)] w-full flex-col justify-end gap-6 p-3 pb-20">
       
       <TimePickerDrawer 
         isOpen={!!activeTimeField}
@@ -296,6 +305,15 @@ const EntryForm: React.FC<Props> = ({
         value={code}
         onChange={(id: string | number) => setCode(id as number)}
       />
+
+      <div className="text-center" aria-label={`${dateHeaderTitle}, ${dateHeaderSubtitle}`}>
+        <div className="text-3xl font-black tracking-normal text-zinc-900 dark:text-white">
+          {dateHeaderTitle}
+        </div>
+        <div className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
+          {dateHeaderSubtitle}
+        </div>
+      </div>
 
       <Card>
         <form onSubmit={handleFormSubmit} className="p-4 space-y-5">

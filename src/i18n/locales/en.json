@@ -630,6 +630,14 @@
       "warning": "Warning: Changing the template recalculates overtime for all previous entries!"
     }
   },
+  "supportPrompt": {
+    "title": "Enjoying eStundnzettl?",
+    "body": "If the app helps you in everyday work, a quick review would mean a lot – or you can buy me a coffee as a small thank-you.",
+    "rate": "Rate it",
+    "coffee": "Coffee",
+    "noThanks": "No thanks",
+    "linkError": "Couldn't open link"
+  },
   "settings": {
     "toast": {
       "customModeRequired": "Pick 'Custom' first",
@@ -711,14 +719,6 @@
       "recalcFixed": "Fixed {{fixed}} of {{total}} entries",
       "recalcAllCorrect": "All {{total}} entries are correct",
       "recalcError": "Recalculation failed"
-    },
-    "supportPrompt": {
-      "title": "Enjoying eStundnzettl?",
-      "body": "If the app helps you in everyday work, a quick review would mean a lot – or you can buy me a coffee as a small thank-you.",
-      "rate": "Rate it",
-      "coffee": "Coffee",
-      "noThanks": "No thanks",
-      "linkError": "Couldn't open link"
     },
     "backup": {
       "header": "Backup & Export",

@@ -8,6 +8,8 @@
  */
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import i18n from "../../i18n";
+import de from "../locales/de.json";
+import en from "../locales/en.json";
 
 const CRITICAL_KEYS = [
   "common.cancel",
@@ -79,6 +81,36 @@ describe("i18n smoke", () => {
       expect(typeof value).toBe("string");
       expect((value as string).length, `EN empty: ${key}`).toBeGreaterThan(0);
     }
+  });
+
+  it("has identical key trees for DE and EN", () => {
+    const collectStringKeys = (node: unknown, prefix = ""): string[] => {
+      if (typeof node === "string") return [prefix];
+      if (node === null || typeof node !== "object") return [];
+      const keys: string[] = [];
+      for (const [name, value] of Object.entries(node as Record<string, unknown>)) {
+        const next = prefix ? `${prefix}.${name}` : name;
+        keys.push(...collectStringKeys(value, next));
+      }
+      return keys;
+    };
+
+    const deKeys = collectStringKeys(de).sort();
+    const enKeys = collectStringKeys(en).sort();
+    const deSet = new Set(deKeys);
+    const enSet = new Set(enKeys);
+    const missingInDe = enKeys.filter((k) => !deSet.has(k));
+    const missingInEn = deKeys.filter((k) => !enSet.has(k));
+
+    expect(
+      missingInDe.length === 0 && missingInEn.length === 0,
+      [
+        missingInDe.length ? `Missing in DE:\n  - ${missingInDe.join("\n  - ")}` : null,
+        missingInEn.length ? `Missing in EN:\n  - ${missingInEn.join("\n  - ")}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n") || "",
+    ).toBe(true);
   });
 
   it("returns distinct strings between DE and EN for most keys", async () => {

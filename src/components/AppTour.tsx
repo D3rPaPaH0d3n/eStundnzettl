@@ -16,6 +16,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { activateOnEnterOrSpace } from "../utils/keyboardActivation";
+import {
+  clampTargetRect,
+  getViewportSize,
+  type TargetRect,
+} from "../utils/spotlightGeometry";
 
 /**
  * AppTour
@@ -56,7 +61,6 @@ const STEP_DEFINITIONS: TourStepDefinition[] = [
 ];
 
 const SPOTLIGHT_PADDING = 10;
-const VIEWPORT_MARGIN = 12;
 const CARD_GAP = 18;
 const ESTIMATED_CARD_HEIGHT = 236;
 
@@ -85,13 +89,6 @@ const colorMap: Record<string, { bg: string; text: string; ring: string; btn: st
  * Misst das Ziel-Element per querySelector und liefert Bounding-Box.
  * Liefert null, wenn kein Ziel gesetzt oder nicht gefunden.
  */
-interface TargetRect {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-}
-
 const useTargetRect = (selector: string | null): TargetRect | null => {
   const [rect, setRect] = useState<TargetRect | null>(null);
 
@@ -132,33 +129,6 @@ const useTargetRect = (selector: string | null): TargetRect | null => {
   }, [selector, measure]);
 
   return rect;
-};
-
-const getViewportSize = () => ({
-  width: typeof window !== "undefined" ? window.innerWidth : 390,
-  height: typeof window !== "undefined" ? window.innerHeight : 800,
-});
-
-const clampTargetRect = (rect: TargetRect): TargetRect => {
-  const viewport = getViewportSize();
-  const maxWidth = Math.max(1, viewport.width - VIEWPORT_MARGIN * 2);
-  const maxHeight = Math.max(1, viewport.height - VIEWPORT_MARGIN * 2);
-  const paddedTop = rect.top - SPOTLIGHT_PADDING;
-  const paddedLeft = rect.left - SPOTLIGHT_PADDING;
-  const paddedRight = rect.left + rect.width + SPOTLIGHT_PADDING;
-  const paddedBottom = rect.top + rect.height + SPOTLIGHT_PADDING;
-
-  const top = Math.min(Math.max(paddedTop, VIEWPORT_MARGIN), viewport.height - VIEWPORT_MARGIN);
-  const left = Math.min(Math.max(paddedLeft, VIEWPORT_MARGIN), viewport.width - VIEWPORT_MARGIN);
-  const right = Math.min(Math.max(paddedRight, VIEWPORT_MARGIN), viewport.width - VIEWPORT_MARGIN);
-  const bottom = Math.min(Math.max(paddedBottom, VIEWPORT_MARGIN), viewport.height - VIEWPORT_MARGIN);
-
-  return {
-    top,
-    left,
-    width: Math.min(Math.max(right - left, 1), maxWidth),
-    height: Math.min(Math.max(bottom - top, 1), maxHeight),
-  };
 };
 
 interface Props {
@@ -213,7 +183,7 @@ const AppTour = ({ onClose }: Props) => {
   // Pointer-Box berechnen: um den Button herum mit etwas Luft.
   const pointerStyle = rect
     ? (() => {
-        const target = clampTargetRect(rect);
+        const target = clampTargetRect(rect, SPOTLIGHT_PADDING);
         return {
           position: "fixed" as const,
           top: target.top,

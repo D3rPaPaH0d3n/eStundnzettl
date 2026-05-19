@@ -16,6 +16,11 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useFirstOpenHint } from "../hooks/useFirstOpenHint";
+import {
+  clampTargetRect,
+  getViewportSize,
+  type TargetRect,
+} from "../utils/spotlightGeometry";
 
 interface TourStepDefinition {
   key: string;
@@ -65,15 +70,7 @@ const STEPS: TourStepDefinition[] = [
   { key: "done", icon: HelpCircle, color: "emerald", target: '[data-settings-tour="help-card"]' },
 ];
 
-interface TargetRect {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-}
-
 const HIGHLIGHT_PADDING = 8;
-const VIEWPORT_MARGIN = 12;
 const CARD_GAP = 18;
 const ESTIMATED_CARD_HEIGHT = 236;
 
@@ -118,33 +115,6 @@ const colorMap = {
 interface Props {
   storageKey: string;
 }
-
-const getViewportSize = () => ({
-  width: typeof window !== "undefined" ? window.innerWidth : 390,
-  height: typeof window !== "undefined" ? window.innerHeight : 800,
-});
-
-const clampTargetRect = (rect: TargetRect): TargetRect => {
-  const viewport = getViewportSize();
-  const maxWidth = Math.max(1, viewport.width - VIEWPORT_MARGIN * 2);
-  const maxHeight = Math.max(1, viewport.height - VIEWPORT_MARGIN * 2);
-  const paddedTop = rect.top - HIGHLIGHT_PADDING;
-  const paddedLeft = rect.left - HIGHLIGHT_PADDING;
-  const paddedRight = rect.left + rect.width + HIGHLIGHT_PADDING;
-  const paddedBottom = rect.top + rect.height + HIGHLIGHT_PADDING;
-
-  const top = Math.min(Math.max(paddedTop, VIEWPORT_MARGIN), viewport.height - VIEWPORT_MARGIN);
-  const left = Math.min(Math.max(paddedLeft, VIEWPORT_MARGIN), viewport.width - VIEWPORT_MARGIN);
-  const right = Math.min(Math.max(paddedRight, VIEWPORT_MARGIN), viewport.width - VIEWPORT_MARGIN);
-  const bottom = Math.min(Math.max(paddedBottom, VIEWPORT_MARGIN), viewport.height - VIEWPORT_MARGIN);
-
-  return {
-    top,
-    left,
-    width: Math.min(Math.max(right - left, 1), maxWidth),
-    height: Math.min(Math.max(bottom - top, 1), maxHeight),
-  };
-};
 
 const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
   const { t } = useTranslation();
@@ -213,7 +183,7 @@ const SettingsTourPopup: React.FC<Props> = ({ storageKey }) => {
 
   const highlightStyle = targetRect
     ? (() => {
-        const rect = clampTargetRect(targetRect);
+        const rect = clampTargetRect(targetRect, HIGHLIGHT_PADDING);
         return {
           position: "fixed" as const,
           top: rect.top,

@@ -6,7 +6,7 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import type { Entry, EntryType, UserData, WorkCode, FormState, CalculationConfig } from '../../types';
 import type { Locale } from "../../locales/types";
 import { toLocalDateString } from "../../utils";
-import { parseTime, calculateEntryNetDuration, getTargetMinutesForDate } from "../../utils/timeCalculations";
+import { parseTime, calculateEntryNetDuration, getTargetMinutesForDate, toAbsoluteRange } from "../../utils/timeCalculations";
 import { generateEntryId } from "../../utils/entryId";
 import { saveLastCode } from "../../utils/lastCode";
 import { WORK_CODE } from "../constants";
@@ -122,19 +122,17 @@ export function useEntryActions({
       let label = "";
 
       if (hasTimeInputs) {
-        const s = parseTime(form.startTime);
-        const en = parseTime(form.endTime);
-        if (en <= s) {
-          toast.error(t("toasts.entry.endBeforeStart"));
+        if (parseTime(form.startTime) === parseTime(form.endTime)) {
+          toast.error(t("toasts.entry.startEqualsEnd"));
           return;
         }
+        const [s, en] = toAbsoluteRange(form.startTime, form.endTime);
 
         const hasOverlap = entries.some((existing) => {
           if (existing.date !== form.formDate) return false;
           if (form.editingEntry && existing.id === form.editingEntry.id) return false;
           if (!existing.start || !existing.end) return false;
-          const exStart = parseTime(existing.start);
-          const exEnd = parseTime(existing.end);
+          const [exStart, exEnd] = toAbsoluteRange(existing.start, existing.end);
           return s < exEnd && exStart < en;
         });
 

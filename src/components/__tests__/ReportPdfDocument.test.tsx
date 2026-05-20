@@ -18,6 +18,7 @@ import { render, cleanup } from "@testing-library/react";
 
 vi.mock("../../utils/timeCalculations", () => ({
   buildDayBalanceMetaMap: vi.fn(() => ({})),
+  isOvernightShift: vi.fn(() => false),
 }));
 
 vi.mock("@react-pdf/renderer", () => {

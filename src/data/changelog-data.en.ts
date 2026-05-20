@@ -19,6 +19,58 @@ import { CHANGELOG_DATA_DE } from "./changelog-data.de";
 const TRANSLATED_EN = [
 
   {
+    version: "4.5.0",
+    date: "19.05.2026",
+    title: "Material You, overnight shifts & smoother handling 🌙",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Sparkles",
+        title: "Material You on Android",
+        items: [
+          "The app can now optionally pick up accent colours from your Android system — matching your wallpaper and theme.",
+          "Toggle it in Expert Mode under \"Appearance\" – the app feels even more like \"your\" Android.",
+          "Status and navigation bars follow the theme automatically and stay readable even over coloured headers."
+        ]
+      },
+      {
+        iconName: "Clock",
+        title: "Capture shifts that cross midnight",
+        items: [
+          "Entries like 22:00 – 06:00 can now be saved — the app automatically recognises that the shift reaches into the next day.",
+          "A small ⁺¹ next to the end time in the list and PDF makes it easy to spot when an entry crosses midnight.",
+          "Break and net hours are calculated correctly whether your shift is during the day or at night."
+        ]
+      },
+      {
+        iconName: "Calculator",
+        title: "Weekly stats for Sunday-night shifts",
+        items: [
+          "When an overnight shift crosses the week boundary (e.g. Sunday night), the hours are split proportionally onto both weeks.",
+          "That keeps Mehrarbeit and Überstunden correct even when your weekly balance sits close to the limit."
+        ]
+      },
+      {
+        iconName: "Smartphone",
+        title: "Entry form easier to reach",
+        items: [
+          "The form now sits further down the screen — easier on your thumb, especially on larger phones.",
+          "Above the form, the weekday is shown big with the date below — at a glance you know which day you're entering."
+        ]
+      },
+      {
+        iconName: "Sliders",
+        title: "App tour & polish",
+        items: [
+          "The spotlight highlights in the app tour now move more smoothly and feel less choppy.",
+          "Support prompt labels are complete again — every help option is properly labelled."
+        ]
+      }
+    ]
+  },
+
+
+  {
     version: "4.4.0",
     date: "15.05.2026",
     title: "Android app cleaner, steadier & lighter 🛠️",

@@ -10,6 +10,10 @@ import {
   calculateEntryNetDuration,
   calculateDisplayedDayMinutes,
   calculatePeriodStats,
+  calculateRawDuration,
+  isOvernightShift,
+  toAbsoluteRange,
+  getEntryDayContributions,
 } from "../timeCalculations";
 import type { Entry, UserData } from "../../types";
 import { WORK_CODE } from "../../hooks/constants";
@@ -20,6 +24,97 @@ describe("parseTime", () => {
     expect(parseTime("01:30")).toBe(90);
     expect(parseTime("08:45")).toBe(525);
     expect(parseTime("23:59")).toBe(23 * 60 + 59);
+  });
+});
+
+describe("calculateRawDuration", () => {
+  it("berechnet normale Dauer (Endzeit > Startzeit)", () => {
+    expect(calculateRawDuration("08:00", "17:00")).toBe(9 * 60);
+    expect(calculateRawDuration("00:00", "12:00")).toBe(12 * 60);
+  });
+
+  it("liefert 0 wenn Start- und Endzeit gleich sind", () => {
+    expect(calculateRawDuration("08:00", "08:00")).toBe(0);
+  });
+
+  it("erkennt Nachtschicht (Endzeit < Startzeit) und rechnet über Mitternacht", () => {
+    expect(calculateRawDuration("22:00", "06:00")).toBe(8 * 60);
+    expect(calculateRawDuration("23:00", "00:00")).toBe(60);
+    expect(calculateRawDuration("18:00", "02:30")).toBe(8 * 60 + 30);
+  });
+});
+
+describe("isOvernightShift", () => {
+  it("ist false für normale Schichten", () => {
+    expect(isOvernightShift("08:00", "17:00")).toBe(false);
+    expect(isOvernightShift("00:00", "23:59")).toBe(false);
+  });
+
+  it("ist false bei gleicher Start- und Endzeit", () => {
+    expect(isOvernightShift("12:00", "12:00")).toBe(false);
+  });
+
+  it("ist true wenn Endzeit numerisch vor Startzeit liegt", () => {
+    expect(isOvernightShift("22:00", "06:00")).toBe(true);
+    expect(isOvernightShift("23:30", "00:30")).toBe(true);
+  });
+});
+
+describe("toAbsoluteRange", () => {
+  it("liefert unveränderte Range bei normaler Schicht", () => {
+    expect(toAbsoluteRange("08:00", "17:00")).toEqual([8 * 60, 17 * 60]);
+  });
+
+  it("verschiebt Ende um 24h bei Nachtschicht", () => {
+    expect(toAbsoluteRange("22:00", "06:00")).toEqual([22 * 60, 30 * 60]);
+  });
+
+  it("verschiebt Ende auch wenn Endzeit == Startzeit (24h-Schicht)", () => {
+    expect(toAbsoluteRange("08:00", "08:00")).toEqual([8 * 60, 32 * 60]);
+  });
+});
+
+describe("getEntryDayContributions", () => {
+  const entry = {
+    date: "2026-01-04", // Sonntag
+    start: "22:00",
+    end: "06:00",
+    netDuration: 450, // 8h Roh, 30min Pause
+  };
+
+  it("schreibt ohne Split alles dem Beginn-Tag zu", () => {
+    expect(getEntryDayContributions(entry, false)).toEqual({
+      "2026-01-04": 450,
+    });
+  });
+
+  it("schreibt ohne Nachtschicht (end > start) alles dem Beginn-Tag zu, auch mit splitEnabled", () => {
+    const dayShift = { date: "2026-01-04", start: "08:00", end: "17:00", netDuration: 510 };
+    expect(getEntryDayContributions(dayShift, true)).toEqual({
+      "2026-01-04": 510,
+    });
+  });
+
+  it("splittet Nachtschicht proportional zur Roh-Dauer auf Beginn- und Folgetag", () => {
+    // 22-24 = 120min von 480min Roh = 25% → 112min, Folgetag bekommt 338min
+    const contrib = getEntryDayContributions(entry, true);
+    expect(contrib).toEqual({
+      "2026-01-04": 112,
+      "2026-01-05": 338,
+    });
+    expect(contrib["2026-01-04"] + contrib["2026-01-05"]).toBe(450);
+  });
+
+  it("rollt über Monatsgrenzen korrekt", () => {
+    const overMonth = {
+      date: "2026-01-31",
+      start: "22:00",
+      end: "06:00",
+      netDuration: 480,
+    };
+    const contrib = getEntryDayContributions(overMonth, true);
+    expect(Object.keys(contrib).sort()).toEqual(["2026-01-31", "2026-02-01"]);
+    expect(contrib["2026-01-31"] + contrib["2026-02-01"]).toBe(480);
   });
 });
 
@@ -116,7 +211,8 @@ describe("calculateEntryNetDuration", () => {
     expect(mins).toBe(120);
   });
 
-  it("liefert 0 statt negativer Dauer", () => {
+  it("interpretiert end < start als Nachtschicht über Mitternacht", () => {
+    // 10:00 → 09:00 = 23h Nachtschicht
     const mins = calculateEntryNetDuration({
       entryType: "work",
       startTime: "10:00",
@@ -126,7 +222,33 @@ describe("calculateEntryNetDuration", () => {
       userData: null,
       code: WORK_CODE.OFFICE,
     });
+    expect(mins).toBe(23 * 60);
+  });
+
+  it("liefert 0 wenn Start- und Endzeit gleich sind", () => {
+    const mins = calculateEntryNetDuration({
+      entryType: "work",
+      startTime: "10:00",
+      endTime: "10:00",
+      pauseDuration: 0,
+      formDate: "2026-04-04",
+      userData: null,
+      code: WORK_CODE.OFFICE,
+    });
     expect(mins).toBe(0);
+  });
+
+  it("berechnet Nachtschicht 22:00–06:00 mit 30min Pause korrekt", () => {
+    const mins = calculateEntryNetDuration({
+      entryType: "work",
+      startTime: "22:00",
+      endTime: "06:00",
+      pauseDuration: 30,
+      formDate: "2026-04-04",
+      userData: null,
+      code: WORK_CODE.OFFICE,
+    });
+    expect(mins).toBe(8 * 60 - 30);
   });
 
   it("nutzt für Nicht-Arbeit (Urlaub/Krank) das Tagessoll", () => {
@@ -352,6 +474,53 @@ describe("calculatePeriodStats", () => {
     // + KW14 tägliche ÜS: Mo (600-510=90) + Di (600-510=90) = 180
     expect(stats.overtimeSplit.ueberstunden).toBe(1080 + 180);
   });
+
+  it("splittet Nachtschicht über ISO-Wochengrenze auf beide Wochen (overtimeMode=split)", () => {
+    // KW8-2026 = Mo 2026-02-16 bis So 2026-02-22
+    // KW9-2026 = Mo 2026-02-23 bis So 2026-03-01
+    // Nachtschicht So 22:00 → Mo 06:00 = 480min Roh, davon 120min am
+    // Sonntag (KW8) und 360min am Montag (KW9).
+    const userData = { workDays: null } as unknown as UserData;
+    const entries = [
+      // KW8 Mo-Fr volle Arbeit (Mo-Do 510 = 8.5h, Fr 270 = 4.5h)
+      { id: "a", date: "2026-02-16", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "b", date: "2026-02-17", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "c", date: "2026-02-18", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "d", date: "2026-02-19", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "e", date: "2026-02-20", type: "work", code: WORK_CODE.OFFICE, netDuration: 270 },
+      // Sonntags-Nachtschicht über Wochengrenze (Roh 480min, ohne Pause)
+      {
+        id: "night",
+        date: "2026-02-22",
+        type: "work",
+        code: WORK_CODE.OFFICE,
+        start: "22:00",
+        end: "06:00",
+        netDuration: 480,
+      },
+      // KW9 Mo-Fr volle Arbeit
+      { id: "f", date: "2026-02-23", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "g", date: "2026-02-24", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "h", date: "2026-02-25", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "i", date: "2026-02-26", type: "work", code: WORK_CODE.OFFICE, netDuration: 510 },
+      { id: "j", date: "2026-02-27", type: "work", code: WORK_CODE.OFFICE, netDuration: 270 },
+    ] as unknown as Entry[];
+    const stats = calculatePeriodStats(
+      entries,
+      userData,
+      new Date(2026, 1, 16),
+      new Date(2026, 2, 1)
+    );
+    // Beide Wochen sind voll im Zeitraum, kein Halbtag.
+    // weekTarget = 2310min für beide Wochen.
+    // KW8: 4*510 + 270 + 120 = 2430min Ist → +120 → 90 MA + 30 ÜS
+    // KW9: 4*510 + 270 + 360 = 2670min Ist → +360 → 90 MA + 270 ÜS
+    expect(stats.overtimeSplit.mehrarbeit).toBe(180);
+    expect(stats.overtimeSplit.ueberstunden).toBe(300);
+    // Gesamtwerk-Stunden bleiben unverändert (8x510 + 2x270 + 480)
+    expect(stats.work).toBe(8 * 510 + 2 * 270 + 480);
+  });
+
 });
 
 describe("adjustSickDuration", () => {

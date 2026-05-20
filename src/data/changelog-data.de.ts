@@ -1,11 +1,20 @@
 export const CHANGELOG_DATA_DE = [
 
   {
-    version: "4.4.1",
+    version: "4.5.0",
     date: "19.05.2026",
-    title: "Nachtschichten gehen jetzt über Mitternacht 🌙",
+    title: "Material You, Nachtschichten & rundere Bedienung 🌙",
     isMajor: false,
     sections: [
+      {
+        iconName: "Sparkles",
+        title: "Material You für Android",
+        items: [
+          "Optional kann die App jetzt die Akzentfarben aus deinem Android-System übernehmen — passend zu deinem Hintergrund und Theme.",
+          "Aktivierst du im Erweiterten Modus unter „Darstellung\" – die App fühlt sich damit nochmal mehr nach „deinem\" Android an.",
+          "Status- und Navigationsleiste folgen dem Thema automatisch und sind auch über farbigen Headern gut lesbar."
+        ]
+      },
       {
         iconName: "Clock",
         title: "Schichten über Mitternacht erfassen",
@@ -21,6 +30,22 @@ export const CHANGELOG_DATA_DE = [
         items: [
           "Wenn eine Nachtschicht über die Wochengrenze geht (z. B. Sonntag-Nacht), werden die Stunden anteilig auf beide Wochen verteilt.",
           "Damit stimmen Mehrarbeit und Überstunden auch dann, wenn deine Wochenabrechnung knapp am Limit ist."
+        ]
+      },
+      {
+        iconName: "Smartphone",
+        title: "Eintragsformular besser zum Tippen",
+        items: [
+          "Das Formular sitzt jetzt weiter unten am Bildschirm — gut für den Daumen, gerade bei größeren Handys.",
+          "Über dem Formular steht der Wochentag groß und das Datum darunter — beim Tippen weißt du auf einen Blick, für welchen Tag du buchst."
+        ]
+      },
+      {
+        iconName: "Sliders",
+        title: "App-Tour & Bedienung runder",
+        items: [
+          "Die Spotlight-Highlights in der App-Tour laufen jetzt sanfter und ruckeln weniger.",
+          "Die Support-Texte sind wieder vollständig — bei Hilfe-Anfragen siehst du alle Optionen sauber beschriftet."
         ]
       }
     ]

@@ -1,6 +1,0 @@
-Overnight shifts crossing midnight 🌙
-Capture shifts crossing midnight
-• Entries like 22:00 – 06:00 can now be saved — the app detects the overnight shift automatically.
-• A small ⁺¹ next to the end time in list and PDF shows when an entry reaches into the next day.
-Weekly stats for Sunday-night shifts
-• Hours from overnight shifts that cross the week boundary are split proportionally onto both weeks — Mehrarbeit and Überstunden stay correct.

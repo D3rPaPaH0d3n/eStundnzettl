@@ -1,0 +1,10 @@
+Material You, overnight shifts & smoother handling 🌙
+Material You on Android
+• Accent colours from your Android system (Expert Mode → Appearance).
+• Status and navigation bars now follow the theme cleanly.
+Shifts crossing midnight
+• Entries like 22:00 – 06:00 can now be saved, ⁺¹ marks the day jump.
+• Weekly stats split Sunday-night hours correctly onto both weeks.
+Polish
+• Entry form sits lower with a big weekday header.
+• App tour spotlight feels smoother.

@@ -1,0 +1,10 @@
+Material You, Nachtschichten & rundere Bedienung 🌙
+Material You für Android
+• Akzentfarben aus dem Android-System (Erweiterter Modus).
+• System-Bars folgen jetzt dem Theme.
+Schichten über Mitternacht
+• Einträge wie 22:00 – 06:00 lassen sich speichern, ⁺¹ markiert den Tagessprung.
+• Wochenstatistik verteilt Sonntag-Nacht-Stunden korrekt auf beide Wochen.
+Bedienung
+• Eintragsformular sitzt tiefer mit großem Wochentag-Header.
+• App-Tour-Spotlight läuft sanfter.

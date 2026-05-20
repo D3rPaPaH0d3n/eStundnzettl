@@ -19,11 +19,20 @@ import { CHANGELOG_DATA_DE } from "./changelog-data.de";
 const TRANSLATED_EN = [
 
   {
-    version: "4.4.1",
+    version: "4.5.0",
     date: "19.05.2026",
-    title: "Overnight shifts crossing midnight 🌙",
+    title: "Material You, overnight shifts & smoother handling 🌙",
     isMajor: false,
     sections: [
+      {
+        iconName: "Sparkles",
+        title: "Material You on Android",
+        items: [
+          "The app can now optionally pick up accent colours from your Android system — matching your wallpaper and theme.",
+          "Toggle it in Expert Mode under \"Appearance\" – the app feels even more like \"your\" Android.",
+          "Status and navigation bars follow the theme automatically and stay readable even over coloured headers."
+        ]
+      },
       {
         iconName: "Clock",
         title: "Capture shifts that cross midnight",
@@ -39,6 +48,22 @@ const TRANSLATED_EN = [
         items: [
           "When an overnight shift crosses the week boundary (e.g. Sunday night), the hours are split proportionally onto both weeks.",
           "That keeps Mehrarbeit and Überstunden correct even when your weekly balance sits close to the limit."
+        ]
+      },
+      {
+        iconName: "Smartphone",
+        title: "Entry form easier to reach",
+        items: [
+          "The form now sits further down the screen — easier on your thumb, especially on larger phones.",
+          "Above the form, the weekday is shown big with the date below — at a glance you know which day you're entering."
+        ]
+      },
+      {
+        iconName: "Sliders",
+        title: "App tour & polish",
+        items: [
+          "The spotlight highlights in the app tour now move more smoothly and feel less choppy.",
+          "Support prompt labels are complete again — every help option is properly labelled."
         ]
       }
     ]

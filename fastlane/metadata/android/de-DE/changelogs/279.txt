@@ -1,6 +1,0 @@
-Nachtschichten gehen jetzt über Mitternacht 🌙
-Schichten über Mitternacht erfassen
-• Einträge wie 22:00 – 06:00 lassen sich jetzt speichern — die App erkennt die Nachtschicht automatisch.
-• Ein kleines ⁺¹ neben der Endzeit zeigt in Liste und PDF, wenn ein Eintrag in den nächsten Tag reicht.
-Wochenstatistik bei Sonntag-Nacht
-• Bei Schichten über die Wochengrenze werden Stunden anteilig auf beide Wochen verteilt — Mehrarbeit und Überstunden stimmen jetzt auch da.

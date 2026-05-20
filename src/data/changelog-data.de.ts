@@ -1,6 +1,33 @@
 export const CHANGELOG_DATA_DE = [
 
   {
+    version: "4.4.1",
+    date: "19.05.2026",
+    title: "Nachtschichten gehen jetzt über Mitternacht 🌙",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Clock",
+        title: "Schichten über Mitternacht erfassen",
+        items: [
+          "Einträge wie 22:00 – 06:00 lassen sich jetzt speichern — die App erkennt automatisch, dass die Schicht in den nächsten Tag reicht.",
+          "Neben der Endzeit in Liste und PDF erscheint ein kleines ⁺¹, damit du auf einen Blick siehst, wenn ein Eintrag über Mitternacht geht.",
+          "Pause und Netto-Stunden werden korrekt berechnet, egal ob deine Schicht am Tag oder in der Nacht liegt."
+        ]
+      },
+      {
+        iconName: "Calculator",
+        title: "Wochenstatistik bei Sonntag-Nacht-Schichten",
+        items: [
+          "Wenn eine Nachtschicht über die Wochengrenze geht (z. B. Sonntag-Nacht), werden die Stunden anteilig auf beide Wochen verteilt.",
+          "Damit stimmen Mehrarbeit und Überstunden auch dann, wenn deine Wochenabrechnung knapp am Limit ist."
+        ]
+      }
+    ]
+  },
+
+
+  {
     version: "4.4.0",
     date: "15.05.2026",
     title: "Android-App sauberer, stabiler & leichter 🛠️",

@@ -1,0 +1,7 @@
+Material You, overnight shifts & smoother handling 🌙
+Material You on Android
+• The app can now optionally pick up accent colours from your Android system — matching your wallpaper and theme.
+• Toggle it in Expert Mode under "Appearance" – the app feels even more like "your" Android.
+• Status and navigation bars follow the theme automatically and stay readable even over coloured headers.
+Capture shifts that cross midnight
+• Entries like 22:00 – 06:00 can now be saved — the a...

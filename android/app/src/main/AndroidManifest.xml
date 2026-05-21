@@ -57,32 +57,11 @@
                 android:resource="@xml/widget_voice_entry_info" />
         </receiver>
 
-        <!-- Transparent activity for voice recognition (launched by widget) -->
+        <!-- Clean Unified Bottom Sheet for Voice Recognition and Gemini Parsing -->
         <activity
-            android:name=".widget.VoiceEntryActivity"
+            android:name=".widget.VoiceEntryBottomSheetActivity"
             android:exported="false"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:excludeFromRecents="true" />
-
-        <!-- Confirmation dialog for voice entry (shows parsed result, lets user edit) -->
-        <activity
-            android:name=".widget.VoiceEntryConfirmActivity"
-            android:exported="false"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:excludeFromRecents="true" />
-
-        <!-- Guided step-by-step voice entry wizard (TTS + Speech) -->
-        <activity
-            android:name=".widget.GuidedVoiceEntryActivity"
-            android:exported="false"
-            android:theme="@style/AppTheme.NoActionBarLaunch"
-            android:excludeFromRecents="true" />
-
-        <!-- Gemini AI freitext voice entry (on-device AI parsing) -->
-        <activity
-            android:name=".widget.GeminiVoiceEntryActivity"
-            android:exported="false"
-            android:theme="@style/AppTheme.NoActionBarLaunch"
             android:excludeFromRecents="true" />
     </application>
 

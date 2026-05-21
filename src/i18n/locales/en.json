@@ -817,7 +817,7 @@
       "unavailable": {
         "hint": "Requires Google Play Services",
         "bannerTitle": "Some features are unavailable on this device",
-        "bannerBody": "No Google Play Services were detected on this device. Google Drive backup and the voice-entry widget rely on them. Local backups and Nextcloud continue to work as usual.",
+        "bannerBody": "No Google Play Services were detected on this device. The Google Drive backup relies on them. Local backups and Nextcloud continue to work as usual.",
         "dismiss": "Got it"
       }
     },

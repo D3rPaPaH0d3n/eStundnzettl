@@ -9,7 +9,7 @@ import { logger } from "../utils/logger";
 
 /**
  * useFeatureAvailability — probes once per app session whether
- * Google Play Services (and the Gemini Nano on-device model) are
+ * Google Play Services are
  * available, and re-probes whenever the app returns from the
  * background (the user might have side-installed Sandboxed Play
  * in the meantime).
@@ -32,7 +32,6 @@ export interface FeatureAvailability extends PlayServicesAvailabilityResult {
 const FAIL_OPEN: FeatureAvailability = {
   googleServicesAvailable: true,
   googleServicesStatus: 0,
-  geminiNanoSupported: false,
   loading: true,
   probeFailed: false,
 };
@@ -69,7 +68,6 @@ async function probe(): Promise<void> {
     cached = {
       googleServicesAvailable: true,
       googleServicesStatus: -1,
-      geminiNanoSupported: false,
       loading: false,
       probeFailed: true,
     };

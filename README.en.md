@@ -88,7 +88,6 @@
 |---|---------|--------------|
 | 🎯 | **Flexible work schedules** | 38.5h, 40h, 4-day week or fully custom |
 | ⏱️ | **Live timer** | Long-press, swipe up — timer running |
-| 🎙️ | **Voice input** | Dictate entries — German speech parser included |
 | 📊 | **Real-time balance** | Overtime, extra hours and flex-time always in view |
 | 🇦🇹 | **Regional holidays** | Austria, 16 German states and 26 Swiss cantons |
 | 📄 | **PDF export** | Professional timesheet by month or week |

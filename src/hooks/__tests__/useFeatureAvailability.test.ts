@@ -49,7 +49,6 @@ describe("useFeatureAvailability", () => {
     mockCheck.mockResolvedValue({
       googleServicesAvailable: false,
       googleServicesStatus: 9,
-      geminiNanoSupported: false,
     });
 
     const { result } = renderHook(() => useFeatureAvailability());
@@ -63,7 +62,6 @@ describe("useFeatureAvailability", () => {
     mockCheck.mockResolvedValue({
       googleServicesAvailable: false,
       googleServicesStatus: 9,
-      geminiNanoSupported: false,
     });
 
     const { result } = renderHook(() => useFeatureAvailability());
@@ -80,7 +78,6 @@ describe("useFeatureAvailability", () => {
     mockCheck.mockResolvedValue({
       googleServicesAvailable: true,
       googleServicesStatus: 0,
-      geminiNanoSupported: true,
     });
 
     const { result } = renderHook(() => useFeatureAvailability());
@@ -89,7 +86,6 @@ describe("useFeatureAvailability", () => {
       expect(result.current.loading).toBe(false);
     });
     expect(result.current.googleServicesAvailable).toBe(true);
-    expect(result.current.geminiNanoSupported).toBe(true);
   });
 
   it("fail-open wenn Probe wirft (Plugin nicht registriert / Crash)", async () => {
@@ -120,7 +116,6 @@ describe("useFeatureAvailability", () => {
     mockCheck.mockResolvedValue({
       googleServicesAvailable: false,
       googleServicesStatus: 9,
-      geminiNanoSupported: false,
     });
 
     const { result: result1 } = renderHook(() => useFeatureAvailability());
@@ -140,7 +135,6 @@ describe("useFeatureAvailability", () => {
     mockCheck.mockResolvedValue({
       googleServicesAvailable: true,
       googleServicesStatus: 0,
-      geminiNanoSupported: false,
     });
 
     renderHook(() => useFeatureAvailability());

@@ -77,7 +77,6 @@
 |---|---------|--------------|
 | 🎯 | **Flexible Arbeitszeitmodelle** | 38,5h, 40h, 4-Tage-Woche oder komplett individuell |
 | ⏱️ | **Live-Timer** | Lang drücken, nach oben wischen — Timer läuft |
-| 🎙️ | **Sprachsteuerung** | Eintrag per Spracheingabe diktieren — Deutsch-Parser inklusive |
 | 📊 | **Echtzeit-Saldo** | Überstunden, Mehrarbeit und Gleitzeit immer im Blick |
 | 🇦🇹 | **Lokale Feiertage** | Österreich, 16 deutsche Bundesländer und 26 Schweizer Kantone |
 | 📄 | **PDF-Export** | Professioneller Stundenzettel per Monats- oder Wochenansicht |

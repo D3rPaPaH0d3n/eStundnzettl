@@ -817,7 +817,7 @@
       "unavailable": {
         "hint": "Benötigt Google Play Services",
         "bannerTitle": "Manche Funktionen sind hier nicht verfügbar",
-        "bannerBody": "Auf diesem Gerät wurden keine Google Play Services gefunden. Google Drive Backup und das Spracheingabe-Widget brauchen sie. Lokale Backups und Nextcloud funktionieren wie gewohnt weiter.",
+        "bannerBody": "Auf diesem Gerät wurden keine Google Play Services gefunden. Google Drive Backup braucht sie. Lokale Backups und Nextcloud funktionieren wie gewohnt weiter.",
         "dismiss": "Verstanden"
       }
     },

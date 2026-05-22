@@ -2,7 +2,6 @@ package com.estundnzettl.app;
 
 import android.content.Context;
 
-import com.estundnzettl.app.widget.GeminiParser;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -12,8 +11,8 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
 /**
- * Custom Capacitor plugin that reports whether Google Play Services
- * (and the Gemini Nano on-device model) are present on the device.
+ * Custom Capacitor plugin that reports whether Google Play Services are
+ * present on the device.
  *
  * The web layer uses this to grey out / hide Google-only features on
  * devices like GrapheneOS, /e/OS or Huawei where those services are
@@ -30,15 +29,9 @@ public class PlayServicesAvailabilityPlugin extends Plugin {
             .getInstance()
             .isGooglePlayServicesAvailable(context);
 
-        boolean googleServicesAvailable = status == ConnectionResult.SUCCESS;
-        // GeminiParser.isSupported() is a class-presence check (no I/O),
-        // safe to call from the bridge thread.
-        boolean geminiNanoSupported = GeminiParser.isSupported();
-
         JSObject result = new JSObject();
-        result.put("googleServicesAvailable", googleServicesAvailable);
+        result.put("googleServicesAvailable", status == ConnectionResult.SUCCESS);
         result.put("googleServicesStatus", status);
-        result.put("geminiNanoSupported", geminiNanoSupported);
         call.resolve(result);
     }
 }

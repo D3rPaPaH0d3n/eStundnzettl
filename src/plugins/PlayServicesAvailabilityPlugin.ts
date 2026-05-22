@@ -1,16 +1,11 @@
 import { registerPlugin } from "@capacitor/core";
 
-/**
- * Result of a Google Play Services / Gemini Nano availability probe.
- * Mirrors the JSObject returned by the native Android plugin.
- */
+/** Result of a Google Play Services availability probe. */
 export interface PlayServicesAvailabilityResult {
   /** True when Google Play Services responded with ConnectionResult.SUCCESS. */
   googleServicesAvailable: boolean;
   /** Raw integer from GoogleApiAvailability (0 = SUCCESS, others see ConnectionResult). */
   googleServicesStatus: number;
-  /** True when the Gemini Nano client class is loadable on this build. */
-  geminiNanoSupported: boolean;
 }
 
 export interface PlayServicesAvailabilityPlugin {

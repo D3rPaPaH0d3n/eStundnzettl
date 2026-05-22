@@ -20,4 +20,11 @@ describe("native plugin wrappers", () => {
     expect(registerPlugin).toHaveBeenCalledWith("SystemBars");
     expect(SystemBars).toEqual({ name: "SystemBars" });
   });
+
+  it("registers the Android nano diagnostics plugin", async () => {
+    const { NanoDiagnostics } = await import("../NanoDiagnosticsPlugin");
+
+    expect(registerPlugin).toHaveBeenCalledWith("NanoDiagnostics");
+    expect(NanoDiagnostics).toEqual({ name: "NanoDiagnostics" });
+  });
 });

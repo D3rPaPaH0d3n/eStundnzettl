@@ -13,6 +13,7 @@ import CollapsibleCard from "./Settings/CollapsibleCard";
 import BackupSettings from "./Settings/BackupSettings";
 import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
+import NanoDiagnosticsSettings from "./Settings/NanoDiagnosticsSettings";
 import SettingsTourPopup from "./SettingsTourPopup";
 import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
 import toast from "react-hot-toast";
@@ -422,6 +423,8 @@ const Settings: React.FC<Props> = ({
         locale={locale}
         calculationConfig={calculationConfig}
       />
+
+      {(userData?.expertMode ?? false) && <NanoDiagnosticsSettings />}
 
       {/* 9. App Info & Danger Zone */}
       <div data-settings-tour="help" className="space-y-6">

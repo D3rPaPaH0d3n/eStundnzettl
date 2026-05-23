@@ -26,11 +26,16 @@ export interface NanoPromptSmokeTestResult {
   text: string;
 }
 
+export interface NanoSpeechRecognitionResult {
+  text: string;
+}
+
 export interface NanoDiagnosticsPlugin {
   getStatus(): Promise<NanoDiagnosticsResult>;
   downloadSpeechAdvanced(): Promise<void>;
   downloadPrompt(): Promise<void>;
   runPromptSmokeTest(): Promise<NanoPromptSmokeTestResult>;
+  recognizeSpeech(): Promise<NanoSpeechRecognitionResult>;
 }
 
 export const NanoDiagnostics =

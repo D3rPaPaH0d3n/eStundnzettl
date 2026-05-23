@@ -99,7 +99,15 @@
     "distanceOrNote": "Route / Note",
     "project": "Project",
     "projectPlaceholder": "…",
-    "knownProjects": "Known projects"
+    "knownProjects": "Known projects",
+    "speech": {
+      "projectButton": "Voice input",
+      "listening": "Listening...",
+      "inserted": "Voice input inserted.",
+      "empty": "No speech recognized.",
+      "failed": "Voice input failed.",
+      "nativeOnly": "Voice input is only available in the Android app."
+    }
   },
   "reports": {
     "title": "Timesheet",

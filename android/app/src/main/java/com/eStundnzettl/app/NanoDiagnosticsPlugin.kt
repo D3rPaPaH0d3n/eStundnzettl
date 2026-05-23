@@ -1,13 +1,18 @@
 package com.estundnzettl.app
 
+import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import com.getcapacitor.JSObject
+import com.getcapacitor.PermissionState
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
+import com.getcapacitor.annotation.Permission
+import com.getcapacitor.annotation.PermissionCallback
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.mlkit.genai.common.audio.AudioSource
 import com.google.mlkit.genai.common.DownloadCallback
 import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.common.GenAiException
@@ -18,14 +23,23 @@ import com.google.mlkit.genai.prompt.java.GenerativeModelFutures
 import com.google.mlkit.genai.speechrecognition.SpeechRecognition
 import com.google.mlkit.genai.speechrecognition.SpeechRecognizer
 import com.google.mlkit.genai.speechrecognition.SpeechRecognizerOptions
+import com.google.mlkit.genai.speechrecognition.SpeechRecognizerRequest
+import com.google.mlkit.genai.speechrecognition.SpeechRecognizerResponse
 import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 
-@CapacitorPlugin(name = "NanoDiagnostics")
+@CapacitorPlugin(
+    name = "NanoDiagnostics",
+    permissions = [
+        Permission(strings = [Manifest.permission.RECORD_AUDIO], alias = "microphone"),
+    ],
+)
 class NanoDiagnosticsPlugin : Plugin() {
     private val executor = Executors.newSingleThreadExecutor()
 
@@ -131,6 +145,90 @@ class NanoDiagnosticsPlugin : Plugin() {
                 call.resolve(result)
             } catch (e: Exception) {
                 call.reject("Prompt smoke test failed", e)
+            }
+        }
+    }
+
+    @PluginMethod
+    fun recognizeSpeech(call: PluginCall) {
+        if (getPermissionState("microphone") != PermissionState.GRANTED) {
+            requestPermissionForAlias("microphone", call, "recognizeSpeechPermissionCallback")
+            return
+        }
+
+        runSpeechRecognition(call)
+    }
+
+    @PermissionCallback
+    private fun recognizeSpeechPermissionCallback(call: PluginCall) {
+        if (getPermissionState("microphone") != PermissionState.GRANTED) {
+            call.reject("Microphone permission denied")
+            return
+        }
+
+        runSpeechRecognition(call)
+    }
+
+    private fun runSpeechRecognition(call: PluginCall) {
+        executor.execute {
+            var recognizer: SpeechRecognizer? = null
+            try {
+                recognizer = createSpeechRecognizer()
+                val status = runBlocking { recognizer.checkStatus() }
+                if (status != FeatureStatus.AVAILABLE) {
+                    call.reject("Speech Advanced de-DE is not available: ${statusName(status)}")
+                    return@execute
+                }
+
+                val request = SpeechRecognizerRequest.builder().apply {
+                    audioSource = AudioSource.fromMic()
+                }.build()
+                val finalTextParts = mutableListOf<String>()
+                var partialText = ""
+
+                val completed = runBlocking {
+                    withTimeoutOrNull(45_000L) {
+                        recognizer.startRecognition(request).takeWhile { response ->
+                            when (response) {
+                                is SpeechRecognizerResponse.PartialTextResponse -> {
+                                    partialText = response.text
+                                    true
+                                }
+
+                                is SpeechRecognizerResponse.FinalTextResponse -> {
+                                    if (response.text.isNotBlank()) {
+                                        finalTextParts.add(response.text.trim())
+                                    }
+                                    true
+                                }
+
+                                is SpeechRecognizerResponse.ErrorResponse -> {
+                                    throw response.e
+                                }
+
+                                is SpeechRecognizerResponse.CompletedResponse -> false
+                            }
+                        }.collect()
+                        true
+                    }
+                } ?: false
+
+                val text = finalTextParts.joinToString(" ").ifBlank { partialText.trim() }
+                if (text.isBlank()) {
+                    call.reject(if (completed) "No speech recognized" else "Speech recognition timed out")
+                    return@execute
+                }
+
+                val result = JSObject()
+                result.put("text", text)
+                call.resolve(result)
+            } catch (e: Exception) {
+                call.reject("Speech recognition failed", e)
+            } finally {
+                runCatching {
+                    if (recognizer != null) runBlocking { recognizer.stopRecognition() }
+                }
+                runCatching { recognizer?.close() }
             }
         }
     }

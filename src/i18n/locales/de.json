@@ -99,7 +99,15 @@
     "distanceOrNote": "Strecke / Notiz",
     "project": "Projekt",
     "projectPlaceholder": "...",
-    "knownProjects": "Bekannte Projekte"
+    "knownProjects": "Bekannte Projekte",
+    "speech": {
+      "projectButton": "Spracheingabe",
+      "listening": "Ich höre zu...",
+      "inserted": "Spracheingabe übernommen.",
+      "empty": "Keine Sprache erkannt.",
+      "failed": "Spracheingabe fehlgeschlagen.",
+      "nativeOnly": "Spracheingabe ist nur in der Android-App verfügbar."
+    }
   },
   "reports": {
     "title": "Stundenzettel",

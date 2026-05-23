@@ -1,6 +1,6 @@
 import React, { forwardRef, useState, useEffect, useCallback } from "react";
 import type { SyntheticEvent } from "react";
-import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus, ChevronDown, Mic, Loader2 } from "lucide-react";
 import { Card, toLocalDateString } from "../utils";
 import { WORK_CODE } from "../hooks/constants";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,7 +15,9 @@ import SelectionDrawer from "./SelectionDrawer";
 import { Capacitor } from "@capacitor/core";
 import { Material3DatePicker } from "../plugins/Material3DatePickerPlugin";
 import { Material3TimePicker } from "../plugins/Material3TimePickerPlugin";
+import { NanoDiagnostics } from "../plugins/NanoDiagnosticsPlugin";
 import { getNativePickerThemeMode } from "../utils/nativePickerTheme";
+import { logger } from "../utils/logger";
 
 import type { Entry, UserData, WorkCode } from "../types";
 import type { Locale } from "../locales/types";
@@ -117,6 +119,7 @@ const EntryForm: React.FC<Props> = ({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showDateFallback, setShowDateFallback] = useState(false);
+  const [isRecognizingProject, setIsRecognizingProject] = useState(false);
   const isNativePlatform = Capacitor.isNativePlatform();
 
   const date = new Date(`${formDate}T00:00:00`);
@@ -267,6 +270,45 @@ const EntryForm: React.FC<Props> = ({
       setShowSuggestions(filtered.length > 0);
     } else {
       setShowSuggestions(false);
+    }
+  };
+
+  const applyProjectText = (value: string) => {
+    setProject(value);
+    const filtered = value
+      ? existingProjects.filter(p =>
+          p.toLowerCase().includes(value.toLowerCase()) && p !== value
+        ).slice(0, 4)
+      : [];
+    setSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
+  };
+
+  const handleProjectSpeechInput = async () => {
+    if (!isNativePlatform) {
+      toast.error(t("entryForm.speech.nativeOnly"));
+      return;
+    }
+
+    setIsRecognizingProject(true);
+    const toastId = toast.loading(t("entryForm.speech.listening"));
+    try {
+      const result = await NanoDiagnostics.recognizeSpeech();
+      const spokenText = result.text.trim();
+      if (!spokenText) {
+        toast.error(t("entryForm.speech.empty"));
+        return;
+      }
+      const nextProject = project.trim() ? `${project.trim()} ${spokenText}` : spokenText;
+      applyProjectText(nextProject);
+      toast.success(t("entryForm.speech.inserted"));
+      Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+    } catch (err) {
+      logger.error("[EntryForm] Spracheingabe fehlgeschlagen:", err);
+      toast.error(t("entryForm.speech.failed"));
+    } finally {
+      toast.dismiss(toastId);
+      setIsRecognizingProject(false);
     }
   };
 
@@ -558,9 +600,20 @@ const EntryForm: React.FC<Props> = ({
                     onChange={handleProjectChange}
                     onFocus={() => { if(project) handleProjectChange({target: {value: project}} as React.ChangeEvent<HTMLInputElement>) }}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    className="w-full p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg outline-none dark:text-white focus:border-emerald-500 transition-colors"
+                    className="w-full rounded-lg border border-zinc-300 bg-white p-3 pr-12 outline-none transition-colors focus:border-emerald-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white"
                     placeholder={t("entryForm.projectPlaceholder")}
                   />
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={handleProjectSpeechInput}
+                    disabled={isRecognizingProject}
+                    className="absolute right-2 top-7 flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-300"
+                    aria-label={t("entryForm.speech.projectButton")}
+                    title={t("entryForm.speech.projectButton")}
+                  >
+                    {isRecognizingProject ? <Loader2 size={18} className="animate-spin" /> : <Mic size={18} />}
+                  </button>
 
                   <AnimatePresence>
                     {showSuggestions && (

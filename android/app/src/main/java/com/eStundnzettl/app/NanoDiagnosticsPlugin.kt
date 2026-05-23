@@ -21,6 +21,8 @@ import com.google.mlkit.genai.speechrecognition.SpeechRecognizerOptions
 import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 
 @CapacitorPlugin(name = "NanoDiagnostics")
@@ -45,6 +47,36 @@ class NanoDiagnosticsPlugin : Plugin() {
             checkPrompt(prompt)
 
             call.resolve(result)
+        }
+    }
+
+    @PluginMethod
+    fun downloadSpeechAdvanced(call: PluginCall) {
+        executor.execute {
+            var speechRecognizer: SpeechRecognizer? = null
+            try {
+                speechRecognizer = createSpeechRecognizer()
+                @Suppress("UNCHECKED_CAST")
+                val downloadFlow = speechRecognizer.javaClass
+                    .getMethod("download")
+                    .invoke(speechRecognizer) as Flow<Any>
+
+                runBlocking {
+                    downloadFlow.collect { status ->
+                        if (status.javaClass.simpleName == "DownloadFailed") {
+                            val error = runCatching {
+                                status.javaClass.getMethod("getE").invoke(status) as? Throwable
+                            }.getOrNull()
+                            throw error ?: IllegalStateException(status.toString())
+                        }
+                    }
+                }
+                call.resolve()
+            } catch (e: Exception) {
+                call.reject("Speech Advanced download could not be started", e)
+            } finally {
+                runCatching { speechRecognizer?.close() }
+            }
         }
     }
 

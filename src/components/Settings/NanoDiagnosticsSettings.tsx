@@ -55,6 +55,10 @@ const NanoDiagnosticsSettings: React.FC = () => {
   const [status, setStatus] = useState<NanoDiagnosticsResult | null>(null);
   const [smokeResult, setSmokeResult] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const speechStatus = status?.speechAdvanced.status;
+  const promptStatus = status?.prompt.status;
+  const speechDownloadLabel = speechStatus === "AVAILABLE" ? "Speech bereit" : "Speech laden";
+  const promptDownloadLabel = promptStatus === "AVAILABLE" ? "Prompt bereit" : "Prompt laden";
 
   const loadStatus = async () => {
     if (!Capacitor.isNativePlatform()) {
@@ -84,6 +88,21 @@ const NanoDiagnosticsSettings: React.FC = () => {
     } catch (err) {
       logger.error("[NanoDiagnosticsSettings] Prompt-Download fehlgeschlagen:", err);
       toast.error("Prompt-Download fehlgeschlagen.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const downloadSpeechAdvanced = async () => {
+    setIsBusy(true);
+    setSmokeResult(null);
+    try {
+      await NanoDiagnostics.downloadSpeechAdvanced();
+      toast.success("Speech de-DE bereit.");
+      await loadStatus();
+    } catch (err) {
+      logger.error("[NanoDiagnosticsSettings] Speech-Download fehlgeschlagen:", err);
+      toast.error("Speech-Download fehlgeschlagen.");
     } finally {
       setIsBusy(false);
     }
@@ -131,19 +150,29 @@ const NanoDiagnosticsSettings: React.FC = () => {
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={downloadPrompt}
-            disabled={isBusy || status?.prompt.status !== "DOWNLOADABLE"}
+            onClick={downloadSpeechAdvanced}
+            disabled={isBusy || speechStatus !== "DOWNLOADABLE"}
             className="flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-xs font-bold text-violet-700 transition-colors hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-900 dark:bg-zinc-800 dark:text-violet-300 dark:hover:bg-zinc-700"
           >
             <Download size={15} />
-            Prompt laden
+            {speechDownloadLabel}
+          </button>
+
+          <button
+            type="button"
+            onClick={downloadPrompt}
+            disabled={isBusy || promptStatus !== "DOWNLOADABLE"}
+            className="flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-xs font-bold text-violet-700 transition-colors hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-900 dark:bg-zinc-800 dark:text-violet-300 dark:hover:bg-zinc-700"
+          >
+            <Download size={15} />
+            {promptDownloadLabel}
           </button>
 
           <button
             type="button"
             onClick={runSmokeTest}
-            disabled={isBusy || status?.prompt.status !== "AVAILABLE"}
-            className="flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-xs font-bold text-violet-700 transition-colors hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-900 dark:bg-zinc-800 dark:text-violet-300 dark:hover:bg-zinc-700"
+            disabled={isBusy || promptStatus !== "AVAILABLE"}
+            className="col-span-2 flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-xs font-bold text-violet-700 transition-colors hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-900 dark:bg-zinc-800 dark:text-violet-300 dark:hover:bg-zinc-700"
           >
             <Play size={15} />
             Prompt testen

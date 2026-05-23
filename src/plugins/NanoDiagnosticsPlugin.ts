@@ -28,6 +28,7 @@ export interface NanoPromptSmokeTestResult {
 
 export interface NanoDiagnosticsPlugin {
   getStatus(): Promise<NanoDiagnosticsResult>;
+  downloadSpeechAdvanced(): Promise<void>;
   downloadPrompt(): Promise<void>;
   runPromptSmokeTest(): Promise<NanoPromptSmokeTestResult>;
 }

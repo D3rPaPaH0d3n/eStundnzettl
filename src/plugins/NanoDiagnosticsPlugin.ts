@@ -14,12 +14,7 @@ export interface NanoFeatureDiagnostic {
 }
 
 export interface NanoDiagnosticsResult {
-  androidSdk?: number;
-  device?: string;
-  aicoreInstalled: boolean;
-  aicoreVersion?: string | null;
   speechAdvanced: NanoFeatureDiagnostic;
-  prompt: NanoFeatureDiagnostic;
 }
 
 export interface NanoPromptSmokeTestResult {

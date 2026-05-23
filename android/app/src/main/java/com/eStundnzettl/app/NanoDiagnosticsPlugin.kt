@@ -1,8 +1,6 @@
 package com.estundnzettl.app
 
 import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import com.getcapacitor.JSObject
 import com.getcapacitor.PermissionState
 import com.getcapacitor.Plugin
@@ -47,18 +45,10 @@ class NanoDiagnosticsPlugin : Plugin() {
     fun getStatus(call: PluginCall) {
         executor.execute {
             val result = JSObject()
-            result.put("androidSdk", Build.VERSION.SDK_INT)
-            result.put("device", "${Build.MANUFACTURER} ${Build.MODEL}")
-            result.put("aicoreVersion", getPackageVersion("com.google.android.aicore"))
-            result.put("aicoreInstalled", result.getString("aicoreVersion") != null)
-
             val speech = JSObject()
-            val prompt = JSObject()
             result.put("speechAdvanced", speech)
-            result.put("prompt", prompt)
 
             checkSpeechAdvanced(speech)
-            checkPrompt(prompt)
 
             call.resolve(result)
         }
@@ -280,16 +270,4 @@ class NanoDiagnosticsPlugin : Plugin() {
             else -> "UNKNOWN_$status"
         }
 
-    private fun getPackageVersion(packageName: String): String? =
-        try {
-            val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
-            } else {
-                @Suppress("DEPRECATION")
-                context.packageManager.getPackageInfo(packageName, 0)
-            }
-            info.versionName
-        } catch (_: PackageManager.NameNotFoundException) {
-            null
-        }
 }

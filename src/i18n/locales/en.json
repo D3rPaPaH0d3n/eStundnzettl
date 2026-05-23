@@ -101,10 +101,14 @@
     "projectPlaceholder": "…",
     "knownProjects": "Known projects",
     "speech": {
+      "entryButton": "Fill entry by voice",
+      "entryButtonShort": "Dictate",
       "projectButton": "Voice input",
       "listening": "Listening...",
+      "entryInserted": "Voice entry inserted. Please review it.",
       "inserted": "Voice input inserted.",
       "empty": "No speech recognized.",
+      "entryFailed": "Voice entry could not be parsed.",
       "failed": "Voice input failed.",
       "nativeOnly": "Voice input is only available in the Android app."
     }

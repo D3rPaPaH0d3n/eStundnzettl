@@ -101,10 +101,14 @@
     "projectPlaceholder": "...",
     "knownProjects": "Bekannte Projekte",
     "speech": {
+      "entryButton": "Eintrag per Sprache ausfüllen",
+      "entryButtonShort": "Diktieren",
       "projectButton": "Spracheingabe",
       "listening": "Ich höre zu...",
+      "entryInserted": "Spracheintrag übernommen. Bitte kurz prüfen.",
       "inserted": "Spracheingabe übernommen.",
       "empty": "Keine Sprache erkannt.",
+      "entryFailed": "Spracheintrag konnte nicht ausgewertet werden.",
       "failed": "Spracheingabe fehlgeschlagen.",
       "nativeOnly": "Spracheingabe ist nur in der Android-App verfügbar."
     }

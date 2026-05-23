@@ -1,9 +1,20 @@
 import React from "react";
 import type { SyntheticEvent } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, fireEvent, cleanup } from "@testing-library/react";
+import { render, fireEvent, cleanup, waitFor } from "@testing-library/react";
 
 // ─── Mocks (VOR dem EntryForm-Import) ───────────────────────
+
+const isNativePlatform = vi.hoisted(() => vi.fn(() => false));
+const nanoDiagnosticsMock = vi.hoisted(() => ({
+  recognizeSpeech: vi.fn(),
+  parseEntrySpeech: vi.fn(),
+}));
+
+vi.mock("@capacitor/core", () => ({
+  Capacitor: { isNativePlatform },
+  registerPlugin: vi.fn(() => ({})),
+}));
 
 vi.mock("@capacitor/haptics", () => ({
   Haptics: { impact: vi.fn().mockResolvedValue(undefined) },
@@ -75,6 +86,10 @@ vi.mock("../../plugins/Material3DatePickerPlugin", () => ({
   Material3DatePicker: {
     pickDate: vi.fn(),
   },
+}));
+
+vi.mock("../../plugins/NanoDiagnosticsPlugin", () => ({
+  NanoDiagnostics: nanoDiagnosticsMock,
 }));
 
 // useWorkCodes: minimal-Mock mit einem Code
@@ -182,6 +197,7 @@ const renderForm = (opts: RenderOptions = {}) => {
 describe("EntryForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isNativePlatform.mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -324,5 +340,40 @@ describe("EntryForm", () => {
 
     expect(await findByText("Native Datumsauswahl nicht verfügbar – bitte Datum manuell wählen.")).toBeTruthy();
     expect(container.querySelector('input[type="date"]')).toBeTruthy();
+  });
+
+  it("füllt einen Eintrag aus Spracheingabe per Nano-Vorschlag", async () => {
+    isNativePlatform.mockReturnValue(true);
+    nanoDiagnosticsMock.recognizeSpeech.mockResolvedValueOnce({
+      text: "Heute sechs bis sechzehn dreißig Kogler Wartung halbe Stunde Pause",
+    });
+    nanoDiagnosticsMock.parseEntrySpeech.mockResolvedValueOnce({
+      type: "work",
+      date: "2026-04-07",
+      start: "06:00",
+      end: "16:30",
+      pause: 30,
+      project: "Kogler Wartung",
+      codeId: 1,
+      confidence: "high",
+    });
+
+    const { findByLabelText, setStartTime, setEndTime, setPauseDuration, setProject, setCode } = renderForm();
+    fireEvent.click(await findByLabelText("Eintrag per Sprache ausfüllen"));
+
+    expect(nanoDiagnosticsMock.recognizeSpeech).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(nanoDiagnosticsMock.parseEntrySpeech).toHaveBeenCalledWith({
+        text: "Heute sechs bis sechzehn dreißig Kogler Wartung halbe Stunde Pause",
+        date: "2026-04-07",
+        workCodes: [],
+        existingProjects: [],
+      });
+    });
+    expect(setStartTime).toHaveBeenCalledWith("06:00");
+    expect(setEndTime).toHaveBeenCalledWith("16:30");
+    expect(setPauseDuration).toHaveBeenCalledWith(30);
+    expect(setProject).toHaveBeenCalledWith("Kogler Wartung");
+    expect(setCode).toHaveBeenCalledWith(1);
   });
 });

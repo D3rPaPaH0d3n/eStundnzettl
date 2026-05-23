@@ -31,6 +31,8 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONArray
+import org.json.JSONObject
 
 @CapacitorPlugin(
     name = "NanoDiagnostics",
@@ -135,6 +137,47 @@ class NanoDiagnosticsPlugin : Plugin() {
                 call.resolve(result)
             } catch (e: Exception) {
                 call.reject("Prompt smoke test failed", e)
+            }
+        }
+    }
+
+    @PluginMethod
+    fun parseEntrySpeech(call: PluginCall) {
+        executor.execute {
+            try {
+                val text = call.getString("text")?.trim().orEmpty()
+                val date = call.getString("date")?.trim().orEmpty()
+                if (text.isBlank()) {
+                    call.reject("Speech text is required")
+                    return@execute
+                }
+                if (!Regex("""\d{4}-\d{2}-\d{2}""").matches(date)) {
+                    call.reject("Current date is required")
+                    return@execute
+                }
+
+                val workCodes = call.getArray("workCodes") ?: JSONArray()
+                val existingProjects = call.getArray("existingProjects") ?: JSONArray()
+                val prompt = createPromptClient()
+                val request = GenerateContentRequest.Builder(
+                    TextPart(buildEntryParsePrompt(text, date, workCodes, existingProjects)),
+                ).apply {
+                    temperature = 0.0f
+                    maxOutputTokens = 512
+                }.build()
+
+                val response = prompt.generateContent(request).get(30, TimeUnit.SECONDS)
+                val responseText = response.candidates
+                    .firstOrNull()
+                    ?.text
+                    ?: response.toString()
+                val parsed = JSONObject(extractJsonObject(responseText))
+                val result = JSObject()
+                copyKnownEntryFields(parsed, result)
+                result.put("rawText", text)
+                call.resolve(result)
+            } catch (e: Exception) {
+                call.reject("Entry speech parse failed", e)
             }
         }
     }
@@ -260,6 +303,112 @@ class NanoDiagnosticsPlugin : Plugin() {
 
     private fun createPromptClient(): GenerativeModelFutures =
         GenerativeModelFutures.from(Generation.getClient())
+
+    private fun buildEntryParsePrompt(
+        text: String,
+        date: String,
+        workCodes: JSONArray,
+        existingProjects: JSONArray,
+    ): String {
+        val quotedSpeechText = JSONObject.quote(text)
+        val codeLines = (0 until workCodes.length()).joinToString("\n") { index ->
+            val code = workCodes.optJSONObject(index)
+            "- ${code?.optInt("id")}: ${code?.optString("label")}"
+        }
+        val projectLines = (0 until existingProjects.length()).joinToString("\n") { index ->
+            "- ${existingProjects.optString(index)}"
+        }
+
+        return """
+            Du extrahierst aus einem deutschen Spracheingabe-Text einen eStundnzettl-Eintragsvorschlag.
+            Antworte ausschliesslich als JSON-Objekt ohne Markdown.
+
+            Aktuelles Datum: $date
+
+            Erlaubte Typen:
+            - work: normale Arbeit
+            - drive: Fahrtzeit oder Strecke
+            - vacation: Urlaub
+            - sick: Krankenstand
+            - time_comp: Zeitausgleich
+
+            Erlaubte Taetigkeitscodes:
+            $codeLines
+
+            Bekannte Projekte:
+            $projectLines
+
+            JSON-Schema:
+            {
+              "type": "work|drive|vacation|sick|time_comp",
+              "date": "YYYY-MM-DD",
+              "start": "HH:MM oder null",
+              "end": "HH:MM oder null",
+              "pause": 0,
+              "project": "Projekt/Strecke/Notiz oder null",
+              "codeId": 1,
+              "specialManualMode": false,
+              "confidence": "high|medium|low"
+            }
+
+            Regeln:
+            - Verwende $date, wenn kein anderes Datum genannt wird.
+            - Normalisiere Uhrzeiten auf 24h HH:MM.
+            - "halb fuenf" bedeutet 16:30, wenn es in einem Arbeitstag-Kontext steht.
+            - Pausen immer in Minuten.
+            - Fuer vacation/sick/time_comp ohne Uhrzeiten start/end null und specialManualMode false.
+            - Wenn fuer vacation/sick/time_comp Uhrzeiten genannt werden, specialManualMode true.
+            - Waehle codeId nur aus der erlaubten Liste. Wenn unklar, nimm null.
+            - Bei drive setze pause 0 und codeId 19, wenn vorhanden.
+            - Erfinde keine Zeiten, Projekte oder Codes.
+
+            Spracheingabe als JSON-String:
+            $quotedSpeechText
+        """.trimIndent()
+    }
+
+    private fun extractJsonObject(text: String): String {
+        val start = text.indexOf('{')
+        val end = text.lastIndexOf('}')
+        if (start < 0 || end <= start) {
+            throw IllegalArgumentException("No JSON object in model response")
+        }
+        return text.substring(start, end + 1)
+    }
+
+    private fun copyKnownEntryFields(source: JSONObject, target: JSObject) {
+        val allowedTypes = setOf("work", "drive", "vacation", "sick", "time_comp")
+        val type = source.optString("type")
+        if (type in allowedTypes) target.put("type", type)
+
+        val date = source.optString("date")
+        if (Regex("""\d{4}-\d{2}-\d{2}""").matches(date)) target.put("date", date)
+
+        putNullableString(source, target, "start")
+        putNullableString(source, target, "end")
+        putNullableString(source, target, "project")
+
+        if (source.has("pause") && !source.isNull("pause")) {
+            target.put("pause", source.optInt("pause"))
+        }
+        if (source.has("codeId") && !source.isNull("codeId")) {
+            target.put("codeId", source.optInt("codeId"))
+        }
+        if (source.has("specialManualMode") && !source.isNull("specialManualMode")) {
+            target.put("specialManualMode", source.optBoolean("specialManualMode"))
+        }
+
+        val confidence = source.optString("confidence")
+        if (confidence in setOf("high", "medium", "low")) {
+            target.put("confidence", confidence)
+        }
+    }
+
+    private fun putNullableString(source: JSONObject, target: JSObject, key: String) {
+        if (!source.has(key) || source.isNull(key)) return
+        val value = source.optString(key).trim()
+        if (value.isNotBlank()) target.put(key, value)
+    }
 
     private fun statusName(status: Int): String =
         when (status) {

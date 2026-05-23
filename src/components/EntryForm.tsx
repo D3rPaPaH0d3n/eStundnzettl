@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useEffect, useCallback } from "react";
+import React, { forwardRef, useState, useEffect, useCallback, useRef } from "react";
 import type { SyntheticEvent } from "react";
 import { ChevronLeft, ChevronRight, Save, Info, Calendar as CalIcon, Clock, List, Wand2, History, Hourglass, Plus, ChevronDown, Mic, Loader2 } from "lucide-react";
 import { Card, toLocalDateString } from "../utils";
@@ -19,7 +19,7 @@ import { NanoDiagnostics } from "../plugins/NanoDiagnosticsPlugin";
 import { getNativePickerThemeMode } from "../utils/nativePickerTheme";
 import { logger } from "../utils/logger";
 
-import type { Entry, UserData, WorkCode } from "../types";
+import type { Entry, EntryType, UserData, WorkCode } from "../types";
 import type { Locale } from "../locales/types";
 import type { CalculationConfig } from "../types";
 
@@ -42,6 +42,23 @@ const CustomInput = forwardRef<HTMLButtonElement, CustomInputProps>(({ value, on
   </button>
 ));
 CustomInput.displayName = "CustomInput";
+
+const validEntryTypes = new Set(["work", "drive", "vacation", "sick", "time_comp"]);
+const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+type VoiceEntryType = EntryType | "drive";
+
+const isVoiceEntryType = (value: unknown): value is VoiceEntryType =>
+  typeof value === "string" && validEntryTypes.has(value);
+
+const isTimeValue = (value: unknown): value is string =>
+  typeof value === "string" && timePattern.test(value);
+
+const isDateValue = (value: unknown): value is string =>
+  typeof value === "string" && datePattern.test(value);
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
 
 interface Props {
   onCancel: () => void;
@@ -120,6 +137,8 @@ const EntryForm: React.FC<Props> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showDateFallback, setShowDateFallback] = useState(false);
   const [isRecognizingProject, setIsRecognizingProject] = useState(false);
+  const [isRecognizingEntry, setIsRecognizingEntry] = useState(false);
+  const skipNextAutoTimeRef = useRef(false);
   const isNativePlatform = Capacitor.isNativePlatform();
 
   const date = new Date(`${formDate}T00:00:00`);
@@ -223,6 +242,10 @@ const EntryForm: React.FC<Props> = ({
   useEffect(() => {
     if (isEditing || isLiveEntry) return; 
     if (entryType !== 'work' && entryType !== 'drive') return;
+    if (skipNextAutoTimeRef.current) {
+      skipNextAutoTimeRef.current = false;
+      return;
+    }
     
     const dayEntries = allEntries.filter(e => e.date === formDate && e.type === 'work' && e.end);
     
@@ -312,6 +335,71 @@ const EntryForm: React.FC<Props> = ({
     }
   };
 
+  const handleEntrySpeechInput = async () => {
+    if (!isNativePlatform) {
+      toast.error(t("entryForm.speech.nativeOnly"));
+      return;
+    }
+
+    setIsRecognizingEntry(true);
+    const toastId = toast.loading(t("entryForm.speech.listening"));
+    try {
+      const speech = await NanoDiagnostics.recognizeSpeech();
+      const spokenText = speech.text.trim();
+      if (!spokenText) {
+        toast.error(t("entryForm.speech.empty"));
+        return;
+      }
+
+      const parsed = await NanoDiagnostics.parseEntrySpeech({
+        text: spokenText,
+        date: formDate,
+        workCodes,
+        existingProjects,
+      });
+      const hasParsedTime = isTimeValue(parsed.start) || isTimeValue(parsed.end);
+      if (hasParsedTime) skipNextAutoTimeRef.current = true;
+
+      if (isVoiceEntryType(parsed.type)) {
+        if (parsed.type === "drive") {
+          setEntryType("drive");
+          setCode(WORK_CODE.DRIVE);
+          setPauseDuration(0);
+        } else {
+          setEntryType(parsed.type);
+          if (parsed.type === "work") {
+            const parsedCode = parsed.codeId;
+            const parsedCodeExists = isFiniteNumber(parsedCode)
+              && workCodes.some((workCode) => workCode.id === parsedCode);
+            setCode(parsedCodeExists ? parsedCode : defaultCode);
+          }
+          if (parsed.type === "vacation" || parsed.type === "sick" || parsed.type === "time_comp") {
+            setSpecialManualMode(Boolean(parsed.specialManualMode || hasParsedTime));
+          }
+        }
+      }
+
+      if (isDateValue(parsed.date)) setFormDate(parsed.date);
+      if (isTimeValue(parsed.start)) setStartTime(parsed.start);
+      if (isTimeValue(parsed.end)) setEndTime(parsed.end);
+      if (parsed.type !== "drive" && isFiniteNumber(parsed.pause)) {
+        setPauseDuration(Math.max(0, Math.round(parsed.pause)));
+      }
+      if (typeof parsed.project === "string") {
+        applyProjectText(parsed.project.trim());
+      }
+
+      toast.success(t("entryForm.speech.entryInserted"));
+      Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+    } catch (err) {
+      logger.error("[EntryForm] Spracheintrag fehlgeschlagen:", err);
+      toast.error(t("entryForm.speech.entryFailed"));
+    } finally {
+      toast.dismiss(toastId);
+      setIsRecognizingEntry(false);
+    }
+  };
+
   const selectSuggestion = (suggestion: string) => {
     setProject(suggestion);
     setShowSuggestions(false);
@@ -364,20 +452,34 @@ const EntryForm: React.FC<Props> = ({
           <div className="flex justify-between items-center mb-1">
              <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{t("entryForm.entryTypeLabel")}</div>
              
-             {entryType === 'work' && code !== WORK_CODE.ARRIVAL && lastWorkEntry && (
+             <div className="flex items-center gap-2">
                <motion.button
                  type="button"
                  whileTap={{ scale: 0.9 }}
-                 onClick={() => {
-                   handleCopyLastEntry();
-                   Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
-                 }}
-                 className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-800/50"
+                 onClick={handleEntrySpeechInput}
+                 disabled={isRecognizingEntry}
+                 className="flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs font-bold text-zinc-600 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-emerald-800 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-300"
+                 aria-label={t("entryForm.speech.entryButton")}
                >
-                 <Wand2 size={12} />
-                 <span>{t("entryForm.asLast")}</span>
+                 {isRecognizingEntry ? <Loader2 size={12} className="animate-spin" /> : <Mic size={12} />}
+                 <span>{t("entryForm.speech.entryButtonShort")}</span>
                </motion.button>
-             )}
+
+               {entryType === 'work' && code !== WORK_CODE.ARRIVAL && lastWorkEntry && (
+                 <motion.button
+                   type="button"
+                   whileTap={{ scale: 0.9 }}
+                   onClick={() => {
+                     handleCopyLastEntry();
+                     Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+                   }}
+                   className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-800/50"
+                 >
+                   <Wand2 size={12} />
+                   <span>{t("entryForm.asLast")}</span>
+                 </motion.button>
+               )}
+             </div>
           </div>
 
           <div className="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-5 gap-1">

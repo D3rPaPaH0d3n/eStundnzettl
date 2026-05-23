@@ -84,8 +84,8 @@ class NanoDiagnosticsPlugin : Plugin() {
                 val request = GenerateContentRequest.Builder(
                     TextPart("Return exactly this text and nothing else: ESTUNDNZETTL_NANO_OK"),
                 ).apply {
-                    setTemperature(0.0f)
-                    setMaxOutputTokens(16)
+                    temperature = 0.0f
+                    maxOutputTokens = 16
                 }.build()
                 val future = prompt.generateContent(request)
                 val response = future.get(30, TimeUnit.SECONDS)
@@ -131,8 +131,8 @@ class NanoDiagnosticsPlugin : Plugin() {
 
     private fun createSpeechRecognizer(): SpeechRecognizer {
         val options = SpeechRecognizerOptions.builder().apply {
-            setLocale(Locale.GERMANY)
-            setPreferredMode(SpeechRecognizerOptions.Mode.MODE_ADVANCED)
+            locale = Locale.GERMANY
+            preferredMode = SpeechRecognizerOptions.Mode.MODE_ADVANCED
         }.build()
 
         return SpeechRecognition.getClient(options)

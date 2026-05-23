@@ -1,6 +1,5 @@
 package com.estundnzettl.app
 
-import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import com.getcapacitor.JSObject
@@ -12,9 +11,17 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.mlkit.genai.common.DownloadCallback
 import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.common.GenAiException
+import com.google.mlkit.genai.prompt.GenerateContentRequest
+import com.google.mlkit.genai.prompt.Generation
+import com.google.mlkit.genai.prompt.TextPart
+import com.google.mlkit.genai.prompt.java.GenerativeModelFutures
+import com.google.mlkit.genai.speechrecognition.SpeechRecognition
+import com.google.mlkit.genai.speechrecognition.SpeechRecognizer
+import com.google.mlkit.genai.speechrecognition.SpeechRecognizerOptions
 import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.runBlocking
 
 @CapacitorPlugin(name = "NanoDiagnostics")
 class NanoDiagnosticsPlugin : Plugin() {
@@ -74,35 +81,17 @@ class NanoDiagnosticsPlugin : Plugin() {
         executor.execute {
             try {
                 val prompt = createPromptClient()
-                val textPart = Class
-                    .forName("com.google.mlkit.genai.prompt.TextPart")
-                    .getConstructor(String::class.java)
-                    .newInstance("Return exactly this text and nothing else: ESTUNDNZETTL_NANO_OK")
-                val contentPartClass = Class.forName("com.google.mlkit.genai.prompt.ContentPart")
-                val builderClass = Class.forName("com.google.mlkit.genai.prompt.GenerateContentRequest\$Builder")
-                val requestBuilder = runCatching {
-                    builderClass.getConstructor(contentPartClass).newInstance(textPart)
-                }.getOrElse {
-                    val partArray = java.lang.reflect.Array.newInstance(contentPartClass, 1)
-                    java.lang.reflect.Array.set(partArray, 0, textPart)
-                    builderClass.getConstructor(partArray.javaClass).newInstance(partArray)
-                }
-                val request = requestBuilder.let { builder ->
-                    runCatching {
-                        builder.javaClass.getMethod("setTemperature", Float::class.javaPrimitiveType).invoke(builder, 0.0f)
-                    }
-                    runCatching {
-                        builder.javaClass.getMethod("setMaxOutputTokens", Int::class.javaPrimitiveType).invoke(builder, 16)
-                    }
-                    builder.javaClass.getMethod("build").invoke(builder)
-                }
-                @Suppress("UNCHECKED_CAST")
-                val future = prompt.javaClass.getMethod("generateContent", request.javaClass).invoke(prompt, request) as ListenableFuture<Any>
+                val request = GenerateContentRequest.Builder(
+                    TextPart("Return exactly this text and nothing else: ESTUNDNZETTL_NANO_OK"),
+                ).apply {
+                    setTemperature(0.0f)
+                    setMaxOutputTokens(16)
+                }.build()
+                val future = prompt.generateContent(request)
                 val response = future.get(30, TimeUnit.SECONDS)
-                val responseText = response.javaClass.methods
-                    .firstOrNull { it.name == "getText" && it.parameterCount == 0 }
-                    ?.invoke(response)
-                    ?.toString()
+                val responseText = response.candidates
+                    .firstOrNull()
+                    ?.text
                     ?: response.toString()
 
                 val result = JSObject()
@@ -115,15 +104,16 @@ class NanoDiagnosticsPlugin : Plugin() {
     }
 
     private fun checkSpeechAdvanced(out: JSObject) {
+        var recognizer: SpeechRecognizer? = null
         try {
-            val recognizer = createSpeechRecognizer()
-            @Suppress("UNCHECKED_CAST")
-            val future = recognizer.javaClass.getMethod("checkStatus").invoke(recognizer) as ListenableFuture<Int>
-            out.put("status", statusName(future.get(15, TimeUnit.SECONDS)))
-            runCatching { recognizer.javaClass.getMethod("close").invoke(recognizer) }
+            recognizer = createSpeechRecognizer()
+            val status = runBlocking { recognizer.checkStatus() }
+            out.put("status", statusName(status))
         } catch (e: Exception) {
             out.put("status", "ERROR")
             out.put("error", e.toString())
+        } finally {
+            runCatching { recognizer?.close() }
         }
     }
 
@@ -139,40 +129,17 @@ class NanoDiagnosticsPlugin : Plugin() {
         }
     }
 
-    private fun createSpeechRecognizer(): Any {
-        val optionsBuilder = Class
-            .forName("com.google.mlkit.genai.speechrecognition.SpeechRecognizerOptions")
-            .getMethod("builder", Context::class.java)
-            .invoke(null, context)!!
+    private fun createSpeechRecognizer(): SpeechRecognizer {
+        val options = SpeechRecognizerOptions.builder().apply {
+            setLocale(Locale.GERMANY)
+            setPreferredMode(SpeechRecognizerOptions.Mode.MODE_ADVANCED)
+        }.build()
 
-        runCatching {
-            optionsBuilder.javaClass.getMethod("setLocale", Locale::class.java).invoke(optionsBuilder, Locale.GERMANY)
-        }
-
-        runCatching {
-            val modeClass = Class.forName("com.google.mlkit.genai.speechrecognition.SpeechRecognizerOptions\$Mode")
-            val advanced = modeClass.enumConstants.first { (it as Enum<*>).name == "MODE_ADVANCED" }
-            optionsBuilder.javaClass.getMethod("setPreferredMode", modeClass).invoke(optionsBuilder, advanced)
-        }
-
-        val options = optionsBuilder.javaClass.getMethod("build").invoke(optionsBuilder)!!
-        return Class
-            .forName("com.google.mlkit.genai.speechrecognition.SpeechRecognition")
-            .getMethod("getClient", options.javaClass)
-            .invoke(null, options)!!
+        return SpeechRecognition.getClient(options)
     }
 
-    private fun createPromptClient(): Any {
-        val generation = Class
-            .forName("com.google.mlkit.genai.prompt.Generation")
-            .getField("INSTANCE")
-            .get(null)
-        val model = generation.javaClass.getMethod("getClient").invoke(generation)
-        return Class
-            .forName("com.google.mlkit.genai.prompt.GenerativeModelFutures")
-            .getMethod("from", Class.forName("com.google.mlkit.genai.prompt.GenerativeModel"))
-            .invoke(null, model)!!
-    }
+    private fun createPromptClient(): GenerativeModelFutures =
+        GenerativeModelFutures.from(Generation.getClient())
 
     private fun statusName(status: Int): String =
         when (status) {

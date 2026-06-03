@@ -39,6 +39,7 @@ public class NextcloudLoginFlowPlugin extends Plugin {
 
     private static final int CONNECT_TIMEOUT_MS = 15000;
     private static final int READ_TIMEOUT_MS = 15000;
+    private static final int UPLOAD_READ_TIMEOUT_MS = 30000;
 
     @PluginMethod
     public void startLoginFlow(PluginCall call) {
@@ -116,7 +117,7 @@ public class NextcloudLoginFlowPlugin extends Plugin {
 
                 OkHttpClient client = new OkHttpClient.Builder()
                     .connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                    .readTimeout(30000, TimeUnit.MILLISECONDS) // longer for uploads
+                    .readTimeout(UPLOAD_READ_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                     .followRedirects(true)
                     .followSslRedirects(true)
                     .build();
@@ -130,6 +131,7 @@ public class NextcloudLoginFlowPlugin extends Plugin {
                         credentials.getBytes(StandardCharsets.UTF_8),
                         android.util.Base64.NO_WRAP
                     );
+                    credentials = null;
                     requestBuilder.header("Authorization", "Basic " + encoded);
                 }
 

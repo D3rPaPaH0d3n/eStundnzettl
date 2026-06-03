@@ -8,6 +8,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import androidx.security.crypto.EncryptedSharedPreferences;
+import androidx.security.crypto.MasterKey;
+
 import androidx.activity.result.ActivityResult;
 
 import com.getcapacitor.JSObject;
@@ -32,6 +35,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -44,7 +48,7 @@ public class GoogleDriveBackupPlugin extends Plugin {
     private static final String TAG = "GoogleDriveBackup";
     private static final String DEFAULT_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
     private static final String EMAIL_SCOPE = "email";
-    private static final String PREFS_NAME = "google_drive_backup";
+    private static final String PREFS_NAME = "google_drive_backup_v2";
     private static final String KEY_CONNECTED = "connected";
     private static final String KEY_SCOPE = "scope";
     private static final String KEY_ACCOUNT_EMAIL = "account_email";
@@ -58,17 +62,35 @@ public class GoogleDriveBackupPlugin extends Plugin {
 
     private AuthorizationClient authorizationClient;
     private SharedPreferences authPrefs;
-    private String lastAccessToken;
-    private String lastGrantedScope = DEFAULT_SCOPE;
-    private String lastAccountEmail;
+    private final AtomicReference<String> lastAccessToken = new AtomicReference<>(null);
+    private volatile String lastGrantedScope = DEFAULT_SCOPE;
+    private final AtomicReference<String> lastAccountEmail = new AtomicReference<>(null);
 
     @Override
     public void load() {
         super.load();
         authorizationClient = Identity.getAuthorizationClient(getContext());
-        authPrefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        authPrefs = createEncryptedPrefs();
         lastGrantedScope = authPrefs.getString(KEY_SCOPE, DEFAULT_SCOPE);
-        lastAccountEmail = authPrefs.getString(KEY_ACCOUNT_EMAIL, null);
+        lastAccountEmail.set(authPrefs.getString(KEY_ACCOUNT_EMAIL, null));
+    }
+
+    private SharedPreferences createEncryptedPrefs() {
+        try {
+            MasterKey masterKey = new MasterKey.Builder(getContext())
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build();
+            return EncryptedSharedPreferences.create(
+                getContext(),
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+        } catch (Exception e) {
+            Log.e(TAG, "EncryptedSharedPreferences init failed, falling back to plaintext", e);
+            return getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        }
     }
 
     @PluginMethod
@@ -166,15 +188,15 @@ public class GoogleDriveBackupPlugin extends Plugin {
             return;
         }
 
-        lastAccessToken = accessToken;
+        lastAccessToken.set(accessToken);
         String localEmail = extractEmail(result);
         if (localEmail != null && !localEmail.isEmpty()) {
-            lastAccountEmail = localEmail;
+            lastAccountEmail.set(localEmail);
         }
 
         fetchUserEmailAsync(accessToken, fetchedEmail -> {
             if (fetchedEmail != null && !fetchedEmail.isEmpty()) {
-                lastAccountEmail = fetchedEmail;
+                lastAccountEmail.set(fetchedEmail);
             }
             persistAuthMetadata(true);
 
@@ -184,8 +206,9 @@ public class GoogleDriveBackupPlugin extends Plugin {
             response.put("connected", true);
             response.put("hasToken", true);
             response.put("source", "authorization-client");
-            if (lastAccountEmail != null && !lastAccountEmail.isEmpty()) {
-                response.put("accountEmail", lastAccountEmail);
+            String email = lastAccountEmail.get();
+            if (email != null && !email.isEmpty()) {
+                response.put("accountEmail", email);
             }
             call.resolve(response);
         });
@@ -193,12 +216,10 @@ public class GoogleDriveBackupPlugin extends Plugin {
 
     @PluginMethod
     public void disconnect(PluginCall call) {
-        final String tokenToClear = lastAccessToken;
+        final String tokenToClear = lastAccessToken.getAndSet(null);
         final String scopeToRevoke = lastGrantedScope != null ? lastGrantedScope : DEFAULT_SCOPE;
-        final String accountEmail = lastAccountEmail;
+        final String accountEmail = lastAccountEmail.getAndSet(null);
 
-        lastAccessToken = null;
-        lastAccountEmail = null;
         clearPersistedAuthMetadata();
 
         if (tokenToClear != null && !tokenToClear.isEmpty()) {
@@ -281,15 +302,15 @@ public class GoogleDriveBackupPlugin extends Plugin {
             return;
         }
 
-        lastAccessToken = accessToken;
+        lastAccessToken.set(accessToken);
         String localEmail = extractEmail(result);
         if (localEmail != null && !localEmail.isEmpty()) {
-            lastAccountEmail = localEmail;
+            lastAccountEmail.set(localEmail);
         }
 
         fetchUserEmailAsync(accessToken, fetchedEmail -> {
             if (fetchedEmail != null && !fetchedEmail.isEmpty()) {
-                lastAccountEmail = fetchedEmail;
+                lastAccountEmail.set(fetchedEmail);
             }
             persistAuthMetadata(true);
 
@@ -312,8 +333,9 @@ public class GoogleDriveBackupPlugin extends Plugin {
         result.put("scope", lastGrantedScope != null ? lastGrantedScope : DEFAULT_SCOPE);
         result.put("available", true);
         result.put("implemented", true);
-        if (lastAccountEmail != null && !lastAccountEmail.isEmpty()) {
-            result.put("accountEmail", lastAccountEmail);
+        String email = lastAccountEmail.get();
+        if (email != null && !email.isEmpty()) {
+            result.put("accountEmail", email);
         }
         return result;
     }
@@ -372,7 +394,7 @@ public class GoogleDriveBackupPlugin extends Plugin {
         try {
             GoogleSignInAccount signInAccount = result != null ? result.toGoogleSignInAccount() : null;
             if (signInAccount == null) {
-                return lastAccountEmail;
+                return lastAccountEmail.get();
             }
             String email = signInAccount.getEmail();
             if (email != null && !email.isEmpty()) {
@@ -385,7 +407,7 @@ public class GoogleDriveBackupPlugin extends Plugin {
         } catch (Exception e) {
             Log.w(TAG, "extractEmail failed", e);
         }
-        return lastAccountEmail;
+        return lastAccountEmail.get();
     }
 
     private void persistAuthMetadata(boolean connected) {
@@ -396,8 +418,9 @@ public class GoogleDriveBackupPlugin extends Plugin {
             .putBoolean(KEY_CONNECTED, connected)
             .putString(KEY_SCOPE, lastGrantedScope != null ? lastGrantedScope : DEFAULT_SCOPE);
 
-        if (lastAccountEmail != null && !lastAccountEmail.isEmpty()) {
-            editor.putString(KEY_ACCOUNT_EMAIL, lastAccountEmail);
+        String email = lastAccountEmail.get();
+        if (email != null && !email.isEmpty()) {
+            editor.putString(KEY_ACCOUNT_EMAIL, email);
         } else {
             editor.remove(KEY_ACCOUNT_EMAIL);
         }

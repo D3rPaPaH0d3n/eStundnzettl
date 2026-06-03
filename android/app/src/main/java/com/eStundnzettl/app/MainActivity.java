@@ -45,7 +45,9 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         
-        Log.d("MainActivity", "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
+        if (BuildConfig.DEBUG) {
+            Log.d("MainActivity", "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
+        }
         
         // Handle all Google-related request codes
         PluginHandle pluginHandle = getBridge().getPlugin("SocialLogin");

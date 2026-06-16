@@ -8,10 +8,10 @@ const rl = readline.createInterface({
 console.log("\n⚠️  ACHTUNG: RELEASE VORBEREITUNG");
 console.log("=================================");
 console.log("Dieser Befehl wird:");
-console.log("  1. Die App-Version erhöhen");
-console.log("  2. Einen Git Commit & Tag erstellen und PUSHEN");
-console.log("  3. Die App neu bauen (Build)");
-console.log("  4. Android Sync & Studio öffnen");
+console.log("  1. Die App-Version erhöhen und lokal Commit + Tag erstellen");
+console.log("  2. Lint, Typecheck, Tests, Web-Build und Android Sync ausführen");
+console.log("  3. Nur bei erfolgreichen Checks Commit + Tag PUSHEN");
+console.log("  4. Android Studio öffnen");
 console.log("=================================");
 
 rl.question('Möchtest du wirklich fortfahren? (y/n): ', (answer) => {

@@ -3,9 +3,10 @@
 # ============================================================================
 #
 # Läuft auf Push und Pull Request für alle Branches.
-# Prüft: Lint, Tests, Build — alles auf Node 22 (wie die anderen Workflows).
+# Prüft: Lint, Typecheck, Tests, Web-Build und Android-Debug-Build — alles
+# auf Node 22 (wie die anderen Workflows).
 #
-# Greift NICHT auf Secrets zu und baut keine APK; ist daher safe für PRs
+# Greift NICHT auf Secrets zu und baut keine signierte Release-APK; ist daher safe für PRs
 # aus Forks.
 #
 # ============================================================================
@@ -53,3 +54,18 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x android/gradlew
+
+      - name: Build Android debug APK
+        run: cd android && ./gradlew assembleDebug --no-daemon

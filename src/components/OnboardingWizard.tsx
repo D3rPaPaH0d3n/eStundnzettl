@@ -1,28 +1,18 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect } from "react";
 import { ShieldCheck, ChevronRight, Check, Upload, Cloud, Loader, CloudLightning, FolderInput, ArrowLeft, ServerCog, CheckCircle2, FileText, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import WelcomeStep from "./Onboarding/steps/WelcomeStep";
 import ProfileStep from "./Onboarding/steps/ProfileStep";
 import LocaleStep from "./Onboarding/steps/LocaleStep";
 import WorkScheduleStep from "./Onboarding/steps/WorkScheduleStep";
-import WorkCodesStep, { type WorkCodePresetId } from "./Onboarding/steps/WorkCodesStep";
+import WorkCodesStep from "./Onboarding/steps/WorkCodesStep";
 import CalculationStep from "./Onboarding/steps/CalculationStep";
 import SummaryStep from "./Onboarding/steps/SummaryStep";
-import toast from "react-hot-toast";
 import { Trans, useTranslation } from "react-i18next";
-import { initGoogleAuth, signInGoogle, findLatestBackup, downloadFileContent } from "../utils/googleDrive";
+import { initGoogleAuth } from "../utils/googleDrive";
 import { useFeatureAvailability } from "../hooks/useFeatureAvailability";
-import { downloadBackup as ncDownloadBackup, initiateLoginFlow, pollLoginResult, getNextcloudErrorMessage, resolveUserId } from "../utils/nextcloudClient";
-import { Browser } from "@capacitor/browser";
-import { analyzeBackupData, applyBackup, readJsonFile, readBackupFromFolder, selectBackupFolder } from "../utils/storageBackup";
 import ImportConflictModal from "./ImportConflictModal";
-import { WORK_MODELS, WORK_CODE_PRESETS, STORAGE_KEYS } from "../hooks/constants";
-import { DEMO_DATA } from "../utils/demoData";
 import { activateOnEnterOrSpace } from "../utils/keyboardActivation";
-import { setSetting } from "../db/repositories/settingsRepo";
-import { storeNextcloudAppPassword } from "../utils/nextcloudSecret";
-import { bulkReplaceWorkCodes } from "../db/repositories/workCodesRepo";
-import { bulkInsertEntries } from "../db/repositories/entriesRepo";
 import { logger } from "../utils/logger";
 import type { LocaleId } from "../locales/types";
 import { getLocale } from "../locales";
@@ -30,8 +20,12 @@ import {
   getDefaultCalculationConfig,
   getBlankCalculationConfig,
 } from "../utils/calculationConfig";
+import { useOnboardingNextcloudAuth } from "../hooks/onboarding/useOnboardingNextcloudAuth";
+import { useOnboardingFlow } from "../hooks/onboarding/useOnboardingFlow";
+import { useOnboardingRestore } from "../hooks/onboarding/useOnboardingRestore";
+import type { WizardFormData } from "../hooks/onboarding/useOnboardingFlow";
 
-import type { Entry, UserData, WorkCode, Theme, WorkModel, GoogleSignInResult, BackupAnalysisData, CalculationConfig } from "../types";
+import type { Entry, UserData, WorkCode, Theme, CalculationConfig } from "../types";
 
 const log = logger.scope("Onboarding");
 
@@ -48,32 +42,7 @@ interface Props {
   setCalculationConfig?: (next: CalculationConfig) => void;
 }
 
-export interface WizardFormData {
-  name: string;
-  company: string;
-  role: string;
-  photo: string | null;
-  workDays: number[];
-  autoBackup: boolean;
-  localBackupEnabled: boolean;
-  simpleMode?: boolean;
-  localeId: LocaleId | null;
-  workCodePresetId: WorkCodePresetId;
-  /** Aktuelle Rechenkonfiguration des Wizards. */
-  calcConfig: CalculationConfig;
-  /**
-   * Nur zur Ablaufsteuerung: true wenn der User in Step 2 "Eigener Plan"
-   * gewählt hat → Step 4 (CalculationStep) wird angezeigt.
-   */
-  customCalc: boolean;
-}
-
-interface NcCredentials {
-  server: string;
-  userId: string;
-  loginName: string;
-  appPassword: string;
-}
+export type { WizardFormData };
 
 const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntries, importWorkCodes, setCloudSyncEnabled, setLocalBackupEnabled, setTheme, setLocale, setCalculationConfig }) => {
   const { t } = useTranslation();
@@ -82,591 +51,35 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
     !featureAvailability.loading &&
     !featureAvailability.probeFailed &&
     featureAvailability.googleServicesAvailable === false;
-  const [step, setStep] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [isRestoreFlow, setIsRestoreFlow] = useState(false);
 
-  const [formData, setFormData] = useState<WizardFormData>({
-    name: "",
-    company: "",
-    role: "",
-    photo: null,
-    workDays: WORK_MODELS[0].days,
-    autoBackup: false,
-    localBackupEnabled: false,
-    localeId: null,
-    workCodePresetId: "allgemein",
-    calcConfig: getDefaultCalculationConfig(getLocale(undefined), WORK_MODELS[0].days),
-    customCalc: false,
+  const ncAuth = useOnboardingNextcloudAuth(t);
+
+  const flow = useOnboardingFlow(
+    t,
+    { onComplete, setUserData, importEntries, importWorkCodes, setCloudSyncEnabled, setLocalBackupEnabled, setTheme, setLocale, setCalculationConfig },
+    ncAuth.ncCredentials,
+  );
+
+  const restore = useOnboardingRestore({
+    t,
+    formData: flow.formData,
+    setFormData: flow.setFormData,
+    setStep: flow.setStep,
+    setRestoreData: flow.setRestoreData,
+    setLoading: flow.setLoading,
   });
-  
-  const [restoreData, setRestoreData] = useState<BackupAnalysisData | null>(null);
-  const [showConflictModal, setShowConflictModal] = useState(false);
-  
-  const [showNcRestore, setShowNcRestore] = useState(false);
-  const [ncRestoreUrl, setNcRestoreUrl] = useState("");
-  const [ncRestoreConnecting, setNcRestoreConnecting] = useState(false);
-  const ncRestorePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Nextcloud Setup State (for new setup flow)
-  const [ncSetupActive, setNcSetupActive] = useState(false);
-  const [ncSetupUrl, setNcSetupUrl] = useState("");
-  const [ncSetupConnecting, setNcSetupConnecting] = useState(false);
-  const [ncSetupConnected, setNcSetupConnected] = useState(false);
-  const [ncCredentials, setNcCredentials] = useState<NcCredentials | null>(null);
-  const ncSetupPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
+  const { fileInputRef, photoInputRef } = restore;
 
   useEffect(() => {
     initGoogleAuth().catch(() => log.debug("Google Auth Init failed silently/already initialized"));
-    return () => {
-      if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
-      if (ncSetupPollRef.current) clearInterval(ncSetupPollRef.current);
-    };
   }, []);
-
-  // --- NAVIGATION ---
-  // Step-Reihenfolge für neue User:
-  //   0 Welcome -> 1 Profile -> 2 Locale -> 3 WorkSchedule
-  //   -> (nur wenn customCalc) 4 Calculation -> 5 WorkCodes
-  //   -> 6 Backup -> 7 Summary
-  //
-  // Step 4 (Calculation) wird nur angezeigt, wenn der User in Step 2
-  // "Eigener Plan" gewählt hat. Für AT/DE/Neutral-User wird dieser
-  // Step übersprungen — ihre Rechenregeln kommen direkt aus dem Locale.
-  //
-  // Restore-Flow überspringt alles außer Welcome(0) -> Backup(6) -> Summary(7).
-  // Für Restore-User wird die Locale nach dem Finish via LocaleMigrationModal
-  // abgefragt (siehe App.tsx), weil sie aus dem Backup restored werden und
-  // Locale dort (noch) nicht enthalten ist.
-  const handleStartSimple = () => {
-    setIsRestoreFlow(false);
-    setFormData((p) => ({
-      ...p,
-      simpleMode: true,
-      workDays: [0, 0, 0, 0, 0, 0, 0],
-      localeId: "neutral",
-      workCodePresetId: "allgemein",
-      calcConfig: getBlankCalculationConfig([0, 0, 0, 0, 0, 0, 0]),
-      customCalc: false,
-    }));
-    setStep(1);
-  };
-
-  const handleStartNew = () => {
-    setIsRestoreFlow(false);
-    setFormData((p) => ({
-      ...p,
-      simpleMode: false,
-      customCalc: false,
-    }));
-    setStep(1);
-  };
-
-  const handleStartRestore = () => {
-    setIsRestoreFlow(true);
-    setStep(6);
-  };
-
-  const handleDemoMode = async () => {
-    const demoEntries = DEMO_DATA.generateEntries();
-
-    // Demo-CalculationConfig: AT-Defaults + 3 Resttage vom Vorjahr
-    const demoLocale = getLocale("at");
-    const demoCalcConfig = getDefaultCalculationConfig(demoLocale, DEMO_DATA.user.workDays);
-    demoCalcConfig.vacationCarryoverDays = 3;
-
-    try {
-      await setSetting("user", DEMO_DATA.user);
-      await setSetting("locale", "at");
-      await setSetting("calculationConfig", demoCalcConfig);
-      await bulkReplaceWorkCodes(DEMO_DATA.workCodes);
-      await bulkInsertEntries(demoEntries);
-      localStorage.setItem(STORAGE_KEYS.LOCALE, "at");
-      localStorage.setItem("estundnzettl_calculation_config", JSON.stringify(demoCalcConfig));
-    } catch (err) {
-      log.error("Demo SQLite write failed:", err);
-    }
-
-    setUserData?.(DEMO_DATA.user);
-    setLocale?.("at");
-    setCalculationConfig?.(demoCalcConfig);
-    importWorkCodes?.(DEMO_DATA.workCodes);
-    importEntries?.(demoEntries);
-    toast.success(t("onboarding.toast.demoLoaded"));
-    onComplete();
-  };
-
-  const nextStep = () => {
-    if (step === 1 && !formData.name.trim()) {
-      toast.error(t("onboarding.toast.nameRequired"));
-      return;
-    }
-    if (step === 1 && formData.simpleMode) {
-      setStep(7);
-      return;
-    }
-    if (step === 2 && !formData.localeId) {
-      toast.error(t("onboarding.toast.localeRequired"));
-      return;
-    }
-    // Locale-Wahl hat Auswirkung auf Default-WorkDays: beim Verlassen von
-    // Step 2 (Locale) die Default-Stunden auf die Locale-Defaults setzen,
-    // außer der User hat bereits ein Modell gewählt, das vom alten Default
-    // abweicht. Hier halten wir es einfach: wenn die workDays noch auf dem
-    // ursprünglichen WORK_MODELS[0]-Default stehen (38,5h klassisch), dann
-    // vorbelegen.
-    if (step === 2 && formData.localeId) {
-      const locale = getLocale(formData.localeId);
-      const currentIsInitial =
-        JSON.stringify(formData.workDays) === JSON.stringify(WORK_MODELS[0].days);
-      if (currentIsInitial) {
-        setFormData((p) => ({ ...p, workDays: [...locale.defaultWorkDays] }));
-      }
-    }
-    // Beim Verlassen von Step 3 (WorkSchedule): `weeklyTargetMinutes` in
-    // der Config neu berechnen, damit der CalculationStep (falls angezeigt)
-    // den korrekten Wert anzeigt.
-    if (step === 3) {
-      setFormData((p) => ({
-        ...p,
-        calcConfig: {
-          ...p.calcConfig,
-          weeklyTargetMinutes: p.workDays.reduce((acc, n) => acc + (Number.isFinite(n) ? n : 0), 0),
-        },
-      }));
-    }
-    // Step 3 → Step 5 überspringt CalculationStep wenn kein Eigener Plan
-    if (step === 3 && !formData.customCalc) {
-      setStep(5);
-      return;
-    }
-    setStep(prev => prev + 1);
-  };
-
-  const prevStep = () => {
-    if (step === 6 && isRestoreFlow) {
-      // Restore-Flow: von Backup direkt zurück zum Welcome
-      setStep(0);
-      return;
-    }
-    // Step 5 (WorkCodes) → Step 3 (WorkSchedule) überspringt CalculationStep
-    // wenn kein Eigener Plan
-    if (step === 5 && !formData.customCalc) {
-      setStep(3);
-      return;
-    }
-    setStep(prev => prev - 1);
-  };
-
-  // --- HANDLER ---
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, photo: reader.result as string | null }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleModelSelect = (model: WorkModel) => {
-    const days = model.days || [0, 0, 0, 0, 0, 0, 0];
-    setFormData({ ...formData, workDays: days });
-  };
-
-  const handleCustomDayChange = (dayIndex: number, value: string) => {
-    const newDays = [...formData.workDays];
-    newDays[dayIndex] = parseInt(value) || 0;
-    setFormData({ ...formData, workDays: newDays });
-  };
-
-  const minToHours = (m: number) => (m / 60).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 2 }) + ' h';
-  const totalWeeklyMinutes = formData.workDays.reduce((a, b) => a + b, 0);
-
-  // --- BACKUP SETUP HANDLER ---
-  const handleAutoBackupToggle = async () => {
-    const newValue = !formData.autoBackup;
-    
-    if (newValue) {
-      try {
-        await signInGoogle();
-        toast.success(t("onboarding.toast.gdriveLinked"));
-        // Erst setzen wenn Login erfolgreich war
-        setFormData(p => ({...p, autoBackup: true}));
-      } catch (error) {
-        log.error(error);
-        toast(t("onboarding.toast.gdriveLoginFailed"), { icon: "⚠️" });
-        // Nicht aktivieren bei Fehler
-        setFormData(p => ({...p, autoBackup: false}));
-      }
-    } else {
-        setFormData(p => ({...p, autoBackup: false}));
-    }
-  };
-
-  const handleLocalBackupToggle = async () => {
-    if (!formData.localBackupEnabled) {
-      try {
-        const success = await selectBackupFolder();
-        if (success) {
-          setFormData(p => ({...p, localBackupEnabled: true}));
-          toast.success(t("onboarding.toast.folderLinked"));
-        }
-      } catch (error) {
-        log.error(error);
-        toast.error(t("onboarding.toast.folderCancelled"));
-      }
-    } else {
-      setFormData(p => ({...p, localBackupEnabled: false}));
-    }
-  };
-
-  const handleNextcloudSetupToggle = () => {
-    if (ncSetupConnected) {
-      // Disconnect
-      setNcSetupConnected(false);
-      setNcCredentials(null);
-      setNcSetupActive(false);
-      setNcSetupUrl("");
-      toast(t("onboarding.toast.ncDisconnected"));
-      return;
-    }
-    setNcSetupActive(!ncSetupActive);
-  };
-
-  const handleNextcloudSetup = async () => {
-    if (!ncSetupUrl) {
-      toast.error(t("onboarding.toast.ncEnterUrl"));
-      return;
-    }
-    try {
-      setNcSetupConnecting(true);
-      const startResult = await initiateLoginFlow(ncSetupUrl);
-      if (!startResult.ok) {
-        throw new Error(getNextcloudErrorMessage(startResult));
-      }
-
-      const loginUrl = startResult.loginUrl as string;
-      const token = startResult.token as string;
-      const pollEndpoint = startResult.pollEndpoint as string;
-      await Browser.open({ url: loginUrl });
-
-      let attempts = 0;
-      ncSetupPollRef.current = setInterval(async () => {
-        attempts++;
-        if (attempts > 100) {
-          if (ncSetupPollRef.current) clearInterval(ncSetupPollRef.current);
-          ncSetupPollRef.current = null;
-          setNcSetupConnecting(false);
-          toast.error(t("onboarding.toast.ncTimeout"));
-          return;
-        }
-        try {
-          const result = await pollLoginResult(pollEndpoint, token);
-          if (!result.ok) {
-            throw new Error(getNextcloudErrorMessage(result));
-          }
-
-          if (result.status === 'pending') return;
-
-          if (result.status === 'complete') {
-            if (ncSetupPollRef.current) clearInterval(ncSetupPollRef.current);
-            ncSetupPollRef.current = null;
-            try { await Browser.close(); } catch { /* browser already closed */ }
-
-            const userId = await resolveUserId(result.server as string, result.loginName as string, result.appPassword as string);
-            setNcCredentials({
-              server: (result.server as string).replace(/\/+$/, ''),
-              userId,
-              loginName: result.loginName as string,
-              appPassword: result.appPassword as string,
-            });
-            setNcSetupConnected(true);
-            setNcSetupConnecting(false);
-            toast.success(t("onboarding.toast.ncConnected"));
-          }
-        } catch (error) {
-          if (ncSetupPollRef.current) clearInterval(ncSetupPollRef.current);
-          ncSetupPollRef.current = null;
-          setNcSetupConnecting(false);
-          toast.error((error as Error)?.message || t("onboarding.toast.ncLoginFailed"));
-        }
-      }, 3000);
-    } catch (error) {
-      setNcSetupConnecting(false);
-      toast.error((error as Error)?.message || t("onboarding.toast.ncServerUnreachable"));
-    }
-  };
-
-  const handleSimpleModeToggle = () => {
-    setFormData(p => ({ ...p, simpleMode: !p.simpleMode }));
-  };
-
-  // --- FINISH (BUGFIX: Persistenz korrigiert) ---
-  const finishSetup = async () => {
-    const userDataToSave = {
-      name: formData.name,
-      company: formData.company,
-      role: formData.role,
-      position: formData.role,
-      photo: formData.photo,
-      workDays: formData.workDays,
-      simpleMode: formData.simpleMode || false,
-      settings: {
-        autoBackup: formData.autoBackup,
-        theme: 'system'
-      }
-    };
-    
-    // FIX: Zuerst direkt in SQLite schreiben, DANN State updaten
-    try {
-      await setSetting("user", userDataToSave);
-      await setSetting("cloud_sync_enabled", formData.autoBackup);
-      await setSetting("local_backup_enabled", formData.localBackupEnabled);
-    } catch {
-      // Fortfahren, State wird unten aktualisiert
-    }
-    
-    // Nextcloud Credentials speichern
-    if (ncCredentials) {
-      try {
-        const secretResult = await storeNextcloudAppPassword(ncCredentials.appPassword);
-        if (secretResult.status !== "ready") {
-          throw new Error(secretResult.message || "Secure Nextcloud password storage unavailable");
-        }
-        await setSetting("nextcloud_url", ncCredentials.server);
-        await setSetting("nextcloud_user", ncCredentials.userId);
-        await setSetting("nextcloud_enabled", true);
-      } catch (err) {
-        log.error("Nextcloud settings save failed:", err);
-      }
-    }
-
-    // CalculationConfig persistieren — unabhängig davon ob customCalc
-    // oder Locale-Default-Config. Bestehende User im Restore-Flow
-    // und reine Aufzeichnungsnutzer überspringen das.
-    if (!isRestoreFlow && !formData.simpleMode) {
-      try {
-        await setSetting("calculationConfig", formData.calcConfig);
-      } catch (err) {
-        log.error("CalculationConfig save failed:", err);
-      }
-      setCalculationConfig?.(formData.calcConfig);
-    }
-
-    // Locale persistieren (nur wenn neuer User — Restore bekommt
-    // LocaleMigrationModal nach dem Abschluss angezeigt)
-    if (!isRestoreFlow && formData.localeId) {
-      try {
-        await setSetting("locale", formData.localeId);
-      } catch (err) {
-        log.error("Locale setting save failed:", err);
-      }
-      setLocale?.(formData.localeId);
-    }
-
-    // Work-Code-Preset laden (auch im einfachen Modus: Basis-Tätigkeiten bleiben optional nutzbar)
-    if (!isRestoreFlow) {
-      const preset = WORK_CODE_PRESETS[formData.workCodePresetId];
-      if (preset) {
-        try {
-          await bulkReplaceWorkCodes(preset.codes);
-          importWorkCodes?.(preset.codes);
-        } catch (err) {
-          log.error("Work code preset load failed:", err);
-        }
-      }
-    }
-
-    // Jetzt State updaten
-    setUserData?.(userDataToSave);
-    setCloudSyncEnabled?.(formData.autoBackup);
-    setLocalBackupEnabled?.(formData.localBackupEnabled);
-    setTheme?.('system');
-
-    if (restoreData) {
-      await applyBackup(restoreData);
-      toast.success(t("onboarding.toast.restoreSuccess"));
-    } else {
-      toast.success(t("onboarding.toast.welcome"));
-    }
-
-    onComplete();
-  };
-
-  // --- RESTORE LOGIC ---
-  const handleGoogleDriveRestore = async () => {
-    try {
-      setLoading(true);
-      const user = await signInGoogle();
-      if (!user) throw new Error(t("onboarding.toast.signinFailed"));
-
-      const token = (user as GoogleSignInResult).authentication?.accessToken;
-      if (!token) throw new Error(t("onboarding.toast.tokenMissing"));
-
-      // Nutzt jetzt automatisch die neue Logik aus googleDrive.js (inkl. Legacy Fallback)
-      const file = await findLatestBackup();
-      if (!file) throw new Error(t("onboarding.toast.backupNotFound"));
-
-      const content = await downloadFileContent(token as string, file.id as string);
-      if (!content) throw new Error(t("onboarding.toast.backupEmpty"));
-
-      const result = await analyzeBackupData(content);
-      if (result.isValid) {
-        setRestoreData(result.data);
-        toast.success(t("onboarding.toast.backupLoaded"));
-        setStep(7);
-      } else {
-        toast.error(t("onboarding.toast.backupInvalid"));
-      }
-    } catch (err) {
-      log.error(err);
-      toast.error((err as Error).message || t("onboarding.toast.loadError"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFolderRestore = async () => {
-    try {
-      setLoading(true);
-      const backupContent = await readBackupFromFolder();
-      if (backupContent) {
-          const result = await analyzeBackupData(backupContent);
-          if (result.isValid) {
-              setRestoreData(result.data);
-              toast.success(t("onboarding.toast.backupLoaded"));
-              setStep(7);
-          } else {
-              toast.error(t("onboarding.toast.backupInvalidShort"));
-          }
-      } else {
-          toast.error(t("onboarding.toast.backupNotFound"));
-      }
-    } catch {
-        toast.error(t("onboarding.toast.folderAccessError"));
-    } finally {
-        setLoading(false);
-    }
-  };
-
-  const handleLocalFileRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setLoading(true);
-      const content = await readJsonFile(file);
-      const result = await analyzeBackupData(content);
-      if (result.isValid) {
-        if (result.data.integrity === "mismatch") {
-          toast(t("onboarding.toast.integrityMismatch"), { duration: 6000 });
-        }
-        setRestoreData(result.data);
-        toast.success(t("onboarding.toast.backupLoaded"));
-        setStep(7);
-      } else {
-        toast.error(t("onboarding.toast.backupInvalidFormat"));
-      }
-    } catch {
-      toast.error(t("onboarding.toast.fileReadError"));
-    } finally {
-      setLoading(false);
-      e.target.value = "";
-    }
-  };
-
-  const handleNextcloudRestore = async () => {
-    if (!ncRestoreUrl) {
-      toast.error(t("onboarding.toast.ncEnterUrl"));
-      return;
-    }
-    try {
-      setNcRestoreConnecting(true);
-      const startResult = await initiateLoginFlow(ncRestoreUrl);
-      if (!startResult.ok) {
-        throw new Error(getNextcloudErrorMessage(startResult));
-      }
-
-      const loginUrl = startResult.loginUrl as string;
-      const token = startResult.token as string;
-      const pollEndpoint = startResult.pollEndpoint as string;
-      await Browser.open({ url: loginUrl });
-
-      let attempts = 0;
-      ncRestorePollRef.current = setInterval(async () => {
-        attempts++;
-        if (attempts > 100) {
-          if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
-          setNcRestoreConnecting(false);
-          toast.error(t("onboarding.toast.ncTimeout"));
-          return;
-        }
-        try {
-          const result = await pollLoginResult(pollEndpoint, token);
-          if (!result.ok) {
-            throw new Error(getNextcloudErrorMessage(result));
-          }
-
-          if (result.status === 'pending') {
-            return;
-          }
-
-          if (result.status === 'complete') {
-            if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
-            try { await Browser.close(); } catch { /* browser already closed */ }
-            setNcRestoreConnecting(false);
-            setLoading(true);
-            try {
-              const userId = await resolveUserId(result.server as string, result.loginName as string, result.appPassword as string);
-              const content = await ncDownloadBackup(result.server as string, userId, result.appPassword as string);
-              if (!content) {
-                toast.error(t("onboarding.toast.ncRestoreNotFound"));
-                setLoading(false);
-                return;
-              }
-              const analysis = await analyzeBackupData(content);
-              if (analysis.isValid) {
-                setRestoreData(analysis.data);
-                toast.success(t("onboarding.toast.ncRestoreLoaded"));
-                setShowNcRestore(false);
-                setStep(7);
-              } else {
-                toast.error(t("onboarding.toast.ncRestoreInvalid"));
-              }
-            } catch (err) {
-              toast.error((err as Error).message || t("onboarding.toast.loadError"));
-            } finally {
-              setLoading(false);
-            }
-          }
-        } catch (error) {
-          if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
-          setNcRestoreConnecting(false);
-          toast.error((error as Error)?.message || t("onboarding.toast.ncLoginFailed"));
-        }
-      }, 3000);
-    } catch (error) {
-      setNcRestoreConnecting(false);
-      toast.error((error as Error)?.message || t("onboarding.toast.ncServerUnreachableRestore"));
-    }
-  };
-
-  const isSelected = (modelDays: number[] | undefined) => {
-     const current = JSON.stringify(formData.workDays);
-     const target = modelDays ? JSON.stringify(modelDays) : JSON.stringify([0,0,0,0,0,0,0]);
-     return current === target;
-  };
 
   return (
     <div className="fixed inset-0 bg-zinc-50 dark:bg-zinc-950 z-50 flex flex-col items-center justify-center p-4">
-      
+
       <div className="w-full max-w-md bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        
-        {step > 0 && (
+
+        {flow.step > 0 && (
           <div className="h-1.5 bg-zinc-100 dark:bg-zinc-700 w-full">
             <motion.div
               className="h-full bg-emerald-500"
@@ -674,7 +87,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
               animate={{
                 // Gesamte Schrittzahl hängt davon ab, ob der User einen
                 // Eigenen Plan konfiguriert (→ +1 Step für CalculationStep).
-                width: step === 7 ? "100%" : (step === 1 && formData.simpleMode) ? "50%" : `${(step / (formData.customCalc ? 7 : 6)) * 100}%`,
+                width: flow.step === 7 ? "100%" : (flow.step === 1 && flow.formData.simpleMode) ? "50%" : `${(flow.step / (flow.formData.customCalc ? 7 : 6)) * 100}%`,
               }}
             />
           </div>
@@ -682,34 +95,34 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
         <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
           <AnimatePresence mode="wait">
-            
+
             {/* SCHRITT 0 */}
-            {step === 0 && (
+            {flow.step === 0 && (
               <WelcomeStep
-                onStartSimple={handleStartSimple}
-                onStartNew={handleStartNew}
-                onStartRestore={handleStartRestore}
-                onDemoMode={handleDemoMode}
+                onStartSimple={flow.handleStartSimple}
+                onStartNew={flow.handleStartNew}
+                onStartRestore={flow.handleStartRestore}
+                onDemoMode={flow.handleDemoMode}
               />
             )}
 
             {/* SCHRITT 1: PROFIL */}
-            {step === 1 && (
+            {flow.step === 1 && (
               <ProfileStep
-                formData={formData}
-                setFormData={setFormData}
+                formData={flow.formData}
+                setFormData={flow.setFormData}
                 photoInputRef={photoInputRef}
-                onPhotoUpload={handlePhotoUpload}
+                onPhotoUpload={flow.handlePhotoUpload}
               />
             )}
 
             {/* SCHRITT 2: LOCALE / STUNDENBERECHNUNG */}
-            {step === 2 && (
+            {flow.step === 2 && (
               <LocaleStep
-                selectedLocaleId={formData.localeId}
-                customPlanSelected={formData.customCalc}
+                selectedLocaleId={flow.formData.localeId}
+                customPlanSelected={flow.formData.customCalc}
                 onSelect={(id) =>
-                  setFormData((p) => ({
+                  flow.setFormData((p) => ({
                     ...p,
                     localeId: id,
                     customCalc: false,
@@ -717,7 +130,7 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                   }))
                 }
                 onSelectCustomPlan={() =>
-                  setFormData((p) => ({
+                  flow.setFormData((p) => ({
                     ...p,
                     // Unter der Haube Neutral-Locale als Basis, damit
                     // Feiertage/Halbtage/MA-Split nicht aus AT/DE kommen.
@@ -730,38 +143,38 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
             )}
 
             {/* SCHRITT 3: ARBEITSZEIT */}
-            {step === 3 && (
+            {flow.step === 3 && (
               <WorkScheduleStep
-                formData={formData}
-                onModelSelect={handleModelSelect}
-                onCustomDayChange={handleCustomDayChange}
-                isSelected={isSelected}
-                totalWeeklyMinutes={totalWeeklyMinutes}
-                minToHours={minToHours}
-                onSimpleModeToggle={handleSimpleModeToggle}
+                formData={flow.formData}
+                onModelSelect={flow.handleModelSelect}
+                onCustomDayChange={flow.handleCustomDayChange}
+                isSelected={flow.isSelected}
+                totalWeeklyMinutes={flow.totalWeeklyMinutes}
+                minToHours={flow.minToHours}
+                onSimpleModeToggle={flow.handleSimpleModeToggle}
               />
             )}
 
             {/* SCHRITT 4: RECHENLOGIK-BAUKASTEN (nur bei "Eigener Plan") */}
-            {step === 4 && formData.customCalc && (
+            {flow.step === 4 && flow.formData.customCalc && (
               <CalculationStep
-                config={formData.calcConfig}
-                onChange={(next) => setFormData((p) => ({ ...p, calcConfig: next }))}
-                workDays={formData.workDays}
+                config={flow.formData.calcConfig}
+                onChange={(next) => flow.setFormData((p) => ({ ...p, calcConfig: next }))}
+                workDays={flow.formData.workDays}
               />
             )}
 
             {/* SCHRITT 5: TÄTIGKEITEN (Work Codes) */}
-            {step === 5 && (
+            {flow.step === 5 && (
               <WorkCodesStep
-                selectedPresetId={formData.workCodePresetId}
-                onSelect={(id) => setFormData((p) => ({ ...p, workCodePresetId: id }))}
+                selectedPresetId={flow.formData.workCodePresetId}
+                onSelect={(id) => flow.setFormData((p) => ({ ...p, workCodePresetId: id }))}
               />
             )}
 
             {/* SCHRITT 6: BACKUP / DATEN */}
-            {step === 6 && (
-               <motion.div 
+            {flow.step === 6 && (
+               <motion.div
                key="step3"
                initial={{ opacity: 0, x: 20 }}
                animate={{ opacity: 1, x: 0 }}
@@ -773,14 +186,14 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                    <ShieldCheck size={32} />
                  </div>
                  <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">
-                    {isRestoreFlow ? t("onboarding.backup.titleRestore") : t("onboarding.backup.titleSetup")}
+                    {flow.isRestoreFlow ? t("onboarding.backup.titleRestore") : t("onboarding.backup.titleSetup")}
                  </h2>
                  <p className="text-zinc-500 dark:text-zinc-400">
-                    {isRestoreFlow ? t("onboarding.backup.subtitleRestore") : t("onboarding.backup.subtitleSetup")}
+                    {flow.isRestoreFlow ? t("onboarding.backup.subtitleRestore") : t("onboarding.backup.subtitleSetup")}
                  </p>
                </div>
 
-               {!isRestoreFlow && (
+               {!flow.isRestoreFlow && (
                  <div className="space-y-2">
                    <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40">
                      <Info size={14} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
@@ -798,27 +211,27 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                )}
 
                <div className="space-y-4">
-                 
+
                  {/* FALL A: EINRICHTUNG */}
-                 {!isRestoreFlow && (
+                 {!flow.isRestoreFlow && (
                    <>
                      {/* 1. CLOUD BACKUP — versteckt wenn Google Play Services fehlen */}
                      {!gdriveDisabled && (
                      <div
                         role="button"
                         tabIndex={0}
-                        aria-pressed={formData.autoBackup}
-                        onClick={handleAutoBackupToggle}
+                        aria-pressed={flow.formData.autoBackup}
+                        onClick={restore.handleAutoBackupToggle}
                         /* c8 ignore next -- keyboard glue delegates to tested helper */
-                        onKeyDown={(event) => activateOnEnterOrSpace(event, handleAutoBackupToggle)}
+                        onKeyDown={(event) => activateOnEnterOrSpace(event, restore.handleAutoBackupToggle)}
                         className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
-                          formData.autoBackup
+                          flow.formData.autoBackup
                               ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm"
                               : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800"
                         }`}
                       >
                           <div className="flex items-center gap-3">
-                             <div className={`p-2 rounded-lg ${formData.autoBackup ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400'}`}>
+                             <div className={`p-2 rounded-lg ${flow.formData.autoBackup ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400'}`}>
                                   <CloudLightning size={20}/>
                              </div>
                              <div className="text-left">
@@ -827,29 +240,29 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                              </div>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            formData.autoBackup ? "border-blue-500 bg-blue-500 text-white" : "border-zinc-300 dark:border-zinc-500"
+                            flow.formData.autoBackup ? "border-blue-500 bg-blue-500 text-white" : "border-zinc-300 dark:border-zinc-500"
                           }`}>
-                            {formData.autoBackup && <Check size={14} strokeWidth={3} />}
+                            {flow.formData.autoBackup && <Check size={14} strokeWidth={3} />}
                           </div>
                       </div>
                       )}
 
                       {/* 2. LOKALES BACKUP */}
-                      <div 
+                      <div
                         role="button"
                         tabIndex={0}
-                        aria-pressed={formData.localBackupEnabled}
-                        onClick={handleLocalBackupToggle}
+                        aria-pressed={flow.formData.localBackupEnabled}
+                        onClick={restore.handleLocalBackupToggle}
                         /* c8 ignore next -- keyboard glue delegates to tested helper */
-                        onKeyDown={(event) => activateOnEnterOrSpace(event, handleLocalBackupToggle)}
+                        onKeyDown={(event) => activateOnEnterOrSpace(event, restore.handleLocalBackupToggle)}
                         className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
-                          formData.localBackupEnabled 
-                              ? "border-green-500 bg-green-50 dark:bg-green-900/20 shadow-sm" 
+                          flow.formData.localBackupEnabled
+                              ? "border-green-500 bg-green-50 dark:bg-green-900/20 shadow-sm"
                               : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800"
                         }`}
                       >
                           <div className="flex items-center gap-3">
-                             <div className={`p-2 rounded-lg ${formData.localBackupEnabled ? 'bg-green-100 dark:bg-green-900/50 text-green-600' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400'}`}>
+                             <div className={`p-2 rounded-lg ${flow.formData.localBackupEnabled ? 'bg-green-100 dark:bg-green-900/50 text-green-600' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400'}`}>
                                   <FolderInput size={20}/>
                              </div>
                              <div className="text-left">
@@ -858,61 +271,61 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                              </div>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            formData.localBackupEnabled ? "border-green-500 bg-green-500 text-white" : "border-zinc-300 dark:border-zinc-500"
+                            flow.formData.localBackupEnabled ? "border-green-500 bg-green-500 text-white" : "border-zinc-300 dark:border-zinc-500"
                           }`}>
-                            {formData.localBackupEnabled && <Check size={14} strokeWidth={3} />}
+                            {flow.formData.localBackupEnabled && <Check size={14} strokeWidth={3} />}
                           </div>
                       </div>
 
                       {/* 3. NEXTCLOUD BACKUP */}
-                      <div 
+                      <div
                         role="button"
-                        tabIndex={ncSetupConnecting ? -1 : 0}
-                        aria-pressed={ncSetupConnected}
-                        aria-disabled={ncSetupConnecting}
-                        onClick={!ncSetupConnecting ? handleNextcloudSetupToggle : undefined}
+                        tabIndex={ncAuth.ncSetupConnecting ? -1 : 0}
+                        aria-pressed={ncAuth.ncSetupConnected}
+                        aria-disabled={ncAuth.ncSetupConnecting}
+                        onClick={!ncAuth.ncSetupConnecting ? ncAuth.handleNextcloudSetupToggle : undefined}
                         /* c8 ignore next 3 -- keyboard glue delegates to tested helper */
                         onKeyDown={(event) => {
-                          if (!ncSetupConnecting) activateOnEnterOrSpace(event, handleNextcloudSetupToggle);
+                          if (!ncAuth.ncSetupConnecting) activateOnEnterOrSpace(event, ncAuth.handleNextcloudSetupToggle);
                         }}
                         className={`w-full p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
-                          ncSetupConnected 
-                              ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-sm" 
+                          ncAuth.ncSetupConnected
+                              ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-sm"
                               : "border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800"
                         }`}
                       >
                           <div className="flex items-center gap-3">
-                             <div className={`p-2 rounded-lg ${ncSetupConnected ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-600' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400'}`}>
+                             <div className={`p-2 rounded-lg ${ncAuth.ncSetupConnected ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-600' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400'}`}>
                                   <ServerCog size={20}/>
                              </div>
                              <div className="text-left">
                                 <div className="font-bold text-zinc-800 dark:text-white">{t("onboarding.backup.nextcloud.title")}</div>
                                 <div className="text-xs text-zinc-500">
-                                  {ncSetupConnected
+                                  {ncAuth.ncSetupConnected
                                     ? <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                                        <CheckCircle2 size={12} /> {t("onboarding.backup.nextcloud.connectedAs", { user: ncCredentials?.loginName || ncCredentials?.userId })}
+                                        <CheckCircle2 size={12} /> {t("onboarding.backup.nextcloud.connectedAs", { user: ncAuth.ncCredentials?.loginName || ncAuth.ncCredentials?.userId })}
                                       </span>
                                     : t("onboarding.backup.nextcloud.subtitle")}
                                 </div>
                              </div>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            ncSetupConnected ? "border-orange-500 bg-orange-500 text-white" : "border-zinc-300 dark:border-zinc-500"
+                            ncAuth.ncSetupConnected ? "border-orange-500 bg-orange-500 text-white" : "border-zinc-300 dark:border-zinc-500"
                           }`}>
-                            {ncSetupConnected && <Check size={14} strokeWidth={3} />}
+                            {ncAuth.ncSetupConnected && <Check size={14} strokeWidth={3} />}
                           </div>
                       </div>
 
-                      {!formData.autoBackup && !formData.localBackupEnabled && !ncSetupConnected && (
+                      {!flow.formData.autoBackup && !flow.formData.localBackupEnabled && !ncAuth.ncSetupConnected && (
                         <p className="text-center text-xs text-zinc-400 dark:text-zinc-500 italic pt-1">
                           {t("onboarding.backup.skipHint")}
                         </p>
                       )}
 
                       {/* Nextcloud Setup Expanded */}
-                      {ncSetupActive && !ncSetupConnected && (
+                      {ncAuth.ncSetupActive && !ncAuth.ncSetupConnected && (
                         <div className="p-3 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10 space-y-2">
-                          {ncSetupConnecting ? (
+                          {ncAuth.ncSetupConnecting ? (
                             <div className="flex flex-col items-center gap-2 py-3">
                               <Loader size={20} className="animate-spin text-orange-500" />
                               <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
@@ -921,11 +334,8 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                               <button type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (ncSetupPollRef.current) {
-                                    clearInterval(ncSetupPollRef.current);
-                                    ncSetupPollRef.current = null;
-                                  }
-                                  setNcSetupConnecting(false);
+                                  ncAuth.clearNcSetupPoll();
+                                  ncAuth.setNcSetupConnecting(false);
                                 }}
                                 className="mt-1 px-3 py-1 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700"
                               >
@@ -936,16 +346,16 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                             <>
                               <input
                                 type="url"
-                                value={ncSetupUrl}
+                                value={ncAuth.ncSetupUrl}
                                 onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => setNcSetupUrl(e.target.value)}
+                                onChange={(e) => ncAuth.setNcSetupUrl(e.target.value)}
                                 placeholder={t("onboarding.backup.nextcloud.urlPlaceholder")}
                                 className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
                               />
                               <button type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleNextcloudSetup();
+                                  ncAuth.handleNextcloudSetup();
                                 }}
                                 className="w-full py-2 text-sm font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-1.5"
                               >
@@ -960,16 +370,16 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                  )}
 
                  {/* FALL B: WIEDERHERSTELLUNG */}
-                 {isRestoreFlow && (
+                 {flow.isRestoreFlow && (
                     <div className="grid grid-cols-1 gap-2">
                         {!gdriveDisabled && (
                         <button type="button"
-                          onClick={handleGoogleDriveRestore}
-                          disabled={loading}
+                          onClick={restore.handleGoogleDriveRestore}
+                          disabled={flow.loading}
                           className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors group"
                         >
                             <div className="p-2 bg-white dark:bg-zinc-700 rounded-lg shadow-sm group-hover:scale-110 transition-transform">
-                              {loading ? <Loader size={18} className="animate-spin text-zinc-400"/> : <Cloud size={18} className="text-blue-500" />}
+                              {flow.loading ? <Loader size={18} className="animate-spin text-zinc-400"/> : <Cloud size={18} className="text-blue-500" />}
                             </div>
                             <div className="text-left flex-1">
                               <div className="font-bold text-sm text-zinc-800 dark:text-white">{t("onboarding.backup.restoreFromGdrive")}</div>
@@ -978,8 +388,8 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                         )}
 
                         <button type="button"
-                          onClick={() => setShowNcRestore(!showNcRestore)}
-                          disabled={loading}
+                          onClick={() => restore.setShowNcRestore(!restore.showNcRestore)}
+                          disabled={flow.loading}
                           className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors group"
                         >
                             <div className="p-2 bg-white dark:bg-zinc-700 rounded-lg shadow-sm group-hover:scale-110 transition-transform">
@@ -990,9 +400,9 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                             </div>
                         </button>
 
-                        {showNcRestore && (
+                        {restore.showNcRestore && (
                           <div className="p-3 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10 space-y-2">
-                            {ncRestoreConnecting ? (
+                            {restore.ncRestoreConnecting ? (
                               <div className="flex flex-col items-center gap-2 py-3">
                                 <Loader size={20} className="animate-spin text-orange-500" />
                                 <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
@@ -1000,8 +410,8 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                                 </span>
                                 <button type="button"
                                   onClick={() => {
-                                    if (ncRestorePollRef.current) clearInterval(ncRestorePollRef.current);
-                                    setNcRestoreConnecting(false);
+                                    if (restore.ncRestorePollRef.current) clearInterval(restore.ncRestorePollRef.current);
+                                    restore.setNcRestoreConnecting(false);
                                   }}
                                   className="mt-1 px-3 py-1 text-xs font-bold rounded-lg border border-zinc-300 bg-white text-zinc-700"
                                 >
@@ -1012,18 +422,18 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                               <>
                                 <input
                                   type="url"
-                                  value={ncRestoreUrl}
-                                  onChange={(e) => setNcRestoreUrl(e.target.value)}
+                                  value={restore.ncRestoreUrl}
+                                  onChange={(e) => restore.setNcRestoreUrl(e.target.value)}
                                   placeholder={t("onboarding.backup.nextcloud.urlPlaceholder")}
                                   className="w-full p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-sm text-zinc-800 dark:text-white outline-none"
                                 />
                                 <button type="button"
-                                  onClick={handleNextcloudRestore}
-                                  disabled={loading}
+                                  onClick={restore.handleNextcloudRestore}
+                                  disabled={flow.loading}
                                   className="w-full py-2 text-sm font-bold rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-1.5"
                                 >
-                                  {loading ? <Loader size={14} className="animate-spin" /> : null}
-                                  {loading ? t("onboarding.backup.ncLoading") : t("onboarding.backup.nextcloud.connectButton")}
+                                  {flow.loading ? <Loader size={14} className="animate-spin" /> : null}
+                                  {flow.loading ? t("onboarding.backup.ncLoading") : t("onboarding.backup.nextcloud.connectButton")}
                                 </button>
                               </>
                             )}
@@ -1032,8 +442,8 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
 
                         <div className="grid grid-cols-2 gap-2">
                             <button type="button"
-                            onClick={handleFolderRestore}
-                            disabled={loading}
+                            onClick={restore.handleFolderRestore}
+                            disabled={flow.loading}
                             className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
                             >
                                 <FolderInput size={20} className="text-yellow-500" />
@@ -1041,10 +451,10 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
                             </button>
 
                             <div className="relative">
-                                <input type="file" ref={fileInputRef} onChange={handleLocalFileRestore} className="hidden" accept=".json" />
+                                <input type="file" ref={fileInputRef} onChange={restore.handleLocalFileRestore} className="hidden" accept=".json" />
                                 <button type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                disabled={loading}
+                                disabled={flow.loading}
                                 className="w-full h-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
                                 >
                                     <Upload size={20} className="text-purple-500" />
@@ -1060,11 +470,11 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
             )}
 
             {/* SCHRITT 7: FERTIG */}
-            {step === 7 && (
+            {flow.step === 7 && (
               <SummaryStep
-                hasRestoreData={!!restoreData}
-                onFinish={finishSetup}
-                onBack={formData.simpleMode && !isRestoreFlow ? () => setStep(1) : undefined}
+                hasRestoreData={!!flow.restoreData}
+                onFinish={flow.finishSetup}
+                onBack={flow.formData.simpleMode && !flow.isRestoreFlow ? () => flow.setStep(1) : undefined}
               />
             )}
 
@@ -1072,35 +482,35 @@ const OnboardingWizard: React.FC<Props> = ({ onComplete, setUserData, importEntr
         </div>
 
         {/* Footer Navigation (Steps 1..6, nicht auf Welcome & Summary) */}
-        {step > 0 && step < 7 && (
+        {flow.step > 0 && flow.step < 7 && (
           <div className="p-4 border-t border-zinc-100 dark:border-zinc-700 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800/50 backdrop-blur-sm">
 
             <button type="button"
-              onClick={prevStep}
+              onClick={flow.prevStep}
               className="px-4 py-2 font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors flex items-center gap-1"
             >
               <ArrowLeft size={18} /> {t("onboarding.nav.back")}
             </button>
 
-            {!isRestoreFlow && (
+            {!flow.isRestoreFlow && (
               <button type="button"
-                onClick={nextStep}
+                onClick={flow.nextStep}
                 className="px-6 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl flex items-center gap-2 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-lg shadow-zinc-900/10"
               >
-                {step === 6 ? t("onboarding.nav.finish") : t("onboarding.nav.next")} <ChevronRight size={18} />
+                {flow.step === 6 ? t("onboarding.nav.finish") : t("onboarding.nav.next")} <ChevronRight size={18} />
               </button>
             )}
           </div>
         )}
 
       </div>
-      
+
       <ImportConflictModal
-        analysisData={showConflictModal ? restoreData : null}
-        onCancel={() => setShowConflictModal(false)}
+        analysisData={flow.showConflictModal ? flow.restoreData : null}
+        onCancel={() => flow.setShowConflictModal(false)}
         onConfirm={() => {
-            setShowConflictModal(false);
-            setStep(7);
+            flow.setShowConflictModal(false);
+            flow.setStep(7);
         }}
       />
 

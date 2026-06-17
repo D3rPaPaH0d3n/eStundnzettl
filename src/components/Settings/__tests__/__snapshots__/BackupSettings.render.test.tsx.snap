@@ -1,0 +1,687 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`BackupSettings (Snapshot/Charakterisierung) > Snapshot: Default (expertMode=false, Nextcloud-Block verborgen) 1`] = `
+<div
+  class="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden overflow-visible"
+>
+  <button
+    aria-expanded="true"
+    class="w-full flex items-center justify-between gap-3 p-4 text-left select-none cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700/30 transition-colors rounded-xl"
+    type="button"
+  >
+    <div
+      class="flex items-center gap-3 min-w-0"
+    >
+      <div
+        class="shrink-0"
+      >
+        <div
+          class="p-2 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-upload"
+            fill="none"
+            height="20"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 3v12"
+            />
+            <path
+              d="m17 8-5-5-5 5"
+            />
+            <path
+              d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+            />
+          </svg>
+        </div>
+      </div>
+      <div
+        class="min-w-0"
+      >
+        <h3
+          class="font-bold text-zinc-800 dark:text-white truncate"
+        >
+          Backup & Export
+        </h3>
+        <p
+          class="text-xs text-zinc-500 dark:text-zinc-400 truncate"
+        >
+          Sichere deine Daten auf Google Drive, Nextcloud oder lokal
+        </p>
+      </div>
+    </div>
+    <div
+      class="flex items-center gap-2 shrink-0"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-chevron-down text-zinc-400 transition-transform rotate-0"
+        fill="none"
+        height="18"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="18"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="m6 9 6 6 6-6"
+        />
+      </svg>
+    </div>
+  </button>
+  <div
+    class="px-4 pb-4 pt-0"
+  >
+    <div
+      class="space-y-3"
+    >
+      <div
+        class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700"
+      >
+        <div
+          class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400"
+        >
+          Status
+        </div>
+        <div
+          class="mt-1 text-sm text-zinc-700 dark:text-zinc-200"
+        >
+          Aktive Ziele: Keine
+        </div>
+        <div
+          class="text-xs text-zinc-500 dark:text-zinc-400"
+        >
+          Letztes Backup: Noch nie gesichert
+        </div>
+      </div>
+      <div
+        class="flex items-center justify-between p-3 rounded-xl bg-zinc-100 dark:bg-zinc-700"
+      >
+        <div
+          class="flex items-center gap-3"
+        >
+          <div
+            class="p-2 rounded-full bg-zinc-200 text-zinc-400"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-cloud-off"
+              fill="none"
+              height="20"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.94 5.274A7 7 0 0 1 15.71 10h1.79a4.5 4.5 0 0 1 4.222 6.057"
+              />
+              <path
+                d="M18.796 18.81A4.5 4.5 0 0 1 17.5 19H9A7 7 0 0 1 5.79 5.78"
+              />
+              <path
+                d="m2 2 20 20"
+              />
+            </svg>
+          </div>
+          <div
+            class="flex flex-col"
+          >
+            <div
+              class="flex items-center gap-2"
+            >
+              <span
+                class="block font-bold text-sm text-zinc-800 dark:text-white"
+              >
+                Google Drive
+              </span>
+            </div>
+            <span
+              class="block text-xs text-zinc-500 dark:text-zinc-400"
+            >
+              Nicht verbunden
+            </span>
+          </div>
+        </div>
+        <button
+          class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] border-zinc-300 bg-white text-zinc-700"
+          type="button"
+        >
+          Verbinden
+        </button>
+      </div>
+      <div
+        class="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl"
+      >
+        <div
+          class="flex items-center gap-3"
+        >
+          <div
+            class="p-2 rounded-full bg-zinc-200 text-zinc-400"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-hard-drive"
+              fill="none"
+              height="20"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10 16h.01"
+              />
+              <path
+                d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+              />
+              <path
+                d="M21.946 12.013H2.054"
+              />
+              <path
+                d="M6 16h.01"
+              />
+            </svg>
+          </div>
+          <div
+            class="flex flex-col"
+          >
+            <div
+              class="flex items-center gap-2"
+            >
+              <span
+                class="block font-bold text-sm text-zinc-800 dark:text-white"
+              >
+                Lokales Backup
+              </span>
+            </div>
+            <span
+              class="block text-xs text-zinc-500 dark:text-zinc-400"
+            >
+              Nicht konfiguriert
+            </span>
+          </div>
+        </div>
+        <button
+          class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] border-zinc-300 bg-white text-zinc-700"
+          type="button"
+        >
+          Wählen
+        </button>
+      </div>
+      <div
+        class="grid grid-cols-2 gap-2 pt-2"
+      >
+        <button
+          class="w-full py-3 bg-zinc-900 dark:bg-zinc-700 text-white font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-600 flex items-center justify-center gap-2 transition-colors"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-upload rotate-180"
+            fill="none"
+            height="18"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="18"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 3v12"
+            />
+            <path
+              d="m17 8-5-5-5 5"
+            />
+            <path
+              d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+            />
+          </svg>
+           
+          Export
+        </button>
+        <button
+          class="w-full py-3 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-upload"
+            fill="none"
+            height="18"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="18"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 3v12"
+            />
+            <path
+              d="m17 8-5-5-5 5"
+            />
+            <path
+              d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+            />
+          </svg>
+           
+          Import
+        </button>
+        <input
+          accept="application/json"
+          class="hidden"
+          type="file"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`BackupSettings (Snapshot/Charakterisierung) > Snapshot: expertMode=true (Nextcloud-Block sichtbar) 1`] = `
+<div
+  class="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden overflow-visible"
+>
+  <button
+    aria-expanded="true"
+    class="w-full flex items-center justify-between gap-3 p-4 text-left select-none cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700/30 transition-colors rounded-xl"
+    type="button"
+  >
+    <div
+      class="flex items-center gap-3 min-w-0"
+    >
+      <div
+        class="shrink-0"
+      >
+        <div
+          class="p-2 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-upload"
+            fill="none"
+            height="20"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 3v12"
+            />
+            <path
+              d="m17 8-5-5-5 5"
+            />
+            <path
+              d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+            />
+          </svg>
+        </div>
+      </div>
+      <div
+        class="min-w-0"
+      >
+        <h3
+          class="font-bold text-zinc-800 dark:text-white truncate"
+        >
+          Backup & Export
+        </h3>
+        <p
+          class="text-xs text-zinc-500 dark:text-zinc-400 truncate"
+        >
+          Sichere deine Daten auf Google Drive, Nextcloud oder lokal
+        </p>
+      </div>
+    </div>
+    <div
+      class="flex items-center gap-2 shrink-0"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-chevron-down text-zinc-400 transition-transform rotate-0"
+        fill="none"
+        height="18"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="18"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="m6 9 6 6 6-6"
+        />
+      </svg>
+    </div>
+  </button>
+  <div
+    class="px-4 pb-4 pt-0"
+  >
+    <div
+      class="space-y-3"
+    >
+      <div
+        class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700"
+      >
+        <div
+          class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400"
+        >
+          Status
+        </div>
+        <div
+          class="mt-1 text-sm text-zinc-700 dark:text-zinc-200"
+        >
+          Aktive Ziele: Keine
+        </div>
+        <div
+          class="text-xs text-zinc-500 dark:text-zinc-400"
+        >
+          Letztes Backup: Noch nie gesichert
+        </div>
+      </div>
+      <div
+        class="flex items-center justify-between p-3 rounded-xl bg-zinc-100 dark:bg-zinc-700"
+      >
+        <div
+          class="flex items-center gap-3"
+        >
+          <div
+            class="p-2 rounded-full bg-zinc-200 text-zinc-400"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-cloud-off"
+              fill="none"
+              height="20"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.94 5.274A7 7 0 0 1 15.71 10h1.79a4.5 4.5 0 0 1 4.222 6.057"
+              />
+              <path
+                d="M18.796 18.81A4.5 4.5 0 0 1 17.5 19H9A7 7 0 0 1 5.79 5.78"
+              />
+              <path
+                d="m2 2 20 20"
+              />
+            </svg>
+          </div>
+          <div
+            class="flex flex-col"
+          >
+            <div
+              class="flex items-center gap-2"
+            >
+              <span
+                class="block font-bold text-sm text-zinc-800 dark:text-white"
+              >
+                Google Drive
+              </span>
+            </div>
+            <span
+              class="block text-xs text-zinc-500 dark:text-zinc-400"
+            >
+              Nicht verbunden
+            </span>
+          </div>
+        </div>
+        <button
+          class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] border-zinc-300 bg-white text-zinc-700"
+          type="button"
+        >
+          Verbinden
+        </button>
+      </div>
+      <div
+        class="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl"
+      >
+        <div
+          class="flex items-center gap-3"
+        >
+          <div
+            class="p-2 rounded-full bg-zinc-200 text-zinc-400"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-server-cog"
+              fill="none"
+              height="20"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m10.852 14.772-.383.923"
+              />
+              <path
+                d="M13.148 14.772a3 3 0 1 0-2.296-5.544l-.383-.923"
+              />
+              <path
+                d="m13.148 9.228.383-.923"
+              />
+              <path
+                d="m13.53 15.696-.382-.924a3 3 0 1 1-2.296-5.544"
+              />
+              <path
+                d="m14.772 10.852.923-.383"
+              />
+              <path
+                d="m14.772 13.148.923.383"
+              />
+              <path
+                d="M4.5 10H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-.5"
+              />
+              <path
+                d="M4.5 14H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-.5"
+              />
+              <path
+                d="M6 18h.01"
+              />
+              <path
+                d="M6 6h.01"
+              />
+              <path
+                d="m9.228 10.852-.923-.383"
+              />
+              <path
+                d="m9.228 13.148-.923.383"
+              />
+            </svg>
+          </div>
+          <div
+            class="flex flex-col"
+          >
+            <div
+              class="flex items-center gap-2"
+            >
+              <span
+                class="block font-bold text-sm text-zinc-800 dark:text-white"
+              >
+                Nextcloud
+              </span>
+            </div>
+            <span
+              class="block text-xs text-zinc-500 dark:text-zinc-400"
+            >
+              Nicht konfiguriert
+            </span>
+          </div>
+        </div>
+        <button
+          class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] border-zinc-300 bg-white text-zinc-700"
+          type="button"
+        >
+          Einrichten
+        </button>
+      </div>
+      <div
+        class="flex items-center justify-between bg-zinc-100 dark:bg-zinc-700 p-3 rounded-xl"
+      >
+        <div
+          class="flex items-center gap-3"
+        >
+          <div
+            class="p-2 rounded-full bg-zinc-200 text-zinc-400"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-hard-drive"
+              fill="none"
+              height="20"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10 16h.01"
+              />
+              <path
+                d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+              />
+              <path
+                d="M21.946 12.013H2.054"
+              />
+              <path
+                d="M6 16h.01"
+              />
+            </svg>
+          </div>
+          <div
+            class="flex flex-col"
+          >
+            <div
+              class="flex items-center gap-2"
+            >
+              <span
+                class="block font-bold text-sm text-zinc-800 dark:text-white"
+              >
+                Lokales Backup
+              </span>
+            </div>
+            <span
+              class="block text-xs text-zinc-500 dark:text-zinc-400"
+            >
+              Nicht konfiguriert
+            </span>
+          </div>
+        </div>
+        <button
+          class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors min-w-[90px] border-zinc-300 bg-white text-zinc-700"
+          type="button"
+        >
+          Wählen
+        </button>
+      </div>
+      <div
+        class="grid grid-cols-2 gap-2 pt-2"
+      >
+        <button
+          class="w-full py-3 bg-zinc-900 dark:bg-zinc-700 text-white font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-600 flex items-center justify-center gap-2 transition-colors"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-upload rotate-180"
+            fill="none"
+            height="18"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="18"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 3v12"
+            />
+            <path
+              d="m17 8-5-5-5 5"
+            />
+            <path
+              d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+            />
+          </svg>
+           
+          Export
+        </button>
+        <button
+          class="w-full py-3 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-upload"
+            fill="none"
+            height="18"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="18"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 3v12"
+            />
+            <path
+              d="m17 8-5-5-5 5"
+            />
+            <path
+              d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+            />
+          </svg>
+           
+          Import
+        </button>
+        <input
+          accept="application/json"
+          class="hidden"
+          type="file"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+`;

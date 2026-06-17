@@ -1,0 +1,720 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`EntryForm > matcht das gerenderte Markup für entryType 'sick' (Snapshot) 1`] = `
+<main
+  class="flex min-h-[calc(100dvh-14rem)] w-full flex-col justify-end gap-6 p-3 pb-20"
+>
+  <div
+    aria-label="Dienstag, 07. April 2026"
+    class="text-center"
+  >
+    <div
+      class="text-3xl font-black tracking-normal text-zinc-900 dark:text-white"
+    >
+      Dienstag
+    </div>
+    <div
+      class="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400"
+    >
+      07. April 2026
+    </div>
+  </div>
+  <div
+    class="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden "
+  >
+    <form
+      class="p-4 space-y-5"
+    >
+      <div
+        class="flex justify-between items-center mb-1"
+      >
+        <div
+          class="text-xs font-bold text-zinc-400 uppercase tracking-wider"
+        >
+          Eintragstyp
+        </div>
+      </div>
+      <div
+        class="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-5 gap-1"
+      >
+        <button
+          class="py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all text-zinc-500 dark:text-zinc-400"
+          type="button"
+        >
+          Arbeit
+        </button>
+        <button
+          class="py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all text-zinc-500 dark:text-zinc-400"
+          type="button"
+        >
+          Fahrt
+        </button>
+        <button
+          class="py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 shadow-sm"
+          type="button"
+        >
+          Krank
+        </button>
+        <button
+          class="py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all text-zinc-500 dark:text-zinc-400"
+          type="button"
+        >
+          Urlaub
+        </button>
+        <button
+          class="py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all text-zinc-500 dark:text-zinc-400"
+          type="button"
+        >
+          ZA
+        </button>
+      </div>
+      <div
+        class="space-y-2 animate-in fade-in slide-in-from-top-2"
+      >
+        <div
+          class="border rounded-lg p-3 flex items-start gap-3 bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800 text-red-800 dark:text-red-300"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-info mt-0.5"
+            fill="none"
+            height="18"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="18"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+            />
+            <path
+              d="M12 16v-4"
+            />
+            <path
+              d="M12 8h.01"
+            />
+          </svg>
+          <div
+            class="text-sm"
+          >
+            <span
+              class="font-bold block mb-1"
+            >
+              Automatische Berechnung
+            </span>
+            Für Krankenstand wird automatisch die tägliche Sollzeit gutgeschrieben.
+          </div>
+        </div>
+        <div
+          class="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-2 gap-1"
+        >
+          <button
+            class="py-2 rounded-lg text-xs font-bold transition-all bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white"
+            type="button"
+          >
+            Automatisch
+          </button>
+          <button
+            class="py-2 rounded-lg text-xs font-bold transition-all text-zinc-500 dark:text-zinc-400"
+            type="button"
+          >
+            Manuell
+          </button>
+        </div>
+      </div>
+      <div
+        class="space-y-1"
+      >
+        <div
+          class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase"
+        >
+          Datum
+        </div>
+        <div
+          class="flex items-center gap-2"
+        >
+          <button
+            class="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-chevron-left"
+              fill="none"
+              height="20"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m15 18-6-6 6-6"
+              />
+            </svg>
+          </button>
+          <div
+            class="flex-1"
+          >
+            <button
+              class="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none focus:border-emerald-500 transition-colors"
+              type="button"
+            >
+              <span
+                class="flex-1 text-center"
+              >
+                Di., 07.04.2026
+              </span>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-calendar text-zinc-400 ml-2"
+                fill="none"
+                height="18"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="18"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 2v4"
+                />
+                <path
+                  d="M16 2v4"
+                />
+                <rect
+                  height="18"
+                  rx="2"
+                  width="18"
+                  x="3"
+                  y="4"
+                />
+                <path
+                  d="M3 10h18"
+                />
+              </svg>
+            </button>
+          </div>
+          <button
+            class="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-chevron-right"
+              fill="none"
+              height="20"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m9 18 6-6-6-6"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="pt-2 flex gap-3"
+      >
+        <button
+          class="material-you-secondary-action flex-1 py-3 font-bold text-zinc-500 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-xl"
+          type="button"
+        >
+          Abbrechen
+        </button>
+        <button
+          class="material-you-primary-action flex-[2] py-3 font-bold text-white bg-zinc-900 dark:bg-emerald-600 hover:bg-zinc-800 dark:hover:bg-emerald-700 rounded-xl shadow-lg flex items-center justify-center gap-2"
+          type="submit"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-save"
+            fill="none"
+            height="18"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="18"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+            />
+            <path
+              d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"
+            />
+            <path
+              d="M7 3v4a1 1 0 0 0 1 1h7"
+            />
+          </svg>
+           
+          Speichern
+        </button>
+      </div>
+    </form>
+  </div>
+</main>
+`;
+
+exports[`EntryForm > matcht das gerenderte Markup für entryType 'work' (Snapshot) 1`] = `
+<main
+  class="flex min-h-[calc(100dvh-14rem)] w-full flex-col justify-end gap-6 p-3 pb-20"
+>
+  <div
+    aria-label="Dienstag, 07. April 2026"
+    class="text-center"
+  >
+    <div
+      class="text-3xl font-black tracking-normal text-zinc-900 dark:text-white"
+    >
+      Dienstag
+    </div>
+    <div
+      class="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400"
+    >
+      07. April 2026
+    </div>
+  </div>
+  <div
+    class="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden "
+  >
+    <form
+      class="p-4 space-y-5"
+    >
+      <div
+        class="flex justify-between items-center mb-1"
+      >
+        <div
+          class="text-xs font-bold text-zinc-400 uppercase tracking-wider"
+        >
+          Eintragstyp
+        </div>
+      </div>
+      <div
+        class="bg-zinc-100 dark:bg-zinc-700 p-1 rounded-xl grid grid-cols-5 gap-1"
+      >
+        <button
+          class="py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all bg-white dark:bg-zinc-600 shadow text-zinc-900 dark:text-white"
+          type="button"
+        >
+          Arbeit
+        </button>
+        <button
+          class="py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all text-zinc-500 dark:text-zinc-400"
+          type="button"
+        >
+          Fahrt
+        </button>
+        <button
+          class="py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all text-zinc-500 dark:text-zinc-400"
+          type="button"
+        >
+          Krank
+        </button>
+        <button
+          class="py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all text-zinc-500 dark:text-zinc-400"
+          type="button"
+        >
+          Urlaub
+        </button>
+        <button
+          class="py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all text-zinc-500 dark:text-zinc-400"
+          type="button"
+        >
+          ZA
+        </button>
+      </div>
+      <div
+        class="space-y-1"
+      >
+        <div
+          class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase"
+        >
+          Datum
+        </div>
+        <div
+          class="flex items-center gap-2"
+        >
+          <button
+            class="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-chevron-left"
+              fill="none"
+              height="20"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m15 18-6-6 6-6"
+              />
+            </svg>
+          </button>
+          <div
+            class="flex-1"
+          >
+            <button
+              class="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none focus:border-emerald-500 transition-colors"
+              type="button"
+            >
+              <span
+                class="flex-1 text-center"
+              >
+                Di., 07.04.2026
+              </span>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-calendar text-zinc-400 ml-2"
+                fill="none"
+                height="18"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="18"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 2v4"
+                />
+                <path
+                  d="M16 2v4"
+                />
+                <rect
+                  height="18"
+                  rx="2"
+                  width="18"
+                  x="3"
+                  y="4"
+                />
+                <path
+                  d="M3 10h18"
+                />
+              </svg>
+            </button>
+          </div>
+          <button
+            class="p-3 bg-zinc-100 dark:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-chevron-right"
+              fill="none"
+              height="20"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m9 18 6-6-6-6"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="grid grid-cols-2 gap-3"
+      >
+        <div
+          class="space-y-1"
+        >
+          <div
+            class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase"
+          >
+            Start
+          </div>
+          <button
+            class="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors"
+            type="button"
+          >
+            <span
+              class="flex-1 text-center text-lg"
+            >
+              08:00
+            </span>
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-clock text-zinc-400 ml-2"
+              fill="none"
+              height="18"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="18"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+              />
+              <path
+                d="M12 6v6l4 2"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="space-y-1"
+        >
+          <div
+            class="flex items-baseline justify-between gap-2"
+          >
+            <div
+              class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase"
+            >
+              Ende
+            </div>
+          </div>
+          <button
+            class="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors"
+            type="button"
+          >
+            <span
+              class="flex-1 text-center text-lg"
+            >
+              16:30
+            </span>
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-clock text-zinc-400 ml-2"
+              fill="none"
+              height="18"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="18"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+              />
+              <path
+                d="M12 6v6l4 2"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="space-y-1"
+      >
+        <div
+          class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase"
+        >
+          Pause
+        </div>
+        <div
+          class="flex gap-2"
+        >
+          <button
+            class="flex-1 p-3 rounded-lg border text-sm font-bold border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-500 dark:text-zinc-300"
+            type="button"
+          >
+            Keine
+          </button>
+          <button
+            class="flex-1 p-3 rounded-lg border text-sm font-bold flex items-center justify-center gap-1 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+            type="button"
+          >
+            30 Min
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-chevron-down"
+              fill="none"
+              height="14"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="14"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m6 9 6 6 6-6"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="space-y-1"
+      >
+        <div
+          class="flex items-center justify-between"
+        >
+          <div
+            class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase"
+          >
+            Tätigkeit
+          </div>
+          <button
+            class="text-xs text-zinc-400 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 transition-colors"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-plus"
+              fill="none"
+              height="12"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="12"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5 12h14"
+              />
+              <path
+                d="M12 5v14"
+              />
+            </svg>
+            <span>
+              Neue
+            </span>
+          </button>
+        </div>
+        <button
+          class="w-full flex items-center justify-between p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg font-bold text-zinc-800 dark:text-white outline-none active:border-emerald-500 transition-colors text-left"
+          type="button"
+        >
+          <span
+            class="truncate pr-2"
+          >
+            Bitte wählen
+          </span>
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-list text-zinc-400 flex-shrink-0"
+            fill="none"
+            height="18"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="18"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 5h.01"
+            />
+            <path
+              d="M3 12h.01"
+            />
+            <path
+              d="M3 19h.01"
+            />
+            <path
+              d="M8 5h13"
+            />
+            <path
+              d="M8 12h13"
+            />
+            <path
+              d="M8 19h13"
+            />
+          </svg>
+        </button>
+      </div>
+      <div
+        class="space-y-1 relative"
+      >
+        <label
+          class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase"
+          for="entry-form-project"
+        >
+          Projekt
+        </label>
+        <input
+          class="w-full p-3 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg outline-none dark:text-white focus:border-emerald-500 transition-colors"
+          id="entry-form-project"
+          placeholder="..."
+          type="text"
+          value=""
+        />
+      </div>
+      <div
+        class="pt-2 flex gap-3"
+      >
+        <button
+          class="material-you-secondary-action flex-1 py-3 font-bold text-zinc-500 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-xl"
+          type="button"
+        >
+          Abbrechen
+        </button>
+        <button
+          class="material-you-primary-action flex-[2] py-3 font-bold text-white bg-zinc-900 dark:bg-emerald-600 hover:bg-zinc-800 dark:hover:bg-emerald-700 rounded-xl shadow-lg flex items-center justify-center gap-2"
+          type="submit"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-save"
+            fill="none"
+            height="18"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="18"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+            />
+            <path
+              d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"
+            />
+            <path
+              d="M7 3v4a1 1 0 0 0 1 1h7"
+            />
+          </svg>
+           
+          Speichern
+        </button>
+      </div>
+    </form>
+  </div>
+</main>
+`;

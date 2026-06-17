@@ -8,8 +8,10 @@ import toast from "react-hot-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { useTranslation } from "react-i18next";
 
-import { getIntlLocale } from "../utils/formatLocale";
 import { isOvernightShift } from "../utils/timeCalculations";
+import { useEntryFormUiState } from "../hooks/entryForm/useEntryFormUiState";
+import { useEntryFormDateLabels } from "../hooks/entryForm/useEntryFormDateLabels";
+import { useProjectAutocomplete } from "../hooks/entryForm/useProjectAutocomplete";
 import TimePickerDrawer from "./TimePickerDrawer";
 import SelectionDrawer from "./SelectionDrawer";
 import { Capacitor } from "@capacitor/core";
@@ -109,32 +111,23 @@ const EntryForm: React.FC<Props> = ({
   const showTimeInputs =
     entryType === "work" || entryType === "drive" || (isSpecialType && effectiveSpecialManualMode);
   
+  // activeTimeField/showPausePicker/showDateFallback bleiben direkte useState,
+  // da ihre Setter in den verbatim beibehaltenen useCallbacks verwendet werden
+  // (Custom-Hook-Grenze würde Setter-Stabilität für den React Compiler brechen).
   const [activeTimeField, setActiveTimeField] = useState<string | null>(null);
-  const [isWorkCodeOpen, setIsWorkCodeOpen] = useState(false);
   const [showPausePicker, setShowPausePicker] = useState(false);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [quickAddValue, setQuickAddValue] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [showDateFallback, setShowDateFallback] = useState(false);
+  const ui = useEntryFormUiState();
+  const {
+    isWorkCodeOpen, setIsWorkCodeOpen,
+    quickAddOpen, setQuickAddOpen,
+  } = ui;
+  const [quickAddValue, setQuickAddValue] = useState("");
+  const autocomplete = useProjectAutocomplete(setProject, existingProjects);
+  const { suggestions, showSuggestions, setShowSuggestions, handleProjectChange, selectSuggestion } = autocomplete;
   const isNativePlatform = Capacitor.isNativePlatform();
 
-  const date = new Date(`${formDate}T00:00:00`);
-  const formattedFormDate = new Intl.DateTimeFormat(getIntlLocale(), {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
-  const dateHeaderWeekday = new Intl.DateTimeFormat(getIntlLocale(), {
-    weekday: "long",
-  }).format(date);
-  const dateHeaderTitle = dateHeaderWeekday.charAt(0).toUpperCase() + dateHeaderWeekday.slice(1);
-  const dateHeaderSubtitle = new Intl.DateTimeFormat(getIntlLocale(), {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(date);
+  const { formattedFormDate, dateHeaderTitle, dateHeaderSubtitle } = useEntryFormDateLabels(formDate);
 
   const openDatePicker = useCallback(async () => {
     try {
@@ -254,25 +247,6 @@ const EntryForm: React.FC<Props> = ({
     setProject(lastWorkEntry.project || "");
     if (lastWorkEntry.code) setCode(lastWorkEntry.code);
     toast.success(t("entryForm.copyLastSuccess"), { icon: "🪄" });
-  };
-
-  const handleProjectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setProject(val);
-    if (val.length > 0) {
-      const filtered = existingProjects.filter(p => 
-        p.toLowerCase().includes(val.toLowerCase()) && p !== val
-      ).slice(0, 4);
-      setSuggestions(filtered);
-      setShowSuggestions(filtered.length > 0);
-    } else {
-      setShowSuggestions(false);
-    }
-  };
-
-  const selectSuggestion = (suggestion: string) => {
-    setProject(suggestion);
-    setShowSuggestions(false);
   };
 
   const changeDate = (days: number) => {

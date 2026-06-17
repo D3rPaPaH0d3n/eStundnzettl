@@ -325,4 +325,14 @@ describe("EntryForm", () => {
     expect(await findByText("Native Datumsauswahl nicht verfügbar – bitte Datum manuell wählen.")).toBeTruthy();
     expect(container.querySelector('input[type="date"]')).toBeTruthy();
   });
+
+  it("matcht das gerenderte Markup für entryType 'work' (Snapshot)", () => {
+    const { container } = renderForm({ entryType: "work" });
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it("matcht das gerenderte Markup für entryType 'sick' (Snapshot)", () => {
+    const { container } = renderForm({ entryType: "sick" });
+    expect(container.firstChild).toMatchSnapshot();
+  });
 });

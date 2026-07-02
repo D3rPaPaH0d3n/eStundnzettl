@@ -17,10 +17,6 @@
 </p>
 
 <p align="center">
-  <a href="https://sonarcloud.io/summary/new_code?id=D3rPaPaH0d3n_eStundnzettl"><img src="https://sonarcloud.io/api/project_badges/quality_gate?project=D3rPaPaH0d3n_eStundnzettl" alt="SonarQube Cloud Quality Gate" /></a>
-</p>
-
-<p align="center">
   <img src="https://raw.githubusercontent.com/D3rPaPaH0d3n/eStundnzettl/main/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" width="160" alt="eStundnzettl Logo" />
 </p>
 

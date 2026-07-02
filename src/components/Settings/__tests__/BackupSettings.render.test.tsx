@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, fireEvent, cleanup } from "@testing-library/react";
+import { render, fireEvent, cleanup, waitFor } from "@testing-library/react";
 
 // ─── Mocks (VOR dem BackupSettings-Import) ──────────────────
 //
@@ -93,6 +93,8 @@ vi.mock("../../../hooks/useFeatureAvailability", () => ({
 
 // Importe NACH den Mocks
 import BackupSettings from "../BackupSettings";
+import { isSQLiteActive } from "../../../db/storageMode";
+import { getSetting } from "../../../db/repositories/settingsRepo";
 
 // ─── Test-Helper ────────────────────────────────────────────
 
@@ -159,5 +161,54 @@ describe("BackupSettings (Snapshot/Charakterisierung)", () => {
     expect(container.textContent).toContain("Nextcloud");
     expect(container.textContent).toContain("Einrichten");
     expect(container.firstChild).toMatchSnapshot();
+  });
+});
+
+describe("BackupSettings lastBackupLabel (relative Zeitanzeige)", () => {
+  // last_backup via SQLite-Slice injizieren, damit alle Zweige der
+  // relativen Zeitanzeige durchlaufen werden. Kein Snapshot — die
+  // Ausgabe hängt von der aktuellen Uhrzeit ab.
+  const expectLastBackupLabel = async (iso: string, expected: string) => {
+    vi.mocked(isSQLiteActive).mockReturnValue(true);
+    vi.mocked(getSetting).mockImplementation(async (key: string) =>
+      key === "last_backup" ? iso : null
+    );
+    const { container } = renderCard();
+    await waitFor(() =>
+      expect(container.textContent).toContain(`Letztes Backup: ${expected}`)
+    );
+  };
+
+  afterEach(() => {
+    // Overrides zurücksetzen, damit andere Suites deterministisch bleiben.
+    vi.mocked(isSQLiteActive).mockReturnValue(false);
+    vi.mocked(getSetting).mockReset();
+    vi.mocked(getSetting).mockResolvedValue(null);
+    cleanup();
+  });
+
+  it('zeigt "gerade eben" für ein Backup vor <1 Minute', async () => {
+    await expectLastBackupLabel(new Date().toISOString(), "gerade eben");
+  });
+
+  it("zeigt Minuten für ein Backup vor 5 Minuten", async () => {
+    await expectLastBackupLabel(
+      new Date(Date.now() - 5 * 60_000).toISOString(),
+      "vor 5 Min."
+    );
+  });
+
+  it("zeigt Stunden für ein Backup vor 3 Stunden", async () => {
+    await expectLastBackupLabel(
+      new Date(Date.now() - 3 * 3_600_000).toISOString(),
+      "vor 3 Std."
+    );
+  });
+
+  it("zeigt Tage für ein Backup vor 2 Tagen", async () => {
+    await expectLastBackupLabel(
+      new Date(Date.now() - 2 * 86_400_000).toISOString(),
+      "vor 2 Tagen"
+    );
   });
 });

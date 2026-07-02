@@ -47,13 +47,12 @@ export function useCalculationConfig({
   userData,
 }: UseCalculationConfigArgs) {
   // Default aus aktueller Locale (wird später ggf. von SQLite überschrieben).
-  const initialDefault = useRef<CalculationConfig>(
+  const [calcConfig, setCalcConfigState] = useState<CalculationConfig>(() =>
     getDefaultCalculationConfig(locale, userData.workDays)
   );
 
-  const [calcConfig, setCalcConfigState] = useState<CalculationConfig>(() =>
-    initialDefault.current
-  );
+  // Hält den Erst-Render-Default als Fallback für die SQLite-Hydration fest.
+  const initialDefault = useRef<CalculationConfig>(calcConfig);
 
   const sqliteReady = useRef<boolean>(false);
   const initDone = useRef<boolean>(false);

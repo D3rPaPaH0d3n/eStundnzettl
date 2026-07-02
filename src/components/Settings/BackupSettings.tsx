@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Cloud,
   CloudOff,
@@ -90,18 +90,6 @@ const BackupSettings: React.FC<Props> = ({
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRetryingBackup, setIsRetryingBackup] = useState(false);
 
-  const formatLastBackup = (isoString: string) => {
-    if (!isoString) return null;
-    const diff = Date.now() - new Date(isoString).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return t("settings.backup.last.now");
-    if (mins < 60) return t("settings.backup.last.minutes", { count: mins });
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return t("settings.backup.last.hours", { count: hrs });
-    const days = Math.floor(hrs / 24);
-    return t("settings.backup.last.days", { count: days });
-  };
-
   // Load initial data (last_backup-Slice)
   useEffect(() => {
     // SQLite nachladen
@@ -172,7 +160,20 @@ const BackupSettings: React.FC<Props> = ({
     nextcloudEnabled ? "Nextcloud" : null,
     localBackup.hasBackupFolder ? t("settings.backup.targetLocal") : null,
   ].filter((target): target is string => Boolean(target));
-  const lastBackupLabel = lastBackupDate ? formatLastBackup(lastBackupDate) : null;
+  const lastBackupLabel = useMemo(() => {
+    if (!lastBackupDate) return null;
+    // Relative Zeitanzeige ("vor 5 Minuten") braucht die aktuelle Uhrzeit;
+    // bewusst impur, Neuberechnung nur bei Backup-/Sprachwechsel.
+    // eslint-disable-next-line react-hooks/purity
+    const diff = Date.now() - new Date(lastBackupDate).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t("settings.backup.last.now");
+    if (mins < 60) return t("settings.backup.last.minutes", { count: mins });
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return t("settings.backup.last.hours", { count: hrs });
+    const days = Math.floor(hrs / 24);
+    return t("settings.backup.last.days", { count: days });
+  }, [lastBackupDate, t]);
 
   // =====================
   // RENDER
@@ -512,8 +513,8 @@ const BackupSettings: React.FC<Props> = ({
                   {isBackingUp ? t("settings.backup.manual.saving") : t("settings.backup.manual.title")}
                 </span>
                 <span className="block text-xs text-emerald-600 dark:text-emerald-400">
-                  {lastBackupDate
-                    ? t("settings.backup.last.lastAt", { time: formatLastBackup(lastBackupDate) })
+                  {lastBackupLabel
+                    ? t("settings.backup.last.lastAt", { time: lastBackupLabel })
                     : t("settings.backup.last.never")}
                 </span>
               </div>

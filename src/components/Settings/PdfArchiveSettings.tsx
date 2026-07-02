@@ -56,6 +56,19 @@ interface Props {
   unwrapped?: boolean;
 }
 
+const Wrapper: React.FC<{ unwrapped: boolean; children: React.ReactNode }> = ({
+  unwrapped,
+  children,
+}) =>
+  unwrapped ? (
+    // Eingebettet in eine andere Card: Trenner oben, kein eigener Card-Rahmen
+    <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-4">
+      {children}
+    </div>
+  ) : (
+    <Card className="p-4">{children}</Card>
+  );
+
 const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, lastRun, lastError, unwrapped = false }) => {
   const { t } = useTranslation();
   const featureAvailability = useFeatureAvailability();
@@ -237,18 +250,8 @@ const PdfArchiveSettings: React.FC<Props> = ({ nextcloudEnabled, performRun, las
     }
   }, [enabled, localTarget, nextcloudTarget, gdriveTarget, performRun, t]);
 
-  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
-    unwrapped ? (
-      // Eingebettet in eine andere Card: Trenner oben, kein eigener Card-Rahmen
-      <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-4">
-        {children}
-      </div>
-    ) : (
-      <Card className="p-4">{children}</Card>
-    );
-
   return (
-    <Wrapper>
+    <Wrapper unwrapped={unwrapped}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">

@@ -58,6 +58,16 @@ interface Props {
   unwrapped?: boolean;
 }
 
+const Wrapper: React.FC<{ unwrapped: boolean; children: React.ReactNode }> = ({
+  unwrapped,
+  children,
+}) =>
+  unwrapped ? (
+    <div className="space-y-4">{children}</div>
+  ) : (
+    <Card className="p-4 space-y-4">{children}</Card>
+  );
+
 const CalculationSettings: React.FC<Props> = ({
   userData,
   locale,
@@ -341,15 +351,8 @@ const CalculationSettings: React.FC<Props> = ({
     }
   };
 
-  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
-    unwrapped ? (
-      <div className="space-y-4">{children}</div>
-    ) : (
-      <Card className="p-4 space-y-4">{children}</Card>
-    );
-
   return (
-    <Wrapper>
+    <Wrapper unwrapped={unwrapped}>
       {!unwrapped && (
         <button
           type="button"

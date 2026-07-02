@@ -63,7 +63,7 @@ dependencies {
     implementation project(':capacitor-cordova-android-plugins')
     implementation "com.google.android.gms:play-services-auth:$playServicesAuthVersion"
     implementation 'com.squareup.okhttp3:okhttp:5.3.2'
-    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+    implementation 'androidx.security:security-crypto:1.1.0'
     implementation 'androidx.activity:activity-compose:1.13.0'
     implementation 'androidx.compose.material3:material3:1.4.0'
 }

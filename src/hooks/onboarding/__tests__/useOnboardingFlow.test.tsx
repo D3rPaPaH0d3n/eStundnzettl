@@ -62,14 +62,14 @@ const makeProps = () => ({
   setCalculationConfig: vi.fn(),
 });
 
-const makeRestoreData = (): BackupAnalysisData => ({
+const makeRestoreData = (overrides: Partial<BackupAnalysisData> = {}): BackupAnalysisData => ({
   valid: true,
   entryCount: 1,
   hasSettings: true,
   hasWorkCodes: false,
   hasAttachments: false,
   hasCalculationConfig: false,
-  entries: [{ id: 1, type: "work", date: "2026-01-05", start: "08:00", end: "16:00", pause: 30 }],
+  entries: [{ id: 1, type: "work", date: "2026-01-05", start: "08:00", end: "16:00", pause: 30, netDuration: 450 }],
   settings: {
     name: "Markus",
     company: "ACME",
@@ -81,8 +81,11 @@ const makeRestoreData = (): BackupAnalysisData => ({
   attachments: [],
   attachmentLabels: [],
   calculationConfig: null,
+  locale: null,
+  theme: null,
   timestamp: "2026-01-05T10:00:00.000Z",
   integrity: "verified",
+  ...overrides,
 });
 
 const renderFlow = () => {
@@ -154,6 +157,33 @@ describe("useOnboardingFlow — finishSetup im Restore-Flow", () => {
     expect(setSetting).not.toHaveBeenCalled();
     expect(props.setUserData).not.toHaveBeenCalled();
     expect(props.onComplete).not.toHaveBeenCalled();
+  });
+
+  it("übernimmt WorkCodes, CalculationConfig, Locale und Theme aus dem Backup in den State", async () => {
+    const { result, props } = renderFlow();
+    const restoreData = makeRestoreData({
+      hasWorkCodes: true,
+      workCodes: [{ id: 1, label: "Montage" }],
+      calculationConfig: { weeklyTargetMinutes: 2310 },
+      locale: "at",
+      theme: "dark",
+    });
+
+    act(() => {
+      result.current.handleStartRestore();
+      result.current.setRestoreData(restoreData);
+    });
+
+    await act(async () => {
+      await result.current.finishSetup();
+    });
+
+    expect(props.importWorkCodes).toHaveBeenCalledWith([{ id: 1, label: "Montage" }]);
+    expect(props.setCalculationConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ weeklyTargetMinutes: 2310 })
+    );
+    expect(props.setLocale).toHaveBeenCalledWith("at");
+    expect(props.setTheme).toHaveBeenCalledWith("dark");
   });
 
   it("nutzt formData-Profil wenn das Backup keine User-Daten enthält", async () => {

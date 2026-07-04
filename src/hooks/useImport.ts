@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { ImportSnapshot } from "../db/snapshot";
 import { verifyBackupIntegrity } from "../utils/storageBackup";
 import { getErrorMessage } from "../utils/errorUtils";
+import { LOCALES } from "../locales";
 
 interface UseImportProps {
   importSnapshot: (snapshot: ImportSnapshot) => Promise<void>;
@@ -82,6 +83,18 @@ export function useImport({ importSnapshot }: UseImportProps) {
         }
         if (d.user && typeof d.user === "object") snapshot.userData = d.user;
         if (d.workCodes && Array.isArray(d.workCodes)) snapshot.workCodes = d.workCodes;
+
+        // Vollständiger Restore (v7-Backups; ältere Backups haben die
+        // Felder schlicht nicht — dann bleibt der jeweilige Bestand stehen).
+        if (d.calculationConfig && typeof d.calculationConfig === "object" && !Array.isArray(d.calculationConfig)) {
+          snapshot.calculationConfig = d.calculationConfig;
+        }
+        if (Array.isArray(d.attachments)) snapshot.attachments = d.attachments;
+        if (Array.isArray(d.attachmentLabels)) {
+          snapshot.attachmentLabels = d.attachmentLabels.filter((l: unknown) => typeof l === "string");
+        }
+        if (typeof d.locale === "string" && d.locale in LOCALES) snapshot.locale = d.locale;
+        if (d.theme === "system" || d.theme === "dark" || d.theme === "light") snapshot.theme = d.theme;
 
         await importSnapshot(snapshot);
 

@@ -199,6 +199,10 @@ export interface BackupPayload {
   attachmentLabels: string[];
   /** Per-User-Rechenkonfiguration (optional, seit v4.1). */
   calculationConfig?: CalculationConfig | null;
+  /** Gewählte LocaleId, z.B. "at" | "de-by" (optional, seit v7). */
+  locale?: string | null;
+  /** Theme "system" | "dark" | "light" (optional, seit v7). */
+  theme?: string | null;
 }
 
 // ─── Nextcloud ───────────────────────────────────────────────
@@ -316,6 +320,10 @@ export interface BackupAnalysisData {
   attachments: Attachment[];
   attachmentLabels: string[];
   calculationConfig: Record<string, unknown> | null;
+  /** Im Backup enthaltene LocaleId (nur wenn gültig), sonst null. */
+  locale: string | null;
+  /** Im Backup enthaltenes Theme (nur wenn gültig), sonst null. */
+  theme: string | null;
   timestamp: string | null;
   integrity: string; // "verified" | "unverified" | "mismatch" | "ok" | "missing"
 }

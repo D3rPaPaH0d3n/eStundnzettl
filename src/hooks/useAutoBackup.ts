@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { App } from "@capacitor/app";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import type { Entry, UserData } from '../types';
+import type { Attachment, CalculationConfig, Entry, UserData, WorkCode } from '../types';
 import { uploadOrUpdateFile, getValidToken } from "../utils/googleDrive";
-import { writeBackupFile } from "../utils/storageBackup";
+import { writeBackupFile, composeBackupPayload, type BackupDataSections } from "../utils/storageBackup";
 import { uploadBackup as ncUploadBackup } from "../utils/nextcloudClient";
 import { BACKUP_CONFIG } from "./constants";
 import { getNextcloudAppPassword } from "../utils/nextcloudSecret";
@@ -154,15 +154,27 @@ async function writeSetting(key: string, value: string | number | boolean): Prom
  * @param userData — User-Profil, wird Teil des Backup-Payloads
  * @param isEnabled — Master-Switch (wenn false UND kein Target
  *                    explizit aktiv ist, wird nichts gemacht)
+ * @param extras — weitere Backup-Sektionen (workCodes, calculationConfig,
+ *                 locale, theme, attachments, attachmentLabels), damit das
+ *                 Backup den VOLLSTÄNDIGEN App-Zustand enthält
  *
  * @returns
  * - `backupFailCount` — aktueller Cloud-Fail-Counter (für UI-Warnung)
  * - `triggerManualBackup()` — manueller Retry, ignoriert aktive
  *   Backoffs und überschreibt Hash-Skip
  */
-export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: boolean) {
+export interface AutoBackupExtras {
+  workCodes?: WorkCode[];
+  calculationConfig?: CalculationConfig | null;
+  locale?: string | null;
+  theme?: string | null;
+  attachments?: Attachment[];
+  attachmentLabels?: string[];
+}
+
+export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: boolean, extras?: AutoBackupExtras) {
   const { t } = useTranslation();
-  const latestDataRef = useRef<{ entries: Entry[]; userData: UserData }>({ entries, userData });
+  const latestDataRef = useRef<{ entries: Entry[]; userData: UserData; extras?: AutoBackupExtras }>({ entries, userData, extras });
   const lastHash = useRef<string>("");
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isUploading = useRef<boolean>(false);
@@ -187,11 +199,13 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
   }, []);
 
   useEffect(() => {
-    latestDataRef.current = { entries, userData };
-  }, [entries, userData]);
+    latestDataRef.current = { entries, userData, extras };
+  }, [entries, userData, extras]);
 
-  const createHash = (data: { entries: Entry[]; userData: UserData }): string => {
-    const str = JSON.stringify(data.userData) + JSON.stringify(data.entries);
+  const createHash = (sections: BackupDataSections): string => {
+    // lastModified/timezone/note absichtlich NICHT im Hash — nur der
+    // eigentliche Dateninhalt entscheidet über den Auto-Save-Skip.
+    const str = JSON.stringify(sections);
     let hash = 5381;
     for (let i = 0; i < str.length; i++) {
       hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
@@ -238,7 +252,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
   };
 
   const performBackup = async (source: "Auto-Save" | "Background" | "Manual" = "Auto-Save") => {
-    const { entries, userData } = latestDataRef.current;
+    const { entries, userData, extras } = latestDataRef.current;
 
     const cloudActive = await readSettingBool("cloud_sync_enabled");
     const localActive = await readSettingBool("local_backup_enabled");
@@ -248,20 +262,24 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
     if (!entries || entries.length === 0) return;
     if (isUploading.current) return;
 
-    const currentHash = createHash({ entries, userData });
+    const sections: BackupDataSections = {
+      user: userData,
+      entries,
+      workCodes: extras?.workCodes,
+      calculationConfig: extras?.calculationConfig,
+      locale: extras?.locale,
+      theme: extras?.theme,
+      attachments: extras?.attachments,
+      attachmentLabels: extras?.attachmentLabels,
+    };
+
+    const currentHash = createHash(sections);
     if (currentHash === lastHash.current && source === "Auto-Save") return;
 
     // Manual-Retry ignoriert Backoff und den Auto-Save-Hash-Skip.
     const ignoreBackoff = source === "Manual";
 
-    const payload = {
-      user: userData,
-      entries,
-      lastModified: new Date().toISOString(),
-      note: "eStundnzettl Auto-Sync",
-      version: "v6",
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    };
+    const payload = await composeBackupPayload(sections, "eStundnzettl Auto-Sync");
 
     isUploading.current = true;
 
@@ -388,8 +406,10 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
     // performBackup is recreated each render but reads fresh data via
     // latestDataRef. Adding it as a dep would reset the 2s debounce on
     // every render and break the "wait until edits stop" behaviour.
+    // `extras` sollte vom Caller memoisiert sein (App.tsx: useMemo), damit
+    // der Debounce nicht bei jedem Render neu startet.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, userData, isEnabled]);
+  }, [entries, userData, isEnabled, extras]);
 
   const triggerManualBackup = () => performBackup("Manual");
 

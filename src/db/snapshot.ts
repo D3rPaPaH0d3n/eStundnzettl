@@ -22,6 +22,10 @@ export interface ImportSnapshot {
   attachments?: Attachment[];
   attachmentLabels?: string[];
   calculationConfig?: CalculationConfig;
+  /** LocaleId aus dem Backup (Settings-Key "locale"). */
+  locale?: string;
+  /** Theme aus dem Backup (Settings-Key "theme"). */
+  theme?: string;
 }
 
 type SnapshotStatement = { statement: string; values: SqlValue[] };
@@ -110,6 +114,20 @@ export async function replaceFullSnapshot(snapshot: ImportSnapshot): Promise<voi
     set.push({
       statement: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
       values: ["calculationConfig", JSON.stringify(snapshot.calculationConfig)],
+    });
+  }
+
+  if (snapshot.locale !== undefined) {
+    set.push({
+      statement: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+      values: ["locale", JSON.stringify(snapshot.locale)],
+    });
+  }
+
+  if (snapshot.theme !== undefined) {
+    set.push({
+      statement: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+      values: ["theme", JSON.stringify(snapshot.theme)],
     });
   }
 

@@ -15,6 +15,7 @@ import { getLocale } from "../../locales";
 import {
   getDefaultCalculationConfig,
   getBlankCalculationConfig,
+  coerceCalculationConfig,
 } from "../../utils/calculationConfig";
 import type {
   Entry,
@@ -112,9 +113,9 @@ export function useOnboardingFlow(
   // Step übersprungen — ihre Rechenregeln kommen direkt aus dem Locale.
   //
   // Restore-Flow überspringt alles außer Welcome(0) -> Backup(6) -> Summary(7).
-  // Für Restore-User wird die Locale nach dem Finish via LocaleMigrationModal
-  // abgefragt (siehe App.tsx), weil sie aus dem Backup restored werden und
-  // Locale dort (noch) nicht enthalten ist.
+  // Locale kommt bei v7-Backups direkt aus dem Backup; nur für ältere
+  // Backups ohne Locale-Feld wird sie nach dem Finish via
+  // LocaleMigrationModal abgefragt (siehe App.tsx).
   const handleStartSimple = () => {
     setIsRestoreFlow(false);
     setFormData((p) => ({
@@ -381,11 +382,27 @@ export function useOnboardingFlow(
     setUserData?.(userDataToSave);
     setCloudSyncEnabled?.(formData.autoBackup);
     setLocalBackupEnabled?.(formData.localBackupEnabled);
-    setTheme?.('system');
 
     if (restoreData) {
+      // Restaurierte Sektionen in den React-State übernehmen — SQLite hat
+      // applyBackup bereits geschrieben, aber ohne Refresh würden
+      // WorkCodes/CalculationConfig/Locale erst nach App-Neustart greifen.
+      if (restoreData.hasWorkCodes) {
+        importWorkCodes?.(restoreData.workCodes);
+      }
+      if (restoreData.calculationConfig) {
+        setCalculationConfig?.(
+          coerceCalculationConfig(restoreData.calculationConfig, formData.calcConfig)
+        );
+      }
+      if (restoreData.locale) {
+        // Locale aus dem Backup übernehmen → LocaleMigrationModal entfällt.
+        setLocale?.(restoreData.locale as LocaleId);
+      }
+      setTheme?.((restoreData.theme as Theme) || 'system');
       toast.success(t("onboarding.toast.restoreSuccess"));
     } else {
+      setTheme?.('system');
       toast.success(t("onboarding.toast.welcome"));
     }
 

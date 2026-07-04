@@ -131,6 +131,22 @@ export function useAttachments() {
     return () => { cancelled = true; };
   }, []);
 
+  // ─── Re-Load nach Backup-Import (Metadaten wurden via Snapshot
+  //     direkt in SQLite ersetzt, der State muss nachziehen) ────
+  const reloadAttachments = useCallback(async () => {
+    if (!isSQLiteActive()) return;
+    try {
+      const [sqlAttachments, sqlLabels] = await Promise.all([
+        getAllAttachments(),
+        getAllLabelSuggestions(),
+      ]);
+      setAttachments(sqlAttachments);
+      setLabelSuggestions(sqlLabels);
+    } catch (err) {
+      logger.error("[useAttachments] Re-Load fehlgeschlagen:", err);
+    }
+  }, []);
+
   // ─── Label-Suggestion Update (SQLite + State) ─────────────
 
   const updateSuggestions = useCallback((label: string) => {
@@ -339,5 +355,6 @@ export function useAttachments() {
     getLabelSuggestions,
     readAttachmentFile,
     formatFileSize,
+    reloadAttachments,
   };
 }

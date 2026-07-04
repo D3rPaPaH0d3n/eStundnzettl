@@ -5,7 +5,7 @@ import { Share } from "@capacitor/share";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import type { Entry, UserData, WorkCode, Attachment, BackupPayload, CalculationConfig } from '../types';
-import { exportToSelectedFolder, attachBackupChecksum } from "../utils/storageBackup";
+import { exportToSelectedFolder, composeBackupPayload } from "../utils/storageBackup";
 import { toLocalDateString } from "../utils";
 import { getIntlLocale } from "../utils/formatLocale";
 import { logger } from "../utils/logger";
@@ -15,8 +15,11 @@ interface UseExportProps {
   userData: UserData;
   workCodes: WorkCode[];
   attachments?: Attachment[];
+  attachmentLabels?: string[];
   exportPayloadRef: RefObject<BackupPayload | null>;
   calculationConfig?: CalculationConfig | null;
+  locale?: string | null;
+  theme?: string | null;
 }
 
 /**
@@ -41,24 +44,24 @@ interface UseExportProps {
  * - `handleExportToFolder()` — schreibt in SAF-Ordner
  * - `handleExportShare()` — öffnet natives Share-Sheet
  */
-export function useExport({ entries, userData, workCodes, attachments = [], exportPayloadRef, calculationConfig }: UseExportProps) {
+export function useExport({ entries, userData, workCodes, attachments = [], attachmentLabels = [], exportPayloadRef, calculationConfig, locale, theme }: UseExportProps) {
   const { t } = useTranslation();
   const [showExportModal, setShowExportModal] = useState(false);
 
-  const buildPayload = async (): Promise<BackupPayload> => {
-    const payload: BackupPayload = {
-      user: userData,
-      entries,
-      workCodes,
-      attachments,
-      attachmentLabels: [],
-      calculationConfig: calculationConfig ?? null,
-      exportedAt: new Date().toISOString(),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    };
-    await attachBackupChecksum(payload);
-    return payload;
-  };
+  const buildPayload = async (): Promise<BackupPayload> =>
+    composeBackupPayload(
+      {
+        user: userData,
+        entries,
+        workCodes,
+        attachments,
+        attachmentLabels,
+        calculationConfig,
+        locale,
+        theme,
+      },
+      "eStundnzettl Export"
+    );
 
   // --- Main entry point ---
   const exportData = async () => {

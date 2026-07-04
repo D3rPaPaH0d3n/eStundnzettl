@@ -34,10 +34,16 @@ vi.mock("../../db/repositories/entriesRepo", () => ({
 }));
 vi.mock("../../db/repositories/workCodesRepo", () => ({
   bulkReplaceWorkCodes: vi.fn(),
+  getAllWorkCodes: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("../../db/repositories/attachmentsRepo", () => ({
   bulkReplaceAttachments: vi.fn(),
   bulkReplaceLabelSuggestions: vi.fn(),
+  getAllAttachments: vi.fn().mockResolvedValue([]),
+  getAllLabelSuggestions: vi.fn().mockResolvedValue([]),
+}));
+vi.mock("../../db/snapshot", () => ({
+  replaceFullSnapshot: vi.fn().mockResolvedValue(undefined),
 }));
 
 import {
@@ -45,12 +51,17 @@ import {
   attachBackupChecksum,
   verifyBackupIntegrity,
   analyzeBackupData,
+  applyBackup,
+  composeBackupPayload,
   triggerManualBackup,
 } from "../storageBackup";
 import { uploadBackup } from "../nextcloudClient";
 import { getNextcloudAppPassword } from "../nextcloudSecret";
 import { getSetting } from "../../db/repositories/settingsRepo";
 import { getAllEntries } from "../../db/repositories/entriesRepo";
+import { getAllWorkCodes } from "../../db/repositories/workCodesRepo";
+import { replaceFullSnapshot } from "../../db/snapshot";
+import type { BackupAnalysisData } from "../../types";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -179,6 +190,103 @@ describe("analyzeBackupData", () => {
   });
 });
 
+describe("analyzeBackupData — locale & theme (v7)", () => {
+  it("extrahiert gültige locale und theme aus dem Payload", async () => {
+    const result = await analyzeBackupData({
+      entries: [{ id: 1, date: "2024-01-01", type: "work" }],
+      locale: "at",
+      theme: "dark",
+    });
+    if (!result.isValid) throw new Error("expected valid result");
+    expect(result.locale).toBe("at");
+    expect(result.theme).toBe("dark");
+  });
+
+  it("verwirft ungültige locale/theme-Werte", async () => {
+    const result = await analyzeBackupData({
+      entries: [{ id: 1, date: "2024-01-01", type: "work" }],
+      locale: "mars-base-1",
+      theme: "neon",
+    });
+    if (!result.isValid) throw new Error("expected valid result");
+    expect(result.locale).toBeNull();
+    expect(result.theme).toBeNull();
+  });
+});
+
+describe("composeBackupPayload", () => {
+  it("baut einen vollständigen v7-Payload mit Checksum", async () => {
+    const payload = await composeBackupPayload(
+      {
+        user: { name: "Demo" },
+        entries: [{ id: 1, date: "2024-01-01", type: "work" } as never],
+        workCodes: [{ id: 1, label: "Montage" } as never],
+        attachmentLabels: ["Beleg"],
+        calculationConfig: { weeklyTargetMinutes: 2310 } as never,
+        locale: "at",
+        theme: "dark",
+      },
+      "Test-Backup"
+    );
+
+    expect(payload.version).toBe("v7");
+    expect(payload.workCodes).toEqual([{ id: 1, label: "Montage" }]);
+    expect(payload.locale).toBe("at");
+    expect(payload.theme).toBe("dark");
+    expect(payload.attachmentLabels).toEqual(["Beleg"]);
+    expect(payload.checksum).toMatch(/^[0-9a-f]{64}$/);
+    expect(await verifyBackupIntegrity(payload)).toBe("verified");
+  });
+});
+
+describe("applyBackup", () => {
+  const makeAnalyzed = (overrides: Partial<BackupAnalysisData> = {}): BackupAnalysisData => ({
+    valid: true,
+    entryCount: 1,
+    hasSettings: true,
+    hasWorkCodes: true,
+    hasAttachments: false,
+    hasCalculationConfig: true,
+    entries: [{ id: 1, date: "2024-01-01", type: "work" } as never],
+    settings: { name: "Demo" },
+    workCodes: [{ id: 1, label: "Montage" } as never],
+    attachments: [],
+    attachmentLabels: ["Beleg"],
+    calculationConfig: { weeklyTargetMinutes: 2310 },
+    locale: "at",
+    theme: "dark",
+    timestamp: null,
+    integrity: "verified",
+    ...overrides,
+  });
+
+  it("schreibt alle Sektionen inkl. locale/theme in den Snapshot", async () => {
+    const ok = await applyBackup(makeAnalyzed());
+
+    expect(ok).toBe(true);
+    expect(replaceFullSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entries: expect.any(Array),
+        userData: { name: "Demo" },
+        workCodes: [{ id: 1, label: "Montage" }],
+        attachmentLabels: ["Beleg"],
+        calculationConfig: { weeklyTargetMinutes: 2310 },
+        locale: "at",
+        theme: "dark",
+      })
+    );
+    // localStorage-Mirrors für Pre-Hydration-Reads
+    expect(localStorage.getItem("estundnzettl_locale")).toBe("at");
+    expect(localStorage.getItem("estundnzettl_theme")).toBe("dark");
+  });
+
+  it("liefert false wenn der Snapshot-Write fehlschlägt", async () => {
+    vi.mocked(replaceFullSnapshot).mockRejectedValueOnce(new Error("db locked"));
+    const ok = await applyBackup(makeAnalyzed());
+    expect(ok).toBe(false);
+  });
+});
+
 describe("triggerManualBackup", () => {
   it("liest das Nextcloud-App-Passwort aus Secure Storage statt aus Legacy-Storage", async () => {
     vi.mocked(getAllEntries).mockResolvedValue([{ id: 1, date: "2024-01-01", type: "work" } as never]);
@@ -203,7 +311,38 @@ describe("triggerManualBackup", () => {
       "https://cloud.invalid/remote.php/dav/files/demo",
       "demo-user",
       "fixture-secure-pass",
-      expect.objectContaining({ version: "v6" }),
+      expect.objectContaining({ version: "v7" }),
+    );
+  });
+
+  it("sichert workCodes im manuellen Backup mit", async () => {
+    vi.mocked(getAllEntries).mockResolvedValue([{ id: 1, date: "2024-01-01", type: "work" } as never]);
+    vi.mocked(getAllWorkCodes).mockResolvedValue([{ id: 7, label: "Montage" } as never]);
+    vi.mocked(getSetting).mockImplementation(async (key: string) => {
+      const values: Record<string, unknown> = {
+        user: { name: "Demo" },
+        locale: "at",
+        theme: "dark",
+        nextcloud_enabled: true,
+        nextcloud_url: "https://cloud.invalid",
+        nextcloud_user: "demo-user",
+      };
+      return values[key] ?? null;
+    });
+    vi.mocked(getNextcloudAppPassword).mockResolvedValue("fixture-secure-pass");
+    vi.mocked(uploadBackup).mockResolvedValue(true);
+
+    await triggerManualBackup();
+
+    expect(uploadBackup).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+      expect.objectContaining({
+        workCodes: [{ id: 7, label: "Montage" }],
+        locale: "at",
+        theme: "dark",
+      }),
     );
   });
 });

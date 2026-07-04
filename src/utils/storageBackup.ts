@@ -6,7 +6,10 @@ import { getNextcloudAppPassword } from "./nextcloudSecret";
 import { isSQLiteActive } from "../db/storageMode";
 import { setSetting, deleteSetting, getSetting } from "../db/repositories/settingsRepo";
 import { getAllEntries } from "../db/repositories/entriesRepo";
+import { getAllWorkCodes } from "../db/repositories/workCodesRepo";
+import { getAllAttachments, getAllLabelSuggestions } from "../db/repositories/attachmentsRepo";
 import { replaceFullSnapshot, type ImportSnapshot } from "../db/snapshot";
+import { LOCALES } from "../locales";
 import { logger } from "./logger";
 import { getErrorMessage } from "./errorUtils";
 import type { BackupAnalysisResult, BackupAnalysisData, BackupPayload, CalculationConfig, UserData, Entry, WorkCode, Attachment } from "../types";
@@ -76,6 +79,93 @@ export async function attachBackupChecksum<T extends BackupPayload | Record<stri
   if (checksum) mutable.checksum = checksum;
   return payload;
 }
+
+// ─── Zentraler Backup-Payload-Builder ───────────────────────
+//
+// Single Source of Truth für den Inhalt eines Backups. ALLE Backup-Wege
+// (Auto-Backup, "Jetzt sichern", Settings-Export) bauen ihren Payload über
+// `composeBackupPayload`, damit kein Pfad stillschweigend Sektionen
+// vergisst (vor v7 fehlten z.B. workCodes im Auto-Backup komplett).
+
+/** Payload-Version: v7 = vollständiger App-Zustand inkl. workCodes/locale/theme. */
+export const BACKUP_PAYLOAD_VERSION = "v7";
+
+export interface BackupDataSections {
+  user: UserData | Record<string, unknown> | null;
+  entries: Entry[];
+  workCodes?: WorkCode[];
+  attachments?: Attachment[];
+  attachmentLabels?: string[];
+  calculationConfig?: CalculationConfig | Record<string, unknown> | null;
+  locale?: string | null;
+  theme?: string | null;
+}
+
+/**
+ * Baut aus den Daten-Sektionen einen vollständigen, checksummten
+ * Backup-Payload. Reine Zusammenstellung — liest selbst nichts aus DB/State.
+ */
+export const composeBackupPayload = async (
+  sections: BackupDataSections,
+  note: string
+): Promise<BackupPayload> => {
+  const payload: BackupPayload = {
+    user: sections.user ?? null,
+    entries: sections.entries || [],
+    workCodes: sections.workCodes || [],
+    attachments: sections.attachments || [],
+    attachmentLabels: sections.attachmentLabels || [],
+    calculationConfig: (sections.calculationConfig as CalculationConfig | null) ?? null,
+    locale: sections.locale ?? null,
+    theme: sections.theme ?? null,
+    lastModified: new Date().toISOString(),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    note,
+    version: BACKUP_PAYLOAD_VERSION,
+  };
+  await attachBackupChecksum(payload);
+  return payload;
+};
+
+/**
+ * Liest alle Backup-Sektionen aus SQLite (Source of Truth). Einzelne
+ * fehlgeschlagene Sektionen werden geloggt und leer/null belassen, damit
+ * ein Backup nicht an einer Nebensektion scheitert.
+ */
+export const collectBackupSections = async (): Promise<BackupDataSections> => {
+  const sections: BackupDataSections = { user: null, entries: [] };
+  if (!isSQLiteActive()) return sections;
+
+  try { sections.user = (await getSetting("user")) as BackupDataSections["user"]; }
+  catch (e) { logger.warn("[collectBackupSections] user-Read fehlgeschlagen:", e); }
+
+  try { sections.entries = await getAllEntries(); }
+  catch (e) { logger.warn("[collectBackupSections] entries-Read fehlgeschlagen:", e); }
+
+  try { sections.workCodes = await getAllWorkCodes(); }
+  catch (e) { logger.warn("[collectBackupSections] workCodes-Read fehlgeschlagen:", e); }
+
+  try { sections.attachments = await getAllAttachments(); }
+  catch (e) { logger.warn("[collectBackupSections] attachments-Read fehlgeschlagen:", e); }
+
+  try { sections.attachmentLabels = await getAllLabelSuggestions(); }
+  catch (e) { logger.warn("[collectBackupSections] attachmentLabels-Read fehlgeschlagen:", e); }
+
+  try { sections.calculationConfig = (await getSetting("calculationConfig")) as BackupDataSections["calculationConfig"]; }
+  catch (e) { logger.warn("[collectBackupSections] calculationConfig-Read fehlgeschlagen:", e); }
+
+  try {
+    const locale = await getSetting("locale");
+    if (typeof locale === "string" && locale in LOCALES) sections.locale = locale;
+  } catch (e) { logger.warn("[collectBackupSections] locale-Read fehlgeschlagen:", e); }
+
+  try {
+    const theme = await getSetting("theme");
+    if (theme === "system" || theme === "dark" || theme === "light") sections.theme = theme;
+  } catch (e) { logger.warn("[collectBackupSections] theme-Read fehlgeschlagen:", e); }
+
+  return sections;
+};
 
 function redactBackupErrorMessage(error: unknown, fallback: string): string {
   const message = getErrorMessage(error, fallback);
@@ -390,6 +480,18 @@ const normalizeCalculationConfig = (value: unknown): Record<string, unknown> | n
   return raw as Record<string, unknown>;
 };
 
+const normalizeLocaleId = (value: unknown): string | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const raw = (value as Record<string, unknown>).locale;
+  return typeof raw === "string" && raw in LOCALES ? raw : null;
+};
+
+const normalizeTheme = (value: unknown): string | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const raw = (value as Record<string, unknown>).theme;
+  return raw === "system" || raw === "dark" || raw === "light" ? raw : null;
+};
+
 // 1. ANALYSE - Schaut in die Daten, OHNE zu speichern.
 // Async, weil die Integritätsprüfung via SHA-256 (Web Crypto) asynchron ist.
 export const analyzeBackupData = async (data: unknown): Promise<BackupAnalysisResult> => {
@@ -401,6 +503,8 @@ export const analyzeBackupData = async (data: unknown): Promise<BackupAnalysisRe
   const attachments = normalizeAttachments(data);
   const attachmentLabels = normalizeAttachmentLabels(data);
   const calculationConfig = normalizeCalculationConfig(data);
+  const locale = normalizeLocaleId(data);
+  const theme = normalizeTheme(data);
 
   const hasUsefulData = entries.length > 0 || !!settings || workCodes.length > 0 || attachments.length > 0 || attachmentLabels.length > 0;
   if (!hasUsefulData) return { valid: false, isValid: false };
@@ -426,6 +530,8 @@ export const analyzeBackupData = async (data: unknown): Promise<BackupAnalysisRe
     attachments,
     attachmentLabels,
     calculationConfig,
+    locale,
+    theme,
     timestamp: normalizeTimestamp(data),
     integrity,
   };
@@ -475,7 +581,24 @@ export const applyBackup = async (analyzedData: BackupAnalysisData, mode: string
         snapshot.calculationConfig = analyzedData.calculationConfig as unknown as CalculationConfig;
       }
 
+      // Locale/Theme (bereits in analyzeBackupData validiert)
+      if (mode === 'ALL' && analyzedData.locale) {
+        snapshot.locale = analyzedData.locale;
+      }
+      if (mode === 'ALL' && analyzedData.theme) {
+        snapshot.theme = analyzedData.theme;
+      }
+
       await replaceFullSnapshot(snapshot);
+
+      // localStorage-Mirrors für Werte, die beim App-Start VOR der
+      // SQLite-Hydration gelesen werden (Theme-Prepaint, Locale-Init).
+      if (mode === 'ALL' && analyzedData.locale) {
+        try { localStorage.setItem(STORAGE_KEYS.LOCALE, analyzedData.locale); } catch { /* noop */ }
+      }
+      if (mode === 'ALL' && analyzedData.theme) {
+        try { localStorage.setItem(STORAGE_KEYS.THEME, analyzedData.theme); } catch { /* noop */ }
+      }
     }
 
     return true;
@@ -488,26 +611,14 @@ export const applyBackup = async (analyzedData: BackupAnalysisData, mode: string
 // 6. MANUELLER BACKUP (für "Jetzt sichern"-Button)
 export const triggerManualBackup = async (): Promise<Record<string, unknown>> => {
   try {
-    let userData: unknown = null;
-    let entries: unknown[] = [];
-
-    if (isSQLiteActive()) {
-      try {
-        userData = await getSetting("user");
-        entries = await getAllEntries();
-      } catch (e) {
-        logger.warn("[triggerManualBackup] SQLite-Read fehlgeschlagen:", e);
-      }
-    } else {
-      try { userData = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null'); } catch { /* corrupt */ }
-      try { entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]'); } catch { entries = []; }
+    // Vollständigen App-Zustand aus SQLite einsammeln (Single Source of
+    // Truth — gleicher Payload-Inhalt wie Auto-Backup und Settings-Export).
+    const sections = await collectBackupSections();
+    if (!isSQLiteActive()) {
+      try { sections.user = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null'); } catch { /* corrupt */ }
+      try { sections.entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]'); } catch { sections.entries = []; }
     }
-
-    // CalculationConfig für Backup laden
-    let calcConfig: unknown = null;
-    if (isSQLiteActive()) {
-      try { calcConfig = await getSetting("calculationConfig"); } catch { /* ignore */ }
-    }
+    const entries = sections.entries;
 
     // Cloud-Status: Nur das aktivierte Flag ist relevant.
     // Das eigentliche Zugriffstoken wird nativ still erneuert.
@@ -526,15 +637,7 @@ export const triggerManualBackup = async (): Promise<Record<string, unknown>> =>
       return { success: false, message: "Keine Daten zum Sichern" };
     }
 
-    const payload: Record<string, unknown> = {
-      user: userData,
-      entries,
-      calculationConfig: calcConfig,
-      lastModified: new Date().toISOString(),
-      note: "eStundnzettl Manueller Backup",
-      version: "v6"
-    };
-    await attachBackupChecksum(payload);
+    const payload = await composeBackupPayload(sections, "eStundnzettl Manueller Backup");
 
     // null = nicht aktiv, true = erfolgreich, false = fehlgeschlagen
     let gdriveOk: boolean | null = cloudActive ? false : null;

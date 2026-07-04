@@ -34,6 +34,21 @@ vi.mock("../../utils/googleDrive", () => ({
 
 vi.mock("../../utils/storageBackup", () => ({
   writeBackupFile: vi.fn().mockResolvedValue(undefined),
+  // Leichtgewichtige Nachbildung von composeBackupPayload — gleiche
+  // Feldstruktur, aber ohne Checksum/Filesystem-Abhängigkeiten.
+  composeBackupPayload: vi.fn(async (sections: Record<string, unknown>, note: string) => ({
+    user: sections.user ?? null,
+    entries: sections.entries || [],
+    workCodes: sections.workCodes || [],
+    attachments: sections.attachments || [],
+    attachmentLabels: sections.attachmentLabels || [],
+    calculationConfig: sections.calculationConfig ?? null,
+    locale: sections.locale ?? null,
+    theme: sections.theme ?? null,
+    lastModified: new Date().toISOString(),
+    note,
+    version: "v7",
+  })),
 }));
 
 vi.mock("../../utils/nextcloudClient", () => ({
@@ -141,7 +156,7 @@ describe("useAutoBackup", () => {
       expect.objectContaining({
         entries: expect.any(Array),
         user: expect.any(Object),
-        version: "v6",
+        version: "v7",
       })
     );
   });
@@ -245,7 +260,7 @@ describe("useAutoBackup", () => {
     expect(uploadOrUpdateFile).toHaveBeenCalledWith(
       "test-token",
       "estundnzettl_backup.json",
-      expect.objectContaining({ entries: expect.any(Array), version: "v6" })
+      expect.objectContaining({ entries: expect.any(Array), version: "v7" })
     );
   });
 
@@ -303,7 +318,7 @@ describe("useAutoBackup", () => {
       "https://nc.example.com",
       "demo-user",
       "fixture-secure-pass",
-      expect.objectContaining({ version: "v6" }),
+      expect.objectContaining({ version: "v7" }),
     );
   });
 
@@ -418,5 +433,59 @@ describe("useAutoBackup", () => {
     const entries = [makeEntry()];
     const { result } = renderHook(() => useAutoBackup(entries, USER, true));
     expect(result.current.backupFailCount).toBe(3);
+  });
+
+  it("includes workCodes, calculationConfig, locale and theme in the payload", async () => {
+    localStorage.setItem("estundnzettl_local_backup_enabled", "true");
+    const entries = [makeEntry()];
+    const extras = {
+      workCodes: [{ id: 1, label: "Montage" }],
+      calculationConfig: { weeklyTargetMinutes: 2310 } as never,
+      locale: "at",
+      theme: "dark",
+      attachmentLabels: ["Beleg"],
+    };
+    renderHook(() => useAutoBackup(entries, USER, true, extras));
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    expect(writeBackupFile).toHaveBeenCalledWith(
+      "estundnzettl_backup.json",
+      expect.objectContaining({
+        workCodes: [{ id: 1, label: "Montage" }],
+        calculationConfig: { weeklyTargetMinutes: 2310 },
+        locale: "at",
+        theme: "dark",
+        attachmentLabels: ["Beleg"],
+      })
+    );
+  });
+
+  it("re-triggers Auto-Save when only workCodes change (hash covers all sections)", async () => {
+    localStorage.setItem("estundnzettl_local_backup_enabled", "true");
+    const entries = [makeEntry()];
+    const extras1 = { workCodes: [{ id: 1, label: "Montage" }] };
+    const extras2 = { workCodes: [{ id: 1, label: "Montage" }, { id: 2, label: "Service" }] };
+
+    const { rerender } = renderHook(
+      ({ extras }) => useAutoBackup(entries, USER, true, extras),
+      { initialProps: { extras: extras1 } }
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+      await Promise.resolve();
+    });
+    expect(writeBackupFile).toHaveBeenCalledTimes(1);
+
+    rerender({ extras: extras2 });
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+      await Promise.resolve();
+    });
+    expect(writeBackupFile).toHaveBeenCalledTimes(2);
   });
 });

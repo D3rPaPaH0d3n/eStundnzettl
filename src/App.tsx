@@ -1,8 +1,10 @@
 import React, { useRef, useCallback, useMemo, Suspense, useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import type { BackupPayload } from "./types";
+import type { BackupPayload, Theme } from "./types";
+import type { LocaleId } from "./locales/types";
 import { getLocale } from "./locales";
+import { coerceCalculationConfig } from "./utils/calculationConfig";
 import { replaceFullSnapshot, type ImportSnapshot } from "./db/snapshot";
 
 import { useWorkCodes } from "./hooks/useWorkCodes";
@@ -93,22 +95,35 @@ export default function App() {
   const form = useFormState({ getDefaultCode });
   const { timerState, autoCheckoutData, clearAutoCheckout, startTimer, pauseTimer, resumeTimer, stopTimer } = useLiveTimer();
 
-  const { triggerManualBackup } = useAutoBackup(entries, userData, autoBackup);
-  const { lastRun: pdfArchiveLastRun, lastError: pdfArchiveLastError, performRun: pdfArchivePerformRun } =
-    useAutoPdfArchive(entries, userData, workCodes, locale, calculationConfig);
-
   const {
     attachments, addAttachment, removeAttachment, removeAttachmentsForEntry,
     getAttachmentsForEntry, getLabelSuggestions, readAttachmentFile, formatFileSize,
-    attachmentCountByEntryId,
+    attachmentCountByEntryId, labelSuggestions, reloadAttachments,
   } = useAttachments();
+
+  // Memoisiert, damit der Auto-Backup-Debounce nicht bei jedem Render
+  // neu startet (useAutoBackup nutzt das Objekt als Effect-Dependency).
+  const autoBackupExtras = useMemo(() => ({
+    workCodes,
+    calculationConfig,
+    locale: localeId,
+    theme,
+    attachments,
+    attachmentLabels: labelSuggestions,
+  }), [workCodes, calculationConfig, localeId, theme, attachments, labelSuggestions]);
+
+  const { triggerManualBackup } = useAutoBackup(entries, userData, autoBackup, autoBackupExtras);
+  const { lastRun: pdfArchiveLastRun, lastError: pdfArchiveLastError, performRun: pdfArchivePerformRun } =
+    useAutoPdfArchive(entries, userData, workCodes, locale, calculationConfig);
 
   const exportPayloadRef = useRef<BackupPayload | null>(null);
   const { showExportModal, setShowExportModal, exportData, handleExportToFolder, handleExportShare } = useExport({
-    entries, userData, workCodes, attachments, exportPayloadRef, calculationConfig,
+    entries, userData, workCodes, attachments, attachmentLabels: labelSuggestions,
+    exportPayloadRef, calculationConfig, locale: localeId, theme,
   });
 
-  // Atomarer Restore: schreibt Entries + UserData + WorkCodes in einer
+  // Atomarer Restore: schreibt alle Backup-Sektionen (Entries, UserData,
+  // WorkCodes, CalculationConfig, Attachments, Locale, Theme) in einer
   // einzigen SQLite-Transaktion. Erst nach erfolgreichem COMMIT wird der
   // React-State refresht — bei Fehler bleibt sowohl DB als auch UI auf
   // dem alten Stand.
@@ -117,7 +132,16 @@ export default function App() {
     if (snapshot.entries !== undefined) setEntriesFromSnapshot(snapshot.entries);
     if (snapshot.userData !== undefined) setUserData(snapshot.userData);
     if (snapshot.workCodes !== undefined) setWorkCodesFromSnapshot(snapshot.workCodes);
-  }, [setEntriesFromSnapshot, setUserData, setWorkCodesFromSnapshot]);
+    if (snapshot.calculationConfig !== undefined) {
+      const raw = snapshot.calculationConfig;
+      setCalculationConfig((prev) => coerceCalculationConfig(raw, prev));
+    }
+    if (snapshot.locale !== undefined) setLocale(snapshot.locale as LocaleId);
+    if (snapshot.theme !== undefined) setTheme(snapshot.theme as Theme);
+    if (snapshot.attachments !== undefined || snapshot.attachmentLabels !== undefined) {
+      await reloadAttachments();
+    }
+  }, [setEntriesFromSnapshot, setUserData, setWorkCodesFromSnapshot, setCalculationConfig, setLocale, setTheme, reloadAttachments]);
 
   const { handleImport } = useImport({ importSnapshot });
 

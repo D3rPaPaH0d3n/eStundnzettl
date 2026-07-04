@@ -408,6 +408,7 @@
       "folderAccessError": "Fehler beim Zugriff.",
       "fileReadError": "Datei konnte nicht gelesen werden.",
       "integrityMismatch": "⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",
+      "restoreError": "Wiederherstellung fehlgeschlagen — Backup konnte nicht gespeichert werden.",
       "restoreSuccess": "Daten wiederhergestellt!",
       "welcome": "Willkommen!"
     }

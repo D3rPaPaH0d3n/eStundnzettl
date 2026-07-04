@@ -267,19 +267,55 @@ export function useOnboardingFlow(
 
   // --- FINISH (BUGFIX: Persistenz korrigiert) ---
   const finishSetup = async () => {
-    const userDataToSave = {
-      name: formData.name,
-      company: formData.company,
-      role: formData.role,
-      position: formData.role,
-      photo: formData.photo,
-      workDays: formData.workDays,
-      simpleMode: formData.simpleMode || false,
-      settings: {
-        autoBackup: formData.autoBackup,
-        theme: 'system'
+    // Restore-Flow: Backup ZUERST einspielen. applyBackup schreibt u.a. den
+    // Settings-Key "user" aus dem Backup. Liefe es erst NACH den
+    // setSetting/setUserData-Calls unten, würde der Persist-Effekt in
+    // useSettings (schreibt userData-State fire-and-forget nach SQLite) das
+    // leere Wizard-Profil zeitlich nach der Snapshot-Transaktion erneut
+    // persistieren — der restaurierte User wäre weg und der Onboarding-
+    // Check (leerer Name) zeigte den Wizard beim nächsten Start wieder.
+    if (restoreData) {
+      const applied = await applyBackup(restoreData);
+      if (!applied) {
+        toast.error(t("onboarding.toast.restoreError"));
+        return;
       }
-    };
+    }
+
+    // Im Restore-Flow werden die Profil-Steps übersprungen (Welcome →
+    // Backup → Summary), formData bleibt leer — das Profil muss deshalb
+    // aus dem Backup übernommen werden statt aus formData.
+    const restoredUser =
+      restoreData?.hasSettings && restoreData.settings
+        ? (restoreData.settings as unknown as UserData & { settings?: Record<string, unknown> })
+        : null;
+
+    const userDataToSave = restoredUser
+      ? {
+          ...restoredUser,
+          workDays:
+            Array.isArray(restoredUser.workDays) && restoredUser.workDays.length === 7
+              ? restoredUser.workDays
+              : formData.workDays,
+          settings: {
+            ...restoredUser.settings,
+            autoBackup: formData.autoBackup,
+            theme: 'system'
+          }
+        }
+      : {
+          name: formData.name,
+          company: formData.company,
+          role: formData.role,
+          position: formData.role,
+          photo: formData.photo,
+          workDays: formData.workDays,
+          simpleMode: formData.simpleMode || false,
+          settings: {
+            autoBackup: formData.autoBackup,
+            theme: 'system'
+          }
+        };
 
     // FIX: Zuerst direkt in SQLite schreiben, DANN State updaten
     try {
@@ -348,7 +384,6 @@ export function useOnboardingFlow(
     setTheme?.('system');
 
     if (restoreData) {
-      await applyBackup(restoreData);
       toast.success(t("onboarding.toast.restoreSuccess"));
     } else {
       toast.success(t("onboarding.toast.welcome"));

@@ -408,6 +408,7 @@
       "folderAccessError": "Error accessing folder.",
       "fileReadError": "Could not read file.",
       "integrityMismatch": "⚠️ Checksum mismatch — backup may have been tampered with",
+      "restoreError": "Restore failed — backup could not be saved.",
       "restoreSuccess": "Data restored!",
       "welcome": "Welcome!"
     }

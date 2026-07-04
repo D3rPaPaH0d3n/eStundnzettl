@@ -161,6 +161,7 @@ const makeProps = (view: string) => ({
     onTriggerManualBackup: vi.fn(),
     onExport: vi.fn(),
     onImport: vi.fn(),
+    onApplyBackup: vi.fn().mockResolvedValue(true),
     onDeleteAll: vi.fn(),
     onCheckUpdate: vi.fn(),
     importEntries: vi.fn(),

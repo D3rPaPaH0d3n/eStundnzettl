@@ -17,6 +17,7 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../utils/storageBackup", () => ({
   verifyBackupIntegrity: vi.fn().mockResolvedValue("verified"),
+  mirrorPreHydrationSettings: vi.fn(),
 }));
 
 vi.mock("../../schemas/entry", () => ({
@@ -94,6 +95,27 @@ describe("useImport — vollständiger Restore (v7)", () => {
     const snapshot: ImportSnapshot = importSnapshot.mock.calls[0][0];
     expect(snapshot.locale).toBeUndefined();
     expect(snapshot.theme).toBeUndefined();
+  });
+
+  it("importiert leere Arrays nicht destruktiv (v7-Backup ohne Codes/Anhänge)", async () => {
+    const { result, importSnapshot } = renderImport();
+
+    result.current.handleImport(
+      makeImportEvent({
+        entries: [{ id: 1, date: "2026-01-05", type: "work" }],
+        workCodes: [],
+        attachments: [],
+        attachmentLabels: [],
+      })
+    );
+
+    await vi.waitFor(() => expect(importSnapshot).toHaveBeenCalledTimes(1));
+
+    // Leere Arrays dürfen den lokalen Bestand nicht via DELETE wegräumen
+    const snapshot: ImportSnapshot = importSnapshot.mock.calls[0][0];
+    expect(snapshot.workCodes).toBeUndefined();
+    expect(snapshot.attachments).toBeUndefined();
+    expect(snapshot.attachmentLabels).toBeUndefined();
   });
 
   it("lässt ältere Backups ohne v7-Felder unverändert durch (kein implizites Löschen)", async () => {

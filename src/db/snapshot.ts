@@ -12,7 +12,8 @@
  * Truth für "vollständigen Snapshot atomar einspielen".
  */
 
-import type { Attachment, CalculationConfig, Entry, SqlValue, UserData, WorkCode } from "../types";
+import type { Attachment, CalculationConfig, Entry, SqlValue, Theme, UserData, WorkCode } from "../types";
+import type { LocaleId } from "../locales/types";
 import { executeSet } from "./database";
 
 export interface ImportSnapshot {
@@ -22,10 +23,10 @@ export interface ImportSnapshot {
   attachments?: Attachment[];
   attachmentLabels?: string[];
   calculationConfig?: CalculationConfig;
-  /** LocaleId aus dem Backup (Settings-Key "locale"). */
-  locale?: string;
-  /** Theme aus dem Backup (Settings-Key "theme"). */
-  theme?: string;
+  /** LocaleId aus dem Backup (Settings-Key "locale"). Producer validieren via `isLocaleId`. */
+  locale?: LocaleId;
+  /** Theme aus dem Backup (Settings-Key "theme"). Producer validieren via `isTheme`. */
+  theme?: Theme;
 }
 
 type SnapshotStatement = { statement: string; values: SqlValue[] };
@@ -74,7 +75,10 @@ export async function replaceFullSnapshot(snapshot: ImportSnapshot): Promise<voi
     set.push({ statement: "DELETE FROM work_codes;", values: [] });
     set.push(
       ...snapshot.workCodes.map((c) => ({
-        statement: "INSERT INTO work_codes (id, label) VALUES (?, ?)",
+        // OR REPLACE wie bei entries/attachments: doppelte IDs im Backup
+        // kollabieren zur letzten Zeile statt die gesamte Restore-
+        // Transaktion mit einem PRIMARY-KEY-Fehler abzubrechen.
+        statement: "INSERT OR REPLACE INTO work_codes (id, label) VALUES (?, ?)",
         values: [c.id, c.label || ""],
       }))
     );

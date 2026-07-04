@@ -186,9 +186,9 @@ describe("useOnboardingFlow — finishSetup im Restore-Flow", () => {
     expect(props.setTheme).toHaveBeenCalledWith("dark");
   });
 
-  it("nutzt formData-Profil wenn das Backup keine User-Daten enthält", async () => {
+  it("leitet zum Profil-Step um wenn das Backup kein Profil enthält (statt leeres Profil zu speichern)", async () => {
     const { result, props } = renderFlow();
-    const restoreData = { ...makeRestoreData(), hasSettings: false, settings: null };
+    const restoreData = makeRestoreData({ hasSettings: false, settings: null });
 
     act(() => {
       result.current.handleStartRestore();
@@ -199,8 +199,49 @@ describe("useOnboardingFlow — finishSetup im Restore-Flow", () => {
       await result.current.finishSetup();
     });
 
+    // Kein Abschluss, kein Write, keine Backup-Anwendung — erst Profil ergänzen
+    expect(props.onComplete).not.toHaveBeenCalled();
+    expect(applyBackup).not.toHaveBeenCalled();
+    expect(setSetting).not.toHaveBeenCalled();
+    expect(result.current.step).toBe(1);
+    expect(result.current.isRestoreFlow).toBe(false);
+
+    // Nach dem Ergänzen des Profils: Einträge aus dem Backup + getipptes Profil
+    act(() => {
+      result.current.setFormData((p) => ({ ...p, name: "Nachgetragen", localeId: "at" }));
+    });
+    await act(async () => {
+      await result.current.finishSetup();
+    });
+
+    expect(applyBackup).toHaveBeenCalledTimes(1);
     const userWrite = vi.mocked(setSetting).mock.calls.find(([key]) => key === "user");
-    expect(userWrite?.[1]).toMatchObject({ name: "" });
+    expect(userWrite?.[1]).toMatchObject({ name: "Nachgetragen" });
+    expect(props.onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it("verwirft ein geladenes Backup, wenn der User danach doch neu startet", async () => {
+    const { result, props } = renderFlow();
+
+    act(() => {
+      result.current.handleStartRestore();
+      result.current.setRestoreData(makeRestoreData());
+    });
+
+    // User geht zurück und entscheidet sich um: neues Profil anlegen
+    act(() => {
+      result.current.handleStartNew();
+      result.current.setFormData((p) => ({ ...p, name: "Ganz Neu", localeId: "at" }));
+    });
+
+    await act(async () => {
+      await result.current.finishSetup();
+    });
+
+    // Das verworfene Backup darf NICHT eingespielt werden
+    expect(applyBackup).not.toHaveBeenCalled();
+    const userWrite = vi.mocked(setSetting).mock.calls.find(([key]) => key === "user");
+    expect(userWrite?.[1]).toMatchObject({ name: "Ganz Neu" });
     expect(props.onComplete).toHaveBeenCalledTimes(1);
   });
 });

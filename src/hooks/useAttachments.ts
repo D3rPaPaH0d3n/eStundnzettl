@@ -105,34 +105,9 @@ export function useAttachments() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [labelSuggestions, setLabelSuggestions] = useState<string[]>([]);
 
-  // ─── SQLite nachladen beim Start ───────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadFromSQLite = async () => {
-      if (!isSQLiteActive()) return;
-
-      try {
-        const [sqlAttachments, sqlLabels] = await Promise.all([
-          getAllAttachments(),
-          getAllLabelSuggestions(),
-        ]);
-
-        if (cancelled) return;
-
-        setAttachments(sqlAttachments);
-        setLabelSuggestions(sqlLabels);
-      } catch (err) {
-        logger.error("[useAttachments] SQLite-Load fehlgeschlagen:", err);
-      }
-    };
-
-    loadFromSQLite();
-    return () => { cancelled = true; };
-  }, []);
-
-  // ─── Re-Load nach Backup-Import (Metadaten wurden via Snapshot
-  //     direkt in SQLite ersetzt, der State muss nachziehen) ────
+  // ─── Load aus SQLite: beim Start und nach Backup-Restores ──
+  // (Restore-Pfade ersetzen die Metadaten via Snapshot direkt in
+  // SQLite; der State muss danach über reloadAttachments nachziehen.)
   const reloadAttachments = useCallback(async () => {
     if (!isSQLiteActive()) return;
     try {
@@ -143,9 +118,15 @@ export function useAttachments() {
       setAttachments(sqlAttachments);
       setLabelSuggestions(sqlLabels);
     } catch (err) {
-      logger.error("[useAttachments] Re-Load fehlgeschlagen:", err);
+      logger.error("[useAttachments] SQLite-Load fehlgeschlagen:", err);
     }
   }, []);
+
+  useEffect(() => {
+    // Initial-Hydration aus SQLite — bewusst direkt im Mount-Effekt.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void reloadAttachments();
+  }, [reloadAttachments]);
 
   // ─── Label-Suggestion Update (SQLite + State) ─────────────
 

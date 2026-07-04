@@ -69,6 +69,16 @@ export const LOCALES: Record<LocaleId, Locale> = {
 };
 
 /**
+ * Type-Guard: prüft ob ein beliebiger Wert eine gültige LocaleId ist.
+ * Zentrale Validierung für Backup-Import/-Export und Settings-Reads.
+ * hasOwnProperty statt `in`, damit Prototype-Keys ("constructor",
+ * "toString", …) aus manipulierten Backups nicht als Locale durchgehen.
+ */
+export function isLocaleId(value: unknown): value is LocaleId {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(LOCALES, value);
+}
+
+/**
  * Holt eine Locale per ID. Wenn `id` undefined oder nicht gefunden,
  * wird `DEFAULT_LOCALE_ID` (Österreich) zurückgegeben.
  */

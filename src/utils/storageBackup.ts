@@ -9,10 +9,12 @@ import { getAllEntries } from "../db/repositories/entriesRepo";
 import { getAllWorkCodes } from "../db/repositories/workCodesRepo";
 import { getAllAttachments, getAllLabelSuggestions } from "../db/repositories/attachmentsRepo";
 import { replaceFullSnapshot, type ImportSnapshot } from "../db/snapshot";
-import { LOCALES } from "../locales";
+import { isLocaleId } from "../locales";
 import { logger } from "./logger";
 import { getErrorMessage } from "./errorUtils";
-import type { BackupAnalysisResult, BackupAnalysisData, BackupPayload, CalculationConfig, UserData, Entry, WorkCode, Attachment } from "../types";
+import { isTheme } from "../types";
+import type { BackupAnalysisResult, BackupAnalysisData, BackupPayload, CalculationConfig, Theme, UserData, Entry, WorkCode, Attachment } from "../types";
+import type { LocaleId } from "../locales/types";
 
 // =========================================================
 // BACKUP ORDNER
@@ -128,43 +130,62 @@ export const composeBackupPayload = async (
 };
 
 /**
- * Liest alle Backup-Sektionen aus SQLite (Source of Truth). Einzelne
- * fehlgeschlagene Sektionen werden geloggt und leer/null belassen, damit
- * ein Backup nicht an einer Nebensektion scheitert.
+ * Liest alle Backup-Sektionen parallel aus SQLite (Source of Truth).
+ *
+ * Kritische Sektionen (Profil, Entries, WorkCodes, Attachments, Labels)
+ * werfen bei Lesefehlern — sonst würde ein unvollständiger v7-Payload ein
+ * vollständiges Backup am Ziel überschreiben. Nur die optionalen
+ * Einzel-Settings (calculationConfig/locale/theme) sind fail-soft.
  */
 export const collectBackupSections = async (): Promise<BackupDataSections> => {
   const sections: BackupDataSections = { user: null, entries: [] };
   if (!isSQLiteActive()) return sections;
 
-  try { sections.user = (await getSetting("user")) as BackupDataSections["user"]; }
-  catch (e) { logger.warn("[collectBackupSections] user-Read fehlgeschlagen:", e); }
+  const safeRead = async <T>(label: string, fn: () => Promise<T>): Promise<T | undefined> => {
+    try {
+      return await fn();
+    } catch (e) {
+      logger.warn(`[collectBackupSections] ${label}-Read fehlgeschlagen:`, e);
+      return undefined;
+    }
+  };
 
-  try { sections.entries = await getAllEntries(); }
-  catch (e) { logger.warn("[collectBackupSections] entries-Read fehlgeschlagen:", e); }
+  const [user, entries, workCodes, attachments, attachmentLabels, calculationConfig, locale, theme] =
+    await Promise.all([
+      getSetting("user"),
+      getAllEntries(),
+      getAllWorkCodes(),
+      getAllAttachments(),
+      getAllLabelSuggestions(),
+      safeRead("calculationConfig", () => getSetting("calculationConfig")),
+      safeRead("locale", () => getSetting("locale")),
+      safeRead("theme", () => getSetting("theme")),
+    ]);
 
-  try { sections.workCodes = await getAllWorkCodes(); }
-  catch (e) { logger.warn("[collectBackupSections] workCodes-Read fehlgeschlagen:", e); }
-
-  try { sections.attachments = await getAllAttachments(); }
-  catch (e) { logger.warn("[collectBackupSections] attachments-Read fehlgeschlagen:", e); }
-
-  try { sections.attachmentLabels = await getAllLabelSuggestions(); }
-  catch (e) { logger.warn("[collectBackupSections] attachmentLabels-Read fehlgeschlagen:", e); }
-
-  try { sections.calculationConfig = (await getSetting("calculationConfig")) as BackupDataSections["calculationConfig"]; }
-  catch (e) { logger.warn("[collectBackupSections] calculationConfig-Read fehlgeschlagen:", e); }
-
-  try {
-    const locale = await getSetting("locale");
-    if (typeof locale === "string" && locale in LOCALES) sections.locale = locale;
-  } catch (e) { logger.warn("[collectBackupSections] locale-Read fehlgeschlagen:", e); }
-
-  try {
-    const theme = await getSetting("theme");
-    if (theme === "system" || theme === "dark" || theme === "light") sections.theme = theme;
-  } catch (e) { logger.warn("[collectBackupSections] theme-Read fehlgeschlagen:", e); }
+  sections.user = (user ?? null) as BackupDataSections["user"];
+  sections.entries = entries;
+  sections.workCodes = workCodes;
+  sections.attachments = attachments;
+  sections.attachmentLabels = attachmentLabels;
+  sections.calculationConfig = (calculationConfig ?? null) as BackupDataSections["calculationConfig"];
+  if (isLocaleId(locale)) sections.locale = locale;
+  if (isTheme(theme)) sections.theme = theme;
 
   return sections;
+};
+
+/**
+ * Schreibt die localStorage-Mirrors für Werte, die beim App-Start VOR der
+ * SQLite-Hydration gelesen werden (Theme-Prepaint, Locale-Init). Muss von
+ * JEDEM Restore-Pfad aufgerufen werden, der Locale/Theme nach SQLite
+ * schreibt (applyBackup, Settings-Import), sonst startet die App bis zur
+ * Hydration mit dem alten Wert.
+ */
+export const mirrorPreHydrationSettings = (locale?: LocaleId | null, theme?: Theme | null): void => {
+  try {
+    if (locale) localStorage.setItem(STORAGE_KEYS.LOCALE, locale);
+    if (theme) localStorage.setItem(STORAGE_KEYS.THEME, theme);
+  } catch { /* localStorage nicht verfügbar — Mirror ist nur Komfort */ }
 };
 
 function redactBackupErrorMessage(error: unknown, fallback: string): string {
@@ -480,16 +501,16 @@ const normalizeCalculationConfig = (value: unknown): Record<string, unknown> | n
   return raw as Record<string, unknown>;
 };
 
-const normalizeLocaleId = (value: unknown): string | null => {
+const normalizeLocaleId = (value: unknown): LocaleId | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const raw = (value as Record<string, unknown>).locale;
-  return typeof raw === "string" && raw in LOCALES ? raw : null;
+  return isLocaleId(raw) ? raw : null;
 };
 
-const normalizeTheme = (value: unknown): string | null => {
+const normalizeTheme = (value: unknown): Theme | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const raw = (value as Record<string, unknown>).theme;
-  return raw === "system" || raw === "dark" || raw === "light" ? raw : null;
+  return isTheme(raw) ? raw : null;
 };
 
 // 1. ANALYSE - Schaut in die Daten, OHNE zu speichern.
@@ -581,24 +602,19 @@ export const applyBackup = async (analyzedData: BackupAnalysisData, mode: string
         snapshot.calculationConfig = analyzedData.calculationConfig as unknown as CalculationConfig;
       }
 
-      // Locale/Theme (bereits in analyzeBackupData validiert)
-      if (mode === 'ALL' && analyzedData.locale) {
-        snapshot.locale = analyzedData.locale;
-      }
-      if (mode === 'ALL' && analyzedData.theme) {
-        snapshot.theme = analyzedData.theme;
-      }
+      // Locale/Theme (bereits in analyzeBackupData validiert). Einmal
+      // hoisten, damit Snapshot-Write und localStorage-Mirror garantiert
+      // dieselbe Bedingung teilen.
+      const restoreLocale = mode === 'ALL' ? analyzedData.locale : null;
+      const restoreTheme = mode === 'ALL' ? analyzedData.theme : null;
+      if (restoreLocale) snapshot.locale = restoreLocale;
+      if (restoreTheme) snapshot.theme = restoreTheme;
 
       await replaceFullSnapshot(snapshot);
 
       // localStorage-Mirrors für Werte, die beim App-Start VOR der
       // SQLite-Hydration gelesen werden (Theme-Prepaint, Locale-Init).
-      if (mode === 'ALL' && analyzedData.locale) {
-        try { localStorage.setItem(STORAGE_KEYS.LOCALE, analyzedData.locale); } catch { /* noop */ }
-      }
-      if (mode === 'ALL' && analyzedData.theme) {
-        try { localStorage.setItem(STORAGE_KEYS.THEME, analyzedData.theme); } catch { /* noop */ }
-      }
+      mirrorPreHydrationSettings(restoreLocale, restoreTheme);
     }
 
     return true;

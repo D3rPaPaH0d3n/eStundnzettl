@@ -1,9 +1,10 @@
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import type { ImportSnapshot } from "../db/snapshot";
-import { verifyBackupIntegrity } from "../utils/storageBackup";
+import { verifyBackupIntegrity, mirrorPreHydrationSettings } from "../utils/storageBackup";
 import { getErrorMessage } from "../utils/errorUtils";
-import { LOCALES } from "../locales";
+import { isLocaleId } from "../locales";
+import { isTheme } from "../types";
 
 interface UseImportProps {
   importSnapshot: (snapshot: ImportSnapshot) => Promise<void>;
@@ -82,21 +83,32 @@ export function useImport({ importSnapshot }: UseImportProps) {
           snapshot.entries = valid;
         }
         if (d.user && typeof d.user === "object") snapshot.userData = d.user;
-        if (d.workCodes && Array.isArray(d.workCodes)) snapshot.workCodes = d.workCodes;
+        if (Array.isArray(d.workCodes) && d.workCodes.length > 0) snapshot.workCodes = d.workCodes;
 
         // Vollständiger Restore (v7-Backups; ältere Backups haben die
         // Felder schlicht nicht — dann bleibt der jeweilige Bestand stehen).
+        // Leere Arrays werden bewusst NICHT importiert (kein implizites
+        // Löschen): v7-Payloads enthalten die Felder immer, auch wenn zum
+        // Backup-Zeitpunkt nichts vorhanden war — ein Import darf dann
+        // bestehende Anhänge/Labels nicht wegräumen.
         if (d.calculationConfig && typeof d.calculationConfig === "object" && !Array.isArray(d.calculationConfig)) {
           snapshot.calculationConfig = d.calculationConfig;
         }
-        if (Array.isArray(d.attachments)) snapshot.attachments = d.attachments;
-        if (Array.isArray(d.attachmentLabels)) {
-          snapshot.attachmentLabels = d.attachmentLabels.filter((l: unknown) => typeof l === "string");
+        if (Array.isArray(d.attachments) && d.attachments.length > 0) {
+          snapshot.attachments = d.attachments;
         }
-        if (typeof d.locale === "string" && d.locale in LOCALES) snapshot.locale = d.locale;
-        if (d.theme === "system" || d.theme === "dark" || d.theme === "light") snapshot.theme = d.theme;
+        if (Array.isArray(d.attachmentLabels)) {
+          const labels = d.attachmentLabels.filter((l: unknown) => typeof l === "string");
+          if (labels.length > 0) snapshot.attachmentLabels = labels;
+        }
+        if (isLocaleId(d.locale)) snapshot.locale = d.locale;
+        if (isTheme(d.theme)) snapshot.theme = d.theme;
 
         await importSnapshot(snapshot);
+
+        // Mirrors für Reads vor der SQLite-Hydration beim nächsten Start
+        // (gleiches Verhalten wie applyBackup im Onboarding-Restore).
+        mirrorPreHydrationSettings(snapshot.locale, snapshot.theme);
 
         if (skipped > 0) {
           toast(t("toasts.import.skippedEntries", { count: skipped }), { icon: "⚠️" });

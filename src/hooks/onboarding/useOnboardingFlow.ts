@@ -118,6 +118,9 @@ export function useOnboardingFlow(
   // LocaleMigrationModal abgefragt (siehe App.tsx).
   const handleStartSimple = () => {
     setIsRestoreFlow(false);
+    // Evtl. geladenes Backup aus einem abgebrochenen Restore-Versuch
+    // verwerfen — sonst würde finishSetup es später still einspielen.
+    setRestoreData(null);
     setFormData((p) => ({
       ...p,
       simpleMode: true,
@@ -132,6 +135,9 @@ export function useOnboardingFlow(
 
   const handleStartNew = () => {
     setIsRestoreFlow(false);
+    // Evtl. geladenes Backup aus einem abgebrochenen Restore-Versuch
+    // verwerfen — sonst würde finishSetup es später still einspielen.
+    setRestoreData(null);
     setFormData((p) => ({
       ...p,
       simpleMode: false,
@@ -268,6 +274,31 @@ export function useOnboardingFlow(
 
   // --- FINISH (BUGFIX: Persistenz korrigiert) ---
   const finishSetup = async () => {
+    // Im Restore-Flow werden die Profil-Steps übersprungen (Welcome →
+    // Backup → Summary), formData bleibt leer — das Profil muss deshalb
+    // aus dem Backup übernommen werden statt aus formData.
+    const backupUser =
+      restoreData?.hasSettings && restoreData.settings
+        ? (restoreData.settings as unknown as UserData & { settings?: Record<string, unknown> })
+        : null;
+    const backupName = typeof backupUser?.name === "string" ? backupUser.name.trim() : "";
+
+    // Backup ohne brauchbares Profil (z.B. Legacy-Backup nur mit Einträgen):
+    // Es gibt keinen Namen zu persistieren — würde hier ein leeres Profil
+    // gespeichert, käme der Wizard beim nächsten Start wieder. Stattdessen
+    // in den Neu-Anlegen-Flow umleiten; restoreData bleibt erhalten, damit
+    // die Einträge am Ende trotzdem eingespielt werden.
+    if (isRestoreFlow && restoreData && !backupName && !formData.name.trim()) {
+      toast(t("onboarding.toast.restoreProfileNeeded"), { icon: "ℹ️", duration: 6000 });
+      setIsRestoreFlow(false);
+      setStep(1);
+      return;
+    }
+
+    // Profil aus dem Backup nur im Restore-Flow übernehmen — nach einer
+    // Umleitung in den Neu-Flow gewinnt das getippte formData-Profil.
+    const restoredUser = isRestoreFlow ? backupUser : null;
+
     // Restore-Flow: Backup ZUERST einspielen. applyBackup schreibt u.a. den
     // Settings-Key "user" aus dem Backup. Liefe es erst NACH den
     // setSetting/setUserData-Calls unten, würde der Persist-Effekt in
@@ -283,14 +314,6 @@ export function useOnboardingFlow(
       }
     }
 
-    // Im Restore-Flow werden die Profil-Steps übersprungen (Welcome →
-    // Backup → Summary), formData bleibt leer — das Profil muss deshalb
-    // aus dem Backup übernommen werden statt aus formData.
-    const restoredUser =
-      restoreData?.hasSettings && restoreData.settings
-        ? (restoreData.settings as unknown as UserData & { settings?: Record<string, unknown> })
-        : null;
-
     const userDataToSave = restoredUser
       ? {
           ...restoredUser,
@@ -301,7 +324,9 @@ export function useOnboardingFlow(
           settings: {
             ...restoredUser.settings,
             autoBackup: formData.autoBackup,
-            theme: 'system'
+            // Konsistent zum setTheme-Call unten: restauriertes Theme
+            // auch im Profil-Objekt spiegeln, nicht hart 'system'.
+            theme: restoreData?.theme || 'system'
           }
         }
       : {
@@ -383,10 +408,12 @@ export function useOnboardingFlow(
     setCloudSyncEnabled?.(formData.autoBackup);
     setLocalBackupEnabled?.(formData.localBackupEnabled);
 
-    if (restoreData) {
+    if (restoreData && isRestoreFlow) {
       // Restaurierte Sektionen in den React-State übernehmen — SQLite hat
       // applyBackup bereits geschrieben, aber ohne Refresh würden
       // WorkCodes/CalculationConfig/Locale erst nach App-Neustart greifen.
+      // Nur im echten Restore-Flow: Nach einer Profil-Umleitung in den
+      // Neu-Flow gewinnen die im Wizard konfigurierten Werte.
       if (restoreData.hasWorkCodes) {
         importWorkCodes?.(restoreData.workCodes);
       }
@@ -397,13 +424,13 @@ export function useOnboardingFlow(
       }
       if (restoreData.locale) {
         // Locale aus dem Backup übernehmen → LocaleMigrationModal entfällt.
-        setLocale?.(restoreData.locale as LocaleId);
+        setLocale?.(restoreData.locale);
       }
-      setTheme?.((restoreData.theme as Theme) || 'system');
+      setTheme?.(restoreData.theme || 'system');
       toast.success(t("onboarding.toast.restoreSuccess"));
     } else {
       setTheme?.('system');
-      toast.success(t("onboarding.toast.welcome"));
+      toast.success(restoreData ? t("onboarding.toast.restoreSuccess") : t("onboarding.toast.welcome"));
     }
 
     onComplete();

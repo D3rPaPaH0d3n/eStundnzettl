@@ -409,6 +409,7 @@
       "fileReadError": "Could not read file.",
       "integrityMismatch": "⚠️ Checksum mismatch — backup may have been tampered with",
       "restoreError": "Restore failed — backup could not be saved.",
+      "restoreProfileNeeded": "This backup has no profile — please add your name & working hours. Your entries will still be imported at the end.",
       "restoreSuccess": "Data restored!",
       "welcome": "Welcome!"
     }
@@ -649,6 +650,7 @@
       "customOnly": "Only available in 'Custom' mode",
       "unlocked": "Editing unlocked",
       "invalidBackup": "Invalid backup format",
+      "restoreError": "Restore failed — nothing was changed.",
       "integrityMismatch": "⚠️ Checksum mismatch — backup may have been tampered with",
       "entriesImported_one": "{{count}} entry imported!",
       "entriesImported_other": "{{count}} entries imported!",

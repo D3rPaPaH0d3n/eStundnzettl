@@ -19,6 +19,44 @@ import { CHANGELOG_DATA_DE } from "./changelog-data.de";
 const TRANSLATED_EN = [
 
   {
+    version: "4.5.2",
+    date: "04.07.2026",
+    title: "Backups done right: save everything, restore everything 🛡️",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Bug",
+        title: "Restore on a new phone fixed",
+        items: [
+          "When setting up a new device, only the entries came back from a backup — profile and settings were lost, and the setup wizard reappeared after every restart. This is fixed.",
+          "The fix covers every path: Google Drive, Nextcloud, backup folder and file import.",
+          "If applying a backup fails, you now get a clear error message instead of a false success."
+        ]
+      },
+      {
+        iconName: "Cloud",
+        title: "Backups now truly contain everything",
+        items: [
+          "Work codes, calculation settings, region and theme are now part of every backup — auto-backup, \"Back up now\" and export alike.",
+          "All backup paths now share the same blueprint, so no path silently forgets anything anymore.",
+          "The integrity checksum covers the new content as well."
+        ]
+      },
+      {
+        iconName: "Download",
+        title: "Restore is complete & instant",
+        items: [
+          "The import in Settings now also restores calculation settings, region, theme and attachment labels — previously these were silently dropped.",
+          "Restored data takes effect immediately, no app restart needed.",
+          "If your region is already in the backup, you won't be asked for it again after restoring.",
+          "Older backups remain fully importable — nothing that's missing in them gets deleted."
+        ]
+      }
+    ]
+  },
+
+
+  {
     version: "4.5.0",
     date: "19.05.2026",
     title: "Material You, overnight shifts & smoother handling 🌙",

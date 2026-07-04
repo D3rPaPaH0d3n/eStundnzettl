@@ -49,6 +49,8 @@ vi.mock("../../utils/storageBackup", () => ({
     note,
     version: "v7",
   })),
+  // Nur im SQLite-Pfad aufgerufen — Tests laufen mit isSQLiteActive=false.
+  collectBackupSections: vi.fn().mockResolvedValue({ user: null, entries: [] }),
 }));
 
 vi.mock("../../utils/nextcloudClient", () => ({

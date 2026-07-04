@@ -6,6 +6,8 @@
  * Verhaltensänderungen.
  */
 
+import type { LocaleId } from "../locales/types";
+
 // ─── Entry Types ─────────────────────────────────────────────
 
 export type EntryType = "work" | "vacation" | "sick" | "public_holiday" | "time_comp";
@@ -218,6 +220,14 @@ export interface NextcloudConfig {
 
 export type Theme = "system" | "dark" | "light";
 
+/**
+ * Type-Guard: prüft ob ein beliebiger Wert ein gültiges Theme ist.
+ * Zentrale Validierung für Backup-Import/-Export und Settings-Reads.
+ */
+export function isTheme(value: unknown): value is Theme {
+  return value === "system" || value === "dark" || value === "light";
+}
+
 // ─── Work Models ─────────────────────────────────────────────
 
 export interface WorkModel {
@@ -321,9 +331,9 @@ export interface BackupAnalysisData {
   attachmentLabels: string[];
   calculationConfig: Record<string, unknown> | null;
   /** Im Backup enthaltene LocaleId (nur wenn gültig), sonst null. */
-  locale: string | null;
+  locale: LocaleId | null;
   /** Im Backup enthaltenes Theme (nur wenn gültig), sonst null. */
-  theme: string | null;
+  theme: Theme | null;
   timestamp: string | null;
   integrity: string; // "verified" | "unverified" | "mismatch" | "ok" | "missing"
 }

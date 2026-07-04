@@ -1,10 +1,10 @@
 import React, { useRef, useCallback, useMemo, Suspense, useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import type { BackupPayload, Theme } from "./types";
-import type { LocaleId } from "./locales/types";
+import type { BackupAnalysisData, BackupPayload, UserData } from "./types";
 import { getLocale } from "./locales";
 import { coerceCalculationConfig } from "./utils/calculationConfig";
+import { applyBackup } from "./utils/storageBackup";
 import { replaceFullSnapshot, type ImportSnapshot } from "./db/snapshot";
 
 import { useWorkCodes } from "./hooks/useWorkCodes";
@@ -136,14 +136,46 @@ export default function App() {
       const raw = snapshot.calculationConfig;
       setCalculationConfig((prev) => coerceCalculationConfig(raw, prev));
     }
-    if (snapshot.locale !== undefined) setLocale(snapshot.locale as LocaleId);
-    if (snapshot.theme !== undefined) setTheme(snapshot.theme as Theme);
+    if (snapshot.locale !== undefined) setLocale(snapshot.locale);
+    if (snapshot.theme !== undefined) setTheme(snapshot.theme);
     if (snapshot.attachments !== undefined || snapshot.attachmentLabels !== undefined) {
       await reloadAttachments();
     }
   }, [setEntriesFromSnapshot, setUserData, setWorkCodesFromSnapshot, setCalculationConfig, setLocale, setTheme, reloadAttachments]);
 
   const { handleImport } = useImport({ importSnapshot });
+
+  // Restore über die Settings-Seite (BackupSettings → Datei-Import):
+  // applyBackup schreibt nach SQLite, danach werden ALLE betroffenen
+  // State-Slices aufgefrischt — sonst würde z.B. der useSettings-Persist-
+  // Effekt beim nächsten Profil-Edit das stale Alt-Profil über den gerade
+  // restaurierten Stand schreiben.
+  const applyBackupAndRefresh = useCallback(async (analysis: BackupAnalysisData, mode: "ALL" | "ENTRIES_ONLY" = "ALL"): Promise<boolean> => {
+    const ok = await applyBackup(analysis, mode);
+    if (!ok) return false;
+
+    setEntriesFromSnapshot(analysis.entries || []);
+    if (analysis.hasWorkCodes) setWorkCodesFromSnapshot(analysis.workCodes);
+    if (mode === "ALL" && analysis.hasSettings && analysis.settings) {
+      setUserData((prev) => {
+        const restored = analysis.settings as Record<string, unknown>;
+        const workDays = Array.isArray(restored.workDays) && restored.workDays.length === 7
+          ? (restored.workDays as number[])
+          : prev.workDays;
+        return { ...restored, workDays } as unknown as UserData;
+      });
+    }
+    if (mode === "ALL" && analysis.calculationConfig) {
+      const raw = analysis.calculationConfig;
+      setCalculationConfig((prev) => coerceCalculationConfig(raw, prev));
+    }
+    if (mode === "ALL" && analysis.locale) setLocale(analysis.locale);
+    if (mode === "ALL" && analysis.theme) setTheme(analysis.theme);
+    if (analysis.hasAttachments || analysis.attachmentLabels?.length) {
+      await reloadAttachments();
+    }
+    return true;
+  }, [setEntriesFromSnapshot, setUserData, setWorkCodesFromSnapshot, setCalculationConfig, setLocale, setTheme, reloadAttachments]);
 
   // --- UI STATE ---
   const {
@@ -197,8 +229,12 @@ export default function App() {
     localStorage.setItem(SETTINGS_UX_MIGRATION_SEEN_KEY, "true");
     setSettingsUxMigrationSeen(true);
     handleOnboardingFinish();
+    // Wizard-Restore kann Attachment-Metadaten nach SQLite geschrieben
+    // haben — den useAttachments-State (vor dem Restore leer hydriert)
+    // nachziehen, sonst fehlen Badges/Labels bis zum App-Neustart.
+    void reloadAttachments();
     handleTourStart();
-  }, [handleOnboardingFinish, handleTourStart]);
+  }, [handleOnboardingFinish, handleTourStart, reloadAttachments]);
 
   // "Was ist neu" — zeigt das ChangelogModal automatisch beim ersten
   // App-Start nach einem Update. Wird unterdrückt während Onboarding,
@@ -259,6 +295,7 @@ export default function App() {
     onTriggerManualBackup: triggerManualBackup,
     onExport: exportData,
     onImport: () => fileInputRef.current?.click(),
+    onApplyBackup: applyBackupAndRefresh,
     onDeleteAll: handleRequestDeleteAll,
     onCheckUpdate: handleManualUpdateCheck,
     importEntries,

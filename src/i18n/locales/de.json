@@ -409,6 +409,7 @@
       "fileReadError": "Datei konnte nicht gelesen werden.",
       "integrityMismatch": "⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",
       "restoreError": "Wiederherstellung fehlgeschlagen — Backup konnte nicht gespeichert werden.",
+      "restoreProfileNeeded": "Dieses Backup enthält kein Profil — bitte kurz Name & Arbeitszeiten ergänzen. Deine Einträge werden am Ende trotzdem übernommen.",
       "restoreSuccess": "Daten wiederhergestellt!",
       "welcome": "Willkommen!"
     }
@@ -649,6 +650,7 @@
       "customOnly": "Nur bei 'Benutzerdefiniert' möglich",
       "unlocked": "Bearbeitung freigegeben",
       "invalidBackup": "Ungültiges Backup-Format",
+      "restoreError": "Wiederherstellung fehlgeschlagen — es wurde nichts verändert.",
       "integrityMismatch": "⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",
       "entriesImported_one": "{{count}} Eintrag importiert!",
       "entriesImported_other": "{{count}} Einträge importiert!",

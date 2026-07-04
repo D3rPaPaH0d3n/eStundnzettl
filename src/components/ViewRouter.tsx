@@ -3,7 +3,7 @@ import type { SyntheticEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { useTranslation } from "react-i18next";
-import type { Entry, UserData, WorkCode, Attachment, FormState, CalculationConfig, Theme, PdfArchiveRunOptions } from "../types";
+import type { Entry, UserData, WorkCode, Attachment, FormState, CalculationConfig, Theme, PdfArchiveRunOptions, BackupAnalysisData } from "../types";
 import type { PeriodStatsResult } from "../utils/timeCalculations";
 import type { Locale, LocaleId } from "../locales/types";
 import {
@@ -33,6 +33,7 @@ interface SettingsRouteProps {
   onTriggerManualBackup: () => Promise<void> | void;
   onExport: () => void;
   onImport: () => void;
+  onApplyBackup: (analysis: BackupAnalysisData, mode?: "ALL" | "ENTRIES_ONLY") => Promise<boolean>;
   onDeleteAll: () => void;
   onCheckUpdate: () => void;
   importEntries: (entries: Entry[]) => void;

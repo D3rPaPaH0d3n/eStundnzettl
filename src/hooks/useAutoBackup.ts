@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import type { Attachment, CalculationConfig, Entry, UserData, WorkCode } from '../types';
 import { uploadOrUpdateFile, getValidToken } from "../utils/googleDrive";
-import { writeBackupFile, composeBackupPayload, type BackupDataSections } from "../utils/storageBackup";
+import { writeBackupFile, composeBackupPayload, collectBackupSections, type BackupDataSections } from "../utils/storageBackup";
 import { uploadBackup as ncUploadBackup } from "../utils/nextcloudClient";
 import { BACKUP_CONFIG } from "./constants";
 import { getNextcloudAppPassword } from "../utils/nextcloudSecret";
@@ -260,30 +260,49 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
 
     if (!isEnabled && !cloudActive && !localActive && !ncActive) return;
     if (!entries || entries.length === 0) return;
-    if (isUploading.current) return;
-
-    const sections: BackupDataSections = {
-      user: userData,
-      entries,
-      workCodes: extras?.workCodes,
-      calculationConfig: extras?.calculationConfig,
-      locale: extras?.locale,
-      theme: extras?.theme,
-      attachments: extras?.attachments,
-      attachmentLabels: extras?.attachmentLabels,
-    };
-
-    const currentHash = createHash(sections);
-    if (currentHash === lastHash.current && source === "Auto-Save") return;
 
     // Manual-Retry ignoriert Backoff und den Auto-Save-Hash-Skip.
     const ignoreBackoff = source === "Manual";
 
-    const payload = await composeBackupPayload(sections, "eStundnzettl Auto-Sync");
+    // Backoff VOR dem (teuren) Payload-Bau prüfen: Wenn kein Ziel
+    // tatsächlich schreiben wird, sparen wir Serialisierung + Checksum.
+    const cloudBlocked = cloudActive && !ignoreBackoff && await isBackoffActive("backup_backoff_until");
+    const ncBlocked = ncActive && !ignoreBackoff && await isBackoffActive("nextcloud_backoff_until");
+    const anyTargetRunnable = localActive || (cloudActive && !cloudBlocked) || (ncActive && !ncBlocked);
+    if (!anyTargetRunnable) return;
 
+    if (isUploading.current) return;
+    // Flag SOFORT nach dem Guard setzen — ab hier folgen awaits
+    // (SQLite-Reads, Checksum); ohne das Flag könnten Background- und
+    // Auto-Save-Trigger parallel durchlaufen und doppelt hochladen.
     isUploading.current = true;
 
     try {
+      // Produktionspfad: Sektionen direkt aus SQLite (Source of Truth) —
+      // unabhängig davon, ob der React-State schon fertig hydriert ist.
+      // Ein Background-Backup direkt nach dem App-Start darf niemals leere
+      // workCodes/attachments über ein vollständiges Backup schreiben.
+      // Fallback ohne SQLite: In-Memory-Daten aus den Props.
+      const sections: BackupDataSections = isSQLiteActive()
+        ? await collectBackupSections()
+        : {
+            user: userData,
+            entries,
+            workCodes: extras?.workCodes,
+            calculationConfig: extras?.calculationConfig,
+            locale: extras?.locale,
+            theme: extras?.theme,
+            attachments: extras?.attachments,
+            attachmentLabels: extras?.attachmentLabels,
+          };
+
+      if (!sections.entries || sections.entries.length === 0) return;
+
+      const currentHash = createHash(sections);
+      if (currentHash === lastHash.current && source === "Auto-Save") return;
+
+      const payload = await composeBackupPayload(sections, "eStundnzettl Auto-Sync");
+
       let anyBackupSucceeded = false;
       let allActiveTargetsSatisfied = true;
 
@@ -298,7 +317,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
       }
 
       if (cloudActive) {
-        if (!ignoreBackoff && await isBackoffActive("backup_backoff_until")) {
+        if (cloudBlocked) {
           const until = await readSettingString("backup_backoff_until");
           logger.warn(`[useAutoBackup] Cloud-Backup übersprungen, Backoff aktiv bis ${until}`);
           allActiveTargetsSatisfied = false;
@@ -322,7 +341,7 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
 
       // Nextcloud Backup
       if (ncActive) {
-        if (!ignoreBackoff && await isBackoffActive("nextcloud_backoff_until")) {
+        if (ncBlocked) {
           const until = await readSettingString("nextcloud_backoff_until");
           logger.warn(`[useAutoBackup] Nextcloud-Backup übersprungen, Backoff aktiv bis ${until}`);
           allActiveTargetsSatisfied = false;
@@ -361,8 +380,13 @@ export function useAutoBackup(entries: Entry[], userData: UserData, isEnabled: b
           toast.error(t("toasts.autoBackup.failed"));
         }
       }
-    } catch {
-      // Silent fail
+    } catch (err) {
+      // z.B. collectBackupSections-Throw bei kritischem SQLite-Lesefehler:
+      // lieber gar kein Backup als ein unvollständiges hochladen.
+      logger.warn("[useAutoBackup] Backup übersprungen:", backupErrorMessage(err, "Backup fehlgeschlagen"));
+      if (source === "Manual") {
+        toast.error(t("toasts.autoBackup.failed"));
+      }
     } finally {
       isUploading.current = false;
     }

@@ -123,7 +123,7 @@ describe("replaceFullSnapshot", () => {
     expect(stmts.filter((s) => s.startsWith("DELETE FROM entries"))).toHaveLength(1);
     expect(stmts.filter((s) => s.startsWith("INSERT OR REPLACE INTO entries"))).toHaveLength(2);
     expect(stmts.filter((s) => s.startsWith("DELETE FROM work_codes"))).toHaveLength(1);
-    expect(stmts.filter((s) => s.startsWith("INSERT INTO work_codes"))).toHaveLength(2);
+    expect(stmts.filter((s) => s.startsWith("INSERT OR REPLACE INTO work_codes"))).toHaveLength(2);
 
     const userWrite = set.find(
       (c) => c.statement.includes("INSERT OR REPLACE INTO settings") && c.values[0] === "user"

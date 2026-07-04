@@ -14,7 +14,7 @@ import BackupSettings from "./Settings/BackupSettings";
 import PdfArchiveSettings from "./Settings/PdfArchiveSettings";
 import AppInfoSettings from "./Settings/AppInfoSettings";
 import SettingsTourPopup from "./SettingsTourPopup";
-import { analyzeBackupData, applyBackup, readJsonFile } from "../utils/storageBackup";
+import { analyzeBackupData, readJsonFile } from "../utils/storageBackup";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
@@ -43,6 +43,12 @@ interface Props {
   importWorkCodes: (codes: WorkCode[]) => void;
   onExport: () => void;
   onImport: (data: unknown) => void;
+  /**
+   * Zentraler Restore aus App.tsx: applyBackup + vollständiger
+   * React-State-Refresh (User, Entries, WorkCodes, CalcConfig,
+   * Locale, Theme, Attachments). Liefert false bei Fehlschlag.
+   */
+  onApplyBackup: (analysis: BackupAnalysisData, mode?: "ALL" | "ENTRIES_ONLY") => Promise<boolean>;
   onDeleteAll: () => void;
   onCheckUpdate: () => void;
   // Nextcloud State
@@ -92,6 +98,7 @@ const Settings: React.FC<Props> = ({
   importWorkCodes,
   onExport,
   onImport: _onImport,
+  onApplyBackup,
   onDeleteAll,
   onCheckUpdate,
   // Nextcloud State
@@ -213,22 +220,29 @@ const Settings: React.FC<Props> = ({
       if (analysis.hasSettings) {
         setPendingImport(analysis);
       } else {
-        await applyBackup(analysis, "ALL");
-        importEntries?.(analysis.entries || []);
-        if (analysis.workCodes?.length) importWorkCodes?.(analysis.workCodes);
-        toast.success(t("settings.toast.entriesImported", { count: analysis.entryCount }));
+        // Zentraler Restore: schreibt SQLite UND refresht alle State-Slices
+        // (nicht nur Entries/WorkCodes — sonst überschreibt der nächste
+        // Auto-Backup den Import mit stale State).
+        const ok = await onApplyBackup(analysis, "ALL");
+        if (ok) {
+          toast.success(t("settings.toast.entriesImported", { count: analysis.entryCount }));
+        } else {
+          toast.error(t("settings.toast.restoreError"));
+        }
       }
     } catch {
       toast.error(t("settings.toast.fileReadError"));
     }
   };
 
-  const handleConfirmImport = async (mode: string) => {
+  const handleConfirmImport = async (mode: "ALL" | "ENTRIES_ONLY") => {
     if (!pendingImport) return;
-    await applyBackup(pendingImport, mode);
-    importEntries?.(pendingImport.entries || []);
-    if (pendingImport.workCodes?.length) importWorkCodes?.(pendingImport.workCodes);
-    toast.success(t("settings.toast.restoreSuccess"));
+    const ok = await onApplyBackup(pendingImport, mode);
+    if (ok) {
+      toast.success(t("settings.toast.restoreSuccess"));
+    } else {
+      toast.error(t("settings.toast.restoreError"));
+    }
     setPendingImport(null);
   };
 

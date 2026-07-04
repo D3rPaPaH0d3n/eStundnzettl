@@ -1,6 +1,44 @@
 export const CHANGELOG_DATA_DE = [
 
   {
+    version: "4.5.2",
+    date: "04.07.2026",
+    title: "Backup komplett: alles sichern, alles zurückholen 🛡️",
+    isMajor: false,
+    sections: [
+      {
+        iconName: "Bug",
+        title: "Wiederherstellen am neuen Handy repariert",
+        items: [
+          "Beim Einrichten auf einem neuen Gerät kamen aus dem Backup nur die Einträge zurück — Profil und Einstellungen fehlten, und der Einrichtungsassistent startete nach jedem Neustart erneut. Das ist behoben.",
+          "Der Fix gilt für alle Wege: Google Drive, Nextcloud, Backup-Ordner und Datei-Import.",
+          "Schlägt das Einspielen eines Backups fehl, siehst du jetzt eine klare Fehlermeldung statt einer falschen Erfolgsmeldung."
+        ]
+      },
+      {
+        iconName: "Cloud",
+        title: "Backups sichern jetzt wirklich alles",
+        items: [
+          "Tätigkeitscodes, Rechenkonfiguration, Region und Design sind ab sofort in jedem Backup enthalten — beim Auto-Backup genauso wie bei „Jetzt sichern\" und beim Export.",
+          "Alle Backup-Wege nutzen jetzt denselben Bauplan, damit kein Weg mehr stillschweigend etwas vergisst.",
+          "Die Integritäts-Prüfsumme deckt die neuen Inhalte mit ab."
+        ]
+      },
+      {
+        iconName: "Download",
+        title: "Wiederherstellung vollständig & sofort",
+        items: [
+          "Der Import in den Einstellungen stellt jetzt auch Rechenkonfiguration, Region, Design und Anhang-Beschriftungen wieder her — vorher gingen diese stillschweigend verloren.",
+          "Wiederhergestellte Daten greifen sofort, ohne dass du die App neu starten musst.",
+          "Steckt deine Region schon im Backup, entfällt die erneute Abfrage nach der Wiederherstellung.",
+          "Ältere Backups bleiben ganz normal importierbar — es wird nichts gelöscht, was darin fehlt."
+        ]
+      }
+    ]
+  },
+
+
+  {
     version: "4.5.0",
     date: "19.05.2026",
     title: "Material You, Nachtschichten & rundere Bedienung 🌙",

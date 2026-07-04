@@ -1,0 +1,6 @@
+Backup komplett: alles sichern, alles zurückholen 🛡️
+Wiederherstellen am neuen Handy repariert
+• Aus dem Backup kamen nur die Einträge zurück — das Profil fehlte und der Einrichtungsassistent kam nach jedem Neustart wieder. Behoben, für Google Drive, Nextcloud, Ordner und Datei.
+Backups jetzt vollständig
+• Tätigkeitscodes, Rechenkonfiguration, Region und Design stecken ab sofort in jedem Backup.
+• Der Import in den Einstellungen stellt alles wieder her — sofort, ohne Neustart.

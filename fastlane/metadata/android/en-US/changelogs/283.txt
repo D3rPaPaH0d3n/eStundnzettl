@@ -1,0 +1,6 @@
+Backups done right: save everything, restore everything 🛡️
+Restore on a new phone fixed
+• Backups only brought back the entries — the profile was lost and the setup wizard reappeared after every restart. Fixed for Google Drive, Nextcloud, folder and file import.
+Backups are now complete
+• Work codes, calculation settings, region and theme are now part of every backup.
+• The import in Settings restores everything — instantly, no app restart needed.

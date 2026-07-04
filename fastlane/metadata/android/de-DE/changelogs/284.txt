@@ -1,0 +1,5 @@
+Backup komplett: alles sichern, alles zurückholen 🛡️
+Wiederherstellen am neuen Handy repariert
+• Beim Einrichten auf einem neuen Gerät kamen aus dem Backup nur die Einträge zurück — Profil und Einstellungen fehlten, und der Einrichtungsassistent startete nach jedem Neustart erneut. Das ist behoben.
+• Der Fix gilt für alle Wege: Google Drive, Nextcloud, Backup-Ordner und Datei-Import.
+• Schlägt das Einspielen eines Backups fehl, siehst du jetzt eine klare Fehlermeldung statt...

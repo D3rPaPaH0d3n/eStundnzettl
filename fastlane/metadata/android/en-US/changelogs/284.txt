@@ -1,0 +1,7 @@
+Backups done right: save everything, restore everything 🛡️
+Restore on a new phone fixed
+• When setting up a new device, only the entries came back from a backup — profile and settings were lost, and the setup wizard reappeared after every restart. This is fixed.
+• The fix covers every path: Google Drive, Nextcloud, backup folder and file import.
+• If applying a backup fails, you now get a clear error message instead of a false success.
+Backups now truly contain everything
+• Wor...

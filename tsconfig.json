@@ -14,10 +14,6 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Mixed JS/TS codebase — migrate incrementally */
-    "allowJs": true,
-    "checkJs": false,
-
     /* Type checking */
     "strict": true,
     "noUnusedLocals": false,

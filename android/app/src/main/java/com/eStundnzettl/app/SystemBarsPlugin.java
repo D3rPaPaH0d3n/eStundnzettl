@@ -33,8 +33,12 @@ public class SystemBarsPlugin extends Plugin {
                 call.reject("Window not available");
                 return;
             }
-            window.setStatusBarColor(Color.TRANSPARENT);
-            window.setNavigationBarColor(Color.TRANSPARENT);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                // Deprecated and a no-op on Android 15+, where edge-to-edge is
+                // enforced and bars are transparent by default.
+                window.setStatusBarColor(Color.TRANSPARENT);
+                window.setNavigationBarColor(Color.TRANSPARENT);
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 window.setStatusBarContrastEnforced(false);

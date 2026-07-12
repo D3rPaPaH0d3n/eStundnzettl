@@ -30,8 +30,9 @@ describe("RecordingModeSettings", () => {
     expect(current.monthlyTargetMinutes).toBe(1800);
 
     rerender(<RecordingModeSettings userData={current} setUserData={setUserData} />);
-    fireEvent.change(getByLabelText("Stunden pro Monat"), { target: { value: "25:30" } });
-    expect(current.monthlyTargetMinutes).toBe(1530);
+    fireEvent.change(getByLabelText("Stunden"), { target: { value: "35" } });
+    fireEvent.change(getByLabelText("Minuten"), { target: { value: "30" } });
+    expect(current.monthlyTargetMinutes).toBe(2130);
   });
 
   it("blendet das Monatsziel bei festen Sollzeiten aus", () => {
@@ -53,11 +54,11 @@ describe("RecordingModeSettings", () => {
     const { getByLabelText } = render(
       <RecordingModeSettings userData={current} setUserData={setUserData} />,
     );
-    const input = getByLabelText("Stunden pro Monat") as HTMLInputElement;
+    const input = getByLabelText("Stunden") as HTMLInputElement;
 
-    fireEvent.change(input, { target: { value: "25:99" } });
+    fireEvent.change(input, { target: { value: "" } });
     expect(current.monthlyTargetMinutes).toBe(1800);
     fireEvent.blur(input);
-    expect(input.value).toBe("30:00");
+    expect(input.value).toBe("30");
   });
 });

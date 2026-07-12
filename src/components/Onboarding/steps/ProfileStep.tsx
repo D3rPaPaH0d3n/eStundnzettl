@@ -4,6 +4,7 @@ import { User, Camera, Upload, Building2, Lock, Target } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import type { WizardFormData } from "../../OnboardingWizard";
 import { formatMonthlyTargetInput, parseMonthlyTargetInput } from "../../../utils/monthlyTarget";
+import MonthlyTargetInput from "../../MonthlyTargetInput";
 
 /**
  * Onboarding-Schritt 1: Profildaten des Users.
@@ -111,19 +112,15 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
             </label>
             {monthlyTargetEnabled && (
               <div>
-                <label htmlFor="onboarding-monthly-target" className="block text-xs font-bold text-zinc-500 uppercase mb-1">
+                <div className="block text-xs font-bold text-zinc-500 uppercase mb-1">
                   {t("onboarding.profile.monthlyTarget.inputLabel")}
-                </label>
-                <input
-                  id="onboarding-monthly-target"
-                  type="text"
-                  inputMode="numeric"
+                </div>
+                <MonthlyTargetInput
+                  idPrefix="onboarding-monthly-target"
                   value={monthlyTargetValue}
-                  onChange={(event) => updateMonthlyTarget(event.target.value)}
-                  placeholder="30:00"
-                  aria-invalid={formData.monthlyTargetMinutes === 0}
-                  aria-describedby="onboarding-monthly-target-hint"
-                  className="w-full p-3 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 focus:border-emerald-500 outline-none font-bold text-zinc-900 dark:text-white"
+                  onChange={updateMonthlyTarget}
+                  invalid={formData.monthlyTargetMinutes === 0}
+                  describedBy="onboarding-monthly-target-hint"
                 />
                 <p
                   id="onboarding-monthly-target-hint"

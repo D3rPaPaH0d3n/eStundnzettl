@@ -8,6 +8,8 @@
     "delete": "Delete",
     "select": "Select",
     "apply": "Apply",
+    "hours": "Hours",
+    "minutes": "Minutes",
     "loading": "Loading..."
   },
   "app": {

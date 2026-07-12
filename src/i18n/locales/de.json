@@ -8,6 +8,8 @@
     "delete": "Löschen",
     "select": "Auswählen",
     "apply": "Übernehmen",
+    "hours": "Stunden",
+    "minutes": "Minuten",
     "loading": "Lädt..."
   },
   "app": {

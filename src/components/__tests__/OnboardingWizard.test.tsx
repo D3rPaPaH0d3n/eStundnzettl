@@ -239,10 +239,11 @@ describe("OnboardingWizard (Snapshot/Charakterisierung)", () => {
     expect(getByText("Monatliches Stundenziel (optional)")).toBeTruthy();
 
     fireEvent.click(getByText("Monatliches Stundenziel (optional)"));
-    const targetInput = getByLabelText("Stunden pro Monat") as HTMLInputElement;
-    expect(targetInput.value).toBe("30:00");
+    const targetInput = getByLabelText("Stunden") as HTMLInputElement;
+    expect(targetInput.value).toBe("30");
+    expect((getByLabelText("Minuten") as HTMLSelectElement).value).toBe("00");
 
-    fireEvent.change(targetInput, { target: { value: "30:75" } });
+    fireEvent.change(targetInput, { target: { value: "745" } });
     fireEvent.change(getByPlaceholderText("Max Mustermann"), { target: { value: "Max Muster" } });
     fireEvent.click(getByText("Weiter"));
     expect(getByText("Bitte ein gültiges Ziel im Format Stunden:Minuten eingeben.")).toBeTruthy();
@@ -253,7 +254,8 @@ describe("OnboardingWizard (Snapshot/Charakterisierung)", () => {
     const { getByText, getByLabelText, getByPlaceholderText } = renderWizard();
     fireEvent.click(getByText("Flexible Arbeitszeiten"));
     fireEvent.click(getByText("Monatliches Stundenziel (optional)"));
-    fireEvent.change(getByLabelText("Stunden pro Monat"), { target: { value: "30:00" } });
+    fireEvent.change(getByLabelText("Stunden"), { target: { value: "35" } });
+    fireEvent.change(getByLabelText("Minuten"), { target: { value: "30" } });
     fireEvent.change(getByPlaceholderText("Max Mustermann"), { target: { value: "Max Muster" } });
     fireEvent.click(getByText("Weiter"));
     expect(getByText("Perfekt! 🎉")).toBeTruthy();

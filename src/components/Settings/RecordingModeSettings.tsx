@@ -7,6 +7,7 @@ import { Card } from "../../utils";
 import { WORK_MODELS } from "../../hooks/constants";
 import { DEFAULT_LOCALE_ID, getLocale } from "../../locales";
 import { formatMonthlyTargetInput, parseMonthlyTargetInput } from "../../utils/monthlyTarget";
+import MonthlyTargetInput from "../MonthlyTargetInput";
 
 import type { UserData } from "../../types";
 import type { Locale, LocaleId } from "../../locales/types";
@@ -128,19 +129,16 @@ const RecordingModeSettings: React.FC<Props> = ({
             </label>
             {targetEnabled && (
               <div>
-                <label htmlFor="settings-monthly-target" className="block text-xs font-bold text-zinc-500 uppercase mb-1">
+                <div className="block text-xs font-bold text-zinc-500 uppercase mb-1">
                   {t("settings.recordingMode.monthlyTarget.inputLabel")}
-                </label>
-                <input
-                  id="settings-monthly-target"
-                  type="text"
-                  inputMode="numeric"
+                </div>
+                <MonthlyTargetInput
+                  idPrefix="settings-monthly-target"
                   value={targetInput}
-                  onChange={(event) => updateMonthlyTarget(event.target.value)}
+                  onChange={updateMonthlyTarget}
                   onBlur={restoreValidMonthlyTarget}
-                  aria-invalid={targetInvalid}
-                  aria-describedby="settings-monthly-target-hint"
-                  className={`w-full p-3 rounded-xl bg-white dark:bg-zinc-800 border outline-none font-bold text-zinc-900 dark:text-white ${targetInvalid ? "border-red-500" : "border-zinc-200 dark:border-zinc-600 focus:border-emerald-500"}`}
+                  invalid={targetInvalid}
+                  describedBy="settings-monthly-target-hint"
                 />
                 <p id="settings-monthly-target-hint" className={`mt-1 text-xs ${targetInvalid ? "text-red-600" : "text-zinc-500"}`}>
                   {targetInvalid

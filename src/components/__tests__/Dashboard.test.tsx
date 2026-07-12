@@ -195,6 +195,36 @@ describe("Dashboard", () => {
     expect(queryByText("Saldo")).toBeNull();
   });
 
+  it("zeigt Monatsziel, Rest und Fortschritt nur im Simple-Modus mit validem Ziel", () => {
+    const { getByRole, getByText } = renderDashboard({
+      userData: { simpleMode: true, monthlyTargetMinutes: 1800 },
+      stats: { totalIst: 1350 },
+    });
+
+    expect(getByText("30h 00m")).toBeTruthy();
+    expect(getByText("7h 30m")).toBeTruthy();
+    expect(getByRole("progressbar").getAttribute("aria-valuenow")).toBe("75");
+  });
+
+  it("zeigt eine Überschreitung und begrenzt den Fortschritt auf 100 Prozent", () => {
+    const { getByRole, getByText } = renderDashboard({
+      userData: { simpleMode: true, monthlyTargetMinutes: 1800 },
+      stats: { totalIst: 1935 },
+    });
+
+    expect(getByText("2h 15m")).toBeTruthy();
+    expect(getByRole("progressbar").getAttribute("aria-valuenow")).toBe("100");
+  });
+
+  it("ändert die bisherige Simple-Mode-Karte ohne Monatsziel nicht", () => {
+    const { queryByRole } = renderDashboard({
+      userData: { simpleMode: true },
+      stats: { totalIst: 480 },
+    });
+
+    expect(queryByRole("progressbar")).toBeNull();
+  });
+
   it("zeigt den Tages-Saldo subtil unter der Tages-Gesamtzeit", () => {
     const entry = makeEntry({ netDuration: 480 });
     const { getByText } = renderDashboard({

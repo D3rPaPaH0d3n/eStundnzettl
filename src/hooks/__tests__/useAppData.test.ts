@@ -168,6 +168,43 @@ describe("useAppData", () => {
     expect(result.current.progressPercent).toBe(100);
   });
 
+  it("derives monthly target progress from totalIst in simple mode", () => {
+    vi.mocked(usePeriodStats).mockReturnValue({
+      work: 540,
+      drive: 0,
+      holiday: 0,
+      vacation: 0,
+      sick: 0,
+      timeComp: 0,
+      totalIst: 540,
+      totalTarget: 510,
+      totalSaldo: 30,
+      normalstunden: 540,
+      overtimeSplit: { mehrarbeit: 0, ueberstunden: 0 },
+    });
+    const { result } = mount({
+      userData: { ...USER, simpleMode: true, monthlyTargetMinutes: 720 },
+    });
+
+    expect(result.current.monthlyTargetProgress).toMatchObject({
+      targetMinutes: 720,
+      actualMinutes: 540,
+      remainingMinutes: 180,
+      exceededMinutes: 0,
+      progressPercent: 75,
+    });
+    expect(result.current.progressPercent).toBe(75);
+  });
+
+  it("ignores monthly target outside simple mode", () => {
+    const { result } = mount({
+      userData: { ...USER, simpleMode: false, monthlyTargetMinutes: 720 },
+    });
+
+    expect(result.current.monthlyTargetProgress).toBeNull();
+    expect(result.current.progressPercent).toBe(100);
+  });
+
   it("finds lastWorkEntry as the latest work entry by date|id", () => {
     const e1 = makeEntry({ id: 10, type: "work", date: "2026-04-01" });
     const e2 = makeEntry({ id: 20, type: "work", date: "2026-04-05" });

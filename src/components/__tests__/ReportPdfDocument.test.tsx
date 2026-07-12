@@ -139,6 +139,7 @@ interface RenderOptions {
   calculationConfig?: CalculationConfig | null;
   allEntries?: Entry[];
   stats?: ReturnType<typeof makeStats>;
+  filterMode?: "month" | number;
 }
 
 const renderReport = (opts: RenderOptions = {}) =>
@@ -154,6 +155,7 @@ const renderReport = (opts: RenderOptions = {}) =>
       calculationConfig={opts.calculationConfig}
       allEntries={opts.allEntries}
       stats={opts.stats ?? makeStats()}
+      filterMode={opts.filterMode ?? "month"}
     />,
   );
 
@@ -414,6 +416,27 @@ describe("ReportPdfDocument", () => {
       const { container } = renderReport({ stats });
       expect(container.textContent).toMatch(/Soll/);
       expect(container.textContent).toMatch(/IST|Ist/);
+    });
+
+    it("zeigt das Monatsziel und die offene Zeit im monatlichen Simple-Mode-Bericht", () => {
+      const { container } = renderReport({
+        userData: makeUser({ simpleMode: true, monthlyTargetMinutes: 1800 }),
+        stats: makeStats({ totalIst: 1350 }),
+      });
+
+      expect(container.textContent).toContain("30h 00m");
+      expect(container.textContent).toContain("7h 30m");
+    });
+
+    it("zeigt das Monatsziel nicht in einem Wochenbericht", () => {
+      const { container } = renderReport({
+        userData: makeUser({ simpleMode: true, monthlyTargetMinutes: 1800 }),
+        stats: makeStats({ totalIst: 1350 }),
+        filterMode: 15,
+      });
+
+      expect(container.textContent).not.toContain("30h 00m");
+      expect(container.textContent).not.toContain("7h 30m");
     });
   });
 

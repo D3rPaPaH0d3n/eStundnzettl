@@ -26,6 +26,11 @@
     "actual": "IST",
     "target": "SOLL",
     "balance": "Saldo",
+    "monthlyTarget": "Monatsziel",
+    "monthlyRemaining": "Noch offen",
+    "monthlyExceeded": "Über dem Ziel",
+    "monthlyReached": "Ziel erreicht",
+    "monthlyProgress": "Fortschritt des monatlichen Stundenziels",
     "driveTime": "Fahrzeit ({{code}})",
     "overtimeShort": {
       "extra": "MA",
@@ -136,7 +141,11 @@
       "balance": "Saldo:",
       "extraHours": "Mehrarbeit:",
       "overtime": "Überstunden:",
-      "driveUnpaid": "Fahrtzeit (unbezahlt):"
+      "driveUnpaid": "Fahrtzeit (unbezahlt):",
+      "monthlyTarget": "Monatliches Stundenziel:",
+      "monthlyRemaining": "Noch offen:",
+      "monthlyExceeded": "Über dem Monatsziel:",
+      "monthlyReached": "Monatsziel erreicht:"
     },
     "vacationBalance": {
       "allowance": "Urlaubsanspruch:",
@@ -255,10 +264,10 @@
       "startNew": "Los geht's — neu einrichten",
       "restore": "Ich hab schon ein Backup",
       "demo": "Nur mal reinschnuppern (Demo)",
-      "simpleStart": "Nur Arbeitszeiten eintragen",
-      "simpleStartHint": "Schnellstart: Profil ausfüllen und loslegen.",
-      "calculatedStart": "Mit Berechnung & Auswertung",
-      "calculatedStartHint": "Für Soll/Ist, Saldo, Überstunden und Berichte."
+      "simpleStart": "Flexible Arbeitszeiten",
+      "simpleStartHint": "Für Minijob, Aushilfe oder flexible Teilzeit – optional mit Monatsziel.",
+      "calculatedStart": "Feste Sollzeiten",
+      "calculatedStartHint": "Für Soll/Ist, Saldo, Überstunden und Berichte anhand fester Arbeitstage."
     },
     "profile": {
       "title": "Sag uns wer du bist",
@@ -271,7 +280,14 @@
       "companyLabel": "Firma",
       "companyPlaceholder": "Firmenname GmbH",
       "roleLabel": "Tätigkeit / Anstellung",
-      "rolePlaceholder": "z.B. Monteur, Kellner, Pflege, Büro..."
+      "rolePlaceholder": "z.B. Monteur, Kellner, Pflege, Büro...",
+      "monthlyTarget": {
+        "title": "Monatliches Stundenziel (optional)",
+        "description": "Zum Beispiel für Minijob, Aushilfe oder flexible Teilzeit. Deine Arbeitstage bleiben frei.",
+        "inputLabel": "Stunden pro Monat",
+        "hint": "Format Stunden:Minuten, z. B. 30:00",
+        "invalid": "Bitte ein gültiges Ziel im Format Stunden:Minuten eingeben."
+      }
     },
     "summary": {
       "title": "Perfekt! 🎉",
@@ -334,9 +350,9 @@
       "subtitle": "Wähle den Modus, der am besten zu dir passt.",
       "modeTargetActual": "Soll/Ist",
       "modeTargetActualHint": "Mit Überstunden & Saldo",
-      "modeSimple": "Einfach",
-      "modeSimpleHint": "Nur Stunden aufzeichnen",
-      "simpleInfo": "Deine Stunden werden wochen- und monatsweise summiert — ohne Soll, Saldo oder Überstunden. Du kannst den Modus später in den Einstellungen ändern.",
+      "modeSimple": "Flexible Arbeitszeiten",
+      "modeSimpleHint": "Minijob, Aushilfe oder flexible Teilzeit",
+      "simpleInfo": "Deine Stunden werden wochen- und monatsweise summiert — optional mit Monatsziel, aber ohne tägliches Soll oder Überstundenberechnung.",
       "customInfo": "Stell deine Stunden pro Tag direkt ein. Unten findest du optionale Presets, die du bei Bedarf übernehmen kannst — später in den Einstellungen ebenfalls jederzeit änderbar.",
       "dailyHoursTitle": "Tagesstunden (benutzerdefiniert)",
       "weeklyHours": "Wochenstunden:",
@@ -1047,15 +1063,22 @@
     },
     "recordingMode": {
       "title": "Aufzeichnungsart",
-      "subtitleSimple": "Du nutzt eStundnzettl als einfache Stundenliste.",
-      "subtitleCalculated": "Du nutzt eStundnzettl mit Soll/Ist, Saldo und Auswertung.",
-      "simpleTitle": "Nur Arbeitszeiten eintragen",
-      "simpleDescription": "Zählt deine erfassten Stunden. Keine Sollzeit, kein Saldo, keine Überstundenberechnung.",
-      "calculatedTitle": "Mit Berechnung & Auswertung",
+      "subtitleSimple": "Du erfasst flexible Arbeitszeiten – optional mit einem monatlichen Stundenziel.",
+      "subtitleCalculated": "Du nutzt feste Sollzeiten mit Soll/Ist, Saldo und Auswertung.",
+      "simpleTitle": "Flexible Arbeitszeiten",
+      "simpleDescription": "Für Minijob, Aushilfe, flexible Teilzeit oder einfache Zeiterfassung – optional mit Monatsziel.",
+      "calculatedTitle": "Feste Sollzeiten",
       "calculatedDescription": "Vergleicht deine Zeiten mit deinem Arbeitszeitmodell und zeigt Saldo, Mehrarbeit und Überstunden.",
       "noDataLossHint": "Hinweis: Diese Auswahl löscht keine Einträge und überschreibt dein Arbeitszeitmodell nicht.",
-      "toastSimple": "Nur Arbeitszeiten eintragen aktiviert",
-      "toastCalculated": "Berechnung & Auswertung aktiviert"
+      "toastSimple": "Flexible Arbeitszeiten aktiviert",
+      "toastCalculated": "Feste Sollzeiten aktiviert",
+      "monthlyTarget": {
+        "title": "Monatliches Stundenziel",
+        "description": "Optionales Ziel für frei verteilte Arbeitszeiten, z. B. bei Minijob oder flexibler Teilzeit.",
+        "inputLabel": "Stunden pro Monat",
+        "hint": "Format Stunden:Minuten, z. B. 30:00",
+        "invalid": "Bitte ein gültiges Ziel im Format Stunden:Minuten eingeben."
+      }
     },
     "workCodesCard": {
       "title": "Tätigkeiten",

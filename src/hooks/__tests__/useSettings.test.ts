@@ -123,6 +123,18 @@ describe("useSettings", () => {
     expect(result.current.userData.workDays).toEqual([0, 510, 510, 510, 510, 270, 0]);
   });
 
+  it("hydrates valid and drops invalid monthly targets from localStorage", () => {
+    const base = { name: "Flex", position: "", photo: null, workDays: [0, 0, 0, 0, 0, 0, 0], simpleMode: true };
+    localStorage.setItem("estundnzettl_user", JSON.stringify({ ...base, monthlyTargetMinutes: 1800 }));
+    const valid = renderHook(() => useSettings());
+    expect(valid.result.current.userData.monthlyTargetMinutes).toBe(1800);
+    valid.unmount();
+
+    localStorage.setItem("estundnzettl_user", JSON.stringify({ ...base, monthlyTargetMinutes: "1800" }));
+    const invalid = renderHook(() => useSettings());
+    expect(invalid.result.current.userData.monthlyTargetMinutes).toBeUndefined();
+  });
+
   it("setUserData updates userData and persists to localStorage", () => {
     const { result } = renderHook(() => useSettings());
 

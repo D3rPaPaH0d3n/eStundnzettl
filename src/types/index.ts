@@ -58,6 +58,8 @@ export interface UserData {
   workDays: number[];       // 7 elements, index 0=Sunday, values in minutes
   company?: string;         // shown in PDF header, optional profile field
   simpleMode?: boolean;     // nur Aufzeichnung, keine Soll/Ist-Berechnung
+  /** Optionales, wiederkehrendes Monatsziel in ganzen Minuten (nur simpleMode). */
+  monthlyTargetMinutes?: number;
   expertMode?: boolean;     // Hausmasta-Modus: erweiterte Einstellungen sichtbar
   workModelId?: string;     // Onboarding work-model preset (e.g. "38.5-classic")
 }

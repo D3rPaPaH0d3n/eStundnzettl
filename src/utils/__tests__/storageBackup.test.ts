@@ -188,6 +188,22 @@ describe("analyzeBackupData", () => {
     expect((result.entries as Array<{ id: string }>)[0].id).toBe("legacy-301");
     expect((result.attachments as Array<{ entryId: string }>)[0].entryId).toBe("legacy-301");
   });
+
+  it("preserves a valid monthly target from a full backup", async () => {
+    const result = await analyzeBackupData({
+      user: { name: "Flex", simpleMode: true, monthlyTargetMinutes: 1800, workDays: [0, 0, 0, 0, 0, 0, 0] },
+    });
+    if (!result.isValid) throw new Error("expected valid result");
+    expect(result.settings).toMatchObject({ monthlyTargetMinutes: 1800 });
+  });
+
+  it("drops an invalid monthly target but keeps the legacy profile importable", async () => {
+    const result = await analyzeBackupData({
+      user: { name: "Legacy", monthlyTargetMinutes: "1800", legacyField: true },
+    });
+    if (!result.isValid) throw new Error("expected valid result");
+    expect(result.settings).toEqual({ name: "Legacy", legacyField: true });
+  });
 });
 
 describe("analyzeBackupData — locale & theme (v7)", () => {

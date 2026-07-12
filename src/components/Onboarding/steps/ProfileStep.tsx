@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { User, Camera, Upload, Building2, Lock } from "lucide-react";
+import { User, Camera, Upload, Building2, Lock, Target } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import type { WizardFormData } from "../../OnboardingWizard";
+import { formatMonthlyTargetInput, parseMonthlyTargetInput } from "../../../utils/monthlyTarget";
 
 /**
  * Onboarding-Schritt 1: Profildaten des Users.
@@ -21,6 +22,19 @@ interface Props {
 
 const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, onPhotoUpload }) => {
   const { t } = useTranslation();
+  const monthlyTargetEnabled = formData.monthlyTargetMinutes !== undefined;
+  const [monthlyTargetValue, setMonthlyTargetValue] = useState(
+    () => formatMonthlyTargetInput(formData.monthlyTargetMinutes) || "30:00",
+  );
+
+  const updateMonthlyTarget = (value: string) => {
+    setMonthlyTargetValue(value);
+    const parsed = parseMonthlyTargetInput(value);
+    setFormData((previous) => ({
+      ...previous,
+      monthlyTargetMinutes: parsed ?? 0,
+    }));
+  };
   return (
     <motion.div
       key="step1"
@@ -70,6 +84,60 @@ const ProfileStep: React.FC<Props> = ({ formData, setFormData, photoInputRef, on
             onChange={onPhotoUpload}
           />
         </div>
+
+        {formData.simpleMode && (
+          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-900/10 space-y-3">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={monthlyTargetEnabled}
+                onChange={(event) => setFormData((previous) => ({
+                  ...previous,
+                  monthlyTargetMinutes: event.target.checked
+                    ? (parseMonthlyTargetInput(monthlyTargetValue) ?? 1800)
+                    : undefined,
+                }))}
+                className="mt-1 h-4 w-4 accent-emerald-600"
+              />
+              <span>
+                <span className="flex items-center gap-2 font-bold text-sm text-zinc-800 dark:text-white">
+                  <Target size={16} className="text-emerald-600" />
+                  {t("onboarding.profile.monthlyTarget.title")}
+                </span>
+                <span className="block mt-1 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  {t("onboarding.profile.monthlyTarget.description")}
+                </span>
+              </span>
+            </label>
+            {monthlyTargetEnabled && (
+              <div>
+                <label htmlFor="onboarding-monthly-target" className="block text-xs font-bold text-zinc-500 uppercase mb-1">
+                  {t("onboarding.profile.monthlyTarget.inputLabel")}
+                </label>
+                <input
+                  id="onboarding-monthly-target"
+                  type="text"
+                  inputMode="numeric"
+                  value={monthlyTargetValue}
+                  onChange={(event) => updateMonthlyTarget(event.target.value)}
+                  placeholder="30:00"
+                  aria-invalid={formData.monthlyTargetMinutes === 0}
+                  aria-describedby="onboarding-monthly-target-hint"
+                  className="w-full p-3 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 focus:border-emerald-500 outline-none font-bold text-zinc-900 dark:text-white"
+                />
+                <p
+                  id="onboarding-monthly-target-hint"
+                  aria-live="polite"
+                  className={`mt-1 text-xs ${formData.monthlyTargetMinutes === 0 ? "text-red-600" : "text-zinc-500"}`}
+                >
+                  {formData.monthlyTargetMinutes === 0
+                    ? t("onboarding.profile.monthlyTarget.invalid")
+                    : t("onboarding.profile.monthlyTarget.hint")}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="space-y-3">
           <div>

@@ -251,6 +251,20 @@ describe("useOnboardingFlow — finishSetup für neue User", () => {
     vi.clearAllMocks();
   });
 
+  it("führt beim Wechsel aus dem festen Modell zurück zur flexiblen Profil-Konfiguration", () => {
+    const { result } = renderFlow();
+
+    act(() => {
+      result.current.handleStartNew();
+      result.current.setStep(3);
+      result.current.handleSimpleModeToggle();
+    });
+
+    expect(result.current.step).toBe(1);
+    expect(result.current.formData.simpleMode).toBe(true);
+    expect(result.current.formData.workDays).toEqual([0, 0, 0, 0, 0, 0, 0]);
+  });
+
   it("persistiert das formData-Profil und ruft applyBackup nicht auf", async () => {
     const { result, props } = renderFlow();
 

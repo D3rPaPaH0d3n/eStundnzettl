@@ -23,6 +23,7 @@ import { getIntlLocale } from "../utils/formatLocale";
 import type { Entry, UserData, WorkCode, CalculationConfig } from "../types";
 import type { PeriodStatsResult } from "../utils/timeCalculations";
 import type { Locale } from "../locales/types";
+import { calculateMonthlyTargetProgress } from "../utils/monthlyTarget";
 
 const DashboardMonthPicker = React.lazy(() => import("./DashboardMonthPicker"));
 
@@ -258,6 +259,7 @@ const Dashboard: React.FC<Props> = ({
 
   const monthlyOvertimeSplit = stats.overtimeSplit || { mehrarbeit: 0, ueberstunden: 0 };
   const simpleMode = !!userData?.simpleMode;
+  const monthlyTarget = calculateMonthlyTargetProgress(stats.totalIst, userData);
   const intlLocale = getIntlLocale();
   const monthLabel = currentDate.toLocaleDateString(intlLocale, {
     month: "long",
@@ -329,7 +331,7 @@ const Dashboard: React.FC<Props> = ({
 
         {/* BODY: STATISTIKEN */}
         <div className="p-4 space-y-4">
-          <div className="flex justify-between items-end">
+          <div className={`flex justify-between items-end ${monthlyTarget ? "flex-wrap gap-4" : ""}`}>
             {/* IST */}
             <div>
               <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider mb-0.5">{t("dashboard.actual")}</p>
@@ -351,6 +353,22 @@ const Dashboard: React.FC<Props> = ({
                 </div>
             </div>
             )}
+            {monthlyTarget && (
+              <div className="flex gap-4 text-right ml-auto">
+                <div>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider mb-0.5">{t("dashboard.monthlyTarget")}</p>
+                  <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-300 mt-1">{formatTime(monthlyTarget.targetMinutes)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5 text-zinc-500 dark:text-zinc-400">
+                    {monthlyTarget.remainingMinutes > 0 ? t("dashboard.monthlyRemaining") : monthlyTarget.exceededMinutes > 0 ? t("dashboard.monthlyExceeded") : t("dashboard.monthlyReached")}
+                  </p>
+                  <p className={`font-bold text-xl leading-none ${monthlyTarget.remainingMinutes > 0 ? "text-orange-600 dark:text-orange-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                    {formatTime(monthlyTarget.remainingMinutes || monthlyTarget.exceededMinutes)}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* PROGRESS BAR (nur im Vollmodus) */}
@@ -358,6 +376,18 @@ const Dashboard: React.FC<Props> = ({
           <div className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2.5 overflow-hidden">
             <motion.div initial={{ width: 0 }} animate={{ width: `${progressPercent}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className={`h-full rounded-full ${overtime >= 0 ? "bg-emerald-500" : "bg-orange-500"}`} />
           </div>
+          )}
+          {monthlyTarget && (
+            <div
+              className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2.5 overflow-hidden"
+              role="progressbar"
+              aria-label={t("dashboard.monthlyProgress")}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(monthlyTarget.progressPercent)}
+            >
+              <motion.div initial={{ width: 0 }} animate={{ width: `${monthlyTarget.progressPercent}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className={`h-full rounded-full ${monthlyTarget.remainingMinutes > 0 ? "bg-orange-500" : "bg-emerald-500"}`} />
+            </div>
           )}
 
           {/* FOOTER INFO */}

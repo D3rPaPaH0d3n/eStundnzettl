@@ -12,6 +12,7 @@ import { replaceFullSnapshot, type ImportSnapshot } from "../db/snapshot";
 import { isLocaleId } from "../locales";
 import { logger } from "./logger";
 import { getErrorMessage } from "./errorUtils";
+import { normalizeUserDataMonthlyTarget } from "./monthlyTarget";
 import { isTheme } from "../types";
 import type { BackupAnalysisResult, BackupAnalysisData, BackupPayload, CalculationConfig, Theme, UserData, Entry, WorkCode, Attachment } from "../types";
 import type { LocaleId } from "../locales/types";
@@ -464,7 +465,8 @@ const normalizeEntries = (value: unknown): Entry[] => {
 const normalizeSettings = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const v = value as Record<string, unknown>;
-  return (v.user || v.settings || v.profile || v.userData || v.employee || null) as Record<string, unknown> | null;
+  const settings = (v.user || v.settings || v.profile || v.userData || v.employee || null) as Record<string, unknown> | null;
+  return settings ? normalizeUserDataMonthlyTarget(settings) : null;
 };
 
 const normalizeWorkCodes = (value: unknown): WorkCode[] => {

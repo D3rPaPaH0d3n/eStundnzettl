@@ -26,6 +26,11 @@
     "actual": "ACTUAL",
     "target": "TARGET",
     "balance": "Balance",
+    "monthlyTarget": "Monthly target",
+    "monthlyRemaining": "Remaining",
+    "monthlyExceeded": "Above target",
+    "monthlyReached": "Target reached",
+    "monthlyProgress": "Monthly hours target progress",
     "driveTime": "Drive time ({{code}})",
     "overtimeShort": {
       "extra": "ET",
@@ -136,7 +141,11 @@
       "balance": "Balance:",
       "extraHours": "Extra hours:",
       "overtime": "Overtime:",
-      "driveUnpaid": "Drive time (unpaid):"
+      "driveUnpaid": "Drive time (unpaid):",
+      "monthlyTarget": "Monthly hours target:",
+      "monthlyRemaining": "Remaining:",
+      "monthlyExceeded": "Above monthly target:",
+      "monthlyReached": "Monthly target reached:"
     },
     "vacationBalance": {
       "allowance": "Vacation allowance:",
@@ -255,10 +264,10 @@
       "startNew": "Let's go — fresh setup",
       "restore": "I already have a backup",
       "demo": "Just take a look (demo)",
-      "simpleStart": "Only record working hours",
-      "simpleStartHint": "Quick start: fill in your profile and start.",
-      "calculatedStart": "With calculation & reports",
-      "calculatedStartHint": "For target/actual time, balance, overtime and reports."
+      "simpleStart": "Flexible working hours",
+      "simpleStartHint": "For mini-jobs, casual work or flexible part-time – with an optional monthly target.",
+      "calculatedStart": "Fixed target hours",
+      "calculatedStartHint": "For target/actual time, balance and overtime based on fixed workdays."
     },
     "profile": {
       "title": "Tell us who you are",
@@ -271,7 +280,14 @@
       "companyLabel": "Company",
       "companyPlaceholder": "Acme Ltd.",
       "roleLabel": "Role / job title",
-      "rolePlaceholder": "e.g. technician, waiter, nurse, office…"
+      "rolePlaceholder": "e.g. technician, waiter, nurse, office…",
+      "monthlyTarget": {
+        "title": "Monthly hours target (optional)",
+        "description": "For example for a mini-job, casual work or flexible part-time. Your workdays remain flexible.",
+        "inputLabel": "Hours per month",
+        "hint": "Hours:minutes format, e.g. 30:00",
+        "invalid": "Enter a valid target in hours:minutes format."
+      }
     },
     "summary": {
       "title": "All set! 🎉",
@@ -334,9 +350,9 @@
       "subtitle": "Pick the mode that fits you best.",
       "modeTargetActual": "Target/Actual",
       "modeTargetActualHint": "With overtime & balance",
-      "modeSimple": "Simple",
-      "modeSimpleHint": "Just record hours",
-      "simpleInfo": "Your hours are summed weekly and monthly — without target, balance or overtime. You can change the mode later in settings.",
+      "modeSimple": "Flexible working hours",
+      "modeSimpleHint": "Mini-job, casual work or flexible part-time work",
+      "simpleInfo": "Your hours are summed weekly and monthly — optionally with a monthly target, but without daily targets or overtime calculations.",
       "customInfo": "Set your hours per day directly. Below you'll find optional presets you can apply if you want — later also changeable at any time in settings.",
       "dailyHoursTitle": "Daily hours (custom)",
       "weeklyHours": "Weekly hours:",
@@ -1047,15 +1063,22 @@
     },
     "recordingMode": {
       "title": "Recording mode",
-      "subtitleSimple": "You use eStundnzettl as a simple time list.",
-      "subtitleCalculated": "You use eStundnzettl with target/actual time, balance and reports.",
-      "simpleTitle": "Only record working hours",
-      "simpleDescription": "Counts the hours you enter. No target time, no balance, no overtime calculation.",
-      "calculatedTitle": "With calculation & reports",
+      "subtitleSimple": "You record flexible working hours, with an optional monthly target.",
+      "subtitleCalculated": "You use fixed target hours with target/actual time, balance and reports.",
+      "simpleTitle": "Flexible working hours",
+      "simpleDescription": "For mini-jobs, casual work, flexible part-time or simple tracking – with an optional monthly target.",
+      "calculatedTitle": "Fixed target hours",
       "calculatedDescription": "Compares your times with your work schedule and shows balance, extra time and overtime.",
       "noDataLossHint": "Note: This choice does not delete entries and does not overwrite your work schedule.",
-      "toastSimple": "Simple recording activated",
-      "toastCalculated": "Calculation & reports activated"
+      "toastSimple": "Flexible working hours activated",
+      "toastCalculated": "Fixed target hours activated",
+      "monthlyTarget": {
+        "title": "Monthly hours target",
+        "description": "An optional target for freely distributed hours, e.g. for mini-jobs or flexible part-time.",
+        "inputLabel": "Hours per month",
+        "hint": "Hours:minutes format, e.g. 30:00",
+        "invalid": "Enter a valid target in hours:minutes format."
+      }
     },
     "workCodesCard": {
       "title": "Activities",

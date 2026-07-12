@@ -40,6 +40,7 @@ export interface WizardFormData {
   autoBackup: boolean;
   localBackupEnabled: boolean;
   simpleMode?: boolean;
+  monthlyTargetMinutes?: number;
   localeId: LocaleId | null;
   workCodePresetId: WorkCodePresetId;
   /** Aktuelle Rechenkonfiguration des Wizards. */
@@ -185,6 +186,10 @@ export function useOnboardingFlow(
       toast.error(t("onboarding.toast.nameRequired"));
       return;
     }
+    if (step === 1 && formData.simpleMode && formData.monthlyTargetMinutes === 0) {
+      toast.error(t("onboarding.profile.monthlyTarget.invalid"));
+      return;
+    }
     if (step === 1 && formData.simpleMode) {
       setStep(7);
       return;
@@ -269,7 +274,19 @@ export function useOnboardingFlow(
   const totalWeeklyMinutes = formData.workDays.reduce((a, b) => a + b, 0);
 
   const handleSimpleModeToggle = () => {
-    setFormData(p => ({ ...p, simpleMode: !p.simpleMode }));
+    if (!formData.simpleMode) {
+      setFormData((p) => ({
+        ...p,
+        simpleMode: true,
+        workDays: [0, 0, 0, 0, 0, 0, 0],
+        localeId: "neutral",
+        calcConfig: getBlankCalculationConfig([0, 0, 0, 0, 0, 0, 0]),
+        customCalc: false,
+      }));
+      setStep(1);
+      return;
+    }
+    setFormData((p) => ({ ...p, simpleMode: false }));
   };
 
   // --- FINISH (BUGFIX: Persistenz korrigiert) ---
@@ -337,6 +354,7 @@ export function useOnboardingFlow(
           photo: formData.photo,
           workDays: formData.workDays,
           simpleMode: formData.simpleMode || false,
+          monthlyTargetMinutes: formData.simpleMode ? formData.monthlyTargetMinutes : undefined,
           settings: {
             autoBackup: formData.autoBackup,
             theme: 'system'

@@ -1,11 +1,12 @@
-import React from "react";
-import { Calculator, ClipboardList } from "lucide-react";
+import React, { useState } from "react";
+import { Calculator, ClipboardList, Target } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { Card } from "../../utils";
 import { WORK_MODELS } from "../../hooks/constants";
 import { DEFAULT_LOCALE_ID, getLocale } from "../../locales";
+import { formatMonthlyTargetInput, parseMonthlyTargetInput } from "../../utils/monthlyTarget";
 
 import type { UserData } from "../../types";
 import type { Locale, LocaleId } from "../../locales/types";
@@ -27,6 +28,36 @@ const RecordingModeSettings: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const simpleMode = !!userData?.simpleMode;
+  const [targetInput, setTargetInput] = useState(
+    () => formatMonthlyTargetInput(userData.monthlyTargetMinutes),
+  );
+  const targetEnabled = userData.monthlyTargetMinutes !== undefined;
+  const targetInvalid = targetEnabled && parseMonthlyTargetInput(targetInput) === undefined;
+
+  const setMonthlyTargetEnabled = (enabled: boolean) => {
+    setTargetInput(enabled ? "30:00" : "");
+    setUserData((previous) => ({
+      ...previous,
+      monthlyTargetMinutes: enabled ? 1800 : undefined,
+    }));
+  };
+
+  const updateMonthlyTarget = (value: string) => {
+    setTargetInput(value);
+    const parsed = parseMonthlyTargetInput(value);
+    if (parsed !== undefined) {
+      setUserData((previous) => ({
+        ...previous,
+        monthlyTargetMinutes: parsed,
+      }));
+    }
+  };
+
+  const restoreValidMonthlyTarget = () => {
+    if (targetInvalid) {
+      setTargetInput(formatMonthlyTargetInput(userData.monthlyTargetMinutes));
+    }
+  };
 
   const setSimpleMode = (nextSimpleMode: boolean) => {
     if (nextSimpleMode === simpleMode) return;
@@ -75,6 +106,51 @@ const RecordingModeSettings: React.FC<Props> = ({
             </p>
           </div>
         </div>
+
+        {simpleMode && (
+          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-900/10 space-y-3">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={targetEnabled}
+                onChange={(event) => setMonthlyTargetEnabled(event.target.checked)}
+                className="mt-1 h-4 w-4 accent-emerald-600"
+              />
+              <span>
+                <span className="flex items-center gap-2 font-bold text-sm text-zinc-800 dark:text-white">
+                  <Target size={16} className="text-emerald-600" />
+                  {t("settings.recordingMode.monthlyTarget.title")}
+                </span>
+                <span className="block mt-1 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  {t("settings.recordingMode.monthlyTarget.description")}
+                </span>
+              </span>
+            </label>
+            {targetEnabled && (
+              <div>
+                <label htmlFor="settings-monthly-target" className="block text-xs font-bold text-zinc-500 uppercase mb-1">
+                  {t("settings.recordingMode.monthlyTarget.inputLabel")}
+                </label>
+                <input
+                  id="settings-monthly-target"
+                  type="text"
+                  inputMode="numeric"
+                  value={targetInput}
+                  onChange={(event) => updateMonthlyTarget(event.target.value)}
+                  onBlur={restoreValidMonthlyTarget}
+                  aria-invalid={targetInvalid}
+                  aria-describedby="settings-monthly-target-hint"
+                  className={`w-full p-3 rounded-xl bg-white dark:bg-zinc-800 border outline-none font-bold text-zinc-900 dark:text-white ${targetInvalid ? "border-red-500" : "border-zinc-200 dark:border-zinc-600 focus:border-emerald-500"}`}
+                />
+                <p id="settings-monthly-target-hint" className={`mt-1 text-xs ${targetInvalid ? "text-red-600" : "text-zinc-500"}`}>
+                  {targetInvalid
+                    ? t("settings.recordingMode.monthlyTarget.invalid")
+                    : t("settings.recordingMode.monthlyTarget.hint")}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button

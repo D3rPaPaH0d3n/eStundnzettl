@@ -51,6 +51,7 @@ import { getIntlLocale } from "../utils/formatLocale";
 import { buildDayBalanceMetaMap, isOvernightShift } from "../utils/timeCalculations";
 import { resolveEffectiveRules, getEffectivePdfDisplay } from "../utils/calculationConfig";
 import { WORK_CODE } from "../hooks/constants";
+import { calculateMonthlyTargetProgress } from "../utils/monthlyTarget";
 
 import type { Entry, UserData, WorkCode, Attachment, CalculationConfig, PdfDisplayConfig } from "../types";
 import type { Locale } from "../locales/types";
@@ -556,6 +557,7 @@ interface SummaryProps {
   showOvertimeColumns: boolean;
   vacationBalance: VacationBalance | null;
   monthDate: Date;
+  isMonthlyReport: boolean;
 }
 interface VacationBalance {
   allowance: number;
@@ -570,6 +572,7 @@ const Summary: React.FC<SummaryProps> = ({
   showOvertimeColumns,
   vacationBalance,
   monthDate,
+  isMonthlyReport,
 }) => {
   const showSollSection = !userData?.simpleMode && display.showTargetTime;
   const showSaldoSection = !userData?.simpleMode && display.showBalance;
@@ -577,6 +580,9 @@ const Summary: React.FC<SummaryProps> = ({
     display.showOvertimeSplit &&
     showOvertimeColumns &&
     (stats.overtimeSplit.mehrarbeit > 0 || stats.overtimeSplit.ueberstunden > 0);
+  const monthlyTarget = isMonthlyReport
+    ? calculateMonthlyTargetProgress(stats.totalIst, userData)
+    : null;
 
   return (
     <View style={styles.summaryBox} wrap={false}>
@@ -657,6 +663,30 @@ const Summary: React.FC<SummaryProps> = ({
                 {formatSignedTime(stats.totalSaldo)}
               </Text>
             </View>
+          ) : null}
+          {monthlyTarget ? (
+            <>
+              <View style={styles.sumRow}>
+                <Text style={{ color: C.textMedium }}>
+                  {t("reports.summary.monthlyTarget")}
+                </Text>
+                <Text style={{ color: C.textMedium }}>
+                  {formatTime(monthlyTarget.targetMinutes)}
+                </Text>
+              </View>
+              <View style={styles.sumRowBold}>
+                <Text>
+                  {monthlyTarget.remainingMinutes > 0
+                    ? t("reports.summary.monthlyRemaining")
+                    : monthlyTarget.exceededMinutes > 0
+                      ? t("reports.summary.monthlyExceeded")
+                      : t("reports.summary.monthlyReached")}
+                </Text>
+                <Text style={{ color: monthlyTarget.remainingMinutes > 0 ? C.textRed : C.textGreen }}>
+                  {formatTime(monthlyTarget.remainingMinutes || monthlyTarget.exceededMinutes)}
+                </Text>
+              </View>
+            </>
           ) : null}
           {overtimeVisible ? (
             <View style={styles.overtimeBlock}>
@@ -873,6 +903,7 @@ const ReportPdfDocument: React.FC<Props> = ({
             showOvertimeColumns={showOvertimeColumns}
             vacationBalance={vacationBalance}
             monthDate={monthDate}
+            isMonthlyReport={filterMode === "month"}
           />
         ) : null}
         {display.showCustomNote ? <Note note={customNote} /> : null}

@@ -1024,12 +1024,12 @@ exports[`OnboardingWizard (Snapshot/Charakterisierung) > Snapshot: Welcome-Step 
               <span
                 class="block"
               >
-                Nur Arbeitszeiten eintragen
+                Flexible Arbeitszeiten
               </span>
               <span
                 class="block text-xs font-medium text-emerald-50/90 mt-0.5"
               >
-                Schnellstart: Profil ausfüllen und loslegen.
+                Für Minijob, Aushilfe oder flexible Teilzeit – optional mit Monatsziel.
               </span>
             </span>
           </button>
@@ -1095,12 +1095,12 @@ exports[`OnboardingWizard (Snapshot/Charakterisierung) > Snapshot: Welcome-Step 
               <span
                 class="block"
               >
-                Mit Berechnung & Auswertung
+                Feste Sollzeiten
               </span>
               <span
                 class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mt-0.5"
               >
-                Für Soll/Ist, Saldo, Überstunden und Berichte.
+                Für Soll/Ist, Saldo, Überstunden und Berichte anhand fester Arbeitstage.
               </span>
             </span>
           </button>

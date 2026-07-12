@@ -4,6 +4,7 @@ import { getHolidayData, toLocalDateString } from "../utils";
 import { getWeekNumber, getTargetMinutesForDate, applyEffectiveDurations } from "../utils/timeCalculations";
 import { usePeriodStats } from "./usePeriodStats";
 import type { Locale } from "../locales/types";
+import { calculateMonthlyTargetProgress } from "../utils/monthlyTarget";
 
 /**
  * useAppData — Zentralisierte, memoisierte Ableitungen aus
@@ -143,7 +144,8 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries,
 
   const stats = usePeriodStats(entriesWithHolidays, userData, periodStart, periodEnd, correctedAllEntries, locale, calculationConfig);
   const overtime = stats.totalSaldo;
-  const progressPercent = Math.min(
+  const monthlyTargetProgress = calculateMonthlyTargetProgress(stats.totalIst, userData);
+  const progressPercent = monthlyTargetProgress?.progressPercent ?? Math.min(
     100,
     (stats.totalIst / (stats.totalTarget || 1)) * 100
   );
@@ -182,6 +184,7 @@ export function useAppData({ entries, userData, viewMonth, viewYear, allEntries,
     stats,
     overtime,
     progressPercent,
+    monthlyTargetProgress,
     todayTarget,
     lastWorkEntry,
     uniqueProjects,

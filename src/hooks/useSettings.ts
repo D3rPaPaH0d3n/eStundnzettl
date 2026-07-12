@@ -22,6 +22,7 @@ import { LOCALES } from "../locales";
 
 import { deobfuscateLegacySync } from "../utils/obfuscate";
 import { logger } from "../utils/logger";
+import { normalizeUserDataMonthlyTarget } from "../utils/monthlyTarget";
 import {
   loadOrMigrateNextcloudAppPassword,
   storeNextcloudAppPassword,
@@ -40,7 +41,7 @@ function loadUserDataFromLS(): UserData | null {
         if (!Array.isArray(parsed.workDays) || parsed.workDays.length !== 7) {
           parsed.workDays = [...WORK_MODELS[0].days];
         }
-        return parsed;
+        return normalizeUserDataMonthlyTarget(parsed);
       }
     }
   } catch { /* corrupt */ }
@@ -190,7 +191,7 @@ export function useSettings() {
           if (!Array.isArray(u.workDays) || (u.workDays as unknown[]).length !== 7) {
             (u as Record<string, unknown>).workDays = [...WORK_MODELS[0].days];
           }
-          setUserData(u as unknown as UserData);
+          setUserData(normalizeUserDataMonthlyTarget(u) as unknown as UserData);
         }
         if (sqlTheme) setTheme(sqlTheme as Theme);
         if (sqlMaterialYou !== null) setMaterialYouEnabled(!!sqlMaterialYou);

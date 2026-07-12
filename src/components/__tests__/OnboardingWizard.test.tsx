@@ -164,7 +164,7 @@ describe("OnboardingWizard (Snapshot/Charakterisierung)", () => {
     const { container } = renderWizard();
     // Sanity: bekannte deutsche Strings des Welcome-Steps.
     expect(container.textContent).toContain("Servus!");
-    expect(container.textContent).toContain("Nur Arbeitszeiten eintragen");
+    expect(container.textContent).toContain("Flexible Arbeitszeiten");
     expect(container.textContent).toContain("Ich hab schon ein Backup");
   });
 
@@ -193,7 +193,7 @@ describe("OnboardingWizard (Snapshot/Charakterisierung)", () => {
     const { container, getByText, getByPlaceholderText } = renderWizard();
 
     // Step 0 → 1: "Mit Berechnung & Auswertung" startet den vollen Flow.
-    fireEvent.click(getByText("Mit Berechnung & Auswertung"));
+    fireEvent.click(getByText("Feste Sollzeiten"));
 
     // Step 1 (Profil): Name ist Pflichtfeld, sonst blockt nextStep.
     const nameInput = getByPlaceholderText("Max Mustermann") as HTMLInputElement;
@@ -222,7 +222,7 @@ describe("OnboardingWizard (Snapshot/Charakterisierung)", () => {
     // Step 7 (Summary) — zuverlässig über sichtbare Buttons erreichbar.
     const { container, getByText, getByPlaceholderText } = renderWizard();
 
-    fireEvent.click(getByText("Nur Arbeitszeiten eintragen"));
+    fireEvent.click(getByText("Flexible Arbeitszeiten"));
     const nameInput = getByPlaceholderText("Max Mustermann") as HTMLInputElement;
     fireEvent.change(nameInput, { target: { value: "Max Muster" } });
     fireEvent.click(getByText("Weiter"));
@@ -230,5 +230,32 @@ describe("OnboardingWizard (Snapshot/Charakterisierung)", () => {
     // Sanity: Summary-spezifische deutsche Strings.
     expect(container.textContent).toContain("Perfekt!");
     expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it("bietet im flexiblen Schnellstart ein optionales Monatsziel an", () => {
+    const { getByText, getByLabelText, getByPlaceholderText } = renderWizard();
+
+    fireEvent.click(getByText("Flexible Arbeitszeiten"));
+    expect(getByText("Monatliches Stundenziel (optional)")).toBeTruthy();
+
+    fireEvent.click(getByText("Monatliches Stundenziel (optional)"));
+    const targetInput = getByLabelText("Stunden pro Monat") as HTMLInputElement;
+    expect(targetInput.value).toBe("30:00");
+
+    fireEvent.change(targetInput, { target: { value: "30:75" } });
+    fireEvent.change(getByPlaceholderText("Max Mustermann"), { target: { value: "Max Muster" } });
+    fireEvent.click(getByText("Weiter"));
+    expect(getByText("Bitte ein gültiges Ziel im Format Stunden:Minuten eingeben.")).toBeTruthy();
+
+  });
+
+  it("akzeptiert ein gültiges Monatsziel im flexiblen Schnellstart", () => {
+    const { getByText, getByLabelText, getByPlaceholderText } = renderWizard();
+    fireEvent.click(getByText("Flexible Arbeitszeiten"));
+    fireEvent.click(getByText("Monatliches Stundenziel (optional)"));
+    fireEvent.change(getByLabelText("Stunden pro Monat"), { target: { value: "30:00" } });
+    fireEvent.change(getByPlaceholderText("Max Mustermann"), { target: { value: "Max Muster" } });
+    fireEvent.click(getByText("Weiter"));
+    expect(getByText("Perfekt! 🎉")).toBeTruthy();
   });
 });

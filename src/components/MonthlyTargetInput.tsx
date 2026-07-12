@@ -10,8 +10,6 @@ interface Props {
   describedBy?: string;
 }
 
-const minuteOptions = Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, "0"));
-
 const MonthlyTargetInput: React.FC<Props> = ({
   idPrefix,
   value,
@@ -48,17 +46,19 @@ const MonthlyTargetInput: React.FC<Props> = ({
         <label htmlFor={`${idPrefix}-minutes`} className="block text-xs font-medium text-zinc-500 mb-1">
           {t("common.minutes")}
         </label>
-        <select
+        <input
           id={`${idPrefix}-minutes`}
+          type="number"
+          inputMode="numeric"
+          min="0"
+          max="59"
           value={minutes}
           onChange={(event) => onChange(`${hours}:${event.target.value}`)}
           onBlur={onBlur}
           aria-invalid={invalid}
           aria-describedby={describedBy}
           className="w-full p-3 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 focus:border-emerald-500 outline-none font-bold text-zinc-900 dark:text-white"
-        >
-          {minuteOptions.map((minute) => <option key={minute} value={minute}>{minute}</option>)}
-        </select>
+        />
       </div>
     </div>
   );

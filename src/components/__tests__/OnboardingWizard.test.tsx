@@ -241,9 +241,9 @@ describe("OnboardingWizard (Snapshot/Charakterisierung)", () => {
     fireEvent.click(getByText("Monatliches Stundenziel (optional)"));
     const targetInput = getByLabelText("Stunden") as HTMLInputElement;
     expect(targetInput.value).toBe("30");
-    expect((getByLabelText("Minuten") as HTMLSelectElement).value).toBe("00");
+    expect((getByLabelText("Minuten") as HTMLInputElement).value).toBe("00");
 
-    fireEvent.change(targetInput, { target: { value: "745" } });
+    fireEvent.change(getByLabelText("Minuten"), { target: { value: "75" } });
     fireEvent.change(getByPlaceholderText("Max Mustermann"), { target: { value: "Max Muster" } });
     fireEvent.click(getByText("Weiter"));
     expect(getByText("Bitte ein gültiges Ziel im Format Stunden:Minuten eingeben.")).toBeTruthy();

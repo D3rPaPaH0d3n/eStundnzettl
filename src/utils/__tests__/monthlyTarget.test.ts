@@ -60,6 +60,7 @@ describe("monthly target core", () => {
 describe("monthly target input", () => {
   it("parses and formats valid HH:MM values", () => {
     expect(parseMonthlyTargetInput("30:15")).toBe(1815);
+    expect(parseMonthlyTargetInput("30:5")).toBe(1805);
     expect(formatMonthlyTargetInput(1815)).toBe("30:15");
   });
 

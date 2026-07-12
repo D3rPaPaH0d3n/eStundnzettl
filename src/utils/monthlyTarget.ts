@@ -3,7 +3,7 @@ import type { UserData } from "../types";
 export const MAX_MONTHLY_TARGET_MINUTES = 31 * 24 * 60;
 
 export function parseMonthlyTargetInput(value: string): number | undefined {
-  const match = /^(\d{1,3}):([0-5]\d)$/.exec(value.trim());
+  const match = /^(\d{1,3}):([0-5]?\d)$/.exec(value.trim());
   if (!match) return undefined;
   return normalizeMonthlyTargetMinutes(Number(match[1]) * 60 + Number(match[2]));
 }

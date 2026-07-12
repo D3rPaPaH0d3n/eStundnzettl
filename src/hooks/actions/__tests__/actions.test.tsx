@@ -403,7 +403,22 @@ describe("useDeleteActions", () => {
 
     expect(removeAttachmentsForEntry).toHaveBeenCalledWith(7);
     expect(deleteEntry).toHaveBeenCalledWith(7);
+    expect(deleteEntry.mock.invocationCallOrder[0]).toBeLessThan(
+      removeAttachmentsForEntry.mock.invocationCallOrder[0]
+    );
     expect(setDeleteTarget).toHaveBeenCalledWith(null);
+  });
+
+  it("bereinigt Attachments nicht, wenn das atomare Entry-Delete fehlschlägt", async () => {
+    const deleteEntry = vi.fn().mockRejectedValue(new Error("db failed"));
+    const removeAttachmentsForEntry = vi.fn();
+    const { result } = mount({ deleteEntry, removeAttachmentsForEntry });
+
+    await expect(act(async () => {
+      await result.current.executeDelete({ type: "single", id: 7 });
+    })).rejects.toThrow("db failed");
+
+    expect(removeAttachmentsForEntry).not.toHaveBeenCalled();
   });
 
   it("type='all' schreibt Sicherheits-Backup und setzt User zurück", async () => {

@@ -88,8 +88,8 @@ const fileToBase64 = (file: File): Promise<string> =>
  * - `attachmentStats` — `{ total, labels }` (memoisiert)
  * - `addAttachment(entryId, label, file)` — legt neuen Anhang an
  * - `removeAttachment(attachmentId)` — löscht einen Anhang (inkl. Datei)
- * - `removeAttachmentsForEntry(entryId)` — löscht alle Anhänge zu einem
- *   Eintrag (wird beim Entry-Delete automatisch gerufen)
+ * - `removeAttachmentsForEntry(entryId)` — bereinigt nach dem atomaren
+ *   Entry-Delete den State und die Dateien aller zugehörigen Anhänge
  * - `getAttachmentsForEntry(entryId)` — Anhänge eines Eintrags
  * - `getAttachmentsForEntries(entryIds)` — Bulk-Version
  * - `getLabelSuggestions()` — aktuelle MRU-Labels
@@ -251,11 +251,26 @@ export function useAttachments() {
 
   const removeAttachmentsForEntry = useCallback(async (entryId: number | string) => {
     const matching = attachments.filter((item) => item.entryId === entryId);
+    if (matching.length === 0) return;
+
+    // Die Metadaten wurden zusammen mit dem Entry bereits atomar in SQLite
+    // gelöscht. Danach nur noch State und Dateien best-effort bereinigen.
+    setAttachments((prev) => prev.filter((item) => item.entryId !== entryId));
 
     for (const item of matching) {
-      await removeAttachment(item.id);
+      if (!item.storagePath) continue;
+      try {
+        ensureNative();
+        await Filesystem.deleteFile({
+          path: item.storagePath,
+          directory: Directory.Data,
+        });
+      } catch {
+        // Metadaten sind bereits entfernt; eine fehlende/verwaiste Datei darf
+        // den erfolgreich abgeschlossenen Entry-Delete nicht zurückrollen.
+      }
     }
-  }, [attachments, removeAttachment]);
+  }, [attachments]);
 
   // ─── Read Helpers (unverändert) ───────────────────────────
 

@@ -141,6 +141,7 @@ export function useEntries() {
       logger.error("[useEntries] SQLite-Write fehlgeschlagen:", err);
       setEntries(backup);
       toast.error(t("toasts.entry.deleteAllFailed"));
+      throw err;
     }
   }, [t]);
 

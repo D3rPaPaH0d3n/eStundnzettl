@@ -91,7 +91,10 @@ export async function updateEntryInDb(entry: Entry): Promise<void> {
  * @returns {Promise<void>}
  */
 export async function deleteEntryFromDb(id: number | string): Promise<void> {
-  await run("DELETE FROM entries WHERE id = ?", [id]);
+  await executeSet([
+    { statement: "DELETE FROM attachments WHERE entryId = ?", values: [id] },
+    { statement: "DELETE FROM entries WHERE id = ?", values: [id] },
+  ]);
 }
 
 /**
@@ -99,7 +102,10 @@ export async function deleteEntryFromDb(id: number | string): Promise<void> {
  * @returns {Promise<void>}
  */
 export async function deleteAllEntriesFromDb(): Promise<void> {
-  await execute("DELETE FROM entries;");
+  await executeSet([
+    { statement: "DELETE FROM attachments;", values: [] },
+    { statement: "DELETE FROM entries;", values: [] },
+  ]);
 }
 
 /**

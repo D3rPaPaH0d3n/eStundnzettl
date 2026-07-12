@@ -36,6 +36,8 @@ export function useDeleteActions({
     async (deleteTarget: DeleteTarget | null) => {
       if (deleteTarget?.type === "single") {
         if (deleteTarget.id === undefined) return;
+        // Löscht Entry + Attachment-Metadaten atomar in SQLite. Erst nach
+        // erfolgreichem Commit werden State und Dateien bereinigt.
         await deleteEntry(deleteTarget.id);
         if (removeAttachmentsForEntry) {
           await removeAttachmentsForEntry(deleteTarget.id);
@@ -60,12 +62,13 @@ export function useDeleteActions({
           /* Best-effort, nicht blockierend */
         }
 
+        // Löscht alle Entries + Attachment-Metadaten atomar in SQLite.
+        await deleteAllEntries();
         if (entries?.length && removeAttachmentsForEntry) {
           for (const entry of entries) {
             await removeAttachmentsForEntry(entry.id);
           }
         }
-        await deleteAllEntries();
         const emptyUser = {
           name: "",
           position: "",

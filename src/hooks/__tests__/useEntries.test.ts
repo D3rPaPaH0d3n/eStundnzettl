@@ -222,6 +222,24 @@ describe("useEntries", () => {
     expect(mockDeleteAllEntriesFromDb).toHaveBeenCalledOnce();
   });
 
+  it("deleteAllEntries stellt den State bei Transaktionsfehler wieder her", async () => {
+    mockGetAllEntries.mockResolvedValue([makeEntry({ id: 1 }), makeEntry({ id: 2 })]);
+    const { result } = renderHook(() => useEntries());
+
+    await vi.waitFor(() => {
+      expect(result.current.entries).toHaveLength(2);
+    });
+
+    mockDeleteAllEntriesFromDb.mockRejectedValueOnce(new Error("delete all failed"));
+
+    await expect(act(async () => {
+      await result.current.deleteAllEntries();
+    })).rejects.toThrow("delete all failed");
+
+    expect(result.current.entries).toHaveLength(2);
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("gelöscht"));
+  });
+
   it("importEntries replaces all entries and bulk-inserts into SQLite", async () => {
     const { result } = renderHook(() => useEntries());
 

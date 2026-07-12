@@ -145,22 +145,30 @@ describe("updateEntryInDb", () => {
 });
 
 describe("deleteEntryFromDb / deleteAllEntriesFromDb", () => {
-  it("schickt DELETE mit Parameter", async () => {
-    runMock.mockResolvedValue(undefined);
+  it("löscht Attachment-Metadaten und Entry gemeinsam in einer Transaktion", async () => {
+    executeSetMock.mockResolvedValue(undefined);
     await deleteEntryFromDb(7);
-    expect(runMock).toHaveBeenCalledWith(expect.stringMatching(/DELETE FROM entries/i), [7]);
+    expect(executeSetMock).toHaveBeenCalledWith([
+      { statement: expect.stringMatching(/DELETE FROM attachments/i), values: [7] },
+      { statement: expect.stringMatching(/DELETE FROM entries/i), values: [7] },
+    ]);
   });
 
   it("übergibt Legacy-String-IDs unverändert an DELETE", async () => {
-    runMock.mockResolvedValue(undefined);
+    executeSetMock.mockResolvedValue(undefined);
     await deleteEntryFromDb("legacy-7");
-    expect(runMock).toHaveBeenCalledWith(expect.stringMatching(/DELETE FROM entries/i), ["legacy-7"]);
+    const [set] = executeSetMock.mock.calls[0];
+    expect(set[0].values).toEqual(["legacy-7"]);
+    expect(set[1].values).toEqual(["legacy-7"]);
   });
 
-  it("schickt bulk DELETE ohne Parameter", async () => {
-    executeMock.mockResolvedValue(undefined);
+  it("löscht alle Attachment-Metadaten und Entries gemeinsam", async () => {
+    executeSetMock.mockResolvedValue(undefined);
     await deleteAllEntriesFromDb();
-    expect(executeMock).toHaveBeenCalledWith("DELETE FROM entries;");
+    expect(executeSetMock).toHaveBeenCalledWith([
+      { statement: "DELETE FROM attachments;", values: [] },
+      { statement: "DELETE FROM entries;", values: [] },
+    ]);
   });
 });
 

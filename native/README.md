@@ -67,7 +67,16 @@ App das Verzeichnis `native/` in Android Studio öffnen.
      Projekt-Autocomplete, „Wie zuletzt")
    - ✅ Live-Timer (FAB: Tap = neuer Eintrag, Long-Press = Timer;
      Pause/Fortsetzen, Status-Pille, Auto-Checkout über Mitternacht)
-   - ⬜ Settings-Screen, Onboarding, AttachmentManager
+   - ✅ Settings-Screen: Profil (inkl. Foto max. 1024px/JPEG wie die
+     Web-App), Aufzeichnungsart, Arbeitszeitmodell (Presets, Lock,
+     7-Tage-Grid), Tätigkeitscode-Manager, Stundenberechnung
+     (Locale-Picker im Hausmasta-Modus, Überstunden-/Krank-Regeln,
+     Feiertage/Halbtage inkl. Import aus AT/DE/CH/orthodox/islamisch,
+     Auto-Pausen, Urlaub, Neuberechnung), Backup-Export/-Import über das
+     Storage Access Framework mit Import-Konflikt-Dialog, Darstellung
+     (Sprache/Theme/Material You dynamische Farben), Hausmasta-Modus,
+     App-Info mit Danger-Zone
+   - ⬜ Onboarding, AttachmentManager, Demo-Daten
 4. ⬜ **Phase 4** — PDF-Report (Layout nach `ReportPdfDocument.tsx`,
    `pdfDisplay`-Toggles), PDF-Archiv.
 5. ⬜ **Phase 5** — Cloud-Backups (Google Drive, Nextcloud), Google-Login,

@@ -22,6 +22,7 @@ val LocalI18n = staticCompositionLocalOf<I18n> {
 @Composable
 fun EStundnzettlTheme(
     themeSetting: String = "system",
+    materialYou: Boolean = false,
     i18n: I18n,
     content: @Composable () -> Unit,
 ) {
@@ -31,6 +32,26 @@ fun EStundnzettlTheme(
         else -> isSystemInDarkTheme()
     }
     val appColors = if (darkTheme) DarkAppColors else LightAppColors
+
+    // Material You: dynamische System-Farbpalette (Android 12+)
+    if (materialYou && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val dynamicScheme = if (darkTheme) {
+            androidx.compose.material3.dynamicDarkColorScheme(context)
+        } else {
+            androidx.compose.material3.dynamicLightColorScheme(context)
+        }
+        CompositionLocalProvider(
+            LocalAppColors provides appColors.copy(
+                accent = dynamicScheme.primary,
+                accentStrong = dynamicScheme.primary,
+            ),
+            LocalI18n provides i18n,
+        ) {
+            MaterialTheme(colorScheme = dynamicScheme, content = content)
+        }
+        return
+    }
 
     val colorScheme = if (darkTheme) {
         darkColorScheme(

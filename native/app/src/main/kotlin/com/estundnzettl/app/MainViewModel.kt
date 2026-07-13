@@ -65,8 +65,13 @@ data class TimerUiState(
     val accumulatedPause: Long = 0,       // milliseconds
 )
 
-/** One-shot Toast-Nachricht (i18n-Key + Argumente). */
-data class UiMessage(val key: String, val args: List<Pair<String, Any?>> = emptyList())
+/** One-shot Toast-Nachricht (i18n-Key + Argumente, oder bereits übersetzter Text). */
+data class UiMessage(
+    val key: String,
+    val args: List<Pair<String, Any?>> = emptyList(),
+    /** true = `key` ist bereits der fertige Anzeigetext. */
+    val raw: Boolean = false,
+)
 
 data class MainUiState(
     val loading: Boolean = true,
@@ -83,6 +88,9 @@ data class MainUiState(
     val timer: TimerUiState = TimerUiState(),
     /** Entry, dessen Löschung gerade bestätigt werden soll. */
     val deleteTarget: Entry? = null,
+    val materialYouEnabled: Boolean = false,
+    /** Backup-Analyse, die auf die Import-Entscheidung (ALL/ENTRIES_ONLY) wartet. */
+    val pendingImport: com.estundnzettl.core.backup.BackupAnalysis? = null,
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -123,6 +131,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val language = settings.getString(SettingsRepository.Keys.LANGUAGE)
             ?: I18n.resolveSystemLanguage(JavaLocale.getDefault().language)
         val codes = workCodesRepo.getAll()
+        val materialYou = settings.getBoolean("material_you_enabled")
         _state.value = _state.value.copy(
             userData = userData,
             locale = locale,
@@ -130,6 +139,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             theme = theme,
             language = language,
             workCodes = codes,
+            materialYouEnabled = materialYou,
         )
     }
 
@@ -443,6 +453,272 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _state.value = _state.value.copy(workCodes = workCodesRepo.getAll())
         }
         return true
+    }
+
+    // ─── Settings-Aktionen (Port der Settings/*-Sektionen) ────
+
+    /** UserData ändern und persistieren; weeklyTargetMinutes bleibt synchron. */
+    fun setUserData(transform: (UserData) -> UserData) {
+        val current = _state.value.userData ?: UserData()
+        val next = transform(current)
+        _state.value = _state.value.copy(userData = next)
+        viewModelScope.launch {
+            settings.setUserData(next)
+            if (next.workDays != current.workDays && next.workDays != null) {
+                val config = _state.value.calculationConfig
+                if (config != null) {
+                    patchCalculationConfig { it.copy(weeklyTargetMinutes = next.workDays!!.sum()) }
+                    return@launch
+                }
+            }
+            recompute()
+        }
+    }
+
+    fun setTheme(theme: String) {
+        _state.value = _state.value.copy(theme = theme)
+        viewModelScope.launch { settings.setTheme(theme) }
+    }
+
+    fun setLanguage(language: String) {
+        _state.value = _state.value.copy(language = language)
+        viewModelScope.launch { settings.setString(SettingsRepository.Keys.LANGUAGE, language) }
+        emit(UiMessage("settings.language.toast"))
+    }
+
+    fun setMaterialYou(enabled: Boolean) {
+        _state.value = _state.value.copy(materialYouEnabled = enabled)
+        viewModelScope.launch { settings.setBoolean("material_you_enabled", enabled) }
+        emit(UiMessage(if (enabled) "settings.toast.materialYouOn" else "settings.toast.materialYouOff"))
+    }
+
+    /**
+     * Locale wechseln; optional die Berechnungsregeln auf die neuen
+     * Locale-Defaults zurücksetzen (resetCalculationConfigToLocale).
+     */
+    fun setLocaleId(localeId: String, resetConfig: Boolean) {
+        val locale = getLocale(localeId)
+        _state.value = _state.value.copy(locale = locale)
+        viewModelScope.launch {
+            settings.setLocaleId(locale.id)
+            if (resetConfig) {
+                val workDays = _state.value.userData?.workDays
+                val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(locale, workDays)
+                _state.value = _state.value.copy(calculationConfig = fresh)
+                settings.setCalculationConfig(fresh)
+            }
+            recompute()
+        }
+    }
+
+    fun patchCalculationConfig(transform: (CalculationConfig) -> CalculationConfig) {
+        val current = _state.value.calculationConfig ?: return
+        val next = transform(current)
+        _state.value = _state.value.copy(calculationConfig = next)
+        viewModelScope.launch {
+            settings.setCalculationConfig(next)
+            recompute()
+        }
+    }
+
+    /** Aufzeichnungsart wechseln — Port von RecordingModeSettings.setSimpleMode. */
+    fun setSimpleMode(nextSimpleMode: Boolean) {
+        val s = _state.value
+        val userData = s.userData ?: UserData()
+        if (nextSimpleMode == userData.simpleMode) return
+
+        val targetLocale = if (!nextSimpleMode && s.locale.id == "neutral") {
+            getLocale(com.estundnzettl.core.locale.DEFAULT_LOCALE_ID)
+        } else {
+            s.locale
+        }
+        val nextWorkDays = if (!nextSimpleMode && userData.workDays?.any { it > 0 } != true) {
+            targetLocale.defaultWorkDays
+        } else {
+            userData.workDays
+        }
+
+        if (!nextSimpleMode && targetLocale.id != s.locale.id) {
+            setLocaleId(targetLocale.id, resetConfig = false)
+        }
+        if (!nextSimpleMode) {
+            val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(targetLocale, nextWorkDays)
+            _state.value = _state.value.copy(calculationConfig = fresh)
+            viewModelScope.launch { settings.setCalculationConfig(fresh) }
+        }
+        setUserData { it.copy(simpleMode = nextSimpleMode, workDays = nextWorkDays) }
+        emit(UiMessage(
+            if (nextSimpleMode) "settings.recordingMode.toastSimple"
+            else "settings.recordingMode.toastCalculated"
+        ))
+    }
+
+    fun setExpertMode(enabled: Boolean) {
+        setUserData { it.copy(expertMode = enabled) }
+        emit(UiMessage(if (enabled) "settings.toast.expertOn" else "settings.toast.expertOff"))
+    }
+
+    /** Arbeitszeitmodell-Preset anwenden — Port von handlePresetSelect. */
+    fun applyWorkModel(model: com.estundnzettl.core.model.WorkModel) {
+        setUserData {
+            if (model.id != "custom") it.copy(workModelId = model.id, workDays = model.days)
+            else it.copy(workModelId = model.id)
+        }
+        emit(UiMessage(
+            if (model.id == "custom") "settings.data.toast.customActivated"
+            else "settings.data.toast.templateApplied"
+        ))
+    }
+
+    fun setWorkDayMinutes(dayIndex: Int, minutes: Int) {
+        val workDays = (_state.value.userData?.workDays ?: List(7) { 0 }).toMutableList()
+        if (dayIndex !in workDays.indices) return
+        workDays[dayIndex] = minutes
+        setUserData { it.copy(workDays = workDays) }
+        emit(UiMessage("settings.toast.timeUpdated"))
+    }
+
+    // ─── Work Codes ──────────────────────────────────────────
+
+    private fun refreshWorkCodes() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(workCodes = workCodesRepo.getAll())
+        }
+    }
+
+    fun updateWorkCode(id: Int, label: String): Boolean {
+        val trimmed = label.trim()
+        if (trimmed.isEmpty()) return false
+        viewModelScope.launch {
+            workCodesRepo.upsert(WorkCode(id, trimmed))
+            refreshWorkCodes()
+        }
+        return true
+    }
+
+    fun deleteWorkCode(id: Int) {
+        viewModelScope.launch {
+            workCodesRepo.delete(id)
+            refreshWorkCodes()
+        }
+    }
+
+    fun loadWorkCodePreset(presetId: String): Boolean {
+        val preset = com.estundnzettl.core.model.WORK_CODE_PRESETS.firstOrNull { it.id == presetId }
+            ?: return false
+        viewModelScope.launch {
+            workCodesRepo.replaceAll(preset.codes)
+            refreshWorkCodes()
+        }
+        return true
+    }
+
+    fun clearAllWorkCodes() {
+        viewModelScope.launch {
+            workCodesRepo.replaceAll(emptyList())
+            refreshWorkCodes()
+        }
+    }
+
+    // ─── Neuberechnung & Danger Zone ─────────────────────────
+
+    fun recalculateAllEntries() {
+        val s = _state.value
+        viewModelScope.launch {
+            try {
+                val result = entriesRepo.recalculateAll(s.userData, s.locale, s.calculationConfig)
+                emit(
+                    if (result.fixed > 0) UiMessage(
+                        "settings.calc.toast.recalcFixed",
+                        listOf("fixed" to result.fixed, "total" to result.total),
+                    ) else UiMessage(
+                        "settings.calc.toast.recalcAllCorrect",
+                        listOf("total" to result.total),
+                    )
+                )
+            } catch (_: Exception) {
+                emit(UiMessage("settings.calc.toast.recalcError"))
+            }
+        }
+    }
+
+    /** Alles löschen: Einträge + Attachments + Profil-Reset (deleteAllMessage). */
+    fun deleteAllData() {
+        viewModelScope.launch {
+            try {
+                entriesRepo.deleteAll()
+                val resetUser = UserData()
+                settings.setUserData(resetUser)
+                _state.value = _state.value.copy(userData = resetUser)
+                emit(UiMessage("toasts.entry.deleted"))
+            } catch (_: Exception) {
+                emit(UiMessage("toasts.entry.deleteAllFailed"))
+            }
+        }
+    }
+
+    // ─── Backup Export / Import ──────────────────────────────
+
+    private val backupRepo by lazy { com.estundnzettl.app.data.BackupRepository(db, settings) }
+
+    /** Datei-Inhalt für den manuellen Export (checksummter v7-Payload). */
+    suspend fun createBackupFileContent(): String =
+        backupRepo.toFileContent(backupRepo.createBackupPayload())
+
+    /** Import: analysieren; mit Settings → Konflikt-Dialog, sonst direkt anwenden. */
+    fun importBackupText(text: String) {
+        val analysis = backupRepo.analyze(text)
+        if (!analysis.valid) {
+            emit(UiMessage("settings.toast.invalidBackup"))
+            return
+        }
+        if (analysis.integrity == com.estundnzettl.core.backup.BackupIntegrity.MISMATCH) {
+            emit(UiMessage("settings.toast.integrityMismatch"))
+        }
+        if (analysis.hasSettings) {
+            _state.value = _state.value.copy(pendingImport = analysis)
+        } else {
+            viewModelScope.launch {
+                val ok = backupRepo.apply(analysis, "ALL")
+                if (ok) {
+                    reloadAfterImport()
+                    emit(UiMessage(
+                        "settings.toast.entriesImported",
+                        listOf("count" to analysis.entryCount),
+                    ))
+                } else {
+                    emit(UiMessage("settings.toast.restoreError"))
+                }
+            }
+        }
+    }
+
+    fun confirmImport(mode: String) {
+        val pending = _state.value.pendingImport ?: return
+        _state.value = _state.value.copy(pendingImport = null)
+        viewModelScope.launch {
+            val ok = backupRepo.apply(pending, mode)
+            if (ok) {
+                reloadAfterImport()
+                emit(UiMessage("settings.toast.restoreSuccess"))
+            } else {
+                emit(UiMessage("settings.toast.restoreError"))
+            }
+        }
+    }
+
+    fun cancelImport() {
+        _state.value = _state.value.copy(pendingImport = null)
+    }
+
+    private suspend fun reloadAfterImport() {
+        loadSettings()
+        recompute()
+    }
+
+    /** Bereits übersetzten Text als Toast anzeigen (für UI-lokale Meldungen). */
+    fun showRawMessage(text: String) {
+        _messages.tryEmit(UiMessage(text, raw = true))
     }
 
     private fun emit(message: UiMessage) {

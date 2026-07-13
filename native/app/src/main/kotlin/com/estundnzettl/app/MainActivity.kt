@@ -26,14 +26,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.rememberCoroutineScope
+import com.estundnzettl.app.data.BackupRepository
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.AppHeader
 import com.estundnzettl.app.ui.DashboardScreen
 import com.estundnzettl.app.ui.EntryFormScreen
 import com.estundnzettl.app.ui.LiveTimerBar
+import com.estundnzettl.app.ui.settings.SettingsScreen
 import com.estundnzettl.app.ui.theme.EStundnzettlTheme
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -47,11 +53,16 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val i18n = remember(state.language) { I18n.load(context, state.language) }
 
-            EStundnzettlTheme(themeSetting = state.theme, i18n = i18n) {
+            EStundnzettlTheme(
+                themeSetting = state.theme,
+                materialYou = state.materialYouEnabled,
+                i18n = i18n,
+            ) {
                 // Toast-Nachrichten aus dem ViewModel
                 LaunchedEffect(Unit) {
                     viewModel.messages.collect { message ->
-                        val text = i18n.t(message.key, *message.args.toTypedArray())
+                        val text = if (message.raw) message.key
+                        else i18n.t(message.key, *message.args.toTypedArray())
                         Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -60,6 +71,57 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+/** Settings-Route mit SAF-Export/-Import (Storage Access Framework). */
+@Composable
+private fun SettingsRoute(viewModel: MainViewModel) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val t = LocalI18n.current
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                runCatching {
+                    val content = viewModel.createBackupFileContent()
+                    context.contentResolver.openOutputStream(uri)?.use { stream ->
+                        stream.write(content.toByteArray(Charsets.UTF_8))
+                    }
+                }.onSuccess {
+                    viewModel.showRawMessage("✅ " + t.t("settings.backup.export"))
+                }.onFailure {
+                    viewModel.showRawMessage(t.t("settings.toast.fileReadError"))
+                }
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { stream ->
+                        stream.bufferedReader().readText()
+                    }
+                }.onSuccess { text ->
+                    if (text != null) viewModel.importBackupText(text)
+                }.onFailure {
+                    viewModel.showRawMessage(t.t("settings.toast.fileReadError"))
+                }
+            }
+        }
+    }
+
+    SettingsScreen(
+        viewModel = viewModel,
+        onExportBackup = { exportLauncher.launch(BackupRepository.FILENAME) },
+        onImportBackup = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
+    )
 }
 
 @Composable
@@ -138,19 +200,17 @@ private fun MainScreen(viewModel: MainViewModel) {
                     onAddWorkCode = viewModel::addWorkCode,
                 )
 
-                state.view == "settings" || state.view == "report" -> {
-                    // Platzhalter — Settings und PDF-Bericht folgen in den
-                    // nächsten Phasen des Rewrites.
+                state.view == "settings" -> SettingsRoute(viewModel)
+
+                state.view == "report" -> {
+                    // Platzhalter — PDF-Bericht folgt in Phase 4.
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text(
-                            text = if (state.view == "settings") "Einstellungen" else "Bericht",
-                            color = colors.textPrimary,
-                        )
+                        Text(text = "Bericht", color = colors.textPrimary)
                         Text(
                             text = "Folgt in der nächsten Phase des Rewrites.",
                             color = colors.textMuted,
@@ -158,7 +218,7 @@ private fun MainScreen(viewModel: MainViewModel) {
                     }
                 }
 
-                else -> DashboardScreen(
+                state.view == "dashboard" -> DashboardScreen(
                     currentMonth = state.currentMonth,
                     appData = state.appData!!,
                     userData = state.userData,
@@ -171,7 +231,45 @@ private fun MainScreen(viewModel: MainViewModel) {
                     onEditEntry = viewModel::startEdit,
                     onDeleteEntry = viewModel::requestDeleteEntry,
                 )
+
+                else -> {}
             }
+        }
+
+        // Import-Konflikt: Backup enthält auch Einstellungen → User entscheidet
+        state.pendingImport?.let { pending ->
+            AlertDialog(
+                onDismissRequest = { viewModel.cancelImport() },
+                title = { Text(t.t("modals.importConflict.title")) },
+                text = {
+                    Column {
+                        Text(
+                            t.t("modals.importConflict.description")
+                                .replace("<b>", "").replace("</b>", ""),
+                        )
+                        Text(
+                            t.t("modals.importConflict.entriesLabel") + ": " + pending.entryCount,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                        Text(
+                            t.t("modals.importConflict.warning"),
+                            color = colors.danger,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.confirmImport("ALL") }) {
+                        Text(t.t("modals.importConflict.importAll"), color = colors.danger)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.confirmImport("ENTRIES_ONLY") }) {
+                        Text(t.t("modals.importConflict.entriesOnly"))
+                    }
+                },
+            )
         }
 
         // FAB + Live-Timer nur im Dashboard (wie die Web-App)

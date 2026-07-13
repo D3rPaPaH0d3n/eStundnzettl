@@ -67,7 +67,11 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                MainScreen(viewModel)
+                if (state.onboarding.active) {
+                    com.estundnzettl.app.ui.onboarding.OnboardingScreen(viewModel)
+                } else {
+                    MainScreen(viewModel)
+                }
             }
         }
     }

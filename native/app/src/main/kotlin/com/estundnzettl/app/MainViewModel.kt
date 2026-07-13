@@ -91,6 +91,7 @@ data class MainUiState(
     val materialYouEnabled: Boolean = false,
     /** Backup-Analyse, die auf die Import-Entscheidung (ALL/ENTRIES_ONLY) wartet. */
     val pendingImport: com.estundnzettl.core.backup.BackupAnalysis? = null,
+    val onboarding: OnboardingUiState = OnboardingUiState(),
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -114,6 +115,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             loadSettings()
             restoreTimer()
+            // Onboarding zeigen, wenn noch kein Profil existiert (leerer
+            // Name = Onboarding-Check der Web-App).
+            if (_state.value.userData?.name.isNullOrBlank()) {
+                _state.value = _state.value.copy(onboarding = OnboardingUiState(active = true))
+            }
             entriesRepo.observeAll().collect { entries ->
                 allEntries = entries
                 recompute()
@@ -714,6 +720,200 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun reloadAfterImport() {
         loadSettings()
         recompute()
+    }
+
+    // ─── Onboarding (Port von useOnboardingFlow.ts) ──────────
+
+    private fun updateOnboarding(transform: (OnboardingUiState) -> OnboardingUiState) {
+        _state.value = _state.value.copy(onboarding = transform(_state.value.onboarding))
+    }
+
+    /** "Nur Arbeitszeiten eintragen" — Simple-Modus-Schnellstart. */
+    fun onboardingStartSimple() {
+        updateOnboarding {
+            it.copy(
+                isRestoreFlow = false,
+                restoreData = null,
+                simpleMode = true,
+                workDays = List(7) { 0 },
+                localeId = "neutral",
+                workCodePresetId = "allgemein",
+                calcConfig = com.estundnzettl.core.calc.getBlankCalculationConfig(List(7) { 0 }),
+                customCalc = false,
+                step = 1,
+            )
+        }
+    }
+
+    fun onboardingStartNew() {
+        updateOnboarding {
+            it.copy(isRestoreFlow = false, restoreData = null, simpleMode = false, customCalc = false, step = 1)
+        }
+    }
+
+    fun onboardingStartRestore() {
+        updateOnboarding { it.copy(isRestoreFlow = true, step = 6) }
+    }
+
+    fun onboardingUpdate(transform: (OnboardingUiState) -> OnboardingUiState) = updateOnboarding(transform)
+
+    fun onboardingNext() {
+        val ob = _state.value.onboarding
+        when {
+            ob.step == 1 && ob.name.isBlank() -> {
+                emit(UiMessage("onboarding.toast.nameRequired"))
+                return
+            }
+            ob.step == 1 && ob.simpleMode -> {
+                updateOnboarding { it.copy(step = 7) }
+                return
+            }
+            ob.step == 2 && ob.localeId == null && !ob.customCalc -> {
+                emit(UiMessage("onboarding.toast.localeRequired"))
+                return
+            }
+        }
+
+        var next = ob
+        // Locale-Wahl belegt Default-WorkDays vor, wenn noch das
+        // Initial-Modell (38,5h klassisch) aktiv ist.
+        if (ob.step == 2 && ob.localeId != null) {
+            if (ob.workDays == com.estundnzettl.core.model.WORK_MODELS[0].days) {
+                next = next.copy(workDays = getLocale(ob.localeId).defaultWorkDays)
+            }
+        }
+        // Beim Verlassen von WorkSchedule: weeklyTargetMinutes aktualisieren
+        if (ob.step == 3) {
+            val config = next.calcConfig
+                ?: com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale(ob.localeId), next.workDays)
+            next = next.copy(calcConfig = config.copy(weeklyTargetMinutes = next.workDays.sum()))
+        }
+
+        // Step 3 → 5 überspringt Calculation ohne Eigenen Plan
+        val target = when {
+            ob.step == 3 && !ob.customCalc -> 5
+            // Backup-Ziele (Cloud) folgen in Phase 5 → Step 6 im Neu-Flow überspringen
+            ob.step == 5 -> 7
+            else -> ob.step + 1
+        }
+        updateOnboarding { next.copy(step = target) }
+    }
+
+    fun onboardingBack() {
+        val ob = _state.value.onboarding
+        val target = when {
+            ob.step == 6 && ob.isRestoreFlow -> 0
+            ob.step == 7 && ob.simpleMode -> 1
+            ob.step == 7 && ob.isRestoreFlow -> 6
+            ob.step == 7 -> 5
+            ob.step == 5 && !ob.customCalc -> 3
+            else -> ob.step - 1
+        }
+        updateOnboarding { it.copy(step = target) }
+    }
+
+    /** Restore-Datei geladen: analysieren und in den Flow übernehmen. */
+    fun onboardingRestoreFromText(text: String) {
+        val analysis = backupRepo.analyze(text)
+        if (!analysis.valid) {
+            emit(UiMessage("settings.toast.invalidBackup"))
+            return
+        }
+        if (analysis.integrity == com.estundnzettl.core.backup.BackupIntegrity.MISMATCH) {
+            emit(UiMessage("settings.toast.integrityMismatch"))
+        }
+        updateOnboarding { it.copy(restoreData = analysis, step = 7) }
+    }
+
+    /** Abschluss — Port von finishSetup (ohne Cloud-Ziele, siehe Phase 5). */
+    fun onboardingFinish() {
+        val ob = _state.value.onboarding
+        viewModelScope.launch {
+            val backupUser = ob.restoreData?.settings as? kotlinx.serialization.json.JsonObject
+            val backupName = (backupUser?.get("name") as? JsonPrimitive)
+                ?.takeIf { it.isString }?.content?.trim() ?: ""
+
+            // Backup ohne brauchbares Profil → in den Neu-Flow umleiten
+            if (ob.isRestoreFlow && ob.restoreData != null && backupName.isEmpty() && ob.name.isBlank()) {
+                emit(UiMessage("onboarding.toast.restoreProfileNeeded"))
+                updateOnboarding { it.copy(isRestoreFlow = false, step = 1) }
+                return@launch
+            }
+
+            // Restore-Flow: Backup ZUERST einspielen
+            if (ob.restoreData != null) {
+                val applied = backupRepo.apply(ob.restoreData, "ALL")
+                if (!applied) {
+                    emit(UiMessage("onboarding.toast.restoreError"))
+                    return@launch
+                }
+            }
+
+            // Profil persistieren — Feldbelegung wie finishSetup (inkl.
+            // role/position und verschachteltem settings-Objekt).
+            val userJson = if (ob.isRestoreFlow && backupUser != null) {
+                kotlinx.serialization.json.buildJsonObject {
+                    backupUser.forEach { (k, v) -> put(k, v) }
+                    val backupWorkDays = backupUser["workDays"] as? kotlinx.serialization.json.JsonArray
+                    if (backupWorkDays == null || backupWorkDays.size != 7) {
+                        put("workDays", kotlinx.serialization.json.buildJsonArray {
+                            ob.workDays.forEach { add(JsonPrimitive(it)) }
+                        })
+                    }
+                    put("settings", kotlinx.serialization.json.buildJsonObject {
+                        put("autoBackup", JsonPrimitive(false))
+                        put("theme", JsonPrimitive(ob.restoreData?.theme ?: "system"))
+                    })
+                }
+            } else {
+                kotlinx.serialization.json.buildJsonObject {
+                    put("name", JsonPrimitive(ob.name))
+                    put("company", JsonPrimitive(ob.company))
+                    put("role", JsonPrimitive(ob.role))
+                    put("position", JsonPrimitive(ob.role))
+                    put("photo", kotlinx.serialization.json.JsonNull)
+                    put("workDays", kotlinx.serialization.json.buildJsonArray {
+                        ob.workDays.forEach { add(JsonPrimitive(it)) }
+                    })
+                    put("simpleMode", JsonPrimitive(ob.simpleMode))
+                    put("settings", kotlinx.serialization.json.buildJsonObject {
+                        put("autoBackup", JsonPrimitive(false))
+                        put("theme", JsonPrimitive("system"))
+                    })
+                }
+            }
+
+            runCatching {
+                settings.setRaw(SettingsRepository.Keys.USER, userJson)
+                settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, false)
+                settings.setBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED, false)
+            }
+
+            if (!ob.isRestoreFlow && !ob.simpleMode) {
+                val config = ob.calcConfig
+                    ?: com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale(ob.localeId), ob.workDays)
+                runCatching { settings.setCalculationConfig(config) }
+            }
+            if (!ob.isRestoreFlow && ob.localeId != null) {
+                runCatching { settings.setLocaleId(ob.localeId) }
+            }
+            if (!ob.isRestoreFlow) {
+                com.estundnzettl.core.model.WORK_CODE_PRESETS
+                    .firstOrNull { it.id == ob.workCodePresetId }
+                    ?.let { preset -> runCatching { workCodesRepo.replaceAll(preset.codes) } }
+            }
+
+            loadSettings()
+            recompute()
+            _state.value = _state.value.copy(
+                onboarding = OnboardingUiState(active = false),
+                view = "dashboard",
+            )
+            emit(UiMessage(
+                if (ob.restoreData != null) "onboarding.toast.restoreSuccess"
+                else "onboarding.toast.welcome"
+            ))
+        }
     }
 
     /** Bereits übersetzten Text als Toast anzeigen (für UI-lokale Meldungen). */

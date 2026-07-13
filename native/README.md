@@ -76,7 +76,11 @@ App das Verzeichnis `native/` in Android Studio öffnen.
      Storage Access Framework mit Import-Konflikt-Dialog, Darstellung
      (Sprache/Theme/Material You dynamische Farben), Hausmasta-Modus,
      App-Info mit Danger-Zone
-   - ⬜ Onboarding, AttachmentManager, Demo-Daten
+   - ✅ Onboarding-Wizard (Welcome mit Schnellstart/Neu/Restore,
+     Profil, Stundenberechnung inkl. „Eigener Plan"-Zweig,
+     Arbeitszeitmodell mit Tages-Feinanpassung, Tätigkeits-Presets,
+     Backup-Restore aus Datei, Abschluss mit Original-Persistenz)
+   - ⬜ AttachmentManager, Demo-Daten, App-Tour
 4. ⬜ **Phase 4** — PDF-Report (Layout nach `ReportPdfDocument.tsx`,
    `pdfDisplay`-Toggles), PDF-Archiv.
 5. ⬜ **Phase 5** — Cloud-Backups (Google Drive, Nextcloud), Google-Login,

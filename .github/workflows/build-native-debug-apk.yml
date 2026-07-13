@@ -16,12 +16,18 @@
 
 name: Build Native Debug APK
 
-# Nur manuell auslösbar. Der "Run workflow"-Button erscheint im Actions-UI
-# erst, wenn diese Datei auf dem Default-Branch liegt — bis dahin lässt sich
-# der Build über die GitHub-API starten (workflow_dispatch mit ref auf den
-# Rewrite-Branch), da der Workflow bereits registriert ist.
+# Nicht bei jedem Push: Der push-Trigger reagiert NUR auf Änderungen an
+# der Trigger-Datei .github/build-native.trigger. Ein Build wird also
+# gezielt angefordert, indem diese Datei angefasst und gepusht wird.
+# Der "Run workflow"-Button (workflow_dispatch) erscheint im Actions-UI
+# zusätzlich, sobald diese Datei auf dem Default-Branch liegt.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - 'claude/kotlin-app-rewrite-**'
+    paths:
+      - '.github/build-native.trigger'
 
 jobs:
   build:

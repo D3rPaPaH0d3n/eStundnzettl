@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * DAOs — Query-Semantik (Sortierung, Konfliktverhalten, gekoppelte
  * Löschungen) entspricht den Repositories der TS-App
- * (src/db/repositories/*.ts).
+ * (src/db/repositories/).
  */
 
 @Dao

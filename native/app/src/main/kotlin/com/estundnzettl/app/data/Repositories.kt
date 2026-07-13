@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.map
 
 /**
  * Domain-Repositories über den Room-DAOs — API-Semantik entspricht den
- * Repositories der TS-App (src/db/repositories/*.ts).
+ * Repositories der TS-App (src/db/repositories/).
  */
 
 class EntriesRepository(private val db: AppDatabase) {

@@ -34,7 +34,7 @@ import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
@@ -55,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -176,7 +177,7 @@ private fun ProfileSection(viewModel: MainViewModel) {
                         val bitmap = remember(userData.photo) { dataUrlToBitmap(userData.photo!!) }
                         if (bitmap != null) {
                             androidx.compose.foundation.Image(
-                                bitmap = androidx.compose.ui.graphics.asImageBitmap(bitmap),
+                                bitmap = bitmap.asImageBitmap(),
                                 contentDescription = t.t("settings.profile.photoAlt"),
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize(),
@@ -620,7 +621,7 @@ private fun AppearanceSection(viewModel: MainViewModel) {
     CollapsibleSettingsCard(
         title = t.t("settings.appearance.title"),
         subtitle = t.t("settings.appearance.subtitle"),
-        icon = { SectionIconBadge(Icons.Filled.Palette, Palette.Purple400) },
+        icon = { SectionIconBadge(Icons.Filled.ColorLens, Palette.Purple400) },
         defaultExpanded = false,
     ) {
         // Sprache

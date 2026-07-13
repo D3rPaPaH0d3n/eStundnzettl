@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
-import com.estundnzettl.core.locale.GERMAN_LOCALE_IDS
+import com.estundnzettl.core.locale.GERMANY_LOCALE_IDS
 import com.estundnzettl.core.locale.SWITZERLAND_LOCALE_IDS
 import com.estundnzettl.core.locale.getLocale
 import com.estundnzettl.core.locale.holidays.getIslamicHolidays
@@ -633,7 +633,7 @@ fun ActionButton(
 /** Import-Optionen: AT, alle DE-Bundesländer, alle CH-Kantone, orthodox, islamisch. */
 fun holidayImportOptions(t: I18n): List<Pair<String, String>> = buildList {
     add("at" to t.t("settings.calc.importOptions.austria"))
-    GERMAN_LOCALE_IDS.forEach { id ->
+    GERMANY_LOCALE_IDS.forEach { id ->
         add(id to t.t("settings.calc.importOptions.germanyState", "state" to getLocale(id).region))
     }
     SWITZERLAND_LOCALE_IDS.forEach { id ->

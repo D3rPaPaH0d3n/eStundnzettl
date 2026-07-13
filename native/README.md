@@ -56,8 +56,18 @@ App das Verzeichnis `native/` in Android Studio öffnen.
 2. ✅ **Phase 2** — Repositories, Settings-Store, Backup-Import/-Export
    (JSON-Format + Checksum kompatibel zu `storageBackup.ts`, per Fixtures
    bewiesen), Datenübernahme aus der Capacitor-DB.
-3. ⬜ **Phase 3** — UI Screen für Screen: Dashboard, EntryForm/Timer,
-   Monatsansicht, Settings, Onboarding (inkl. ViewModels je Screen).
+3. 🔶 **Phase 3 (in Arbeit)** — UI Screen für Screen:
+   - ✅ App-Shell (Header, Navigation, Theme hell/dunkel, Toasts)
+   - ✅ i18n: identische de/en-Sprachdateien der Web-App (Gradle-Sync aus
+     `src/i18n/locales`, i18next-kompatibler Lookup inkl. Plurale)
+   - ✅ Dashboard (Monats-Statistik-Karte, Monats-Picker, Wochen-Gruppen
+     mit Tages-Karten, Swipe-zum-Löschen, Tag-Saldo)
+   - ✅ Eintragsformular (Typ-Segmente, Fahrt-Untertypen, Auto/Manuell für
+     Sondertypen, Material-Picker, Pause, Tätigkeits-Sheet mit Quick-Add,
+     Projekt-Autocomplete, „Wie zuletzt")
+   - ✅ Live-Timer (FAB: Tap = neuer Eintrag, Long-Press = Timer;
+     Pause/Fortsetzen, Status-Pille, Auto-Checkout über Mitternacht)
+   - ⬜ Settings-Screen, Onboarding, AttachmentManager
 4. ⬜ **Phase 4** — PDF-Report (Layout nach `ReportPdfDocument.tsx`,
    `pdfDisplay`-Toggles), PDF-Archiv.
 5. ⬜ **Phase 5** — Cloud-Backups (Google Drive, Nextcloud), Google-Login,

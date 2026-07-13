@@ -53,6 +53,23 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+// Die UI-Sprachdateien (848 Keys, de/en) kommen 1:1 aus der bestehenden
+// App (src/i18n/locales) — Single Source of Truth, kein Text-Drift.
+val syncI18n = tasks.register<Copy>("syncI18n") {
+    from(rootProject.layout.projectDirectory.dir("../src/i18n/locales")) {
+        include("*.json")
+    }
+    into(layout.buildDirectory.dir("generated/i18nAssets/i18n"))
+}
+
+android.sourceSets.getByName("main") {
+    assets.srcDir(layout.buildDirectory.dir("generated/i18nAssets"))
+}
+
+tasks.named("preBuild") {
+    dependsOn(syncI18n)
+}
+
 dependencies {
     implementation(project(":core"))
 
@@ -65,6 +82,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
 
     implementation(libs.androidx.room.runtime)

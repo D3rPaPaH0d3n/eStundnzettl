@@ -1,0 +1,197 @@
+package com.estundnzettl.app.ui
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.estundnzettl.app.TimerUiState
+import com.estundnzettl.app.ui.theme.LocalAppColors
+import com.estundnzettl.app.ui.theme.LocalI18n
+import com.estundnzettl.app.ui.theme.Palette
+import kotlinx.coroutines.delay
+import java.time.Instant
+
+/**
+ * FAB + Live-Timer — Port von LiveTimerOverlay.tsx:
+ * - Tap auf den FAB: neuer Eintrag; langer Druck: Timer starten
+ *   (Ersatz für die Long-Press+Swipe-Geste der Web-App)
+ * - Laufender Timer: Status-Pille mit Fortschrittsfarbe, Stop-FAB,
+ *   daneben Pause/Fortsetzen.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun LiveTimerBar(
+    timer: TimerUiState,
+    targetMinutes: Int,
+    onCreateEntry: () -> Unit,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+
+    // Anzeige alle 30s aktualisieren (wie das Original-Intervall)
+    var nowMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(timer.isRunning, timer.isPaused) {
+        while (timer.isRunning) {
+            nowMillis = System.currentTimeMillis()
+            delay(30_000)
+        }
+    }
+
+    val statusText: String
+    val statusTone: Color
+    if (timer.isRunning && timer.startTime != null) {
+        val start = Instant.parse(timer.startTime).toEpochMilli()
+        var pauseMs = timer.accumulatedPause
+        if (timer.isPaused && timer.pauseStartTime != null) {
+            pauseMs += nowMillis - Instant.parse(timer.pauseStartTime).toEpochMilli()
+        }
+        val workedMinutes = ((nowMillis - start - pauseMs) / 1000.0 / 60.0)
+        val rounded = maxOf(0, workedMinutes.toInt())
+        statusText = "${rounded / 60}:${(rounded % 60).toString().padStart(2, '0')} ${t.t("liveTimer.hours")}"
+        val progress = if (targetMinutes > 0) workedMinutes / targetMinutes else 0.6
+        statusTone = when {
+            progress >= 1 -> Palette.Emerald500
+            progress >= 0.6 -> Palette.Blue500
+            else -> Palette.Red500
+        }
+    } else {
+        statusText = ""
+        statusTone = Palette.Blue500
+    }
+
+    Column(
+        modifier = modifier
+            .navigationBarsPadding()
+            .padding(end = 24.dp, bottom = 56.dp),
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // Status-Pille
+        AnimatedVisibility(visible = timer.isRunning, enter = fadeIn(), exit = fadeOut()) {
+            Text(
+                text = if (timer.isPaused) t.t("liveTimer.paused") else statusText,
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(statusTone.copy(alpha = 0.9f))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+        }
+
+        androidx.compose.foundation.layout.Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Pause/Fortsetzen (nur bei laufendem Timer)
+            AnimatedVisibility(visible = timer.isRunning, enter = fadeIn(), exit = fadeOut()) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (timer.isPaused) Palette.Emerald100 else colors.surface
+                        )
+                        .border(
+                            1.dp,
+                            if (timer.isPaused) Palette.Emerald400 else colors.border,
+                            CircleShape,
+                        )
+                        .combinedClickable(onClick = { if (timer.isPaused) onResume() else onPause() }),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        if (timer.isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+                        contentDescription = if (timer.isPaused) t.t("timer.resume") else t.t("timer.pause"),
+                        tint = if (timer.isPaused) Palette.Emerald600 else colors.textFaint,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+
+            // Haupt-FAB
+            Column(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(
+                        when {
+                            timer.isRunning -> colors.surface
+                            colors.isDark -> Palette.Emerald600
+                            else -> Palette.Zinc900
+                        }
+                    )
+                    .border(
+                        2.dp,
+                        if (timer.isRunning) Palette.Red500 else Color.Transparent,
+                        CircleShape,
+                    )
+                    .combinedClickable(
+                        onClick = { if (timer.isRunning) onStop() else onCreateEntry() },
+                        onLongClick = { if (!timer.isRunning) onStart() },
+                    ),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (timer.isRunning) {
+                    Icon(
+                        Icons.Filled.Stop,
+                        contentDescription = t.t("timer.stop"),
+                        tint = Palette.Red500,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        t.t("liveTimer.fabOff"),
+                        color = Palette.Red500,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                    )
+                } else {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = t.t("timer.start"),
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+            }
+        }
+    }
+}

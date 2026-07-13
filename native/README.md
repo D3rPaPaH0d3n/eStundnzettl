@@ -81,7 +81,14 @@ App das Verzeichnis `native/` in Android Studio öffnen.
      Arbeitszeitmodell mit Tages-Feinanpassung, Tätigkeits-Presets,
      Backup-Restore aus Datei, Abschluss mit Original-Persistenz)
    - ⬜ AttachmentManager, Demo-Daten, App-Tour
-4. ⬜ **Phase 4** — PDF-Report (Layout nach `ReportPdfDocument.tsx`,
-   `pdfDisplay`-Toggles), PDF-Archiv.
+4. 🔶 **Phase 4** — PDF-Report
+   - ✅ Vektor-PDF-Generator (`pdf/ReportPdfGenerator.kt`, Layout-Port
+     von `ReportPdfDocument.tsx` auf android.graphics.pdf: Kopf mit
+     Foto, Tabelle mit Zebra/Feiertag/Nachtschicht, Zusammenfassung,
+     Urlaubsbilanz, Notiz-Block, Seitenumbruch mit wiederholtem Kopf)
+   - ✅ Bericht-Screen (`ui/ReportScreen.kt`): Live-Vorschau via
+     PdfRenderer, Monats-/KW-Filter, Notiz-Dialog, `pdfDisplay`-Toggles
+     (Hausmasta), Teilen via FileProvider, Speichern via SAF
+   - ⬜ Automatisches Monats-PDF-Archiv (`pdfArchive`)
 5. ⬜ **Phase 5** — Cloud-Backups (Google Drive, Nextcloud), Google-Login,
    Feinschliff, Release-Vorbereitung.

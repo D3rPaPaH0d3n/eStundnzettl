@@ -741,7 +741,7 @@ private fun EmptyState(t: I18n, colors: AppColors) {
 
 /** Monats-Picker: Jahr-Stepper + 12 Monats-Buttons. */
 @Composable
-private fun MonthPickerDialog(
+internal fun MonthPickerDialog(
     selected: YearMonth,
     javaLocale: JavaLocale,
     onSelect: (YearMonth) -> Unit,

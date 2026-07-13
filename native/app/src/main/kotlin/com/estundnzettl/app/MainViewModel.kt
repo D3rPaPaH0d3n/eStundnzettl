@@ -99,6 +99,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val db = (application as EStundnzettlApp).database
     private val entriesRepo = EntriesRepository(db)
     private val workCodesRepo = WorkCodesRepository(db)
+    private val attachmentsRepo = com.estundnzettl.app.data.AttachmentsRepository(db)
     val settings = SettingsRepository(db.settingsDao())
 
     private val timerJson = Json { ignoreUnknownKeys = true }
@@ -188,6 +189,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _state.value = _state.value.copy(currentMonth = month)
         recompute()
     }
+
+    // ─── Bericht (PDF) ───────────────────────────────────────
+
+    /** Rohliste aller Einträge (unkorrigiert) — für den PDF-Bericht. */
+    fun rawAllEntries(): List<Entry> = allEntries
+
+    /** Alle Attachments — der Bericht filtert selbst nach Zeitraum. */
+    suspend fun getAllAttachments(): List<com.estundnzettl.core.model.Attachment> =
+        attachmentsRepo.getAll()
 
     // ─── Formular ────────────────────────────────────────────
 

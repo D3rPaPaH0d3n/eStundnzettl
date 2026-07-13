@@ -35,6 +35,7 @@ import com.estundnzettl.app.ui.AppHeader
 import com.estundnzettl.app.ui.DashboardScreen
 import com.estundnzettl.app.ui.EntryFormScreen
 import com.estundnzettl.app.ui.LiveTimerBar
+import com.estundnzettl.app.ui.ReportScreen
 import com.estundnzettl.app.ui.settings.SettingsScreen
 import com.estundnzettl.app.ui.theme.EStundnzettlTheme
 import com.estundnzettl.app.ui.theme.LocalAppColors
@@ -206,21 +207,7 @@ private fun MainScreen(viewModel: MainViewModel) {
 
                 state.view == "settings" -> SettingsRoute(viewModel)
 
-                state.view == "report" -> {
-                    // Platzhalter — PDF-Bericht folgt in Phase 4.
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(text = "Bericht", color = colors.textPrimary)
-                        Text(
-                            text = "Folgt in der nächsten Phase des Rewrites.",
-                            color = colors.textMuted,
-                        )
-                    }
-                }
+                state.view == "report" -> ReportScreen(viewModel)
 
                 state.view == "dashboard" -> DashboardScreen(
                     currentMonth = state.currentMonth,

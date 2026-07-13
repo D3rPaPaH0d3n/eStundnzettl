@@ -157,6 +157,27 @@ interface AttachmentLabelDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(labels: List<AttachmentLabelRow>)
+
+    /**
+     * Ein Label an Position 0 einfügen (MRU-Update, max. 20 Einträge) —
+     * Ablauf identisch zu pushLabelSuggestion in attachmentsRepo.ts.
+     */
+    @Transaction
+    suspend fun pushLabel(label: String) {
+        deleteByLabel(label)
+        shiftPositions()
+        insertAll(listOf(AttachmentLabelRow(label = label, position = 0)))
+        trimToLimit()
+    }
+
+    @Query("DELETE FROM attachment_labels WHERE label = :label")
+    suspend fun deleteByLabel(label: String)
+
+    @Query("UPDATE attachment_labels SET position = position + 1")
+    suspend fun shiftPositions()
+
+    @Query("DELETE FROM attachment_labels WHERE position >= 20")
+    suspend fun trimToLimit()
 }
 
 @Dao

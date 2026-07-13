@@ -1,7 +1,9 @@
 package com.estundnzettl.app.data
 
+import com.estundnzettl.app.data.db.AttachmentRow
 import com.estundnzettl.app.data.db.EntryRow
 import com.estundnzettl.app.data.db.WorkCodeRow
+import com.estundnzettl.core.model.Attachment
 import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
@@ -45,3 +47,35 @@ fun Entry.toRow(): EntryRow = EntryRow(
 fun WorkCodeRow.toDomain(): WorkCode = WorkCode(id = id.toInt(), label = label)
 
 fun WorkCode.toRow(): WorkCodeRow = WorkCodeRow(id = id.toLong(), label = label)
+
+/**
+ * entryId ist in der Alt-DB eine INTEGER-Spalte — String-IDs aus
+ * Legacy-Backups sind dort zwangsläufig numerisch (SQLite koerziert bzw.
+ * lehnt ab). Nicht-numerische IDs werfen hier wie beim TS-Insert.
+ */
+private fun EntryId.toLongId(): Long = when (this) {
+    is EntryId.Numeric -> value
+    is EntryId.Text -> value.toLong()
+}
+
+fun AttachmentRow.toDomain(): Attachment = Attachment(
+    id = id,
+    entryId = EntryId.of(entryId),
+    label = label,
+    fileName = fileName,
+    mimeType = mimeType,
+    storagePath = storagePath,
+    fileSize = fileSize,
+    createdAt = createdAt,
+)
+
+fun Attachment.toRow(): AttachmentRow = AttachmentRow(
+    id = id,
+    entryId = entryId.toLongId(),
+    label = label,
+    fileName = fileName,
+    mimeType = mimeType,
+    storagePath = storagePath,
+    fileSize = fileSize,
+    createdAt = createdAt,
+)

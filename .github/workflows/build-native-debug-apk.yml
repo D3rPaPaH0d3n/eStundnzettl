@@ -16,17 +16,12 @@
 
 name: Build Native Debug APK
 
-# workflow_dispatch erscheint im Actions-UI erst, wenn diese Datei auf dem
-# Default-Branch liegt. Bis der Rewrite gemerged ist, baut der push-Trigger
-# deshalb bei jedem Push auf den Rewrite-Branch automatisch eine APK.
+# Nur manuell auslösbar. Der "Run workflow"-Button erscheint im Actions-UI
+# erst, wenn diese Datei auf dem Default-Branch liegt — bis dahin lässt sich
+# der Build über die GitHub-API starten (workflow_dispatch mit ref auf den
+# Rewrite-Branch), da der Workflow bereits registriert ist.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - 'claude/kotlin-app-rewrite-**'
-    paths:
-      - 'native/**'
-      - '.github/workflows/build-native-debug-apk.yml'
 
 jobs:
   build:

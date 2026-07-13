@@ -1,14 +1,12 @@
-// Root build file — plugin versions live in gradle/libs.versions.toml.
-// Alle Kotlin-Plugins werden hier mit Version deklariert (apply false),
-// damit Subprojekte sie ohne Klassenpfad-Konflikt anfordern können.
-// Nur AGP bleibt draußen: es liegt ausschließlich auf Googles Maven und
-// würde JVM-only-Umgebungen ohne Zugriff darauf blockieren — :app
-// deklariert es selbst und wird ohne Android SDK gar nicht konfiguriert
-// (siehe settings.gradle.kts).
-plugins {
-    alias(libs.plugins.kotlin.jvm) apply false
-    alias(libs.plugins.kotlin.android) apply false
-    alias(libs.plugins.kotlin.compose) apply false
-    alias(libs.plugins.kotlin.serialization) apply false
-    alias(libs.plugins.ksp) apply false
-}
+// Root build file — bewusst OHNE plugins-Block.
+//
+// Jedes Modul deklariert seine Plugins selbst (Versionen aus
+// gradle/libs.versions.toml): :core lädt kotlin-jvm/serialization,
+// :app lädt AGP + kotlin-android + compose + ksp gemeinsam in EINEM
+// Klassenpfad (AGP und das Kotlin-Android-Plugin müssen sich sehen).
+//
+// Würde der Root das Kotlin-Plugin laden, könnte :app entweder die
+// Version nicht prüfen ("already on the classpath") oder das Kotlin-
+// Android-Plugin fände die AGP-Klassen nicht (BaseVariant). Und AGP im
+// Root würde JVM-only-Umgebungen ohne Google-Maven-Zugriff blockieren —
+// dort wird :app über settings.gradle.kts gar nicht erst konfiguriert.

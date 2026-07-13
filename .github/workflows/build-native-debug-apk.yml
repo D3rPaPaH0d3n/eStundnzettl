@@ -1,0 +1,116 @@
+# ============================================================================
+# Build Native Debug APK (Kotlin-Rewrite)
+# ============================================================================
+#
+# Baut eine Debug-APK der nativen Kotlin-App (native/) und stellt sie als
+# Download bereit. Wird manuell über GitHub Actions → "Run workflow"
+# gestartet. Branch-Auswahl über den "Use workflow from" Dropdown oben.
+#
+# Debug-Builds nutzen die applicationIdSuffix ".native" und lassen sich
+# parallel zur produktiven Capacitor-App installieren.
+#
+# Kein Keystore oder Play Store Zugang nötig — nur Debug-Signatur.
+# APK wird mit Commit-Hash benannt für eindeutige Identifizierung.
+#
+# ============================================================================
+
+name: Build Native Debug APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: "Build Native Debug APK (${{ github.ref_name }})"
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Code auschecken (vom gewählten Branch) ────────────────────
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # ── 1.5 Build-Kennung generieren ─────────────────────────────────
+      - name: Generate build ID
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BUILD_TIME=$(date +%Y%m%d-%H%M)
+          BUILD_ID="${BUILD_TIME}-${SHORT_SHA}"
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "📌 Build: $BUILD_ID (Branch: ${{ github.ref_name }})"
+
+      # ── 2. Java Setup ────────────────────────────────────────────────
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      # ── 3. Core-Tests (portierte Berechnungs- und Backup-Logik) ─────
+      - name: Run core unit tests
+        working-directory: native
+        run: ./gradlew :core:test
+
+      # ── 4. Debug APK bauen ───────────────────────────────────────────
+      - name: Build Debug APK
+        working-directory: native
+        run: ./gradlew :app:assembleDebug
+
+      # ── 4.5 APK umbenennen mit Build-ID ──────────────────────────────
+      - name: Rename APK with build ID
+        run: |
+          APK=$(find native/app/build/outputs -name "*.apk" -type f | head -1)
+          if [ -n "$APK" ]; then
+            DIR=$(dirname "$APK")
+            mv "$APK" "$DIR/eStundnzettl-NATIVE-${BUILD_ID}.apk"
+            echo "✅ Renamed to: eStundnzettl-NATIVE-${BUILD_ID}.apk"
+            ls -la "$DIR/"
+          else
+            echo "❌ No APK found!"
+            exit 1
+          fi
+
+      # ── 5. Test-Report bei Fehlern hochladen ─────────────────────────
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-${{ env.BUILD_ID }}
+          path: native/core/build/reports/tests/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      # ── 6. APK als Artifact hochladen ────────────────────────────────
+      - name: Upload Debug APK
+        id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: eStundnzettl-NATIVE-${{ env.BUILD_ID }}
+          path: native/app/build/outputs/apk/**/*.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      # ── 7. Telegram Notification ─────────────────────────────────────
+      - name: Telegram notification
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
+            echo "ℹ️ Kein Telegram-Token konfiguriert — Notification übersprungen"
+            exit 0
+          fi
+          if [ "${{ job.status }}" = "success" ]; then
+            DOWNLOAD_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload.outputs.artifact-id }}"
+            MSG="📱 *eStundnzettl NATIVE Build fertig*%0A%0ABuild: \`${BUILD_ID}\`%0ABranch: ${{ github.ref_name }}%0A%0A⬇️ [APK herunterladen](${DOWNLOAD_URL})"
+          else
+            MSG="❌ *eStundnzettl NATIVE Build fehlgeschlagen*%0A%0ABranch: ${{ github.ref_name }}%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MSG}" \
+            -d "parse_mode=Markdown"

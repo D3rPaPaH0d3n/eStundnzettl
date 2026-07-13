@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Debug-Builds heißen "NATIVE", damit sie neben der produktiven
+         App eindeutig erkennbar sind (parallele Installation über
+         applicationIdSuffix ".native"). -->
+    <string name="app_name">eStundnzettl NATIVE</string>
+</resources>

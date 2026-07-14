@@ -233,6 +233,10 @@ private fun MainScreen(viewModel: MainViewModel) {
                     onSetMonth = viewModel::setMonth,
                     onEditEntry = viewModel::startEdit,
                     onDeleteEntry = viewModel::requestDeleteEntry,
+                    attachmentCounts = remember(state.attachments) {
+                        state.attachments.groupingBy { it.entryId }.eachCount()
+                    },
+                    onManageAttachments = viewModel::openAttachments,
                 )
 
                 else -> {}
@@ -287,6 +291,16 @@ private fun MainScreen(viewModel: MainViewModel) {
                 onResume = viewModel::resumeTimer,
                 modifier = Modifier.align(Alignment.BottomEnd),
             )
+        }
+
+        // Dokumente-Verwaltung pro Eintrag (Port von AttachmentManager)
+        if (state.attachmentEntry != null) {
+            com.estundnzettl.app.ui.AttachmentSheet(viewModel)
+        }
+
+        // Einmalige App-Tour nach dem Onboarding
+        if (state.showTour) {
+            com.estundnzettl.app.ui.AppTourDialog(i18n = t, onClose = viewModel::closeTour)
         }
     }
 }

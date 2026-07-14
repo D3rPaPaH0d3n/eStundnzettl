@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -64,6 +65,7 @@ import com.estundnzettl.core.format.formatTime
 import com.estundnzettl.core.locale.AppLocale
 import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.Entry
+import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.UserData
 import com.estundnzettl.core.model.WorkCode
@@ -90,6 +92,8 @@ fun DashboardScreen(
     onSetMonth: (YearMonth) -> Unit,
     onEditEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
+    attachmentCounts: Map<EntryId, Int> = emptyMap(),
+    onManageAttachments: (Entry) -> Unit = {},
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
@@ -146,6 +150,8 @@ fun DashboardScreen(
             } else {
                 sortedWeeks.forEach { (week, weekEntries) ->
                     WeekGroup(
+                        attachmentCounts = attachmentCounts,
+                        onManageAttachments = onManageAttachments,
                         week = week,
                         weekEntries = weekEntries,
                         currentMonth = currentMonth,
@@ -335,6 +341,8 @@ private fun WeekGroup(
     javaLocale: JavaLocale,
     onEditEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
+    attachmentCounts: Map<EntryId, Int> = emptyMap(),
+    onManageAttachments: (Entry) -> Unit = {},
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
@@ -471,6 +479,8 @@ private fun WeekGroup(
                         javaLocale = javaLocale,
                         onEditEntry = onEditEntry,
                         onDeleteEntry = onDeleteEntry,
+                        attachmentCounts = attachmentCounts,
+                        onManageAttachments = onManageAttachments,
                     )
                 }
             }
@@ -490,6 +500,8 @@ private fun DayCard(
     javaLocale: JavaLocale,
     onEditEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
+    attachmentCounts: Map<EntryId, Int> = emptyMap(),
+    onManageAttachments: (Entry) -> Unit = {},
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
@@ -538,6 +550,8 @@ private fun DayCard(
                         colors = colors,
                         onEditEntry = onEditEntry,
                         onDeleteEntry = onDeleteEntry,
+                        attachmentCount = attachmentCounts[entry.id] ?: 0,
+                        onManageAttachments = onManageAttachments,
                     )
                 }
             }
@@ -586,6 +600,8 @@ private fun EntryRow(
     colors: AppColors,
     onEditEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
+    attachmentCount: Int = 0,
+    onManageAttachments: (Entry) -> Unit = {},
 ) {
     val isHoliday = entry.type == EntryType.PUBLIC_HOLIDAY
     val isTimeComp = entry.type == EntryType.TIME_COMP
@@ -663,6 +679,35 @@ private fun EntryRow(
                     }
                     if (codeLabel.isNotEmpty()) {
                         Text(codeLabel, color = colors.textMuted, fontSize = 12.sp)
+                    }
+                    if (!isHoliday) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier
+                                .padding(top = 2.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(colors.surfaceVariant)
+                                .clickable { onManageAttachments(entry) }
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.AttachFile,
+                                contentDescription = null,
+                                tint = colors.textMuted,
+                                modifier = Modifier.size(12.dp),
+                            )
+                            Text(
+                                if (attachmentCount > 0) {
+                                    t.t("dashboard.documentsCount", "count" to attachmentCount)
+                                } else {
+                                    t.t("dashboard.documentsLabel")
+                                },
+                                color = colors.textMuted,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
                     }
                 }
                 Text(

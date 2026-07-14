@@ -2,4 +2,6 @@
 <paths>
     <!-- PDF-Berichte, die zum Teilen in den Cache geschrieben werden -->
     <cache-path name="reports" path="reports/" />
+    <!-- Anhänge (Dokumente pro Eintrag) für das Teilen-Bundle -->
+    <files-path name="attachments" path="attachments/" />
 </paths>

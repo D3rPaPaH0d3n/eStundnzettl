@@ -15,6 +15,7 @@ import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.deriveAppData
 import com.estundnzettl.core.calc.getDefaultTimesForDate
 import com.estundnzettl.core.calc.prepareEntryToSave
+import com.estundnzettl.core.config.toJson
 import com.estundnzettl.core.locale.AppLocale
 import com.estundnzettl.core.locale.getLocale
 import com.estundnzettl.core.locale.holidays.toDateString
@@ -92,6 +93,14 @@ data class MainUiState(
     /** Backup-Analyse, die auf die Import-Entscheidung (ALL/ENTRIES_ONLY) wartet. */
     val pendingImport: com.estundnzettl.core.backup.BackupAnalysis? = null,
     val onboarding: OnboardingUiState = OnboardingUiState(),
+    /** Alle Anhänge (Metadaten) — Pendant zum useAttachments-State. */
+    val attachments: List<com.estundnzettl.core.model.Attachment> = emptyList(),
+    /** MRU-Label-Vorschläge für neue Anhänge. */
+    val labelSuggestions: List<String> = emptyList(),
+    /** Entry, dessen Anhänge gerade verwaltet werden (AttachmentManager offen). */
+    val attachmentEntry: Entry? = null,
+    /** App-Tour sichtbar (einmalig nach dem Onboarding). */
+    val showTour: Boolean = false,
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -122,6 +131,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (_state.value.userData?.name.isNullOrBlank()) {
                 _state.value = _state.value.copy(onboarding = OnboardingUiState(active = true))
             }
+            refreshAttachments()
             // Startup-Check des PDF-Archivs (verzögert wie in der TS-App,
             // damit DB-/Settings-Loads abgeschlossen sind)
             viewModelScope.launch {
@@ -372,7 +382,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val id = (target.id as? EntryId.Numeric)?.value ?: return
         viewModelScope.launch {
             try {
+                // Dateien der zugehörigen Anhänge merken; die Metadaten
+                // löscht deleteWithAttachments atomar mit dem Entry.
+                val orphanedFiles = _state.value.attachments
+                    .filter { it.entryId == target.id }
+                    .map { it.storagePath }
                 entriesRepo.delete(id)
+                orphanedFiles.forEach { deleteAttachmentFile(it) }
+                refreshAttachments()
                 emit(UiMessage("toasts.entry.deleted"))
             } catch (_: Exception) {
                 emit(UiMessage("toasts.entry.deleteFailed"))
@@ -697,9 +714,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 entriesRepo.deleteAll()
+                runCatching { attachmentsDir().deleteRecursively() }
                 val resetUser = UserData()
                 settings.setUserData(resetUser)
                 _state.value = _state.value.copy(userData = resetUser)
+                refreshAttachments()
                 emit(UiMessage("toasts.entry.deleted"))
             } catch (_: Exception) {
                 emit(UiMessage("toasts.entry.deleteAllFailed"))
@@ -764,6 +783,156 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun reloadAfterImport() {
         loadSettings()
         recompute()
+        refreshAttachments()
+    }
+
+    // ─── Anhänge (Port von useAttachments.ts) ────────────────
+
+    companion object {
+        private const val ATTACHMENTS_DIR = "attachments"
+        private const val MAX_ATTACHMENT_SIZE = 10L * 1024 * 1024
+        private val ALLOWED_ATTACHMENT_TYPES = setOf(
+            "application/pdf", "image/jpeg", "image/png", "image/webp",
+        )
+        private const val TOUR_SEEN_KEY = "estundnzettl_tour_seen"
+    }
+
+    private fun attachmentsDir(): java.io.File =
+        java.io.File(getApplication<Application>().filesDir, ATTACHMENTS_DIR).apply { mkdirs() }
+
+    private suspend fun refreshAttachments() {
+        runCatching {
+            val all = attachmentsRepo.getAll()
+                .sortedByDescending { it.createdAt }
+            val labels = attachmentsRepo.getLabelSuggestions()
+            _state.value = _state.value.copy(attachments = all, labelSuggestions = labels)
+        }
+    }
+
+    fun openAttachments(entry: Entry) {
+        _state.value = _state.value.copy(attachmentEntry = entry)
+    }
+
+    fun closeAttachments() {
+        _state.value = _state.value.copy(attachmentEntry = null)
+    }
+
+    /**
+     * Anhang anlegen: Datei aus der SAF-Uri in den App-Speicher kopieren,
+     * Metadaten in SQLite, Label in die MRU-Liste. Validierung wie die
+     * Web-App (max. 10 MB; PDF/JPEG/PNG/WebP). Wirft bei Fehlern mit
+     * anzeigbarer Meldung.
+     */
+    suspend fun addAttachment(entryId: EntryId, uri: android.net.Uri, label: String) {
+        val context = getApplication<Application>()
+        val trimmedLabel = label.trim()
+        require(trimmedLabel.isNotEmpty()) { "Bitte eine Bezeichnung eingeben." }
+
+        val resolver = context.contentResolver
+        val mimeType = resolver.getType(uri) ?: "application/octet-stream"
+        if (mimeType !in ALLOWED_ATTACHMENT_TYPES) {
+            throw IllegalArgumentException("Nur PDF, JPG, PNG oder WEBP sind erlaubt.")
+        }
+
+        var displayName = "dokument"
+        var size = -1L
+        resolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val nameIdx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                val sizeIdx = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                if (nameIdx >= 0) cursor.getString(nameIdx)?.let { displayName = it }
+                if (sizeIdx >= 0 && !cursor.isNull(sizeIdx)) size = cursor.getLong(sizeIdx)
+            }
+        }
+
+        val bytes = resolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: throw IllegalArgumentException("Datei konnte nicht gelesen werden.")
+        if (size < 0) size = bytes.size.toLong()
+        if (size > MAX_ATTACHMENT_SIZE) {
+            throw IllegalArgumentException("Datei ist größer als 10 MB.")
+        }
+
+        val id = "att_${System.currentTimeMillis()}_${(1..6).map { "abcdefghijklmnopqrstuvwxyz0123456789".random() }.joinToString("")}"
+        val extension = displayName.substringAfterLast('.', "bin").lowercase()
+        val fileName = displayName.replace(Regex("[^a-zA-Z0-9._-]"), "_").ifEmpty { "dokument" }
+        val storagePath = "$ATTACHMENTS_DIR/$id.$extension"
+
+        val file = java.io.File(attachmentsDir(), "$id.$extension")
+        file.writeBytes(bytes)
+
+        val attachment = com.estundnzettl.core.model.Attachment(
+            id = id,
+            entryId = entryId,
+            label = trimmedLabel,
+            fileName = fileName,
+            mimeType = mimeType,
+            storagePath = storagePath,
+            fileSize = size,
+            createdAt = java.time.Instant.now().toString(),
+        )
+
+        try {
+            attachmentsRepo.upsert(attachment)
+        } catch (_: Exception) {
+            runCatching { file.delete() }
+            throw IllegalStateException("Anhang konnte nicht gespeichert werden.")
+        }
+        attachmentsRepo.pushLabelSuggestion(trimmedLabel)
+        refreshAttachments()
+    }
+
+    suspend fun removeAttachment(attachmentId: String) {
+        val removed = _state.value.attachments.firstOrNull { it.id == attachmentId } ?: return
+        attachmentsRepo.delete(attachmentId)
+        deleteAttachmentFile(removed.storagePath)
+        refreshAttachments()
+    }
+
+    /** Datei-Inhalt eines Anhangs (für Teilen/Report-Bundle). */
+    fun attachmentFile(attachment: com.estundnzettl.core.model.Attachment): java.io.File =
+        java.io.File(getApplication<Application>().filesDir, attachment.storagePath)
+
+    private fun deleteAttachmentFile(storagePath: String) {
+        runCatching {
+            java.io.File(getApplication<Application>().filesDir, storagePath).delete()
+        }
+    }
+
+    // ─── Demo-Daten (Port von DataSettings.handleConfirmDemoData) ──
+
+    fun loadDemoData() {
+        viewModelScope.launch {
+            try {
+                val entries = com.estundnzettl.core.calc.generateDemoEntries()
+                db.replaceFullSnapshot(
+                    com.estundnzettl.app.data.ImportSnapshot(
+                        entries = entries,
+                        userData = com.estundnzettl.core.calc.DEMO_USER.toJson(),
+                        workCodes = com.estundnzettl.core.calc.DEMO_WORK_CODES,
+                    ),
+                )
+                runCatching { db.settingsDao().delete("last_code") }
+                reloadAfterImport()
+                emit(UiMessage("settings.data.toast.demoLoaded"))
+            } catch (_: Exception) {
+                emit(UiMessage("Demo-Daten konnten nicht geladen werden", raw = true))
+            }
+        }
+    }
+
+    // ─── App-Tour (Port von useAppState-Tour-Handling) ───────
+
+    private suspend fun maybeStartTour() {
+        val seen = settings.getString(TOUR_SEEN_KEY) == "1"
+        if (!seen) {
+            kotlinx.coroutines.delay(350)
+            _state.value = _state.value.copy(showTour = true)
+        }
+    }
+
+    fun closeTour() {
+        _state.value = _state.value.copy(showTour = false)
+        viewModelScope.launch { settings.setString(TOUR_SEEN_KEY, "1") }
     }
 
     // ─── Onboarding (Port von useOnboardingFlow.ts) ──────────
@@ -957,6 +1126,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (ob.restoreData != null) "onboarding.toast.restoreSuccess"
                 else "onboarding.toast.welcome"
             ))
+            // Einmalige App-Tour nach dem Onboarding (Port von handleTourStart)
+            maybeStartTour()
         }
     }
 

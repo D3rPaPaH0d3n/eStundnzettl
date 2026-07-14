@@ -270,15 +270,33 @@ fun ReportScreen(viewModel: MainViewModel) {
     fun sharePdf() {
         val bytes = pdfBytes ?: return
         try {
+            val authority = "${context.packageName}.fileprovider"
             val dir = File(context.cacheDir, "reports").apply { mkdirs() }
             val file = File(dir, buildFilename())
             file.writeBytes(bytes)
-            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "application/pdf"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            val uris = arrayListOf(FileProvider.getUriForFile(context, authority, file))
+
+            // Report-Bundle: verknüpfte Dokumente des Zeitraums mit teilen
+            // (Port von shareReportBundle in useAttachmentShare)
+            reportAttachments.forEach { attachment ->
+                val attachmentFile = viewModel.attachmentFile(attachment)
+                if (attachmentFile.exists()) {
+                    uris.add(FileProvider.getUriForFile(context, authority, attachmentFile))
+                }
             }
+
+            val intent = if (uris.size == 1) {
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "application/pdf"
+                    putExtra(Intent.EXTRA_STREAM, uris.first())
+                }
+            } else {
+                Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                    type = "*/*"
+                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                }
+            }
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             context.startActivity(Intent.createChooser(intent, i18n.t("reports.title")))
             Toast.makeText(context, i18n.t("reports.toast.readyToShare"), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {

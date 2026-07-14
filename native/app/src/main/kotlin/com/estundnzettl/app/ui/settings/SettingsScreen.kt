@@ -691,6 +691,31 @@ private fun ExpertModeSection(viewModel: MainViewModel) {
     val t = LocalI18n.current
     val expertMode = state.userData?.expertMode == true
     var showRecalcWarning by remember { mutableStateOf(false) }
+    var showDemoWarning by remember { mutableStateOf(false) }
+
+    if (showDemoWarning) {
+        AlertDialog(
+            onDismissRequest = { showDemoWarning = false },
+            title = { Text(t.t("settings.data.demoWarning.title")) },
+            text = {
+                Text(
+                    t.t(
+                        "settings.data.demoWarning.messageTemplate",
+                        "hint" to t.t("settings.data.demoWarning.withBackupHint"),
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDemoWarning = false
+                    viewModel.loadDemoData()
+                }) { Text(t.t("settings.data.demoWarning.confirm"), color = colors.danger) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDemoWarning = false }) { Text(t.t("common.cancel")) }
+            },
+        )
+    }
 
     if (showRecalcWarning) {
         AlertDialog(
@@ -728,6 +753,9 @@ private fun ExpertModeSection(viewModel: MainViewModel) {
                     ActionButton(label = t.t("settings.appInfo.recalc"), tint = Palette.Amber600) {
                         showRecalcWarning = true
                     }
+                    ActionButton(label = t.t("settings.appInfo.demoData"), tint = Palette.Amber600) {
+                        showDemoWarning = true
+                    }
                 }
             }
         }
@@ -758,12 +786,23 @@ private fun AppInfoSection(viewModel: MainViewModel) {
         )
     }
 
+    var showHelp by remember { mutableStateOf(false) }
+    var showChangelog by remember { mutableStateOf(false) }
+    if (showHelp) com.estundnzettl.app.ui.HelpSheet(onDismiss = { showHelp = false })
+    if (showChangelog) com.estundnzettl.app.ui.ChangelogSheet(onDismiss = { showChangelog = false })
+
     com.estundnzettl.app.ui.AppCard {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 t.t("settings.appInfo.versionLabel", "version" to "0.1.0 (Kotlin)"),
                 color = colors.textMuted, fontSize = 12.sp,
             )
+            ActionButton(label = t.t("settings.appInfo.help"), tint = colors.info) {
+                showHelp = true
+            }
+            ActionButton(label = t.t("settings.appInfo.changelog"), tint = colors.info) {
+                showChangelog = true
+            }
             Text(
                 t.t("settings.appInfo.dangerTitle"),
                 color = colors.danger, fontWeight = FontWeight.Bold, fontSize = 14.sp,

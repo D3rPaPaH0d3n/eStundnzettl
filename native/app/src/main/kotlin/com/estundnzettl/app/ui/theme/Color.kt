@@ -75,7 +75,7 @@ data class AppColors(
 )
 
 val LightAppColors = AppColors(
-    background = Palette.Zinc100,
+    background = Palette.Zinc50,
     surface = Color.White,
     surfaceVariant = Palette.Zinc100,
     border = Palette.Zinc200,

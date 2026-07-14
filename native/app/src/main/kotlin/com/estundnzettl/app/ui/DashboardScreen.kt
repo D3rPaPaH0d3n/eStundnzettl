@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -388,7 +389,8 @@ private fun WeekGroup(
     // Tage gruppieren, absteigend
     val sortedDays = visibleEntries.groupBy { it.date }.entries.sortedByDescending { it.key }
 
-    Column {
+    // mb-3 der Original-Wochen: ergibt zusammen mit dem Listen-Gap 24dp
+    Column(modifier = Modifier.padding(bottom = 12.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -866,6 +868,8 @@ fun AppCard(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            // shadow-sm der Original-Card
+            .shadow(2.dp, RoundedCornerShape(12.dp), spotColor = Color.Black.copy(alpha = 0.35f))
             .clip(RoundedCornerShape(12.dp))
             .background(colors.surface)
             .border(1.dp, colors.border, RoundedCornerShape(12.dp))

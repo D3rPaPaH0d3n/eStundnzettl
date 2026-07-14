@@ -15,16 +15,21 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Assessment
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -75,11 +80,12 @@ fun AppHeader(
                         )
                     }
                 } else {
+                    // Logo-Box: dunkles zinc-800 wie das Original (shadow-inner)
                     Column(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White),
+                            .background(colors.headerControl),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -122,7 +128,7 @@ fun AppHeader(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Icon(
-                            Icons.Filled.Settings,
+                            Icons.Outlined.Settings,
                             contentDescription = t.t("header.settings"),
                             tint = Palette.Zinc300,
                             modifier = Modifier.size(20.dp),
@@ -138,7 +144,7 @@ fun AppHeader(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Icon(
-                            Icons.Outlined.Assessment,
+                            fileBarChartIcon(),
                             contentDescription = t.t("header.report"),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp),
@@ -148,4 +154,65 @@ fun AppHeader(
             }
         }
     }
+}
+
+/**
+ * Lucide "FileBarChart" als Stroke-Vektor — das Bericht-Icon des
+ * Original-Headers (Dokument mit Balkendiagramm).
+ */
+@Composable
+private fun fileBarChartIcon(): ImageVector = remember {
+    ImageVector.Builder(
+        name = "FileBarChart",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).apply {
+        val stroke = SolidColor(Color.White)
+        path(
+            fill = null,
+            stroke = stroke,
+            strokeLineWidth = 2f,
+            strokeLineCap = StrokeCap.Round,
+            strokeLineJoin = StrokeJoin.Round,
+        ) {
+            // Dokument-Umriss mit Eselsohr
+            moveTo(15f, 2f)
+            horizontalLineTo(6f)
+            arcToRelative(2f, 2f, 0f, false, false, -2f, 2f)
+            verticalLineTo(20f)
+            arcToRelative(2f, 2f, 0f, false, false, 2f, 2f)
+            horizontalLineTo(18f)
+            arcToRelative(2f, 2f, 0f, false, false, 2f, -2f)
+            verticalLineTo(7f)
+            close()
+        }
+        path(
+            fill = null,
+            stroke = stroke,
+            strokeLineWidth = 2f,
+            strokeLineCap = StrokeCap.Round,
+            strokeLineJoin = StrokeJoin.Round,
+        ) {
+            moveTo(14f, 2f)
+            verticalLineTo(6f)
+            arcToRelative(2f, 2f, 0f, false, false, 2f, 2f)
+            horizontalLineTo(20f)
+        }
+        path(
+            fill = null,
+            stroke = stroke,
+            strokeLineWidth = 2f,
+            strokeLineCap = StrokeCap.Round,
+            strokeLineJoin = StrokeJoin.Round,
+        ) {
+            moveTo(8f, 18f)
+            verticalLineToRelative(-2f)
+            moveTo(12f, 18f)
+            verticalLineToRelative(-6f)
+            moveTo(16f, 18f)
+            verticalLineToRelative(-4f)
+        }
+    }.build()
 }

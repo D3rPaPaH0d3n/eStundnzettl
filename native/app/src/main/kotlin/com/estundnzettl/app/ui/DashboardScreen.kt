@@ -32,16 +32,17 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +56,7 @@ import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.theme.AppColors
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
+import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.calc.AppData
 import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.calculateDisplayedDayMinutes
@@ -274,15 +276,37 @@ private fun MonthStatsCard(
             }
 
             if (!simpleMode) {
-                LinearProgressIndicator(
-                    progress = { (appData.progressPercent / 100.0).toFloat() },
+                // Durchgehender Balken wie das Original (motion.div: Breite
+                // animiert beim Einblenden von 0 auf den Prozentwert).
+                var progressStarted by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) { progressStarted = true }
+                val progressFraction by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (progressStarted) {
+                        (appData.progressPercent / 100.0).toFloat().coerceIn(0f, 1f)
+                    } else {
+                        0f
+                    },
+                    animationSpec = androidx.compose.animation.core.tween(
+                        durationMillis = 800,
+                        easing = androidx.compose.animation.core.FastOutSlowInEasing,
+                    ),
+                    label = "dashboardProgress",
+                )
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(10.dp)
-                        .clip(RoundedCornerShape(5.dp)),
-                    color = if (overtime >= 0) colors.positive else colors.negative,
-                    trackColor = colors.surfaceVariant,
-                )
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(if (colors.isDark) Palette.Zinc700 else Palette.Zinc200),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(progressFraction)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(if (overtime >= 0) colors.positive else colors.negative),
+                    )
+                }
             }
 
             // Footer: Fahrzeit + MA/ÜS
@@ -292,8 +316,14 @@ private fun MonthStatsCard(
             ) {
                 if (stats.drive > 0) {
                     Text(
-                        text = t.t("dashboard.driveTime", "code" to WorkCodes.DRIVE) +
-                            ": " + formatTime(stats.drive),
+                        text = androidx.compose.ui.text.buildAnnotatedString {
+                            append(t.t("dashboard.driveTime", "code" to WorkCodes.DRIVE) + ": ")
+                            withStyle(
+                                androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.SemiBold),
+                            ) {
+                                append(formatTime(stats.drive))
+                            }
+                        },
                         color = colors.textMuted,
                         fontSize = 12.sp,
                     )

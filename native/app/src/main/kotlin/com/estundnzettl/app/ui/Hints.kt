@@ -2,12 +2,7 @@ package com.estundnzettl.app.ui
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -53,9 +49,9 @@ import com.estundnzettl.app.ui.theme.Palette
 import kotlinx.coroutines.launch
 
 /**
- * Einmalige Hinweis-Box — Port von FirstOpenHint.tsx. Erscheint, bis
- * der Nutzer sie mit "Verstanden" wegklickt (persistiert unter
- * [storageKey] in den Settings).
+ * Einmaliger Hinweis-Dialog — Port von FirstOpenHint.tsx: modales
+ * Popup mit Info-Icon, Titel/Body und "Verstanden"-Button. Erscheint,
+ * bis der Nutzer ihn wegklickt (persistiert unter [storageKey]).
  */
 @Composable
 fun FirstOpenHint(
@@ -63,49 +59,99 @@ fun FirstOpenHint(
     storageKey: String,
     title: String,
     body: String,
-    onDark: Boolean = false,
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
     val scope = rememberCoroutineScope()
     var visible by remember { mutableStateOf(false) }
 
-    val accent = if (onDark) Palette.Blue400 else colors.info
-    val bodyColor = if (onDark) Palette.Zinc300 else colors.textSecondary
-
     LaunchedEffect(storageKey) {
         visible = viewModel.settings.getString(storageKey) != "1"
     }
+    if (!visible) return
 
-    AnimatedVisibility(
-        visible = visible,
-        enter = expandVertically() + fadeIn(),
-        exit = shrinkVertically() + fadeOut(),
-    ) {
+    fun dismiss() {
+        visible = false
+        scope.launch { viewModel.settings.setString(storageKey, "1") }
+    }
+
+    Dialog(onDismissRequest = ::dismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(colors.info.copy(alpha = if (onDark || colors.isDark) 0.2f else 0.08f))
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+                .clip(RoundedCornerShape(16.dp))
+                .background(colors.surface),
         ) {
-            Text(title, color = accent, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Text(body, color = bodyColor, fontSize = 12.sp)
-            Text(
-                t.t("hints.gotIt"),
-                color = accent,
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
+            // Kopfzeile: Emerald-Pille links, X rechts
+            Row(
                 modifier = Modifier
-                    .align(Alignment.End)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable {
-                        visible = false
-                        scope.launch { viewModel.settings.setString(storageKey, "1") }
-                    }
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-            )
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 8.dp, top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 40.dp, height = 6.dp)
+                        .clip(CircleShape)
+                        .background(Palette.Emerald500),
+                )
+                IconButton(onClick = ::dismiss) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = t.t("common.close"),
+                        tint = colors.textFaint,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colors.info.copy(alpha = if (colors.isDark) 0.3f else 0.12f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Outlined.Info,
+                        contentDescription = null,
+                        tint = if (colors.isDark) Palette.Blue400 else colors.info,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+                Column {
+                    Text(title, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(
+                        body,
+                        color = colors.textSecondary,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
+
+            // Fußzeile mit "Verstanden" (blau gefüllt wie das Original)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(colors.surfaceVariant.copy(alpha = if (colors.isDark) 0.3f else 0.6f))
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Button(
+                    onClick = ::dismiss,
+                    colors = ButtonDefaults.buttonColors(containerColor = Palette.Blue600),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    Text(t.t("hints.gotIt"), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
         }
     }
 }

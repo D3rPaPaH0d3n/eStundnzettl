@@ -219,13 +219,17 @@ private fun MainScreen(viewModel: MainViewModel) {
             .background(colors.background),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            AppHeader(
-                view = state.view,
-                headerTitle = headerTitle,
-                onNavigateBack = { viewModel.setView("dashboard") },
-                onOpenSettings = { viewModel.setView("settings") },
-                onOpenReport = { viewModel.setView("report") },
-            )
+            // Der Bericht ist im Original ein Vollbild-Overlay mit eigener
+            // Toolbar — der App-Header entfällt dort komplett.
+            if (state.view != "report") {
+                AppHeader(
+                    view = state.view,
+                    headerTitle = headerTitle,
+                    onNavigateBack = { viewModel.setView("dashboard") },
+                    onOpenSettings = { viewModel.setView("settings") },
+                    onOpenReport = { viewModel.setView("report") },
+                )
+            }
 
             // View-Wechsel mit Übergang (Pendant zu den framer-motion-
             // Transitions der Web-App): sanftes Einblenden + leichtes

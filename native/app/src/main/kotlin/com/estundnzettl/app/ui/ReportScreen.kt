@@ -16,6 +16,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -38,19 +41,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -68,6 +74,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -197,6 +204,7 @@ fun ReportScreen(viewModel: MainViewModel) {
     }
 
     var customNote by remember { mutableStateOf("") }
+    var userScale by remember { mutableStateOf(1f) }
     var noteDialogOpen by remember { mutableStateOf(false) }
     var exportDialogOpen by remember { mutableStateOf(false) }
     var layoutPanelOpen by remember { mutableStateOf(false) }
@@ -345,6 +353,14 @@ fun ReportScreen(viewModel: MainViewModel) {
         )
     }
 
+    // Einmaliger Hinweis beim ersten Öffnen (modales Popup wie das Original)
+    FirstOpenHint(
+        viewModel = viewModel,
+        storageKey = "estundnzettl_hint_report_seen_v2",
+        title = i18n.t("hints.reportTitle"),
+        body = i18n.t("hints.report"),
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // ── Steuerleiste — dunkel wie der Original-Viewer ───────
@@ -352,25 +368,51 @@ fun ReportScreen(viewModel: MainViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Palette.Zinc900)
+                    .statusBarsPadding()
                     .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                // Monat wechseln (zinc-800-Box mit Border wie das Original)
+                // Kopfzeile: Titel + Monats-Stepper + Schließen (Port der
+                // Vorschau-Toolbar aus PrintReport.tsx)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(
+                            Icons.Outlined.Description,
+                            contentDescription = null,
+                            tint = Palette.Emerald500,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Text(
+                            text = i18n.t("reports.preview"),
+                            color = Palette.Zinc100,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            maxLines = 1,
+                        )
+                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .clip(RoundedCornerShape(10.dp))
                             .background(Palette.Zinc800)
-                            .border(1.dp, Palette.Zinc700, RoundedCornerShape(10.dp)),
+                            .border(1.dp, Palette.Zinc700, RoundedCornerShape(10.dp))
+                            .padding(2.dp),
                     ) {
-                        IconButton(onClick = {
-                            viewModel.changeMonth(-1L)
-                            filterWeek = null
-                        }) {
+                        IconButton(
+                            onClick = {
+                                viewModel.changeMonth(-1L)
+                                filterWeek = null
+                            },
+                            modifier = Modifier.size(32.dp),
+                        ) {
                             Icon(
                                 Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                                 contentDescription = null,
@@ -381,16 +423,21 @@ fun ReportScreen(viewModel: MainViewModel) {
                             text = month.atDay(1).format(DateTimeFormatter.ofPattern("MMM yy", javaLocale)),
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
+                            fontSize = 14.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            maxLines = 1,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable { monthPickerOpen = true }
-                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
                         )
-                        IconButton(onClick = {
-                            viewModel.changeMonth(1L)
-                            filterWeek = null
-                        }) {
+                        IconButton(
+                            onClick = {
+                                viewModel.changeMonth(1L)
+                                filterWeek = null
+                            },
+                            modifier = Modifier.size(32.dp),
+                        ) {
                             Icon(
                                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = null,
@@ -398,16 +445,23 @@ fun ReportScreen(viewModel: MainViewModel) {
                             )
                         }
                     }
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Palette.Zinc800)
+                            .clickable { viewModel.setView("dashboard") },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = i18n.t("common.close"),
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                 }
-
-                // Einmaliger Hinweis beim ersten Öffnen (Port von FirstOpenHint)
-                FirstOpenHint(
-                    viewModel = viewModel,
-                    storageKey = "estundnzettl_hint_report_seen_v2",
-                    title = i18n.t("hints.reportTitle"),
-                    body = i18n.t("hints.report"),
-                    onDark = true,
-                )
 
                 // Notiz + Layout-Toggles + Zeitraum-Filter
                 Row(
@@ -462,12 +516,23 @@ fun ReportScreen(viewModel: MainViewModel) {
                         DropdownMenu(
                             expanded = filterMenuOpen,
                             onDismissRequest = { filterMenuOpen = false },
+                            modifier = Modifier.background(Palette.Zinc800),
                         ) {
                             DropdownMenuItem(
-                                text = { Text(i18n.t("reports.fullMonth")) },
+                                text = {
+                                    Text(
+                                        i18n.t("reports.fullMonth"),
+                                        color = if (filterWeek == null) Palette.Emerald500 else Palette.Zinc300,
+                                    )
+                                },
                                 trailingIcon = {
                                     if (filterWeek == null) {
-                                        Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Icon(
+                                            Icons.Filled.Check,
+                                            contentDescription = null,
+                                            tint = Palette.Emerald500,
+                                            modifier = Modifier.size(16.dp),
+                                        )
                                     }
                                 },
                                 onClick = { filterWeek = null; filterMenuOpen = false },
@@ -478,11 +543,17 @@ fun ReportScreen(viewModel: MainViewModel) {
                                         Text(
                                             i18n.t("dashboard.calendarWeekShort", "week" to week) +
                                                 " (${weekLabel(week)})",
+                                            color = if (filterWeek == week) Palette.Emerald500 else Palette.Zinc300,
                                         )
                                     },
                                     trailingIcon = {
                                         if (filterWeek == week) {
-                                            Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                                            Icon(
+                                                Icons.Filled.Check,
+                                                contentDescription = null,
+                                                tint = Palette.Emerald500,
+                                                modifier = Modifier.size(16.dp),
+                                            )
                                         }
                                     },
                                     onClick = { filterWeek = week; filterMenuOpen = false },
@@ -493,54 +564,132 @@ fun ReportScreen(viewModel: MainViewModel) {
                 }
             }
 
-            // ── PDF-Vorschau — dunkler Hintergrund wie das Original ─
-            Box(
+            // ── PDF-Vorschau — dunkler Hintergrund + Zoom wie das
+            //    Original (PdfBlobPreview: 0.5x–3x in 0.25er-Schritten) ─
+            androidx.compose.foundation.layout.BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .background(Palette.Zinc950),
             ) {
+                val baseWidth = maxWidth
+                val animatedScale by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = userScale,
+                    animationSpec = androidx.compose.animation.core.tween(80),
+                    label = "pdfZoom",
+                )
                 if (pageBitmaps.isEmpty()) {
                     CircularProgressIndicator(
                         color = colors.accent,
                         modifier = Modifier.align(Alignment.Center),
                     )
                 } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            start = 12.dp, end = 12.dp, top = 12.dp, bottom = 96.dp,
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Palette.Zinc800.copy(alpha = 0.5f))
+                            .horizontalScroll(rememberScrollState()),
                     ) {
-                        items(pageBitmaps) { bitmap ->
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
+                        LazyColumn(
+                            modifier = Modifier
+                                .width(baseWidth * animatedScale)
+                                .fillMaxHeight(),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                start = 12.dp, end = 12.dp, top = 12.dp, bottom = 96.dp,
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(pageBitmaps) { bitmap ->
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.FillWidth,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(bitmap.width.toFloat() / bitmap.height)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Color.White),
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Zoom-Toolbar unten links (Port der PdfBlobPreview-Buttons)
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 12.dp, bottom = 28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Palette.Zinc900.copy(alpha = 0.85f))
+                        .border(1.dp, Palette.Zinc700, RoundedCornerShape(8.dp))
+                        .padding(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    ZoomButton(
+                        icon = Icons.Filled.Add,
+                        enabled = userScale < ZOOM_MAX - 0.0001f,
+                    ) { userScale = (userScale + ZOOM_STEP).coerceAtMost(ZOOM_MAX) }
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { userScale = 1f },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (userScale == 1f) {
+                            Icon(
+                                Icons.Filled.OpenInFull,
                                 contentDescription = null,
-                                contentScale = ContentScale.FillWidth,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(bitmap.width.toFloat() / bitmap.height)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(Color.White),
+                                tint = Palette.Zinc100,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        } else {
+                            Text(
+                                text = "${(userScale * 100).toInt()}%",
+                                color = Palette.Zinc100,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
                             )
                         }
                     }
+                    ZoomButton(
+                        icon = Icons.Filled.Remove,
+                        enabled = userScale > ZOOM_MIN + 0.0001f,
+                    ) { userScale = (userScale - ZOOM_STEP).coerceAtLeast(ZOOM_MIN) }
                 }
             }
         }
 
-        // Senden-FAB unten rechts (wie der Export-FAB im Original)
-        ExtendedFloatingActionButton(
-            onClick = { if (pdfBytes != null) exportDialogOpen = true },
-            containerColor = colors.accentStrong,
-            contentColor = Color.White,
+        // Senden-Pill unten rechts (emerald-500 mit Ring wie das Original)
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(20.dp),
-            icon = { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null) },
-            text = { Text(i18n.t("reports.exportButton"), fontWeight = FontWeight.Bold) },
-        )
+                .padding(24.dp)
+                .shadow(12.dp, CircleShape, spotColor = Palette.Emerald700)
+                .clip(CircleShape)
+                .background(Palette.Emerald500)
+                .border(2.dp, Palette.Emerald400.copy(alpha = 0.5f), CircleShape)
+                .clickable { if (pdfBytes != null) exportDialogOpen = true }
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.Send,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                i18n.t("reports.exportButton"),
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+            )
+        }
 
         // ── PDF-Einstellungen als Seitenleiste von rechts (Port des
         //    Layout-Panels aus PrintReport.tsx, nur Hausmasta-Modus) ──
@@ -789,6 +938,34 @@ fun PdfDisplayToggles(viewModel: MainViewModel, showHeader: Boolean = true) {
                 onToggle = toggle.update,
             )
         }
+    }
+}
+
+// Zoom-Grenzen der Vorschau — identisch zu PdfBlobPreview.tsx
+private const val ZOOM_MIN = 0.5f
+private const val ZOOM_MAX = 3f
+private const val ZOOM_STEP = 0.25f
+
+/** Einzelner Zoom-Button (+/−) der Vorschau-Toolbar. */
+@Composable
+private fun ZoomButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(28.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = Palette.Zinc100.copy(alpha = if (enabled) 1f else 0.3f),
+            modifier = Modifier.size(16.dp),
+        )
     }
 }
 

@@ -16,8 +16,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Palette as OutlinedPaletteIcon
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Work
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -210,12 +217,15 @@ fun TourPopupCard(
     onBack: () -> Unit,
     onNext: () -> Unit,
     onClose: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    iconTone: String = "emerald",
     extra: (@Composable () -> Unit)? = null,
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
     val isFirst = index == 0
     val isLast = index == stepCount - 1
+    val (toneBg, toneFg) = tourToneColors(iconTone, colors.isDark)
 
     Dialog(onDismissRequest = onClose) {
         Column(
@@ -257,13 +267,26 @@ fun TourPopupCard(
                     )
                 }
             }
-            Column(
+            Row(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(title, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                Text(body, color = colors.textSecondary, fontSize = 14.sp)
-                extra?.invoke()
+                if (icon != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(toneBg),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(icon, contentDescription = null, tint = toneFg, modifier = Modifier.size(22.dp))
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(title, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    Text(body, color = colors.textSecondary, fontSize = 14.sp)
+                    extra?.invoke()
+                }
             }
             Row(
                 modifier = Modifier
@@ -307,13 +330,56 @@ fun TourPopupCard(
     }
 }
 
+/** Farbtöne der Tour-Icon-Boxen (Port der colorClasses aus den Tour-Popups). */
+private fun tourToneColors(tone: String, isDark: Boolean): Pair<Color, Color> = when (tone) {
+    "blue" -> if (isDark) {
+        Palette.Blue500.copy(alpha = 0.25f) to Palette.Blue400
+    } else {
+        Palette.Blue100 to Palette.Blue600
+    }
+    "amber" -> if (isDark) {
+        Palette.Amber600.copy(alpha = 0.3f) to Palette.Amber400
+    } else {
+        Palette.Amber600.copy(alpha = 0.12f) to Palette.Amber600
+    }
+    "violet" -> if (isDark) {
+        Color(0xFF7C3AED).copy(alpha = 0.3f) to Color(0xFFA78BFA)
+    } else {
+        Color(0xFFEDE9FE) to Color(0xFF7C3AED)
+    }
+    "zinc" -> if (isDark) {
+        Palette.Zinc700 to Palette.Zinc300
+    } else {
+        Palette.Zinc100 to Palette.Zinc600
+    }
+    else -> if (isDark) {
+        Palette.Emerald500.copy(alpha = 0.25f) to Palette.Emerald400
+    } else {
+        Palette.Emerald100 to Palette.Emerald600
+    }
+}
+
 /**
  * Einmalige Einstellungen-Tour — Port von SettingsTourPopup.tsx
- * (8 Schritte aus settingsTour.steps.*).
+ * (8 Schritte aus settingsTour.steps.*, Icon + Farbton je Schritt).
  */
-private val SETTINGS_TOUR_STEPS = listOf(
-    "overview", "profile", "recording", "codes", "calculation", "backup", "appearanceHelp", "done",
+private data class SettingsTourStep(
+    val key: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val tone: String,
 )
+
+private val SETTINGS_TOUR_STEPS
+    @Composable get() = listOf(
+        SettingsTourStep("overview", Icons.Outlined.Tune, "emerald"),
+        SettingsTourStep("profile", Icons.Outlined.Person, "blue"),
+        SettingsTourStep("recording", Icons.Outlined.Work, "emerald"),
+        SettingsTourStep("codes", Icons.Outlined.Work, "amber"),
+        SettingsTourStep("calculation", Icons.Outlined.Calculate, "violet"),
+        SettingsTourStep("backup", Icons.Outlined.Backup, "blue"),
+        SettingsTourStep("appearanceHelp", Icons.Outlined.OutlinedPaletteIcon, "zinc"),
+        SettingsTourStep("done", Icons.AutoMirrored.Outlined.HelpOutline, "emerald"),
+    )
 
 @Composable
 fun SettingsTourPopup(viewModel: MainViewModel, storageKey: String = "estundnzettl_settings_tour_seen_v2") {
@@ -332,16 +398,19 @@ fun SettingsTourPopup(viewModel: MainViewModel, storageKey: String = "estundnzet
         scope.launch { viewModel.settings.setString(storageKey, "1") }
     }
 
-    val step = SETTINGS_TOUR_STEPS[index]
-    val isLast = index == SETTINGS_TOUR_STEPS.lastIndex
+    val steps = SETTINGS_TOUR_STEPS
+    val step = steps[index]
+    val isLast = index == steps.lastIndex
 
     TourPopupCard(
-        stepCount = SETTINGS_TOUR_STEPS.size,
+        stepCount = steps.size,
         index = index,
-        title = t.t("settingsTour.steps.$step.title"),
-        body = t.t("settingsTour.steps.$step.body"),
+        title = t.t("settingsTour.steps.${step.key}.title"),
+        body = t.t("settingsTour.steps.${step.key}.body"),
         onBack = { if (index > 0) index-- },
         onNext = { if (isLast) close() else index++ },
         onClose = ::close,
+        icon = step.icon,
+        iconTone = step.tone,
     )
 }

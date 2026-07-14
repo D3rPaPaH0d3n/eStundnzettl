@@ -14,8 +14,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
@@ -306,6 +311,18 @@ fun AppTourDialog(i18n: I18n, onClose: () -> Unit) {
     val step = TOUR_STEPS[index]
     val isLast = index == TOUR_STEPS.lastIndex
 
+    // Schritt-Icons wie AppTour.tsx (Sparkles, BarChart3, Plus, ArrowUp,
+    // FileBarChart, Settings, Check)
+    val stepIcon = when (step) {
+        "welcome" -> Icons.Outlined.AutoAwesome
+        "dashboard" -> Icons.Outlined.BarChart
+        "fabTap" -> Icons.Filled.Add
+        "fabTimer" -> Icons.Filled.ArrowUpward
+        "report" -> fileBarChartIcon()
+        "settings" -> Icons.Outlined.Settings
+        else -> Icons.Filled.Check
+    }
+
     TourPopupCard(
         stepCount = TOUR_STEPS.size,
         index = index,
@@ -314,6 +331,8 @@ fun AppTourDialog(i18n: I18n, onClose: () -> Unit) {
         onBack = { if (index > 0) index-- },
         onNext = { if (isLast) onClose() else index++ },
         onClose = onClose,
+        icon = stepIcon,
+        iconTone = if (step == "settings") "zinc" else "emerald",
         extra = if (step == "fabTimer") {
             {
                 Text(

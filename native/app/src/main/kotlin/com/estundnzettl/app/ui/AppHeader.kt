@@ -161,7 +161,7 @@ fun AppHeader(
  * Original-Headers (Dokument mit Balkendiagramm).
  */
 @Composable
-private fun fileBarChartIcon(): ImageVector = remember {
+internal fun fileBarChartIcon(): ImageVector = remember {
     ImageVector.Builder(
         name = "FileBarChart",
         defaultWidth = 24.dp,

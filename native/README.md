@@ -89,6 +89,10 @@ App das Verzeichnis `native/` in Android Studio öffnen.
    - ✅ Bericht-Screen (`ui/ReportScreen.kt`): Live-Vorschau via
      PdfRenderer, Monats-/KW-Filter, Notiz-Dialog, `pdfDisplay`-Toggles
      (Hausmasta), Teilen via FileProvider, Speichern via SAF
-   - ⬜ Automatisches Monats-PDF-Archiv (`pdfArchive`)
+   - ✅ Automatisches Monats-PDF-Archiv (`data/PdfArchiveManager.kt`:
+     täglicher Lauf bei Start/Resume, Monatswechsel-Finalisierung,
+     Content-Hash-Skip, lokales Ziel via MediaStore mit Fallback-Kette;
+     Settings-Sektion mit Zielen + „Jetzt ausführen". Nextcloud/GDrive-
+     Ziele folgen mit Phase 5)
 5. ⬜ **Phase 5** — Cloud-Backups (Google Drive, Nextcloud), Google-Login,
    Feinschliff, Release-Vorbereitung.

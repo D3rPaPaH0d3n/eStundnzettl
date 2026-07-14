@@ -101,6 +101,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val workCodesRepo = WorkCodesRepository(db)
     private val attachmentsRepo = com.estundnzettl.app.data.AttachmentsRepository(db)
     val settings = SettingsRepository(db.settingsDao())
+    private val pdfArchive = com.estundnzettl.app.data.PdfArchiveManager(application, settings)
 
     private val timerJson = Json { ignoreUnknownKeys = true }
 
@@ -120,6 +121,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // Name = Onboarding-Check der Web-App).
             if (_state.value.userData?.name.isNullOrBlank()) {
                 _state.value = _state.value.copy(onboarding = OnboardingUiState(active = true))
+            }
+            // Startup-Check des PDF-Archivs (verzögert wie in der TS-App,
+            // damit DB-/Settings-Loads abgeschlossen sind)
+            viewModelScope.launch {
+                kotlinx.coroutines.delay(3000)
+                autoPdfArchiveRun("startup")
             }
             entriesRepo.observeAll().collect { entries ->
                 allEntries = entries
@@ -198,6 +205,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** Alle Attachments — der Bericht filtert selbst nach Zeitraum. */
     suspend fun getAllAttachments(): List<com.estundnzettl.core.model.Attachment> =
         attachmentsRepo.getAll()
+
+    // ─── Automatisches PDF-Archiv ────────────────────────────
+
+    private fun pdfArchiveData() = com.estundnzettl.app.data.PdfArchiveManager.Data(
+        entries = allEntries,
+        userData = _state.value.userData,
+        workCodes = _state.value.workCodes,
+        locale = _state.value.locale,
+        calculationConfig = _state.value.calculationConfig,
+    )
+
+    /** Auto-Trigger (Startup/Resume) — Fehler landen nur im Log/Setting. */
+    fun autoPdfArchiveRun(source: String) {
+        // Nie mit halb geladenen Daten laufen: Ein leerer Entry-Stand
+        // würde sonst Hash + Archiv-PDF mit leerem Monat überschreiben.
+        if (_state.value.loading) return
+        viewModelScope.launch { pdfArchive.performRun(pdfArchiveData(), source) }
+    }
+
+    /** Manueller "Jetzt ausführen"-Lauf aus den Einstellungen. */
+    suspend fun runPdfArchiveNow(): com.estundnzettl.app.data.PdfArchiveManager.RunOutcome =
+        pdfArchive.performRun(pdfArchiveData(), source = "manual", force = true)
+
+    /** App kam aus dem Hintergrund zurück (Port des appStateChange-Listeners). */
+    fun onAppResume() {
+        autoPdfArchiveRun("resume")
+    }
 
     // ─── Formular ────────────────────────────────────────────
 

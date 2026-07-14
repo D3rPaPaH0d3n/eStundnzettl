@@ -46,6 +46,18 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
+    /** Erster onResume gehört zum App-Start — der zählt nicht als "Resume". */
+    private var resumedOnce = false
+
+    override fun onResume() {
+        super.onResume()
+        if (resumedOnce) {
+            viewModel.onAppResume()
+        } else {
+            resumedOnce = true
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

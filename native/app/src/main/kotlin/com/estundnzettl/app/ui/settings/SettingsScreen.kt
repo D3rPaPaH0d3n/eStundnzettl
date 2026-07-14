@@ -123,6 +123,7 @@ fun SettingsScreen(
         }
 
         BackupSection(t, colors.accent, onExportBackup, onImportBackup)
+        PdfArchiveSection(viewModel)
         AppearanceSection(viewModel)
         ExpertModeSection(viewModel)
         AppInfoSection(viewModel)

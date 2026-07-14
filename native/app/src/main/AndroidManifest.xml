@@ -3,6 +3,8 @@
 
     <!-- Cloud-Backups (Nextcloud WebDAV, Google Drive REST) -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Haptisches Feedback (Pendant zu Capacitor Haptics) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:name=".EStundnzettlApp"

@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -211,53 +212,61 @@ private fun MainScreen(viewModel: MainViewModel) {
                 onOpenReport = { viewModel.setView("report") },
             )
 
-            when {
-                state.loading || state.appData == null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(color = colors.accent)
-                    }
+            // View-Wechsel mit Übergang (Pendant zu den framer-motion-
+            // Transitions der Web-App): sanftes Einblenden + leichtes
+            // Hochgleiten der neuen Ansicht.
+            androidx.compose.animation.AnimatedContent(
+                targetState = if (state.loading || state.appData == null) "loading" else state.view,
+                transitionSpec = {
+                    (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(220)) +
+                        androidx.compose.animation.slideInVertically(
+                            androidx.compose.animation.core.tween(220),
+                        ) { it / 24 })
+                        .togetherWith(androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(120)))
+                },
+                label = "viewTransition",
+            ) { view ->
+                when (view) {
+                    "loading" -> com.estundnzettl.app.ui.SkeletonScreen()
+
+                    "add" -> EntryFormScreen(
+                        form = state.form,
+                        userData = state.userData,
+                        workCodes = state.workCodes,
+                        uniqueProjects = state.appData!!.uniqueProjects,
+                        lastWorkEntry = state.appData!!.lastWorkEntry,
+                        language = state.language,
+                        onUpdateForm = viewModel::updateForm,
+                        onDateChanged = viewModel::onFormDateChanged,
+                        onSave = viewModel::saveEntry,
+                        onCancel = { viewModel.setView("dashboard") },
+                        onAddWorkCode = viewModel::addWorkCode,
+                    )
+
+                    "settings" -> SettingsRoute(viewModel)
+
+                    "report" -> ReportScreen(viewModel)
+
+                    "dashboard" -> DashboardScreen(
+                        currentMonth = state.currentMonth,
+                        appData = state.appData!!,
+                        userData = state.userData,
+                        workCodes = state.workCodes,
+                        locale = state.locale,
+                        calculationConfig = state.calculationConfig,
+                        language = state.language,
+                        onChangeMonth = viewModel::changeMonth,
+                        onSetMonth = viewModel::setMonth,
+                        onEditEntry = viewModel::startEdit,
+                        onDeleteEntry = viewModel::requestDeleteEntry,
+                        attachmentCounts = remember(state.attachments) {
+                            state.attachments.groupingBy { it.entryId }.eachCount()
+                        },
+                        onManageAttachments = viewModel::openAttachments,
+                    )
+
+                    else -> {}
                 }
-
-                state.view == "add" -> EntryFormScreen(
-                    form = state.form,
-                    userData = state.userData,
-                    workCodes = state.workCodes,
-                    uniqueProjects = state.appData!!.uniqueProjects,
-                    lastWorkEntry = state.appData!!.lastWorkEntry,
-                    language = state.language,
-                    onUpdateForm = viewModel::updateForm,
-                    onDateChanged = viewModel::onFormDateChanged,
-                    onSave = viewModel::saveEntry,
-                    onCancel = { viewModel.setView("dashboard") },
-                    onAddWorkCode = viewModel::addWorkCode,
-                )
-
-                state.view == "settings" -> SettingsRoute(viewModel)
-
-                state.view == "report" -> ReportScreen(viewModel)
-
-                state.view == "dashboard" -> DashboardScreen(
-                    currentMonth = state.currentMonth,
-                    appData = state.appData!!,
-                    userData = state.userData,
-                    workCodes = state.workCodes,
-                    locale = state.locale,
-                    calculationConfig = state.calculationConfig,
-                    language = state.language,
-                    onChangeMonth = viewModel::changeMonth,
-                    onSetMonth = viewModel::setMonth,
-                    onEditEntry = viewModel::startEdit,
-                    onDeleteEntry = viewModel::requestDeleteEntry,
-                    attachmentCounts = remember(state.attachments) {
-                        state.attachments.groupingBy { it.entryId }.eachCount()
-                    },
-                    onManageAttachments = viewModel::openAttachments,
-                )
-
-                else -> {}
             }
         }
 

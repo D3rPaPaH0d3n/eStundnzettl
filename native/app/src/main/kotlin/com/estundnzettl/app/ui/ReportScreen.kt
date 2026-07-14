@@ -7,27 +7,39 @@ import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Share
@@ -38,9 +50,9 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -331,15 +343,6 @@ fun ReportScreen(viewModel: MainViewModel) {
         )
     }
 
-    if (layoutPanelOpen && layoutTogglesAvailable) {
-        ModalBottomSheet(
-            onDismissRequest = { layoutPanelOpen = false },
-            containerColor = colors.surface,
-        ) {
-            PdfDisplayToggles(viewModel = viewModel)
-        }
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // ── Steuerleiste ────────────────────────────────────────
@@ -526,6 +529,92 @@ fun ReportScreen(viewModel: MainViewModel) {
             icon = { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null) },
             text = { Text(i18n.t("reports.exportButton"), fontWeight = FontWeight.Bold) },
         )
+
+        // ── PDF-Einstellungen als Seitenleiste von rechts (Port des
+        //    Layout-Panels aus PrintReport.tsx, nur Hausmasta-Modus) ──
+        androidx.activity.compose.BackHandler(enabled = layoutPanelOpen) { layoutPanelOpen = false }
+        AnimatedVisibility(
+            visible = layoutPanelOpen && layoutTogglesAvailable,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) { layoutPanelOpen = false },
+            )
+        }
+        AnimatedVisibility(
+            visible = layoutPanelOpen && layoutTogglesAvailable,
+            enter = slideInHorizontally(initialOffsetX = { it }),
+            exit = slideOutHorizontally(targetOffsetX = { it }),
+            modifier = Modifier.align(Alignment.CenterEnd),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.92f)
+                    .background(colors.background)
+                    .safeDrawingPadding(),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(colors.accent.copy(alpha = if (colors.isDark) 0.25f else 0.15f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Filled.Tune, contentDescription = null,
+                                tint = colors.accent, modifier = Modifier.size(18.dp),
+                            )
+                        }
+                        Column {
+                            Text(
+                                i18n.t("reports.layoutPanel.title"),
+                                color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp,
+                            )
+                            Text(
+                                i18n.t("reports.layoutPanel.subtitle"),
+                                color = colors.textMuted, fontSize = 12.sp,
+                            )
+                        }
+                    }
+                    IconButton(onClick = { layoutPanelOpen = false }) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = i18n.t("common.close"),
+                            tint = colors.textSecondary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+                HorizontalDivider(color = colors.border)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(12.dp),
+                ) {
+                    PdfDisplayToggles(viewModel = viewModel, showHeader = false)
+                }
+            }
+        }
     }
 }
 
@@ -631,7 +720,7 @@ private fun ExportOptionRow(
 // ─── PDF-Anzeige-Toggles (Port von PdfDisplayToggles.tsx) ───────────
 
 @Composable
-fun PdfDisplayToggles(viewModel: MainViewModel) {
+fun PdfDisplayToggles(viewModel: MainViewModel, showHeader: Boolean = true) {
     val colors = LocalAppColors.current
     val i18n = LocalI18n.current
     val s by viewModel.state.collectAsState()
@@ -666,21 +755,23 @@ fun PdfDisplayToggles(viewModel: MainViewModel) {
             .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Text(
-            i18n.t("settings.pdfDisplay.title"),
-            color = colors.textPrimary,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-        )
-        Text(
-            i18n.t("settings.pdfDisplay.subtitle"),
-            color = colors.textMuted,
-            fontSize = 12.sp,
-        )
+        if (showHeader) {
+            Text(
+                i18n.t("settings.pdfLayout.title"),
+                color = colors.textPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+            )
+            Text(
+                i18n.t("settings.pdfLayout.subtitle"),
+                color = colors.textMuted,
+                fontSize = 12.sp,
+            )
+        }
         toggles.forEach { toggle ->
             SettingsToggleRow(
-                title = i18n.t("settings.pdfDisplay.${toggle.key}"),
-                subtitle = i18n.t("settings.pdfDisplay.${toggle.key}Desc"),
+                title = i18n.t("settings.pdfLayout.${toggle.key}"),
+                subtitle = i18n.t("settings.pdfLayout.${toggle.key}Desc"),
                 checked = toggle.checked,
                 accent = colors.accentStrong,
                 onToggle = toggle.update,

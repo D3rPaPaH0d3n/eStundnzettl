@@ -49,6 +49,7 @@ import androidx.compose.ui.window.Dialog
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
+import com.estundnzettl.app.ui.theme.Palette
 import kotlinx.coroutines.launch
 
 /**
@@ -62,11 +63,15 @@ fun FirstOpenHint(
     storageKey: String,
     title: String,
     body: String,
+    onDark: Boolean = false,
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
     val scope = rememberCoroutineScope()
     var visible by remember { mutableStateOf(false) }
+
+    val accent = if (onDark) Palette.Blue400 else colors.info
+    val bodyColor = if (onDark) Palette.Zinc300 else colors.textSecondary
 
     LaunchedEffect(storageKey) {
         visible = viewModel.settings.getString(storageKey) != "1"
@@ -81,15 +86,15 @@ fun FirstOpenHint(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .background(colors.info.copy(alpha = if (colors.isDark) 0.15f else 0.08f))
+                .background(colors.info.copy(alpha = if (onDark || colors.isDark) 0.2f else 0.08f))
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(title, color = colors.info, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Text(body, color = colors.textSecondary, fontSize = 12.sp)
+            Text(title, color = accent, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(body, color = bodyColor, fontSize = 12.sp)
             Text(
                 t.t("hints.gotIt"),
-                color = colors.info,
+                color = accent,
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
                 modifier = Modifier

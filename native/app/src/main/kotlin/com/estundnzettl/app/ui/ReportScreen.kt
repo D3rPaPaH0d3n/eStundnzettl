@@ -14,6 +14,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -84,6 +85,7 @@ import com.estundnzettl.app.pdf.ReportPdfInput
 import com.estundnzettl.app.ui.settings.SettingsToggleRow
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
+import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.calc.applyEffectiveDurations
 import com.estundnzettl.core.calc.calculatePeriodStats
 import com.estundnzettl.core.calc.getEffectivePdfDisplay
@@ -345,49 +347,56 @@ fun ReportScreen(viewModel: MainViewModel) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // ── Steuerleiste ────────────────────────────────────────
+            // ── Steuerleiste — dunkel wie der Original-Viewer ───────
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(colors.surface)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .background(Palette.Zinc900)
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // Monat wechseln
+                // Monat wechseln (zinc-800-Box mit Border wie das Original)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = {
-                        viewModel.changeMonth(-1L)
-                        filterWeek = null
-                    }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            contentDescription = null,
-                            tint = colors.textPrimary,
-                        )
-                    }
-                    Text(
-                        text = month.atDay(1).format(DateTimeFormatter.ofPattern("MMM yy", javaLocale)),
-                        color = colors.textPrimary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { monthPickerOpen = true }
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                    )
-                    IconButton(onClick = {
-                        viewModel.changeMonth(1L)
-                        filterWeek = null
-                    }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = colors.textPrimary,
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Palette.Zinc800)
+                            .border(1.dp, Palette.Zinc700, RoundedCornerShape(10.dp)),
+                    ) {
+                        IconButton(onClick = {
+                            viewModel.changeMonth(-1L)
+                            filterWeek = null
+                        }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                contentDescription = null,
+                                tint = Palette.Zinc300,
+                            )
+                        }
+                        Text(
+                            text = month.atDay(1).format(DateTimeFormatter.ofPattern("MMM yy", javaLocale)),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { monthPickerOpen = true }
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
                         )
+                        IconButton(onClick = {
+                            viewModel.changeMonth(1L)
+                            filterWeek = null
+                        }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = Palette.Zinc300,
+                            )
+                        }
                     }
                 }
 
@@ -397,6 +406,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                     storageKey = "estundnzettl_hint_report_seen_v2",
                     title = i18n.t("hints.reportTitle"),
                     body = i18n.t("hints.report"),
+                    onDark = true,
                 )
 
                 // Notiz + Layout-Toggles + Zeitraum-Filter
@@ -405,28 +415,30 @@ fun ReportScreen(viewModel: MainViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = { noteDialogOpen = true }) {
-                        Icon(
-                            Icons.Filled.AddComment,
-                            contentDescription = i18n.t("reports.noteModal.title"),
-                            tint = if (customNote.isNotEmpty()) colors.info else colors.textMuted,
-                        )
-                    }
+                    val hasNote = customNote.isNotEmpty()
+                    DarkToolbarButton(
+                        icon = Icons.Filled.AddComment,
+                        contentDescription = i18n.t("reports.noteModal.title"),
+                        tint = if (hasNote) Palette.Blue400 else Palette.Zinc400,
+                        background = if (hasNote) Palette.Blue500.copy(alpha = 0.2f) else Palette.Zinc800,
+                        border = if (hasNote) Palette.Blue500.copy(alpha = 0.5f) else Palette.Zinc700,
+                    ) { noteDialogOpen = true }
                     if (layoutTogglesAvailable) {
-                        IconButton(onClick = { layoutPanelOpen = true }) {
-                            Icon(
-                                Icons.Filled.Tune,
-                                contentDescription = i18n.t("reports.layoutPanel.title"),
-                                tint = colors.textMuted,
-                            )
-                        }
+                        DarkToolbarButton(
+                            icon = Icons.Filled.Tune,
+                            contentDescription = i18n.t("reports.layoutPanel.title"),
+                            tint = if (layoutPanelOpen) Palette.Emerald400 else Palette.Zinc400,
+                            background = if (layoutPanelOpen) Palette.Emerald500.copy(alpha = 0.2f) else Palette.Zinc800,
+                            border = if (layoutPanelOpen) Palette.Emerald500.copy(alpha = 0.5f) else Palette.Zinc700,
+                        ) { layoutPanelOpen = true }
                     }
                     Box(modifier = Modifier.weight(1f)) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(colors.surface)
+                                .background(Palette.Zinc800)
+                                .border(1.dp, Palette.Zinc700, RoundedCornerShape(10.dp))
                                 .clickable { filterMenuOpen = true }
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -436,14 +448,14 @@ fun ReportScreen(viewModel: MainViewModel) {
                                 text = filterWeek?.let {
                                     i18n.t("dashboard.calendarWeekShort", "week" to it) + " (${weekLabel(it)})"
                                 } ?: i18n.t("reports.fullMonth"),
-                                color = colors.textPrimary,
+                                color = Color.White,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
                             )
                             Icon(
                                 Icons.Filled.KeyboardArrowDown,
                                 contentDescription = null,
-                                tint = colors.textFaint,
+                                tint = Palette.Zinc400,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -481,12 +493,12 @@ fun ReportScreen(viewModel: MainViewModel) {
                 }
             }
 
-            // ── PDF-Vorschau ────────────────────────────────────────
+            // ── PDF-Vorschau — dunkler Hintergrund wie das Original ─
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(colors.background),
+                    .background(Palette.Zinc950),
             ) {
                 if (pageBitmaps.isEmpty()) {
                     CircularProgressIndicator(
@@ -777,6 +789,29 @@ fun PdfDisplayToggles(viewModel: MainViewModel, showHeader: Boolean = true) {
                 onToggle = toggle.update,
             )
         }
+    }
+}
+
+/** Dunkler Toolbar-Button (Notiz/Layout) — Port der zinc-800-Buttons. */
+@Composable
+private fun DarkToolbarButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    tint: Color,
+    background: Color,
+    border: Color,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(background)
+            .border(1.dp, border, RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(20.dp))
     }
 }
 

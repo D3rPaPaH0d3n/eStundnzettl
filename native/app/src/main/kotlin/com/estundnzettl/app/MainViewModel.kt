@@ -742,13 +742,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteAllData() {
         viewModelScope.launch {
             try {
+                // Sicherheits-Backup vor dem Löschen in den App-Cache
+                // (Port des pre_delete_backup der Web-App — best-effort)
+                runCatching {
+                    val file = java.io.File(
+                        getApplication<Application>().cacheDir,
+                        "estundnzettl_pre_delete_backup.json",
+                    )
+                    file.writeText(createBackupFileContent(), Charsets.UTF_8)
+                }
+
                 entriesRepo.deleteAll()
                 runCatching { attachmentsDir().deleteRecursively() }
                 val resetUser = UserData()
                 settings.setUserData(resetUser)
-                _state.value = _state.value.copy(userData = resetUser)
+                runCatching { db.settingsDao().delete("last_code") }
                 refreshAttachments()
-                emit(UiMessage("toasts.entry.deleted"))
+                reloadAfterImport()
+
+                // Zurück in den Einrichtungs-Assistenten (wie die Web-App,
+                // deren Router bei leerem Profilnamen den Wizard zeigt)
+                _state.value = _state.value.copy(
+                    userData = resetUser,
+                    view = "dashboard",
+                    onboarding = OnboardingUiState(active = true),
+                )
+                emit(UiMessage("toasts.appReset"))
             } catch (_: Exception) {
                 emit(UiMessage("toasts.entry.deleteAllFailed"))
             }
@@ -810,6 +829,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun reloadAfterImport() {
+        // Große Schreiboperation (Restore/Import/Demo/Reset) sofort in
+        // die Hauptdatei checkpointen — nicht nur im WAL lassen
+        db.checkpoint()
         loadSettings()
         recompute()
         refreshAttachments()
@@ -1102,6 +1124,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** App ging in den Hintergrund → Background-Backup (ohne Debounce). */
     fun onAppBackground() {
         viewModelScope.launch {
+            // WAL in die Hauptdatei schreiben, bevor das System den
+            // Prozess killen darf (schützt vor Datenverlust bei Updates)
+            db.checkpoint()
             autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.BACKGROUND)
         }
     }
@@ -1421,6 +1446,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     ?.let { preset -> runCatching { workCodesRepo.replaceAll(preset.codes) } }
             }
 
+            db.checkpoint()
             loadSettings()
             recompute()
             _state.value = _state.value.copy(

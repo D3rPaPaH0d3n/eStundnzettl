@@ -31,6 +31,22 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun attachmentLabelDao(): AttachmentLabelDao
     abstract fun backupMetadataDao(): BackupMetadataDao
 
+    /**
+     * Erzwingt einen WAL-Checkpoint (TRUNCATE), damit alle Daten in der
+     * Hauptdatei landen. Ohne das lebt der komplette Datenbestand im
+     * -wal-File und kann bei einem harten Prozess-Kill (z. B. App-Update)
+     * verloren gehen, wenn SQLite den WAL beim nächsten Öffnen verwirft.
+     */
+    suspend fun checkpoint() {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                openHelper.writableDatabase
+                    .query("PRAGMA wal_checkpoint(TRUNCATE)")
+                    .use { it.moveToFirst() }
+            }
+        }
+    }
+
     companion object {
         const val DB_NAME = "estundnzettl"
 

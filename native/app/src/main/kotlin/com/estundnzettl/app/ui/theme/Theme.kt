@@ -33,6 +33,19 @@ fun EStundnzettlTheme(
     }
     val appColors = if (darkTheme) DarkAppColors else LightAppColors
 
+    // System-Leisten (Port des SystemBarsPlugin-Verhaltens): Der
+    // App-Header ist in beiden Themes dunkel → Statusbar-Icons immer
+    // hell; die Navigationsleiste folgt dem App-Theme.
+    val view = androidx.compose.ui.platform.LocalView.current
+    if (!view.isInEditMode) {
+        androidx.compose.runtime.SideEffect {
+            val window = (view.context as? android.app.Activity)?.window ?: return@SideEffect
+            val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = false
+            controller.isAppearanceLightNavigationBars = !darkTheme
+        }
+    }
+
     // Material You: dynamische System-Farbpalette (Android 12+)
     if (materialYou && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
         val context = androidx.compose.ui.platform.LocalContext.current

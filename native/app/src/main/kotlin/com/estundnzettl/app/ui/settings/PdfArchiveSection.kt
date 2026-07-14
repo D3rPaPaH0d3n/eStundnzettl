@@ -48,8 +48,15 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    val vmState = viewModel.state.collectAsState().value
+    val ncConnected = vmState.nextcloud.connected
+    val gdriveConnected = vmState.googleDrive.pdfConnected
+    val gdriveEmail = vmState.googleDrive.pdfEmail
+
     var enabled by remember { mutableStateOf(false) }
     var localTarget by remember { mutableStateOf(false) }
+    var nextcloudTarget by remember { mutableStateOf(false) }
+    var gdriveTarget by remember { mutableStateOf(false) }
     var lastRun by remember { mutableStateOf("") }
     var lastError by remember { mutableStateOf("") }
     var isRunning by remember { mutableStateOf(false) }
@@ -64,6 +71,8 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
     LaunchedEffect(Unit) {
         enabled = viewModel.settings.getBoolean(PdfArchiveManager.KEY_ENABLED)
         localTarget = viewModel.settings.getBoolean(PdfArchiveManager.KEY_LOCAL)
+        nextcloudTarget = viewModel.settings.getBoolean(PdfArchiveManager.KEY_NEXTCLOUD)
+        gdriveTarget = viewModel.settings.getBoolean(PdfArchiveManager.KEY_GDRIVE)
         reloadStatus()
     }
 
@@ -117,31 +126,71 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
                 }
             }
 
-            // ── Ziel: Nextcloud (erst nach Phase 5 verbindbar) ──
+            // ── Ziel: Nextcloud (aktivierbar sobald verbunden) ──
             TargetRow(
-                icon = { Icon(Icons.Filled.Cloud, contentDescription = null, tint = colors.textFaint) },
+                icon = {
+                    Icon(
+                        Icons.Filled.Cloud, contentDescription = null,
+                        tint = if (ncConnected && nextcloudTarget) colors.positive else colors.textFaint,
+                    )
+                },
             ) {
                 SettingsToggleRow(
                     title = t.t("settings.pdfArchive.nextcloud.title"),
-                    subtitle = t.t("settings.pdfArchive.nextcloud.requiresConnect"),
-                    checked = false,
+                    subtitle = if (ncConnected) {
+                        t.t("settings.pdfArchive.nextcloud.path")
+                    } else {
+                        t.t("settings.pdfArchive.nextcloud.requiresConnect")
+                    },
+                    checked = ncConnected && nextcloudTarget,
                     accent = colors.special,
-                ) {
-                    toast(t.t("settings.pdfArchive.toast.ncNotConnected"))
+                ) { next ->
+                    if (!ncConnected) {
+                        toast(t.t("settings.pdfArchive.toast.ncNotConnected"))
+                    } else {
+                        nextcloudTarget = next
+                        scope.launch { viewModel.settings.setBoolean(PdfArchiveManager.KEY_NEXTCLOUD, next) }
+                    }
                 }
             }
 
-            // ── Ziel: Google Drive (erst nach Phase 5 verbindbar) ──
+            // ── Ziel: Google Drive (eigener drive.file-Zugriff) ──
             TargetRow(
-                icon = { Icon(Icons.Filled.Cloud, contentDescription = null, tint = colors.textFaint) },
+                icon = {
+                    Icon(
+                        Icons.Filled.Cloud, contentDescription = null,
+                        tint = if (gdriveConnected && gdriveTarget) colors.positive else colors.textFaint,
+                    )
+                },
             ) {
-                SettingsToggleRow(
-                    title = t.t("settings.pdfArchive.gdrive.title"),
-                    subtitle = t.t("settings.pdfArchive.gdrive.info"),
-                    checked = false,
-                    accent = colors.special,
-                ) {
-                    toast(t.t("settings.pdfArchive.toast.gdriveConnectFirst"))
+                Column {
+                    SettingsToggleRow(
+                        title = t.t("settings.pdfArchive.gdrive.title"),
+                        subtitle = if (gdriveConnected) {
+                            t.t("settings.pdfArchive.gdrive.folderWithEmail", "email" to gdriveEmail)
+                        } else {
+                            t.t("settings.pdfArchive.gdrive.info")
+                        },
+                        checked = gdriveConnected && gdriveTarget,
+                        accent = colors.special,
+                    ) { next ->
+                        if (!gdriveConnected) {
+                            toast(t.t("settings.pdfArchive.toast.gdriveConnectFirst"))
+                        } else {
+                            gdriveTarget = next
+                            scope.launch { viewModel.settings.setBoolean(PdfArchiveManager.KEY_GDRIVE, next) }
+                        }
+                    }
+                    if (!gdriveConnected) {
+                        ActionButton(label = t.t("settings.pdfArchive.gdrive.connect"), tint = colors.special) {
+                            viewModel.connectGoogleDrive(forPdfArchive = true)
+                        }
+                    } else {
+                        ActionButton(label = t.t("settings.pdfArchive.gdrive.disconnect"), tint = colors.danger) {
+                            gdriveTarget = false
+                            viewModel.disconnectGoogleDrive(forPdfArchive = true)
+                        }
+                    }
                 }
             }
 
@@ -175,7 +224,7 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
                     toast(t.t("settings.pdfArchive.toast.archiveDisabled"))
                     return@ActionButton
                 }
-                if (!localTarget) {
+                if (!localTarget && !(ncConnected && nextcloudTarget) && !(gdriveConnected && gdriveTarget)) {
                     toast(t.t("settings.pdfArchive.toast.pickTarget"))
                     return@ActionButton
                 }

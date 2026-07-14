@@ -122,7 +122,7 @@ fun SettingsScreen(
             }
         }
 
-        BackupSection(t, colors.accent, onExportBackup, onImportBackup)
+        BackupSection(viewModel, t, colors.accent, onExportBackup, onImportBackup)
         PdfArchiveSection(viewModel)
         AppearanceSection(viewModel)
         ExpertModeSection(viewModel)
@@ -587,6 +587,7 @@ private fun WorkCodesSection(viewModel: MainViewModel) {
 
 @Composable
 private fun BackupSection(
+    viewModel: MainViewModel,
     t: com.estundnzettl.app.i18n.I18n,
     accent: Color,
     onExport: () -> Unit,
@@ -599,6 +600,7 @@ private fun BackupSection(
         icon = { SectionIconBadge(Icons.Filled.Save, accent) },
         defaultExpanded = false,
     ) {
+        CloudBackupContent(viewModel)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(modifier = Modifier.weight(1f)) {
                 ActionButton(label = t.t("settings.backup.export"), tint = accent) { onExport() }
@@ -607,7 +609,6 @@ private fun BackupSection(
                 ActionButton(label = t.t("settings.backup.import"), tint = colors.info) { onImport() }
             }
         }
-        // Cloud-Ziele (Google Drive / Nextcloud) folgen in Phase 5.
     }
 }
 

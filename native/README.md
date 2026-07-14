@@ -94,5 +94,22 @@ App das Verzeichnis `native/` in Android Studio öffnen.
      Content-Hash-Skip, lokales Ziel via MediaStore mit Fallback-Kette;
      Settings-Sektion mit Zielen + „Jetzt ausführen". Nextcloud/GDrive-
      Ziele folgen mit Phase 5)
-5. ⬜ **Phase 5** — Cloud-Backups (Google Drive, Nextcloud), Google-Login,
-   Feinschliff, Release-Vorbereitung.
+5. 🔶 **Phase 5** — Cloud-Backups
+   - ✅ Nextcloud: Login Flow v2 (Browser + Polling), WebDAV-Client
+     (`data/NextcloudClient.kt`), App-Passwort in
+     EncryptedSharedPreferences (`data/SecretStore.kt`, inkl.
+     Entschlüsselung des Legacy-"enc:v1"-Werts aus der importierten DB),
+     Verbinden/Testen/Trennen in den Backup-Einstellungen
+   - ✅ Auto-Backup (`data/AutoBackupManager.kt`): debounced Auto-Save,
+     Background-Trigger, manueller Lauf, Hash-Skip, exponentieller
+     Backoff, Ziele lokal + Nextcloud + Google Drive
+   - ✅ Google Drive (`data/GoogleDriveManager.kt`): AuthorizationClient
+     (drive.appdata für Backups, drive.file für das PDF-Archiv),
+     Drive-REST-Upload/-Update/-Download. **Hinweis:** funktioniert erst,
+     wenn Paketname `com.estundnzettl.app` (+ `.native` Debug-Suffix)
+     samt Signatur-SHA-1 als Android-OAuth-Client im Google-Cloud-Projekt
+     registriert ist — bis dahin liefert der Verbinden-Dialog einen
+     Play-Services-Fehler.
+   - ✅ PDF-Archiv-Ziele Nextcloud + Google Drive freigeschaltet
+   - ⬜ Cloud-Restore im Onboarding (Restore aus Datei existiert),
+     Release-Vorbereitung/Feinschliff

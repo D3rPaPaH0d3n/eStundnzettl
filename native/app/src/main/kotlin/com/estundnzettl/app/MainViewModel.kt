@@ -101,6 +101,23 @@ data class MainUiState(
     val attachmentEntry: Entry? = null,
     /** App-Tour sichtbar (einmalig nach dem Onboarding). */
     val showTour: Boolean = false,
+    /** Nextcloud-Verbindungszustand für Backup-/Archiv-UI. */
+    val nextcloud: NextcloudUiState = NextcloudUiState(),
+    /** Google-Drive-Verbindungszustand (Backup + PDF-Archiv getrennt). */
+    val googleDrive: GoogleDriveUiState = GoogleDriveUiState(),
+)
+
+data class NextcloudUiState(
+    val connected: Boolean = false,
+    val user: String = "",
+    val connecting: Boolean = false,
+)
+
+data class GoogleDriveUiState(
+    val backupConnected: Boolean = false,
+    val backupEmail: String = "",
+    val pdfConnected: Boolean = false,
+    val pdfEmail: String = "",
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -110,7 +127,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val workCodesRepo = WorkCodesRepository(db)
     private val attachmentsRepo = com.estundnzettl.app.data.AttachmentsRepository(db)
     val settings = SettingsRepository(db.settingsDao())
-    private val pdfArchive = com.estundnzettl.app.data.PdfArchiveManager(application, settings)
+    private val secrets = com.estundnzettl.app.data.SecretStore(application)
+    private val nextcloudManager = com.estundnzettl.app.data.NextcloudManager(settings, secrets)
+    private val googleDrive = com.estundnzettl.app.data.GoogleDriveManager(application, settings)
+    private val pdfArchive =
+        com.estundnzettl.app.data.PdfArchiveManager(application, settings, nextcloudManager, googleDrive)
 
     private val timerJson = Json { ignoreUnknownKeys = true }
 
@@ -132,6 +153,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _state.value = _state.value.copy(onboarding = OnboardingUiState(active = true))
             }
             refreshAttachments()
+            refreshNextcloudState(connecting = false)
+            refreshGoogleState()
             // Startup-Check des PDF-Archivs (verzögert wie in der TS-App,
             // damit DB-/Settings-Loads abgeschlossen sind)
             viewModelScope.launch {
@@ -142,6 +165,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 allEntries = entries
                 recompute()
                 _state.value = _state.value.copy(loading = false)
+                // Debounced Auto-Save wie useAutoBackup (2 s nach Änderung)
+                scheduleAutoBackup()
             }
         }
     }
@@ -933,6 +958,219 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun closeTour() {
         _state.value = _state.value.copy(showTour = false)
         viewModelScope.launch { settings.setString(TOUR_SEEN_KEY, "1") }
+    }
+
+    // ─── Nextcloud (Port von useNextcloudBackup) ─────────────
+
+    private val autoBackup by lazy {
+        com.estundnzettl.app.data.AutoBackupManager(
+            getApplication(), settings, backupRepo, nextcloudManager, googleDrive,
+        )
+    }
+
+    private var autoBackupJob: kotlinx.coroutines.Job? = null
+    private var nextcloudPollJob: kotlinx.coroutines.Job? = null
+
+    private suspend fun refreshNextcloudState(connecting: Boolean = _state.value.nextcloud.connecting) {
+        val creds = runCatching { nextcloudManager.getCredentials() }.getOrNull()
+        val enabled = settings.getBoolean(SettingsRepository.Keys.NEXTCLOUD_ENABLED)
+        _state.value = _state.value.copy(
+            nextcloud = NextcloudUiState(
+                connected = creds != null && enabled,
+                user = creds?.user ?: "",
+                connecting = connecting,
+            ),
+        )
+    }
+
+    /** Startet Login Flow v2; liefert die Browser-URL. Wirft bei Fehlern. */
+    suspend fun nextcloudInitiate(serverUrl: String): String {
+        val flow = com.estundnzettl.app.data.NextcloudClient.initiateLoginFlow(serverUrl)
+        _state.value = _state.value.copy(nextcloud = _state.value.nextcloud.copy(connecting = true))
+        startNextcloudPolling(flow.pollEndpoint, flow.token)
+        return flow.loginUrl
+    }
+
+    /** Poll-Loop (3 s, max. 100 Versuche) — Port von startPolling. */
+    private fun startNextcloudPolling(pollEndpoint: String, token: String) {
+        nextcloudPollJob?.cancel()
+        nextcloudPollJob = viewModelScope.launch {
+            repeat(100) {
+                kotlinx.coroutines.delay(3000)
+                try {
+                    when (val result = com.estundnzettl.app.data.NextcloudClient.pollLoginResult(pollEndpoint, token)) {
+                        is com.estundnzettl.app.data.NextcloudClient.PollResult.Pending -> {}
+                        is com.estundnzettl.app.data.NextcloudClient.PollResult.Complete -> {
+                            nextcloudManager.persistLogin(result.server, result.loginName, result.appPassword)
+                            runCatching {
+                                com.estundnzettl.app.data.NextcloudClient
+                                    .testConnection(result.server, result.loginName, result.appPassword)
+                                com.estundnzettl.app.data.NextcloudClient
+                                    .ensureFolderPath(result.server, result.loginName, result.appPassword,
+                                        listOf(com.estundnzettl.app.data.NextcloudClient.BACKUP_FOLDER))
+                            }
+                            refreshNextcloudState(connecting = false)
+                            emit(UiMessage("settings.backup.toast.ncConnectedAs", listOf("loginName" to result.loginName)))
+                            return@launch
+                        }
+                    }
+                } catch (e: Exception) {
+                    refreshNextcloudState(connecting = false)
+                    emit(UiMessage(e.message ?: "Nextcloud Login fehlgeschlagen", raw = true))
+                    return@launch
+                }
+            }
+            refreshNextcloudState(connecting = false)
+            emit(UiMessage("settings.backup.toast.pollingTimeout"))
+        }
+    }
+
+    fun cancelNextcloudConnect() {
+        nextcloudPollJob?.cancel()
+        viewModelScope.launch { refreshNextcloudState(connecting = false) }
+    }
+
+    fun disconnectNextcloud() {
+        nextcloudPollJob?.cancel()
+        viewModelScope.launch {
+            nextcloudManager.disconnect()
+            refreshNextcloudState(connecting = false)
+            emit(UiMessage("settings.backup.toast.ncDisconnected"))
+        }
+    }
+
+    fun testNextcloud() {
+        viewModelScope.launch {
+            val creds = nextcloudManager.getCredentials()
+            if (creds == null) {
+                emit(UiMessage("settings.backup.toast.ncConnectFirst"))
+                return@launch
+            }
+            val result = com.estundnzettl.app.data.NextcloudClient
+                .testConnection(creds.url, creds.user, creds.appPassword)
+            if (result.isSuccess) {
+                emit(UiMessage("settings.backup.toast.ncTestOk"))
+            } else {
+                emit(UiMessage(result.exceptionOrNull()?.message ?: "Verbindung fehlgeschlagen", raw = true))
+            }
+        }
+    }
+
+    // ─── Auto-Backup (Port von useAutoBackup) ────────────────
+
+    /** Debounced Auto-Save 2 s nach Datenänderung. */
+    private fun scheduleAutoBackup() {
+        autoBackupJob?.cancel()
+        autoBackupJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(2000)
+            autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.AUTO)
+        }
+    }
+
+    /** App ging in den Hintergrund → Background-Backup (ohne Debounce). */
+    fun onAppBackground() {
+        viewModelScope.launch {
+            autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.BACKGROUND)
+        }
+    }
+
+    /** "Jetzt sichern" aus den Einstellungen. */
+    suspend fun manualBackup(): com.estundnzettl.app.data.AutoBackupManager.Outcome =
+        autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.MANUAL)
+
+    /** Toggle für das tägliche lokale Backup. */
+    fun setLocalBackupEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settings.setBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED, enabled)
+        }
+    }
+
+    // ─── Google Drive (Port des GoogleDriveBackupPlugin-Flows) ──
+
+    /** Consent-PendingIntents, die die Activity per IntentSender startet. */
+    private val _googleAuthIntents =
+        MutableSharedFlow<android.app.PendingIntent>(extraBufferCapacity = 2)
+    val googleAuthIntents: SharedFlow<android.app.PendingIntent> = _googleAuthIntents.asSharedFlow()
+
+    private var pendingGoogleScope: String? = null
+
+    private suspend fun refreshGoogleState() {
+        val backupEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL) ?: ""
+        val pdfEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL) ?: ""
+        _state.value = _state.value.copy(
+            googleDrive = GoogleDriveUiState(
+                backupConnected = backupEmail.isNotEmpty(),
+                backupEmail = backupEmail,
+                pdfConnected = pdfEmail.isNotEmpty(),
+                pdfEmail = pdfEmail,
+            ),
+        )
+    }
+
+    fun connectGoogleDrive(forPdfArchive: Boolean = false) {
+        val scope = if (forPdfArchive) {
+            com.estundnzettl.app.data.GoogleDriveManager.SCOPE_FILE
+        } else {
+            com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA
+        }
+        viewModelScope.launch {
+            try {
+                val token = googleDrive.authorize(scope)
+                onGoogleConnected(scope, token)
+            } catch (e: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
+                val intent = e.pendingIntent
+                if (intent != null) {
+                    pendingGoogleScope = scope
+                    _googleAuthIntents.tryEmit(intent)
+                } else {
+                    emit(UiMessage("settings.backup.toast.gdriveUnavailable"))
+                }
+            } catch (e: Exception) {
+                emit(UiMessage(e.message ?: "Google Drive Verbindung fehlgeschlagen", raw = true))
+            }
+        }
+    }
+
+    /** Ergebnis des Consent-Dialogs (von der Activity durchgereicht). */
+    fun onGoogleAuthResult(intent: android.content.Intent?) {
+        val scope = pendingGoogleScope ?: return
+        pendingGoogleScope = null
+        viewModelScope.launch {
+            val token = googleDrive.tokenFromResultIntent(intent)
+            if (token != null) {
+                onGoogleConnected(scope, token)
+            } else {
+                emit(UiMessage("settings.backup.toast.gdriveCancelled"))
+            }
+        }
+    }
+
+    private suspend fun onGoogleConnected(scope: String, token: String) {
+        val email = googleDrive.fetchAccountEmail(token)
+        if (scope == com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA) {
+            settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL, email.ifEmpty { "Google" })
+            settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, true)
+        } else {
+            settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, email.ifEmpty { "Google" })
+        }
+        refreshGoogleState()
+        emit(UiMessage("settings.backup.toast.gdriveConnected"))
+    }
+
+    fun disconnectGoogleDrive(forPdfArchive: Boolean = false) {
+        viewModelScope.launch {
+            if (forPdfArchive) {
+                settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, "")
+                settings.setBoolean(com.estundnzettl.app.data.PdfArchiveManager.KEY_GDRIVE, false)
+            } else {
+                settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL, "")
+                settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, false)
+                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_FAIL_COUNT, "0")
+                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_ERROR, "")
+                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_BACKOFF_UNTIL, "")
+            }
+            refreshGoogleState()
+        }
     }
 
     // ─── Onboarding (Port von useOnboardingFlow.ts) ──────────

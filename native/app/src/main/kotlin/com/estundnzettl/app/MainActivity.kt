@@ -58,6 +58,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        // Background-Backup wie der appStateChange-Listener der Web-App
+        viewModel.onAppBackground()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -77,6 +83,18 @@ class MainActivity : ComponentActivity() {
                         val text = if (message.raw) message.key
                         else i18n.t(message.key, *message.args.toTypedArray())
                         Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                // Google-Consent-Dialoge (AuthorizationClient-Resolution)
+                val googleAuthLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.StartIntentSenderForResult(),
+                ) { result -> viewModel.onGoogleAuthResult(result.data) }
+                LaunchedEffect(Unit) {
+                    viewModel.googleAuthIntents.collect { pendingIntent ->
+                        googleAuthLauncher.launch(
+                            androidx.activity.result.IntentSenderRequest.Builder(pendingIntent.intentSender).build(),
+                        )
                     }
                 }
 

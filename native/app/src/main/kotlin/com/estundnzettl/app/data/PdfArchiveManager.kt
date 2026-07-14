@@ -40,6 +40,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 class PdfArchiveManager(
     private val context: Context,
     private val settings: SettingsRepository,
+    private val nextcloud: NextcloudManager? = null,
+    private val googleDrive: GoogleDriveManager? = null,
 ) {
 
     companion object {
@@ -140,12 +142,8 @@ class PdfArchiveManager(
 
         val results = ArrayList<TargetResult>()
         if (localTarget) results.add(writeLocalArchive(filename, bytes))
-        if (nextcloudTarget) {
-            results.add(TargetResult(false, "nextcloud", error = "Nextcloud folgt in Phase 5 der nativen App"))
-        }
-        if (gdriveTarget) {
-            results.add(TargetResult(false, "gdrive", error = "Google Drive folgt in Phase 5 der nativen App"))
-        }
+        if (nextcloudTarget) results.add(uploadNextcloudArchive(filename, bytes))
+        if (gdriveTarget) results.add(uploadGDriveArchive(filename, bytes))
 
         if (results.any { it.ok }) {
             settings.setString(key, newHash)
@@ -198,6 +196,38 @@ class PdfArchiveManager(
                 allEntries = corrected,
             ),
         )
+    }
+
+    /** Nextcloud-Ziel — Port von uploadNextcloudArchive (pdfArchiveTargets.ts). */
+    private suspend fun uploadNextcloudArchive(filename: String, bytes: ByteArray): TargetResult {
+        val creds = nextcloud?.getCredentials()
+            ?: return TargetResult(false, "nextcloud", error = "Nextcloud nicht konfiguriert")
+        return try {
+            NextcloudClient.uploadBinaryToPath(
+                creds.url, creds.user, creds.appPassword,
+                listOf("eStundnzettl", "Archiv"), filename, bytes, "application/pdf",
+            )
+            TargetResult(true, "nextcloud")
+        } catch (e: Exception) {
+            Log.w(TAG, "Nextcloud PDF-Archiv fehlgeschlagen", e)
+            TargetResult(false, "nextcloud", error = e.message)
+        }
+    }
+
+    /** Google-Drive-Ziel — Port von uploadGDriveArchive (drive.file-Scope). */
+    private suspend fun uploadGDriveArchive(filename: String, bytes: ByteArray): TargetResult {
+        val drive = googleDrive
+            ?: return TargetResult(false, "gdrive", error = "Google Drive nicht konfiguriert")
+        return try {
+            val token = drive.authorize(GoogleDriveManager.SCOPE_FILE)
+            drive.uploadPdfArchive(token, filename, bytes)
+            TargetResult(true, "gdrive")
+        } catch (e: GoogleDriveManager.AuthRequiredException) {
+            TargetResult(false, "gdrive", error = "Google Drive Anmeldung erforderlich")
+        } catch (e: Exception) {
+            Log.w(TAG, "GDrive PDF-Archiv fehlgeschlagen", e)
+            TargetResult(false, "gdrive", error = e.message)
+        }
     }
 
     // ─── Lokales Ziel (Port von writeLocalArchive) ──────────────────

@@ -601,6 +601,7 @@ fun ActionButton(
     tint: Color,
     filled: Boolean = false,
     outlined: Boolean = false,
+    small: Boolean = false,
     onClick: () -> Unit,
 ) {
     val colors = LocalAppColors.current
@@ -608,7 +609,8 @@ fun ActionButton(
         text = label,
         color = if (filled) Color.White else tint,
         fontWeight = FontWeight.Bold,
-        fontSize = 14.sp,
+        fontSize = if (small) 11.sp else 14.sp,
+        maxLines = 1,
         textAlign = TextAlign.Center,
         modifier = Modifier
             .fillMaxWidth()
@@ -626,7 +628,7 @@ fun ActionButton(
                 RoundedCornerShape(12.dp),
             )
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = if (small) 9.dp else 12.dp),
     )
 }
 

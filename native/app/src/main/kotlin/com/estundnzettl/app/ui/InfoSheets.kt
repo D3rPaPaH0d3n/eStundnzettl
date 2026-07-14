@@ -306,27 +306,16 @@ fun AppTourDialog(i18n: I18n, onClose: () -> Unit) {
     val step = TOUR_STEPS[index]
     val isLast = index == TOUR_STEPS.lastIndex
 
-    Dialog(onDismissRequest = onClose) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(colors.surface)
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                i18n.t("appTour.steps.$step.title"),
-                color = colors.textPrimary,
-                fontWeight = FontWeight.Bold,
-                fontSize = 17.sp,
-            )
-            Text(
-                i18n.t("appTour.steps.$step.body"),
-                color = colors.textSecondary,
-                fontSize = 14.sp,
-            )
-            if (step == "fabTimer") {
+    TourPopupCard(
+        stepCount = TOUR_STEPS.size,
+        index = index,
+        title = i18n.t("appTour.steps.$step.title"),
+        body = i18n.t("appTour.steps.$step.body"),
+        onBack = { if (index > 0) index-- },
+        onNext = { if (isLast) onClose() else index++ },
+        onClose = onClose,
+        extra = if (step == "fabTimer") {
+            {
                 Text(
                     "☝ " + i18n.t("appTour.steps.fabTimer.hint"),
                     color = colors.accent,
@@ -334,46 +323,8 @@ fun AppTourDialog(i18n: I18n, onClose: () -> Unit) {
                     fontSize = 13.sp,
                 )
             }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Fortschritts-Punkte
-                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    TOUR_STEPS.indices.forEach { i ->
-                        Box(
-                            modifier = Modifier
-                                .size(7.dp)
-                                .clip(CircleShape)
-                                .background(if (i == index) colors.accentStrong else colors.surfaceVariant),
-                        )
-                    }
-                }
-                Row {
-                    TextButton(onClick = onClose) {
-                        Text(i18n.t("appTour.skipAria"), color = colors.textMuted, fontSize = 13.sp)
-                    }
-                    TextButton(onClick = { if (isLast) onClose() else index++ }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (isLast) {
-                                Icon(
-                                    Icons.Filled.Check, contentDescription = null,
-                                    tint = Palette.Emerald600, modifier = Modifier.size(16.dp),
-                                )
-                            }
-                            Text(
-                                if (isLast) i18n.t("appTour.finish") else i18n.t("appTour.next"),
-                                color = colors.accentStrong,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                modifier = Modifier.padding(start = 4.dp),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+        } else {
+            null
+        },
+    )
 }

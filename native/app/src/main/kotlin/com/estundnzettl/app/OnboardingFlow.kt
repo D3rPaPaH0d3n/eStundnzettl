@@ -22,6 +22,8 @@ data class OnboardingUiState(
     val name: String = "",
     val company: String = "",
     val role: String = "",
+    /** Profilbild als JPEG-Data-URL (max. 1024px) — optional. */
+    val photo: String? = null,
     val workDays: List<Int> = WORK_MODELS[0].days,
     val simpleMode: Boolean = false,
     val localeId: String? = null,

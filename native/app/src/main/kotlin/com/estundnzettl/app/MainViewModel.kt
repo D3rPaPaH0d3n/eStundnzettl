@@ -1238,6 +1238,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         updateOnboarding { it.copy(isRestoreFlow = true, step = 6) }
     }
 
+    /** "Nur mal reinschnuppern (Demo)" — Port von handleDemoMode. */
+    fun onboardingDemoMode() {
+        viewModelScope.launch {
+            try {
+                val demoLocale = getLocale("at")
+                val demoConfig = com.estundnzettl.core.calc
+                    .getDefaultCalculationConfig(demoLocale, com.estundnzettl.core.calc.DEMO_USER.workDays)
+                    .copy(vacationCarryoverDays = 3)
+
+                db.replaceFullSnapshot(
+                    com.estundnzettl.app.data.ImportSnapshot(
+                        entries = com.estundnzettl.core.calc.generateDemoEntries(),
+                        userData = com.estundnzettl.core.calc.DEMO_USER.toJson(),
+                        workCodes = com.estundnzettl.core.calc.DEMO_WORK_CODES,
+                    ),
+                )
+                runCatching {
+                    settings.setLocaleId("at")
+                    settings.setCalculationConfig(demoConfig)
+                }
+
+                loadSettings()
+                reloadAfterImport()
+                _state.value = _state.value.copy(
+                    onboarding = OnboardingUiState(active = false),
+                    view = "dashboard",
+                )
+                emit(UiMessage("onboarding.toast.demoLoaded"))
+                maybeStartTour()
+            } catch (_: Exception) {
+                emit(UiMessage("Demo-Daten konnten nicht geladen werden", raw = true))
+            }
+        }
+    }
+
     fun onboardingUpdate(transform: (OnboardingUiState) -> OnboardingUiState) = updateOnboarding(transform)
 
     fun onboardingNext() {
@@ -1354,7 +1389,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     put("company", JsonPrimitive(ob.company))
                     put("role", JsonPrimitive(ob.role))
                     put("position", JsonPrimitive(ob.role))
-                    put("photo", kotlinx.serialization.json.JsonNull)
+                    put("photo", ob.photo?.let { JsonPrimitive(it) } ?: kotlinx.serialization.json.JsonNull)
                     put("workDays", kotlinx.serialization.json.buildJsonArray {
                         ob.workDays.forEach { add(JsonPrimitive(it)) }
                     })

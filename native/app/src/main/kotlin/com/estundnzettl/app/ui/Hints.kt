@@ -3,6 +3,7 @@ package com.estundnzettl.app.ui
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,13 +13,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -137,6 +146,117 @@ fun SupportPromptDialog(viewModel: MainViewModel) {
 }
 
 /**
+ * Gemeinsame Tour-Karte — Layout-Port der Tour-Popups aus AppTour.tsx /
+ * SettingsTourPopup.tsx: Fortschritts-Segmente + X oben, Titel/Body,
+ * Fußzeile mit Zurück, Schrittzähler und gefülltem Weiter-Button.
+ */
+@Composable
+fun TourPopupCard(
+    stepCount: Int,
+    index: Int,
+    title: String,
+    body: String,
+    onBack: () -> Unit,
+    onNext: () -> Unit,
+    onClose: () -> Unit,
+    extra: (@Composable () -> Unit)? = null,
+) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    val isFirst = index == 0
+    val isLast = index == stepCount - 1
+
+    Dialog(onDismissRequest = onClose) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(colors.surface),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 8.dp, top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    repeat(stepCount) { i ->
+                        val width by animateDpAsState(if (i == index) 24.dp else 6.dp, label = "tourDot")
+                        Box(
+                            modifier = Modifier
+                                .size(width = width, height = 6.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    when {
+                                        i == index -> colors.accentStrong
+                                        i < index -> colors.accent.copy(alpha = 0.45f)
+                                        else -> colors.surfaceVariant
+                                    },
+                                ),
+                        )
+                    }
+                }
+                IconButton(onClick = onClose) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = t.t("appTour.skipAria"),
+                        tint = colors.textFaint,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(title, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                Text(body, color = colors.textSecondary, fontSize = 14.sp)
+                extra?.invoke()
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+                    .background(colors.surfaceVariant.copy(alpha = if (colors.isDark) 0.3f else 0.5f))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = onBack, enabled = !isFirst) {
+                    Text(
+                        "← " + t.t("common.back"),
+                        color = colors.textMuted.copy(alpha = if (isFirst) 0.35f else 1f),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                    )
+                }
+                Text(
+                    "${index + 1} / $stepCount",
+                    color = colors.textFaint,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                )
+                Button(
+                    onClick = onNext,
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.accentStrong),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
+                ) {
+                    Text(
+                        if (isLast) "✓ " + t.t("appTour.finish") else t.t("appTour.next") + " →",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
  * Einmalige Einstellungen-Tour — Port von SettingsTourPopup.tsx
  * (8 Schritte aus settingsTour.steps.*).
  */
@@ -146,7 +266,6 @@ private val SETTINGS_TOUR_STEPS = listOf(
 
 @Composable
 fun SettingsTourPopup(viewModel: MainViewModel, storageKey: String = "estundnzettl_settings_tour_seen_v2") {
-    val colors = LocalAppColors.current
     val t = LocalI18n.current
     val scope = rememberCoroutineScope()
     var visible by remember { mutableStateOf(false) }
@@ -165,50 +284,13 @@ fun SettingsTourPopup(viewModel: MainViewModel, storageKey: String = "estundnzet
     val step = SETTINGS_TOUR_STEPS[index]
     val isLast = index == SETTINGS_TOUR_STEPS.lastIndex
 
-    Dialog(onDismissRequest = ::close) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(colors.surface)
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                t.t("settingsTour.steps.$step.title"),
-                color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp,
-            )
-            Text(
-                t.t("settingsTour.steps.$step.body"),
-                color = colors.textSecondary, fontSize = 14.sp,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    SETTINGS_TOUR_STEPS.indices.forEach { i ->
-                        Box(
-                            modifier = Modifier
-                                .size(7.dp)
-                                .clip(CircleShape)
-                                .background(if (i == index) colors.accentStrong else colors.surfaceVariant),
-                        )
-                    }
-                }
-                Row {
-                    TextButton(onClick = ::close) {
-                        Text(t.t("appTour.skipAria"), color = colors.textMuted, fontSize = 13.sp)
-                    }
-                    TextButton(onClick = { if (isLast) close() else index++ }) {
-                        Text(
-                            if (isLast) t.t("appTour.finish") else t.t("appTour.next"),
-                            color = colors.accentStrong, fontWeight = FontWeight.Bold, fontSize = 14.sp,
-                        )
-                    }
-                }
-            }
-        }
-    }
+    TourPopupCard(
+        stepCount = SETTINGS_TOUR_STEPS.size,
+        index = index,
+        title = t.t("settingsTour.steps.$step.title"),
+        body = t.t("settingsTour.steps.$step.body"),
+        onBack = { if (index > 0) index-- },
+        onNext = { if (isLast) close() else index++ },
+        onClose = ::close,
+    )
 }

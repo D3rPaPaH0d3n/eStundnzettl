@@ -367,7 +367,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                         )
                     }
                     Text(
-                        text = month.atDay(1).format(DateTimeFormatter.ofPattern("LLL yy", javaLocale)),
+                        text = month.atDay(1).format(DateTimeFormatter.ofPattern("MMM yy", javaLocale)),
                         color = colors.textPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,

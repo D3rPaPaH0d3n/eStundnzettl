@@ -401,10 +401,11 @@ private fun WeekGroup(
         ) {
             Column {
                 Text(
-                    t.t("dashboard.calendarWeek"),
+                    t.t("dashboard.calendarWeek").uppercase(),
                     color = colors.textMuted,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -895,4 +896,4 @@ private fun StatLabel(text: String, colors: AppColors) {
 }
 
 private fun formatShortDate(date: LocalDate): String =
-    "%02d.%02d".format(date.dayOfMonth, date.monthValue)
+    "%02d.%02d.".format(date.dayOfMonth, date.monthValue)

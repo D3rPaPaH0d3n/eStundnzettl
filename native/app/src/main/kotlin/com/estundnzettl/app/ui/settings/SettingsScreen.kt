@@ -777,21 +777,82 @@ private fun AppInfoSection(viewModel: MainViewModel) {
     if (showHelp) com.estundnzettl.app.ui.HelpSheet(onDismiss = { showHelp = false })
     if (showChangelog) com.estundnzettl.app.ui.ChangelogSheet(onDismiss = { showChangelog = false })
 
+    val context = LocalContext.current
+    fun openLink(url: String) {
+        runCatching {
+            context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(url)))
+        }.onFailure { viewModel.showRawMessage(t.t("settings.appInfo.linkError")) }
+    }
+    fun openMail(email: String) {
+        runCatching {
+            context.startActivity(android.content.Intent(android.content.Intent.ACTION_SENDTO, Uri.parse("mailto:$email")))
+        }.onFailure { viewModel.showRawMessage(t.t("settings.appInfo.mailError")) }
+    }
+
+    // App & Informationen — Port von AppInfoSettings.tsx
     com.estundnzettl.app.ui.AppCard {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                t.t("settings.appInfo.versionLabel", "version" to "0.1.0 (Kotlin)"),
-                color = colors.textMuted, fontSize = 12.sp,
+                t.t("settings.appInfo.sectionInfoTitle"),
+                color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp,
             )
+            ActionButton(label = t.t("settings.appInfo.playStore"), tint = colors.accentStrong) {
+                openLink("https://play.google.com/store/apps/details?id=com.estundnzettl.app")
+            }
             ActionButton(label = t.t("settings.appInfo.help"), tint = colors.info) {
                 showHelp = true
             }
-            ActionButton(label = t.t("settings.appInfo.changelog"), tint = colors.info) {
+            ActionButton(label = t.t("settings.appInfo.changelog"), tint = colors.info, outlined = true) {
                 showChangelog = true
             }
+        }
+    }
+
+    // Über — Datenschutz, Website, GitHub, Rechtliches, Spenden
+    com.estundnzettl.app.ui.AppCard {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                t.t("settings.appInfo.dangerTitle"),
-                color = colors.danger, fontWeight = FontWeight.Bold, fontSize = 14.sp,
+                t.t("settings.appInfo.sectionAboutTitle"),
+                color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp,
+            )
+            ActionButton(label = t.t("settings.appInfo.privacy"), tint = colors.textSecondary, outlined = true) {
+                openLink("https://d3rpapah0d3n.github.io/eStundnzettl/privacy.html")
+            }
+            ActionButton(label = t.t("settings.appInfo.website"), tint = colors.textSecondary, outlined = true) {
+                openLink("https://d3rpapah0d3n.github.io/eStundnzettl/")
+            }
+            ActionButton(label = t.t("settings.appInfo.sourceCode"), tint = colors.textSecondary, outlined = true) {
+                openLink("https://github.com/D3rPaPaH0d3n/eStundnzettl")
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(modifier = Modifier.weight(1f)) {
+                    ActionButton(label = t.t("settings.appInfo.imprint"), tint = colors.textMuted, outlined = true, small = true) {
+                        openLink("https://d3rpapah0d3n.github.io/eStundnzettl/impressum.html")
+                    }
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    ActionButton(label = t.t("settings.appInfo.license"), tint = colors.textMuted, outlined = true, small = true) {
+                        openLink("https://github.com/D3rPaPaH0d3n/eStundnzettl/blob/main/LICENSE")
+                    }
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    ActionButton(label = t.t("settings.appInfo.contact"), tint = colors.textMuted, outlined = true, small = true) {
+                        openMail("project@kainer.co.at")
+                    }
+                }
+            }
+            ActionButton(label = "☕ " + t.t("settings.appInfo.donate"), tint = com.estundnzettl.app.ui.theme.Palette.Amber600) {
+                openLink("https://revolut.me/mkainer/pocket/QAt1Q0Ntsb")
+            }
+        }
+    }
+
+    // Gefahrenzone
+    com.estundnzettl.app.ui.AppCard {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                "⚠ " + t.t("settings.appInfo.dangerTitle"),
+                color = colors.danger, fontWeight = FontWeight.Bold, fontSize = 15.sp,
             )
             Text(t.t("settings.appInfo.dangerBody"), color = colors.textMuted, fontSize = 12.sp)
             ActionButton(label = t.t("settings.appInfo.deleteAll"), tint = colors.danger) {
@@ -799,11 +860,30 @@ private fun AppInfoSection(viewModel: MainViewModel) {
             }
         }
     }
+
+    // Footer: Version + Credits
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+    ) {
+        Text(
+            t.t("settings.appInfo.versionLabel", "version" to "0.1.0 (Kotlin)"),
+            color = colors.textFaint, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+        )
+        Text(
+            t.t("settings.appInfo.credits"),
+            color = colors.textFaint.copy(alpha = 0.7f), fontSize = 10.sp,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+    }
 }
 
 // ─── Foto-Helfer (Port von processImage: max 1024px, JPEG 90 %) ──
 
-private fun uriToJpegDataUrl(context: android.content.Context, uri: Uri): String {
+internal fun uriToJpegDataUrl(context: android.content.Context, uri: Uri): String {
     val original: Bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri)) { decoder, _, _ ->
             decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
@@ -834,7 +914,7 @@ private fun uriToJpegDataUrl(context: android.content.Context, uri: Uri): String
     return "data:image/jpeg;base64,$base64"
 }
 
-private fun dataUrlToBitmap(dataUrl: String): Bitmap? {
+internal fun dataUrlToBitmap(dataUrl: String): Bitmap? {
     val base64 = dataUrl.substringAfter("base64,", "")
     if (base64.isEmpty()) return null
     return runCatching {

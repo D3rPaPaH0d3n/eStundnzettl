@@ -96,6 +96,9 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
+        // Einmalige Einstellungen-Tour (Port von SettingsTourPopup)
+        com.estundnzettl.app.ui.SettingsTourPopup(viewModel)
+
         ProfileSection(viewModel)
         RecordingModeSection(viewModel)
         WorkScheduleSection(viewModel)
@@ -497,33 +500,13 @@ private fun DayDurationDialog(
     onConfirm: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val t = LocalI18n.current
-    var text by remember {
-        mutableStateOf(
-            if (initialMinutes > 0) String.format(java.util.Locale.GERMAN, "%.2f", initialMinutes / 60.0) else ""
-        )
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text(t.t("drawers.decimalDuration.title")) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                val hours = text.replace(",", ".").toDoubleOrNull() ?: 0.0
-                onConfirm((hours * 60).toInt().coerceIn(0, 24 * 60))
-            }) { Text("OK") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(t.t("common.cancel")) }
-        },
+    // Dauer-Wheel im Original-Stil (Port von DecimalDurationPicker)
+    com.estundnzettl.app.ui.DurationWheelSheet(
+        title = title,
+        initialMinutes = initialMinutes,
+        maxHours = 16,
+        onConfirm = { minutes -> onConfirm(minutes.coerceIn(0, 24 * 60)) },
+        onDismiss = onDismiss,
     )
 }
 
@@ -690,6 +673,7 @@ private fun ExpertModeSection(viewModel: MainViewModel) {
     val state by viewModel.state.collectAsState()
     val colors = LocalAppColors.current
     val t = LocalI18n.current
+    val context = LocalContext.current
     val expertMode = state.userData?.expertMode == true
     var showRecalcWarning by remember { mutableStateOf(false) }
     var showDemoWarning by remember { mutableStateOf(false) }
@@ -709,6 +693,7 @@ private fun ExpertModeSection(viewModel: MainViewModel) {
             confirmButton = {
                 TextButton(onClick = {
                     showDemoWarning = false
+                    com.estundnzettl.app.ui.Haptics.medium(context)
                     viewModel.loadDemoData()
                 }) { Text(t.t("settings.data.demoWarning.confirm"), color = colors.danger) }
             },

@@ -1,6 +1,5 @@
 package com.estundnzettl.app.ui.settings
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,7 +61,7 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
     var lastError by remember { mutableStateOf("") }
     var isRunning by remember { mutableStateOf(false) }
 
-    fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    fun toast(message: String) = viewModel.showRawMessage(message)
 
     suspend fun reloadStatus() {
         lastRun = viewModel.settings.getString(PdfArchiveManager.KEY_LAST_RUN) ?: ""

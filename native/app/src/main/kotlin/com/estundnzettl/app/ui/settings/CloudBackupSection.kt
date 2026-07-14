@@ -1,7 +1,6 @@
 package com.estundnzettl.app.ui.settings
 
 import android.net.Uri
-import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,7 +60,7 @@ fun CloudBackupContent(viewModel: MainViewModel) {
     var saving by remember { mutableStateOf(false) }
     var refreshTick by remember { mutableStateOf(0) }
 
-    fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    fun toast(message: String) = viewModel.showRawMessage(message)
 
     LaunchedEffect(refreshTick, nc.connected) {
         localEnabled = viewModel.settings.getBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED)

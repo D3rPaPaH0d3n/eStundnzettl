@@ -1,6 +1,5 @@
 package com.estundnzettl.app.ui
 
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -104,7 +103,7 @@ fun AttachmentSheet(viewModel: MainViewModel) {
         }
     }
 
-    fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    fun toast(message: String) = viewModel.showRawMessage(message)
 
     val javaLocale = if (t.language == "en") JavaLocale.ENGLISH else JavaLocale.GERMAN
     val dateLabel = remember(entry.date, t.language) {
@@ -222,6 +221,7 @@ fun AttachmentSheet(viewModel: MainViewModel) {
                                     scope.launch {
                                         try {
                                             viewModel.addAttachment(entry.id, uri, label)
+                                            Haptics.light(context)
                                             toast(t.t("attachments.toast.added"))
                                             pickedUri = null
                                             pickedName = ""
@@ -301,6 +301,7 @@ fun AttachmentSheet(viewModel: MainViewModel) {
                                 scope.launch {
                                     try {
                                         viewModel.removeAttachment(attachment.id)
+                                        Haptics.light(context)
                                         toast(t.t("attachments.toast.deleted"))
                                     } catch (_: Exception) {
                                         toast(t.t("attachments.toast.deleteError"))

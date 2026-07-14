@@ -102,6 +102,8 @@ data class MainUiState(
     val attachmentEntry: Entry? = null,
     /** App-Tour sichtbar (einmalig nach dem Onboarding). */
     val showTour: Boolean = false,
+    /** Bewertungs-/Spenden-Hinweis (frühestens 5 Tage nach Erstnutzung). */
+    val showSupportPrompt: Boolean = false,
     /** Nextcloud-Verbindungszustand für Backup-/Archiv-UI. */
     val nextcloud: NextcloudUiState = NextcloudUiState(),
     /** Google-Drive-Verbindungszustand (Backup + PDF-Archiv getrennt). */
@@ -161,6 +163,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch {
                 kotlinx.coroutines.delay(3000)
                 autoPdfArchiveRun("startup")
+                maybeShowSupportPrompt()
             }
             entriesRepo.observeAll().collect { entries ->
                 allEntries = entries
@@ -959,6 +962,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun closeTour() {
         _state.value = _state.value.copy(showTour = false)
         viewModelScope.launch { settings.setString(TOUR_SEEN_KEY, "1") }
+    }
+
+    // ─── Support-Prompt (Port aus App.tsx) ───────────────────
+
+    private suspend fun maybeShowSupportPrompt() {
+        val dismissed = settings.getString("estundnzettl_support_prompt_dismissed_v1") == "true"
+        if (dismissed) return
+        if (_state.value.userData?.name.isNullOrBlank() || allEntries.isEmpty()) return
+
+        val key = "estundnzettl_support_prompt_first_eligible_v1"
+        val now = System.currentTimeMillis()
+        val firstEligible = settings.getString(key)?.toLongOrNull() ?: 0L
+        if (firstEligible <= 0) {
+            settings.setString(key, now.toString())
+            return
+        }
+        // Frühestens 5 Tage nach der ersten Eignung
+        if (now - firstEligible < 5L * 24 * 60 * 60 * 1000) return
+        if (!_state.value.onboarding.active) {
+            _state.value = _state.value.copy(showSupportPrompt = true)
+        }
+    }
+
+    fun dismissSupportPrompt() {
+        _state.value = _state.value.copy(showSupportPrompt = false)
+        viewModelScope.launch {
+            settings.setString("estundnzettl_support_prompt_dismissed_v1", "true")
+        }
     }
 
     // ─── Nextcloud (Port von useNextcloudBackup) ─────────────

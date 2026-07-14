@@ -1,7 +1,6 @@
 package com.estundnzettl.app
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -78,12 +77,14 @@ class MainActivity : ComponentActivity() {
                 materialYou = state.materialYouEnabled,
                 i18n = i18n,
             ) {
-                // Toast-Nachrichten aus dem ViewModel
+                // Meldungen aus dem ViewModel als Snackbar im App-Look
+                // (Ersatz für die gestylten react-hot-toast-Toasts)
+                val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
                 LaunchedEffect(Unit) {
                     viewModel.messages.collect { message ->
                         val text = if (message.raw) message.key
                         else i18n.t(message.key, *message.args.toTypedArray())
-                        Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+                        snackbarHostState.showSnackbar(text)
                     }
                 }
 
@@ -99,10 +100,24 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (state.onboarding.active) {
-                    com.estundnzettl.app.ui.onboarding.OnboardingScreen(viewModel)
-                } else {
-                    MainScreen(viewModel)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (state.onboarding.active) {
+                        com.estundnzettl.app.ui.onboarding.OnboardingScreen(viewModel)
+                    } else {
+                        MainScreen(viewModel)
+                    }
+
+                    // Bewertungs-/Spenden-Hinweis (einmalig, 5 Tage nach Erstnutzung)
+                    if (state.showSupportPrompt && !state.onboarding.active) {
+                        com.estundnzettl.app.ui.SupportPromptDialog(viewModel)
+                    }
+
+                    androidx.compose.material3.SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 96.dp),
+                    )
                 }
             }
         }

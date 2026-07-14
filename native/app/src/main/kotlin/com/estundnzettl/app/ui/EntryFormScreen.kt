@@ -35,10 +35,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -91,6 +89,7 @@ fun EntryFormScreen(
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     val javaLocale = if (language == "en") JavaLocale.ENGLISH else JavaLocale.GERMAN
 
     val isSpecialType = form.entryType in listOf("vacation", "sick", "time_comp")
@@ -141,7 +140,8 @@ fun EntryFormScreen(
 
     activeTimeField?.let { field ->
         val current = if (field == "start") form.startTime else form.endTime
-        TimePickerAlertDialog(
+        // Wheel-Picker im Original-Stil (Port von TimePickerDrawer)
+        TimeWheelSheet(
             title = if (field == "start") t.t("entryForm.startTime") else t.t("entryForm.endTime"),
             initial = current,
             onConfirm = { value ->
@@ -155,13 +155,12 @@ fun EntryFormScreen(
     }
 
     if (showPausePicker) {
-        val minutes = if (form.pauseDuration > 0) form.pauseDuration else 30
-        TimePickerAlertDialog(
+        DurationWheelSheet(
             title = t.t("entryForm.pause"),
-            initial = "%02d:%02d".format(minutes / 60, minutes % 60),
-            onConfirm = { value ->
-                val parts = value.split(":")
-                onUpdateForm { it.copy(pauseDuration = parts[0].toInt() * 60 + parts[1].toInt()) }
+            initialMinutes = if (form.pauseDuration > 0) form.pauseDuration else 30,
+            maxHours = 4,
+            onConfirm = { minutes ->
+                onUpdateForm { it.copy(pauseDuration = minutes) }
                 showPausePicker = false
             },
             onDismiss = { showPausePicker = false },
@@ -600,7 +599,10 @@ fun EntryFormScreen(
                             .weight(2f)
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (colors.isDark) Palette.Emerald600 else Palette.Zinc900)
-                            .clickable(onClick = onSave)
+                            .clickable {
+                                Haptics.medium(context)
+                                onSave()
+                            }
                             .padding(vertical = 14.dp),
                     ) {
                         Icon(Icons.Filled.Save, null, tint = Color.White, modifier = Modifier.size(18.dp))
@@ -614,36 +616,6 @@ fun EntryFormScreen(
 }
 
 // ─── Bausteine ───────────────────────────────────────────────
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimePickerAlertDialog(
-    title: String,
-    initial: String,
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val t = LocalI18n.current
-    val parts = initial.split(":")
-    val state = rememberTimePickerState(
-        initialHour = parts.getOrNull(0)?.toIntOrNull() ?: 0,
-        initialMinute = parts.getOrNull(1)?.toIntOrNull() ?: 0,
-        is24Hour = true,
-    )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = { TimePicker(state = state) },
-        confirmButton = {
-            TextButton(onClick = { onConfirm("%02d:%02d".format(state.hour, state.minute)) }) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(t.t("common.cancel")) }
-        },
-    )
-}
 
 @Composable
 private fun FieldLabel(text: String) {

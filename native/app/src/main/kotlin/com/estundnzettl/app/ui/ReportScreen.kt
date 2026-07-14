@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -256,13 +255,9 @@ fun ReportScreen(viewModel: MainViewModel) {
         if (uri != null && bytes != null) {
             try {
                 context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
-                Toast.makeText(context, "📂 " + i18n.t("reports.toast.readyToShare"), Toast.LENGTH_SHORT).show()
+                viewModel.showRawMessage(("📂 " + i18n.t("reports.toast.readyToShare")))
             } catch (e: Exception) {
-                Toast.makeText(
-                    context,
-                    i18n.t("reports.toast.error", "message" to (e.message ?: "")),
-                    Toast.LENGTH_LONG,
-                ).show()
+                viewModel.showRawMessage((i18n.t("reports.toast.error", "message" to (e.message ?: ""))))
             }
         }
     }
@@ -298,13 +293,9 @@ fun ReportScreen(viewModel: MainViewModel) {
             }
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             context.startActivity(Intent.createChooser(intent, i18n.t("reports.title")))
-            Toast.makeText(context, i18n.t("reports.toast.readyToShare"), Toast.LENGTH_SHORT).show()
+            viewModel.showRawMessage((i18n.t("reports.toast.readyToShare")))
         } catch (e: Exception) {
-            Toast.makeText(
-                context,
-                i18n.t("reports.toast.error", "message" to (e.message ?: "")),
-                Toast.LENGTH_LONG,
-            ).show()
+            viewModel.showRawMessage((i18n.t("reports.toast.error", "message" to (e.message ?: ""))))
         }
     }
 
@@ -396,6 +387,14 @@ fun ReportScreen(viewModel: MainViewModel) {
                         )
                     }
                 }
+
+                // Einmaliger Hinweis beim ersten Öffnen (Port von FirstOpenHint)
+                FirstOpenHint(
+                    viewModel = viewModel,
+                    storageKey = "estundnzettl_hint_report_seen_v2",
+                    title = i18n.t("hints.reportTitle"),
+                    body = i18n.t("hints.report"),
+                )
 
                 // Notiz + Layout-Toggles + Zeitraum-Filter
                 Row(

@@ -614,6 +614,7 @@ private fun EntryRow(
     attachmentCount: Int = 0,
     onManageAttachments: (Entry) -> Unit = {},
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val isHoliday = entry.type == EntryType.PUBLIC_HOLIDAY
     val isTimeComp = entry.type == EntryType.TIME_COMP
     val hasExplicitTime = !entry.start.isNullOrEmpty() && !entry.end.isNullOrEmpty()
@@ -742,6 +743,7 @@ private fun EntryRow(
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) {
+                Haptics.heavy(context)
                 onDeleteEntry(entry)
             }
             false // Row bleibt sichtbar; Löschen läuft über Bestätigungs-Dialog

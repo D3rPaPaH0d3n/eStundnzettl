@@ -112,4 +112,14 @@ App das Verzeichnis `native/` in Android Studio öffnen.
      Play-Services-Fehler.
    - ✅ PDF-Archiv-Ziele Nextcloud + Google Drive freigeschaltet
    - ⬜ Cloud-Restore im Onboarding (Restore aus Datei existiert),
-     Release-Vorbereitung/Feinschliff
+     Release-Vorbereitung
+6. 🔶 **Phase 6** — Feinschliff
+   - ✅ Optik & Animationen: View-Übergänge, Long-Press+Hochwisch-Geste
+     am Timer-FAB mit Status-Pille, Skeleton-Loading, animierte
+     Wochen-/Settings-Karten mit rotierenden Chevrons
+   - ✅ Eingabe-Komfort: iOS-artige Wheel-Picker für Uhrzeit
+     (TimePickerDrawer-Port) und Dauer (DecimalDurationPicker-Port)
+     in Formular + Arbeitszeitmodell
+   - ✅ Feedback: Haptik an den Kernaktionen, Snackbars statt
+     Standard-Toasts, einmalige Hinweis-Boxen (Report),
+     Einstellungen-Tour, Bewertungs-/Spenden-Hinweis nach 5 Tagen

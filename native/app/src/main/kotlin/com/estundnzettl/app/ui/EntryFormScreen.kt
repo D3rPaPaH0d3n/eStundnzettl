@@ -140,8 +140,8 @@ fun EntryFormScreen(
 
     activeTimeField?.let { field ->
         val current = if (field == "start") form.startTime else form.endTime
-        // Wheel-Picker im Original-Stil (Port von TimePickerDrawer)
-        TimeWheelSheet(
+        // Material3-Uhr wie die Original-App (Material3TimePickerActivity)
+        AppTimePickerDialog(
             title = if (field == "start") t.t("entryForm.startTime") else t.t("entryForm.endTime"),
             initial = current,
             onConfirm = { value ->
@@ -155,12 +155,15 @@ fun EntryFormScreen(
     }
 
     if (showPausePicker) {
-        DurationWheelSheet(
+        // Pausendauer als HH:MM in der M3-Uhr mit orangem Akzent (wie Original)
+        val pauseMinutes = if (form.pauseDuration > 0) form.pauseDuration else 30
+        AppTimePickerDialog(
             title = t.t("entryForm.pause"),
-            initialMinutes = if (form.pauseDuration > 0) form.pauseDuration else 30,
-            maxHours = 4,
-            onConfirm = { minutes ->
-                onUpdateForm { it.copy(pauseDuration = minutes) }
+            initial = "%02d:%02d".format(pauseMinutes / 60, pauseMinutes % 60),
+            orangeAccent = true,
+            onConfirm = { value ->
+                val (h, m) = value.split(":").map { it.toInt() }
+                onUpdateForm { it.copy(pauseDuration = h * 60 + m) }
                 showPausePicker = false
             },
             onDismiss = { showPausePicker = false },

@@ -197,60 +197,6 @@ private fun WheelHighlightBand(content: @Composable () -> Unit) {
 }
 
 /**
- * Uhrzeit-Wheel (Stunden : Minuten) als Bottom-Sheet —
- * Port von TimePickerDrawer.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TimeWheelSheet(
-    title: String,
-    initial: String,
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val colors = LocalAppColors.current
-    val parts = initial.split(":")
-    var hour by remember { mutableIntStateOf(parts.getOrNull(0)?.toIntOrNull() ?: 6) }
-    var minute by remember { mutableIntStateOf(parts.getOrNull(1)?.toIntOrNull() ?: 0) }
-
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.surface) {
-        Column(modifier = Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
-            WheelSheetHeader(
-                title = title,
-                onCancel = onDismiss,
-                onConfirm = { onConfirm("%02d:%02d".format(hour, minute)) },
-            )
-            WheelHighlightBand {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    WheelColumn(
-                        items = (0..23).toList(),
-                        initial = hour,
-                        accentSelected = true,
-                        modifier = Modifier.width(90.dp),
-                    ) { hour = it }
-                    Text(
-                        ":",
-                        color = colors.textFaint,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
-                    WheelColumn(
-                        items = (0..59).toList(),
-                        initial = minute,
-                        accentSelected = false,
-                        modifier = Modifier.width(90.dp),
-                    ) { minute = it }
-                }
-            }
-        }
-    }
-}
-
-/**
  * Dauer-Wheel (Stunden + Minuten) als Bottom-Sheet —
  * Port von DecimalDurationPicker (1-Minuten-Auflösung).
  */

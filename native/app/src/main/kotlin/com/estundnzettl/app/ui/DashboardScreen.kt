@@ -502,10 +502,21 @@ private fun WeekGroup(
             )
         }
 
+        // 220ms easeOut wie die framer-motion-Transition des Originals
+        val weekExpandSpec = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntSize>(
+            durationMillis = 220,
+            easing = androidx.compose.animation.core.FastOutSlowInEasing,
+        )
+        val weekFadeSpec = androidx.compose.animation.core.tween<Float>(
+            durationMillis = 220,
+            easing = androidx.compose.animation.core.FastOutSlowInEasing,
+        )
         AnimatedVisibility(
             visible = expanded,
-            enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
+            enter = androidx.compose.animation.expandVertically(animationSpec = weekExpandSpec) +
+                androidx.compose.animation.fadeIn(animationSpec = weekFadeSpec),
+            exit = androidx.compose.animation.shrinkVertically(animationSpec = weekExpandSpec) +
+                androidx.compose.animation.fadeOut(animationSpec = weekFadeSpec),
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -830,7 +841,11 @@ private fun EmptyState(t: I18n, colors: AppColors) {
     }
 }
 
-/** Monats-Picker: Jahr-Stepper + 12 Monats-Buttons. */
+/**
+ * Monats-Picker — Port des Material3DatePicker-Plugins (pickMonth):
+ * Titel mit aktuellem Datum, Jahr-Stepper, 12 Monats-Pillen,
+ * Auswahl wird erst mit OK übernommen.
+ */
 @Composable
 internal fun MonthPickerDialog(
     selected: YearMonth,
@@ -841,50 +856,65 @@ internal fun MonthPickerDialog(
     val colors = LocalAppColors.current
     val t = LocalI18n.current
     var year by remember { mutableStateOf(selected.year) }
+    var month by remember { mutableStateOf(selected.monthValue) }
+    // Monatsnamen wie das Original-Plugin über die Gerätesprache
+    // (de-AT → "Jän."), nicht über die App-Sprache.
+    val deviceLocale = remember { JavaLocale.getDefault() }
+    val currentLabel = remember(selected, javaLocale) {
+        val date = if (selected == YearMonth.now()) LocalDate.now() else selected.atDay(1)
+        val pattern = if (javaLocale.language == "en") "M/d/yyyy" else "d.M.yyyy"
+        date.format(java.time.format.DateTimeFormatter.ofPattern(pattern))
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(t.t("common.close")) }
-        },
-        title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = { year-- }) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
-                }
-                Text(year.toString(), fontWeight = FontWeight.Bold)
-                IconButton(onClick = { year++ }) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                }
-            }
-        },
+        title = { Text(t.t("dashboard.monthPickerAria", "value" to currentLabel)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = { year-- }) { Text("‹", color = colors.accent, fontSize = 18.sp) }
+                    Text(
+                        year.toString(),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = colors.textPrimary,
+                    )
+                    TextButton(onClick = { year++ }) { Text("›", color = colors.accent, fontSize = 18.sp) }
+                }
                 (0 until 4).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         (1..3).forEach { col ->
-                            val month = row * 3 + col
-                            val ym = YearMonth.of(year, month)
-                            val isSelected = ym == selected
+                            val m = row * 3 + col
+                            val isSelected = month == m
                             Text(
-                                text = ym.month.getDisplayName(TextStyle.SHORT_STANDALONE, javaLocale),
+                                text = java.time.Month.of(m).getDisplayName(TextStyle.SHORT, deviceLocale),
                                 textAlign = TextAlign.Center,
                                 color = if (isSelected) Color.White else colors.textPrimary,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(50))
                                     .background(if (isSelected) colors.accentStrong else colors.surfaceVariant)
-                                    .clickable { onSelect(ym) }
+                                    .clickable { month = m }
                                     .padding(vertical = 12.dp),
                             )
                         }
                     }
                 }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSelect(YearMonth.of(year, month)) }) {
+                Text("OK", color = colors.accent, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(t.t("common.cancel"), color = colors.accent)
             }
         },
     )

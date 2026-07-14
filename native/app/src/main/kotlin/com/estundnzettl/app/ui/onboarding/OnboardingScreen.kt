@@ -199,9 +199,9 @@ private fun WelcomeStep(viewModel: MainViewModel) {
             contentAlignment = Alignment.Center,
         ) {
             Image(
-                painter = painterResource(R.mipmap.ic_launcher_foreground),
+                painter = painterResource(R.drawable.app_logo),
                 contentDescription = t.t("onboarding.welcome.logoAlt"),
-                modifier = Modifier.size(140.dp),
+                modifier = Modifier.size(80.dp),
             )
         }
         Text(t.t("onboarding.welcome.hello"), color = colors.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.Black)

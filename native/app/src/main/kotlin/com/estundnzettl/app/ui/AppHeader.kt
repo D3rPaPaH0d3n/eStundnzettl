@@ -90,9 +90,11 @@ fun AppHeader(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Image(
-                            painter = painterResource(R.mipmap.ic_launcher_foreground),
+                            painter = painterResource(R.drawable.app_logo),
                             contentDescription = null,
-                            modifier = Modifier.size(58.dp),
+                            modifier = Modifier
+                                .size(36.dp)
+                                .padding(1.dp),
                         )
                     }
                 }

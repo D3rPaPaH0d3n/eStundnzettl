@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.estundnzettl.app.data.EntriesRepository
+import com.estundnzettl.app.data.replaceFullSnapshot
 import com.estundnzettl.app.data.EntryIdGenerator
 import com.estundnzettl.app.data.SettingsRepository
 import com.estundnzettl.app.data.WorkCodesRepository

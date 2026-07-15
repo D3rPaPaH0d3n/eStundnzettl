@@ -43,11 +43,23 @@ object Palette {
     val Amber600 = Color(0xFFD97706)
 
     // Tint-Flächen (…-50/…-900/20-Äquivalente)
+    val Red50 = Color(0xFFFEF2F2)
     val Red100 = Color(0xFFFEE2E2)
+    val Red300 = Color(0xFFFCA5A5)
     val Blue50 = Color(0xFFEFF6FF)
     val Blue100 = Color(0xFFDBEAFE)
+    val Blue300 = Color(0xFF93C5FD)
     val Purple50 = Color(0xFFFAF5FF)
     val Purple100 = Color(0xFFF3E8FF)
+    val Amber50 = Color(0xFFFFFBEB)
+    val Amber100 = Color(0xFFFEF3C7)
+    val Amber900 = Color(0xFF78350F)
+    val Orange50 = Color(0xFFFFF7ED)
+    val Orange100 = Color(0xFFFFEDD5)
+    val Green50 = Color(0xFFF0FDF4)
+    val Green100 = Color(0xFFDCFCE7)
+    val Green500 = Color(0xFF22C55E)
+    val Green600 = Color(0xFF16A34A)
 }
 
 /** Semantische App-Farben, aufgelöst je nach Hell-/Dunkel-Modus. */

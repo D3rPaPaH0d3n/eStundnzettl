@@ -1335,8 +1335,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Step 3 → 5 überspringt Calculation ohne Eigenen Plan
         val target = when {
             ob.step == 3 && !ob.customCalc -> 5
-            // Backup-Ziele (Cloud) folgen in Phase 5 → Step 6 im Neu-Flow überspringen
-            ob.step == 5 -> 7
             else -> ob.step + 1
         }
         updateOnboarding { next.copy(step = target) }
@@ -1348,7 +1346,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             ob.step == 6 && ob.isRestoreFlow -> 0
             ob.step == 7 && ob.simpleMode -> 1
             ob.step == 7 && ob.isRestoreFlow -> 6
-            ob.step == 7 -> 5
+            ob.step == 7 -> 6
             ob.step == 5 && !ob.customCalc -> 3
             else -> ob.step - 1
         }
@@ -1404,7 +1402,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         })
                     }
                     put("settings", kotlinx.serialization.json.buildJsonObject {
-                        put("autoBackup", JsonPrimitive(false))
+                        put("autoBackup", JsonPrimitive(ob.autoBackup))
                         put("theme", JsonPrimitive(ob.restoreData?.theme ?: "system"))
                     })
                 }
@@ -1420,7 +1418,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     })
                     put("simpleMode", JsonPrimitive(ob.simpleMode))
                     put("settings", kotlinx.serialization.json.buildJsonObject {
-                        put("autoBackup", JsonPrimitive(false))
+                        put("autoBackup", JsonPrimitive(ob.autoBackup))
                         put("theme", JsonPrimitive("system"))
                     })
                 }
@@ -1428,8 +1426,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             runCatching {
                 settings.setRaw(SettingsRepository.Keys.USER, userJson)
-                settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, false)
-                settings.setBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED, false)
+                settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, ob.autoBackup)
+                settings.setBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED, ob.localBackupEnabled)
             }
 
             if (!ob.isRestoreFlow && !ob.simpleMode) {

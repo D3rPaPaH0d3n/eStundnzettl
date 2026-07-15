@@ -24,6 +24,12 @@ fun EStundnzettlTheme(
     themeSetting: String = "system",
     materialYou: Boolean = false,
     i18n: I18n,
+    /**
+     * true, wenn der aktuelle Screen oben dunkel ist (App-Header) →
+     * Statusbar-Icons immer hell. Onboarding hat einen hellen
+     * Hintergrund und braucht im Light-Theme dunkle Icons.
+     */
+    darkTopBar: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val darkTheme = when (themeSetting) {
@@ -41,7 +47,7 @@ fun EStundnzettlTheme(
         androidx.compose.runtime.SideEffect {
             val window = (view.context as? android.app.Activity)?.window ?: return@SideEffect
             val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
-            controller.isAppearanceLightStatusBars = false
+            controller.isAppearanceLightStatusBars = !darkTopBar && !darkTheme
             controller.isAppearanceLightNavigationBars = !darkTheme
         }
     }

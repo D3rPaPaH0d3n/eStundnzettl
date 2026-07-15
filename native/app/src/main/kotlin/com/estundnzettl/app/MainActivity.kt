@@ -76,6 +76,7 @@ class MainActivity : ComponentActivity() {
                 themeSetting = state.theme,
                 materialYou = state.materialYouEnabled,
                 i18n = i18n,
+                darkTopBar = !state.onboarding.active,
             ) {
                 // Meldungen aus dem ViewModel als Snackbar im App-Look
                 // (Ersatz für die gestylten react-hot-toast-Toasts)

@@ -26,6 +26,10 @@ data class OnboardingUiState(
     val photo: String? = null,
     val workDays: List<Int> = WORK_MODELS[0].days,
     val simpleMode: Boolean = false,
+    /** Google-Drive-Backup im Backup-Schritt aktiviert. */
+    val autoBackup: Boolean = false,
+    /** Lokales Backup im Backup-Schritt aktiviert. */
+    val localBackupEnabled: Boolean = false,
     val localeId: String? = null,
     val workCodePresetId: String = "allgemein",
     val calcConfig: CalculationConfig? = null,

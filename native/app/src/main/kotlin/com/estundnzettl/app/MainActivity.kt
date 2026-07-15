@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -214,12 +215,20 @@ private fun MainScreen(viewModel: MainViewModel) {
         )
     }
 
+    // Während der App-Tour liegt der Inhalt unscharf hinter dem Popup
+    // (Port des backdrop-blur aus AppTour.tsx)
+    val tourBlur = if (state.showTour) {
+        Modifier.blur(4.dp)
+    } else {
+        Modifier
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(colors.background),
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().then(tourBlur)) {
             // Der Bericht ist im Original ein Vollbild-Overlay mit eigener
             // Toolbar — der App-Header entfällt dort komplett.
             if (state.view != "report") {
@@ -336,7 +345,7 @@ private fun MainScreen(viewModel: MainViewModel) {
                 onStop = viewModel::stopTimer,
                 onPause = viewModel::pauseTimer,
                 onResume = viewModel::resumeTimer,
-                modifier = Modifier.align(Alignment.BottomEnd),
+                modifier = Modifier.align(Alignment.BottomEnd).then(tourBlur),
             )
         }
 

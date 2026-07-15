@@ -1004,22 +1004,14 @@ private fun WorkScheduleStep(viewModel: MainViewModel, ob: OnboardingUiState, la
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.width(26.dp),
                         )
-                        Slider(
-                            value = minutes.toFloat(),
-                            onValueChange = { value ->
+                        DayHoursSlider(
+                            minutes = minutes,
+                            onChange = { value ->
                                 val days = ob.workDays.toMutableList()
-                                days[dayIndex] = value.toInt()
+                                days[dayIndex] = value
                                 viewModel.onboardingUpdate { it.copy(workDays = days) }
                             },
-                            valueRange = 0f..720f,
-                            colors = SliderDefaults.colors(
-                                thumbColor = Palette.Emerald500,
-                                activeTrackColor = Palette.Emerald500,
-                                inactiveTrackColor = if (colors.isDark) Palette.Zinc700 else Palette.Zinc200,
-                            ),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(24.dp),
+                            modifier = Modifier.weight(1f),
                         )
                         Text(
                             formatHoursLocalized(minutes, language),
@@ -1077,6 +1069,43 @@ private fun WorkScheduleStep(viewModel: MainViewModel, ob: OnboardingUiState, la
             }
         }
     }
+}
+
+/**
+ * Tagesstunden-Slider im Look des Web-Range-Inputs: durchgehende
+ * 8dp-Spur ohne Thumb-Lücke/Stop-Punkt, runder 16dp-Emerald-Thumb.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun DayHoursSlider(minutes: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val colors = LocalAppColors.current
+    Slider(
+        value = minutes.toFloat(),
+        onValueChange = { onChange(it.toInt()) },
+        valueRange = 0f..720f,
+        thumb = {
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(Palette.Emerald500),
+            )
+        },
+        track = { sliderState ->
+            SliderDefaults.Track(
+                sliderState = sliderState,
+                modifier = Modifier.height(8.dp),
+                colors = SliderDefaults.colors(
+                    activeTrackColor = Palette.Emerald500,
+                    inactiveTrackColor = if (colors.isDark) Palette.Zinc700 else Palette.Zinc200,
+                ),
+                thumbTrackGapSize = 0.dp,
+                trackInsideCornerSize = 0.dp,
+                drawStopIndicator = null,
+            )
+        },
+        modifier = modifier.height(24.dp),
+    )
 }
 
 @Composable

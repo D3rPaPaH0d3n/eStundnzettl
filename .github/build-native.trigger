@@ -1,4 +1,4 @@
 Build-Anforderung für den "Build Native Debug APK"-Workflow.
 Diese Datei ändern + pushen = Debug-APK bauen.
 
-Letzte Anforderung: 2026-07-14 (Original-App-Icon)
+Letzte Anforderung: 2026-07-15 (Build auf Zuruf fuer Markus)

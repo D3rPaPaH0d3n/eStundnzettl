@@ -16,6 +16,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -77,6 +80,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -588,6 +593,24 @@ fun ReportScreen(viewModel: MainViewModel) {
                         modifier = Modifier
                             .fillMaxSize()
                             .background(Palette.Zinc800.copy(alpha = 0.5f))
+                            // Pinch-to-Zoom wie das Original: greift nur bei
+                            // zwei Fingern ein, Ein-Finger-Scrollen bleibt frei.
+                            .pointerInput(Unit) {
+                                awaitEachGesture {
+                                    awaitFirstDown(requireUnconsumed = false)
+                                    do {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        if (event.changes.count { it.pressed } >= 2) {
+                                            val zoomChange = event.calculateZoom()
+                                            if (zoomChange != 1f) {
+                                                userScale = (userScale * zoomChange)
+                                                    .coerceIn(ZOOM_MIN, ZOOM_MAX)
+                                            }
+                                            event.changes.forEach { it.consume() }
+                                        }
+                                    } while (event.changes.any { it.pressed })
+                                }
+                            }
                             .horizontalScroll(rememberScrollState()),
                     ) {
                         LazyColumn(

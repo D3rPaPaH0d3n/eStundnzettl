@@ -1,4 +1,1 @@
-Build-Anforderung für den "Build Native Debug APK"-Workflow.
-Diese Datei ändern + pushen = Debug-APK bauen.
-
-Letzte Anforderung: 2026-07-15 (Build auf Zuruf fuer Markus)
+2026-07-16T16:35:24Z 76c9a7e onboarding-restore

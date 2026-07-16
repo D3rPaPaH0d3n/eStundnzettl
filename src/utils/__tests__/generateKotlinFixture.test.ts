@@ -139,7 +139,7 @@ describe("generate kotlin fixtures", () => {
     const checksums: Record<string, { canonical: string; checksum: string | null }> = {};
     for (const [name, value] of Object.entries(edgeCases)) {
       checksums[name] = {
-        canonical: (await import("../storageBackup")).computeBackupChecksum ? "" : "",
+        canonical: "",
         checksum: await computeBackupChecksum(value as Record<string, unknown>),
       };
     }

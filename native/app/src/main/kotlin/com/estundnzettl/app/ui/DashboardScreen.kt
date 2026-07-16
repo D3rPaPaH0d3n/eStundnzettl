@@ -145,6 +145,7 @@ fun DashboardScreen(
                 text = t.t("dashboard.recentEntries"),
                 color = colors.textMuted,
                 fontSize = 14.sp,
+                lineHeight = 20.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 4.dp),
             )
@@ -248,6 +249,8 @@ private fun MonthStatsCard(
                         formatTime(stats.totalIst),
                         color = colors.textPrimary,
                         fontSize = 24.sp,
+                        // leading-none des Originals
+                        lineHeight = 24.sp,
                         fontWeight = FontWeight.Bold,
                     )
                 }
@@ -259,6 +262,7 @@ private fun MonthStatsCard(
                                 formatTime(stats.totalTarget),
                                 color = colors.textSecondary,
                                 fontSize = 14.sp,
+                                lineHeight = 20.sp,
                                 fontWeight = FontWeight.SemiBold,
                             )
                         }
@@ -268,6 +272,7 @@ private fun MonthStatsCard(
                                 formatSignedTime(overtime),
                                 color = if (overtime >= 0) colors.positive else colors.negative,
                                 fontSize = 20.sp,
+                                lineHeight = 20.sp,
                                 fontWeight = FontWeight.Bold,
                             )
                         }
@@ -326,6 +331,7 @@ private fun MonthStatsCard(
                         },
                         color = colors.textMuted,
                         fontSize = 12.sp,
+                        lineHeight = 16.sp,
                     )
                 } else {
                     Spacer(Modifier.width(1.dp))
@@ -339,6 +345,7 @@ private fun MonthStatsCard(
                                     t.t("dashboard.overtimeShort.extra"),
                                 color = colors.info,
                                 fontSize = 12.sp,
+                                lineHeight = 16.sp,
                                 fontWeight = FontWeight.Medium,
                             )
                         }
@@ -348,6 +355,7 @@ private fun MonthStatsCard(
                                     t.t("dashboard.overtimeShort.overtime"),
                                 color = colors.positive,
                                 fontSize = 12.sp,
+                                lineHeight = 16.sp,
                                 fontWeight = FontWeight.Medium,
                             )
                         }
@@ -436,6 +444,7 @@ private fun WeekGroup(
                     t.t("dashboard.calendarWeek").uppercase(),
                     color = colors.textMuted,
                     fontSize = 11.sp,
+                    lineHeight = 16.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp,
                 )
@@ -443,12 +452,15 @@ private fun WeekGroup(
                     Text(
                         t.t("dashboard.calendarWeekShort", "week" to week),
                         color = colors.textPrimary,
+                        fontSize = 16.sp,
+                        lineHeight = 24.sp,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
                         " (${formatShortDate(clippedMonday)} – ${formatShortDate(clippedSunday)})",
                         color = colors.textMuted,
                         fontSize = 12.sp,
+                        lineHeight = 16.sp,
                     )
                 }
                 Row(
@@ -460,6 +472,7 @@ private fun WeekGroup(
                         formatTime(workMinutes),
                         color = if (simpleMode) colors.textSecondary else totalColor,
                         fontSize = 14.sp,
+                        lineHeight = 20.sp,
                         fontWeight = FontWeight.Bold,
                     )
                     if (!simpleMode) {
@@ -467,6 +480,7 @@ private fun WeekGroup(
                             (if (diff >= 0) "+" else "-") + formatTime(kotlin.math.abs(diff)),
                             color = balanceColor,
                             fontSize = 14.sp,
+                            lineHeight = 20.sp,
                             fontWeight = FontWeight.Bold,
                         )
                         if (diff > 0 && (mehrarbeit > 0 || ueberstunden > 0)) {
@@ -474,13 +488,13 @@ private fun WeekGroup(
                                 if (mehrarbeit > 0) {
                                     Text(
                                         formatTime(mehrarbeit) + " " + t.t("dashboard.overtimeShort.extra"),
-                                        color = colors.info, fontSize = 10.sp,
+                                        color = colors.info, fontSize = 10.sp, lineHeight = 15.sp,
                                     )
                                 }
                                 if (ueberstunden > 0) {
                                     Text(
                                         formatTime(ueberstunden) + " " + t.t("dashboard.overtimeShort.overtime"),
-                                        color = colors.positive, fontSize = 10.sp,
+                                        color = colors.positive, fontSize = 10.sp, lineHeight = 15.sp,
                                     )
                                 }
                             }
@@ -584,12 +598,14 @@ private fun DayCard(
                     date.dayOfWeek.getDisplayName(TextStyle.SHORT, javaLocale).take(2),
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 11.sp,
+                    lineHeight = 16.sp,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
                     formatShortDate(date),
                     color = Color.White,
                     fontSize = 13.sp,
+                    lineHeight = 20.sp,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -625,12 +641,14 @@ private fun DayCard(
                     t.t("dashboard.total").uppercase(javaLocale),
                     color = colors.textFaint,
                     fontSize = 9.sp,
+                    lineHeight = 13.sp,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
                     formatTime(daySum),
                     color = colors.textPrimary,
                     fontSize = 14.sp,
+                    lineHeight = 20.sp,
                     fontWeight = FontWeight.Bold,
                 )
                 if (dayBalance != null && dayBalance != 0) {
@@ -638,6 +656,7 @@ private fun DayCard(
                         formatSignedTime(dayBalance),
                         color = if (dayBalance > 0) colors.positive else colors.negative,
                         fontSize = 9.sp,
+                        lineHeight = 11.sp,
                         fontWeight = FontWeight.Medium,
                     )
                 }
@@ -707,6 +726,7 @@ private fun EntryRow(
                     modifier = Modifier.weight(1f),
                 ) {
                     Row {
+                        // leading-none / leading-tight des Originals
                         Text(
                             timeLabel,
                             color = when {
@@ -715,6 +735,7 @@ private fun EntryRow(
                                 else -> colors.textPrimary
                             },
                             fontSize = 14.sp,
+                            lineHeight = 14.sp,
                             fontWeight = FontWeight.Bold,
                         )
                         if (pauseLabel.isNotEmpty()) {
@@ -722,6 +743,7 @@ private fun EntryRow(
                                 pauseLabel,
                                 color = colors.textPrimary.copy(alpha = 0.7f),
                                 fontSize = 14.sp,
+                                lineHeight = 14.sp,
                             )
                         }
                     }
@@ -730,18 +752,19 @@ private fun EntryRow(
                             entry.project!!,
                             color = colors.textSecondary,
                             fontSize = 14.sp,
+                            lineHeight = 17.5.sp,
                             fontWeight = FontWeight.Medium,
                         )
                     }
                     if (codeLabel.isNotEmpty()) {
-                        Text(codeLabel, color = colors.textMuted, fontSize = 12.sp)
+                        Text(codeLabel, color = colors.textMuted, fontSize = 12.sp, lineHeight = 15.sp)
                     }
                     if (!isHoliday) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier
-                                .padding(top = 2.dp)
+                                .padding(top = 4.dp)
                                 .clip(RoundedCornerShape(50))
                                 .background(colors.surfaceVariant)
                                 .clickable { onManageAttachments(entry) }
@@ -761,6 +784,7 @@ private fun EntryRow(
                                 },
                                 color = colors.textMuted,
                                 fontSize = 11.sp,
+                                lineHeight = 16.sp,
                                 fontWeight = FontWeight.Medium,
                             )
                         }
@@ -770,6 +794,7 @@ private fun EntryRow(
                     formatTime(entry.netDuration),
                     color = colors.textFaint,
                     fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 8.dp),
                 )
@@ -954,6 +979,7 @@ private fun StatLabel(text: String, colors: AppColors) {
         text = text.uppercase(),
         color = colors.textMuted,
         fontSize = 10.sp,
+        lineHeight = 15.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.sp,
     )

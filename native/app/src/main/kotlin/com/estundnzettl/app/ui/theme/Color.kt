@@ -38,9 +38,11 @@ object Palette {
     val Blue500 = Color(0xFF3B82F6)
     val Blue600 = Color(0xFF2563EB)
     val Purple400 = Color(0xFFC084FC)
+    val Purple500 = Color(0xFFA855F7)
     val Purple700 = Color(0xFF7E22CE)
     val Amber400 = Color(0xFFFBBF24)
     val Amber600 = Color(0xFFD97706)
+    val Yellow500 = Color(0xFFEAB308)
 
     // Tint-Flächen (…-50/…-900/20-Äquivalente)
     val Red50 = Color(0xFFFEF2F2)

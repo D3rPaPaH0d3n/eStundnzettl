@@ -37,4 +37,6 @@ data class OnboardingUiState(
     val customCalc: Boolean = false,
     /** Analysiertes Backup für den Restore-Flow. */
     val restoreData: BackupAnalysis? = null,
+    /** true während ein Restore-Backup geladen wird (GDrive/Nextcloud/Ordner). */
+    val restoreLoading: Boolean = false,
 )

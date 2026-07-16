@@ -1151,6 +1151,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private var pendingGoogleScope: String? = null
 
+    /** true → der nächste Consent-Callback gehört zum Onboarding-Restore. */
+    private var pendingGoogleRestore = false
+
     private suspend fun refreshGoogleState() {
         val backupEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL) ?: ""
         val pdfEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL) ?: ""
@@ -1192,11 +1195,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun onGoogleAuthResult(intent: android.content.Intent?) {
         val scope = pendingGoogleScope ?: return
         pendingGoogleScope = null
+        val forRestore = pendingGoogleRestore
+        pendingGoogleRestore = false
         viewModelScope.launch {
             val token = googleDrive.tokenFromResultIntent(intent)
             if (token != null) {
-                onGoogleConnected(scope, token)
+                if (forRestore) {
+                    finishGoogleDriveRestore(token)
+                } else {
+                    onGoogleConnected(scope, token)
+                }
             } else {
+                if (forRestore) updateOnboarding { it.copy(restoreLoading = false) }
                 emit(UiMessage("settings.backup.toast.gdriveCancelled"))
             }
         }
@@ -1353,17 +1363,142 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         updateOnboarding { it.copy(step = target) }
     }
 
-    /** Restore-Datei geladen: analysieren und in den Flow übernehmen. */
-    fun onboardingRestoreFromText(text: String) {
-        val analysis = backupRepo.analyze(text)
+    /**
+     * Backup-Inhalt analysieren und in den Flow übernehmen — gemeinsamer
+     * Kern der Restore-Quellen (Toast-Keys wie useOnboardingRestore.ts).
+     */
+    private fun applyRestoreContent(content: String, invalidKey: String, loadedKey: String): Boolean {
+        val analysis = backupRepo.analyze(content)
         if (!analysis.valid) {
-            emit(UiMessage("settings.toast.invalidBackup"))
-            return
+            emit(UiMessage(invalidKey))
+            return false
         }
         if (analysis.integrity == com.estundnzettl.core.backup.BackupIntegrity.MISMATCH) {
-            emit(UiMessage("settings.toast.integrityMismatch"))
+            emit(UiMessage("onboarding.toast.integrityMismatch"))
         }
+        emit(UiMessage(loadedKey))
         updateOnboarding { it.copy(restoreData = analysis, step = 7) }
+        return true
+    }
+
+    /** Restore-Datei geladen — Port von handleLocalFileRestore. */
+    fun onboardingRestoreFromText(text: String) {
+        applyRestoreContent(
+            text,
+            invalidKey = "onboarding.toast.backupInvalidFormat",
+            loadedKey = "onboarding.toast.backupLoaded",
+        )
+    }
+
+    /** Backup aus Google Drive laden — Port von handleGoogleDriveRestore. */
+    fun onboardingGoogleDriveRestore() {
+        viewModelScope.launch {
+            updateOnboarding { it.copy(restoreLoading = true) }
+            try {
+                val token = googleDrive.authorize(com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA)
+                finishGoogleDriveRestore(token)
+            } catch (e: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
+                val intent = e.pendingIntent
+                if (intent != null) {
+                    // Consent nötig — restoreLoading bleibt aktiv, bis der
+                    // Callback (onGoogleAuthResult) den Restore fortsetzt.
+                    pendingGoogleScope = com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA
+                    pendingGoogleRestore = true
+                    _googleAuthIntents.tryEmit(intent)
+                } else {
+                    updateOnboarding { it.copy(restoreLoading = false) }
+                    emit(UiMessage("settings.backup.toast.gdriveUnavailable"))
+                }
+            } catch (e: Exception) {
+                updateOnboarding { it.copy(restoreLoading = false) }
+                emit(UiMessage(e.message ?: "Google Drive Verbindung fehlgeschlagen", raw = true))
+            }
+        }
+    }
+
+    /** Autorisiert: neuestes Drive-Backup herunterladen und übernehmen. */
+    private suspend fun finishGoogleDriveRestore(token: String) {
+        try {
+            // Konto wie im Original nach dem Sign-in merken (Anzeige-Status;
+            // die Sync-Flags kommen aus dem Backup selbst).
+            val email = googleDrive.fetchAccountEmail(token)
+            settings.setString(
+                com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL,
+                email.ifEmpty { "Google" },
+            )
+            refreshGoogleState()
+
+            val content = googleDrive.downloadLatestBackup(token)
+            if (content == null) {
+                emit(UiMessage("onboarding.toast.backupNotFound"))
+                return
+            }
+            applyRestoreContent(
+                content,
+                invalidKey = "onboarding.toast.backupInvalid",
+                loadedKey = "onboarding.toast.backupLoaded",
+            )
+        } catch (e: Exception) {
+            emit(UiMessage(e.message ?: "Google Drive Verbindung fehlgeschlagen", raw = true))
+        } finally {
+            updateOnboarding { it.copy(restoreLoading = false) }
+        }
+    }
+
+    /** Nach erfolgreichem NC-Login im Restore-Flow: Backup vom Server laden. */
+    fun onboardingNextcloudRestore() {
+        viewModelScope.launch {
+            updateOnboarding { it.copy(restoreLoading = true) }
+            try {
+                val creds = nextcloudManager.getCredentials()
+                if (creds == null) {
+                    emit(UiMessage("onboarding.toast.ncLoginFailed"))
+                    return@launch
+                }
+                val content = com.estundnzettl.app.data.NextcloudClient
+                    .downloadBackup(creds.url, creds.user, creds.appPassword)
+                if (content == null) {
+                    emit(UiMessage("onboarding.toast.ncRestoreNotFound"))
+                    return@launch
+                }
+                applyRestoreContent(
+                    content,
+                    invalidKey = "onboarding.toast.ncRestoreInvalid",
+                    loadedKey = "onboarding.toast.ncRestoreLoaded",
+                )
+            } catch (e: Exception) {
+                emit(UiMessage(e.message ?: "Nextcloud-Restore fehlgeschlagen", raw = true))
+            } finally {
+                updateOnboarding { it.copy(restoreLoading = false) }
+            }
+        }
+    }
+
+    /** Backup aus dem internen App-Ordner — Port von handleFolderRestore. */
+    fun onboardingFolderRestore() {
+        viewModelScope.launch {
+            updateOnboarding { it.copy(restoreLoading = true) }
+            try {
+                val file = java.io.File(
+                    getApplication<android.app.Application>().filesDir,
+                    "${com.estundnzettl.app.data.NextcloudClient.BACKUP_FOLDER}/" +
+                        com.estundnzettl.app.data.NextcloudClient.BACKUP_FILENAME,
+                )
+                if (!file.exists()) {
+                    emit(UiMessage("onboarding.toast.backupNotFound"))
+                    return@launch
+                }
+                applyRestoreContent(
+                    file.readText(),
+                    invalidKey = "onboarding.toast.backupInvalidShort",
+                    loadedKey = "onboarding.toast.backupLoaded",
+                )
+            } catch (_: Exception) {
+                emit(UiMessage("onboarding.toast.folderAccessError"))
+            } finally {
+                updateOnboarding { it.copy(restoreLoading = false) }
+            }
+        }
     }
 
     /** Abschluss — Port von finishSetup (ohne Cloud-Ziele, siehe Phase 5). */

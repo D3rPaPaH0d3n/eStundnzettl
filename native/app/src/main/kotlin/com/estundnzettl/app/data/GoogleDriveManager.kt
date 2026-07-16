@@ -43,6 +43,9 @@ class GoogleDriveManager(
         const val KEY_ACCOUNT_EMAIL = "gdrive_account_email"
         const val KEY_PDF_ACCOUNT_EMAIL = "gdrive_pdf_account_email"
         private const val ARCHIVE_FOLDER_NAME = "eStundnzettl Archiv"
+
+        /** Dateiname vor dem Rebranding — BACKUP_CONFIG.LEGACY_FILENAME. */
+        const val LEGACY_BACKUP_FILENAME = "kogler_backup.json"
     }
 
     class AuthRequiredException(val pendingIntent: PendingIntent?) :
@@ -165,6 +168,14 @@ class GoogleDriveManager(
                 )
             }
         }
+
+    /**
+     * Neuestes Backup aus dem appDataFolder laden — Port von
+     * findLatestBackupFile inkl. Legacy-Dateinamen-Fallback.
+     */
+    suspend fun downloadLatestBackup(token: String): String? =
+        downloadBackup(token, NextcloudClient.BACKUP_FILENAME)
+            ?: downloadBackup(token, LEGACY_BACKUP_FILENAME)
 
     /** Backup aus dem appDataFolder laden — null wenn keines existiert. */
     suspend fun downloadBackup(token: String, fileName: String): String? = withContext(Dispatchers.IO) {

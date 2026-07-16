@@ -44,10 +44,13 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
@@ -56,7 +59,6 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material.icons.outlined.UploadFile
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material.icons.outlined.Work
@@ -1304,7 +1306,7 @@ private fun BackupStep(viewModel: MainViewModel, ob: OnboardingUiState) {
     )
 
     if (ob.isRestoreFlow) {
-        RestoreOptions(viewModel)
+        RestoreOptions(viewModel, ob)
     } else {
         BackupSetupOptions(viewModel, ob)
     }
@@ -1543,13 +1545,27 @@ private fun BackupOptionCard(
     }
 }
 
-/** Restore-Quellen im Wiederherstellungs-Flow. */
+/** Restore-Quellen im Wiederherstellungs-Flow — GDrive/Nextcloud/Ordner/Datei. */
 @Composable
-private fun RestoreOptions(viewModel: MainViewModel) {
+private fun RestoreOptions(viewModel: MainViewModel, ob: OnboardingUiState) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val state by viewModel.state.collectAsState()
+    val nextcloud = state.nextcloud
+    var ncPanelOpen by remember { mutableStateOf(false) }
+    var ncUrl by remember { mutableStateOf("") }
+    var ncRestoreRequested by remember { mutableStateOf(false) }
+
+    // Login-Flow abgeschlossen → Backup direkt vom Server laden
+    LaunchedEffect(nextcloud.connected) {
+        if (nextcloud.connected && ncRestoreRequested) {
+            ncRestoreRequested = false
+            ncPanelOpen = false
+            viewModel.onboardingNextcloudRestore()
+        }
+    }
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -1567,6 +1583,151 @@ private fun RestoreOptions(viewModel: MainViewModel) {
         }
     }
 
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        RestoreSourceRow(
+            icon = Icons.Outlined.Cloud,
+            tint = Palette.Blue500,
+            label = t.t("onboarding.backup.restoreFromGdrive"),
+            enabled = !ob.restoreLoading,
+            loading = ob.restoreLoading,
+        ) { viewModel.onboardingGoogleDriveRestore() }
+
+        RestoreSourceRow(
+            icon = Icons.Outlined.Cloud,
+            tint = Palette.Orange500,
+            label = t.t("onboarding.backup.restoreFromNextcloud"),
+            enabled = !ob.restoreLoading,
+        ) {
+            if (nextcloud.connected) {
+                viewModel.onboardingNextcloudRestore()
+            } else {
+                ncPanelOpen = !ncPanelOpen
+            }
+        }
+
+        if (ncPanelOpen && !nextcloud.connected) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (colors.isDark) Palette.Orange500.copy(alpha = 0.08f) else Palette.Orange50.copy(alpha = 0.5f))
+                    .border(
+                        1.dp,
+                        if (colors.isDark) Palette.Orange500.copy(alpha = 0.4f) else Palette.Orange100,
+                        RoundedCornerShape(12.dp),
+                    )
+                    .padding(12.dp),
+            ) {
+                if (nextcloud.connecting) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                    ) {
+                        CircularProgressIndicator(
+                            color = Palette.Orange500,
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Text(
+                            t.t("onboarding.backup.nextcloud.awaiting"),
+                            color = colors.textSecondary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Text(
+                            t.t("common.cancel"),
+                            color = colors.textSecondary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, colors.border, RoundedCornerShape(8.dp))
+                                .clickable {
+                                    ncRestoreRequested = false
+                                    viewModel.cancelNextcloudConnect()
+                                }
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                        )
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = ncUrl,
+                        onValueChange = { ncUrl = it },
+                        placeholder = { Text(t.t("onboarding.backup.nextcloud.urlPlaceholder"), fontSize = 13.sp) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        t.t("onboarding.backup.nextcloud.connectButton"),
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Palette.Orange500)
+                            .clickable {
+                                val serverUrl = ncUrl.trim()
+                                if (serverUrl.isNotEmpty()) {
+                                    scope.launch {
+                                        try {
+                                            val loginUrl = viewModel.nextcloudInitiate(serverUrl)
+                                            ncRestoreRequested = true
+                                            CustomTabsIntent.Builder().build()
+                                                .launchUrl(context, Uri.parse(loginUrl))
+                                        } catch (e: Exception) {
+                                            viewModel.showRawMessage(
+                                                t.t(
+                                                    "settings.backup.toast.nextcloudLoginFailedWith",
+                                                    "message" to (e.message ?: ""),
+                                                ),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(vertical = 8.dp),
+                    )
+                }
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            RestoreGridCell(
+                icon = Icons.Outlined.FolderOpen,
+                tint = Palette.Yellow500,
+                label = t.t("onboarding.backup.restoreFromFolder"),
+                enabled = !ob.restoreLoading,
+                modifier = Modifier.weight(1f),
+            ) { viewModel.onboardingFolderRestore() }
+
+            RestoreGridCell(
+                icon = Icons.Outlined.Upload,
+                tint = Palette.Purple500,
+                label = t.t("onboarding.backup.restoreFromFile"),
+                enabled = !ob.restoreLoading,
+                modifier = Modifier.weight(1f),
+            ) { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }
+        }
+    }
+}
+
+/** Restore-Zeile in voller Breite (GDrive/Nextcloud). */
+@Composable
+private fun RestoreSourceRow(
+    icon: ImageVector,
+    tint: Color,
+    label: String,
+    enabled: Boolean,
+    loading: Boolean = false,
+    onClick: () -> Unit,
+) {
+    val colors = LocalAppColors.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -1574,7 +1735,7 @@ private fun RestoreOptions(viewModel: MainViewModel) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .border(1.dp, colors.border, RoundedCornerShape(12.dp))
-            .clickable { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(12.dp),
     ) {
         Box(
@@ -1584,16 +1745,47 @@ private fun RestoreOptions(viewModel: MainViewModel) {
                 .background(colors.surface)
                 .padding(8.dp),
         ) {
-            Icon(
-                Icons.Outlined.UploadFile, contentDescription = null,
-                tint = Palette.Purple400, modifier = Modifier.size(18.dp),
-            )
+            if (loading) {
+                CircularProgressIndicator(
+                    color = colors.textFaint,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(18.dp),
+                )
+            } else {
+                Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
+            }
         }
+        Text(label, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+    }
+}
+
+/** Halbbreite Restore-Zelle (Ordner/Datei) im Zweier-Grid. */
+@Composable
+private fun RestoreGridCell(
+    icon: ImageVector,
+    tint: Color,
+    label: String,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val colors = LocalAppColors.current
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(12.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
         Text(
-            t.t("onboarding.backup.restoreFromFile"),
-            color = colors.textPrimary,
+            label,
+            color = colors.textSecondary,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
+            textAlign = TextAlign.Center,
         )
     }
 }

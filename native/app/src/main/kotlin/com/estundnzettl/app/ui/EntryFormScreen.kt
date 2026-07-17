@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
@@ -455,6 +456,7 @@ fun EntryFormScreen(
                                         t.t("entryForm.pauseMinutes", "minutes" to 30)
                                     },
                                     selected = form.pauseDuration > 0,
+                                    withChevron = true,
                                     modifier = Modifier.weight(1f),
                                 ) { showPausePicker = true }
                             }
@@ -751,15 +753,13 @@ private fun PauseButton(
     label: String,
     selected: Boolean,
     modifier: Modifier = Modifier,
+    withChevron: Boolean = false,
     onClick: () -> Unit,
 ) {
     val colors = LocalAppColors.current
-    Text(
-        text = label,
-        color = if (selected) colors.accent else colors.textMuted,
-        fontSize = 14.sp,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(if (selected) colors.accent.copy(alpha = 0.08f) else colors.surface)
@@ -770,5 +770,22 @@ private fun PauseButton(
             )
             .clickable(onClick = onClick)
             .padding(vertical = 14.dp),
-    )
+    ) {
+        Text(
+            text = label,
+            color = if (selected) colors.accent else colors.textMuted,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+        )
+        if (withChevron) {
+            // Dropdown-Pfeil wie das Original (öffnet den Dauer-Picker)
+            Icon(
+                Icons.Filled.KeyboardArrowDown,
+                contentDescription = null,
+                tint = if (selected) colors.accent else colors.textMuted,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+    }
 }

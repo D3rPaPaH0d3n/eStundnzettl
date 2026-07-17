@@ -140,7 +140,7 @@ fun DashboardScreen(
             onOpenPicker = { monthPickerOpen = true },
         )
 
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 text = t.t("dashboard.recentEntries"),
                 color = colors.textMuted,
@@ -427,8 +427,8 @@ private fun WeekGroup(
     // Tage gruppieren, absteigend
     val sortedDays = visibleEntries.groupBy { it.date }.entries.sortedByDescending { it.key }
 
-    // mb-3 der Original-Wochen: ergibt zusammen mit dem Listen-Gap 24dp
-    Column(modifier = Modifier.padding(bottom = 12.dp)) {
+    // Der Abstand zwischen Wochen kommt zentral aus der umgebenden Liste.
+    Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

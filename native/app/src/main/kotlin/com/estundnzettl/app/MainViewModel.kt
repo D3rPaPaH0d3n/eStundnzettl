@@ -9,6 +9,7 @@ import com.estundnzettl.app.data.EntryIdGenerator
 import com.estundnzettl.app.data.SettingsRepository
 import com.estundnzettl.app.data.WorkCodesRepository
 import com.estundnzettl.app.i18n.I18n
+import com.estundnzettl.app.ui.Haptics
 import com.estundnzettl.core.calc.AppData
 import com.estundnzettl.core.calc.EntryFormInput
 import com.estundnzettl.core.calc.SaveEntryResult
@@ -41,7 +42,11 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.Locale as JavaLocale
+
+internal fun autoCheckoutDays(startDate: LocalDate, today: LocalDate): Int =
+    ChronoUnit.DAYS.between(startDate, today).toInt().coerceAtLeast(1)
 
 /** Formular-Zustand — Port von useFormState. */
 data class FormUiState(
@@ -68,11 +73,15 @@ data class TimerUiState(
 )
 
 /** One-shot Toast-Nachricht (i18n-Key + Argumente, oder bereits übersetzter Text). */
+enum class UiMessageTone { AUTO, SUCCESS, INFO, WARNING, ERROR }
+
 data class UiMessage(
     val key: String,
     val args: List<Pair<String, Any?>> = emptyList(),
     /** true = `key` ist bereits der fertige Anzeigetext. */
     val raw: Boolean = false,
+    /** AUTO ordnet zentrale Standardmeldungen anhand von Key und Text ein. */
+    val tone: UiMessageTone = UiMessageTone.AUTO,
 )
 
 data class MainUiState(
@@ -470,6 +479,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val start = LocalDateTime.ofInstant(Instant.parse(timer.startTime), ZoneId.systemDefault())
             val today = LocalDate.now()
             if (start.toLocalDate() != today) {
+                val daysMissed = autoCheckoutDays(start.toLocalDate(), today)
                 val pauseMinutes = Math.round(timer.accumulatedPause / 1000.0 / 60.0).toInt()
                 persistTimer(TimerUiState())
                 _state.value = _state.value.copy(
@@ -485,6 +495,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         isLiveEntry = true,
                     ),
                     view = "add",
+                )
+                Haptics.heavy(getApplication())
+                emit(
+                    UiMessage(
+                        key = "toasts.autoCheckout",
+                        args = listOf("count" to daysMissed),
+                        tone = UiMessageTone.WARNING,
+                    )
                 )
             }
         }

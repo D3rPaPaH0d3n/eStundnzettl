@@ -12,7 +12,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -26,8 +33,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.rememberCoroutineScope
@@ -87,7 +97,15 @@ class MainActivity : ComponentActivity() {
                     viewModel.messages.collect { message ->
                         val text = if (message.raw) message.key
                         else i18n.t(message.key, *message.args.toTypedArray())
-                        snackbarHostState.showSnackbar(text)
+                        val tone = resolveToastTone(message, text)
+                        snackbarHostState.showSnackbar(
+                            message = tone.name + TOAST_SEPARATOR + text,
+                            duration = when (tone) {
+                                UiMessageTone.ERROR, UiMessageTone.WARNING ->
+                                    androidx.compose.material3.SnackbarDuration.Long
+                                else -> androidx.compose.material3.SnackbarDuration.Short
+                            },
+                        )
                     }
                 }
 
@@ -118,8 +136,123 @@ class MainActivity : ComponentActivity() {
                     androidx.compose.material3.SnackbarHost(
                         hostState = snackbarHostState,
                         modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 96.dp),
+                            .align(Alignment.TopCenter)
+                            .padding(
+                                top = if (state.onboarding.active) 72.dp else 136.dp,
+                                start = 16.dp,
+                                end = 16.dp,
+                            ),
+                    ) { snackbarData ->
+                        AppToast(snackbarData)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Schwebende App-Meldung statt der Material-Standard-Snackbar.
+ * Sie sitzt unter dem dunklen Header und damit weder über dem FAB noch
+ * direkt auf der Android-Navigationsleiste.
+ */
+private const val TOAST_SEPARATOR = "\u001F"
+
+internal fun resolveToastTone(message: UiMessage, displayText: String): UiMessageTone {
+    if (message.tone != UiMessageTone.AUTO) return message.tone
+    val source = (message.key + " " + displayText).lowercase()
+    return when {
+        listOf(
+            "error", "failed", "failure", "invalid", "mismatch", "unavailable",
+            "fehler", "fehlgeschlagen", "ungültig", "konnte nicht", "nicht verfügbar",
+        ).any(source::contains) -> UiMessageTone.ERROR
+
+        listOf(
+            "warning", "required", "overlap", "startequalsend", "timeout", "cancelled",
+            "selectfile", "selecttarget", "connectfirst", "disabled", "notfound", "notrun",
+            "warnung", "erforderlich", "überschneid", "auswählen", "abgebrochen",
+            "nicht gefunden", "zuerst verbinden", "deaktiviert", "entsperr",
+        ).any(source::contains) -> UiMessageTone.WARNING
+
+        displayText.contains("✅") || listOf(
+            "success", "saved", "updated", "deleted", "connected", "completed", "imported",
+            "loaded", "started", "captured", "applied", "activated", "recalcallcorrect", "testok",
+            "erfolgreich", "gespeichert", "aktualisiert", "gelöscht", "verbunden",
+            "abgeschlossen", "importiert", "geladen", "gestartet", "übernommen", "aktiviert",
+        ).any(source::contains) -> UiMessageTone.SUCCESS
+
+        else -> UiMessageTone.INFO
+    }
+}
+
+@Composable
+private fun AppToast(snackbarData: androidx.compose.material3.SnackbarData) {
+    val colors = LocalAppColors.current
+    val encoded = snackbarData.visuals.message
+    val toneName = encoded.substringBefore(TOAST_SEPARATOR)
+    val message = encoded.substringAfter(TOAST_SEPARATOR, encoded)
+    val tone = runCatching { UiMessageTone.valueOf(toneName) }.getOrDefault(UiMessageTone.INFO)
+    val tint = when (tone) {
+        UiMessageTone.SUCCESS -> colors.positive
+        UiMessageTone.WARNING -> com.estundnzettl.app.ui.theme.Palette.Amber600
+        UiMessageTone.ERROR -> colors.danger
+        else -> colors.info
+    }
+    val icon = when (tone) {
+        UiMessageTone.SUCCESS -> androidx.compose.material.icons.Icons.Outlined.CheckCircle
+        UiMessageTone.WARNING -> androidx.compose.material.icons.Icons.Outlined.WarningAmber
+        UiMessageTone.ERROR -> androidx.compose.material.icons.Icons.Outlined.ErrorOutline
+        else -> androidx.compose.material.icons.Icons.Outlined.Info
+    }
+    androidx.compose.material3.Surface(
+        color = colors.surface,
+        contentColor = colors.textPrimary,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, tint.copy(alpha = 0.4f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .widthIn(max = 520.dp)
+            .shadow(
+                elevation = 12.dp,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                clip = false,
+            )
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp)),
+    ) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(tint.copy(alpha = 0.14f))
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                androidx.compose.material3.Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Text(
+                text = message,
+                color = colors.textPrimary,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                modifier = Modifier.weight(1f),
+            )
+            if (tone == UiMessageTone.ERROR || tone == UiMessageTone.WARNING) {
+                androidx.compose.material3.IconButton(onClick = snackbarData::dismiss) {
+                    androidx.compose.material3.Icon(
+                        androidx.compose.material.icons.Icons.Outlined.Close,
+                        contentDescription = LocalI18n.current.t("common.close"),
+                        tint = colors.textMuted,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }

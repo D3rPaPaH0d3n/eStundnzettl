@@ -184,63 +184,84 @@
     "title": "Anleitung & Hilfe",
     "subtitle": "Dein Wegweiser durch den eStundnzettl",
     "intro": {
-      "badge": "Servus und herzlich willkommen!",
-      "body": "Schluss mit der Zettelwirtschaft! Mit dem eStundnzettl erfasst du deine Arbeitszeiten, Fahrten, Urlaub und mehr direkt am Handy. Am Monatsende erstellst du mit einem Tipp ein sauberes PDF."
+      "badge": "Servus, schön dass d' da bist!",
+      "body": "Mit dem eStundnzettl schreibst du deine Arbeitszeit direkt am Handy auf. Am Monatsende macht die App daraus einen sauberen Stundenzettel. Ka Hexerei: Geh die Punkte einfach der Reihe nach durch — du kannst dabei nichts kaputtmachen."
+    },
+    "firstSteps": {
+      "title": "Zuerst: Wo ist was?",
+      "addTitle": "Grüner Plus-Knopf = neuer Eintrag",
+      "addBody": "Der runde grüne Knopf unten rechts ist dein wichtigster Knopf. Kurz antippen öffnet ein Formular, in das du deine Arbeitszeit einträgst.",
+      "reportTitle": "Blatt-Symbol = Stundenzettel",
+      "reportBody": "Oben rechts öffnest du die Vorschau. Dort kontrollierst du deine Stunden und verschickst später das fertige PDF.",
+      "settingsTitle": "Zahnrad = Einstellungen",
+      "settingsBody": "Hier stehen dein Name, deine Arbeitszeiten, Backups und das Aussehen der App. Karten mit einem Pfeil kannst du antippen und aufklappen.",
+      "gestureHint": "<b>Kurz tippen</b> heißt: einmal antippen und gleich wieder loslassen. <b>Gedrückt halten</b> heißt: Finger ungefähr eine Sekunde liegen lassen. <b>Wischen</b> heißt: Finger auflegen und über den Bildschirm ziehen."
     },
     "step1": {
-      "title": "Stunden erfassen",
-      "lead": "Du hast zwei Wege, deine Stunden einzutragen:",
-      "timerTitle": "Live-Timer",
-      "timerBody": "Halte den <plus>+</plus> Button unten rechts lange gedrückt und wische nach oben. Der Timer läuft, bis du ihn mit einem Tipp stoppst. Die App trägt dann Start, Ende und Dauer automatisch ein.",
-      "manualTitle": "Manuell eintragen",
-      "manualBody": "Tipp auf den <plus>+</plus> Button. Wähle Start- und Endzeit, Pause und Projekt. Mit <b>\"Wie zuletzt\"</b> übernimmst du die Zeiten vom Vortag — praktisch bei gleichbleibenden Arbeitszeiten!"
+      "title": "Stunden eintragen",
+      "lead": "Zwei Wege führen zum Ziel — such dir den aus, der dir taugt:",
+      "timerTitle": "Live-Timer (mitlaufen lassen)",
+      "timerBody": "In der Früh: Leg den Finger auf den grünen <plus>+</plus> Knopf, lass ihn kurz dort und schieb ihn nach oben. Sobald der Timer erscheint, kannst du loslassen. Am Feierabend tippst du den Timer an und bestätigst das Ende. Die App trägt Start, Ende und Dauer ein.",
+      "manualTitle": "Von Hand (nachtragen)",
+      "manualBody": "Tipp den <plus>+</plus> Knopf einmal kurz an. Wähle zuerst die Art des Eintrags, dann Start, Ende und Pause. Zum Schluss unten auf <b>„Speichern“</b> tippen. <b>„Wie zuletzt“</b> übernimmt die Zeiten deines letzten Eintrags."
     },
     "step2": {
       "title": "Fahrtzeiten",
-      "lead": "Wähle beim Erstellen eines Eintrags oben den Typ <b>\"Fahrt\"</b>.",
-      "arrival": "<b>An/Abreise:</b> Bezahlte Arbeitszeit — zählt zum Tagessoll.",
-      "drive": "<b>Fahrtzeit:</b> Unbezahlte Wegzeit — wird separat ausgewiesen."
+      "lead": "Beim Eintragen oben den Typ <b>„Fahrt“</b> wählen — dann gibt's zwei Sorten:",
+      "arrival": "<b>An/Abreise:</b> Zählt als bezahlte Arbeitszeit — geht ins Tagessoll.",
+      "drive": "<b>Fahrtzeit:</b> Unbezahlte Wegzeit — steht extra am Stundenzettel."
     },
     "step3": {
       "title": "Urlaub, Krank & ZA",
-      "body": "Wähle einfach <b>Urlaub</b>, <b>Krank</b> oder <b>ZA</b> (Zeitausgleich). Die App rechnet automatisch die richtigen Soll-Stunden für den Tag ein. Du kannst auch manuell Zeiten eingeben, wenn nötig."
+      "body": "Einfach beim Eintragen <b>Urlaub</b>, <b>Krank</b> oder <b>ZA</b> (Zeitausgleich) auswählen — mehr brauchst du nicht. Die App rechnet die Soll-Stunden für den Tag automatisch richtig, und dein Resturlaub steht gleich am Monats-PDF. Wenn's sein muss, kannst du auch eigene Zeiten eingeben."
     },
     "step4": {
       "title": "Dokumente anhängen",
-      "body": "Zu jedem Eintrag kannst du Fotos oder Dateien anhängen — z.B. Regiescheine, Lieferscheine oder Arbeitsberichte. Tipp auf <b>\"Dokumente\"</b> beim Eintrag. Die Anhänge werden beim PDF-Export automatisch mitgeliefert."
+      "body": "Regieschein, Lieferschein oder Foto von der Baustelle: Öffne den Eintrag und tipp auf <b>„Dokumente“</b>. Danach wählst du ein Foto oder eine Datei vom Handy aus. Beim PDF-Export kannst du die Anhänge mitgeben — da geht nix verloren."
     },
     "step5": {
       "title": "Monatsabschluss & PDF",
-      "preview": "Tipp oben rechts auf das <icon/> Symbol. Dort siehst du eine Vorschau deines Stundenzettels — nach Monat oder Woche filterbar.",
-      "share": "Prüfen, dann als <b>PDF teilen</b> — per Mail, WhatsApp, oder einfach lokal speichern. Fertig!"
+      "preview": "Tipp oben rechts auf das grüne <icon/> Symbol. Da siehst du deinen fertigen Stundenzettel als Vorschau — nach Monat oder Kalenderwoche gefiltert. Mit zwei Fingern zoomst du rein, und übers Sprechblasen-Symbol gibst du bei Bedarf noch eine Notiz für den Chef dazu.",
+      "share": "Passt alles? Dann auf <b>„Senden“</b> — per Mail, WhatsApp oder als Datei speichern. Und fertig ist der Monat!"
     },
     "step6": {
-      "title": "Backup & Datensicherung",
-      "lead": "Deine Daten sind wertvoll — sicher sie ab!",
+      "title": "Backup — sicher ist sicher",
+      "lead": "Handy kaputt oder verloren — und die Stunden weg? Na sicher nicht! Schalt dir eine automatische Sicherung ein, das dauert keine Minute:",
       "gdriveTitle": "Google Drive",
-      "gdriveBody": "Verbinde dein Google-Konto in den Einstellungen. Die App sichert täglich automatisch in die Cloud.",
+      "gdriveBody": "In den Einstellungen unter „Backup & Export“ dein Google-Konto verbinden — ab dann sichert die App jeden Tag von selbst in deine Cloud. Am neuen Handy tippst du beim Start einfach auf „Ich hab schon ein Backup“, und alles ist wieder da.",
       "localTitle": "Lokales Backup",
-      "localBody": "Wähle einen Ordner auf deinem Gerät. Die App sichert täglich dorthin — ganz ohne Internet."
+      "localBody": "Geht auch ohne Internet: Wähle einmal einen Backup-Ordner auf deinem Handy. Wichtig: Bei Verlust des Handys ist auch dieser Ordner weg — für diesen Fall ist Google Drive oder Nextcloud sicherer."
     },
     "step7": {
       "title": "Hausmasta-Modus",
-      "lead": "Für Profis, die mehr wollen! Aktiviere den <b>Hausmasta-Modus</b> ganz unten in den Einstellungen. Damit werden zusätzliche Funktionen sichtbar — Tätigkeitscodes findest du unabhängig davon direkt in der Erfassung:",
-      "nextcloud": "<b>Nextcloud-Backup</b> — für deine eigene Cloud",
-      "jsonIO": "<b>JSON Import/Export</b> — Daten manuell sichern",
-      "pdfArchive": "<b>PDF-Archiv</b> — automatische monatliche PDF-Sicherung",
-      "codes": "<b>Tätigkeitscodes</b> — Branchen-Presets oder eigene Codes, auch ohne Hausmasta-Modus",
-      "recordOnly": "<b>Nur Aufzeichnung</b> — ohne Soll/Ist-Berechnung"
+      "lead": "Für alle, die's genauer wissen wollen: Aktivier ganz unten in den Einstellungen die <b>Erweiterten Einstellungen</b> — bei uns liebevoll Hausmasta-Modus genannt. Dann kommen die Profi-Werkzeuge zum Vorschein:",
+      "nextcloud": "<b>Nextcloud-Backup</b> — Sicherung in deine eigene Cloud",
+      "jsonIO": "<b>Import & Export</b> — Daten als Datei sichern und zurückholen",
+      "pdfArchive": "<b>PDF-Archiv</b> — legt automatisch jedes Monat ein PDF ab, für die gesetzliche Aufbewahrung",
+      "codes": "<b>Tätigkeitscodes</b> — Kürzel für Arbeiten, zum Beispiel M für Montage; sie sind auch ohne Hausmasta in den Einstellungen erreichbar",
+      "recordOnly": "<b>Nur Aufzeichnung</b> — Stunden notieren ganz ohne Soll/Ist-Rechnerei"
+    },
+    "newFeatures": {
+      "title": "Gut zu wissen — neu & praktisch",
+      "nightTitle": "Nachtschicht über Mitternacht",
+      "nightBody": "Du kannst zum Beispiel 22:00 bis 06:00 eintragen. Die App versteht von selbst, dass 06:00 am nächsten Morgen gemeint ist. Das kleine ⁺¹ neben der Endzeit erinnert dich daran.",
+      "materialTitle": "Farben passend zu deinem Handy",
+      "materialBody": "Unter <b>Einstellungen → Darstellung</b> kannst du Material You einschalten. Dann übernimmt die App Farben von deinem Android-Handy. Das ändert nur das Aussehen, nicht deine Daten.",
+      "tourTitle": "Die App kann dir alles zeigen",
+      "tourBody": "Beim ersten Start markieren kleine Hinweise die wichtigen Knöpfe. In den Einstellungen gibt es ebenfalls eine Führung. Tippe auf <b>„Weiter“</b>, bis du fertig bist — dabei wird nichts verstellt.",
+      "restoreTitle": "Umzug auf ein neues Handy",
+      "restoreBody": "Wähle beim Einrichten <b>„Ich hab schon ein Backup“</b>. Ein vollständiges Backup bringt Einträge, Name, Einstellungen, Tätigkeitscodes und Anhänge zurück. Lies die Zusammenfassung, bevor du bestätigst."
     },
     "tips": {
       "title": "Tipps & Tricks",
       "deleteTitle": "Löschen",
-      "deleteBody": "Wisch einen Eintrag nach <b>links</b> zum Löschen.",
+      "deleteBody": "Finger auf einen Eintrag legen und nach <b>links ziehen</b>. Vor dem Löschen fragt die App noch einmal nach.",
       "editTitle": "Bearbeiten",
-      "editBody": "Tipp auf einen Eintrag, um ihn zu <b>bearbeiten</b>.",
+      "editBody": "Einfach auf einen Eintrag <b>tippen</b> und ändern.",
       "autoBackupTitle": "Auto-Backup",
-      "autoBackupBody": "Einmal verbunden, sichert die App <b>täglich automatisch</b>.",
+      "autoBackupBody": "Einmal verbunden, sichert die App <b>täglich von selbst</b>. Du brauchst nix mehr tun.",
       "themeTitle": "Design",
-      "themeBody": "Hell, Dunkel oder <b>System</b> — in den Einstellungen wählbar."
+      "themeBody": "Hell, dunkel oder wie's Handy mag — stellst du unter <b>Darstellung</b> ein."
     },
     "tagline": "\"Damit ka Stund verloren geht!\""
   },
@@ -456,6 +477,8 @@
       "failed": "Backup fehlgeschlagen"
     },
     "autoCheckout": "⚠️ Automatisch ausgestempelt! Bitte prüfen.",
+    "autoCheckout_one": "Der Timer war noch von gestern aktiv und wurde automatisch um 23:59 beendet. Bitte kontrolliere den Eintrag.",
+    "autoCheckout_other": "Der Timer lief seit {{count}} Tagen weiter und wurde am Starttag automatisch um 23:59 beendet. Bitte kontrolliere den Eintrag.",
     "export": {
       "exporting": "Exportiere Daten...",
       "success": "📤 Export erfolgreich!",
@@ -687,6 +710,7 @@
       "companyPlaceholder": "Firmenname GmbH",
       "positionLabel": "Position / Job",
       "positionPlaceholder": "Monteur",
+      "editHint": "Antippen zum Bearbeiten",
       "toastPhotoUpdated": "Profilbild aktualisiert",
       "toastPhotoError": "Fehler beim Bild",
       "toastPhotoRemoved": "Bild entfernt"

@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
@@ -54,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.asImageBitmap
@@ -106,7 +108,7 @@ fun SettingsScreen(
             .fillMaxSize()
             .verticalScroll(scrollState)
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(Modifier.tourSection("profile")) { ProfileSection(viewModel) }
         Box(Modifier.tourSection("recording")) { RecordingModeSection(viewModel) }
@@ -146,7 +148,7 @@ fun SettingsScreen(
         // Footer — eine Box würde sie übereinander stapeln.
         Column(
             modifier = Modifier.tourSection("help-card"),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             AppInfoSection(viewModel)
         }
@@ -164,6 +166,7 @@ private fun ProfileSection(viewModel: MainViewModel) {
     val t = LocalI18n.current
     val context = LocalContext.current
     val userData = state.userData ?: com.estundnzettl.core.model.UserData()
+    var expanded by rememberSaveable { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -180,21 +183,20 @@ private fun ProfileSection(viewModel: MainViewModel) {
     }
 
     com.estundnzettl.app.ui.AppCard {
-        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column {
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded }
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
                     modifier = Modifier
-                        .size(64.dp)
+                        .size(68.dp)
                         .clip(CircleShape)
-                        .background(colors.surfaceVariant)
-                        .clickable {
-                            photoPicker.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        },
+                        .background(colors.surfaceVariant),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (userData.photo != null) {
@@ -214,35 +216,92 @@ private fun ProfileSection(viewModel: MainViewModel) {
                         )
                     }
                 }
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
                     Text(
-                        t.t("settings.profile.title"),
-                        color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp,
+                        userData.name.ifBlank { t.t("settings.profile.namePlaceholder") },
+                        color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp,
                     )
-                    Text(t.t("settings.profile.photoHint"), color = colors.textFaint, fontSize = 12.sp)
-                    if (userData.photo != null) {
-                        Text(
-                            "✕ " + t.t("common.delete"),
-                            color = colors.danger, fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .clickable {
-                                    viewModel.setUserData { it.copy(photo = null) }
-                                    viewModel.showRawMessage(t.t("settings.profile.toastPhotoRemoved"))
-                                }
-                                .padding(top = 4.dp),
-                        )
-                    }
+                    Text(
+                        userData.company?.takeIf { it.isNotBlank() }
+                            ?: t.t("settings.profile.companyPlaceholder"),
+                        color = colors.textSecondary, fontSize = 14.sp,
+                    )
+                    Text(
+                        userData.position.ifBlank { t.t("settings.profile.positionPlaceholder") },
+                        color = colors.textMuted, fontSize = 13.sp,
+                    )
+                    Text(
+                        t.t("settings.profile.editHint"),
+                        color = colors.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 3.dp),
+                    )
                 }
+                val chevronRotation by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (expanded) 180f else 0f,
+                    label = "profileChevron",
+                )
+                Icon(
+                    Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = colors.textFaint,
+                    modifier = Modifier.size(22.dp).rotate(chevronRotation),
+                )
             }
 
-            ProfileTextField(t.t("settings.profile.nameLabel"), userData.name, t.t("settings.profile.namePlaceholder")) { value ->
-                viewModel.setUserData { it.copy(name = value) }
-            }
-            ProfileTextField(t.t("settings.profile.companyLabel"), userData.company ?: "", t.t("settings.profile.companyPlaceholder")) { value ->
-                viewModel.setUserData { it.copy(company = value.ifEmpty { null }) }
-            }
-            ProfileTextField(t.t("settings.profile.positionLabel"), userData.position, t.t("settings.profile.positionPlaceholder")) { value ->
-                viewModel.setUserData { it.copy(position = value) }
+            AnimatedVisibility(
+                visible = expanded,
+                enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
+            ) {
+                Column(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(
+                            t.t("settings.profile.photoHint"),
+                            color = colors.accent,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable {
+                                    photoPicker.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                }
+                                .padding(vertical = 8.dp),
+                        )
+                        if (userData.photo != null) {
+                            Text(
+                                "✕ " + t.t("common.delete"),
+                                color = colors.danger,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .clickable {
+                                        viewModel.setUserData { it.copy(photo = null) }
+                                        viewModel.showRawMessage(t.t("settings.profile.toastPhotoRemoved"))
+                                    }
+                                    .padding(vertical = 8.dp),
+                            )
+                        }
+                    }
+                    ProfileTextField(t.t("settings.profile.nameLabel"), userData.name, t.t("settings.profile.namePlaceholder")) { value ->
+                        viewModel.setUserData { it.copy(name = value) }
+                    }
+                    ProfileTextField(t.t("settings.profile.companyLabel"), userData.company ?: "", t.t("settings.profile.companyPlaceholder")) { value ->
+                        viewModel.setUserData { it.copy(company = value.ifEmpty { null }) }
+                    }
+                    ProfileTextField(t.t("settings.profile.positionLabel"), userData.position, t.t("settings.profile.positionPlaceholder")) { value ->
+                        viewModel.setUserData { it.copy(position = value) }
+                    }
+                }
             }
         }
     }

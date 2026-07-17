@@ -182,67 +182,88 @@
   },
   "helpModal": {
     "title": "Guide & Help",
-    "subtitle": "Your tour of eStundnzettl",
+    "subtitle": "Your companion through eStundnzettl",
     "intro": {
-      "badge": "Hello and welcome!",
-      "body": "No more paper slips! With eStundnzettl you log your work hours, drives, vacation and more straight from your phone. At the end of the month a single tap produces a clean PDF."
+      "badge": "Hi there, great to have you!",
+      "body": "eStundnzettl records your working time right on your phone. At the end of the month, the app turns it into a clean timesheet. No rocket science: simply follow these points in order — you cannot break anything."
+    },
+    "firstSteps": {
+      "title": "First: what is where?",
+      "addTitle": "Green plus button = new entry",
+      "addBody": "The round green button at the bottom right is your most important button. A quick tap opens the form where you enter your working time.",
+      "reportTitle": "Sheet icon = timesheet",
+      "reportBody": "The icon at the top right opens the preview. Here you check your hours and later send the finished PDF.",
+      "settingsTitle": "Cogwheel = settings",
+      "settingsBody": "This is where you find your name, work schedule, backups and the app's appearance. Tap cards with an arrow to open them.",
+      "gestureHint": "<b>Tap</b> means touch once and let go. <b>Press and hold</b> means leave your finger there for about one second. <b>Swipe</b> means place your finger down and slide it across the screen."
     },
     "step1": {
-      "title": "Log hours",
-      "lead": "You have two ways to log your hours:",
-      "timerTitle": "Live timer",
-      "timerBody": "Long-press the <plus>+</plus> button in the bottom right and swipe up. The timer runs until you stop it with a tap. The app then fills in start, end and duration automatically.",
-      "manualTitle": "Enter manually",
-      "manualBody": "Tap the <plus>+</plus> button. Pick start and end time, break and project. With <b>\"Same as last\"</b> you copy the times from yesterday — handy when your hours stay the same!"
+      "title": "Track your hours",
+      "lead": "Two ways to get there — pick whichever suits you:",
+      "timerTitle": "Live timer (let it run)",
+      "timerBody": "In the morning: place your finger on the green <plus>+</plus> button, hold it there briefly and slide it upward. Let go when the timer appears. At the end of the day, tap the timer and confirm. The app fills in start, end and duration.",
+      "manualTitle": "By hand (add later)",
+      "manualBody": "Tap the <plus>+</plus> button once. First choose the type of entry, then start, end and break. Finally tap <b>\"Save\"</b> at the bottom. <b>\"Same as last\"</b> copies the times from your previous entry."
     },
     "step2": {
-      "title": "Drive times",
-      "lead": "When creating an entry, pick the type <b>\"Drive\"</b> at the top.",
-      "arrival": "<b>Arrival/Departure:</b> Paid working time — counts towards the daily target.",
-      "drive": "<b>Drive time:</b> Unpaid travel — reported separately."
+      "title": "Travel times",
+      "lead": "When adding an entry, choose the type <b>\"Drive\"</b> at the top — there are two kinds:",
+      "arrival": "<b>Arrival/departure:</b> Counts as paid working time — goes into the daily target.",
+      "drive": "<b>Travel time:</b> Unpaid travel — listed separately on the timesheet."
     },
     "step3": {
-      "title": "Vacation, sick & time off",
-      "body": "Just pick <b>Vacation</b>, <b>Sick</b> or <b>TO</b> (time off). The app automatically credits the right target hours for that day. You can also enter times manually if needed."
+      "title": "Vacation, sick & comp time",
+      "body": "Just pick <b>Vacation</b>, <b>Sick</b> or <b>Comp time</b> when adding an entry — that is all. The app automatically applies the correct target hours for the day, and your remaining vacation shows right on the monthly PDF. You can also enter custom times if needed."
     },
     "step4": {
       "title": "Attach documents",
-      "body": "You can attach photos or files to any entry — e.g. delivery notes, receipts or work reports. Tap <b>\"Documents\"</b> on the entry. Attachments are bundled automatically when you export the PDF."
+      "body": "Work order, delivery note or photo from the site: open the entry and tap <b>\"Documents\"</b>. Then choose a photo or file from your phone. You can include the attachments when exporting the PDF."
     },
     "step5": {
-      "title": "Month close & PDF",
-      "preview": "Tap the <icon/> icon in the top right. There you see a preview of your timesheet — filterable by month or week.",
-      "share": "Check it, then <b>share as PDF</b> — via email, WhatsApp or just save it locally. Done!"
+      "title": "Month end & PDF",
+      "preview": "Tap the green <icon/> icon at the top right. You will see a preview of your finished timesheet — filtered by month or calendar week. Pinch with two fingers to zoom in, and use the speech-bubble icon to add a note for your boss if you like.",
+      "share": "All good? Tap <b>\"Send\"</b> — via email, WhatsApp, or save it as a file. And the month is done!"
     },
     "step6": {
-      "title": "Backup & data safety",
-      "lead": "Your data is precious — back it up!",
+      "title": "Backup — better safe than sorry",
+      "lead": "Phone broken or lost — and your hours gone? No way! Turn on automatic backups, it takes less than a minute:",
       "gdriveTitle": "Google Drive",
-      "gdriveBody": "Connect your Google account in settings. The app will back up to the cloud every day automatically.",
+      "gdriveBody": "Connect your Google account in Settings under \"Backup & Export\" — from then on the app backs up to your cloud every day by itself. On a new phone, just tap \"I already have a backup\" at the start and everything comes right back.",
       "localTitle": "Local backup",
-      "localBody": "Pick a folder on your device. The app backs up there every day — completely offline."
+      "localBody": "Also works without internet: choose a backup folder on your phone once. Important: if the phone is lost, that folder is lost too — Google Drive or Nextcloud is safer for that case."
     },
     "step7": {
-      "title": "Power-user mode",
-      "lead": "For pros who want more! Enable <b>Power-user mode</b> at the very bottom of settings. Extra features then become visible — activity codes stay directly available in Recording either way:",
-      "nextcloud": "<b>Nextcloud backup</b> — for your own cloud",
-      "jsonIO": "<b>JSON import/export</b> — back up data manually",
-      "pdfArchive": "<b>PDF archive</b> — automatic monthly PDF backup",
-      "codes": "<b>Activity codes</b> — industry presets or your own codes, even without Power-user mode",
-      "recordOnly": "<b>Record only</b> — without target/actual calculation"
+      "title": "Hausmasta mode",
+      "lead": "For everyone who wants the full picture: enable <b>Advanced settings</b> at the very bottom of the settings — we lovingly call it Hausmasta mode. It reveals the pro tools:",
+      "nextcloud": "<b>Nextcloud backup</b> — back up to your own cloud",
+      "jsonIO": "<b>Import & export</b> — save and restore your data as a file",
+      "pdfArchive": "<b>PDF archive</b> — automatically stores a PDF every month for legal record keeping",
+      "codes": "<b>Work codes</b> — short labels for tasks, for example M for assembly; also available in Settings without Hausmasta mode",
+      "recordOnly": "<b>Recording only</b> — track hours without any target/actual math"
+    },
+    "newFeatures": {
+      "title": "Good to know — new & useful",
+      "nightTitle": "Night shifts across midnight",
+      "nightBody": "You can enter 22:00 to 06:00, for example. The app understands that 06:00 means the next morning. A small ⁺¹ next to the end time reminds you.",
+      "materialTitle": "Colors matching your phone",
+      "materialBody": "Enable Material You under <b>Settings → Appearance</b>. The app then uses colors from your Android phone. This only changes the look, never your data.",
+      "tourTitle": "Let the app show you around",
+      "tourBody": "On first launch, small hints highlight the important buttons. Settings has its own tour too. Tap <b>\"Next\"</b> until it is done — the tour does not change any setting.",
+      "restoreTitle": "Moving to a new phone",
+      "restoreBody": "Choose <b>\"I already have a backup\"</b> during setup. A complete backup restores entries, your name, settings, work codes and attachments. Read the summary before confirming."
     },
     "tips": {
       "title": "Tips & tricks",
       "deleteTitle": "Delete",
-      "deleteBody": "Swipe an entry to the <b>left</b> to delete it.",
+      "deleteBody": "Place your finger on an entry and drag it to the <b>left</b>. The app asks for confirmation before deleting it.",
       "editTitle": "Edit",
-      "editBody": "Tap an entry to <b>edit</b> it.",
+      "editBody": "Just <b>tap</b> an entry to change it.",
       "autoBackupTitle": "Auto backup",
-      "autoBackupBody": "Once connected, the app backs up <b>daily, automatically</b>.",
+      "autoBackupBody": "Once connected, the app backs up <b>daily by itself</b>. Nothing left to do.",
       "themeTitle": "Theme",
-      "themeBody": "Light, dark or <b>System</b> — pick your favorite in settings."
+      "themeBody": "Light, dark or follow the system — set it under <b>Appearance</b>."
     },
-    "tagline": "\"So not a single hour gets lost!\""
+    "tagline": "\"So no hour gets lost!\""
   },
   "onboarding": {
     "nav": {
@@ -456,6 +477,8 @@
       "failed": "Backup failed"
     },
     "autoCheckout": "⚠️ Auto-clocked out! Please review.",
+    "autoCheckout_one": "The timer was still running from yesterday and was automatically stopped at 23:59. Please review the entry.",
+    "autoCheckout_other": "The timer had been running for {{count}} days and was automatically stopped at 23:59 on its start day. Please review the entry.",
     "export": {
       "exporting": "Exporting data...",
       "success": "📤 Export successful!",
@@ -687,6 +710,7 @@
       "companyPlaceholder": "Acme Ltd.",
       "positionLabel": "Position / Job",
       "positionPlaceholder": "Engineer",
+      "editHint": "Tap to edit",
       "toastPhotoUpdated": "Profile picture updated",
       "toastPhotoError": "Image error",
       "toastPhotoRemoved": "Picture removed"

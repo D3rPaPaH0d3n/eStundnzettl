@@ -22,6 +22,18 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // CI signs with the shared debug keystore (the Google Drive OAuth
+    // client is registered against its SHA-1). Locally the default
+    // ~/.android/debug.keystore applies — same keystore, same signature.
+    System.getenv("DEBUG_KEYSTORE_FILE")?.let { path ->
+        signingConfigs.getByName("debug") {
+            storeFile = file(path)
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         debug {
             // Side-by-side install next to the production Capacitor app

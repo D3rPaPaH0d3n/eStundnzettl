@@ -69,15 +69,18 @@ jobs:
         env:
           DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
         run: |
-          if [ -n "$DEBUG_KEYSTORE_B64" ]; then
-            mkdir -p ~/.android
-            echo "$DEBUG_KEYSTORE_B64" | tr -d ' \r\n' | base64 -d > ~/.android/debug.keystore
-            FP=$(keytool -list -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android 2>/dev/null | grep -i sha || true)
-            echo "✅ Debug-Keystore aus Secret wiederhergestellt: $FP"
-          else
+          if [ -z "$DEBUG_KEYSTORE_B64" ]; then
             echo "❌ Kein DEBUG_KEYSTORE_B64-Secret (Repository secret) gefunden — die APK hätte eine falsche Signatur und der Google-Drive-Login würde mit 'Abgebrochen' fehlschlagen."
             exit 1
           fi
+          KS="$RUNNER_TEMP/debug.keystore"
+          printf %s "$DEBUG_KEYSTORE_B64" | tr -d ' \r\n\t' | base64 -d > "$KS" || {
+            echo "❌ Secret ist kein gültiges Base64"; exit 1; }
+          keytool -list -keystore "$KS" -alias androiddebugkey -storepass android > /tmp/keystore-info.txt 2>&1 || {
+            echo "❌ Secret dekodiert, aber kein gültiger Keystore:"; cat /tmp/keystore-info.txt; exit 1; }
+          echo "DEBUG_KEYSTORE_FILE=$KS" >> "$GITHUB_ENV"
+          echo "✅ Keystore gültig:"
+          grep -i sha /tmp/keystore-info.txt || true
 
       # ── 3. Core-Tests (portierte Berechnungs- und Backup-Logik) ─────
       - name: Run core unit tests
@@ -103,6 +106,10 @@ jobs:
             exit 1
           fi
 
+      # ── 4.6 Signatur-Diagnose mit ins Artefakt legen ─────────────────
+      - name: Attach keystore diagnostics
+        run: cp /tmp/keystore-info.txt native/app/build/outputs/apk/debug/ || true
+
       # ── 5. Test-Report bei Fehlern hochladen ─────────────────────────
       - name: Upload test reports on failure
         if: failure()
@@ -119,7 +126,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: eStundnzettl-NATIVE-${{ env.BUILD_ID }}
-          path: native/app/build/outputs/apk/**/*.apk
+          path: |
+            native/app/build/outputs/apk/**/*.apk
+            native/app/build/outputs/apk/**/keystore-info.txt
           retention-days: 30
           if-no-files-found: error
 

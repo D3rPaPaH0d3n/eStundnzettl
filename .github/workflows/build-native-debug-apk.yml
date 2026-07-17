@@ -71,10 +71,12 @@ jobs:
         run: |
           if [ -n "$DEBUG_KEYSTORE_B64" ]; then
             mkdir -p ~/.android
-            echo "$DEBUG_KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
-            echo "✅ Debug-Keystore aus Secret wiederhergestellt"
+            echo "$DEBUG_KEYSTORE_B64" | tr -d ' \r\n' | base64 -d > ~/.android/debug.keystore
+            FP=$(keytool -list -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android 2>/dev/null | grep -i sha || true)
+            echo "✅ Debug-Keystore aus Secret wiederhergestellt: $FP"
           else
-            echo "⚠️ Kein DEBUG_KEYSTORE_B64-Secret gesetzt — Runner-Keystore wird verwendet (Google-Drive-Login schlägt in dieser APK fehl)"
+            echo "❌ Kein DEBUG_KEYSTORE_B64-Secret (Repository secret) gefunden — die APK hätte eine falsche Signatur und der Google-Drive-Login würde mit 'Abgebrochen' fehlschlagen."
+            exit 1
           fi
 
       # ── 3. Core-Tests (portierte Berechnungs- und Backup-Logik) ─────

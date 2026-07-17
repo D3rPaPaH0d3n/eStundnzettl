@@ -76,6 +76,8 @@ data class UserData(
     val company: String? = null,
     /** nur Aufzeichnung, keine Soll/Ist-Berechnung */
     val simpleMode: Boolean = false,
+    /** Optionales wiederkehrendes Monatsziel in Minuten, nur im einfachen Modus aktiv. */
+    val monthlyTargetMinutes: Int? = null,
     /** Hausmasta-Modus: erweiterte Einstellungen sichtbar */
     val expertMode: Boolean = false,
     /** Onboarding work-model preset (e.g. "38.5-classic") */

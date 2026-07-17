@@ -45,6 +45,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -61,6 +62,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -71,6 +73,8 @@ import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.model.WORK_CODE_PRESETS
 import com.estundnzettl.core.model.WORK_MODELS
+import com.estundnzettl.core.calc.formatMonthlyTargetInput
+import com.estundnzettl.core.calc.parseMonthlyTargetInput
 import java.io.ByteArrayOutputStream
 
 /**
@@ -330,6 +334,9 @@ private fun RecordingModeSection(viewModel: MainViewModel) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
     val simpleMode = state.userData?.simpleMode == true
+    val monthlyTarget = state.userData?.monthlyTargetMinutes
+    var targetInput by remember(monthlyTarget) { mutableStateOf(formatMonthlyTargetInput(monthlyTarget)) }
+    val targetInvalid = monthlyTarget != null && parseMonthlyTargetInput(targetInput) == null
 
     com.estundnzettl.app.ui.AppCard {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -360,6 +367,67 @@ private fun RecordingModeSection(viewModel: MainViewModel) {
                 selected = !simpleMode,
                 tint = colors.info,
             ) { viewModel.setSimpleMode(false) }
+
+            if (simpleMode) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colors.accent.copy(alpha = 0.08f))
+                        .border(1.dp, colors.accent.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                t.t("settings.recordingMode.monthlyTarget.title"),
+                                color = colors.textPrimary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                            )
+                            Text(
+                                t.t("settings.recordingMode.monthlyTarget.description"),
+                                color = colors.textMuted,
+                                fontSize = 12.sp,
+                                lineHeight = 17.sp,
+                            )
+                        }
+                        Switch(
+                            checked = monthlyTarget != null,
+                            onCheckedChange = { enabled ->
+                                val value = if (enabled) 1800 else null
+                                targetInput = formatMonthlyTargetInput(value)
+                                viewModel.setUserData { it.copy(monthlyTargetMinutes = value) }
+                            },
+                        )
+                    }
+                    if (monthlyTarget != null) {
+                        OutlinedTextField(
+                            value = targetInput,
+                            onValueChange = { value ->
+                                targetInput = value
+                                parseMonthlyTargetInput(value)?.let { parsed ->
+                                    viewModel.setUserData { it.copy(monthlyTargetMinutes = parsed) }
+                                }
+                            },
+                            label = { Text(t.t("settings.recordingMode.monthlyTarget.inputLabel")) },
+                            supportingText = {
+                                Text(
+                                    t.t(
+                                        if (targetInvalid) "settings.recordingMode.monthlyTarget.invalid"
+                                        else "settings.recordingMode.monthlyTarget.hint"
+                                    )
+                                )
+                            },
+                            isError = targetInvalid,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
 
             Text(t.t("settings.recordingMode.noDataLossHint"), color = colors.textFaint, fontSize = 11.sp)
         }

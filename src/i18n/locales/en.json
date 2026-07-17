@@ -38,6 +38,10 @@
     "actual": "ACTUAL",
     "target": "TARGET",
     "balance": "Balance",
+    "monthlyTarget": "MONTHLY TARGET",
+    "monthlyRemaining": "REMAINING",
+    "monthlyExceeded": "ABOVE TARGET",
+    "monthlyReached": "REACHED",
     "driveTime": "Drive time ({{code}})",
     "overtimeShort": {
       "extra": "ET",
@@ -144,6 +148,10 @@
       "timeComp": "Time off:",
       "sickness": "Sick leave:",
       "totalActual": "Total (actual):",
+      "monthlyTarget": "Monthly target:",
+      "monthlyRemaining": "Remaining:",
+      "monthlyExceeded": "Above target:",
+      "monthlyReached": "Monthly target reached:",
       "targetTime": "Target time:",
       "balance": "Balance:",
       "extraHours": "Extra hours:",
@@ -1108,7 +1116,14 @@
       "calculatedDescription": "Compares your times with your work schedule and shows balance, extra time and overtime.",
       "noDataLossHint": "Note: This choice does not delete entries and does not overwrite your work schedule.",
       "toastSimple": "Simple recording activated",
-      "toastCalculated": "Calculation & reports activated"
+      "toastCalculated": "Calculation & reports activated",
+      "monthlyTarget": {
+        "title": "Set monthly hours",
+        "description": "Ideal for mini-jobs, part-time or flexible workdays. Only your total hours for the month matter.",
+        "inputLabel": "Target hours per month (HH:MM)",
+        "hint": "For example 30:00 for 30 hours per month.",
+        "invalid": "Enter hours and minutes such as 30:00."
+      }
     },
     "workCodesCard": {
       "title": "Activities",

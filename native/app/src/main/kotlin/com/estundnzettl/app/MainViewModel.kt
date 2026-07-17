@@ -1752,6 +1752,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         ob.workDays.forEach { add(JsonPrimitive(it)) }
                     })
                     put("simpleMode", JsonPrimitive(ob.simpleMode))
+                    ob.monthlyTargetMinutes?.let { put("monthlyTargetMinutes", JsonPrimitive(it)) }
                     put("settings", kotlinx.serialization.json.buildJsonObject {
                         put("autoBackup", JsonPrimitive(ob.autoBackup))
                         put("theme", JsonPrimitive("system"))

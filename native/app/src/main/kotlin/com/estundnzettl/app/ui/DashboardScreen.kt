@@ -64,6 +64,7 @@ import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.calc.AppData
 import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.calculateDisplayedDayMinutes
+import com.estundnzettl.core.calc.calculateMonthlyTargetProgress
 import com.estundnzettl.core.calc.calculatePeriodStats
 import com.estundnzettl.core.calc.calculateWeekStats
 import com.estundnzettl.core.calc.getTargetMinutesForDate
@@ -143,6 +144,7 @@ fun DashboardScreen(
                     currentMonth = currentMonth,
                     appData = appData,
                     simpleMode = simpleMode,
+                    monthlyTargetMinutes = userData?.monthlyTargetMinutes,
                     javaLocale = javaLocale,
                     onChangeMonth = onChangeMonth,
                     onOpenPicker = { monthPickerOpen = true },
@@ -203,6 +205,7 @@ private fun MonthStatsCard(
     currentMonth: YearMonth,
     appData: AppData,
     simpleMode: Boolean,
+    monthlyTargetMinutes: Int?,
     javaLocale: JavaLocale,
     onChangeMonth: (Long) -> Unit,
     onOpenPicker: () -> Unit,
@@ -211,6 +214,10 @@ private fun MonthStatsCard(
     val t = LocalI18n.current
     val stats = appData.stats
     val overtime = appData.overtime
+    val monthlyProgress = calculateMonthlyTargetProgress(
+        actualMinutes = stats.totalIst,
+        userData = UserData(simpleMode = simpleMode, monthlyTargetMinutes = monthlyTargetMinutes),
+    )
     val monthLabel = currentMonth.month.getDisplayName(TextStyle.FULL_STANDALONE, javaLocale)
         .replaceFirstChar { it.uppercase(javaLocale) } + " " + currentMonth.year
 
@@ -268,7 +275,28 @@ private fun MonthStatsCard(
                         fontWeight = FontWeight.Bold,
                     )
                 }
-                if (!simpleMode) {
+                if (monthlyProgress != null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            StatLabel(t.t("dashboard.monthlyTarget"), colors)
+                            Text(formatTime(monthlyProgress.targetMinutes), color = colors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            StatLabel(
+                                when {
+                                    monthlyProgress.exceededMinutes > 0 -> t.t("dashboard.monthlyExceeded")
+                                    monthlyProgress.remainingMinutes > 0 -> t.t("dashboard.monthlyRemaining")
+                                    else -> t.t("dashboard.monthlyReached")
+                                }, colors,
+                            )
+                            Text(
+                                formatTime(if (monthlyProgress.exceededMinutes > 0) monthlyProgress.exceededMinutes else monthlyProgress.remainingMinutes),
+                                color = if (monthlyProgress.remainingMinutes == 0) colors.positive else colors.textSecondary,
+                                fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                } else if (!simpleMode) {
                     Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                         Column(horizontalAlignment = Alignment.End) {
                             StatLabel(t.t("dashboard.target"), colors)
@@ -294,14 +322,15 @@ private fun MonthStatsCard(
                 }
             }
 
-            if (!simpleMode) {
+            if (!simpleMode || monthlyProgress != null) {
                 // Durchgehender Balken wie das Original (motion.div: Breite
                 // animiert beim Einblenden von 0 auf den Prozentwert).
                 var progressStarted by remember { mutableStateOf(false) }
                 LaunchedEffect(Unit) { progressStarted = true }
                 val progressFraction by androidx.compose.animation.core.animateFloatAsState(
                     targetValue = if (progressStarted) {
-                        (appData.progressPercent / 100.0).toFloat().coerceIn(0f, 1f)
+                        (monthlyProgress?.progressPercent
+                            ?: appData.progressPercent.toFloat()).div(100f).coerceIn(0f, 1f)
                     } else {
                         0f
                     },
@@ -323,7 +352,7 @@ private fun MonthStatsCard(
                             .fillMaxHeight()
                             .fillMaxWidth(progressFraction)
                             .clip(RoundedCornerShape(5.dp))
-                            .background(if (overtime >= 0) colors.positive else colors.negative),
+                            .background(if (monthlyProgress != null || overtime >= 0) colors.positive else colors.negative),
                     )
                 }
             }

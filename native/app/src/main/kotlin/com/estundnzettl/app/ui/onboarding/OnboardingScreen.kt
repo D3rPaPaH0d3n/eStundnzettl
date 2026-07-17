@@ -32,6 +32,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Assignment
@@ -68,6 +69,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -95,6 +97,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -107,6 +110,8 @@ import com.estundnzettl.app.ui.settings.formatHoursLocalized
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
+import com.estundnzettl.core.calc.formatMonthlyTargetInput
+import com.estundnzettl.core.calc.parseMonthlyTargetInput
 import com.estundnzettl.core.locale.GERMANY_LOCALE_IDS
 import com.estundnzettl.core.locale.SWITZERLAND_LOCALE_IDS
 import com.estundnzettl.core.locale.getLocale
@@ -723,6 +728,53 @@ private fun ProfileStep(viewModel: MainViewModel, ob: OnboardingUiState) {
             viewModel.onboardingUpdate { it.copy(role = value) }
         }
     }
+    if (ob.simpleMode) MonthlyTargetSetup(viewModel, ob)
+}
+
+@Composable
+private fun MonthlyTargetSetup(viewModel: MainViewModel, ob: OnboardingUiState) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    var targetInput by remember(ob.monthlyTargetMinutes) {
+        mutableStateOf(formatMonthlyTargetInput(ob.monthlyTargetMinutes ?: 1800))
+    }
+    val parsedTarget = parseMonthlyTargetInput(targetInput)
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+            .background(if (colors.isDark) Palette.Zinc800.copy(alpha = 0.5f) else Palette.Zinc50)
+            .border(1.dp, colors.border, RoundedCornerShape(12.dp)).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(t.t("settings.recordingMode.monthlyTarget.title"), color = colors.textPrimary, fontWeight = FontWeight.Bold)
+                Text(t.t("settings.recordingMode.monthlyTarget.description"), color = colors.textMuted, fontSize = 12.sp)
+            }
+            Switch(
+                checked = ob.monthlyTargetMinutes != null,
+                onCheckedChange = { enabled ->
+                    viewModel.onboardingUpdate { it.copy(monthlyTargetMinutes = if (enabled) parsedTarget ?: 1800 else null) }
+                },
+            )
+        }
+        if (ob.monthlyTargetMinutes != null) {
+            OutlinedTextField(
+                value = targetInput,
+                onValueChange = { value ->
+                    targetInput = value
+                    parseMonthlyTargetInput(value)?.let { minutes ->
+                        viewModel.onboardingUpdate { it.copy(monthlyTargetMinutes = minutes) }
+                    }
+                },
+                label = { Text(t.t("settings.recordingMode.monthlyTarget.inputLabel")) },
+                supportingText = { Text(if (parsedTarget == null) t.t("settings.recordingMode.monthlyTarget.invalid") else t.t("settings.recordingMode.monthlyTarget.hint")) },
+                isError = parsedTarget == null,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
 }
 
 /** Gestrichelte Kreis-Umrandung für den Foto-Platzhalter. */
@@ -971,6 +1023,7 @@ private fun WorkScheduleStep(viewModel: MainViewModel, ob: OnboardingUiState, la
 
     if (ob.simpleMode) {
         HintBox(Icons.Outlined.Info, "emerald", t.t("onboarding.workSchedule.simpleInfo"))
+        MonthlyTargetSetup(viewModel, ob)
     } else {
         HintBox(Icons.Outlined.Info, "blue", t.t("onboarding.workSchedule.customInfo"))
 

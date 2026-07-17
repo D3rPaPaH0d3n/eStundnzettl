@@ -38,6 +38,10 @@
     "actual": "IST",
     "target": "SOLL",
     "balance": "Saldo",
+    "monthlyTarget": "MONATSZIEL",
+    "monthlyRemaining": "NOCH OFFEN",
+    "monthlyExceeded": "DARÜBER",
+    "monthlyReached": "GESCHAFFT",
     "driveTime": "Fahrzeit ({{code}})",
     "overtimeShort": {
       "extra": "MA",
@@ -144,6 +148,10 @@
       "timeComp": "Zeitausgleich:",
       "sickness": "Krankenstand:",
       "totalActual": "Gesamt (IST):",
+      "monthlyTarget": "Monatsziel:",
+      "monthlyRemaining": "Noch offen:",
+      "monthlyExceeded": "Über Ziel:",
+      "monthlyReached": "Monatsziel geschafft:",
       "targetTime": "Sollzeit (SOLL):",
       "balance": "Saldo:",
       "extraHours": "Mehrarbeit:",
@@ -1108,7 +1116,14 @@
       "calculatedDescription": "Vergleicht deine Zeiten mit deinem Arbeitszeitmodell und zeigt Saldo, Mehrarbeit und Überstunden.",
       "noDataLossHint": "Hinweis: Diese Auswahl löscht keine Einträge und überschreibt dein Arbeitszeitmodell nicht.",
       "toastSimple": "Nur Arbeitszeiten eintragen aktiviert",
-      "toastCalculated": "Berechnung & Auswertung aktiviert"
+      "toastCalculated": "Berechnung & Auswertung aktiviert",
+      "monthlyTarget": {
+        "title": "Monatsstunden festlegen",
+        "description": "Ideal für Minijob, Teilzeit oder flexible Arbeitstage. Es zählt nur, wie viele Stunden du im Monat insgesamt arbeitest.",
+        "inputLabel": "Sollstunden im Monat (HH:MM)",
+        "hint": "Zum Beispiel 30:00 für 30 Stunden pro Monat.",
+        "invalid": "Bitte im Format Stunden:Minuten eingeben, zum Beispiel 30:00."
+      }
     },
     "workCodesCard": {
       "title": "Tätigkeiten",

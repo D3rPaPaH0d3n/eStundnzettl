@@ -5,6 +5,7 @@ import com.estundnzettl.core.locale.austriaLocale
 import com.estundnzettl.core.model.AutoPauseRule
 import com.estundnzettl.core.model.OvertimeMode
 import com.estundnzettl.core.model.PdfDisplayConfig
+import com.estundnzettl.core.model.UserData
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
@@ -123,5 +124,15 @@ class CalculationConfigJsonTest {
         assertEquals(false, user.simpleMode)
         assertEquals(true, user.expertMode)
         assertEquals("38.5-classic", user.workModelId)
+    }
+
+    @Test
+    fun `Monatsziel bleibt beim UserData Roundtrip erhalten und ungueltige Werte entfallen`() {
+        val encoded = UserData(simpleMode = true, monthlyTargetMinutes = 1800).toJson()
+        assertEquals(1800, decodeUserData(encoded)?.monthlyTargetMinutes)
+
+        val invalid = decodeUserData(parse("""{"simpleMode":true,"monthlyTargetMinutes":0}"""))
+        assertNull(invalid?.monthlyTargetMinutes)
+        assertNull(UserData(simpleMode = true, monthlyTargetMinutes = -1).toJson()["monthlyTargetMinutes"])
     }
 }

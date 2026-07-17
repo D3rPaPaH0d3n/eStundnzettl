@@ -17,6 +17,7 @@ import android.util.Base64
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.buildDayBalanceMetaMap
+import com.estundnzettl.core.calc.calculateMonthlyTargetProgress
 import com.estundnzettl.core.calc.getEffectivePdfDisplay
 import com.estundnzettl.core.calc.isOvernightShift
 import com.estundnzettl.core.calc.resolveEffectiveRules
@@ -655,6 +656,9 @@ class ReportPdfGenerator(
         val simpleMode = input.userData?.simpleMode == true
         val showSollSection = !simpleMode && showTargetTime
         val showSaldoSection = !simpleMode && showBalance
+        val monthlyProgress = if (input.filterWeek == null) {
+            calculateMonthlyTargetProgress(stats.totalIst, input.userData)
+        } else null
         val overtimeVisible = showOvertimeSplit &&
             (stats.overtimeSplit.mehrarbeit > 0 || stats.overtimeSplit.ueberstunden > 0)
 
@@ -736,6 +740,26 @@ class ReportPdfGenerator(
         ) + 2f
         canvas?.drawLine(rightColLeft, rightY, innerRight, rightY, linePaint(C.borderLight, 0.5f, dashed = true))
         rightY += 0.5f + 2f
+        if (monthlyProgress != null) {
+            rightY += sumRow(
+                canvas, rightY, rightColLeft, innerRight,
+                t("reports.summary.monthlyTarget"), formatTime(monthlyProgress.targetMinutes),
+                C.textMedium, C.textMedium, valueBold = false,
+            ) + 1f
+            val reached = monthlyProgress.remainingMinutes == 0
+            rightY += sumRow(
+                canvas, rightY, rightColLeft, innerRight,
+                when {
+                    monthlyProgress.exceededMinutes > 0 -> t("reports.summary.monthlyExceeded")
+                    reached -> t("reports.summary.monthlyReached")
+                    else -> t("reports.summary.monthlyRemaining")
+                },
+                if (monthlyProgress.exceededMinutes > 0) formatTime(monthlyProgress.exceededMinutes)
+                else formatTime(monthlyProgress.remainingMinutes),
+                if (reached) C.textGreen else C.textDark,
+                if (reached) C.textGreen else C.textDark,
+            ) + 1f
+        }
         if (showSollSection) {
             rightY += sumRow(
                 canvas, rightY, rightColLeft, innerRight,

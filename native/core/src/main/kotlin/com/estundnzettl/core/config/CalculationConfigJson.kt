@@ -11,6 +11,7 @@ import com.estundnzettl.core.model.OvertimeMode
 import com.estundnzettl.core.model.PdfDisplayConfig
 import com.estundnzettl.core.model.SickOnWorkDayMode
 import com.estundnzettl.core.model.UserData
+import com.estundnzettl.core.calc.normalizeMonthlyTargetMinutes
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -199,6 +200,7 @@ fun decodeUserData(value: JsonElement?): UserData? {
             ?.takeIf { it.size == 7 },
         company = stringOrNull(obj["company"]),
         simpleMode = booleanOrNull(obj["simpleMode"]) ?: false,
+        monthlyTargetMinutes = normalizeMonthlyTargetMinutes(numberOrNull(obj["monthlyTargetMinutes"])?.toInt()),
         expertMode = booleanOrNull(obj["expertMode"]) ?: false,
         workModelId = stringOrNull(obj["workModelId"]),
     )
@@ -212,6 +214,7 @@ fun UserData.toJson(): JsonObject = buildJsonObject {
     put("workDays", buildJsonArray { (workDays ?: List(7) { 0 }).forEach { add(JsonPrimitive(it)) } })
     company?.let { put("company", it) }
     put("simpleMode", simpleMode)
+    monthlyTargetMinutes?.let { normalizeMonthlyTargetMinutes(it)?.let { value -> put("monthlyTargetMinutes", value) } }
     put("expertMode", expertMode)
     workModelId?.let { put("workModelId", it) }
 }

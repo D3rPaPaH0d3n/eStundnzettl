@@ -5,6 +5,7 @@ import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.UserData
+import com.estundnzettl.core.model.WorkCode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -104,6 +105,16 @@ class PdfArchiveTest {
         val a = hashMonthContent(entries, userData, 2025, 3, currentDate = today)
         val b = hashMonthContent(entries, userData.copy(name = "Erika"), 2025, 3, currentDate = today)
         assertNotEquals(a, b)
+    }
+
+    @Test
+    fun `hash changes with profile monthly target work codes and language`() {
+        val entries = listOf(entry(1, "2025-03-05"))
+        val base = hashMonthContent(entries, userData, 2025, 3, currentDate = today)
+        assertNotEquals(base, hashMonthContent(entries, userData.copy(company = "Neue Firma"), 2025, 3, currentDate = today))
+        assertNotEquals(base, hashMonthContent(entries, userData.copy(simpleMode = true, monthlyTargetMinutes = 1800), 2025, 3, currentDate = today))
+        assertNotEquals(base, hashMonthContent(entries, userData, 2025, 3, currentDate = today, workCodes = listOf(WorkCode(1, "Montage"))))
+        assertNotEquals(base, hashMonthContent(entries, userData, 2025, 3, currentDate = today, language = "en"))
     }
 
     @Test

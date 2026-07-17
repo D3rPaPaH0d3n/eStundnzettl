@@ -121,9 +121,13 @@ class PdfArchiveManager(
         val ym = "%04d-%02d".format(year, month)
         val filename = buildArchiveFilename(year, month, data.userData)
         val currentDate = LocalDate.now()
+        val language = settings.getString(SettingsRepository.Keys.LANGUAGE)
+            ?: I18n.resolveSystemLanguage(JavaLocale.getDefault().language)
         val newHash = hashMonthContent(
             data.entries, data.userData, year, month,
             data.locale, data.calculationConfig, currentDate,
+            workCodes = data.workCodes,
+            language = language,
         )
         val key = hashKey(year, month)
         val prevHash = settings.getString(key)

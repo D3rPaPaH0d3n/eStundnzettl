@@ -4,7 +4,10 @@ import android.content.Context
 import android.util.Log
 import com.estundnzettl.core.backup.BackupSections
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.time.Instant
+import java.time.LocalDate
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -167,7 +170,24 @@ class AutoBackupManager(
     /** Lokales Backup — wie writeBackupFile (Directory.Data/eStundnzettl/). */
     private fun writeLocalBackup(content: String) {
         val dir = File(context.filesDir, NextcloudClient.BACKUP_FOLDER).apply { mkdirs() }
-        File(dir, NextcloudClient.BACKUP_FILENAME).writeText(content)
+        val target = File(dir, NextcloudClient.BACKUP_FILENAME)
+        val temp = File(dir, ".${NextcloudClient.BACKUP_FILENAME}.tmp")
+        temp.writeText(content)
+        try {
+            Files.move(
+                temp.toPath(), target.toPath(),
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.ATOMIC_MOVE,
+            )
+        } catch (_: Exception) {
+            Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+
+        val dated = File(dir, "estundnzettl_backup_${LocalDate.now()}.json")
+        if (!dated.exists()) target.copyTo(dated)
+        dir.listFiles { file ->
+            file.name.startsWith("estundnzettl_backup_") && file.name.endsWith(".json")
+        }?.sortedByDescending { it.name }?.drop(7)?.forEach { it.delete() }
     }
 
     suspend fun performBackup(source: Source): Outcome {
@@ -186,8 +206,6 @@ class AutoBackupManager(
         if (!isUploading.compareAndSet(false, true)) return Outcome(ran = false)
         try {
             val sections = backupRepo.collectSections()
-            if (sections.entries.isEmpty()) return Outcome(ran = false)
-
             val currentHash = hashSections(sections)
             if (currentHash == lastHash && source == Source.AUTO) return Outcome(ran = false)
 

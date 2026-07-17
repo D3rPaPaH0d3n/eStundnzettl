@@ -31,6 +31,15 @@
      "The guided tours now highlight the relevant spots right on screen.",
      "The PDF preview zooms sharper and stays under your fingers while pinching."
     ]
+   },
+   {
+    "iconName": "Calendar",
+    "title": "Monthly hours for mini-jobs & part-time work",
+    "items": [
+     "Simple mode now lets you set a flexible monthly target – ideal for mini-jobs, part-time work and changing workdays.",
+     "The dashboard shows at a glance how many hours remain or whether you have already exceeded your monthly target.",
+     "Your monthly target is fully included in monthly reports, backups and restores."
+    ]
    }
   ]
  },

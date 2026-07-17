@@ -284,7 +284,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 recompute()
                 _state.value = _state.value.copy(loading = false)
                 // Debounced Auto-Save wie useAutoBackup (2 s nach Änderung)
-                scheduleAutoBackup()
+                scheduleDataProtection()
             }
         }
     }
@@ -670,6 +670,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             workCodesRepo.upsert(WorkCode(nextId, trimmed))
             _state.value = _state.value.copy(workCodes = workCodesRepo.getAll())
+            scheduleDataProtection()
         }
         return true
     }
@@ -691,17 +692,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             recompute()
+            scheduleDataProtection()
         }
     }
 
     fun setTheme(theme: String) {
         _state.value = _state.value.copy(theme = theme)
-        viewModelScope.launch { settings.setTheme(theme) }
+        viewModelScope.launch {
+            settings.setTheme(theme)
+            scheduleDataProtection()
+        }
     }
 
     fun setLanguage(language: String) {
         _state.value = _state.value.copy(language = language)
-        viewModelScope.launch { settings.setString(SettingsRepository.Keys.LANGUAGE, language) }
+        viewModelScope.launch {
+            settings.setString(SettingsRepository.Keys.LANGUAGE, language)
+            scheduleDataProtection()
+        }
         emit(UiMessage("settings.language.toast"))
     }
 
@@ -727,6 +735,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 settings.setCalculationConfig(fresh)
             }
             recompute()
+            scheduleDataProtection()
         }
     }
 
@@ -737,6 +746,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             settings.setCalculationConfig(next)
             recompute()
+            scheduleDataProtection()
         }
     }
 
@@ -811,6 +821,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             workCodesRepo.upsert(WorkCode(id, trimmed))
             refreshWorkCodes()
+            scheduleDataProtection()
         }
         return true
     }
@@ -819,6 +830,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             workCodesRepo.delete(id)
             refreshWorkCodes()
+            scheduleDataProtection()
         }
     }
 
@@ -828,6 +840,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             workCodesRepo.replaceAll(preset.codes)
             refreshWorkCodes()
+            scheduleDataProtection()
         }
         return true
     }
@@ -836,6 +849,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             workCodesRepo.replaceAll(emptyList())
             refreshWorkCodes()
+            scheduleDataProtection()
         }
     }
 
@@ -1058,6 +1072,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         attachmentsRepo.pushLabelSuggestion(trimmedLabel)
         refreshAttachments()
+        scheduleDataProtection()
     }
 
     suspend fun removeAttachment(attachmentId: String) {
@@ -1065,6 +1080,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         attachmentsRepo.delete(attachmentId)
         deleteAttachmentFile(removed.storagePath)
         refreshAttachments()
+        scheduleDataProtection()
     }
 
     /** Datei-Inhalt eines Anhangs (für Teilen/Report-Bundle). */
@@ -1207,6 +1223,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private var autoBackupJob: kotlinx.coroutines.Job? = null
+    private var pdfArchiveRefreshJob: kotlinx.coroutines.Job? = null
     private var nextcloudPollJob: kotlinx.coroutines.Job? = null
 
     private suspend fun refreshNextcloudState(connecting: Boolean = _state.value.nextcloud.connecting) {
@@ -1248,6 +1265,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                         listOf(com.estundnzettl.app.data.NextcloudClient.BACKUP_FOLDER))
                             }
                             refreshNextcloudState(connecting = false)
+                            scheduleDataProtection()
                             emit(UiMessage("settings.backup.toast.ncConnectedAs", listOf("loginName" to result.loginName)))
                             return@launch
                         }
@@ -1323,6 +1341,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setLocalBackupEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settings.setBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED, enabled)
+            if (enabled) scheduleDataProtection()
+        }
+    }
+
+    /** Ein neu aktiviertes PDF-Ziel braucht sofort eine eigene aktuelle Datei. */
+    fun onPdfArchiveTargetsChanged() {
+        viewModelScope.launch {
+            if (allEntries.isEmpty()) return@launch
+            val now = YearMonth.now()
+            settings.setString(
+                com.estundnzettl.app.data.PdfArchiveManager.hashKey(now.year, now.monthValue),
+                "",
+            )
+            settings.getString(com.estundnzettl.app.data.PdfArchiveManager.KEY_LAST_MONTH)
+                ?.split("-")
+                ?.mapNotNull { it.toIntOrNull() }
+                ?.takeIf { it.size == 2 && it[1] in 1..12 }
+                ?.let { (year, month) ->
+                    settings.setString(com.estundnzettl.app.data.PdfArchiveManager.hashKey(year, month), "")
+                }
+            pdfArchive.performRun(pdfArchiveData(), source = "target-change", force = true)
         }
     }
 
@@ -1356,6 +1395,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 playServices = playServices,
             ),
         )
+    }
+
+    /** Bündelt alle Änderungen, die Backup oder Monats-PDF beeinflussen. */
+    private fun scheduleDataProtection() {
+        scheduleAutoBackup()
+        pdfArchiveRefreshJob?.cancel()
+        pdfArchiveRefreshJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(2500)
+            if (!_state.value.loading) {
+                // force umgeht nur die Einmal-pro-Tag-Sperre; der Monats-Hash
+                // verhindert weiterhin unnötige PDF-Neuschreibvorgänge.
+                pdfArchive.performRun(pdfArchiveData(), source = "data-change", force = true)
+            }
+        }
     }
 
     /** Beim Öffnen der Backup-Karte erneut prüfen, falls Dienste aktiviert/aktualisiert wurden. */
@@ -1417,6 +1470,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (scope == com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA) {
             settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL, email.ifEmpty { "Google" })
             settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, true)
+            scheduleDataProtection()
         } else {
             settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, email.ifEmpty { "Google" })
         }
@@ -1793,6 +1847,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             ))
             // Einmalige App-Tour nach dem Onboarding (Port von handleTourStart)
             maybeStartTour()
+            scheduleDataProtection()
         }
     }
 

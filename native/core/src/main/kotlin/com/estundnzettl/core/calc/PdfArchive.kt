@@ -8,6 +8,7 @@ import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.UserData
+import com.estundnzettl.core.model.WorkCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
@@ -93,16 +94,32 @@ fun hashMonthContent(
     locale: AppLocale? = null,
     config: CalculationConfig? = null,
     currentDate: LocalDate = LocalDate.now(),
+    workCodes: List<WorkCode> = emptyList(),
+    language: String? = null,
 ): String {
     val holidayEntries = generateHolidayEntries(year, month, userData, locale, config, currentDate)
     val relevant = buildJsonObject {
         put("ym", "$year-${pad2(month)}")
         put("name", userData?.name ?: "")
+        put("company", userData?.company ?: "")
+        put("position", userData?.position ?: "")
+        put("photo", userData?.photo ?: "")
+        put("simpleMode", userData?.simpleMode ?: false)
+        put("monthlyTargetMinutes", userData?.monthlyTargetMinutes ?: 0)
+        put("language", language ?: "")
         userData?.workDays?.let { days ->
             putJsonArray("workDays") { days.forEach { add(it) } }
         } ?: put("workDays", JsonNull)
         put("workModel", JsonNull)
         put("calculationConfig", config?.toJson() ?: JsonNull)
+        putJsonArray("workCodes") {
+            workCodes.sortedBy { it.id }.forEach { code ->
+                add(buildJsonObject {
+                    put("id", code.id)
+                    put("label", code.label)
+                })
+            }
+        }
         putJsonArray("holidays") {
             holidayEntries.forEach { e ->
                 add(

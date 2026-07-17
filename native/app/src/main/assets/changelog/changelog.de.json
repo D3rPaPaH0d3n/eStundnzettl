@@ -31,6 +31,15 @@
      "Die Einführungs-Touren markieren jetzt die passenden Stellen direkt am Bildschirm.",
      "Die PDF-Vorschau zoomt schärfer und bleibt beim Zwei-Finger-Zoom unter deinen Fingern."
     ]
+   },
+   {
+    "iconName": "Calendar",
+    "title": "Monatsstunden für Minijob & Teilzeit",
+    "items": [
+     "Im einfachen Modus kannst du jetzt ein flexibles Monatsziel festlegen – ideal für Minijob, Teilzeit und wechselnde Arbeitstage.",
+     "Das Dashboard zeigt dir auf einen Blick, wie viele Stunden noch offen sind oder ob du dein Monatsziel bereits überschritten hast.",
+     "Dein Monatsziel wird auch in Monatsberichten, Backups und bei der Wiederherstellung vollständig berücksichtigt."
+    ]
    }
   ]
  },

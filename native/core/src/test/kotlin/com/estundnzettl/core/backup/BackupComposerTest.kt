@@ -94,4 +94,18 @@ class BackupComposerTest {
             reExported.getValue("checksum").jsonPrimitive.content,
         )
     }
+
+    @Test
+    fun `leerer Eintragsstand bleibt ein gueltiges vollstaendiges Backup`() {
+        val payload = composeBackupPayload(
+            BackupSections(entries = emptyList(), workCodes = listOf(WorkCode(1, "Arbeit"))),
+            note = "Leerer aktueller Stand",
+            lastModified = "2026-07-18T12:00:00.000Z",
+            timezone = "Europe/Vienna",
+        )
+
+        assertEquals(0, payload.getValue("entries").jsonArray.size)
+        assertEquals(BackupIntegrity.VERIFIED, verifyBackupIntegrity(payload))
+        assertEquals(0, analyzeBackupData(payload).entries.size)
+    }
 }

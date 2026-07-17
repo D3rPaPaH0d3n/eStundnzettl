@@ -111,6 +111,7 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
                     localTarget = true
                     viewModel.settings.setBoolean(PdfArchiveManager.KEY_LOCAL, true)
                 }
+                if (next) viewModel.onPdfArchiveTargetsChanged()
             }
         }
 
@@ -126,7 +127,10 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
                     accent = colors.special,
                 ) { next ->
                     localTarget = next
-                    scope.launch { viewModel.settings.setBoolean(PdfArchiveManager.KEY_LOCAL, next) }
+                    scope.launch {
+                        viewModel.settings.setBoolean(PdfArchiveManager.KEY_LOCAL, next)
+                        if (next) viewModel.onPdfArchiveTargetsChanged()
+                    }
                 }
             }
 
@@ -153,7 +157,10 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
                         toast(t.t("settings.pdfArchive.toast.ncNotConnected"))
                     } else {
                         nextcloudTarget = next
-                        scope.launch { viewModel.settings.setBoolean(PdfArchiveManager.KEY_NEXTCLOUD, next) }
+                        scope.launch {
+                            viewModel.settings.setBoolean(PdfArchiveManager.KEY_NEXTCLOUD, next)
+                            if (next) viewModel.onPdfArchiveTargetsChanged()
+                        }
                     }
                 }
             }
@@ -186,7 +193,10 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
                             toast(t.t("settings.pdfArchive.toast.gdriveConnectFirst"))
                         } else {
                             gdriveTarget = next
-                            scope.launch { viewModel.settings.setBoolean(PdfArchiveManager.KEY_GDRIVE, next) }
+                            scope.launch {
+                                viewModel.settings.setBoolean(PdfArchiveManager.KEY_GDRIVE, next)
+                                if (next) viewModel.onPdfArchiveTargetsChanged()
+                            }
                         }
                     }
                     if (!gdriveConnected) {

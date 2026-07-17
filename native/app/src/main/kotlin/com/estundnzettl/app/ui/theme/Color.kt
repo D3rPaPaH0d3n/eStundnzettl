@@ -27,6 +27,7 @@ object Palette {
     val Emerald500 = Color(0xFF10B981)
     val Emerald600 = Color(0xFF059669)
     val Emerald700 = Color(0xFF047857)
+    val Emerald900 = Color(0xFF064E3B)
 
     // Akzente (Dashboard/Formular)
     val Orange500 = Color(0xFFF97316)

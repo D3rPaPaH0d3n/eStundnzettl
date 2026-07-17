@@ -1,4 +1,10 @@
 {
+  "nativeWelcome": {
+    "title": "Welcome to the new eStundnzettl!",
+    "body": "Hi! Your app has been rebuilt from the ground up — the previous web-based shell is now a true native Android app. Why the switch? The old foundation was a good start, but you could feel it: at launch, while scrolling, on battery. The new version starts faster, runs smoother and is ready for everything ahead. Your data has been migrated automatically — everything is right where it belongs.",
+    "signature": "Thanks for being here! – Markus",
+    "cta": "Let's go!"
+  },
   "common": {
     "back": "Back",
     "close": "Close",

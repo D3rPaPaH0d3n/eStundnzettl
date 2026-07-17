@@ -254,6 +254,26 @@ private fun MainScreen(viewModel: MainViewModel) {
                 )
             }
 
+            // Update-Hinweis für Sideload-Installationen (GitHub-Release)
+            val bannerContext = androidx.compose.ui.platform.LocalContext.current
+            val release = state.updateAvailable
+            if (state.view == "dashboard" && release != null) {
+                com.estundnzettl.app.ui.UpdateAvailableBanner(
+                    release = release,
+                    onOpen = {
+                        runCatching {
+                            bannerContext.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse(release.url),
+                                ),
+                            )
+                        }
+                    },
+                    onDismiss = viewModel::dismissUpdateBanner,
+                )
+            }
+
             // View-Wechsel mit Übergang (Pendant zu den framer-motion-
             // Transitions der Web-App): sanftes Einblenden + leichtes
             // Hochgleiten der neuen Ansicht.
@@ -382,6 +402,11 @@ private fun MainScreen(viewModel: MainViewModel) {
         // Spotlight und scrollt sie mittig (Port von SettingsTourPopup.tsx)
         if (state.view == "settings" && !state.loading) {
             com.estundnzettl.app.ui.SettingsTourOverlay(viewModel)
+        }
+
+        // Einmaliges Willkommens-Popup nach der Capacitor-Migration
+        if (state.showNativeWelcome && !state.loading) {
+            com.estundnzettl.app.ui.NativeWelcomeDialog(viewModel)
         }
     }
     }

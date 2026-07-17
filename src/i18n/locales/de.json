@@ -1,4 +1,10 @@
 {
+  "nativeWelcome": {
+    "title": "Willkommen in der neuen eStundnzettl!",
+    "body": "Servus! Deine App wurde von Grund auf neu gebaut — aus der bisherigen Web-Technik ist eine echte, native Android-App geworden. Warum der Wechsel? Die alte Basis war ein guter Start, aber man hat sie der App angemerkt: beim Öffnen, beim Scrollen, beim Akku. Die neue Version startet schneller, läuft flüssiger und ist bereit für alles, was noch kommt. Deine Daten wurden automatisch übernommen — alles ist noch genau da, wo es hingehört.",
+    "signature": "Danke, dass du dabei bist! – Markus",
+    "cta": "Los geht's!"
+  },
   "common": {
     "back": "Zurück",
     "close": "Schließen",

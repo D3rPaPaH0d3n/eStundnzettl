@@ -108,6 +108,10 @@ data class MainUiState(
     val nextcloud: NextcloudUiState = NextcloudUiState(),
     /** Google-Drive-Verbindungszustand (Backup + PDF-Archiv getrennt). */
     val googleDrive: GoogleDriveUiState = GoogleDriveUiState(),
+    /** Neueres GitHub-Release (nur Sideload-Installationen). */
+    val updateAvailable: com.estundnzettl.app.data.UpdateCheck.Release? = null,
+    /** Einmaliges Willkommens-Popup nach der Migration von der Capacitor-App. */
+    val showNativeWelcome: Boolean = false,
 )
 
 data class NextcloudUiState(
@@ -152,6 +156,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // sonst racet die Onboarding-Entscheidung gegen den Import.
             (getApplication<android.app.Application>() as? EStundnzettlApp)
                 ?.legacyImport?.join()
+
+            // Einmaliges Willkommens-Popup für Umsteiger von der
+            // Capacitor-Version (Migration gelaufen, Popup noch nie gezeigt)
+            if (settings.getString(com.estundnzettl.app.data.LegacyDbImporter.MIGRATION_MARKER_KEY) != null &&
+                settings.getString(KEY_NATIVE_WELCOME_SEEN) != "1"
+            ) {
+                _state.value = _state.value.copy(showNativeWelcome = true)
+            }
+
+            // GitHub-Update-Check (nur Sideload; Debug-Builds prüfen nie)
+            launch {
+                val release = com.estundnzettl.app.data.UpdateCheck.check(
+                    getApplication(),
+                    settings,
+                    currentVersion = com.estundnzettl.app.BuildConfig.VERSION_NAME,
+                    isDebugBuild = com.estundnzettl.app.BuildConfig.DEBUG,
+                )
+                if (release != null) {
+                    _state.value = _state.value.copy(updateAvailable = release)
+                }
+            }
             loadSettings()
             restoreTimer()
             // Onboarding zeigen, wenn noch kein Profil existiert (leerer
@@ -844,6 +869,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Anhänge (Port von useAttachments.ts) ────────────────
 
     companion object {
+        private const val KEY_NATIVE_WELCOME_SEEN = "estundnzettl_native_welcome_seen_v1"
         private const val ATTACHMENTS_DIR = "attachments"
         private const val MAX_ATTACHMENT_SIZE = 10L * 1024 * 1024
         private val ALLOWED_ATTACHMENT_TYPES = setOf(
@@ -1024,6 +1050,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         com.estundnzettl.app.data.AutoBackupManager(
             getApplication(), settings, backupRepo, nextcloudManager, googleDrive,
         )
+    }
+
+    /** Willkommens-Popup nach der Capacitor-Migration bestätigt. */
+    fun dismissNativeWelcome() {
+        _state.value = _state.value.copy(showNativeWelcome = false)
+        viewModelScope.launch { settings.setString(KEY_NATIVE_WELCOME_SEEN, "1") }
+    }
+
+    /** Update-Banner für genau diese Version wegklicken. */
+    fun dismissUpdateBanner() {
+        val tag = _state.value.updateAvailable?.tag ?: return
+        _state.value = _state.value.copy(updateAvailable = null)
+        viewModelScope.launch {
+            settings.setString(com.estundnzettl.app.data.UpdateCheck.KEY_DISMISSED, tag)
+        }
     }
 
     private var autoBackupJob: kotlinx.coroutines.Job? = null

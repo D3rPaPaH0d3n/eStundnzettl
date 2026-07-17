@@ -59,6 +59,24 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
 
+      # ── 2.5 Gemeinsamer Debug-Keystore ───────────────────────────────
+      # Google validiert die Drive-Autorisierung über Paketname +
+      # Signatur-SHA-1. Ohne diesen Schritt signiert jeder (flüchtige)
+      # Runner mit einem frischen Keystore → der in der Cloud Console
+      # registrierte SHA-1 passt nie und der Login endet mit "Abgebrochen".
+      # Secret DEBUG_KEYSTORE_B64 = base64 des lokalen ~/.android/debug.keystore.
+      - name: Restore shared debug keystore
+        env:
+          DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$DEBUG_KEYSTORE_B64" ]; then
+            mkdir -p ~/.android
+            echo "$DEBUG_KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+            echo "✅ Debug-Keystore aus Secret wiederhergestellt"
+          else
+            echo "⚠️ Kein DEBUG_KEYSTORE_B64-Secret gesetzt — Runner-Keystore wird verwendet (Google-Drive-Login schlägt in dieser APK fehl)"
+          fi
+
       # ── 3. Core-Tests (portierte Berechnungs- und Backup-Logik) ─────
       - name: Run core unit tests
         working-directory: native

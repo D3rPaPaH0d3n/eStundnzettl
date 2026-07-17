@@ -1,5 +1,40 @@
 [
  {
+  "version": "5.0.0",
+  "date": "17.07.2026",
+  "title": "Komplett neu gebaut — jetzt echt nativ 🚀",
+  "isMajor": true,
+  "sections": [
+   {
+    "iconName": "Rocket",
+    "title": "Neues Fundament",
+    "items": [
+     "eStundnzettl ist keine verpackte Web-App mehr, sondern eine echte, native Android-App — von Grund auf neu geschrieben.",
+     "Das merkst du sofort: schnellerer Start, flüssigeres Scrollen und spürbar weniger Akkuverbrauch.",
+     "Gleiche Optik, gleiche Bedienung — nur das Fundament darunter ist neu."
+    ]
+   },
+   {
+    "iconName": "Database",
+    "title": "Deine Daten ziehen automatisch um",
+    "items": [
+     "Beim Update werden alle Einträge, Einstellungen, Tätigkeiten und Anhänge automatisch übernommen — du musst nichts tun.",
+     "Ein einmaliges Willkommens-Popup erklärt kurz, was sich geändert hat.",
+     "Die Berechnungen bleiben exakt gleich: Dieselben Daten ergeben denselben Stundenzettel — auf die Minute und aufs Byte."
+    ]
+   },
+   {
+    "iconName": "Sparkles",
+    "title": "Alles drin wie gewohnt",
+    "items": [
+     "Berichte mit PDF-Vorschau, Live-Timer, Einrichtungsassistent, Google-Drive-, Nextcloud- und lokale Backups — alles vollständig an Bord.",
+     "Die Einführungs-Touren markieren jetzt die passenden Stellen direkt am Bildschirm.",
+     "Die PDF-Vorschau zoomt schärfer und bleibt beim Zwei-Finger-Zoom unter deinen Fingern."
+    ]
+   }
+  ]
+ },
+ {
   "version": "4.5.2",
   "date": "04.07.2026",
   "title": "Backup komplett: alles sichern, alles zurückholen 🛡️",

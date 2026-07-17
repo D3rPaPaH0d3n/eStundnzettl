@@ -890,7 +890,10 @@ private fun AppInfoSection(viewModel: MainViewModel) {
             .padding(vertical = 8.dp),
     ) {
         Text(
-            t.t("settings.appInfo.versionLabel", "version" to "0.1.0 (Kotlin)"),
+            t.t(
+                "settings.appInfo.versionLabel",
+                "version" to com.estundnzettl.app.BuildConfig.VERSION_NAME,
+            ),
             color = colors.textFaint, fontSize = 12.sp, fontWeight = FontWeight.Bold,
         )
         Text(

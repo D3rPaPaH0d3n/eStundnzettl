@@ -1,5 +1,40 @@
 [
  {
+  "version": "5.0.0",
+  "date": "17.07.2026",
+  "title": "Rebuilt from the ground up — truly native 🚀",
+  "isMajor": true,
+  "sections": [
+   {
+    "iconName": "Rocket",
+    "title": "A new foundation",
+    "items": [
+     "eStundnzettl is no longer a packaged web app but a true native Android app — rewritten from scratch.",
+     "You'll notice right away: faster startup, smoother scrolling and noticeably less battery drain.",
+     "Same look, same workflow — only the foundation underneath is new."
+    ]
+   },
+   {
+    "iconName": "Database",
+    "title": "Your data moves in automatically",
+    "items": [
+     "All entries, settings, work codes and attachments are migrated automatically with the update — nothing to do on your side.",
+     "A one-time welcome popup briefly explains what changed.",
+     "Calculations stay exactly the same: the same data produces the same timesheet — to the minute and to the byte."
+    ]
+   },
+   {
+    "iconName": "Sparkles",
+    "title": "Everything on board as usual",
+    "items": [
+     "Reports with PDF preview, live timer, setup wizard, Google Drive, Nextcloud and local backups — all fully included.",
+     "The guided tours now highlight the relevant spots right on screen.",
+     "The PDF preview zooms sharper and stays under your fingers while pinching."
+    ]
+   }
+  ]
+ },
+ {
   "version": "4.5.2",
   "date": "04.07.2026",
   "title": "Backups done right: save everything, restore everything 🛡️",

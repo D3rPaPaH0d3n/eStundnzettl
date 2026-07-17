@@ -16,8 +16,10 @@ android {
         applicationId = "com.estundnzettl.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // Muss über dem versionCode der Capacitor-Produktion (284) liegen,
+        // damit Play die Beta als Update anbietet; Luft für Hotfixes gelassen.
+        versionCode = 300
+        versionName = "5.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

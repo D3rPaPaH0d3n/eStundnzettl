@@ -83,6 +83,10 @@ android.sourceSets.getByName("main") {
     assets.srcDir(layout.buildDirectory.dir("generated/i18nAssets"))
 }
 
+android.sourceSets.getByName("androidTest") {
+    assets.srcDir("$projectDir/schemas")
+}
+
 tasks.named("preBuild") {
     dependsOn(syncI18n)
 }
@@ -92,6 +96,7 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
@@ -120,4 +125,5 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.uiautomator)
+    androidTestImplementation(libs.androidx.room.testing)
 }

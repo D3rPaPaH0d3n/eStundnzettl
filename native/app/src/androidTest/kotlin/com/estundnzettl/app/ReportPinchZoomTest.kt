@@ -37,6 +37,9 @@ class ReportPinchZoomTest {
             val settings = SettingsRepository(AppDatabase.get(context).settingsDao())
             settings.setUserData(DEMO_USER)
             settings.setString("estundnzettl_hint_report_seen_v2", "1")
+            settings.setString("last_seen_changelog_version_code", BuildConfig.VERSION_CODE.toString())
+            settings.setString("last_seen_changelog_version_name", BuildConfig.VERSION_NAME)
+            settings.setString("estundnzettl_support_prompt_dismissed_v1", "true")
         }
 
         val intent = context.packageManager.getLaunchIntentForPackage(pkg)!!

@@ -93,16 +93,54 @@ data class TimerUiState(
 )
 
 /** One-shot Toast-Nachricht (i18n-Key + Argumente, oder bereits übersetzter Text). */
-enum class UiMessageTone { AUTO, SUCCESS, INFO, WARNING, ERROR }
+enum class UiMessageTone { SUCCESS, INFO, WARNING, ERROR }
+
+enum class UiMessageDuration { SHORT, LONG, UNTIL_DISMISSED }
 
 data class UiMessage(
     val key: String,
     val args: List<Pair<String, Any?>> = emptyList(),
     /** true = `key` ist bereits der fertige Anzeigetext. */
     val raw: Boolean = false,
-    /** AUTO ordnet zentrale Standardmeldungen anhand von Key und Text ein. */
-    val tone: UiMessageTone = UiMessageTone.AUTO,
+    val tone: UiMessageTone = toneForMessageKey(key),
+    val duration: UiMessageDuration = when (tone) {
+        UiMessageTone.ERROR, UiMessageTone.WARNING -> UiMessageDuration.LONG
+        else -> UiMessageDuration.SHORT
+    },
 )
+
+/**
+ * Übergang für vorhandene i18n-Aufrufe: Die Darstellungsart hängt nur vom
+ * stabilen Übersetzungsschlüssel ab, niemals vom deutschen/englischen Text.
+ * Neue Aufrufer sollen den Tone direkt am UiMessage angeben.
+ */
+internal fun toneForMessageKey(key: String): UiMessageTone = when (key) {
+    "toasts.entry.startEqualsEnd", "toasts.entry.overlap",
+    "settings.backup.toast.pollingTimeout", "settings.backup.toast.ncConnectFirst",
+    "settings.backup.toast.gdriveCancelled", "onboarding.toast.nameRequired",
+    "onboarding.toast.localeRequired", "onboarding.toast.backupNotFound",
+    "onboarding.toast.ncRestoreNotFound", "onboarding.toast.restoreProfileNeeded" ->
+        UiMessageTone.WARNING
+
+    "toasts.entry.saved", "toasts.entry.updated", "toasts.entry.deleted",
+    "toasts.timer.started", "toasts.timer.captured", "toasts.appReset",
+    "settings.language.toast", "settings.toast.materialYouOn", "settings.toast.materialYouOff",
+    "settings.toast.expertOn", "settings.toast.expertOff", "settings.toast.timeUpdated",
+    "settings.toast.restoreSuccess", "settings.data.toast.demoLoaded",
+    "settings.backup.toast.ncConnectedAs", "settings.backup.toast.ncDisconnected",
+    "settings.backup.toast.ncTestOk", "settings.backup.toast.gdriveConnected",
+    "onboarding.toast.demoLoaded" -> UiMessageTone.SUCCESS
+
+    else -> when {
+        key.endsWith("Failed", ignoreCase = true) ||
+            key.endsWith("Error", ignoreCase = true) ||
+            key.contains("invalid", ignoreCase = true) ||
+            key.contains("integrityMismatch", ignoreCase = true) ||
+            key.contains("folderAccessError", ignoreCase = true) ||
+            key.contains("unavailable", ignoreCase = true) -> UiMessageTone.ERROR
+        else -> UiMessageTone.INFO
+    }
+}
 
 data class MainUiState(
     val loading: Boolean = true,
@@ -1758,8 +1796,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Bereits übersetzten Text als Toast anzeigen (für UI-lokale Meldungen). */
-    fun showRawMessage(text: String) {
-        _messages.tryEmit(UiMessage(text, raw = true))
+    fun showRawMessage(
+        text: String,
+        tone: UiMessageTone = UiMessageTone.INFO,
+        duration: UiMessageDuration = when (tone) {
+            UiMessageTone.ERROR, UiMessageTone.WARNING -> UiMessageDuration.LONG
+            else -> UiMessageDuration.SHORT
+        },
+    ) {
+        _messages.tryEmit(UiMessage(text, raw = true, tone = tone, duration = duration))
     }
 
     private fun emit(message: UiMessage) {

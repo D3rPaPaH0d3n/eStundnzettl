@@ -1,6 +1,10 @@
 package com.estundnzettl.app
 
 import android.os.Bundle
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -26,7 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,8 +46,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.rememberCoroutineScope
 import com.estundnzettl.app.data.BackupRepository
+import com.estundnzettl.app.data.CrashRecoveryStore
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.AppHeader
+import com.estundnzettl.app.ui.AppErrorScreen
 import com.estundnzettl.app.ui.DashboardScreen
 import com.estundnzettl.app.ui.EntryFormScreen
 import com.estundnzettl.app.ui.LiveTimerBar
@@ -79,8 +85,39 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val crashStore = CrashRecoveryStore(this)
+        val crashReport = crashStore.read()
         setContent {
-            val state by viewModel.state.collectAsState()
+            if (crashReport != null) {
+                val recoveryI18n = remember { I18n.load(this, I18n.DEFAULT_LANGUAGE) }
+                EStundnzettlTheme(
+                    themeSetting = "system",
+                    materialYou = false,
+                    i18n = recoveryI18n,
+                    darkTopBar = false,
+                ) {
+                    AppErrorScreen(
+                        onRestart = {
+                            crashStore.clear()
+                            recreate()
+                        },
+                        onCopyDiagnostic = {
+                            getSystemService(ClipboardManager::class.java).setPrimaryClip(
+                                ClipData.newPlainText("eStundnzettl Diagnose", crashReport.diagnostic)
+                            )
+                        },
+                        onContactSupport = {
+                            val uri = Uri.parse(
+                                "mailto:project@kainer.co.at?subject=" +
+                                    Uri.encode("eStundnzettl Android-Fehler")
+                            )
+                            runCatching { startActivity(Intent(Intent.ACTION_SENDTO, uri)) }
+                        },
+                    )
+                }
+                return@setContent
+            }
+            val state by viewModel.state.collectAsStateWithLifecycle()
             val context = LocalContext.current
             val i18n = remember(state.language) { I18n.load(context, state.language) }
 
@@ -97,13 +134,13 @@ class MainActivity : ComponentActivity() {
                     viewModel.messages.collect { message ->
                         val text = if (message.raw) message.key
                         else i18n.t(message.key, *message.args.toTypedArray())
-                        val tone = resolveToastTone(message, text)
+                        val tone = message.tone
                         snackbarHostState.showSnackbar(
                             message = tone.name + TOAST_SEPARATOR + text,
-                            duration = when (tone) {
-                                UiMessageTone.ERROR, UiMessageTone.WARNING ->
-                                    androidx.compose.material3.SnackbarDuration.Long
-                                else -> androidx.compose.material3.SnackbarDuration.Short
+                            duration = when (message.duration) {
+                                UiMessageDuration.SHORT -> androidx.compose.material3.SnackbarDuration.Short
+                                UiMessageDuration.LONG -> androidx.compose.material3.SnackbarDuration.Long
+                                UiMessageDuration.UNTIL_DISMISSED -> androidx.compose.material3.SnackbarDuration.Indefinite
                             },
                         )
                     }
@@ -157,33 +194,6 @@ class MainActivity : ComponentActivity() {
  * direkt auf der Android-Navigationsleiste.
  */
 private const val TOAST_SEPARATOR = "\u001F"
-
-internal fun resolveToastTone(message: UiMessage, displayText: String): UiMessageTone {
-    if (message.tone != UiMessageTone.AUTO) return message.tone
-    val source = (message.key + " " + displayText).lowercase()
-    return when {
-        listOf(
-            "error", "failed", "failure", "invalid", "mismatch", "unavailable",
-            "fehler", "fehlgeschlagen", "ungültig", "konnte nicht", "nicht verfügbar",
-        ).any(source::contains) -> UiMessageTone.ERROR
-
-        listOf(
-            "warning", "required", "overlap", "startequalsend", "timeout", "cancelled",
-            "selectfile", "selecttarget", "connectfirst", "disabled", "notfound", "notrun",
-            "warnung", "erforderlich", "überschneid", "auswählen", "abgebrochen",
-            "nicht gefunden", "zuerst verbinden", "deaktiviert", "entsperr",
-        ).any(source::contains) -> UiMessageTone.WARNING
-
-        displayText.contains("✅") || listOf(
-            "success", "saved", "updated", "deleted", "connected", "completed", "imported",
-            "loaded", "started", "captured", "applied", "activated", "recalcallcorrect", "testok",
-            "erfolgreich", "gespeichert", "aktualisiert", "gelöscht", "verbunden",
-            "abgeschlossen", "importiert", "geladen", "gestartet", "übernommen", "aktiviert",
-        ).any(source::contains) -> UiMessageTone.SUCCESS
-
-        else -> UiMessageTone.INFO
-    }
-}
 
 @Composable
 private fun AppToast(snackbarData: androidx.compose.material3.SnackbarData) {
@@ -313,7 +323,7 @@ private fun SettingsRoute(viewModel: MainViewModel) {
 
 @Composable
 private fun MainScreen(viewModel: MainViewModel) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val colors = LocalAppColors.current
     val t = LocalI18n.current
 

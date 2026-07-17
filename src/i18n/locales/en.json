@@ -1184,5 +1184,13 @@
     "pointAdvanced": "Pro features are available under “Advanced settings”.",
     "close": "Got it",
     "reviewMode": "Review recording mode"
+  },
+  "crashRecovery": {
+    "title": "Something went wrong",
+    "body": "The app ended unexpectedly last time. You can safely restart it or copy the technical diagnostic for support.",
+    "dataSafe": "Your entries, attachments and backups will not be changed.",
+    "restart": "Restart app safely",
+    "copyDiagnostic": "Copy diagnostic",
+    "contactSupport": "Contact support"
   }
 }

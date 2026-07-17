@@ -6,56 +6,41 @@ import org.junit.Test
 class ToastToneTest {
 
     @Test
-    fun `saved entry is success`() {
-        assertEquals(
-            UiMessageTone.SUCCESS,
-            resolveToastTone(UiMessage("toasts.entry.saved"), "Eintrag gespeichert"),
-        )
+    fun `message keeps explicitly assigned success tone`() {
+        assertEquals(UiMessageTone.SUCCESS, UiMessage("saved", tone = UiMessageTone.SUCCESS).tone)
     }
 
     @Test
-    fun `activated mode is success`() {
-        assertEquals(
-            UiMessageTone.SUCCESS,
-            resolveToastTone(
-                UiMessage("settings.recordingMode.toastSimple"),
-                "Nur Arbeitszeiten eintragen aktiviert",
-            ),
-        )
+    fun `translated wording cannot change tone`() {
+        val german = UiMessage("Beliebiger deutscher Text", raw = true, tone = UiMessageTone.ERROR)
+        val english = german.copy(key = "Arbitrary English text")
+        assertEquals(german.tone, english.tone)
     }
 
     @Test
-    fun `failed backup is error`() {
-        assertEquals(
-            UiMessageTone.ERROR,
-            resolveToastTone(UiMessage("toasts.autoBackup.failed"), "Backup fehlgeschlagen"),
-        )
+    fun `errors default to long duration`() {
+        assertEquals(UiMessageDuration.LONG, UiMessage("failed", tone = UiMessageTone.ERROR).duration)
     }
 
     @Test
-    fun `required selection is warning`() {
-        assertEquals(
-            UiMessageTone.WARNING,
-            resolveToastTone(UiMessage("attachments.toast.selectFile"), "Bitte Datei auswählen"),
-        )
+    fun `warnings default to long duration`() {
+        assertEquals(UiMessageDuration.LONG, UiMessage("required", tone = UiMessageTone.WARNING).duration)
     }
 
     @Test
-    fun `neutral status remains info`() {
-        assertEquals(
-            UiMessageTone.INFO,
-            resolveToastTone(UiMessage("settings.pdfArchive.toast.generating"), "PDF wird erstellt"),
-        )
+    fun `neutral status defaults to short info`() {
+        val message = UiMessage("generating")
+        assertEquals(UiMessageTone.INFO, message.tone)
+        assertEquals(UiMessageDuration.SHORT, message.duration)
     }
 
     @Test
-    fun `explicit tone overrides automatic classifier`() {
-        assertEquals(
-            UiMessageTone.WARNING,
-            resolveToastTone(
-                UiMessage("custom", raw = true, tone = UiMessageTone.WARNING),
-                "Beliebiger Text",
-            ),
+    fun `critical error can remain until dismissed`() {
+        val message = UiMessage(
+            "critical",
+            tone = UiMessageTone.ERROR,
+            duration = UiMessageDuration.UNTIL_DISMISSED,
         )
+        assertEquals(UiMessageDuration.UNTIL_DISMISSED, message.duration)
     }
 }

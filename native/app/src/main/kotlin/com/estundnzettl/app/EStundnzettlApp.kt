@@ -3,6 +3,7 @@ package com.estundnzettl.app
 import android.app.Application
 import android.util.Log
 import com.estundnzettl.app.data.LegacyDbImporter
+import com.estundnzettl.app.data.CrashRecoveryStore
 import com.estundnzettl.app.data.db.AppDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +27,18 @@ class EStundnzettlApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            val comesFromTestRunner = throwable.stackTrace.any {
+                it.className.startsWith("org.junit.") || it.className.startsWith("androidx.test.")
+            }
+            if (!comesFromTestRunner) {
+                runCatching { CrashRecoveryStore(this).record(throwable) }
+                    .onFailure { Log.e("EStundnzettlApp", "Crash-Diagnose konnte nicht gespeichert werden", it) }
+            }
+            previousHandler?.uncaughtException(thread, throwable)
+        }
 
         // Einmalige Datenübernahme aus der Capacitor-App (gleiche
         // applicationId → Alt-DB liegt im eigenen Datenverzeichnis).

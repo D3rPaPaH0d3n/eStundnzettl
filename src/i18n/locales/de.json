@@ -1184,5 +1184,13 @@
     "pointAdvanced": "Profi-Funktionen findest du unter „Erweiterte Einstellungen“.",
     "close": "Verstanden",
     "reviewMode": "Aufzeichnungsart prüfen"
+  },
+  "crashRecovery": {
+    "title": "Da ist etwas schiefgegangen",
+    "body": "Die App wurde beim letzten Mal unerwartet beendet. Du kannst sie sicher neu starten oder die technische Diagnose für den Support kopieren.",
+    "dataSafe": "Deine Einträge, Anhänge und Backups werden dabei nicht verändert.",
+    "restart": "App sicher neu starten",
+    "copyDiagnostic": "Diagnose kopieren",
+    "contactSupport": "Support kontaktieren"
   }
 }

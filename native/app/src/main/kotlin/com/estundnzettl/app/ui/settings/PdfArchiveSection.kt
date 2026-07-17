@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.MainViewModel
+import com.estundnzettl.app.GooglePlayServicesStatus
 import com.estundnzettl.app.data.PdfArchiveManager
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
@@ -52,6 +53,8 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
     val ncConnected = vmState.nextcloud.connected
     val gdriveConnected = vmState.googleDrive.pdfConnected
     val gdriveEmail = vmState.googleDrive.pdfEmail
+    val playServicesAvailable =
+        vmState.googleDrive.playServices == GooglePlayServicesStatus.AVAILABLE
 
     var enabled by remember { mutableStateOf(false) }
     var localTarget by remember { mutableStateOf(false) }
@@ -69,6 +72,7 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
     }
 
     LaunchedEffect(Unit) {
+        viewModel.refreshGooglePlayServices()
         enabled = viewModel.settings.getBoolean(PdfArchiveManager.KEY_ENABLED)
         localTarget = viewModel.settings.getBoolean(PdfArchiveManager.KEY_LOCAL)
         nextcloudTarget = viewModel.settings.getBoolean(PdfArchiveManager.KEY_NEXTCLOUD)
@@ -166,7 +170,9 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
                 Column {
                     SettingsToggleRow(
                         title = t.t("settings.pdfArchive.gdrive.title"),
-                        subtitle = if (gdriveConnected) {
+                        subtitle = if (!playServicesAvailable) {
+                            t.t(vmState.googleDrive.playServices.messageKey())
+                        } else if (gdriveConnected) {
                             t.t("settings.pdfArchive.gdrive.folderWithEmail", "email" to gdriveEmail)
                         } else {
                             t.t("settings.pdfArchive.gdrive.info")
@@ -174,7 +180,9 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
                         checked = gdriveConnected && gdriveTarget,
                         accent = colors.special,
                     ) { next ->
-                        if (!gdriveConnected) {
+                        if (!playServicesAvailable) {
+                            toast(t.t("settings.backup.toast.gdriveUnavailable"))
+                        } else if (!gdriveConnected) {
                             toast(t.t("settings.pdfArchive.toast.gdriveConnectFirst"))
                         } else {
                             gdriveTarget = next
@@ -182,7 +190,12 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
                         }
                     }
                     if (!gdriveConnected) {
-                        ActionButton(label = t.t("settings.pdfArchive.gdrive.connect"), tint = colors.special) {
+                        ActionButton(
+                            label = if (playServicesAvailable) t.t("settings.pdfArchive.gdrive.connect")
+                            else t.t("settings.backup.gdrive.unavailableButton"),
+                            tint = if (playServicesAvailable) colors.special else colors.textFaint,
+                            enabled = playServicesAvailable,
+                        ) {
                             viewModel.connectGoogleDrive(forPdfArchive = true)
                         }
                     } else {

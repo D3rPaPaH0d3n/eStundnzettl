@@ -157,7 +157,21 @@ data class GoogleDriveUiState(
     val backupEmail: String = "",
     val pdfConnected: Boolean = false,
     val pdfEmail: String = "",
+    val playServices: GooglePlayServicesStatus = GooglePlayServicesStatus.CHECKING,
 )
+
+enum class GooglePlayServicesStatus {
+    CHECKING, AVAILABLE, MISSING, UPDATE_REQUIRED, DISABLED, INVALID, UNAVAILABLE,
+}
+
+internal fun googlePlayServicesStatus(errorCode: Int): GooglePlayServicesStatus = when (errorCode) {
+    0 -> GooglePlayServicesStatus.AVAILABLE
+    1 -> GooglePlayServicesStatus.MISSING
+    2 -> GooglePlayServicesStatus.UPDATE_REQUIRED
+    3 -> GooglePlayServicesStatus.DISABLED
+    9 -> GooglePlayServicesStatus.INVALID
+    else -> GooglePlayServicesStatus.UNAVAILABLE
+}
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -1289,17 +1303,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun refreshGoogleState() {
         val backupEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL) ?: ""
         val pdfEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL) ?: ""
+        val playServices = runCatching {
+            googlePlayServicesStatus(
+                com.google.android.gms.common.GoogleApiAvailability.getInstance()
+                    .isGooglePlayServicesAvailable(getApplication()),
+            )
+        }.getOrDefault(GooglePlayServicesStatus.UNAVAILABLE)
         _state.value = _state.value.copy(
             googleDrive = GoogleDriveUiState(
                 backupConnected = backupEmail.isNotEmpty(),
                 backupEmail = backupEmail,
                 pdfConnected = pdfEmail.isNotEmpty(),
                 pdfEmail = pdfEmail,
+                playServices = playServices,
             ),
         )
     }
 
+    /** Beim Öffnen der Backup-Karte erneut prüfen, falls Dienste aktiviert/aktualisiert wurden. */
+    fun refreshGooglePlayServices() {
+        viewModelScope.launch { refreshGoogleState() }
+    }
+
     fun connectGoogleDrive(forPdfArchive: Boolean = false) {
+        if (_state.value.googleDrive.playServices != GooglePlayServicesStatus.AVAILABLE) {
+            emit(UiMessage("settings.backup.toast.gdriveUnavailable"))
+            return
+        }
         val scope = if (forPdfArchive) {
             com.estundnzettl.app.data.GoogleDriveManager.SCOPE_FILE
         } else {

@@ -602,12 +602,13 @@ fun ActionButton(
     filled: Boolean = false,
     outlined: Boolean = false,
     small: Boolean = false,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     val colors = LocalAppColors.current
     Text(
         text = label,
-        color = if (filled) Color.White else tint,
+        color = if (!enabled) colors.textFaint else if (filled) Color.White else tint,
         fontWeight = FontWeight.Bold,
         fontSize = if (small) 11.sp else 14.sp,
         maxLines = 1,
@@ -619,15 +620,16 @@ fun ActionButton(
                 when {
                     filled -> if (tint == colors.textPrimary) colors.headerBackground else tint
                     outlined -> Color.Transparent
-                    else -> tint.copy(alpha = 0.1f)
+                    else -> tint.copy(alpha = if (enabled) 0.1f else 0.04f)
                 }
             )
             .border(
                 1.dp,
-                if (outlined) colors.border else tint.copy(alpha = if (filled) 0f else 0.4f),
+                if (!enabled) colors.borderSubtle
+                else if (outlined) colors.border else tint.copy(alpha = if (filled) 0f else 0.4f),
                 RoundedCornerShape(12.dp),
             )
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = if (small) 9.dp else 12.dp),
     )
 }

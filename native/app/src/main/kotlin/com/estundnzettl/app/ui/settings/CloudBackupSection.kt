@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.MainViewModel
+import com.estundnzettl.app.GooglePlayServicesStatus
 import com.estundnzettl.app.data.AutoBackupManager
 import com.estundnzettl.app.data.SettingsRepository
 import com.estundnzettl.app.ui.theme.LocalAppColors
@@ -52,6 +53,8 @@ fun CloudBackupContent(viewModel: MainViewModel) {
     val scope = rememberCoroutineScope()
     val state by viewModel.state.collectAsState()
     val nc = state.nextcloud
+    val playServicesAvailable =
+        state.googleDrive.playServices == GooglePlayServicesStatus.AVAILABLE
 
     var serverUrl by remember { mutableStateOf("") }
     var localEnabled by remember { mutableStateOf(false) }
@@ -67,6 +70,8 @@ fun CloudBackupContent(viewModel: MainViewModel) {
         lastBackup = viewModel.settings.getString(AutoBackupManager.KEY_LAST_BACKUP) ?: ""
         ncLastError = viewModel.settings.getString(AutoBackupManager.KEY_NC_LAST_ERROR) ?: ""
     }
+
+    LaunchedEffect(Unit) { viewModel.refreshGooglePlayServices() }
 
     fun formatLastBackup(): String {
         if (lastBackup.isEmpty()) return t.t("settings.backup.last.never")
@@ -89,11 +94,32 @@ fun CloudBackupContent(viewModel: MainViewModel) {
             Icon(
                 if (state.googleDrive.backupConnected) Icons.Filled.CloudDone else Icons.Filled.Cloud,
                 contentDescription = null,
-                tint = if (state.googleDrive.backupConnected) colors.positive else colors.textFaint,
+                tint = when {
+                    !playServicesAvailable -> colors.danger
+                    state.googleDrive.backupConnected -> colors.positive
+                    else -> colors.textFaint
+                },
             )
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Google Drive", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                if (state.googleDrive.backupConnected) {
+                if (!playServicesAvailable) {
+                    Text(
+                        t.t(state.googleDrive.playServices.messageKey()),
+                        color = colors.danger,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        t.t("settings.backup.gdrive.alternativesHint"),
+                        color = colors.textMuted,
+                        fontSize = 12.sp,
+                    )
+                    ActionButton(
+                        label = t.t("settings.backup.gdrive.unavailableButton"),
+                        tint = colors.textFaint,
+                        enabled = false,
+                    ) {}
+                } else if (state.googleDrive.backupConnected) {
                     Text(
                         t.t("settings.backup.gdrive.connectedAs", "label" to state.googleDrive.backupEmail),
                         color = colors.positive, fontSize = 12.sp,
@@ -242,4 +268,14 @@ fun CloudBackupContent(viewModel: MainViewModel) {
             }
         }
     }
+}
+
+internal fun GooglePlayServicesStatus.messageKey(): String = when (this) {
+    GooglePlayServicesStatus.CHECKING -> "settings.backup.gdrive.playServicesChecking"
+    GooglePlayServicesStatus.MISSING -> "settings.backup.gdrive.playServicesMissing"
+    GooglePlayServicesStatus.UPDATE_REQUIRED -> "settings.backup.gdrive.playServicesUpdateRequired"
+    GooglePlayServicesStatus.DISABLED -> "settings.backup.gdrive.playServicesDisabled"
+    GooglePlayServicesStatus.INVALID -> "settings.backup.gdrive.playServicesInvalid"
+    GooglePlayServicesStatus.UNAVAILABLE -> "settings.backup.gdrive.playServicesUnavailable"
+    GooglePlayServicesStatus.AVAILABLE -> "settings.backup.gdrive.notConnected"
 }

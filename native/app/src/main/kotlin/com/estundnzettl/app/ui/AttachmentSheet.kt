@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,10 +20,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.UploadFile
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,10 +56,9 @@ fun formatFileSize(bytes: Long): String {
 
 /**
  * Dokumente pro Eintrag — Port von AttachmentManager.tsx als
- * ModalBottomSheet: Datei wählen (SAF), Bezeichnung mit MRU-Vorschlägen,
+ * Vollbild-Dialog: Datei wählen (SAF), Bezeichnung mit MRU-Vorschlägen,
  * Liste der vorhandenen Anhänge mit Löschen.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AttachmentSheet(viewModel: MainViewModel) {
     val s by viewModel.state.collectAsState()
@@ -113,29 +111,18 @@ fun AttachmentSheet(viewModel: MainViewModel) {
         "$weekday, ${d.format(DateTimeFormatter.ofPattern(pattern))}"
     }
 
-    ModalBottomSheet(
-        onDismissRequest = { viewModel.closeAttachments() },
-        containerColor = colors.background,
+    AppFullScreenDialog(
+        title = t.t("attachments.title"),
+        subtitle = dateLabel,
+        onDismiss = { viewModel.closeAttachments() },
     ) {
         LazyColumn(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 16.dp, bottom = 32.dp),
         ) {
-            item {
-                Column {
-                    Text(
-                        t.t("attachments.title"),
-                        color = colors.textPrimary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                    )
-                    Text(dateLabel, color = colors.textMuted, fontSize = 12.sp)
-                }
-            }
-
             // ── Neues Dokument ──────────────────────────────────
             item {
                 AppCard {
@@ -310,7 +297,11 @@ fun AttachmentSheet(viewModel: MainViewModel) {
                                     }
                                 }
                             }) {
-                                Icon(Icons.Filled.Delete, contentDescription = null, tint = colors.danger)
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    contentDescription = t.t("common.delete"),
+                                    tint = colors.danger,
+                                )
                             }
                         }
                     }

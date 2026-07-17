@@ -28,12 +28,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.ui.AppCard
 import com.estundnzettl.app.ui.theme.LocalAppColors
+import com.estundnzettl.app.ui.theme.LocalI18n
 import java.util.Locale as JavaLocale
 
 /** Farbiges Icon-Badge im Karten-Header (Pendant zu den p-2-rounded-lg-Divs). */
@@ -60,12 +65,17 @@ fun CollapsibleSettingsCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = LocalAppColors.current
+    val t = LocalI18n.current
     var expanded by remember { mutableStateOf(defaultExpanded) }
 
     AppCard {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .semantics(mergeDescendants = true) {
+                    role = Role.Button
+                    stateDescription = t.t(if (expanded) "common.expanded" else "common.collapsed")
+                }
                 .clickable { expanded = !expanded }
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,

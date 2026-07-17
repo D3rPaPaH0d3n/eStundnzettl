@@ -10,8 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,7 +20,6 @@ import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,7 +29,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -343,7 +339,6 @@ fun ReportScreen(viewModel: MainViewModel) {
     if (monthPickerOpen) {
         MonthPickerDialog(
             selected = month,
-            javaLocale = javaLocale,
             onSelect = {
                 viewModel.setMonth(it)
                 filterWeek = null
@@ -758,82 +753,16 @@ fun ReportScreen(viewModel: MainViewModel) {
 
         // ── PDF-Einstellungen als Seitenleiste von rechts (Port des
         //    Layout-Panels aus PrintReport.tsx, nur Hausmasta-Modus) ──
-        androidx.activity.compose.BackHandler(enabled = layoutPanelOpen) { layoutPanelOpen = false }
-        AnimatedVisibility(
-            visible = layoutPanelOpen && layoutTogglesAvailable,
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { layoutPanelOpen = false },
-            )
-        }
-        AnimatedVisibility(
-            visible = layoutPanelOpen && layoutTogglesAvailable,
-            enter = slideInHorizontally(initialOffsetX = { it }),
-            exit = slideOutHorizontally(targetOffsetX = { it }),
-            modifier = Modifier.align(Alignment.CenterEnd),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(0.92f)
-                    .background(colors.background)
-                    .safeDrawingPadding(),
+        if (layoutPanelOpen && layoutTogglesAvailable) {
+            AppSelectionSheet(
+                title = i18n.t("reports.layoutPanel.title"),
+                subtitle = i18n.t("reports.layoutPanel.subtitle"),
+                icon = Icons.Filled.Tune,
+                onDismiss = { layoutPanelOpen = false },
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(colors.accent.copy(alpha = if (colors.isDark) 0.25f else 0.15f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Filled.Tune, contentDescription = null,
-                                tint = colors.accent, modifier = Modifier.size(18.dp),
-                            )
-                        }
-                        Column {
-                            Text(
-                                i18n.t("reports.layoutPanel.title"),
-                                color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp,
-                            )
-                            Text(
-                                i18n.t("reports.layoutPanel.subtitle"),
-                                color = colors.textMuted, fontSize = 12.sp,
-                            )
-                        }
-                    }
-                    IconButton(onClick = { layoutPanelOpen = false }) {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = i18n.t("common.close"),
-                            tint = colors.textSecondary,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                }
-                HorizontalDivider(color = colors.border)
                 Column(
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
                         .padding(12.dp),
                 ) {

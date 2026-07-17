@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -32,8 +33,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -195,23 +199,33 @@ fun CalculationSection(
 
         AnimatedVisibility(visible = editOpen) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SelectRow(t.t("settings.calc.overtimeRule"), overtimeLabel) { activeDrawer = "overtime" }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colors.surfaceVariant.copy(alpha = 0.34f))
+                        .border(1.dp, colors.borderSubtle, RoundedCornerShape(12.dp))
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    SelectRow(t.t("settings.calc.overtimeRule"), overtimeLabel) { activeDrawer = "overtime" }
 
-                if (config.overtimeMode == OvertimeMode.SPLIT) {
-                    NumberInputRow(
-                        label = t.t("settings.calc.overtimeThresholdLabel"),
-                        unit = t.t("settings.calc.hoursPerWeekUnit"),
-                        value = ((config.overtimeThresholdMinutes ?: 2400) / 60.0).toString().removeSuffix(".0"),
-                        onCommit = { text ->
-                            val parsed = text.replace(",", ".").toDoubleOrNull()
-                            if (parsed != null && parsed > 0) {
-                                onPatch { it.copy(overtimeThresholdMinutes = (parsed * 60).roundToInt()) }
-                            }
-                        },
-                    )
+                    if (config.overtimeMode == OvertimeMode.SPLIT) {
+                        NumberInputRow(
+                            label = t.t("settings.calc.overtimeThresholdLabel"),
+                            unit = t.t("settings.calc.hoursPerWeekUnit"),
+                            value = ((config.overtimeThresholdMinutes ?: 2400) / 60.0).toString().removeSuffix(".0"),
+                            onCommit = { text ->
+                                val parsed = text.replace(",", ".").toDoubleOrNull()
+                                if (parsed != null && parsed > 0) {
+                                    onPatch { it.copy(overtimeThresholdMinutes = (parsed * 60).roundToInt()) }
+                                }
+                            },
+                        )
+                    }
+
+                    SelectRow(t.t("settings.calc.sickOnWorkDay"), sickLabel) { activeDrawer = "sick" }
                 }
-
-                SelectRow(t.t("settings.calc.sickOnWorkDay"), sickLabel) { activeDrawer = "sick" }
 
                 // Feiertage & Halbtage
                 ActionButton(label = "📅 " + t.t("settings.calc.holidaysHalfDays"), tint = colors.textSecondary, outlined = true) {
@@ -579,19 +593,33 @@ private fun NumberInputRow(
 ) {
     val colors = LocalAppColors.current
     var text by remember(value) { mutableStateOf(value) }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    var hadFocus by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         SettingsFieldLabel(label)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it; onValueChange(it) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.weight(1f),
-            )
-            Text(unit, color = colors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            ActionButton(label = "OK", tint = colors.accent) { onCommit(text) }
-        }
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it; onValueChange(it) },
+            singleLine = true,
+            suffix = {
+                Text(unit, color = colors.textSecondary, fontWeight = FontWeight.Bold)
+            },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Decimal,
+                imeAction = ImeAction.Done,
+            ),
+            keyboardActions = KeyboardActions(onDone = {
+                hadFocus = false
+                onCommit(text)
+                focusManager.clearFocus()
+            }),
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { state ->
+                    if (hadFocus && !state.isFocused) onCommit(text)
+                    hadFocus = state.isFocused
+                },
+        )
     }
 }
 

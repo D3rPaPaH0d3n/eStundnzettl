@@ -336,20 +336,14 @@ private fun MainScreen(viewModel: MainViewModel) {
 
     // Lösch-Bestätigung (Port von ConfirmModal + app.deleteEntry*)
     state.deleteTarget?.let {
-        AlertDialog(
-            onDismissRequest = { viewModel.cancelDelete() },
-            title = { Text(t.t("app.deleteEntryTitle")) },
-            text = { Text(t.t("app.deleteEntryMessage")) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.confirmDelete() }) {
-                    Text(t.t("common.delete"), color = colors.danger)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.cancelDelete() }) {
-                    Text(t.t("common.cancel"))
-                }
-            },
+        com.estundnzettl.app.ui.AppConfirmDialog(
+            title = t.t("app.deleteEntryTitle"),
+            message = t.t("app.deleteEntryMessage"),
+            confirmLabel = t.t("common.delete"),
+            dismissLabel = t.t("common.cancel"),
+            onConfirm = viewModel::confirmDelete,
+            onDismiss = viewModel::cancelDelete,
+            destructive = true,
         )
     }
 

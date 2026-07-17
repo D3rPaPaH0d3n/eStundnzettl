@@ -7,6 +7,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +51,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.i18n.I18n
@@ -118,7 +122,6 @@ fun DashboardScreen(
     if (monthPickerOpen) {
         MonthPickerDialog(
             selected = currentMonth,
-            javaLocale = javaLocale,
             onSelect = { onSetMonth(it); monthPickerOpen = false },
             onDismiss = { monthPickerOpen = false },
         )
@@ -878,14 +881,12 @@ private fun EmptyState(t: I18n, colors: AppColors) {
 }
 
 /**
- * Monats-Picker — Port des Material3DatePicker-Plugins (pickMonth):
- * Titel mit aktuellem Datum, Jahr-Stepper, 12 Monats-Pillen,
- * Auswahl wird erst mit OK übernommen.
+ * Kompakter nativer Monats-Picker: Jahr-Stepper, 12 Monate und
+ * explizite Bestätigung. Bewusst ohne irreführende Tagesdatums-Anzeige.
  */
 @Composable
 internal fun MonthPickerDialog(
     selected: YearMonth,
-    javaLocale: JavaLocale,
     onSelect: (YearMonth) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -896,36 +897,51 @@ internal fun MonthPickerDialog(
     // Monatsnamen wie das Original-Plugin über die Gerätesprache
     // (de-AT → "Jän."), nicht über die App-Sprache.
     val deviceLocale = remember { JavaLocale.getDefault() }
-    val currentLabel = remember(selected, javaLocale) {
-        val date = if (selected == YearMonth.now()) LocalDate.now() else selected.atDay(1)
-        val pattern = if (javaLocale.language == "en") "M/d/yyyy" else "d.M.yyyy"
-        date.format(java.time.format.DateTimeFormatter.ofPattern(pattern))
-    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(t.t("dashboard.monthPickerAria", "value" to currentLabel)) },
+        title = {
+            Text(
+                text = t.t("dashboard.selectMonth"),
+                color = colors.textPrimary,
+                fontWeight = FontWeight.Bold,
+            )
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    TextButton(onClick = { year-- }) { Text("‹", color = colors.accent, fontSize = 18.sp) }
+                    IconButton(onClick = { year-- }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                            contentDescription = t.t("dashboard.previousYear"),
+                            tint = colors.accent,
+                        )
+                    }
                     Text(
                         year.toString(),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
+                        fontSize = 22.sp,
                         color = colors.textPrimary,
                     )
-                    TextButton(onClick = { year++ }) { Text("›", color = colors.accent, fontSize = 18.sp) }
+                    IconButton(onClick = { year++ }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = t.t("dashboard.nextYear"),
+                            tint = colors.accent,
+                        )
+                    }
                 }
                 (0 until 4).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         (1..3).forEach { col ->
                             val m = row * 3 + col
                             val isSelected = month == m
+                            val monthName = java.time.Month.of(m)
+                                .getDisplayName(TextStyle.FULL, deviceLocale)
                             Text(
                                 text = java.time.Month.of(m).getDisplayName(TextStyle.SHORT, deviceLocale),
                                 textAlign = TextAlign.Center,
@@ -933,10 +949,17 @@ internal fun MonthPickerDialog(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(50))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .background(if (isSelected) colors.accentStrong else colors.surfaceVariant)
-                                    .clickable { month = m }
-                                    .padding(vertical = 12.dp),
+                                    .selectable(
+                                        selected = isSelected,
+                                        role = Role.RadioButton,
+                                        onClick = { month = m },
+                                    )
+                                    .semantics {
+                                        contentDescription = "$monthName $year"
+                                    }
+                                    .padding(vertical = 13.dp),
                             )
                         }
                     }
@@ -945,7 +968,7 @@ internal fun MonthPickerDialog(
         },
         confirmButton = {
             TextButton(onClick = { onSelect(YearMonth.of(year, month)) }) {
-                Text("OK", color = colors.accent, fontWeight = FontWeight.Bold)
+                Text(t.t("common.confirm"), color = colors.accent, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -953,6 +976,7 @@ internal fun MonthPickerDialog(
                 Text(t.t("common.cancel"), color = colors.accent)
             }
         },
+        containerColor = colors.surface,
     )
 }
 

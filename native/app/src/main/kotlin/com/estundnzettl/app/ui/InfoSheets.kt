@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,10 +22,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -64,6 +63,10 @@ import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material.icons.outlined.Work
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
@@ -221,7 +224,6 @@ private fun HelpIconParagraph(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HelpSheet(onDismiss: () -> Unit) {
     val colors = LocalAppColors.current
@@ -229,26 +231,18 @@ fun HelpSheet(onDismiss: () -> Unit) {
 
     fun h(key: String): String = t.t("helpModal.$key")
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.background) {
+    AppFullScreenDialog(
+        title = h("title"),
+        subtitle = h("subtitle"),
+        onDismiss = onDismiss,
+    ) {
         LazyColumn(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 40.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 20.dp, bottom = 40.dp),
         ) {
-            item {
-                Column {
-                    Text(
-                        h("title"),
-                        color = colors.textPrimary,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 24.sp,
-                    )
-                    Text(h("subtitle"), color = colors.textMuted, fontSize = 13.sp)
-                }
-            }
-
             // Intro (Emerald-Karte mit Raketen-Badge)
             item {
                 Column(
@@ -591,7 +585,6 @@ fun loadChangelog(context: android.content.Context, language: String): List<Chan
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChangelogSheet(
     onDismiss: () -> Unit,
@@ -618,47 +611,19 @@ fun ChangelogSheet(
         )
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.background) {
+    AppFullScreenDialog(
+        title = if (automatic) t.t("changelogModal.whatsNewTitle") else t.t("changelogModal.title"),
+        subtitle = if (automatic) t.t("changelogModal.whatsNewSubtitle")
+        else t.t("changelogModal.versionsCount", "count" to versions.size),
+        onDismiss = onDismiss,
+    ) {
         LazyColumn(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 16.dp, bottom = 32.dp),
         ) {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (automatic) {
-                            Icon(
-                                Icons.Outlined.AutoAwesome,
-                                contentDescription = null,
-                                tint = colors.accent,
-                                modifier = Modifier.size(22.dp),
-                            )
-                        }
-                        Text(
-                            if (automatic) t.t("changelogModal.whatsNewTitle")
-                            else t.t("changelogModal.title"),
-                            color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp,
-                        )
-                        if (!automatic) {
-                            Text(
-                                t.t("changelogModal.versionsCount", "count" to versions.size),
-                                color = colors.textMuted, fontSize = 13.sp,
-                            )
-                        }
-                    }
-                    if (automatic) {
-                        Text(
-                            t.t("changelogModal.whatsNewSubtitle"),
-                            color = colors.textSecondary,
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp,
-                        )
-                    }
-                }
-            }
             items(displayedVersions, key = { it.version }) { version ->
                 val expanded = expandedVersion == version.version
                 AppCard {
@@ -666,6 +631,12 @@ fun ChangelogSheet(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .semantics(mergeDescendants = true) {
+                                    role = Role.Button
+                                    stateDescription = t.t(
+                                        if (expanded) "common.expanded" else "common.collapsed",
+                                    )
+                                }
                                 .clickable {
                                     expandedVersion = if (expanded) null else version.version
                                 },
@@ -685,7 +656,9 @@ fun ChangelogSheet(
                             }
                             Icon(
                                 Icons.Filled.KeyboardArrowDown,
-                                contentDescription = null,
+                                contentDescription = t.t(
+                                    if (expanded) "common.collapse" else "common.expand",
+                                ),
                                 tint = colors.textFaint,
                                 modifier = Modifier
                                     .size(18.dp)

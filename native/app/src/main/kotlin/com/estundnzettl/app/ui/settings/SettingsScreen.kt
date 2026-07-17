@@ -758,43 +758,34 @@ private fun ExpertModeSection(viewModel: MainViewModel) {
     var showDemoWarning by remember { mutableStateOf(false) }
 
     if (showDemoWarning) {
-        AlertDialog(
-            onDismissRequest = { showDemoWarning = false },
-            title = { Text(t.t("settings.data.demoWarning.title")) },
-            text = {
-                Text(
-                    t.t(
-                        "settings.data.demoWarning.messageTemplate",
-                        "hint" to t.t("settings.data.demoWarning.withBackupHint"),
-                    ),
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDemoWarning = false
-                    com.estundnzettl.app.ui.Haptics.medium(context)
-                    viewModel.loadDemoData()
-                }) { Text(t.t("settings.data.demoWarning.confirm"), color = colors.danger) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDemoWarning = false }) { Text(t.t("common.cancel")) }
+        com.estundnzettl.app.ui.AppConfirmDialog(
+            title = t.t("settings.data.demoWarning.title"),
+            message = t.t(
+                "settings.data.demoWarning.messageTemplate",
+                "hint" to t.t("settings.data.demoWarning.withBackupHint"),
+            ),
+            confirmLabel = t.t("settings.data.demoWarning.confirm"),
+            dismissLabel = t.t("common.cancel"),
+            destructive = true,
+            onDismiss = { showDemoWarning = false },
+            onConfirm = {
+                showDemoWarning = false
+                com.estundnzettl.app.ui.Haptics.medium(context)
+                viewModel.loadDemoData()
             },
         )
     }
 
     if (showRecalcWarning) {
-        AlertDialog(
-            onDismissRequest = { showRecalcWarning = false },
-            title = { Text(t.t("settings.appInfo.recalcModalTitle")) },
-            text = { Text(t.t("settings.appInfo.recalcModalMessage")) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showRecalcWarning = false
-                    viewModel.recalculateAllEntries()
-                }) { Text(t.t("settings.appInfo.recalc"), color = colors.accent) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRecalcWarning = false }) { Text(t.t("common.cancel")) }
+        com.estundnzettl.app.ui.AppConfirmDialog(
+            title = t.t("settings.appInfo.recalcModalTitle"),
+            message = t.t("settings.appInfo.recalcModalMessage"),
+            confirmLabel = t.t("settings.appInfo.recalc"),
+            dismissLabel = t.t("common.cancel"),
+            onDismiss = { showRecalcWarning = false },
+            onConfirm = {
+                showRecalcWarning = false
+                viewModel.recalculateAllEntries()
             },
         )
     }
@@ -836,18 +827,14 @@ private fun AppInfoSection(viewModel: MainViewModel) {
     var showDeleteAll by remember { mutableStateOf(false) }
 
     if (showDeleteAll) {
-        AlertDialog(
-            onDismissRequest = { showDeleteAll = false },
-            title = { Text(t.t("app.deleteAllTitle")) },
-            text = { Text(t.t("app.deleteAllMessage")) },
-            confirmButton = {
-                TextButton(onClick = { showDeleteAll = false; viewModel.deleteAllData() }) {
-                    Text(t.t("common.delete"), color = colors.danger)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteAll = false }) { Text(t.t("common.cancel")) }
-            },
+        com.estundnzettl.app.ui.AppConfirmDialog(
+            title = t.t("app.deleteAllTitle"),
+            message = t.t("app.deleteAllMessage"),
+            confirmLabel = t.t("common.delete"),
+            dismissLabel = t.t("common.cancel"),
+            onConfirm = { showDeleteAll = false; viewModel.deleteAllData() },
+            onDismiss = { showDeleteAll = false },
+            destructive = true,
         )
     }
 

@@ -35,19 +35,27 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 
 PACKAGE = "com.estundnzettl.app"
-AAB_PATH = "android/app/build/outputs/bundle/release/app-release.aab"
+AAB_PATH = os.environ.get(
+    "AAB_PATH", "android/app/build/outputs/bundle/release/app-release.aab"
+)
 TRACK = os.environ.get("PLAY_TRACK", "internal")
 ALL_TRACKS = ("internal", "alpha", "beta", "production")
 RELEASE_NOTES_LIMIT = 500
 RELEASE_NAME_LIMIT = 50
 
 # ── Versionsinfo aus Repo lesen ──────────────────────────────────────────
-build_gradle = pathlib.Path("android/app/build.gradle").read_text()
-match = re.search(r"versionCode\s+(\d+)", build_gradle)
-VERSION_CODE = match.group(1) if match else "0"
+# Env-Overrides erlauben dem Workflow, die Werte der gewählten App-Variante
+# (Capacitor vs. natives Kotlin-Rewrite) direkt durchzureichen.
+VERSION_CODE = os.environ.get("VERSION_CODE", "")
+if not VERSION_CODE:
+    build_gradle = pathlib.Path("android/app/build.gradle").read_text()
+    match = re.search(r"versionCode\s+(\d+)", build_gradle)
+    VERSION_CODE = match.group(1) if match else "0"
 
-pkg_json = json.loads(pathlib.Path("package.json").read_text(encoding="utf-8"))
-VERSION_NAME = pkg_json.get("version", "0.0.0")
+VERSION_NAME = os.environ.get("VERSION_NAME", "")
+if not VERSION_NAME:
+    pkg_json = json.loads(pathlib.Path("package.json").read_text(encoding="utf-8"))
+    VERSION_NAME = pkg_json.get("version", "0.0.0")
 
 # ── Release-Name ableiten ────────────────────────────────────────────────
 FASTLANE_DE = pathlib.Path(

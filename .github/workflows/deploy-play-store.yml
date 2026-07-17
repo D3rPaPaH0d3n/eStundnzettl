@@ -53,6 +53,14 @@ on:
         options:
           - internal
           - beta
+      app:
+        description: 'App-Variante (capacitor = android/, native = Kotlin-Rewrite in native/)'
+        required: true
+        default: 'capacitor'
+        type: choice
+        options:
+          - capacitor
+          - native
       version_bump:
         description: 'Version bump (nur bei Internal, bei Beta ignoriert)'
         required: false
@@ -101,28 +109,38 @@ jobs:
           echo "📌 HEAD ist jetzt: $(git log --oneline -1)"
           echo "📌 Track: $DEPLOY_TRACK"
 
-      # ── 2. Node.js Setup + Dependencies ──────────────────────────────
+      # ── 2. Node.js Setup + Dependencies (nur Capacitor) ──────────────
       - name: Set up Node.js
+        if: github.event.inputs.app != 'native'
         uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
+        if: github.event.inputs.app != 'native'
         run: npm ci
 
       - name: Run unit tests
+        if: github.event.inputs.app != 'native'
         run: npm test
 
       # ── 3. Version hochzählen ────────────────────────────────────────
       - name: Read current version
         id: read_version
+        env:
+          APP_VARIANT: ${{ github.event.inputs.app }}
         run: |
-          CODE=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
-          NAME=$(node -p "require('./package.json').version")
+          if [ "$APP_VARIANT" = "native" ]; then
+            CODE=$(grep -oP 'versionCode = \K\d+' native/app/build.gradle.kts)
+            NAME=$(grep -oP 'versionName = "\K[^"]+' native/app/build.gradle.kts)
+          else
+            CODE=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
+            NAME=$(node -p "require('./package.json').version")
+          fi
           echo "code=$CODE" >> $GITHUB_OUTPUT
           echo "name=$NAME" >> $GITHUB_OUTPUT
-          echo "📌 Lokale Version: $NAME (versionCode $CODE)"
+          echo "📌 Lokale Version ($APP_VARIANT): $NAME (versionCode $CODE)"
 
       # Play Console immer abfragen: Google Play verbrennt versionCodes track-übergreifend.
       # Auch Beta muss daher max(lokal, Play) + 1 verwenden.
@@ -204,8 +222,10 @@ jobs:
             NEW_NAME="${new_major}.${new_minor}.${new_patch}"
           fi
 
-          # package.json nur bei echtem Semver-Bump anpassen
-          if [ "$BUMP_TYPE" != "none" ]; then
+          APP_VARIANT="${{ github.event.inputs.app }}"
+
+          # package.json nur bei echtem Semver-Bump der Capacitor-App anpassen
+          if [ "$BUMP_TYPE" != "none" ] && [ "$APP_VARIANT" != "native" ]; then
             node -e "
               const fs = require('fs');
               const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -214,9 +234,14 @@ jobs:
             "
           fi
 
-          # build.gradle aktualisieren
-          sed -i "s/versionCode $OLD_CODE/versionCode $NEW_CODE/" android/app/build.gradle
-          sed -i "s/versionName \"[^\"]*\"/versionName \"$NEW_NAME\"/" android/app/build.gradle
+          # Versionsdatei der gewählten Variante aktualisieren
+          if [ "$APP_VARIANT" = "native" ]; then
+            sed -i "s/versionCode = $OLD_CODE/versionCode = $NEW_CODE/" native/app/build.gradle.kts
+            sed -i "s/versionName = \"[^\"]*\"/versionName = \"$NEW_NAME\"/" native/app/build.gradle.kts
+          else
+            sed -i "s/versionCode $OLD_CODE/versionCode $NEW_CODE/" android/app/build.gradle
+            sed -i "s/versionName \"[^\"]*\"/versionName \"$NEW_NAME\"/" android/app/build.gradle
+          fi
 
           echo "new_code=$NEW_CODE" >> $GITHUB_OUTPUT
           echo "new_name=$NEW_NAME" >> $GITHUB_OUTPUT
@@ -282,15 +307,18 @@ jobs:
           echo "📝 Play Store Release-Notes für versionCode $CODE vorbereitet:"
           sed -n '1,20p' fastlane/metadata/android/de-DE/changelogs/${CODE}.txt
 
-      # ── 4. Frontend bauen ────────────────────────────────────────────
+      # ── 4. Frontend bauen (nur Capacitor) ────────────────────────────
       - name: Build web assets
+        if: github.event.inputs.app != 'native'
         run: npm run build
 
-      # ── 5. Capacitor Sync + Proguard-Fix ─────────────────────────────
+      # ── 5. Capacitor Sync + Proguard-Fix (nur Capacitor) ─────────────
       - name: Sync Capacitor
+        if: github.event.inputs.app != 'native'
         run: npx cap sync android
 
       - name: Fix Capacitor Proguard reference
+        if: github.event.inputs.app != 'native'
         run: |
           find node_modules/@capacitor -name "build.gradle" \
             -exec sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" {} \;
@@ -302,11 +330,16 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
-
       - name: Build release AAB
-        run: cd android && ./gradlew bundleRelease --no-daemon
+        env:
+          APP_VARIANT: ${{ github.event.inputs.app }}
+        run: |
+          if [ "$APP_VARIANT" = "native" ]; then
+            # Core-Tests ersetzen hier die npm-Tests der Capacitor-Variante
+            cd native && chmod +x gradlew && ./gradlew :core:test :app:bundleRelease --no-daemon
+          else
+            cd android && chmod +x gradlew && ./gradlew bundleRelease --no-daemon
+          fi
 
       # ── 7. AAB signieren ─────────────────────────────────────────────
       - name: Decode keystore
@@ -318,12 +351,19 @@ jobs:
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+          APP_VARIANT: ${{ github.event.inputs.app }}
         run: |
+          if [ "$APP_VARIANT" = "native" ]; then
+            AAB="native/app/build/outputs/bundle/release/app-release.aab"
+          else
+            AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          fi
+          echo "AAB_PATH=$AAB" >> "$GITHUB_ENV"
           jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
             -keystore keystore.jks \
             -storepass "$KEYSTORE_PASSWORD" \
             -keypass "$KEYSTORE_PASSWORD" \
-            android/app/build/outputs/bundle/release/app-release.aab \
+            "$AAB" \
             "$KEYSTORE_ALIAS"
 
       # ── 8. Play Store Upload ─────────────────────────────────────────
@@ -344,6 +384,9 @@ jobs:
         env:
           PLAY_TRACK: ${{ github.event.inputs.track }}
           RELEASE_NOTES: ${{ github.event.inputs.release_notes_override }}
+          AAB_PATH: ${{ env.AAB_PATH }}
+          VERSION_CODE: ${{ steps.bump.outputs.new_code }}
+          VERSION_NAME: ${{ steps.bump.outputs.new_name }}
         run: python3 .github/workflows/scripts/deploy-play.py
 
       # ── 9. Version-Bump committen (nur Internal) ─────────────────────
@@ -353,7 +396,7 @@ jobs:
           NEW_NAME=${{ steps.bump.outputs.new_name }}
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add android/app/build.gradle package.json package-lock.json fastlane/metadata/android/*/changelogs/${{ steps.bump.outputs.new_code }}.txt
+          git add android/app/build.gradle native/app/build.gradle.kts package.json package-lock.json fastlane/metadata/android/*/changelogs/${{ steps.bump.outputs.new_code }}.txt
           CURRENT_BRANCH="${{ github.ref_name }}"
           if ! git diff --staged --quiet; then
             git commit -m "chore: release metadata for v$NEW_NAME [skip ci]"
@@ -368,7 +411,7 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add android/app/build.gradle fastlane/metadata/android/*/changelogs/${{ steps.bump.outputs.new_code }}.txt
+          git add android/app/build.gradle native/app/build.gradle.kts fastlane/metadata/android/*/changelogs/${{ steps.bump.outputs.new_code }}.txt
           if ! git diff --staged --quiet; then
             git commit -m "chore: bump versionCode for Beta v${{ steps.bump.outputs.new_name }} (${{ steps.bump.outputs.new_code }}) [skip ci]"
             git push origin "${{ github.ref_name }}"

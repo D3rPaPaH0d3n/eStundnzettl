@@ -442,7 +442,7 @@ class ReportPdfGenerator(
         val timeLine2Paint: TextPaint?,
         val projectLayout: StaticLayout,
         val attachmentLayout: StaticLayout?,
-        val codeText: String,
+        val codeLayout: StaticLayout?,
         val hoursText: String,
         val hoursPaint: TextPaint,
         val balanceText: String?,
@@ -537,17 +537,26 @@ class ReportPdfGenerator(
             )
         }
 
+        // Code — in der Spaltenbreite umbrechen statt in STD./SALDO zu laufen
+        val codeLabel = e.code?.let { workCodeLabels[it] }.orEmpty()
+        val codeLayout = if (codeLabel.isNotEmpty()) {
+            staticLayout(codeLabel, textPaint(7.5f, C.textMedium), COL_CODE - 6f)
+        } else {
+            null
+        }
+
         val timeH = line1Paint.lineHeight + (line2Paint?.let { 1f + it.lineHeight } ?: 0f)
         val projectH = projectLayout.height.toFloat() +
             (attachmentLayout?.let { 2f + it.height.toFloat() } ?: 0f)
-        val contentH = maxOf(timeH, projectH, textPaint(9f, C.textDark).lineHeight)
+        val codeH = codeLayout?.height?.toFloat() ?: 0f
+        val contentH = maxOf(timeH, projectH, codeH, textPaint(9f, C.textDark).lineHeight)
         val height = 4f + contentH + 4f + 0.5f
 
         return RowLayout(
             height, sameDay, lastOfDay,
             line1, line1Paint, line2, line2Paint,
             projectLayout, attachmentLayout,
-            codeText = e.code?.let { workCodeLabels[it] }.orEmpty(),
+            codeLayout = codeLayout,
             hoursText = hoursText, hoursPaint = hoursPaint,
             balanceText = balanceText, balancePaint = balancePaint,
             meta = meta,
@@ -608,8 +617,11 @@ class ReportPdfGenerator(
         canvas.restore()
 
         // Code
-        if (showCode && row.codeText.isNotEmpty()) {
-            canvas.drawTextTop(row.codeText, codeLeft, contentTop, textPaint(7.5f, C.textMedium))
+        if (showCode && row.codeLayout != null) {
+            canvas.save()
+            canvas.translate(codeLeft, contentTop)
+            row.codeLayout.draw(canvas)
+            canvas.restore()
         }
 
         // Stunden

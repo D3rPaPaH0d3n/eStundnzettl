@@ -142,7 +142,14 @@ fun SettingsScreen(
         PdfArchiveSection(viewModel)
         Box(Modifier.tourSection("appearanceHelp")) { AppearanceSection(viewModel) }
         ExpertModeSection(viewModel)
-        Box(Modifier.tourSection("help-card")) { AppInfoSection(viewModel) }
+        // Column statt Box: AppInfoSection besteht aus mehreren Karten +
+        // Footer — eine Box würde sie übereinander stapeln.
+        Column(
+            modifier = Modifier.tourSection("help-card"),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            AppInfoSection(viewModel)
+        }
 
         Spacer(Modifier.height(24.dp))
     }

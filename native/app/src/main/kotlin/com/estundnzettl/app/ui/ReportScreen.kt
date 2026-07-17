@@ -17,6 +17,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.horizontalScroll
@@ -73,6 +75,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -106,6 +109,7 @@ import com.estundnzettl.core.calc.getWeekRangeInMonth
 import com.estundnzettl.core.model.Attachment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDate
@@ -222,8 +226,16 @@ fun ReportScreen(viewModel: MainViewModel) {
     var pdfBytes by remember { mutableStateOf<ByteArray?>(null) }
     var pageBitmaps by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
 
+    // Vorschau-Auflösung: 1.5x Bildschirmbreite reicht für 1x-Ansicht;
+    // sobald gezoomt wird, einmalig scharf für ZOOM_MAX nachrendern.
+    var hiResPreview by remember { mutableStateOf(false) }
     val previewWidthPx = with(LocalDensity.current) {
-        (LocalConfiguration.current.screenWidthDp.dp.toPx() * 1.5f).toInt().coerceAtMost(2000)
+        val base = LocalConfiguration.current.screenWidthDp.dp.toPx()
+        if (hiResPreview) {
+            (base * 3f).toInt().coerceAtMost(3000)
+        } else {
+            (base * 1.5f).toInt().coerceAtMost(2000)
+        }
     }
 
     fun buildInput(note: String) = ReportPdfInput(
@@ -243,6 +255,7 @@ fun ReportScreen(viewModel: MainViewModel) {
     LaunchedEffect(
         filteredEntries, userData, month, filterWeek, stats,
         s.workCodes, reportAttachments, customNote, locale, config, allCorrected, i18n,
+        previewWidthPx,
     ) {
         // Debounce (PREVIEW_DEBOUNCE_MS) — Tippen im Notizfeld soll nicht
         // jeden Tastendruck ein PDF rendern lassen.
@@ -578,11 +591,12 @@ fun ReportScreen(viewModel: MainViewModel) {
                     .background(Palette.Zinc950),
             ) {
                 val baseWidth = maxWidth
-                val animatedScale by androidx.compose.animation.core.animateFloatAsState(
-                    targetValue = userScale,
-                    animationSpec = androidx.compose.animation.core.tween(80),
-                    label = "pdfZoom",
-                )
+                val baseWidthPx = constraints.maxWidth.toFloat()
+                val hScroll = rememberScrollState()
+                val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+                val pinchScope = rememberCoroutineScope()
+                val pageAspect = pageBitmaps.firstOrNull()
+                    ?.let { it.height.toFloat() / it.width } ?: 1.414f
                 if (pageBitmaps.isEmpty()) {
                     CircularProgressIndicator(
                         color = colors.accent,
@@ -595,6 +609,8 @@ fun ReportScreen(viewModel: MainViewModel) {
                             .background(Palette.Zinc800.copy(alpha = 0.5f))
                             // Pinch-to-Zoom wie das Original: greift nur bei
                             // zwei Fingern ein, Ein-Finger-Scrollen bleibt frei.
+                            // Die Scroll-Offsets folgen dem Finger-Mittelpunkt,
+                            // damit die Stelle unter den Fingern stehen bleibt.
                             .pointerInput(Unit) {
                                 awaitEachGesture {
                                     awaitFirstDown(requireUnconsumed = false)
@@ -603,19 +619,42 @@ fun ReportScreen(viewModel: MainViewModel) {
                                         if (event.changes.count { it.pressed } >= 2) {
                                             val zoomChange = event.calculateZoom()
                                             if (zoomChange != 1f) {
-                                                userScale = (userScale * zoomChange)
+                                                val oldScale = userScale
+                                                val newScale = (oldScale * zoomChange)
                                                     .coerceIn(ZOOM_MIN, ZOOM_MAX)
+                                                if (newScale != oldScale) {
+                                                    val factor = newScale / oldScale
+                                                    val centroid = event.calculateCentroid()
+                                                    val spacingPx = 12.dp.toPx()
+                                                    val pageH = baseWidthPx * oldScale * pageAspect
+                                                    val absY = listState.firstVisibleItemIndex *
+                                                        (pageH + spacingPx) +
+                                                        listState.firstVisibleItemScrollOffset
+                                                    userScale = newScale
+                                                    if (newScale > 1.05f) hiResPreview = true
+                                                    pinchScope.launch {
+                                                        hScroll.scrollBy(
+                                                            (hScroll.value + centroid.x) * (factor - 1f),
+                                                        )
+                                                    }
+                                                    pinchScope.launch {
+                                                        listState.scrollBy(
+                                                            (absY + centroid.y) * (factor - 1f),
+                                                        )
+                                                    }
+                                                }
                                             }
                                             event.changes.forEach { it.consume() }
                                         }
                                     } while (event.changes.any { it.pressed })
                                 }
                             }
-                            .horizontalScroll(rememberScrollState()),
+                            .horizontalScroll(hScroll),
                     ) {
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier
-                                .width(baseWidth * animatedScale)
+                                .width(baseWidth * userScale)
                                 .fillMaxHeight(),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(
                                 start = 12.dp, end = 12.dp, top = 12.dp, bottom = 96.dp,
@@ -653,7 +692,10 @@ fun ReportScreen(viewModel: MainViewModel) {
                     ZoomButton(
                         icon = Icons.Filled.Add,
                         enabled = userScale < ZOOM_MAX - 0.0001f,
-                    ) { userScale = (userScale + ZOOM_STEP).coerceAtMost(ZOOM_MAX) }
+                    ) {
+                        userScale = (userScale + ZOOM_STEP).coerceAtMost(ZOOM_MAX)
+                        if (userScale > 1.05f) hiResPreview = true
+                    }
                     Box(
                         modifier = Modifier
                             .size(28.dp)

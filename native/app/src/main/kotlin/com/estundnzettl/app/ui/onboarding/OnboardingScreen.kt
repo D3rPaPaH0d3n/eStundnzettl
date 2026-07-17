@@ -192,7 +192,7 @@ fun OnboardingScreen(viewModel: MainViewModel) {
                         1 -> ProfileStep(viewModel, ob)
                         2 -> LocaleStep(viewModel, ob)
                         3 -> WorkScheduleStep(viewModel, ob, state.language)
-                        4 -> CalculationStep(viewModel, ob)
+                        4 -> CalculationBuilderStep(viewModel, ob, state.language)
                         5 -> WorkCodesStep(viewModel, ob)
                         6 -> BackupStep(viewModel, ob)
                         7 -> SummaryStep(viewModel, ob)
@@ -319,7 +319,7 @@ private fun tone(name: String): Tone {
 
 /** Zentrierter Step-Header: 64dp-Icon-Box, Titel und Untertitel. */
 @Composable
-private fun StepHeader(icon: ImageVector, toneName: String, title: String, subtitle: String) {
+internal fun StepHeader(icon: ImageVector, toneName: String, title: String, subtitle: String) {
     val colors = LocalAppColors.current
     val boxTone = tone(toneName)
     Column(
@@ -354,7 +354,7 @@ private fun StepHeader(icon: ImageVector, toneName: String, title: String, subti
 
 /** Hinweisbox mit Icon: bg tone-50, Border tone-100, Text tone-900. */
 @Composable
-private fun HintBox(icon: ImageVector, toneName: String, text: String) {
+internal fun HintBox(icon: ImageVector, toneName: String, text: String) {
     val dark = LocalAppColors.current.isDark
     val bg: Color
     val borderColor: Color
@@ -737,7 +737,7 @@ private fun Modifier.dashedCircleBorder(color: Color): Modifier = drawBehind {
 }
 
 @Composable
-private fun WizardField(
+internal fun WizardField(
     label: String,
     value: String,
     placeholder: String,
@@ -1145,69 +1145,6 @@ private fun ModeCard(
 }
 
 // ─── Step 4: Berechnung (nur Eigener Plan) ───────────────────
-
-@Composable
-private fun CalculationStep(viewModel: MainViewModel, ob: OnboardingUiState) {
-    val colors = LocalAppColors.current
-    val t = LocalI18n.current
-    val config = ob.calcConfig ?: return
-    var drawer by remember { mutableStateOf<String?>(null) }
-
-    StepHeader(Icons.Outlined.Tune, "emerald", t.t("settings.calc.header"), t.t("settings.calc.subtitle"))
-
-    when (drawer) {
-        "overtime" -> OptionSheet(
-            title = t.t("settings.calc.overtimeRule"),
-            options = OvertimeMode.entries.map { it.wireName to t.t("settings.calc.overtimeOptions.${it.wireName}") },
-            selected = config.overtimeMode.wireName,
-            onSelect = { id ->
-                val mode = OvertimeMode.fromWireOrNull(id)!!
-                viewModel.onboardingUpdate {
-                    it.copy(calcConfig = config.copy(
-                        overtimeMode = mode,
-                        overtimeThresholdMinutes = when (mode) {
-                            OvertimeMode.SPLIT -> config.overtimeThresholdMinutes ?: 2400
-                            OvertimeMode.NONE -> null
-                            else -> config.overtimeThresholdMinutes
-                        },
-                    ))
-                }
-                drawer = null
-            },
-            onDismiss = { drawer = null },
-        )
-
-        "sick" -> OptionSheet(
-            title = t.t("settings.calc.sickOnWorkDay"),
-            options = listOf(
-                SickOnWorkDayMode.CAP_TO_TARGET, SickOnWorkDayMode.ADDITIVE, SickOnWorkDayMode.IGNORE,
-            ).map { it.wireName to t.t("settings.calc.sickOptions.${it.wireName}") },
-            selected = config.sickOnWorkDayMode.wireName,
-            onSelect = { id ->
-                viewModel.onboardingUpdate {
-                    it.copy(calcConfig = config.copy(sickOnWorkDayMode = SickOnWorkDayMode.fromWireOrNull(id)!!))
-                }
-                drawer = null
-            },
-            onDismiss = { drawer = null },
-        )
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        com.estundnzettl.app.ui.settings.SelectRow(
-            t.t("settings.calc.overtimeRule"),
-            t.t("settings.calc.overtimeOptions.${config.overtimeMode.wireName}"),
-        ) { drawer = "overtime" }
-        com.estundnzettl.app.ui.settings.SelectRow(
-            t.t("settings.calc.sickOnWorkDay"),
-            t.t("settings.calc.sickOptions.${config.sickOnWorkDayMode.wireName}"),
-        ) { drawer = "sick" }
-        Text(
-            t.t("settings.calc.subtitle"),
-            color = colors.textMuted, fontSize = 12.sp,
-        )
-    }
-}
 
 // ─── Step 5: Tätigkeiten ─────────────────────────────────────
 

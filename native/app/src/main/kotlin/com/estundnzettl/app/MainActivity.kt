@@ -129,7 +129,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     // Bewertungs-/Spenden-Hinweis (einmalig, 5 Tage nach Erstnutzung)
-                    if (state.showSupportPrompt && !state.onboarding.active) {
+                    if (state.showSupportPrompt && !state.onboarding.active && !state.showWhatsNew) {
                         com.estundnzettl.app.ui.SupportPromptDialog(viewModel)
                     }
 
@@ -324,9 +324,13 @@ private fun MainScreen(viewModel: MainViewModel) {
 
     // Header-Titel — bewusst hartkodiert wie getHeaderTitle in useAppState.ts
     val headerTitle = when (state.view) {
-        "settings" -> "Einstellungen"
-        "add" -> if (state.form.editingEntry != null) "Eintrag bearbeiten" else "Neuer Eintrag"
-        "report" -> "Bericht"
+        "settings" -> t.t("header.settingsTitle")
+        "add" -> if (state.form.editingEntry != null) {
+            t.t("header.editEntryTitle")
+        } else {
+            t.t("header.newEntryTitle")
+        }
+        "report" -> t.t("header.reportTitle")
         else -> "eStundnzettl"
     }
 
@@ -522,7 +526,7 @@ private fun MainScreen(viewModel: MainViewModel) {
 
         // Einmalige App-Tour nach dem Onboarding — Overlay mit Spotlight
         // auf FAB/Bericht/Einstellungen (Port von AppTour.tsx)
-        if (state.showTour) {
+        if (state.showTour && !state.showWhatsNew) {
             com.estundnzettl.app.ui.AppTourOverlay(
                 i18n = t,
                 index = tourIndex,
@@ -540,6 +544,23 @@ private fun MainScreen(viewModel: MainViewModel) {
         // Einmaliges Willkommens-Popup nach der Capacitor-Migration
         if (state.showNativeWelcome && !state.loading) {
             com.estundnzettl.app.ui.NativeWelcomeDialog(viewModel)
+        }
+
+        // Nach einem echten App-Update einmalig die aktuelle Version zeigen.
+        // Onboarding, Migration und Auto-Checkout haben bewusst Vorrang.
+        if (
+            state.showWhatsNew &&
+            !state.loading &&
+            !state.showNativeWelcome &&
+            !state.showTour &&
+            !state.showSupportPrompt &&
+            !state.form.isLiveEntry
+        ) {
+            com.estundnzettl.app.ui.ChangelogSheet(
+                onDismiss = viewModel::dismissWhatsNew,
+                focusVersion = state.whatsNewVersion,
+                automatic = true,
+            )
         }
     }
     }

@@ -20,9 +20,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -124,23 +124,30 @@ fun DashboardScreen(
         )
     }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(horizontal = 12.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            top = 12.dp,
+            bottom = 108.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        MonthStatsCard(
-            currentMonth = currentMonth,
-            appData = appData,
-            simpleMode = simpleMode,
-            javaLocale = javaLocale,
-            onChangeMonth = onChangeMonth,
-            onOpenPicker = { monthPickerOpen = true },
-        )
+        item(key = "month-stats") {
+            Box(modifier = Modifier.padding(bottom = 8.dp)) {
+                MonthStatsCard(
+                    currentMonth = currentMonth,
+                    appData = appData,
+                    simpleMode = simpleMode,
+                    javaLocale = javaLocale,
+                    onChangeMonth = onChangeMonth,
+                    onOpenPicker = { monthPickerOpen = true },
+                )
+            }
+        }
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        item(key = "recent-entries-title") {
             Text(
                 text = t.t("dashboard.recentEntries"),
                 color = colors.textMuted,
@@ -149,37 +156,41 @@ fun DashboardScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 4.dp),
             )
+        }
 
-            if (sortedWeeks.isEmpty()) {
+        if (sortedWeeks.isEmpty()) {
+            item(key = "empty-state") {
                 EmptyState(t, colors)
-            } else {
-                sortedWeeks.forEach { (week, weekEntries) ->
-                    WeekGroup(
-                        attachmentCounts = attachmentCounts,
-                        onManageAttachments = onManageAttachments,
-                        week = week,
-                        weekEntries = weekEntries,
-                        currentMonth = currentMonth,
-                        expanded = week in expandedWeeks,
-                        onToggle = {
-                            expandedWeeks = if (week in expandedWeeks) {
-                                expandedWeeks - week
-                            } else {
-                                expandedWeeks + week
-                            }
-                        },
-                        userData = userData,
-                        locale = locale,
-                        config = calculationConfig,
-                        simpleMode = simpleMode,
-                        workCodeLabelMap = workCodeLabelMap,
-                        javaLocale = javaLocale,
-                        onEditEntry = onEditEntry,
-                        onDeleteEntry = onDeleteEntry,
-                    )
-                }
             }
-            Spacer(Modifier.height(96.dp)) // Platz für FAB
+        } else {
+            items(
+                items = sortedWeeks,
+                key = { (week, _) -> "week-$week" },
+            ) { (week, weekEntries) ->
+                WeekGroup(
+                    attachmentCounts = attachmentCounts,
+                    onManageAttachments = onManageAttachments,
+                    week = week,
+                    weekEntries = weekEntries,
+                    currentMonth = currentMonth,
+                    expanded = week in expandedWeeks,
+                    onToggle = {
+                        expandedWeeks = if (week in expandedWeeks) {
+                            expandedWeeks - week
+                        } else {
+                            expandedWeeks + week
+                        }
+                    },
+                    userData = userData,
+                    locale = locale,
+                    config = calculationConfig,
+                    simpleMode = simpleMode,
+                    workCodeLabelMap = workCodeLabelMap,
+                    javaLocale = javaLocale,
+                    onEditEntry = onEditEntry,
+                    onDeleteEntry = onDeleteEntry,
+                )
+            }
         }
     }
 }

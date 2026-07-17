@@ -506,11 +506,19 @@
   },
   "changelogModal": {
     "title": "Änderungsprotokoll",
+    "whatsNewTitle": "Servus, da gibt’s was Neues!",
+    "whatsNewSubtitle": "Wir haben eStundnzettl verbessert. Hier siehst du kurz und verständlich, was sich geändert hat.",
+    "olderChangesHint": "Ältere Änderungen kannst du jederzeit in den Einstellungen unter App-Info nachlesen.",
+    "allClear": "Alles klar",
     "recentBugfixes": "Kürzliche Bugfixes",
     "versionsCount_one": "({{count}} Version)",
     "versionsCount_other": "({{count}} Versionen)"
   },
   "header": {
+    "settingsTitle": "Einstellungen",
+    "newEntryTitle": "Neuer Eintrag",
+    "editEntryTitle": "Eintrag bearbeiten",
+    "reportTitle": "Bericht",
     "settings": "Einstellungen öffnen",
     "report": "Bericht öffnen",
     "backToOverview": "Zurück zur Übersicht",
@@ -673,6 +681,7 @@
   },
   "settings": {
     "toast": {
+      "demoLoadFailed": "Demo-Daten konnten nicht geladen werden.",
       "customModeRequired": "Bitte erst 'Benutzerdefiniert' wählen",
       "unlockRequired": "Zum Bearbeiten erst Schloss öffnen",
       "timeUpdated": "Zeit aktualisiert",
@@ -1116,6 +1125,9 @@
       "entryMissing": "Eintrag fehlt.",
       "selectFile": "Bitte zuerst ein Dokument auswählen.",
       "labelRequired": "Bitte eine Bezeichnung eingeben.",
+      "invalidType": "Nur PDF, JPG, PNG oder WEBP sind erlaubt.",
+      "readError": "Datei konnte nicht gelesen werden.",
+      "fileTooLarge": "Datei ist größer als 10 MB.",
       "added": "Dokument hinzugefügt",
       "addError": "Dokument konnte nicht gespeichert werden.",
       "deleted": "Dokument gelöscht",

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -592,12 +593,30 @@ fun loadChangelog(context: android.content.Context, language: String): List<Chan
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChangelogSheet(onDismiss: () -> Unit) {
+fun ChangelogSheet(
+    onDismiss: () -> Unit,
+    focusVersion: String? = null,
+    automatic: Boolean = false,
+) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
     val context = LocalContext.current
     val versions = remember(t.language) { loadChangelog(context, t.language) }
-    var expandedVersion by remember { mutableStateOf(versions.firstOrNull()?.version) }
+    val displayedVersions = remember(versions, focusVersion, automatic) {
+        if (automatic && focusVersion != null) {
+            versions.firstOrNull { it.version == focusVersion }
+                ?.let { focused -> listOf(focused) + versions.filterNot { it.version == focusVersion } }
+                ?: versions
+        } else {
+            versions
+        }
+    }
+    var expandedVersion by remember(focusVersion, automatic) {
+        mutableStateOf(
+            focusVersion?.takeIf { target -> versions.any { it.version == target } }
+                ?: versions.firstOrNull()?.version,
+        )
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.background) {
         LazyColumn(
@@ -608,18 +627,39 @@ fun ChangelogSheet(onDismiss: () -> Unit) {
             contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp),
         ) {
             item {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        t.t("changelogModal.title"),
-                        color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp,
-                    )
-                    Text(
-                        t.t("changelogModal.versionsCount", "count" to versions.size),
-                        color = colors.textMuted, fontSize = 13.sp,
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (automatic) {
+                            Icon(
+                                Icons.Outlined.AutoAwesome,
+                                contentDescription = null,
+                                tint = colors.accent,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                        Text(
+                            if (automatic) t.t("changelogModal.whatsNewTitle")
+                            else t.t("changelogModal.title"),
+                            color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp,
+                        )
+                        if (!automatic) {
+                            Text(
+                                t.t("changelogModal.versionsCount", "count" to versions.size),
+                                color = colors.textMuted, fontSize = 13.sp,
+                            )
+                        }
+                    }
+                    if (automatic) {
+                        Text(
+                            t.t("changelogModal.whatsNewSubtitle"),
+                            color = colors.textSecondary,
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                        )
+                    }
                 }
             }
-            items(versions, key = { it.version }) { version ->
+            items(displayedVersions, key = { it.version }) { version ->
                 val expanded = expandedVersion == version.version
                 AppCard {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -674,6 +714,23 @@ fun ChangelogSheet(onDismiss: () -> Unit) {
                                 }
                             }
                         }
+                    }
+                }
+            }
+            if (automatic) {
+                item {
+                    Text(
+                        t.t("changelogModal.olderChangesHint"),
+                        color = colors.textMuted,
+                        fontSize = 12.sp,
+                    )
+                }
+                item {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(t.t("changelogModal.allClear"), fontWeight = FontWeight.Bold)
                     }
                 }
             }

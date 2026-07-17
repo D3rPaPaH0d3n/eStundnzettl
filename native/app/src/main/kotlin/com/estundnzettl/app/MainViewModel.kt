@@ -37,6 +37,9 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -47,6 +50,23 @@ import java.util.Locale as JavaLocale
 
 internal fun autoCheckoutDays(startDate: LocalDate, today: LocalDate): Int =
     ChronoUnit.DAYS.between(startDate, today).toInt().coerceAtLeast(1)
+
+internal enum class WhatsNewDecision { SHOW, MARK_CURRENT, NONE }
+
+internal class AttachmentValidationException(val translationKey: String) : Exception()
+
+internal fun decideWhatsNew(
+    lastSeenVersionCode: Int?,
+    currentVersionCode: Int,
+    hasExistingProfile: Boolean,
+    hasCurrentChangelog: Boolean,
+): WhatsNewDecision = when {
+    !hasCurrentChangelog -> WhatsNewDecision.MARK_CURRENT
+    lastSeenVersionCode == null && hasExistingProfile -> WhatsNewDecision.SHOW
+    lastSeenVersionCode == null -> WhatsNewDecision.MARK_CURRENT
+    currentVersionCode > lastSeenVersionCode -> WhatsNewDecision.SHOW
+    else -> WhatsNewDecision.NONE
+}
 
 /** Formular-Zustand — Port von useFormState. */
 data class FormUiState(
@@ -121,6 +141,9 @@ data class MainUiState(
     val updateAvailable: com.estundnzettl.app.data.UpdateCheck.Release? = null,
     /** Einmaliges Willkommens-Popup nach der Migration von der Capacitor-App. */
     val showNativeWelcome: Boolean = false,
+    /** Nach einem Update einmalig sichtbares Änderungsprotokoll. */
+    val showWhatsNew: Boolean = false,
+    val whatsNewVersion: String? = null,
 )
 
 data class NextcloudUiState(
@@ -193,6 +216,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (_state.value.userData?.name.isNullOrBlank()) {
                 _state.value = _state.value.copy(onboarding = OnboardingUiState(active = true))
             }
+            prepareWhatsNew()
             refreshAttachments()
             refreshNextcloudState(connecting = false)
             refreshGoogleState()
@@ -888,6 +912,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         private const val KEY_NATIVE_WELCOME_SEEN = "estundnzettl_native_welcome_seen_v1"
+        private const val KEY_CHANGELOG_VERSION_CODE = "last_seen_changelog_version_code"
+        private const val KEY_CHANGELOG_VERSION_NAME = "last_seen_changelog_version_name"
         private const val ATTACHMENTS_DIR = "attachments"
         private const val MAX_ATTACHMENT_SIZE = 10L * 1024 * 1024
         private val ALLOWED_ATTACHMENT_TYPES = setOf(
@@ -925,12 +951,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun addAttachment(entryId: EntryId, uri: android.net.Uri, label: String) {
         val context = getApplication<Application>()
         val trimmedLabel = label.trim()
-        require(trimmedLabel.isNotEmpty()) { "Bitte eine Bezeichnung eingeben." }
+        if (trimmedLabel.isEmpty()) {
+            throw AttachmentValidationException("attachments.toast.labelRequired")
+        }
 
         val resolver = context.contentResolver
         val mimeType = resolver.getType(uri) ?: "application/octet-stream"
         if (mimeType !in ALLOWED_ATTACHMENT_TYPES) {
-            throw IllegalArgumentException("Nur PDF, JPG, PNG oder WEBP sind erlaubt.")
+            throw AttachmentValidationException("attachments.toast.invalidType")
         }
 
         var displayName = "dokument"
@@ -945,10 +973,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val bytes = resolver.openInputStream(uri)?.use { it.readBytes() }
-            ?: throw IllegalArgumentException("Datei konnte nicht gelesen werden.")
+            ?: throw AttachmentValidationException("attachments.toast.readError")
         if (size < 0) size = bytes.size.toLong()
         if (size > MAX_ATTACHMENT_SIZE) {
-            throw IllegalArgumentException("Datei ist größer als 10 MB.")
+            throw AttachmentValidationException("attachments.toast.fileTooLarge")
         }
 
         val id = "att_${System.currentTimeMillis()}_${(1..6).map { "abcdefghijklmnopqrstuvwxyz0123456789".random() }.joinToString("")}"
@@ -974,7 +1002,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             attachmentsRepo.upsert(attachment)
         } catch (_: Exception) {
             runCatching { file.delete() }
-            throw IllegalStateException("Anhang konnte nicht gespeichert werden.")
+            throw AttachmentValidationException("attachments.toast.addError")
         }
         attachmentsRepo.pushLabelSuggestion(trimmedLabel)
         refreshAttachments()
@@ -1014,7 +1042,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 reloadAfterImport()
                 emit(UiMessage("settings.data.toast.demoLoaded"))
             } catch (_: Exception) {
-                emit(UiMessage("Demo-Daten konnten nicht geladen werden", raw = true))
+                emit(UiMessage("settings.toast.demoLoadFailed"))
             }
         }
     }
@@ -1076,6 +1104,47 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { settings.setString(KEY_NATIVE_WELCOME_SEEN, "1") }
     }
 
+    /** Automatisches Änderungsprotokoll bestätigt; manuell bleibt es in den Einstellungen erreichbar. */
+    fun dismissWhatsNew() {
+        _state.value = _state.value.copy(showWhatsNew = false)
+        viewModelScope.launch { markCurrentChangelogSeen() }
+    }
+
+    private suspend fun prepareWhatsNew() {
+        val currentCode = BuildConfig.VERSION_CODE
+        val currentName = BuildConfig.VERSION_NAME
+        val lastSeenCode = settings.getString(KEY_CHANGELOG_VERSION_CODE)?.toIntOrNull()
+        val hasEntry = runCatching {
+            val raw = getApplication<Application>().assets
+                .open("changelog/changelog.de.json")
+                .bufferedReader().use { it.readText() }
+            Json.parseToJsonElement(raw).jsonArray.any { item ->
+                item.jsonObject["version"]?.jsonPrimitive?.content == currentName
+            }
+        }.getOrDefault(false)
+
+        when (
+            decideWhatsNew(
+                lastSeenVersionCode = lastSeenCode,
+                currentVersionCode = currentCode,
+                hasExistingProfile = !_state.value.userData?.name.isNullOrBlank(),
+                hasCurrentChangelog = hasEntry,
+            )
+        ) {
+            WhatsNewDecision.SHOW -> _state.value = _state.value.copy(
+                showWhatsNew = true,
+                whatsNewVersion = currentName,
+            )
+            WhatsNewDecision.MARK_CURRENT -> markCurrentChangelogSeen()
+            WhatsNewDecision.NONE -> Unit
+        }
+    }
+
+    private suspend fun markCurrentChangelogSeen() {
+        settings.setString(KEY_CHANGELOG_VERSION_CODE, BuildConfig.VERSION_CODE.toString())
+        settings.setString(KEY_CHANGELOG_VERSION_NAME, BuildConfig.VERSION_NAME)
+    }
+
     /** Update-Banner für genau diese Version wegklicken. */
     fun dismissUpdateBanner() {
         val tag = _state.value.updateAvailable?.tag ?: return
@@ -1133,7 +1202,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 } catch (e: Exception) {
                     refreshNextcloudState(connecting = false)
-                    emit(UiMessage(e.message ?: "Nextcloud Login fehlgeschlagen", raw = true))
+                    emit(UiMessage("settings.backup.toast.nextcloudLoginFailed"))
                     return@launch
                 }
             }
@@ -1168,7 +1237,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (result.isSuccess) {
                 emit(UiMessage("settings.backup.toast.ncTestOk"))
             } else {
-                emit(UiMessage(result.exceptionOrNull()?.message ?: "Verbindung fehlgeschlagen", raw = true))
+                emit(UiMessage("settings.backup.toast.ncTestFailed"))
             }
         }
     }
@@ -1249,7 +1318,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     emit(UiMessage("settings.backup.toast.gdriveUnavailable"))
                 }
             } catch (e: Exception) {
-                emit(UiMessage(e.message ?: "Google Drive Verbindung fehlgeschlagen", raw = true))
+                emit(UiMessage("settings.backup.toast.gdriveFailed"))
             }
         }
     }
@@ -1366,7 +1435,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 emit(UiMessage("onboarding.toast.demoLoaded"))
                 maybeStartTour()
             } catch (_: Exception) {
-                emit(UiMessage("Demo-Daten konnten nicht geladen werden", raw = true))
+                emit(UiMessage("settings.toast.demoLoadFailed"))
             }
         }
     }
@@ -1474,7 +1543,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 updateOnboarding { it.copy(restoreLoading = false) }
-                emit(UiMessage(e.message ?: "Google Drive Verbindung fehlgeschlagen", raw = true))
+                emit(UiMessage("settings.backup.toast.gdriveFailed"))
             }
         }
     }
@@ -1502,7 +1571,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 loadedKey = "onboarding.toast.backupLoaded",
             )
         } catch (e: Exception) {
-            emit(UiMessage(e.message ?: "Google Drive Verbindung fehlgeschlagen", raw = true))
+            emit(UiMessage("settings.backup.toast.gdriveFailed"))
         } finally {
             updateOnboarding { it.copy(restoreLoading = false) }
         }
@@ -1530,7 +1599,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     loadedKey = "onboarding.toast.ncRestoreLoaded",
                 )
             } catch (e: Exception) {
-                emit(UiMessage(e.message ?: "Nextcloud-Restore fehlgeschlagen", raw = true))
+                emit(UiMessage("onboarding.toast.ncLoginFailed"))
             } finally {
                 updateOnboarding { it.copy(restoreLoading = false) }
             }

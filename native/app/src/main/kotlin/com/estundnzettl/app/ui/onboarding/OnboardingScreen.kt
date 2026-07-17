@@ -1386,13 +1386,8 @@ private fun BackupSetupOptions(viewModel: MainViewModel, ob: OnboardingUiState) 
                                             val loginUrl = viewModel.nextcloudInitiate(serverUrl)
                                             CustomTabsIntent.Builder().build()
                                                 .launchUrl(context, Uri.parse(loginUrl))
-                                        } catch (e: Exception) {
-                                            viewModel.showRawMessage(
-                                                t.t(
-                                                    "settings.backup.toast.nextcloudLoginFailedWith",
-                                                    "message" to (e.message ?: ""),
-                                                ),
-                                            )
+                                        } catch (_: Exception) {
+                                            viewModel.showRawMessage(t.t("settings.backup.toast.nextcloudLoginFailed"))
                                         }
                                     }
                                 }
@@ -1617,13 +1612,8 @@ private fun RestoreOptions(viewModel: MainViewModel, ob: OnboardingUiState) {
                                             ncRestoreRequested = true
                                             CustomTabsIntent.Builder().build()
                                                 .launchUrl(context, Uri.parse(loginUrl))
-                                        } catch (e: Exception) {
-                                            viewModel.showRawMessage(
-                                                t.t(
-                                                    "settings.backup.toast.nextcloudLoginFailedWith",
-                                                    "message" to (e.message ?: ""),
-                                                ),
-                                            )
+                                        } catch (_: Exception) {
+                                            viewModel.showRawMessage(t.t("settings.backup.toast.nextcloudLoginFailed"))
                                         }
                                     }
                                 }

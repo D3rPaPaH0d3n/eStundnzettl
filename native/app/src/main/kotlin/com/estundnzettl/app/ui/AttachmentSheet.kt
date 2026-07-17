@@ -226,8 +226,10 @@ fun AttachmentSheet(viewModel: MainViewModel) {
                                             pickedUri = null
                                             pickedName = ""
                                             label = ""
-                                        } catch (e: Exception) {
-                                            toast(e.message ?: t.t("attachments.toast.addError"))
+                                        } catch (e: com.estundnzettl.app.AttachmentValidationException) {
+                                            toast(t.t(e.translationKey))
+                                        } catch (_: Exception) {
+                                            toast(t.t("attachments.toast.addError"))
                                         } finally {
                                             saving = false
                                         }

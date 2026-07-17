@@ -506,11 +506,19 @@
   },
   "changelogModal": {
     "title": "Changelog",
+    "whatsNewTitle": "Hello, there’s something new!",
+    "whatsNewSubtitle": "We’ve improved eStundnzettl. Here’s a quick and simple look at what changed.",
+    "olderChangesHint": "You can revisit older changes anytime in Settings under App info.",
+    "allClear": "Got it",
     "recentBugfixes": "Recent bug fixes",
     "versionsCount_one": "({{count}} version)",
     "versionsCount_other": "({{count}} versions)"
   },
   "header": {
+    "settingsTitle": "Settings",
+    "newEntryTitle": "New entry",
+    "editEntryTitle": "Edit entry",
+    "reportTitle": "Report",
     "settings": "Open settings",
     "report": "Open report",
     "backToOverview": "Back to overview",
@@ -673,6 +681,7 @@
   },
   "settings": {
     "toast": {
+      "demoLoadFailed": "Demo data could not be loaded.",
       "customModeRequired": "Pick 'Custom' first",
       "unlockRequired": "Unlock the padlock first to edit",
       "timeUpdated": "Time updated",
@@ -1116,6 +1125,9 @@
       "entryMissing": "Entry missing.",
       "selectFile": "Please pick a document first.",
       "labelRequired": "Please enter a label.",
+      "invalidType": "Only PDF, JPG, PNG or WEBP files are allowed.",
+      "readError": "The file could not be read.",
+      "fileTooLarge": "The file is larger than 10 MB.",
       "added": "Document added",
       "addError": "Couldn't save the document.",
       "deleted": "Document deleted",

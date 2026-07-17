@@ -195,13 +195,8 @@ fun CloudBackupContent(viewModel: MainViewModel) {
                                     val loginUrl = viewModel.nextcloudInitiate(serverUrl)
                                     CustomTabsIntent.Builder().build()
                                         .launchUrl(context, Uri.parse(loginUrl))
-                                } catch (e: Exception) {
-                                    toast(
-                                        t.t(
-                                            "settings.backup.toast.nextcloudLoginFailedWith",
-                                            "message" to (e.message ?: ""),
-                                        ),
-                                    )
+                                } catch (_: Exception) {
+                                    toast(t.t("settings.backup.toast.nextcloudLoginFailed"))
                                 }
                             }
                         }
@@ -238,8 +233,8 @@ fun CloudBackupContent(viewModel: MainViewModel) {
                     } else {
                         toast(t.t("toasts.autoBackup.failed"))
                     }
-                } catch (e: Exception) {
-                    toast(e.message ?: t.t("toasts.autoBackup.failed"))
+                } catch (_: Exception) {
+                    toast(t.t("toasts.autoBackup.failed"))
                 } finally {
                     saving = false
                     refreshTick++

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -62,6 +63,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.MainViewModel
+import com.estundnzettl.app.ui.tourTarget
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
@@ -89,47 +91,58 @@ fun SettingsScreen(
     val userData = state.userData ?: com.estundnzettl.core.model.UserData()
     val expertMode = userData.expertMode
 
+    // Tour-Ziele + Scroll-Hook für die Einstellungen-Tour (Spotlight
+    // scrollt die jeweilige Sektion mittig ins Bild)
+    val scrollState = rememberScrollState()
+    val tourTargets = com.estundnzettl.app.ui.LocalTourTargets.current
+    androidx.compose.runtime.DisposableEffect(scrollState) {
+        tourTargets.settingsScroll = { delta -> scrollState.animateScrollBy(delta) }
+        onDispose { tourTargets.settingsScroll = null }
+    }
+    fun Modifier.tourSection(key: String) = tourTarget(tourTargets, "settings:$key")
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        // Einmalige Einstellungen-Tour (Port von SettingsTourPopup)
-        com.estundnzettl.app.ui.SettingsTourPopup(viewModel)
-
-        ProfileSection(viewModel)
-        RecordingModeSection(viewModel)
+        Box(Modifier.tourSection("profile")) { ProfileSection(viewModel) }
+        Box(Modifier.tourSection("recording")) { RecordingModeSection(viewModel) }
         WorkScheduleSection(viewModel)
-        WorkCodesSection(viewModel)
+        Box(Modifier.tourSection("codes")) { WorkCodesSection(viewModel) }
 
         // Stundenberechnung (Locale im Hausmasta-Modus + Berechnungsregeln)
-        CollapsibleSettingsCard(
-            title = t.t("settings.locale.header"),
-            subtitle = t.t("settings.locale.subtitle"),
-            icon = { SectionIconBadge(Icons.Filled.Calculate, colors.accent) },
-            defaultExpanded = false,
-        ) {
-            if (expertMode) {
-                LocaleSection(viewModel)
-            }
-            state.calculationConfig?.let { config ->
-                CalculationSection(
-                    config = config,
-                    language = state.language,
-                    onPatch = viewModel::patchCalculationConfig,
-                    onRecalculate = viewModel::recalculateAllEntries,
-                    onMessage = { viewModel.showRawMessage(it) },
-                )
+        Box(Modifier.tourSection("calculation")) {
+            CollapsibleSettingsCard(
+                title = t.t("settings.locale.header"),
+                subtitle = t.t("settings.locale.subtitle"),
+                icon = { SectionIconBadge(Icons.Filled.Calculate, colors.accent) },
+                defaultExpanded = false,
+            ) {
+                if (expertMode) {
+                    LocaleSection(viewModel)
+                }
+                state.calculationConfig?.let { config ->
+                    CalculationSection(
+                        config = config,
+                        language = state.language,
+                        onPatch = viewModel::patchCalculationConfig,
+                        onRecalculate = viewModel::recalculateAllEntries,
+                        onMessage = { viewModel.showRawMessage(it) },
+                    )
+                }
             }
         }
 
-        BackupSection(viewModel, t, colors.accent, onExportBackup, onImportBackup)
+        Box(Modifier.tourSection("backup")) {
+            BackupSection(viewModel, t, colors.accent, onExportBackup, onImportBackup)
+        }
         PdfArchiveSection(viewModel)
-        AppearanceSection(viewModel)
+        Box(Modifier.tourSection("appearanceHelp")) { AppearanceSection(viewModel) }
         ExpertModeSection(viewModel)
-        AppInfoSection(viewModel)
+        Box(Modifier.tourSection("help-card")) { AppInfoSection(viewModel) }
 
         Spacer(Modifier.height(24.dp))
     }

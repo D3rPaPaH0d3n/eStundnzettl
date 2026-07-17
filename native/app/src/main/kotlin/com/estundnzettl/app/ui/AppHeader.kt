@@ -119,9 +119,11 @@ fun AppHeader(
             }
 
             if (view == "dashboard") {
+                val tourTargets = LocalTourTargets.current
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(
                         modifier = Modifier
+                            .tourTarget(tourTargets, "settings")
                             .size(44.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(colors.headerControl)
@@ -138,6 +140,7 @@ fun AppHeader(
                     }
                     Column(
                         modifier = Modifier
+                            .tourTarget(tourTargets, "report")
                             .size(44.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(Palette.Emerald600)

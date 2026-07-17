@@ -194,6 +194,7 @@ fun LiveTimerBar(
             // Haupt-FAB mit Long-Press+Hochwisch-Geste (Port der Pointer-Logik)
             Column(
                 modifier = Modifier
+                    .tourTarget(LocalTourTargets.current, "fab")
                     .size(56.dp)
                     .graphicsLayer {
                         scaleX = fabScale

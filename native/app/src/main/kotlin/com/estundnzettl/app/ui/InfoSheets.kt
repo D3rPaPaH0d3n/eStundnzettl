@@ -297,53 +297,5 @@ fun ChangelogSheet(onDismiss: () -> Unit) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// App-Tour — Port von AppTour.tsx als Schritt-Dialog-Sequenz
-// (die DOM-Spotlight-Positionierung des Originals entfällt nativ)
-// ─────────────────────────────────────────────────────────────────
-
-private val TOUR_STEPS = listOf("welcome", "dashboard", "fabTap", "fabTimer", "report", "settings", "done")
-
-@Composable
-fun AppTourDialog(i18n: I18n, onClose: () -> Unit) {
-    val colors = LocalAppColors.current
-    var index by remember { mutableStateOf(0) }
-    val step = TOUR_STEPS[index]
-    val isLast = index == TOUR_STEPS.lastIndex
-
-    // Schritt-Icons wie AppTour.tsx (Sparkles, BarChart3, Plus, ArrowUp,
-    // FileBarChart, Settings, Check)
-    val stepIcon = when (step) {
-        "welcome" -> Icons.Outlined.AutoAwesome
-        "dashboard" -> Icons.Outlined.BarChart
-        "fabTap" -> Icons.Filled.Add
-        "fabTimer" -> Icons.Filled.ArrowUpward
-        "report" -> fileBarChartIcon()
-        "settings" -> Icons.Outlined.Settings
-        else -> Icons.Filled.Check
-    }
-
-    TourPopupCard(
-        stepCount = TOUR_STEPS.size,
-        index = index,
-        title = i18n.t("appTour.steps.$step.title"),
-        body = i18n.t("appTour.steps.$step.body"),
-        onBack = { if (index > 0) index-- },
-        onNext = { if (isLast) onClose() else index++ },
-        onClose = onClose,
-        icon = stepIcon,
-        iconTone = if (step == "settings") "zinc" else "emerald",
-        extra = if (step == "fabTimer") {
-            {
-                Text(
-                    "☝ " + i18n.t("appTour.steps.fabTimer.hint"),
-                    color = colors.accent,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                )
-            }
-        } else {
-            null
-        },
-    )
-}
+// Die App-Tour lebt jetzt in TourOverlay.kt (AppTourOverlay) — mit
+// Spotlight-Markierungen wie AppTour.tsx statt zentriertem Dialog.

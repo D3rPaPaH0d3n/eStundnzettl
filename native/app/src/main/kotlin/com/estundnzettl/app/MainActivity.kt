@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -215,14 +216,26 @@ private fun MainScreen(viewModel: MainViewModel) {
         )
     }
 
-    // Während der App-Tour liegt der Inhalt unscharf hinter dem Popup
-    // (Port des backdrop-blur aus AppTour.tsx)
-    val tourBlur = if (state.showTour) {
+    // App-Tour: Ziel-Registry (Spotlight-Positionen) + aktueller Schritt.
+    // Blur nur bei Schritten ohne markiertes Ziel — mit Spotlight bleibt
+    // der Inhalt scharf (wie AppTour.tsx: backdrop-blur nur ohne Target).
+    val tourTargets = remember { com.estundnzettl.app.ui.TourTargetRegistry() }
+    var tourIndex by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    LaunchedEffect(state.showTour) {
+        if (state.showTour) tourIndex = 0
+    }
+    val tourBlur = if (
+        (state.showTour && !com.estundnzettl.app.ui.appTourStepHasTarget(tourIndex)) ||
+        tourTargets.settingsTourBlur.value
+    ) {
         Modifier.blur(4.dp)
     } else {
         Modifier
     }
 
+    androidx.compose.runtime.CompositionLocalProvider(
+        com.estundnzettl.app.ui.LocalTourTargets provides tourTargets,
+    ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -354,9 +367,22 @@ private fun MainScreen(viewModel: MainViewModel) {
             com.estundnzettl.app.ui.AttachmentSheet(viewModel)
         }
 
-        // Einmalige App-Tour nach dem Onboarding
+        // Einmalige App-Tour nach dem Onboarding — Overlay mit Spotlight
+        // auf FAB/Bericht/Einstellungen (Port von AppTour.tsx)
         if (state.showTour) {
-            com.estundnzettl.app.ui.AppTourDialog(i18n = t, onClose = viewModel::closeTour)
+            com.estundnzettl.app.ui.AppTourOverlay(
+                i18n = t,
+                index = tourIndex,
+                onIndexChange = { tourIndex = it },
+                onClose = viewModel::closeTour,
+            )
         }
+
+        // Einmalige Einstellungen-Tour — markiert die Sektionen per
+        // Spotlight und scrollt sie mittig (Port von SettingsTourPopup.tsx)
+        if (state.view == "settings" && !state.loading) {
+            com.estundnzettl.app.ui.SettingsTourOverlay(viewModel)
+        }
+    }
     }
 }

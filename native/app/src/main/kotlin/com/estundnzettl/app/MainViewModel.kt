@@ -148,6 +148,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
+            // Erst laden, wenn die Capacitor-Datenübernahme durch ist —
+            // sonst racet die Onboarding-Entscheidung gegen den Import.
+            (getApplication<android.app.Application>() as? EStundnzettlApp)
+                ?.legacyImport?.join()
             loadSettings()
             restoreTimer()
             // Onboarding zeigen, wenn noch kein Profil existiert (leerer

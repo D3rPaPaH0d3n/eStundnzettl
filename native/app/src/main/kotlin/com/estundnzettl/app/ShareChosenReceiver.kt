@@ -79,6 +79,13 @@ object ShareHandoffStore {
         }.getOrNull()
     }
 
+    fun setPreferredTarget(context: Context, component: ComponentName) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
+            putString(KEY_PREFERRED_COMPONENT, component.flattenToString())
+            putBoolean(KEY_USE_PREFERRED_TARGET, true)
+        }
+    }
+
     fun clearPreferredTarget(context: Context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
             remove(KEY_PREFERRED_COMPONENT)

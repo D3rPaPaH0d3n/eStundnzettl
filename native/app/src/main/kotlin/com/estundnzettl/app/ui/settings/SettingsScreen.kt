@@ -1,10 +1,13 @@
 package com.estundnzettl.app.ui.settings
 
+import android.app.Activity
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
+import android.provider.ContactsContract.CommonDataKinds.Email
 import android.util.Base64
 import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,8 +25,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -32,6 +38,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Checklist
@@ -39,6 +46,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.ContactMail
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Info
@@ -47,6 +55,8 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -73,6 +83,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.ShareHandoffStore
+import com.estundnzettl.app.ShareTargetCapabilities
+import com.estundnzettl.app.ShareTargetOption
 import com.estundnzettl.app.ui.tourTarget
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
@@ -775,12 +787,24 @@ private fun PreferredShareTargetSection() {
     val context = LocalContext.current
     val colors = LocalAppColors.current
     val t = LocalI18n.current
+    var preferredComponent by remember {
+        mutableStateOf(ShareHandoffStore.preferredComponent(context))
+    }
     var enabled by rememberSaveable {
         mutableStateOf(ShareHandoffStore.usePreferredTarget(context))
     }
     var preferredLabel by remember {
         mutableStateOf(ShareHandoffStore.preferredTargetLabel(context))
     }
+    var appPickerOpen by remember { mutableStateOf(false) }
+    var availableTargets by remember { mutableStateOf(emptyList<ShareTargetOption>()) }
+    val preferredIsEmail = preferredComponent?.let {
+        ShareTargetCapabilities.isEmailTarget(context, it)
+    } == true
+    val fieldVisibility = shareFieldVisibility(
+        hasPreferredTarget = preferredComponent != null,
+        isEmailTarget = preferredIsEmail,
+    )
     val defaultMessageTemplate = t.t("reports.shareMessage.body")
     val defaultSubjectTemplate = t.t("reports.shareMessage.subject")
     val periodToken = t.t("reports.shareMessage.periodToken")
@@ -813,6 +837,30 @@ private fun PreferredShareTargetSection() {
     var emailRecipient by remember {
         mutableStateOf(ShareHandoffStore.emailRecipient(context))
     }
+    val emailContactPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val contactUri = result.data?.data
+        if (result.resultCode == Activity.RESULT_OK && contactUri != null) {
+            val address = runCatching {
+                context.contentResolver.query(
+                    contactUri,
+                    arrayOf(Email.ADDRESS),
+                    null,
+                    null,
+                    null,
+                )?.use { cursor ->
+                    if (!cursor.moveToFirst()) return@use null
+                    val column = cursor.getColumnIndex(Email.ADDRESS)
+                    if (column >= 0) cursor.getString(column) else null
+                }
+            }.getOrNull()?.trim().orEmpty()
+            if (address.isNotBlank()) {
+                emailRecipient = address
+                ShareHandoffStore.setEmailRecipient(context, address)
+            }
+        }
+    }
     val emailInvalid = emailRecipient.isNotBlank() &&
         !Patterns.EMAIL_ADDRESS.matcher(emailRecipient.trim()).matches()
 
@@ -838,6 +886,26 @@ private fun PreferredShareTargetSection() {
         }
     }
 
+    fun openAppPicker() {
+        availableTargets = ShareTargetCapabilities.installedPdfTargets(context)
+        appPickerOpen = true
+    }
+
+    if (appPickerOpen) {
+        ShareAppPickerDialog(
+            targets = availableTargets,
+            selectedPackage = preferredComponent?.packageName,
+            onSelect = { target ->
+                ShareHandoffStore.setPreferredTarget(context, target.component)
+                preferredComponent = target.component
+                preferredLabel = target.label
+                enabled = true
+                appPickerOpen = false
+            },
+            onDismiss = { appPickerOpen = false },
+        )
+    }
+
     CollapsibleSettingsCard(
         title = t.t("settings.shareTarget.title"),
         subtitle = preferredLabel?.let {
@@ -846,37 +914,55 @@ private fun PreferredShareTargetSection() {
         icon = { SectionIconBadge(Icons.AutoMirrored.Filled.Send, colors.accent) },
         defaultExpanded = false,
     ) {
-        SettingsToggleRow(
-            title = t.t("settings.shareTarget.directTitle"),
-            subtitle = if (preferredLabel == null) {
-                t.t("settings.shareTarget.waitingDescription")
-            } else {
-                t.t("settings.shareTarget.directDescription")
-            },
-            checked = enabled,
-            accent = colors.accent,
-            onToggle = { usePreferred ->
-                enabled = usePreferred
-                ShareHandoffStore.setUsePreferredTarget(context, usePreferred)
-            },
+        ActionButton(
+            label = preferredLabel?.let {
+                t.t("settings.shareTarget.changeApp", "app" to it)
+            } ?: t.t("settings.shareTarget.chooseApp"),
+            tint = colors.accent,
+            onClick = ::openAppPicker,
         )
-        if (preferredLabel != null) {
+        if (preferredComponent != null) {
+            SettingsToggleRow(
+                title = t.t("settings.shareTarget.directTitle"),
+                subtitle = if (preferredIsEmail) {
+                    t.t("settings.shareTarget.directEmailDescription")
+                } else {
+                    t.t("settings.shareTarget.directMessageDescription")
+                },
+                checked = enabled,
+                accent = colors.accent,
+                onToggle = { usePreferred ->
+                    enabled = usePreferred
+                    ShareHandoffStore.setUsePreferredTarget(context, usePreferred)
+                },
+            )
             TextButton(
                 onClick = {
                     ShareHandoffStore.clearPreferredTarget(context)
+                    ShareHandoffStore.setUsePreferredTarget(context, false)
+                    preferredComponent = null
                     preferredLabel = null
+                    enabled = false
                 },
             ) {
                 Text(t.t("settings.shareTarget.reset"), color = colors.accent)
             }
         }
         Text(
-            text = t.t("settings.shareTarget.hint"),
+            text = t.t(
+                when {
+                    preferredComponent == null -> "settings.shareTarget.chooseHint"
+                    preferredIsEmail -> "settings.shareTarget.emailContactHint"
+                    else -> "settings.shareTarget.messagingContactHint"
+                }
+            ),
             color = colors.textFaint,
             fontSize = 11.sp,
             lineHeight = 16.sp,
         )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (fieldVisibility.showMessage) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (fieldVisibility.showEmail) {
             Text(
                 text = t.t("settings.shareTarget.emailTitle"),
                 color = colors.textPrimary,
@@ -907,6 +993,23 @@ private fun PreferredShareTargetSection() {
                 isError = emailInvalid,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
+                trailingIcon = {
+                    IconButton(
+                        onClick = {
+                            emailContactPicker.launch(
+                                Intent(Intent.ACTION_PICK).apply {
+                                    type = Email.CONTENT_TYPE
+                                }
+                            )
+                        },
+                    ) {
+                        Icon(
+                            Icons.Filled.ContactMail,
+                            contentDescription = t.t("settings.shareTarget.chooseEmailContact"),
+                            tint = colors.accent,
+                        )
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
@@ -937,6 +1040,7 @@ private fun PreferredShareTargetSection() {
                     modifier = Modifier.align(Alignment.End),
                 ) {
                     Text(t.t("settings.shareTarget.resetSubject"), color = colors.accent)
+                }
                 }
             }
             Text(
@@ -982,8 +1086,99 @@ private fun PreferredShareTargetSection() {
                     Text(t.t("settings.shareTarget.resetMessage"), color = colors.accent)
                 }
             }
+            }
         }
     }
+}
+
+internal data class ShareFieldVisibility(
+    val showEmail: Boolean,
+    val showMessage: Boolean,
+)
+
+internal fun shareFieldVisibility(
+    hasPreferredTarget: Boolean,
+    isEmailTarget: Boolean,
+): ShareFieldVisibility = ShareFieldVisibility(
+    showEmail = hasPreferredTarget && isEmailTarget,
+    showMessage = hasPreferredTarget,
+)
+
+@Composable
+private fun ShareAppPickerDialog(
+    targets: List<ShareTargetOption>,
+    selectedPackage: String?,
+    onSelect: (ShareTargetOption) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(Icons.Filled.Apps, contentDescription = null, tint = colors.accent)
+        },
+        title = { Text(t.t("settings.shareTarget.chooseAppTitle")) },
+        text = {
+            if (targets.isEmpty()) {
+                Text(
+                    t.t("settings.shareTarget.noApps"),
+                    color = colors.textMuted,
+                )
+            } else {
+                LazyColumn(modifier = Modifier.heightIn(max = 380.dp)) {
+                    items(
+                        items = targets,
+                        key = { it.component.flattenToString() },
+                    ) { target ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onSelect(target) }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            SectionIconBadge(
+                                icon = if (target.isEmail) {
+                                    Icons.Filled.ContactMail
+                                } else {
+                                    Icons.AutoMirrored.Filled.Send
+                                },
+                                tint = colors.accent,
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    target.label,
+                                    color = colors.textPrimary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                )
+                                Text(
+                                    t.t(
+                                        if (target.isEmail) "settings.shareTarget.emailApp"
+                                        else "settings.shareTarget.messagingApp"
+                                    ),
+                                    color = colors.textMuted,
+                                    fontSize = 12.sp,
+                                )
+                            }
+                            if (target.component.packageName == selectedPackage) {
+                                Text("✓", color = colors.accent, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        HorizontalDivider(color = colors.border.copy(alpha = 0.6f))
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(t.t("common.cancel"), color = colors.textMuted)
+            }
+        },
+    )
 }
 
 private fun appendTemplateToken(template: String, token: String): String = when {

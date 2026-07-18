@@ -4,7 +4,7 @@
   "date": "17.07.2026",
   "title": "Rebuilt from the ground up — truly native 🚀",
   "isMajor": true,
-  "playStoreText": "Truly native and properly smooth 🚀\n\n• Rebuilt from scratch as a native Android app\n• PDF sharing in a subtle Styrian green-and-white look\n• Prepare email recipient, subject and message\n• Remember your preferred sharing app\n• Quiet, actionable Google Drive backup warnings\n• Cleaner, collapsible settings\n• Monthly targets for mini-jobs and part-time work\n\nYour data moves across automatically – so no hour gets lost!",
+  "playStoreText": "Truly native and properly smooth 🚀\n\n• Rebuilt from scratch as a native Android app\n• PDF sharing in a subtle Styrian green-and-white look\n• Prepare email recipient, subject and message\n• Remember your preferred sharing app\n• Choose a sharing app and find suitable contacts faster\n• Quiet, actionable Google Drive backup warnings\n• Cleaner, collapsible settings\n• Monthly targets for mini-jobs and part-time work\n\nYour data moves across automatically – so no hour gets lost!",
   "sections": [
    {
     "iconName": "Rocket",
@@ -45,6 +45,7 @@
      "Sharing and saving are now clearly separated, dressed in a subtle Styrian green-and-white look and free from confusing headings.",
      "After handing the PDF to Mail, WhatsApp & co., a small “All set, handed off!” animation confirms that it is ready in the selected app.",
      "For email, you can prepare the recipient, subject and message and reset them to the defaults at any time; [Period] and [Name] are filled in automatically.",
+     "Choose the sharing app directly in Settings. Gmail, Outlook & co. reveal contact picking, recipient and subject; WhatsApp and Messenger only show useful fields, with the person selected privately while sharing.",
      "Optionally, eStundnzettl remembers your preferred sharing app and skips the chooser next time — if the app is no longer available, you are simply asked again."
     ]
    }

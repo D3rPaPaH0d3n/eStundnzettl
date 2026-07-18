@@ -111,6 +111,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.ShareChosenReceiver
 import com.estundnzettl.app.ShareHandoffStore
+import com.estundnzettl.app.ShareTargetCapabilities
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.pdf.ReportPdfGenerator
 import com.estundnzettl.app.pdf.ReportPdfInput
@@ -239,11 +240,17 @@ fun ReportScreen(viewModel: MainViewModel) {
     var filterMenuOpen by remember { mutableStateOf(false) }
     var monthPickerOpen by remember { mutableStateOf(false) }
     var shareHandoffVisible by remember { mutableStateOf(false) }
-    val preferredShareTargetLabel = if (ShareHandoffStore.usePreferredTarget(context)) {
-        ShareHandoffStore.preferredTargetLabel(context)
+    val preferredShareComponent = if (ShareHandoffStore.usePreferredTarget(context)) {
+        ShareHandoffStore.preferredComponent(context)
     } else {
         null
     }
+    val preferredShareTargetLabel = preferredShareComponent?.let {
+        ShareHandoffStore.preferredTargetLabel(context)
+    }
+    val preferredShareTargetIsEmail = preferredShareComponent?.let {
+        ShareTargetCapabilities.isEmailTarget(context, it)
+    } == true
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, context) {
@@ -439,7 +446,10 @@ fun ReportScreen(viewModel: MainViewModel) {
             } else {
                 null
             }
-            if (preferredComponent != null) {
+            val preferredIsEmail = preferredComponent?.let {
+                ShareTargetCapabilities.isEmailTarget(context, it)
+            } == true
+            if (preferredComponent != null && preferredIsEmail) {
                 intent.component = preferredComponent
                 try {
                     context.startActivity(intent)
@@ -454,6 +464,15 @@ fun ReportScreen(viewModel: MainViewModel) {
                 } catch (_: SecurityException) {
                     ShareHandoffStore.clearPreferredTarget(context)
                     intent.component = null
+                }
+            } else if (preferredComponent != null) {
+                // Messaging apps own their conversation list. Restrict the
+                // system Sharesheet to the chosen app so Android can surface
+                // its Direct Share people without exposing them to us.
+                intent.`package` = preferredComponent.packageName
+                if (intent.resolveActivity(context.packageManager) == null) {
+                    ShareHandoffStore.clearPreferredTarget(context)
+                    intent.`package` = null
                 }
             }
 
@@ -506,6 +525,7 @@ fun ReportScreen(viewModel: MainViewModel) {
         ExportDialog(
             i18n = i18n,
             preferredAppLabel = preferredShareTargetLabel,
+            preferredAppIsEmail = preferredShareTargetIsEmail,
             onShare = { exportDialogOpen = false; sharePdf() },
             onFolder = { exportDialogOpen = false; saveLauncher.launch(buildFilename()) },
             onDismiss = { exportDialogOpen = false },
@@ -968,6 +988,7 @@ private fun NoteDialog(
 private fun ExportDialog(
     i18n: I18n,
     preferredAppLabel: String?,
+    preferredAppIsEmail: Boolean,
     onShare: () -> Unit,
     onFolder: () -> Unit,
     onDismiss: () -> Unit,
@@ -990,7 +1011,10 @@ private fun ExportDialog(
                         i18n.t("reports.shareTarget.shareWith", "app" to it)
                     } ?: i18n.t("modals.export.share"),
                     subtitle = if (preferredAppLabel != null) {
-                        i18n.t("reports.shareTarget.directDescription")
+                        i18n.t(
+                            if (preferredAppIsEmail) "reports.shareTarget.directDescription"
+                            else "reports.shareTarget.contactDescription"
+                        )
                     } else {
                         i18n.t("modals.export.shareDescription")
                     },

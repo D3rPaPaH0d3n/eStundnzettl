@@ -7,13 +7,12 @@
 #
 # WAS PASSIERT?
 #   1. Code auschecken (auf dem Branch, von dem aus getriggert wird)
-#   2. Tests ausführen (Sicherheitsnetz)
-#   3. Frontend bauen + Capacitor Sync
-#   4. Universal Release-APK bauen (signiert mit dem Play-Store-Keystore)
-#   5. APK mit apksigner v2/v3 signieren
-#   6. SHA-256 Checksum erzeugen
-#   7. Release-Notes aus fastlane/metadata/android/de-DE/changelogs/<code>.txt
-#   8. GitHub Release anlegen mit APK + Checksum als Assets
+#   2. Kotlin-Core- und App-Tests ausführen
+#   3. Native Release-APK aus native/ bauen
+#   4. APK mit apksigner v2/v3 signieren
+#   5. SHA-256 Checksum erzeugen
+#   6. Release-Notes aus fastlane/metadata/android/*/changelogs/<code>.txt
+#   7. GitHub Release anlegen mit APK + Checksum als Assets
 #
 # WAS PASSIERT NICHT?
 #   - Kein Versionsbump (lokales versionCode/versionName aus build.gradle wird genutzt)
@@ -72,11 +71,11 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
-      - name: Read version from build.gradle and package.json
+      - name: Read native app version
         id: version
         run: |
-          CODE=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
-          NAME=$(node -p "require('./package.json').version")
+          CODE=$(grep -oP 'versionCode = \K\d+' native/app/build.gradle.kts)
+          NAME=$(grep -oP 'versionName = "\K[^"]+' native/app/build.gradle.kts)
           TAG="v${NAME}"
           APK_NAME="eStundnzettl-${TAG}-universal.apk"
           echo "code=$CODE" >> $GITHUB_OUTPUT
@@ -89,7 +88,7 @@ jobs:
         run: |
           TAG="${{ steps.version.outputs.tag }}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "::error::Tag $TAG existiert bereits. Bitte zuerst die Version in package.json + android/app/build.gradle erhöhen."
+            echo "::error::Tag $TAG existiert bereits. Bitte zuerst versionName/versionCode in native/app/build.gradle.kts erhöhen."
             exit 1
           fi
           if gh release view "$TAG" >/dev/null 2>&1; then
@@ -100,45 +99,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      # ── 2. Node + Tests ──────────────────────────────────────────────
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run unit tests
-        run: npm test
-
-      # ── 3. Frontend + Capacitor ──────────────────────────────────────
-      - name: Build web assets
-        run: npm run build
-
-      - name: Sync Capacitor
-        run: npx cap sync android
-
-      - name: Fix Capacitor Proguard reference
-        run: |
-          find node_modules/@capacitor -name "build.gradle" \
-            -exec sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" {} \;
-
-      # ── 4. APK bauen ─────────────────────────────────────────────────
+      # ── 2. Native Tests + APK bauen ───────────────────────────────────
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           java-version: "21"
           distribution: "temurin"
 
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
 
-      - name: Build release APK
-        run: cd android && ./gradlew assembleRelease --no-daemon
+      - name: Make Gradle wrapper executable
+        run: chmod +x native/gradlew
 
-      # ── 5. Signieren mit apksigner (v2/v3) ───────────────────────────
+      - name: Test and build native release APK
+        working-directory: native
+        run: ./gradlew :core:test :app:testDebugUnitTest :app:assembleRelease --no-daemon
+
+      # ── 3. Signieren mit apksigner (v2/v3) ───────────────────────────
       - name: Decode keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -157,19 +135,19 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
         run: |
-          UNSIGNED="android/app/build/outputs/apk/release/app-release-unsigned.apk"
-          ALIGNED="android/app/build/outputs/apk/release/app-release-aligned.apk"
+          UNSIGNED="native/app/build/outputs/apk/release/app-release-unsigned.apk"
+          ALIGNED="native/app/build/outputs/apk/release/app-release-aligned.apk"
           SIGNED="${{ steps.version.outputs.apk_name }}"
 
           if [ ! -f "$UNSIGNED" ]; then
             # assembleRelease produces app-release.apk if a signing config is present,
             # otherwise app-release-unsigned.apk. Handle both.
-            ALT="android/app/build/outputs/apk/release/app-release.apk"
+            ALT="native/app/build/outputs/apk/release/app-release.apk"
             if [ -f "$ALT" ]; then
               UNSIGNED="$ALT"
             else
               echo "::error::Kein APK-Output gefunden!"
-              ls -la android/app/build/outputs/apk/release/
+              ls -la native/app/build/outputs/apk/release/
               exit 1
             fi
           fi
@@ -186,7 +164,7 @@ jobs:
           "${{ steps.tools.outputs.apksigner }}" verify --verbose "$SIGNED"
           echo "✅ APK signiert und verifiziert: $SIGNED"
 
-      # ── 6. SHA-256 Checksum ──────────────────────────────────────────
+      # ── 4. SHA-256 Checksum ──────────────────────────────────────────
       - name: Generate SHA-256 checksum
         id: checksum
         run: |
@@ -197,13 +175,10 @@ jobs:
           cat "$SUM_FILE"
           echo "sum_file=$SUM_FILE" >> $GITHUB_OUTPUT
 
-      # ── 7. Release-Notes zusammenbauen ───────────────────────────────
+      # ── 5. Release-Notes zusammenbauen ───────────────────────────────
       # Reihenfolge:
       #   1. Override-Input — wenn gesetzt, gewinnt der.
-      #   2. Strukturierter App-Changelog (src/data/changelog-data.*.ts)
-      #      — gleicher Inhalt wie das ChangelogModal in der App.
-      #   3. Fastlane-Kurzhinweise (fastlane/.../changelogs/<code>.txt)
-      #      als Fallback, falls die Version nicht im App-Changelog steht.
+      #   2. Fastlane-Kurzhinweise passend zum nativen versionCode.
       - name: Build release notes
         id: notes
         env:
@@ -222,25 +197,18 @@ jobs:
           if [ -n "$OVERRIDE" ]; then
             printf '%s\n' "$OVERRIDE" > "$NOTES_FILE"
           else
-            DE_APP="$(node scripts/extract-changelog.mjs --version "$NAME" --lang de 2>/dev/null || true)"
-            EN_APP="$(node scripts/extract-changelog.mjs --version "$NAME" --lang en 2>/dev/null || true)"
-
             {
               echo "## eStundnzettl v${NAME} (versionCode ${CODE})"
               echo ""
               echo "### 🇩🇪 Deutsch"
-              if [ -n "$DE_APP" ]; then
-                printf '%s\n' "$DE_APP"
-              elif [ -f "$DE_FALLBACK" ]; then
+              if [ -f "$DE_FALLBACK" ]; then
                 cat "$DE_FALLBACK"
               else
                 echo "_Keine deutsche Versionshinweise hinterlegt._"
               fi
               echo ""
               echo "### 🇬🇧 English"
-              if [ -n "$EN_APP" ]; then
-                printf '%s\n' "$EN_APP"
-              elif [ -f "$EN_FALLBACK" ]; then
+              if [ -f "$EN_FALLBACK" ]; then
                 cat "$EN_FALLBACK"
               else
                 echo "_No English release notes available._"
@@ -270,7 +238,7 @@ jobs:
           cat "$NOTES_FILE"
           echo "───────────────────"
 
-      # ── 8. GitHub Release erstellen ──────────────────────────────────
+      # ── 6. GitHub Release erstellen ──────────────────────────────────
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -294,7 +262,7 @@ jobs:
           echo ""
           echo "🔗 ${{ github.server_url }}/${{ github.repository }}/releases/tag/${TAG}"
 
-      # ── 9. Cleanup ───────────────────────────────────────────────────
+      # ── 7. Cleanup ───────────────────────────────────────────────────
       - name: Cleanup secrets
         if: always()
         run: rm -f keystore.jks

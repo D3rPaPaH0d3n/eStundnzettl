@@ -1,7 +1,17 @@
 {
+  "nativeWelcome": {
+    "title": "Willkommen in der neuen eStundnzettl!",
+    "body": "Servus! Deine App wurde von Grund auf neu gebaut — aus der bisherigen Web-Technik ist eine echte, native Android-App geworden. Warum der Wechsel? Die alte Basis war ein guter Start, aber man hat sie der App angemerkt: beim Öffnen, beim Scrollen, beim Akku. Die neue Version startet schneller, läuft flüssiger und ist bereit für alles, was noch kommt. Deine Daten wurden automatisch übernommen — alles ist noch genau da, wo es hingehört.",
+    "signature": "Danke, dass du dabei bist! – Markus",
+    "cta": "Los geht's!"
+  },
   "common": {
     "back": "Zurück",
     "close": "Schließen",
+    "expand": "Aufklappen",
+    "collapse": "Zuklappen",
+    "expanded": "Aufgeklappt",
+    "collapsed": "Zugeklappt",
     "cancel": "Abbrechen",
     "confirm": "Bestätigen",
     "save": "Speichern",
@@ -22,10 +32,16 @@
     "nextMonth": "Nächster Monat",
     "selectMonth": "Monat wählen",
     "monthPickerAria": "Monat wählen (aktuell {{value}})",
+    "previousYear": "Vorheriges Jahr",
+    "nextYear": "Nächstes Jahr",
     "monthPickerFallback": "Monatsauswahl konnte nicht geöffnet werden.",
     "actual": "IST",
     "target": "SOLL",
     "balance": "Saldo",
+    "monthlyTarget": "MONATSZIEL",
+    "monthlyRemaining": "NOCH OFFEN",
+    "monthlyExceeded": "DARÜBER",
+    "monthlyReached": "GESCHAFFT",
     "driveTime": "Fahrzeit ({{code}})",
     "overtimeShort": {
       "extra": "MA",
@@ -132,6 +148,10 @@
       "timeComp": "Zeitausgleich:",
       "sickness": "Krankenstand:",
       "totalActual": "Gesamt (IST):",
+      "monthlyTarget": "Monatsziel:",
+      "monthlyRemaining": "Noch offen:",
+      "monthlyExceeded": "Über Ziel:",
+      "monthlyReached": "Monatsziel geschafft:",
       "targetTime": "Sollzeit (SOLL):",
       "balance": "Saldo:",
       "extraHours": "Mehrarbeit:",
@@ -155,8 +175,25 @@
     "toast": {
       "downloadStarted": "🖨️ Download gestartet!",
       "readyToShare": "Bereit zum Teilen",
+      "saved": "PDF gespeichert",
       "savedToDocuments": "Gespeichert in 'Dokumente/eStundnzettl'",
       "error": "Fehler: {{message}}"
+    },
+    "shareHandoff": {
+      "title": "Passt, übergeben!",
+      "subtitle": "Die PDF ist in der gewählten App bereit zum Senden."
+    },
+    "shareMessage": {
+      "subject": "Stundenzettel – [Zeitraum]",
+      "weekPeriod": "KW {{week}} ({{range}})",
+      "body": "Hallo,\n\nanbei mein Stundenzettel für [Zeitraum].\n\nLiebe Grüße\n[Name]",
+      "bodyWithoutName": "Hallo,\n\nanbei mein Stundenzettel für [Zeitraum].\n\nLiebe Grüße",
+      "periodToken": "[Zeitraum]",
+      "nameToken": "[Name]"
+    },
+    "shareTarget": {
+      "shareWith": "Mit {{app}} senden",
+      "directDescription": "Direkt in deiner bevorzugten App öffnen"
     },
     "noteModal": {
       "title": "Notiz für PDF",
@@ -178,63 +215,84 @@
     "title": "Anleitung & Hilfe",
     "subtitle": "Dein Wegweiser durch den eStundnzettl",
     "intro": {
-      "badge": "Servus und herzlich willkommen!",
-      "body": "Schluss mit der Zettelwirtschaft! Mit dem eStundnzettl erfasst du deine Arbeitszeiten, Fahrten, Urlaub und mehr direkt am Handy. Am Monatsende erstellst du mit einem Tipp ein sauberes PDF."
+      "badge": "Servus, schön dass d' da bist!",
+      "body": "Mit dem eStundnzettl schreibst du deine Arbeitszeit direkt am Handy auf. Am Monatsende macht die App daraus einen sauberen Stundenzettel. Ka Hexerei: Geh die Punkte einfach der Reihe nach durch — du kannst dabei nichts kaputtmachen."
+    },
+    "firstSteps": {
+      "title": "Zuerst: Wo ist was?",
+      "addTitle": "Grüner Plus-Knopf = neuer Eintrag",
+      "addBody": "Der runde grüne Knopf unten rechts ist dein wichtigster Knopf. Kurz antippen öffnet ein Formular, in das du deine Arbeitszeit einträgst.",
+      "reportTitle": "Blatt-Symbol = Stundenzettel",
+      "reportBody": "Oben rechts öffnest du die Vorschau. Dort kontrollierst du deine Stunden und verschickst später das fertige PDF.",
+      "settingsTitle": "Zahnrad = Einstellungen",
+      "settingsBody": "Hier stehen dein Name, deine Arbeitszeiten, Backups und das Aussehen der App. Karten mit einem Pfeil kannst du antippen und aufklappen.",
+      "gestureHint": "<b>Kurz tippen</b> heißt: einmal antippen und gleich wieder loslassen. <b>Gedrückt halten</b> heißt: Finger ungefähr eine Sekunde liegen lassen. <b>Wischen</b> heißt: Finger auflegen und über den Bildschirm ziehen."
     },
     "step1": {
-      "title": "Stunden erfassen",
-      "lead": "Du hast zwei Wege, deine Stunden einzutragen:",
-      "timerTitle": "Live-Timer",
-      "timerBody": "Halte den <plus>+</plus> Button unten rechts lange gedrückt und wische nach oben. Der Timer läuft, bis du ihn mit einem Tipp stoppst. Die App trägt dann Start, Ende und Dauer automatisch ein.",
-      "manualTitle": "Manuell eintragen",
-      "manualBody": "Tipp auf den <plus>+</plus> Button. Wähle Start- und Endzeit, Pause und Projekt. Mit <b>\"Wie zuletzt\"</b> übernimmst du die Zeiten vom Vortag — praktisch bei gleichbleibenden Arbeitszeiten!"
+      "title": "Stunden eintragen",
+      "lead": "Zwei Wege führen zum Ziel — such dir den aus, der dir taugt:",
+      "timerTitle": "Live-Timer (mitlaufen lassen)",
+      "timerBody": "In der Früh: Leg den Finger auf den grünen <plus>+</plus> Knopf, lass ihn kurz dort und schieb ihn nach oben. Sobald der Timer erscheint, kannst du loslassen. Am Feierabend tippst du den Timer an und bestätigst das Ende. Die App trägt Start, Ende und Dauer ein.",
+      "manualTitle": "Von Hand (nachtragen)",
+      "manualBody": "Tipp den <plus>+</plus> Knopf einmal kurz an. Wähle zuerst die Art des Eintrags, dann Start, Ende und Pause. Zum Schluss unten auf <b>„Speichern“</b> tippen. <b>„Wie zuletzt“</b> übernimmt die Zeiten deines letzten Eintrags."
     },
     "step2": {
       "title": "Fahrtzeiten",
-      "lead": "Wähle beim Erstellen eines Eintrags oben den Typ <b>\"Fahrt\"</b>.",
-      "arrival": "<b>An/Abreise:</b> Bezahlte Arbeitszeit — zählt zum Tagessoll.",
-      "drive": "<b>Fahrtzeit:</b> Unbezahlte Wegzeit — wird separat ausgewiesen."
+      "lead": "Beim Eintragen oben den Typ <b>„Fahrt“</b> wählen — dann gibt's zwei Sorten:",
+      "arrival": "<b>An/Abreise:</b> Zählt als bezahlte Arbeitszeit — geht ins Tagessoll.",
+      "drive": "<b>Fahrtzeit:</b> Unbezahlte Wegzeit — steht extra am Stundenzettel."
     },
     "step3": {
       "title": "Urlaub, Krank & ZA",
-      "body": "Wähle einfach <b>Urlaub</b>, <b>Krank</b> oder <b>ZA</b> (Zeitausgleich). Die App rechnet automatisch die richtigen Soll-Stunden für den Tag ein. Du kannst auch manuell Zeiten eingeben, wenn nötig."
+      "body": "Einfach beim Eintragen <b>Urlaub</b>, <b>Krank</b> oder <b>ZA</b> (Zeitausgleich) auswählen — mehr brauchst du nicht. Die App rechnet die Soll-Stunden für den Tag automatisch richtig, und dein Resturlaub steht gleich am Monats-PDF. Wenn's sein muss, kannst du auch eigene Zeiten eingeben."
     },
     "step4": {
       "title": "Dokumente anhängen",
-      "body": "Zu jedem Eintrag kannst du Fotos oder Dateien anhängen — z.B. Regiescheine, Lieferscheine oder Arbeitsberichte. Tipp auf <b>\"Dokumente\"</b> beim Eintrag. Die Anhänge werden beim PDF-Export automatisch mitgeliefert."
+      "body": "Regieschein, Lieferschein oder Foto von der Baustelle: Öffne den Eintrag und tipp auf <b>„Dokumente“</b>. Danach wählst du ein Foto oder eine Datei vom Handy aus. Beim PDF-Export kannst du die Anhänge mitgeben — da geht nix verloren."
     },
     "step5": {
       "title": "Monatsabschluss & PDF",
-      "preview": "Tipp oben rechts auf das <icon/> Symbol. Dort siehst du eine Vorschau deines Stundenzettels — nach Monat oder Woche filterbar.",
-      "share": "Prüfen, dann als <b>PDF teilen</b> — per Mail, WhatsApp, oder einfach lokal speichern. Fertig!"
+      "preview": "Tipp oben rechts auf das grüne <icon/> Symbol. Da siehst du deinen fertigen Stundenzettel als Vorschau — nach Monat oder Kalenderwoche gefiltert. Mit zwei Fingern zoomst du rein, und übers Sprechblasen-Symbol gibst du bei Bedarf noch eine Notiz für den Chef dazu.",
+      "share": "Passt alles? Dann auf <b>„Senden“</b> — per Mail, WhatsApp oder als Datei speichern. Und fertig ist der Monat!"
     },
     "step6": {
-      "title": "Backup & Datensicherung",
-      "lead": "Deine Daten sind wertvoll — sicher sie ab!",
+      "title": "Backup — sicher ist sicher",
+      "lead": "Handy kaputt oder verloren — und die Stunden weg? Na sicher nicht! Schalt dir eine automatische Sicherung ein, das dauert keine Minute:",
       "gdriveTitle": "Google Drive",
-      "gdriveBody": "Verbinde dein Google-Konto in den Einstellungen. Die App sichert täglich automatisch in die Cloud.",
+      "gdriveBody": "In den Einstellungen unter „Backup & Export“ dein Google-Konto verbinden — ab dann sichert die App jeden Tag von selbst in deine Cloud. Am neuen Handy tippst du beim Start einfach auf „Ich hab schon ein Backup“, und alles ist wieder da.",
       "localTitle": "Lokales Backup",
-      "localBody": "Wähle einen Ordner auf deinem Gerät. Die App sichert täglich dorthin — ganz ohne Internet."
+      "localBody": "Geht auch ohne Internet: Wähle einmal einen Backup-Ordner auf deinem Handy. Wichtig: Bei Verlust des Handys ist auch dieser Ordner weg — für diesen Fall ist Google Drive oder Nextcloud sicherer."
     },
     "step7": {
       "title": "Hausmasta-Modus",
-      "lead": "Für Profis, die mehr wollen! Aktiviere den <b>Hausmasta-Modus</b> ganz unten in den Einstellungen. Damit werden zusätzliche Funktionen sichtbar — Tätigkeitscodes findest du unabhängig davon direkt in der Erfassung:",
-      "nextcloud": "<b>Nextcloud-Backup</b> — für deine eigene Cloud",
-      "jsonIO": "<b>JSON Import/Export</b> — Daten manuell sichern",
-      "pdfArchive": "<b>PDF-Archiv</b> — automatische monatliche PDF-Sicherung",
-      "codes": "<b>Tätigkeitscodes</b> — Branchen-Presets oder eigene Codes, auch ohne Hausmasta-Modus",
-      "recordOnly": "<b>Nur Aufzeichnung</b> — ohne Soll/Ist-Berechnung"
+      "lead": "Für alle, die's genauer wissen wollen: Aktivier ganz unten in den Einstellungen die <b>Erweiterten Einstellungen</b> — bei uns liebevoll Hausmasta-Modus genannt. Dann kommen die Profi-Werkzeuge zum Vorschein:",
+      "nextcloud": "<b>Nextcloud-Backup</b> — Sicherung in deine eigene Cloud",
+      "jsonIO": "<b>Import & Export</b> — Daten als Datei sichern und zurückholen",
+      "pdfArchive": "<b>PDF-Archiv</b> — legt automatisch jedes Monat ein PDF ab, für die gesetzliche Aufbewahrung",
+      "codes": "<b>Tätigkeitscodes</b> — Kürzel für Arbeiten, zum Beispiel M für Montage; sie sind auch ohne Hausmasta in den Einstellungen erreichbar",
+      "recordOnly": "<b>Nur Aufzeichnung</b> — Stunden notieren ganz ohne Soll/Ist-Rechnerei"
+    },
+    "newFeatures": {
+      "title": "Gut zu wissen — neu & praktisch",
+      "nightTitle": "Nachtschicht über Mitternacht",
+      "nightBody": "Du kannst zum Beispiel 22:00 bis 06:00 eintragen. Die App versteht von selbst, dass 06:00 am nächsten Morgen gemeint ist. Das kleine ⁺¹ neben der Endzeit erinnert dich daran.",
+      "materialTitle": "Farben passend zu deinem Handy",
+      "materialBody": "Unter <b>Einstellungen → Darstellung</b> kannst du Material You einschalten. Dann übernimmt die App Farben von deinem Android-Handy. Das ändert nur das Aussehen, nicht deine Daten.",
+      "tourTitle": "Die App kann dir alles zeigen",
+      "tourBody": "Beim ersten Start markieren kleine Hinweise die wichtigen Knöpfe. In den Einstellungen gibt es ebenfalls eine Führung. Tippe auf <b>„Weiter“</b>, bis du fertig bist — dabei wird nichts verstellt.",
+      "restoreTitle": "Umzug auf ein neues Handy",
+      "restoreBody": "Wähle beim Einrichten <b>„Ich hab schon ein Backup“</b>. Ein vollständiges Backup bringt Einträge, Name, Einstellungen, Tätigkeitscodes und Anhänge zurück. Lies die Zusammenfassung, bevor du bestätigst."
     },
     "tips": {
       "title": "Tipps & Tricks",
       "deleteTitle": "Löschen",
-      "deleteBody": "Wisch einen Eintrag nach <b>links</b> zum Löschen.",
+      "deleteBody": "Finger auf einen Eintrag legen und nach <b>links ziehen</b>. Vor dem Löschen fragt die App noch einmal nach.",
       "editTitle": "Bearbeiten",
-      "editBody": "Tipp auf einen Eintrag, um ihn zu <b>bearbeiten</b>.",
+      "editBody": "Einfach auf einen Eintrag <b>tippen</b> und ändern.",
       "autoBackupTitle": "Auto-Backup",
-      "autoBackupBody": "Einmal verbunden, sichert die App <b>täglich automatisch</b>.",
+      "autoBackupBody": "Einmal verbunden, sichert die App <b>täglich von selbst</b>. Du brauchst nix mehr tun.",
       "themeTitle": "Design",
-      "themeBody": "Hell, Dunkel oder <b>System</b> — in den Einstellungen wählbar."
+      "themeBody": "Hell, dunkel oder wie's Handy mag — stellst du unter <b>Darstellung</b> ein."
     },
     "tagline": "\"Damit ka Stund verloren geht!\""
   },
@@ -447,9 +505,13 @@
     "autoBackup": {
       "failed5x": "Cloud-Backup fehlgeschlagen (5x). Bitte Einstellungen prüfen.",
       "completed": "Backup abgeschlossen",
-      "failed": "Backup fehlgeschlagen"
+      "failed": "Backup fehlgeschlagen",
+      "partial": "Teilweise gesichert – {{targets}} nicht erreicht.",
+      "driveNeedsAttention": "Das Google-Drive-Backup braucht kurz deine Aufmerksamkeit. Bitte in den Einstellungen prüfen."
     },
     "autoCheckout": "⚠️ Automatisch ausgestempelt! Bitte prüfen.",
+    "autoCheckout_one": "Der Timer war noch von gestern aktiv und wurde automatisch um 23:59 beendet. Bitte kontrolliere den Eintrag.",
+    "autoCheckout_other": "Der Timer lief seit {{count}} Tagen weiter und wurde am Starttag automatisch um 23:59 beendet. Bitte kontrolliere den Eintrag.",
     "export": {
       "exporting": "Exportiere Daten...",
       "success": "📤 Export erfolgreich!",
@@ -477,11 +539,19 @@
   },
   "changelogModal": {
     "title": "Änderungsprotokoll",
+    "whatsNewTitle": "Servus, da gibt’s was Neues!",
+    "whatsNewSubtitle": "Wir haben eStundnzettl verbessert. Hier siehst du kurz und verständlich, was sich geändert hat.",
+    "olderChangesHint": "Ältere Änderungen kannst du jederzeit in den Einstellungen unter App-Info nachlesen.",
+    "allClear": "Alles klar",
     "recentBugfixes": "Kürzliche Bugfixes",
     "versionsCount_one": "({{count}} Version)",
     "versionsCount_other": "({{count}} Versionen)"
   },
   "header": {
+    "settingsTitle": "Einstellungen",
+    "newEntryTitle": "Neuer Eintrag",
+    "editEntryTitle": "Eintrag bearbeiten",
+    "reportTitle": "Bericht",
     "settings": "Einstellungen öffnen",
     "report": "Bericht öffnen",
     "backToOverview": "Zurück zur Übersicht",
@@ -644,6 +714,7 @@
   },
   "settings": {
     "toast": {
+      "demoLoadFailed": "Demo-Daten konnten nicht geladen werden.",
       "customModeRequired": "Bitte erst 'Benutzerdefiniert' wählen",
       "unlockRequired": "Zum Bearbeiten erst Schloss öffnen",
       "timeUpdated": "Zeit aktualisiert",
@@ -681,6 +752,7 @@
       "companyPlaceholder": "Firmenname GmbH",
       "positionLabel": "Position / Job",
       "positionPlaceholder": "Monteur",
+      "editHint": "Antippen zum Bearbeiten",
       "toastPhotoUpdated": "Profilbild aktualisiert",
       "toastPhotoError": "Fehler beim Bild",
       "toastPhotoRemoved": "Bild entfernt"
@@ -713,6 +785,7 @@
       "recalc": "Neu berechnen",
       "demoData": "Demo-Daten",
       "dangerTitle": "Gefahrenzone",
+      "dangerHint": "Nur aufmachen, wenn’s wirklich sein muss.",
       "dangerBody": "Hier kannst du die App komplett zurücksetzen und alle lokalen Daten unwiderruflich löschen. Das ermöglicht dir einen frischen Start – ideal, wenn du z.B. den Einrichtungs-Assistenten erneut durchlaufen möchtest, um dein Stundenmodell oder deine Arbeitszeiten zu ändern.",
       "deleteAll": "Alles löschen & App zurücksetzen",
       "versionLabel": "Version {{version}}",
@@ -751,10 +824,20 @@
       "gdrive": {
         "connectedAs": "Verbunden als {{label}}",
         "activeAppData": "Aktiv (Google Drive App-Daten)",
+        "playServicesChecking": "Google-Play-Dienste werden geprüft …",
+        "playServicesMissing": "Google-Play-Dienste sind auf diesem Gerät nicht installiert.",
+        "playServicesUpdateRequired": "Google-Play-Dienste müssen aktualisiert werden.",
+        "playServicesDisabled": "Google-Play-Dienste sind auf diesem Gerät deaktiviert.",
+        "playServicesInvalid": "Die installierten Google-Play-Dienste sind nicht verwendbar.",
+        "playServicesUnavailable": "Google-Play-Dienste sind derzeit nicht verfügbar.",
+        "alternativesHint": "Du kannst deine Daten trotzdem sicher lokal oder über Nextcloud sichern.",
+        "unavailableButton": "Google Drive nicht verfügbar",
         "expired": "Verbindung abgelaufen",
         "notConnected": "Nicht verbunden",
         "disconnect": "Trennen",
-        "connect": "Verbinden"
+        "connect": "Verbinden",
+        "testConnection": "Verbindung prüfen",
+        "testing": "Prüfe …"
       },
       "nextcloud": {
         "connectedAs": "Verbunden als {{user}}",
@@ -777,7 +860,10 @@
         "select": "Wählen"
       },
       "warning": {
-        "gdriveFailed": "⚠️ Letzte Backups fehlgeschlagen. Bitte Google Drive Verbindung prüfen.",
+        "gdriveFailed": "Google Drive konnte zuletzt nicht sichern.",
+        "gdriveFailureCount_one": "Der letzte Versuch ist fehlgeschlagen.",
+        "gdriveFailureCount_other": "{{count}} Versuche seit dem letzten Erfolg sind fehlgeschlagen.",
+        "lastSuccessfulAt": "Zuletzt erfolgreich: {{time}}",
         "gdriveReconnect": "⚠️ Google Drive muss neu verbunden werden, bevor wieder gesichert werden kann.",
         "nextcloudWithError": "Nextcloud-Backup fehlgeschlagen: {{error}}",
         "nextcloudGeneric": "Letzte Nextcloud-Backups sind fehlgeschlagen. Bitte Verbindung prüfen.",
@@ -808,6 +894,9 @@
         "gdriveCancelled": "Google-Anmeldung abgebrochen",
         "gdriveUnavailable": "Google Drive ist auf diesem Gerät noch nicht verfügbar",
         "gdriveFailed": "Google-Drive-Verbindung fehlgeschlagen",
+        "gdriveTestOk": "Google Drive schaut gut aus – Verbindung steht und das Backup ist aktuell.",
+        "gdriveTestFailed": "Google Drive konnte gerade nicht erreicht werden.",
+        "gdriveReconnectNeeded": "Google Drive braucht eine neue Anmeldung.",
         "localDisconnected": "Backup-Ordner getrennt",
         "localActivated": "Backup aktiviert!",
         "folderCancelled": "Ordnerauswahl abgebrochen",
@@ -1045,6 +1134,30 @@
       "showCustomNote": "Notizen anzeigen",
       "showCustomNoteDesc": "Optionaler Notiz-Block am Ende des Berichts"
     },
+    "shareTarget": {
+      "title": "PDF-Versand",
+      "subtitle": "Versand-App und Direktstart",
+      "current": "Bevorzugte App: {{app}}",
+      "directTitle": "Bevorzugte App direkt öffnen",
+      "directDescription": "Überspringt beim PDF-Versand die App-Auswahl.",
+      "waitingDescription": "Beim nächsten Teilen wird deine Auswahl gespeichert.",
+      "reset": "Bevorzugte App zurücksetzen",
+      "hint": "Wenn die App nicht mehr verfügbar ist, erscheint automatisch wieder die normale Auswahl.",
+      "emailTitle": "E-Mail-Vorgaben",
+      "emailDescription": "Empfänger und Betreff werden von kompatiblen E-Mail-Apps direkt übernommen.",
+      "emailRecipientLabel": "E-Mail-Empfänger (optional)",
+      "emailRecipientHint": "Leer lassen, wenn kein Empfänger vorausgefüllt werden soll.",
+      "emailRecipientInvalid": "Bitte eine gültige E-Mail-Adresse eingeben.",
+      "subjectInputLabel": "Betreff",
+      "autoFillHint": "Die markierten Begriffe werden beim Versand automatisch ausgefüllt.",
+      "insertPeriod": "Zeitraum einsetzen",
+      "insertName": "Name einsetzen",
+      "resetSubject": "Standardbetreff wiederherstellen",
+      "messageTitle": "Standard-Nachricht",
+      "messageDescription": "Dieser Text wird gemeinsam mit dem PDF an die gewählte App übergeben. Du kannst ihn jederzeit anpassen.",
+      "messageInputLabel": "Nachrichtentext",
+      "resetMessage": "Standardtext wiederherstellen"
+    },
     "recordingMode": {
       "title": "Aufzeichnungsart",
       "subtitleSimple": "Du nutzt eStundnzettl als einfache Stundenliste.",
@@ -1055,7 +1168,14 @@
       "calculatedDescription": "Vergleicht deine Zeiten mit deinem Arbeitszeitmodell und zeigt Saldo, Mehrarbeit und Überstunden.",
       "noDataLossHint": "Hinweis: Diese Auswahl löscht keine Einträge und überschreibt dein Arbeitszeitmodell nicht.",
       "toastSimple": "Nur Arbeitszeiten eintragen aktiviert",
-      "toastCalculated": "Berechnung & Auswertung aktiviert"
+      "toastCalculated": "Berechnung & Auswertung aktiviert",
+      "monthlyTarget": {
+        "title": "Monatsstunden festlegen",
+        "description": "Ideal für Minijob, Teilzeit oder flexible Arbeitstage. Es zählt nur, wie viele Stunden du im Monat insgesamt arbeitest.",
+        "inputLabel": "Sollstunden im Monat (HH:MM)",
+        "hint": "Zum Beispiel 30:00 für 30 Stunden pro Monat.",
+        "invalid": "Bitte im Format Stunden:Minuten eingeben, zum Beispiel 30:00."
+      }
     },
     "workCodesCard": {
       "title": "Tätigkeiten",
@@ -1086,6 +1206,9 @@
       "entryMissing": "Eintrag fehlt.",
       "selectFile": "Bitte zuerst ein Dokument auswählen.",
       "labelRequired": "Bitte eine Bezeichnung eingeben.",
+      "invalidType": "Nur PDF, JPG, PNG oder WEBP sind erlaubt.",
+      "readError": "Datei konnte nicht gelesen werden.",
+      "fileTooLarge": "Datei ist größer als 10 MB.",
       "added": "Dokument hinzugefügt",
       "addError": "Dokument konnte nicht gespeichert werden.",
       "deleted": "Dokument gelöscht",
@@ -1128,5 +1251,21 @@
     "pointAdvanced": "Profi-Funktionen findest du unter „Erweiterte Einstellungen“.",
     "close": "Verstanden",
     "reviewMode": "Aufzeichnungsart prüfen"
+  },
+  "migrationRecovery": {
+    "title": "Datenübernahme noch nicht abgeschlossen",
+    "body": "Die App konnte deine bisherigen Daten noch nicht sicher prüfen. Deshalb startet sie absichtlich nicht mit einer leeren Ansicht. Versuche die Übernahme bitte noch einmal.",
+    "dataSafe": "Deine bisherige Datenbank und deine Anhänge wurden nicht gelöscht oder verändert.",
+    "retry": "Datenübernahme erneut versuchen",
+    "copyDiagnostic": "Technische Diagnose kopieren",
+    "contactSupport": "Support kontaktieren"
+  },
+  "crashRecovery": {
+    "title": "Da ist etwas schiefgegangen",
+    "body": "Die App wurde beim letzten Mal unerwartet beendet. Du kannst sie sicher neu starten oder die technische Diagnose für den Support kopieren.",
+    "dataSafe": "Deine Einträge, Anhänge und Backups werden dabei nicht verändert.",
+    "restart": "App sicher neu starten",
+    "copyDiagnostic": "Diagnose kopieren",
+    "contactSupport": "Support kontaktieren"
   }
 }

@@ -1,0 +1,58 @@
+{
+  "cases": {
+    "simple": {
+      "a": 1,
+      "b": "two",
+      "c": null,
+      "d": true
+    },
+    "umlauts": {
+      "text": "äöüß €—🙂",
+      "nested": {
+        "zahl": 2.5,
+        "negativ": 0,
+        "gross": 1736531200000123
+      }
+    },
+    "escapes": {
+      "s": "Zeile1\nZeile2\t\"quoted\"\\back\u0001",
+      "leer": "",
+      "arr": [
+        1,
+        "x",
+        null,
+        false,
+        {
+          "k": "v"
+        }
+      ]
+    },
+    "keyOrder": {
+      "zebra": 1,
+      "Alpha": 2,
+      "alpha": 3,
+      "workCodes": 4,
+      "workDays": 5,
+      "attachmentLabels": 6,
+      "attachments": 7
+    }
+  },
+  "checksums": {
+    "simple": {
+      "canonical": "",
+      "checksum": "2fd125c1ff571d574a48c57b9c1e75af3509f943254a22944ba25b5156ed8290"
+    },
+    "umlauts": {
+      "canonical": "",
+      "checksum": "493d8e95e2a4df4d7afe8d669cd5493036386b675ce60338f8351365b567b289"
+    },
+    "escapes": {
+      "canonical": "",
+      "checksum": "6aef8d9a94a7e8aba3a511116899191a9f1db67238a290fe26d712de9115a3fa"
+    },
+    "keyOrder": {
+      "canonical": "",
+      "checksum": "7bef79d336a637aaa40228dfb71d57da07f96cb020402cd175d6444c7f3d6a01"
+    }
+  }
+}

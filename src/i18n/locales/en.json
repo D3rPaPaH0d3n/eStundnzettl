@@ -1,7 +1,17 @@
 {
+  "nativeWelcome": {
+    "title": "Welcome to the new eStundnzettl!",
+    "body": "Hi! Your app has been rebuilt from the ground up — the previous web-based shell is now a true native Android app. Why the switch? The old foundation was a good start, but you could feel it: at launch, while scrolling, on battery. The new version starts faster, runs smoother and is ready for everything ahead. Your data has been migrated automatically — everything is right where it belongs.",
+    "signature": "Thanks for being here! – Markus",
+    "cta": "Let's go!"
+  },
   "common": {
     "back": "Back",
     "close": "Close",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "expanded": "Expanded",
+    "collapsed": "Collapsed",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",
@@ -22,10 +32,16 @@
     "nextMonth": "Next month",
     "selectMonth": "Select month",
     "monthPickerAria": "Select month (currently {{value}})",
+    "previousYear": "Previous year",
+    "nextYear": "Next year",
     "monthPickerFallback": "Month picker could not be opened.",
     "actual": "ACTUAL",
     "target": "TARGET",
     "balance": "Balance",
+    "monthlyTarget": "MONTHLY TARGET",
+    "monthlyRemaining": "REMAINING",
+    "monthlyExceeded": "ABOVE TARGET",
+    "monthlyReached": "REACHED",
     "driveTime": "Drive time ({{code}})",
     "overtimeShort": {
       "extra": "ET",
@@ -132,6 +148,10 @@
       "timeComp": "Time off:",
       "sickness": "Sick leave:",
       "totalActual": "Total (actual):",
+      "monthlyTarget": "Monthly target:",
+      "monthlyRemaining": "Remaining:",
+      "monthlyExceeded": "Above target:",
+      "monthlyReached": "Monthly target reached:",
       "targetTime": "Target time:",
       "balance": "Balance:",
       "extraHours": "Extra hours:",
@@ -155,8 +175,25 @@
     "toast": {
       "downloadStarted": "🖨️ Download started!",
       "readyToShare": "Ready to share",
+      "saved": "PDF saved",
       "savedToDocuments": "Saved to 'Documents/eStundnzettl'",
       "error": "Error: {{message}}"
+    },
+    "shareHandoff": {
+      "title": "All set, handed off!",
+      "subtitle": "The PDF is ready to send in the selected app."
+    },
+    "shareMessage": {
+      "subject": "Timesheet – [Period]",
+      "weekPeriod": "CW {{week}} ({{range}})",
+      "body": "Hello,\n\nplease find attached my timesheet for [Period].\n\nKind regards,\n[Name]",
+      "bodyWithoutName": "Hello,\n\nplease find attached my timesheet for [Period].\n\nKind regards",
+      "periodToken": "[Period]",
+      "nameToken": "[Name]"
+    },
+    "shareTarget": {
+      "shareWith": "Send with {{app}}",
+      "directDescription": "Open directly in your preferred app"
     },
     "noteModal": {
       "title": "Note for PDF",
@@ -176,67 +213,88 @@
   },
   "helpModal": {
     "title": "Guide & Help",
-    "subtitle": "Your tour of eStundnzettl",
+    "subtitle": "Your companion through eStundnzettl",
     "intro": {
-      "badge": "Hello and welcome!",
-      "body": "No more paper slips! With eStundnzettl you log your work hours, drives, vacation and more straight from your phone. At the end of the month a single tap produces a clean PDF."
+      "badge": "Hi there, great to have you!",
+      "body": "eStundnzettl records your working time right on your phone. At the end of the month, the app turns it into a clean timesheet. No rocket science: simply follow these points in order — you cannot break anything."
+    },
+    "firstSteps": {
+      "title": "First: what is where?",
+      "addTitle": "Green plus button = new entry",
+      "addBody": "The round green button at the bottom right is your most important button. A quick tap opens the form where you enter your working time.",
+      "reportTitle": "Sheet icon = timesheet",
+      "reportBody": "The icon at the top right opens the preview. Here you check your hours and later send the finished PDF.",
+      "settingsTitle": "Cogwheel = settings",
+      "settingsBody": "This is where you find your name, work schedule, backups and the app's appearance. Tap cards with an arrow to open them.",
+      "gestureHint": "<b>Tap</b> means touch once and let go. <b>Press and hold</b> means leave your finger there for about one second. <b>Swipe</b> means place your finger down and slide it across the screen."
     },
     "step1": {
-      "title": "Log hours",
-      "lead": "You have two ways to log your hours:",
-      "timerTitle": "Live timer",
-      "timerBody": "Long-press the <plus>+</plus> button in the bottom right and swipe up. The timer runs until you stop it with a tap. The app then fills in start, end and duration automatically.",
-      "manualTitle": "Enter manually",
-      "manualBody": "Tap the <plus>+</plus> button. Pick start and end time, break and project. With <b>\"Same as last\"</b> you copy the times from yesterday — handy when your hours stay the same!"
+      "title": "Track your hours",
+      "lead": "Two ways to get there — pick whichever suits you:",
+      "timerTitle": "Live timer (let it run)",
+      "timerBody": "In the morning: place your finger on the green <plus>+</plus> button, hold it there briefly and slide it upward. Let go when the timer appears. At the end of the day, tap the timer and confirm. The app fills in start, end and duration.",
+      "manualTitle": "By hand (add later)",
+      "manualBody": "Tap the <plus>+</plus> button once. First choose the type of entry, then start, end and break. Finally tap <b>\"Save\"</b> at the bottom. <b>\"Same as last\"</b> copies the times from your previous entry."
     },
     "step2": {
-      "title": "Drive times",
-      "lead": "When creating an entry, pick the type <b>\"Drive\"</b> at the top.",
-      "arrival": "<b>Arrival/Departure:</b> Paid working time — counts towards the daily target.",
-      "drive": "<b>Drive time:</b> Unpaid travel — reported separately."
+      "title": "Travel times",
+      "lead": "When adding an entry, choose the type <b>\"Drive\"</b> at the top — there are two kinds:",
+      "arrival": "<b>Arrival/departure:</b> Counts as paid working time — goes into the daily target.",
+      "drive": "<b>Travel time:</b> Unpaid travel — listed separately on the timesheet."
     },
     "step3": {
-      "title": "Vacation, sick & time off",
-      "body": "Just pick <b>Vacation</b>, <b>Sick</b> or <b>TO</b> (time off). The app automatically credits the right target hours for that day. You can also enter times manually if needed."
+      "title": "Vacation, sick & comp time",
+      "body": "Just pick <b>Vacation</b>, <b>Sick</b> or <b>Comp time</b> when adding an entry — that is all. The app automatically applies the correct target hours for the day, and your remaining vacation shows right on the monthly PDF. You can also enter custom times if needed."
     },
     "step4": {
       "title": "Attach documents",
-      "body": "You can attach photos or files to any entry — e.g. delivery notes, receipts or work reports. Tap <b>\"Documents\"</b> on the entry. Attachments are bundled automatically when you export the PDF."
+      "body": "Work order, delivery note or photo from the site: open the entry and tap <b>\"Documents\"</b>. Then choose a photo or file from your phone. You can include the attachments when exporting the PDF."
     },
     "step5": {
-      "title": "Month close & PDF",
-      "preview": "Tap the <icon/> icon in the top right. There you see a preview of your timesheet — filterable by month or week.",
-      "share": "Check it, then <b>share as PDF</b> — via email, WhatsApp or just save it locally. Done!"
+      "title": "Month end & PDF",
+      "preview": "Tap the green <icon/> icon at the top right. You will see a preview of your finished timesheet — filtered by month or calendar week. Pinch with two fingers to zoom in, and use the speech-bubble icon to add a note for your boss if you like.",
+      "share": "All good? Tap <b>\"Send\"</b> — via email, WhatsApp, or save it as a file. And the month is done!"
     },
     "step6": {
-      "title": "Backup & data safety",
-      "lead": "Your data is precious — back it up!",
+      "title": "Backup — better safe than sorry",
+      "lead": "Phone broken or lost — and your hours gone? No way! Turn on automatic backups, it takes less than a minute:",
       "gdriveTitle": "Google Drive",
-      "gdriveBody": "Connect your Google account in settings. The app will back up to the cloud every day automatically.",
+      "gdriveBody": "Connect your Google account in Settings under \"Backup & Export\" — from then on the app backs up to your cloud every day by itself. On a new phone, just tap \"I already have a backup\" at the start and everything comes right back.",
       "localTitle": "Local backup",
-      "localBody": "Pick a folder on your device. The app backs up there every day — completely offline."
+      "localBody": "Also works without internet: choose a backup folder on your phone once. Important: if the phone is lost, that folder is lost too — Google Drive or Nextcloud is safer for that case."
     },
     "step7": {
-      "title": "Power-user mode",
-      "lead": "For pros who want more! Enable <b>Power-user mode</b> at the very bottom of settings. Extra features then become visible — activity codes stay directly available in Recording either way:",
-      "nextcloud": "<b>Nextcloud backup</b> — for your own cloud",
-      "jsonIO": "<b>JSON import/export</b> — back up data manually",
-      "pdfArchive": "<b>PDF archive</b> — automatic monthly PDF backup",
-      "codes": "<b>Activity codes</b> — industry presets or your own codes, even without Power-user mode",
-      "recordOnly": "<b>Record only</b> — without target/actual calculation"
+      "title": "Hausmasta mode",
+      "lead": "For everyone who wants the full picture: enable <b>Advanced settings</b> at the very bottom of the settings — we lovingly call it Hausmasta mode. It reveals the pro tools:",
+      "nextcloud": "<b>Nextcloud backup</b> — back up to your own cloud",
+      "jsonIO": "<b>Import & export</b> — save and restore your data as a file",
+      "pdfArchive": "<b>PDF archive</b> — automatically stores a PDF every month for legal record keeping",
+      "codes": "<b>Work codes</b> — short labels for tasks, for example M for assembly; also available in Settings without Hausmasta mode",
+      "recordOnly": "<b>Recording only</b> — track hours without any target/actual math"
+    },
+    "newFeatures": {
+      "title": "Good to know — new & useful",
+      "nightTitle": "Night shifts across midnight",
+      "nightBody": "You can enter 22:00 to 06:00, for example. The app understands that 06:00 means the next morning. A small ⁺¹ next to the end time reminds you.",
+      "materialTitle": "Colors matching your phone",
+      "materialBody": "Enable Material You under <b>Settings → Appearance</b>. The app then uses colors from your Android phone. This only changes the look, never your data.",
+      "tourTitle": "Let the app show you around",
+      "tourBody": "On first launch, small hints highlight the important buttons. Settings has its own tour too. Tap <b>\"Next\"</b> until it is done — the tour does not change any setting.",
+      "restoreTitle": "Moving to a new phone",
+      "restoreBody": "Choose <b>\"I already have a backup\"</b> during setup. A complete backup restores entries, your name, settings, work codes and attachments. Read the summary before confirming."
     },
     "tips": {
       "title": "Tips & tricks",
       "deleteTitle": "Delete",
-      "deleteBody": "Swipe an entry to the <b>left</b> to delete it.",
+      "deleteBody": "Place your finger on an entry and drag it to the <b>left</b>. The app asks for confirmation before deleting it.",
       "editTitle": "Edit",
-      "editBody": "Tap an entry to <b>edit</b> it.",
+      "editBody": "Just <b>tap</b> an entry to change it.",
       "autoBackupTitle": "Auto backup",
-      "autoBackupBody": "Once connected, the app backs up <b>daily, automatically</b>.",
+      "autoBackupBody": "Once connected, the app backs up <b>daily by itself</b>. Nothing left to do.",
       "themeTitle": "Theme",
-      "themeBody": "Light, dark or <b>System</b> — pick your favorite in settings."
+      "themeBody": "Light, dark or follow the system — set it under <b>Appearance</b>."
     },
-    "tagline": "\"So not a single hour gets lost!\""
+    "tagline": "\"So no hour gets lost!\""
   },
   "onboarding": {
     "nav": {
@@ -447,9 +505,13 @@
     "autoBackup": {
       "failed5x": "Cloud backup failed (5x). Please check settings.",
       "completed": "Backup complete",
-      "failed": "Backup failed"
+      "failed": "Backup failed",
+      "partial": "Partially backed up – {{targets}} could not be reached.",
+      "driveNeedsAttention": "Google Drive backup needs a moment of your attention. Please check it in Settings."
     },
     "autoCheckout": "⚠️ Auto-clocked out! Please review.",
+    "autoCheckout_one": "The timer was still running from yesterday and was automatically stopped at 23:59. Please review the entry.",
+    "autoCheckout_other": "The timer had been running for {{count}} days and was automatically stopped at 23:59 on its start day. Please review the entry.",
     "export": {
       "exporting": "Exporting data...",
       "success": "📤 Export successful!",
@@ -477,11 +539,19 @@
   },
   "changelogModal": {
     "title": "Changelog",
+    "whatsNewTitle": "Hello, there’s something new!",
+    "whatsNewSubtitle": "We’ve improved eStundnzettl. Here’s a quick and simple look at what changed.",
+    "olderChangesHint": "You can revisit older changes anytime in Settings under App info.",
+    "allClear": "Got it",
     "recentBugfixes": "Recent bug fixes",
     "versionsCount_one": "({{count}} version)",
     "versionsCount_other": "({{count}} versions)"
   },
   "header": {
+    "settingsTitle": "Settings",
+    "newEntryTitle": "New entry",
+    "editEntryTitle": "Edit entry",
+    "reportTitle": "Report",
     "settings": "Open settings",
     "report": "Open report",
     "backToOverview": "Back to overview",
@@ -644,6 +714,7 @@
   },
   "settings": {
     "toast": {
+      "demoLoadFailed": "Demo data could not be loaded.",
       "customModeRequired": "Pick 'Custom' first",
       "unlockRequired": "Unlock the padlock first to edit",
       "timeUpdated": "Time updated",
@@ -681,6 +752,7 @@
       "companyPlaceholder": "Acme Ltd.",
       "positionLabel": "Position / Job",
       "positionPlaceholder": "Engineer",
+      "editHint": "Tap to edit",
       "toastPhotoUpdated": "Profile picture updated",
       "toastPhotoError": "Image error",
       "toastPhotoRemoved": "Picture removed"
@@ -713,6 +785,7 @@
       "recalc": "Recalculate",
       "demoData": "Demo data",
       "dangerTitle": "Danger zone",
+      "dangerHint": "Only open this if you really need it.",
       "dangerBody": "Here you can reset the app and irreversibly delete all local data. This gives you a fresh start — ideal if you want to run the setup wizard again, e.g. to change your work-hours model or schedule.",
       "deleteAll": "Delete everything & reset app",
       "versionLabel": "Version {{version}}",
@@ -751,10 +824,20 @@
       "gdrive": {
         "connectedAs": "Connected as {{label}}",
         "activeAppData": "Active (Google Drive app data)",
+        "playServicesChecking": "Checking Google Play services…",
+        "playServicesMissing": "Google Play services are not installed on this device.",
+        "playServicesUpdateRequired": "Google Play services need to be updated.",
+        "playServicesDisabled": "Google Play services are disabled on this device.",
+        "playServicesInvalid": "The installed Google Play services cannot be used.",
+        "playServicesUnavailable": "Google Play services are currently unavailable.",
+        "alternativesHint": "You can still keep your data safe with a local or Nextcloud backup.",
+        "unavailableButton": "Google Drive unavailable",
         "expired": "Connection expired",
         "notConnected": "Not connected",
         "disconnect": "Disconnect",
-        "connect": "Connect"
+        "connect": "Connect",
+        "testConnection": "Check connection",
+        "testing": "Checking …"
       },
       "nextcloud": {
         "connectedAs": "Connected as {{user}}",
@@ -777,7 +860,10 @@
         "select": "Choose"
       },
       "warning": {
-        "gdriveFailed": "⚠️ Recent backups failed. Please check the Google Drive connection.",
+        "gdriveFailed": "Google Drive could not complete its latest backup.",
+        "gdriveFailureCount_one": "The latest attempt failed.",
+        "gdriveFailureCount_other": "{{count}} attempts since the last success have failed.",
+        "lastSuccessfulAt": "Last successful: {{time}}",
         "gdriveReconnect": "⚠️ Google Drive needs to be reconnected before backups can continue.",
         "nextcloudWithError": "Nextcloud backup failed: {{error}}",
         "nextcloudGeneric": "Recent Nextcloud backups failed. Please check the connection.",
@@ -808,6 +894,9 @@
         "gdriveCancelled": "Google sign-in cancelled",
         "gdriveUnavailable": "Google Drive is not available on this device yet",
         "gdriveFailed": "Google Drive connection failed",
+        "gdriveTestOk": "Google Drive looks good – the connection works and the backup is up to date.",
+        "gdriveTestFailed": "Google Drive could not be reached right now.",
+        "gdriveReconnectNeeded": "Google Drive needs you to sign in again.",
         "localDisconnected": "Backup folder disconnected",
         "localActivated": "Backup enabled!",
         "folderCancelled": "Folder selection cancelled",
@@ -1045,6 +1134,30 @@
       "showCustomNote": "Show notes",
       "showCustomNoteDesc": "Optional notes block at the end of the report"
     },
+    "shareTarget": {
+      "title": "PDF sharing",
+      "subtitle": "Sharing app and direct launch",
+      "current": "Preferred app: {{app}}",
+      "directTitle": "Open preferred app directly",
+      "directDescription": "Skips the app picker when sharing a PDF.",
+      "waitingDescription": "Your choice will be saved the next time you share.",
+      "reset": "Reset preferred app",
+      "hint": "If the app is no longer available, the regular picker appears automatically.",
+      "emailTitle": "Email defaults",
+      "emailDescription": "Compatible email apps receive the recipient and subject automatically.",
+      "emailRecipientLabel": "Email recipient (optional)",
+      "emailRecipientHint": "Leave empty if no recipient should be prefilled.",
+      "emailRecipientInvalid": "Enter a valid email address.",
+      "subjectInputLabel": "Subject",
+      "autoFillHint": "The marked words are filled in automatically when sharing.",
+      "insertPeriod": "Insert period",
+      "insertName": "Insert name",
+      "resetSubject": "Restore default subject",
+      "messageTitle": "Default message",
+      "messageDescription": "This text is passed to the selected app together with the PDF. You can customize it at any time.",
+      "messageInputLabel": "Message text",
+      "resetMessage": "Restore default text"
+    },
     "recordingMode": {
       "title": "Recording mode",
       "subtitleSimple": "You use eStundnzettl as a simple time list.",
@@ -1055,7 +1168,14 @@
       "calculatedDescription": "Compares your times with your work schedule and shows balance, extra time and overtime.",
       "noDataLossHint": "Note: This choice does not delete entries and does not overwrite your work schedule.",
       "toastSimple": "Simple recording activated",
-      "toastCalculated": "Calculation & reports activated"
+      "toastCalculated": "Calculation & reports activated",
+      "monthlyTarget": {
+        "title": "Set monthly hours",
+        "description": "Ideal for mini-jobs, part-time or flexible workdays. Only your total hours for the month matter.",
+        "inputLabel": "Target hours per month (HH:MM)",
+        "hint": "For example 30:00 for 30 hours per month.",
+        "invalid": "Enter hours and minutes such as 30:00."
+      }
     },
     "workCodesCard": {
       "title": "Activities",
@@ -1086,6 +1206,9 @@
       "entryMissing": "Entry missing.",
       "selectFile": "Please pick a document first.",
       "labelRequired": "Please enter a label.",
+      "invalidType": "Only PDF, JPG, PNG or WEBP files are allowed.",
+      "readError": "The file could not be read.",
+      "fileTooLarge": "The file is larger than 10 MB.",
       "added": "Document added",
       "addError": "Couldn't save the document.",
       "deleted": "Document deleted",
@@ -1128,5 +1251,21 @@
     "pointAdvanced": "Pro features are available under “Advanced settings”.",
     "close": "Got it",
     "reviewMode": "Review recording mode"
+  },
+  "migrationRecovery": {
+    "title": "Data transfer is not complete",
+    "body": "The app could not safely verify your existing data yet. It therefore does not start with an empty view. Please try the transfer again.",
+    "dataSafe": "Your existing database and attachments were not deleted or changed.",
+    "retry": "Try data transfer again",
+    "copyDiagnostic": "Copy technical diagnostic",
+    "contactSupport": "Contact support"
+  },
+  "crashRecovery": {
+    "title": "Something went wrong",
+    "body": "The app ended unexpectedly last time. You can safely restart it or copy the technical diagnostic for support.",
+    "dataSafe": "Your entries, attachments and backups will not be changed.",
+    "restart": "Restart app safely",
+    "copyDiagnostic": "Copy diagnostic",
+    "contactSupport": "Contact support"
   }
 }

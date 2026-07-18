@@ -16,6 +16,10 @@ yarn-error.log*
 # Test coverage
 coverage/
 
+# Python workflow helpers
+__pycache__/
+*.py[cod]
+
 # Capacitor / Android — Gradle local JVM hint
 android/gradle/gradle-daemon-jvm.properties
 

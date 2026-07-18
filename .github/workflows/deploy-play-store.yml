@@ -15,7 +15,7 @@
 #      - Beta: kein Semver-Bump, aber ebenfalls Play-safe versionCode
 #   4. Native Release-AAB bauen und signieren
 #   5. AAB zum Play Store hochladen (NUR gewählter Track)
-#   6. Release-Name + Versionshinweise aus nativer Version + Fastlane-Changelogs
+#   6. Release-Name + Versionshinweise aus dem nativen Changelog
 #   7. Version-Bump committen
 #   8. Telegram Notification
 #
@@ -26,9 +26,9 @@
 #   - PLAY_DEPLOY_KEY_BASE64 → Base64-encoded Google Play Service Account JSON
 #
 # RELEASE-METADATEN:
-#   - Release-Name = "v<package.json.version> — <erste Zeile fastlane de-DE/<code>.txt>"
-#   - Release-Notes werden aus fastlane/metadata/android/{de-DE,en-US}/changelogs/<code>.txt
-#     gelesen und in BEIDEN Sprachen an Play Store geschickt.
+#   - Release-Name = "v<versionName> — <erste Zeile der deutschen Versionshinweise>"
+#   - Release-Notes werden aus dem nativen In-App-Changelog erzeugt, auf maximal
+#     500 Zeichen begrenzt und zusätzlich als Fastlane-Dateien gespeichert.
 #   - Override via 'release_notes_override' Input (de-DE) oder RELEASE_NAME/RELEASE_NOTES env.
 #
 # CROSS-TRACK-SANITY-CHECK:
@@ -253,54 +253,20 @@ jobs:
           mkdir -p fastlane/metadata/android/de-DE/changelogs fastlane/metadata/android/en-US/changelogs
 
           make_notes() {
-            LANG="$1"
+            LOCALE="$1"
             OUT="$2"
-            SRC="fastlane/metadata/android/$LANG/changelogs/${{ steps.read_version.outputs.code }}.txt"
+            SRC="fastlane/metadata/android/$LOCALE/changelogs/${{ steps.read_version.outputs.code }}.txt"
 
-            if [ -f "$SRC" ]; then
-              # Beta erhöht den versionCode dynamisch. Die Store-Texte der
-              # aktuellen App-Version bleiben dabei gleich, nur die Code-Datei
-              # muss zum finalen Play-versionCode passen.
-              cp "$SRC" "$OUT"
-              return
-            fi
-
-            TMP="$(mktemp)"
-            node scripts/extract-changelog.mjs --version "$NAME" --lang "$LANG" > "$TMP" 2>/dev/null || true
-            if [ -s "$TMP" ]; then
-              # Fallback: App-Changelog grob zu kompaktem Store-Text verdichten.
-              python3 - "$TMP" "$OUT" << 'PYEOF'
-          import re, sys, pathlib
-          src = pathlib.Path(sys.argv[1]).read_text(encoding='utf-8')
-          lines = []
-          for raw in src.splitlines():
-              line = raw.strip()
-              if not line or line.startswith('_'):
-                  continue
-              line = re.sub(r'^#+\s*', '', line)
-              line = line.replace('**', '')
-              if line.startswith('- '):
-                  line = '• ' + line[2:]
-              lines.append(line)
-          text = '\n'.join(lines).strip()
-          encoded = text.encode('utf-8')
-          if len(encoded) > 500:
-              cut = encoded[:497]
-              while True:
-                  try:
-                      text = cut.decode('utf-8').rstrip() + '...'
-                      break
-                  except UnicodeDecodeError:
-                      cut = cut[:-1]
-          pathlib.Path(sys.argv[2]).write_text(text + '\n', encoding='utf-8')
-          PYEOF
-            else
-              echo "v$NAME" > "$OUT"
-            fi
+            python3 scripts/render_release_notes.py \
+              --version "$NAME" \
+              --language "$LOCALE" \
+              --format play \
+              --fallback "$SRC" \
+              --output "$OUT"
           }
 
-          make_notes de fastlane/metadata/android/de-DE/changelogs/${CODE}.txt
-          make_notes en fastlane/metadata/android/en-US/changelogs/${CODE}.txt
+          make_notes de-DE fastlane/metadata/android/de-DE/changelogs/${CODE}.txt
+          make_notes en-US fastlane/metadata/android/en-US/changelogs/${CODE}.txt
           echo "📝 Play Store Release-Notes für versionCode $CODE vorbereitet:"
           sed -n '1,20p' fastlane/metadata/android/de-DE/changelogs/${CODE}.txt
 

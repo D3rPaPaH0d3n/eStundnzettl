@@ -11,7 +11,7 @@
 #   3. Native Release-APK aus native/ bauen
 #   4. APK mit apksigner v2/v3 signieren
 #   5. SHA-256 Checksum erzeugen
-#   6. Release-Notes aus fastlane/metadata/android/*/changelogs/<code>.txt
+#   6. Ausführliche Release-Notes aus dem nativen In-App-Changelog erzeugen
 #   7. GitHub Release anlegen mit APK + Checksum als Assets
 #
 # WAS PASSIERT NICHT?
@@ -47,7 +47,7 @@ on:
         type: boolean
         default: false
       release_notes_override:
-        description: "Release-Notes überschreiben (optional, sonst aus fastlane changelog)"
+        description: "Release-Notes überschreiben (optional, sonst aus dem nativen Changelog)"
         required: false
         default: ""
 
@@ -178,7 +178,8 @@ jobs:
       # ── 5. Release-Notes zusammenbauen ───────────────────────────────
       # Reihenfolge:
       #   1. Override-Input — wenn gesetzt, gewinnt der.
-      #   2. Fastlane-Kurzhinweise passend zum nativen versionCode.
+      #   2. Vollständiger nativer In-App-Changelog passend zur versionName.
+      #   3. Fastlane-Kurzhinweise nur als Fallback.
       - name: Build release notes
         id: notes
         env:
@@ -197,22 +198,29 @@ jobs:
           if [ -n "$OVERRIDE" ]; then
             printf '%s\n' "$OVERRIDE" > "$NOTES_FILE"
           else
+            DE_NOTES="$(mktemp)"
+            EN_NOTES="$(mktemp)"
+            python3 scripts/render_release_notes.py \
+              --version "$NAME" \
+              --language de-DE \
+              --format github \
+              --fallback "$DE_FALLBACK" \
+              --output "$DE_NOTES"
+            python3 scripts/render_release_notes.py \
+              --version "$NAME" \
+              --language en-US \
+              --format github \
+              --fallback "$EN_FALLBACK" \
+              --output "$EN_NOTES"
+
             {
               echo "## eStundnzettl v${NAME} (versionCode ${CODE})"
               echo ""
               echo "### 🇩🇪 Deutsch"
-              if [ -f "$DE_FALLBACK" ]; then
-                cat "$DE_FALLBACK"
-              else
-                echo "_Keine deutsche Versionshinweise hinterlegt._"
-              fi
+              cat "$DE_NOTES"
               echo ""
               echo "### 🇬🇧 English"
-              if [ -f "$EN_FALLBACK" ]; then
-                cat "$EN_FALLBACK"
-              else
-                echo "_No English release notes available._"
-              fi
+              cat "$EN_NOTES"
             } > "$NOTES_FILE"
           fi
 

@@ -1,8 +1,11 @@
-v5.0.0 — truly native and smoother 🚀
+Truly native and properly smooth 🚀
 
+• Rebuilt from scratch as a native Android app
 • PDF sharing in a subtle Styrian green-and-white look
 • Prepare email recipient, subject and message
 • Remember your preferred sharing app
 • Quiet, actionable Google Drive backup warnings
 • Cleaner, collapsible settings
 • Monthly targets for mini-jobs and part-time work
+
+Your data moves across automatically – so no hour gets lost!

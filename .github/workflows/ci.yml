@@ -45,6 +45,9 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x native/gradlew
 
+      - name: Test release-note rendering
+        run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+
       - name: Test and build native Android app
         working-directory: native
         run: ./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug --no-daemon

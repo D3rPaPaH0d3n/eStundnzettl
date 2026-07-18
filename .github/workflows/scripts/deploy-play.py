@@ -80,7 +80,21 @@ def first_line(path: pathlib.Path) -> str:
     return ""
 
 
-derived_title = first_line(FASTLANE_DE)
+def clean_release_title(title: str) -> str:
+    """Remove a duplicated version prefix from a human release title."""
+    title = title.strip()
+    title = re.sub(
+        rf"^v?{re.escape(VERSION_NAME)}\s*(?:—|–|-|:)\s*",
+        "",
+        title,
+        flags=re.IGNORECASE,
+    ).strip()
+    if re.fullmatch(r"v?\d+(?:\.\d+){1,3}", title, flags=re.IGNORECASE):
+        return ""
+    return title
+
+
+derived_title = clean_release_title(first_line(FASTLANE_DE))
 derived_name = (
     f"v{VERSION_NAME} — {derived_title}" if derived_title else f"v{VERSION_NAME}"
 )

@@ -39,6 +39,9 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -200,7 +203,8 @@ private fun ProfileSection(viewModel: MainViewModel) {
                     modifier = Modifier
                         .size(68.dp)
                         .clip(CircleShape)
-                        .background(colors.surfaceVariant),
+                        .background(if (userData.photo == null) colors.accent.copy(alpha = 0.12f) else colors.surfaceVariant)
+                        .border(1.dp, colors.accent.copy(alpha = 0.22f), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (userData.photo != null) {
@@ -216,7 +220,7 @@ private fun ProfileSection(viewModel: MainViewModel) {
                     } else {
                         Icon(
                             Icons.Filled.Person, contentDescription = t.t("settings.profile.photoHint"),
-                            tint = colors.textFaint, modifier = Modifier.size(32.dp),
+                            tint = colors.accent, modifier = Modifier.size(32.dp),
                         )
                     }
                 }
@@ -360,12 +364,14 @@ private fun RecordingModeSection(viewModel: MainViewModel) {
                 description = t.t("settings.recordingMode.simpleDescription"),
                 selected = simpleMode,
                 tint = colors.accent,
+                icon = Icons.Filled.Checklist,
             ) { viewModel.setSimpleMode(true) }
             ModeCard(
                 title = t.t("settings.recordingMode.calculatedTitle"),
                 description = t.t("settings.recordingMode.calculatedDescription"),
                 selected = !simpleMode,
                 tint = colors.info,
+                icon = Icons.Filled.Calculate,
             ) { viewModel.setSimpleMode(false) }
 
             if (simpleMode) {
@@ -435,9 +441,16 @@ private fun RecordingModeSection(viewModel: MainViewModel) {
 }
 
 @Composable
-private fun ModeCard(title: String, description: String, selected: Boolean, tint: Color, onClick: () -> Unit) {
+private fun ModeCard(
+    title: String,
+    description: String,
+    selected: Boolean,
+    tint: Color,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+) {
     val colors = LocalAppColors.current
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
@@ -445,10 +458,22 @@ private fun ModeCard(title: String, description: String, selected: Boolean, tint
             .border(2.dp, if (selected) tint else colors.border, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
     ) {
-        Text(title, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        Text(description, color = colors.textMuted, fontSize = 12.sp)
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(tint.copy(alpha = if (selected) 0.18f else 0.10f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(21.dp))
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
+            Text(title, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text(description, color = colors.textMuted, fontSize = 12.sp, lineHeight = 17.sp)
+        }
     }
 }
 
@@ -893,6 +918,7 @@ private fun AppInfoSection(viewModel: MainViewModel) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
     var showDeleteAll by remember { mutableStateOf(false) }
+    var dangerExpanded by rememberSaveable { mutableStateOf(false) }
 
     if (showDeleteAll) {
         com.estundnzettl.app.ui.AppConfirmDialog(
@@ -926,10 +952,10 @@ private fun AppInfoSection(viewModel: MainViewModel) {
     // App & Informationen — Port von AppInfoSettings.tsx
     com.estundnzettl.app.ui.AppCard {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                t.t("settings.appInfo.sectionInfoTitle"),
-                color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                SectionIconBadge(Icons.Filled.Info, Palette.Blue500)
+                Text(t.t("settings.appInfo.sectionInfoTitle"), color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            }
             ActionButton(label = t.t("settings.appInfo.playStore"), tint = colors.accentStrong) {
                 openLink("https://play.google.com/store/apps/details?id=com.estundnzettl.app")
             }
@@ -945,10 +971,10 @@ private fun AppInfoSection(viewModel: MainViewModel) {
     // Über — Datenschutz, Website, GitHub, Rechtliches, Spenden
     com.estundnzettl.app.ui.AppCard {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                t.t("settings.appInfo.sectionAboutTitle"),
-                color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                SectionIconBadge(Icons.Filled.Public, Palette.Purple500)
+                Text(t.t("settings.appInfo.sectionAboutTitle"), color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            }
             ActionButton(label = t.t("settings.appInfo.privacy"), tint = colors.textSecondary, outlined = true) {
                 openLink("https://d3rpapah0d3n.github.io/eStundnzettl/privacy.html")
             }
@@ -981,16 +1007,70 @@ private fun AppInfoSection(viewModel: MainViewModel) {
         }
     }
 
-    // Gefahrenzone
-    com.estundnzettl.app.ui.AppCard {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                "⚠ " + t.t("settings.appInfo.dangerTitle"),
-                color = colors.danger, fontWeight = FontWeight.Bold, fontSize = 15.sp,
-            )
-            Text(t.t("settings.appInfo.dangerBody"), color = colors.textMuted, fontSize = 12.sp)
-            ActionButton(label = t.t("settings.appInfo.deleteAll"), tint = colors.danger) {
-                showDeleteAll = true
+    // Gefahrenzone: bewusst kompakt und standardmäßig geschlossen. Die
+    // destruktive Aktion wird erst nach dem Aufklappen angeboten.
+    com.estundnzettl.app.ui.AppCard(
+        containerColor = colors.danger.copy(alpha = if (colors.isDark) 0.075f else 0.025f),
+        borderColor = colors.danger.copy(alpha = if (dangerExpanded) 0.26f else 0.16f),
+        shadowElevation = 0.dp,
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { dangerExpanded = !dangerExpanded }
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SectionIconBadge(Icons.Filled.Warning, colors.danger)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        t.t("settings.appInfo.dangerTitle"),
+                        color = colors.danger,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                    )
+                    Text(
+                        t.t("settings.appInfo.dangerHint"),
+                        color = colors.textMuted,
+                        fontSize = 11.sp,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(colors.danger.copy(alpha = 0.10f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = colors.danger,
+                        modifier = Modifier
+                            .size(21.dp)
+                            .rotate(if (dangerExpanded) 180f else 0f),
+                    )
+                }
+            }
+            AnimatedVisibility(visible = dangerExpanded) {
+                Column(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        t.t("settings.appInfo.dangerBody"),
+                        color = colors.textMuted,
+                        fontSize = 12.sp,
+                    )
+                    ActionButton(label = t.t("settings.appInfo.deleteAll"), tint = colors.danger) {
+                        showDeleteAll = true
+                    }
+                }
             }
         }
     }

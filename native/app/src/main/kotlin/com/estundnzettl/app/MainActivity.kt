@@ -149,7 +149,7 @@ class MainActivity : ComponentActivity() {
                 // Google-Consent-Dialoge (AuthorizationClient-Resolution)
                 val googleAuthLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartIntentSenderForResult(),
-                ) { result -> viewModel.onGoogleAuthResult(result.data) }
+                ) { result -> viewModel.onGoogleAuthResult(result.resultCode, result.data) }
                 LaunchedEffect(Unit) {
                     viewModel.googleAuthIntents.collect { pendingIntent ->
                         googleAuthLauncher.launch(

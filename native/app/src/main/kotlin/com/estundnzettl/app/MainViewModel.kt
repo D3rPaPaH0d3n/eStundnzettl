@@ -1,6 +1,8 @@
 package com.estundnzettl.app
 
 import android.app.Application
+import android.app.Activity
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.estundnzettl.app.data.EntriesRepository
@@ -47,6 +49,8 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.Locale as JavaLocale
+
+private const val GOOGLE_DRIVE_TAG = "GoogleDriveFlow"
 
 internal fun autoCheckoutDays(startDate: LocalDate, today: LocalDate): Int =
     ChronoUnit.DAYS.between(startDate, today).toInt().coerceAtLeast(1)
@@ -1428,54 +1432,100 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             try {
+                Log.i(GOOGLE_DRIVE_TAG, "Autorisierung gestartet (scope=${googleScopeLabel(scope)})")
                 val token = googleDrive.authorize(scope)
+                Log.i(GOOGLE_DRIVE_TAG, "Autorisierung ohne Dialog erfolgreich (scope=${googleScopeLabel(scope)})")
                 onGoogleConnected(scope, token)
             } catch (e: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
                 val intent = e.pendingIntent
                 if (intent != null) {
                     pendingGoogleScope = scope
+                    Log.i(GOOGLE_DRIVE_TAG, "Zustimmung erforderlich (scope=${googleScopeLabel(scope)})")
                     _googleAuthIntents.tryEmit(intent)
                 } else {
+                    Log.e(GOOGLE_DRIVE_TAG, "Zustimmung erforderlich, aber PendingIntent fehlt")
                     emit(UiMessage("settings.backup.toast.gdriveUnavailable"))
                 }
             } catch (e: Exception) {
+                Log.e(GOOGLE_DRIVE_TAG, "Google-Drive-Autorisierung fehlgeschlagen", e)
                 emit(UiMessage("settings.backup.toast.gdriveFailed"))
             }
         }
     }
 
     /** Ergebnis des Consent-Dialogs (von der Activity durchgereicht). */
-    fun onGoogleAuthResult(intent: android.content.Intent?) {
-        val scope = pendingGoogleScope ?: return
+    fun onGoogleAuthResult(resultCode: Int, intent: android.content.Intent?) {
+        val scope = pendingGoogleScope
+        if (scope == null) {
+            Log.w(GOOGLE_DRIVE_TAG, "OAuth-Ergebnis ohne ausstehenden Scope empfangen")
+            return
+        }
         pendingGoogleScope = null
         val forRestore = pendingGoogleRestore
         pendingGoogleRestore = false
+
+        if (resultCode != Activity.RESULT_OK) {
+            Log.i(GOOGLE_DRIVE_TAG, "OAuth-Dialog abgebrochen (resultCode=$resultCode)")
+            if (forRestore) updateOnboarding { it.copy(restoreLoading = false) }
+            emit(UiMessage("settings.backup.toast.gdriveCancelled"))
+            return
+        }
+
         viewModelScope.launch {
-            val token = googleDrive.tokenFromResultIntent(intent)
-            if (token != null) {
+            try {
+                val token = googleDrive.tokenFromResultIntent(intent)
+                if (token == null) {
+                    Log.e(GOOGLE_DRIVE_TAG, "OAuth-Dialog war erfolgreich, lieferte aber keinen Access-Token")
+                    if (forRestore) updateOnboarding { it.copy(restoreLoading = false) }
+                    emit(UiMessage("settings.backup.toast.gdriveFailed"))
+                    return@launch
+                }
+
+                Log.i(GOOGLE_DRIVE_TAG, "OAuth-Token übernommen (scope=${googleScopeLabel(scope)}, restore=$forRestore)")
                 if (forRestore) {
                     finishGoogleDriveRestore(token)
                 } else {
                     onGoogleConnected(scope, token)
                 }
-            } else {
+            } catch (e: Exception) {
+                Log.e(GOOGLE_DRIVE_TAG, "OAuth-Ergebnis konnte nicht abgeschlossen werden", e)
                 if (forRestore) updateOnboarding { it.copy(restoreLoading = false) }
-                emit(UiMessage("settings.backup.toast.gdriveCancelled"))
+                emit(UiMessage("settings.backup.toast.gdriveFailed"))
             }
         }
     }
 
     private suspend fun onGoogleConnected(scope: String, token: String) {
         val email = googleDrive.fetchAccountEmail(token)
+        val accountLabel = email.ifEmpty { "Google" }
         if (scope == com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA) {
-            settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL, email.ifEmpty { "Google" })
-            settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, true)
-            scheduleDataProtection()
+            // Konto und Aktivierungsflag gehören logisch zusammen. Ein
+            // einzelner Batch verhindert den zuvor beobachteten Halbzustand
+            // (Konto gespeichert, Cloud-Backup aber nicht aktiviert).
+            settings.setRawBatch(
+                mapOf(
+                    com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
+                    SettingsRepository.Keys.CLOUD_SYNC_ENABLED to JsonPrimitive(true),
+                ),
+            )
         } else {
-            settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, email.ifEmpty { "Google" })
+            settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, accountLabel)
         }
+
+        // Erst UI und Erfolgsmeldung abschließen. Der ohnehin verzögerte
+        // Backup-/PDF-Lauf darf die sichtbare Verbindung nicht beeinflussen.
         refreshGoogleState()
-        emit(UiMessage("settings.backup.toast.gdriveConnected"))
+        emit(UiMessage("settings.backup.toast.gdriveConnected", listOf("label" to accountLabel)))
+        Log.i(GOOGLE_DRIVE_TAG, "Google Drive verbunden (scope=${googleScopeLabel(scope)}, account=$accountLabel)")
+        if (scope == com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA) {
+            scheduleDataProtection()
+        }
+    }
+
+    private fun googleScopeLabel(scope: String): String = when (scope) {
+        com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA -> "backup"
+        com.estundnzettl.app.data.GoogleDriveManager.SCOPE_FILE -> "pdf"
+        else -> "unknown"
     }
 
     fun disconnectGoogleDrive(forPdfArchive: Boolean = false) {

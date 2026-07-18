@@ -1012,16 +1012,21 @@ internal fun MonthPickerDialog(
 // ─── Gemeinsame Bausteine ────────────────────────────────────
 
 @Composable
-fun AppCard(content: @Composable ColumnScope.() -> Unit) {
+fun AppCard(
+    containerColor: Color? = null,
+    borderColor: Color? = null,
+    shadowElevation: androidx.compose.ui.unit.Dp = 2.dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val colors = LocalAppColors.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
             // shadow-sm der Original-Card
-            .shadow(2.dp, RoundedCornerShape(12.dp), spotColor = Color.Black.copy(alpha = 0.35f))
+            .shadow(shadowElevation, RoundedCornerShape(12.dp), spotColor = Color.Black.copy(alpha = 0.35f))
             .clip(RoundedCornerShape(12.dp))
-            .background(colors.surface)
-            .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+            .background(containerColor ?: colors.surface)
+            .border(1.dp, borderColor ?: colors.border, RoundedCornerShape(12.dp))
             .animateContentSize(),
         content = content,
     )

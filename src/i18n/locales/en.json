@@ -766,6 +766,7 @@
       "recalc": "Recalculate",
       "demoData": "Demo data",
       "dangerTitle": "Danger zone",
+      "dangerHint": "Only open this if you really need it.",
       "dangerBody": "Here you can reset the app and irreversibly delete all local data. This gives you a fresh start — ideal if you want to run the setup wizard again, e.g. to change your work-hours model or schedule.",
       "deleteAll": "Delete everything & reset app",
       "versionLabel": "Version {{version}}",

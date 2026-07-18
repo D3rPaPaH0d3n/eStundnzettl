@@ -58,6 +58,11 @@ class SettingsRepository(private val dao: SettingsDao) {
         dao.put(SettingRow(key, value.toString()))
     }
 
+    /** Schreibt zusammengehörige Einstellungen in einem Room-Aufruf. */
+    suspend fun setRawBatch(values: Map<String, JsonElement>) {
+        dao.putAll(values.map { (key, value) -> SettingRow(key, value.toString()) })
+    }
+
     suspend fun delete(key: String) = dao.delete(key)
 
     // ─── Typisierte Zugriffe ─────────────────────────────────

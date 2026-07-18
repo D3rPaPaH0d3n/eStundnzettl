@@ -766,6 +766,7 @@
       "recalc": "Neu berechnen",
       "demoData": "Demo-Daten",
       "dangerTitle": "Gefahrenzone",
+      "dangerHint": "Nur aufmachen, wenn’s wirklich sein muss.",
       "dangerBody": "Hier kannst du die App komplett zurücksetzen und alle lokalen Daten unwiderruflich löschen. Das ermöglicht dir einen frischen Start – ideal, wenn du z.B. den Einrichtungs-Assistenten erneut durchlaufen möchtest, um dein Stundenmodell oder deine Arbeitszeiten zu ändern.",
       "deleteAll": "Alles löschen & App zurücksetzen",
       "versionLabel": "Version {{version}}",

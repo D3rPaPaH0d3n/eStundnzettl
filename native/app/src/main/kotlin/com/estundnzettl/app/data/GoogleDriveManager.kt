@@ -19,6 +19,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * Google-Drive-Anbindung — Port von GoogleDriveBackupPlugin.java +
@@ -70,7 +71,10 @@ class GoogleDriveManager(
                 .authorize(request)
                 .addOnSuccessListener { cont.resume(it) }
                 .addOnFailureListener { e ->
-                    if (cont.isActive) cont.cancel(e)
+                    // Ein OAuth-Fehler ist kein Coroutine-Abbruch. Als echte
+                    // Exception erreicht er den Aufrufer, wird protokolliert
+                    // und kann dem Nutzer verständlich angezeigt werden.
+                    if (cont.isActive) cont.resumeWithException(e)
                 }
         }
         if (result.hasResolution()) {

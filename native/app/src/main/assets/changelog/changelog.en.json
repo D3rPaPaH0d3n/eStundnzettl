@@ -19,6 +19,8 @@
     "title": "Your data moves in automatically",
     "items": [
      "All entries, settings, work codes and attachments are migrated automatically with the update — nothing to do on your side.",
+     "App language, live timer, backup connections and the securely stored Nextcloud app password move across as well.",
+     "If the transfer cannot be fully verified, the app never opens as an empty installation and instead offers a safe retry path.",
      "A one-time welcome popup briefly explains what changed.",
      "Calculations stay exactly the same: the same data produces the same timesheet — to the minute and to the byte."
     ]

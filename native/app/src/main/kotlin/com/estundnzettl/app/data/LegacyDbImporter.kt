@@ -13,15 +13,34 @@ import com.estundnzettl.app.data.db.EntryRow
 import com.estundnzettl.app.data.db.SettingRow
 import com.estundnzettl.app.data.db.WorkCodeRow
 import java.io.File
+import java.time.Instant
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+
+enum class LegacyDbImportStatus { NOT_FOUND, ALREADY_DONE, IMPORTED }
+
+data class LegacyMigrationCounts(
+    val entries: Int = 0,
+    val settings: Int = 0,
+    val workCodes: Int = 0,
+    val attachments: Int = 0,
+    val attachmentLabels: Int = 0,
+    val backupMetadata: Int = 0,
+)
+
+data class LegacyDbImportResult(
+    val status: LegacyDbImportStatus,
+    val sourceFile: String? = null,
+    val counts: LegacyMigrationCounts = LegacyMigrationCounts(),
+)
 
 /**
- * Einmalige Datenübernahme aus der SQLite-DB der Capacitor-App.
+ * One-time, rollback-safe import from the Capacitor SQLite database.
  *
- * @capacitor-community/sqlite legt die Datenbank als
- * `databases/<name>SQLite.db` im App-Datenverzeichnis ab. Da die native
- * App dieselbe applicationId behält, liegt die Alt-DB nach dem Update im
- * eigenen Datenverzeichnis und kann zeilenweise kopiert werden — das
- * Schema ist identisch (siehe Entities.kt).
+ * The legacy database is opened read-only and never renamed or deleted. The
+ * complete copy, its verification and the completion marker share one Room
+ * transaction, so a failed import can be retried on the next start.
  */
 class LegacyDbImporter(
     private val context: Context,
@@ -30,92 +49,102 @@ class LegacyDbImporter(
 
     companion object {
         private const val TAG = "LegacyDbImporter"
-
-        /** Marker-Setting: Import wurde durchgeführt (Wert = ISO-Timestamp). */
         const val MIGRATION_MARKER_KEY = "native_migration_done"
+        const val MIGRATION_REPORT_KEY = "native_migration_report"
 
-        /** Kandidaten-Dateinamen des Capacitor-SQLite-Plugins. */
         private val LEGACY_DB_CANDIDATES = listOf(
             "estundnzettlSQLite.db",
             "estundnzettl.db",
         )
+        private val DATE_PATTERN = Regex("\\d{4}-\\d{2}-\\d{2}")
+        private val ENTRY_TYPES = setOf("work", "vacation", "sick", "public_holiday", "time_comp")
     }
 
     fun findLegacyDbFile(): File? {
-        // Plugin-Standard: <data>/databases/<name>SQLite.db
         val databasesDir = context.getDatabasePath("probe").parentFile ?: return null
         return LEGACY_DB_CANDIDATES
             .map { File(databasesDir, it) }
             .firstOrNull { it.exists() && it.length() > 0 }
     }
 
-    /**
-     * Importiert die Alt-Daten, wenn (a) eine Legacy-DB existiert und
-     * (b) der Import noch nie gelaufen ist. Liefert true bei erfolgtem
-     * Import. Die Alt-DB bleibt unangetastet (Rollback-Sicherheit — sie
-     * wird erst in einer späteren Version aufgeräumt).
-     */
-    suspend fun importIfNeeded(): Boolean {
-        val marker = db.settingsDao().getValue(MIGRATION_MARKER_KEY)
-        if (marker != null) return false
-        val legacyFile = findLegacyDbFile() ?: return false
+    suspend fun importIfNeeded(): LegacyDbImportResult {
+        if (db.settingsDao().getValue(MIGRATION_MARKER_KEY) != null) {
+            return LegacyDbImportResult(LegacyDbImportStatus.ALREADY_DONE)
+        }
+        val legacyFile = findLegacyDbFile()
+            ?: return LegacyDbImportResult(LegacyDbImportStatus.NOT_FOUND)
+
+        ensureDestinationIsEmpty()
 
         val legacy = SQLiteDatabase.openDatabase(
-            legacyFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY
+            legacyFile.absolutePath,
+            null,
+            SQLiteDatabase.OPEN_READONLY,
         )
         try {
-            val entries = legacy.readTable("entries") { c ->
+            val entries = legacy.readTable("entries") { cursor ->
                 EntryRow(
-                    id = c.getLong(c.getColumnIndexOrThrow("id")),
-                    type = c.getStringOr("type") ?: "work",
-                    date = c.getStringOr("date") ?: "",
-                    start = c.getStringOr("start"),
-                    end = c.getStringOr("end"),
-                    pause = c.getIntOr("pause") ?: 0,
-                    project = c.getStringOr("project"),
-                    code = c.getIntOr("code"),
-                    netDuration = c.getIntOr("netDuration") ?: 0,
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    type = cursor.getStringOr("type") ?: "work",
+                    date = cursor.getStringOr("date") ?: "",
+                    start = cursor.getStringOr("start"),
+                    end = cursor.getStringOr("end"),
+                    pause = cursor.getIntOr("pause") ?: 0,
+                    project = cursor.getStringOr("project"),
+                    code = cursor.getIntOr("code"),
+                    netDuration = cursor.getIntOr("netDuration") ?: 0,
                 )
             }
-            val settings = legacy.readTable("settings") { c ->
+            val settings = legacy.readTable("settings") { cursor ->
                 SettingRow(
-                    key = c.getStringOr("key") ?: "",
-                    value = c.getStringOr("value") ?: "",
+                    key = cursor.getStringOr("key") ?: "",
+                    value = cursor.getStringOr("value") ?: "",
                 )
             }.filter { it.key.isNotEmpty() }
-            val workCodes = legacy.readTable("work_codes") { c ->
+            val workCodes = legacy.readTable("work_codes") { cursor ->
                 WorkCodeRow(
-                    id = c.getLong(c.getColumnIndexOrThrow("id")),
-                    label = c.getStringOr("label") ?: "",
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    label = cursor.getStringOr("label") ?: "",
                 )
             }
-            val attachments = legacy.readTable("attachments") { c ->
+            val attachments = legacy.readTable("attachments") { cursor ->
                 AttachmentRow(
-                    id = c.getStringOr("id") ?: "",
-                    entryId = c.getLongOr("entryId") ?: 0,
-                    label = c.getStringOr("label") ?: "",
-                    fileName = c.getStringOr("fileName") ?: "",
-                    mimeType = c.getStringOr("mimeType") ?: "",
-                    storagePath = c.getStringOr("storagePath") ?: "",
-                    fileSize = c.getLongOr("fileSize") ?: 0,
-                    createdAt = c.getStringOr("createdAt") ?: "",
-                )
-            }.filter { it.id.isNotEmpty() }
-            val labels = legacy.readTable("attachment_labels") { c ->
-                AttachmentLabelRow(
-                    label = c.getStringOr("label") ?: "",
-                    position = c.getIntOr("position") ?: 0,
-                )
-            }.filter { it.label.isNotEmpty() }
-            val backupMetadata = legacy.readTable("backup_metadata") { c ->
-                BackupMetadataRow(
-                    id = c.getLongOr("id") ?: 0,
-                    type = c.getStringOr("type"),
-                    timestamp = c.getStringOr("timestamp"),
-                    sizeBytes = c.getLongOr("size_bytes"),
-                    location = c.getStringOr("location"),
+                    id = cursor.getStringOr("id") ?: "",
+                    entryId = cursor.getLongOr("entryId") ?: 0,
+                    label = cursor.getStringOr("label") ?: "",
+                    fileName = cursor.getStringOr("fileName") ?: "",
+                    mimeType = cursor.getStringOr("mimeType") ?: "",
+                    storagePath = cursor.getStringOr("storagePath") ?: "",
+                    fileSize = cursor.getLongOr("fileSize") ?: 0,
+                    createdAt = cursor.getStringOr("createdAt") ?: "",
                 )
             }
+            val labels = legacy.readTable("attachment_labels") { cursor ->
+                AttachmentLabelRow(
+                    label = cursor.getStringOr("label") ?: "",
+                    position = cursor.getIntOr("position") ?: 0,
+                )
+            }
+            val backupMetadata = legacy.readTable("backup_metadata") { cursor ->
+                BackupMetadataRow(
+                    id = cursor.getLongOr("id") ?: 0,
+                    type = cursor.getStringOr("type"),
+                    timestamp = cursor.getStringOr("timestamp"),
+                    sizeBytes = cursor.getLongOr("size_bytes"),
+                    location = cursor.getStringOr("location"),
+                )
+            }
+
+            validateSource(entries, settings, workCodes, attachments, labels)
+            val counts = LegacyMigrationCounts(
+                entries = entries.size,
+                settings = settings.size,
+                workCodes = workCodes.size,
+                attachments = attachments.size,
+                attachmentLabels = labels.size,
+                backupMetadata = backupMetadata.size,
+            )
+            val completedAt = Instant.now().toString()
 
             db.withTransaction {
                 db.entryDao().insertAll(entries)
@@ -124,20 +153,91 @@ class LegacyDbImporter(
                 db.attachmentDao().insertAll(attachments)
                 db.attachmentLabelDao().insertAll(labels)
                 backupMetadata.forEach { db.backupMetadataDao().insert(it.copy(id = 0)) }
-                db.settingsDao().put(
-                    SettingRow(MIGRATION_MARKER_KEY, "\"${java.time.Instant.now()}\"")
+
+                check(db.entryDao().getAll().toSet() == entries.toSet()) {
+                    "Entry verification after legacy import failed"
+                }
+                check(db.workCodeDao().getAll().toSet() == workCodes.toSet()) {
+                    "Work-code verification after legacy import failed"
+                }
+                check(db.attachmentDao().getAll().toSet() == attachments.toSet()) {
+                    "Attachment verification after legacy import failed"
+                }
+                check(db.attachmentLabelDao().getAll().toSet() == labels.toSet()) {
+                    "Attachment-label verification after legacy import failed"
+                }
+                check(db.backupMetadataDao().getAll().size == backupMetadata.size) {
+                    "Backup metadata verification after legacy import failed"
+                }
+                val writtenSettings = db.settingsDao().getAll().associate { it.key to it.value }
+                check(settings.all { writtenSettings[it.key] == it.value }) {
+                    "Settings verification after legacy import failed"
+                }
+
+                val report = buildJsonObject {
+                    put("source", legacyFile.name)
+                    put("completedAt", completedAt)
+                    put("entries", counts.entries)
+                    put("settings", counts.settings)
+                    put("workCodes", counts.workCodes)
+                    put("attachments", counts.attachments)
+                    put("attachmentLabels", counts.attachmentLabels)
+                    put("backupMetadata", counts.backupMetadata)
+                }
+                db.settingsDao().putAll(
+                    listOf(
+                        SettingRow(MIGRATION_MARKER_KEY, JsonPrimitive(completedAt).toString()),
+                        SettingRow(MIGRATION_REPORT_KEY, report.toString()),
+                    )
                 )
             }
 
-            Log.i(TAG, "Legacy-Import: ${entries.size} entries, ${settings.size} settings, " +
-                "${workCodes.size} codes, ${attachments.size} attachments übernommen")
-            return true
+            Log.i(TAG, "Verified Capacitor import: $counts")
+            return LegacyDbImportResult(
+                status = LegacyDbImportStatus.IMPORTED,
+                sourceFile = legacyFile.absolutePath,
+                counts = counts,
+            )
         } finally {
             legacy.close()
         }
     }
 
-    /** Liest eine Tabelle vollständig; fehlende Tabellen ergeben eine leere Liste. */
+    private suspend fun ensureDestinationIsEmpty() {
+        val populated = buildList {
+            if (db.entryDao().getAll().isNotEmpty()) add("entries")
+            if (db.settingsDao().getAll().isNotEmpty()) add("settings")
+            if (db.workCodeDao().getAll().isNotEmpty()) add("work_codes")
+            if (db.attachmentDao().getAll().isNotEmpty()) add("attachments")
+            if (db.attachmentLabelDao().getAll().isNotEmpty()) add("attachment_labels")
+            if (db.backupMetadataDao().getAll().isNotEmpty()) add("backup_metadata")
+        }
+        check(populated.isEmpty()) {
+            "Legacy import refused because the native destination is not empty: ${populated.joinToString()}"
+        }
+    }
+
+    private fun validateSource(
+        entries: List<EntryRow>,
+        settings: List<SettingRow>,
+        workCodes: List<WorkCodeRow>,
+        attachments: List<AttachmentRow>,
+        labels: List<AttachmentLabelRow>,
+    ) {
+        check(entries.map { it.id }.distinct().size == entries.size) { "Duplicate entry IDs in legacy database" }
+        check(entries.all { it.id > 0 && it.type in ENTRY_TYPES && DATE_PATTERN.matches(it.date) }) {
+            "Invalid entry in legacy database"
+        }
+        check(settings.map { it.key }.distinct().size == settings.size) { "Duplicate setting keys in legacy database" }
+        check(workCodes.map { it.id }.distinct().size == workCodes.size) { "Duplicate work-code IDs in legacy database" }
+        check(attachments.map { it.id }.distinct().size == attachments.size && attachments.all { it.id.isNotBlank() }) {
+            "Invalid attachment IDs in legacy database"
+        }
+        check(labels.map { it.label }.distinct().size == labels.size && labels.all { it.label.isNotBlank() }) {
+            "Invalid attachment labels in legacy database"
+        }
+    }
+
     private fun <T> SQLiteDatabase.readTable(table: String, mapper: (Cursor) -> T): List<T> {
         if (!hasTable(table)) return emptyList()
         return rawQuery("SELECT * FROM $table", null).use { cursor ->
@@ -155,16 +255,16 @@ class LegacyDbImporter(
 }
 
 private fun Cursor.getStringOr(column: String): String? {
-    val idx = getColumnIndex(column)
-    return if (idx >= 0 && !isNull(idx)) getString(idx) else null
+    val index = getColumnIndex(column)
+    return if (index >= 0 && !isNull(index)) getString(index) else null
 }
 
 private fun Cursor.getIntOr(column: String): Int? {
-    val idx = getColumnIndex(column)
-    return if (idx >= 0 && !isNull(idx)) getInt(idx) else null
+    val index = getColumnIndex(column)
+    return if (index >= 0 && !isNull(index)) getInt(index) else null
 }
 
 private fun Cursor.getLongOr(column: String): Long? {
-    val idx = getColumnIndex(column)
-    return if (idx >= 0 && !isNull(idx)) getLong(idx) else null
+    val index = getColumnIndex(column)
+    return if (index >= 0 && !isNull(index)) getLong(index) else null
 }

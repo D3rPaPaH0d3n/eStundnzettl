@@ -179,6 +179,8 @@ fun PdfArchiveSection(viewModel: MainViewModel) {
                         title = t.t("settings.pdfArchive.gdrive.title"),
                         subtitle = if (!playServicesAvailable) {
                             t.t(vmState.googleDrive.playServices.messageKey())
+                        } else if (vmState.googleDrive.pdfReconnectRequired) {
+                            t.t("settings.backup.warning.gdriveReconnect")
                         } else if (gdriveConnected) {
                             t.t("settings.pdfArchive.gdrive.folderWithEmail", "email" to gdriveEmail)
                         } else {

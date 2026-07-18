@@ -8,14 +8,14 @@ plugins {
 
 android {
     namespace = "com.estundnzettl.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         // Same application id as the Capacitor app so the native rewrite can
         // eventually replace it as an in-place update on the Play Store.
         applicationId = "com.estundnzettl.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         // Muss über dem versionCode der Capacitor-Produktion (284) liegen,
         // damit Play die Beta als Update anbietet; Luft für Hotfixes gelassen.
         versionCode = 300

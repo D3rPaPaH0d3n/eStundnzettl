@@ -33,6 +33,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +52,7 @@ import com.estundnzettl.app.data.CrashRecoveryStore
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.AppHeader
 import com.estundnzettl.app.ui.AppErrorScreen
+import com.estundnzettl.app.ui.MigrationRecoveryScreen
 import com.estundnzettl.app.ui.DashboardScreen
 import com.estundnzettl.app.ui.EntryFormScreen
 import com.estundnzettl.app.ui.LiveTimerBar
@@ -63,13 +66,14 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+    @Volatile private var appReady = false
 
     /** Erster onResume gehört zum App-Start — der zählt nicht als "Resume". */
     private var resumedOnce = false
 
     override fun onResume() {
         super.onResume()
-        if (resumedOnce) {
+        if (resumedOnce && appReady) {
             viewModel.onAppResume()
         } else {
             resumedOnce = true
@@ -79,7 +83,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         // Background-Backup wie der appStateChange-Listener der Web-App
-        viewModel.onAppBackground()
+        if (appReady) viewModel.onAppBackground()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,6 +114,74 @@ class MainActivity : ComponentActivity() {
                             val uri = Uri.parse(
                                 "mailto:project@kainer.co.at?subject=" +
                                     Uri.encode("eStundnzettl Android-Fehler")
+                            )
+                            runCatching { startActivity(Intent(Intent.ACTION_SENDTO, uri)) }
+                        },
+                    )
+                }
+                return@setContent
+            }
+
+            var migrationAttempt by remember { mutableIntStateOf(0) }
+            var migrationResult by remember {
+                mutableStateOf<Result<MigrationRunResult>?>(null)
+            }
+            LaunchedEffect(migrationAttempt) {
+                migrationResult = null
+                val result = (application as EStundnzettlApp)
+                    .runMigrations(this@MainActivity)
+                appReady = result.isSuccess
+                migrationResult = result
+            }
+
+            val migration = migrationResult
+            if (migration == null) {
+                val migrationI18n = remember {
+                    I18n.load(
+                        this,
+                        I18n.resolveSystemLanguage(java.util.Locale.getDefault().language),
+                    )
+                }
+                EStundnzettlTheme(
+                    themeSetting = "system",
+                    materialYou = false,
+                    i18n = migrationI18n,
+                    darkTopBar = false,
+                ) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = LocalAppColors.current.accentStrong)
+                    }
+                }
+                return@setContent
+            }
+            val migrationFailure = migration.exceptionOrNull()
+            if (migrationFailure != null) {
+                val migrationI18n = remember {
+                    I18n.load(
+                        this,
+                        I18n.resolveSystemLanguage(java.util.Locale.getDefault().language),
+                    )
+                }
+                EStundnzettlTheme(
+                    themeSetting = "system",
+                    materialYou = false,
+                    i18n = migrationI18n,
+                    darkTopBar = false,
+                ) {
+                    MigrationRecoveryScreen(
+                        onRetry = { migrationAttempt++ },
+                        onCopyDiagnostic = {
+                            getSystemService(ClipboardManager::class.java).setPrimaryClip(
+                                ClipData.newPlainText(
+                                    "eStundnzettl Migration",
+                                    migrationFailure.stackTraceToString(),
+                                )
+                            )
+                        },
+                        onContactSupport = {
+                            val uri = Uri.parse(
+                                "mailto:project@kainer.co.at?subject=" +
+                                    Uri.encode("eStundnzettl Datenübernahme")
                             )
                             runCatching { startActivity(Intent(Intent.ACTION_SENDTO, uri)) }
                         },

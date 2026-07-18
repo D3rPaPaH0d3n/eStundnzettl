@@ -1201,6 +1201,14 @@
     "close": "Verstanden",
     "reviewMode": "Aufzeichnungsart prüfen"
   },
+  "migrationRecovery": {
+    "title": "Datenübernahme noch nicht abgeschlossen",
+    "body": "Die App konnte deine bisherigen Daten noch nicht sicher prüfen. Deshalb startet sie absichtlich nicht mit einer leeren Ansicht. Versuche die Übernahme bitte noch einmal.",
+    "dataSafe": "Deine bisherige Datenbank und deine Anhänge wurden nicht gelöscht oder verändert.",
+    "retry": "Datenübernahme erneut versuchen",
+    "copyDiagnostic": "Technische Diagnose kopieren",
+    "contactSupport": "Support kontaktieren"
+  },
   "crashRecovery": {
     "title": "Da ist etwas schiefgegangen",
     "body": "Die App wurde beim letzten Mal unerwartet beendet. Du kannst sie sicher neu starten oder die technische Diagnose für den Support kopieren.",

@@ -119,6 +119,16 @@ fun CloudBackupContent(viewModel: MainViewModel) {
                         tint = colors.textFaint,
                         enabled = false,
                     ) {}
+                } else if (state.googleDrive.backupReconnectRequired) {
+                    Text(
+                        t.t("settings.backup.warning.gdriveReconnect"),
+                        color = colors.danger,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    ActionButton(label = t.t("settings.backup.gdrive.connect"), tint = colors.accent) {
+                        viewModel.connectGoogleDrive(forPdfArchive = false)
+                    }
                 } else if (state.googleDrive.backupConnected) {
                     Text(
                         t.t("settings.backup.gdrive.connectedAs", "label" to state.googleDrive.backupEmail),

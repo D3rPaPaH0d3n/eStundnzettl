@@ -197,8 +197,10 @@ data class NextcloudUiState(
 data class GoogleDriveUiState(
     val backupConnected: Boolean = false,
     val backupEmail: String = "",
+    val backupReconnectRequired: Boolean = false,
     val pdfConnected: Boolean = false,
     val pdfEmail: String = "",
+    val pdfReconnectRequired: Boolean = false,
     val playServices: GooglePlayServicesStatus = GooglePlayServicesStatus.CHECKING,
 )
 
@@ -240,11 +242,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            // Erst laden, wenn die Capacitor-Datenübernahme durch ist —
-            // sonst racet die Onboarding-Entscheidung gegen den Import.
-            (getApplication<android.app.Application>() as? EStundnzettlApp)
-                ?.legacyImport?.join()
-
             // Einmaliges Willkommens-Popup für Umsteiger von der
             // Capacitor-Version (Migration gelaufen, Popup noch nie gezeigt)
             if (settings.getString(com.estundnzettl.app.data.LegacyDbImporter.MIGRATION_MARKER_KEY) != null &&
@@ -266,6 +263,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             loadSettings()
+            reconcileMigratedGoogleAuthorization()
             restoreTimer()
             // Onboarding zeigen, wenn noch kein Profil existiert (leerer
             // Name = Onboarding-Check der Web-App).
@@ -982,6 +980,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         private const val KEY_NATIVE_WELCOME_SEEN = "estundnzettl_native_welcome_seen_v1"
+        private const val KEY_GDRIVE_BACKUP_RECONNECT = "gdrive_backup_reconnect_required"
+        private const val KEY_GDRIVE_PDF_RECONNECT = "gdrive_pdf_reconnect_required"
         private const val KEY_CHANGELOG_VERSION_CODE = "last_seen_changelog_version_code"
         private const val KEY_CHANGELOG_VERSION_NAME = "last_seen_changelog_version_name"
         private const val ATTACHMENTS_DIR = "attachments"
@@ -1381,9 +1381,65 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** true → der nächste Consent-Callback gehört zum Onboarding-Restore. */
     private var pendingGoogleRestore = false
 
+    /**
+     * The web build stored Google account labels outside SQLite. Re-check both
+     * enabled scopes silently after migration so a valid existing grant is
+     * repaired without asking the user to connect again. A required consent
+     * flow is persisted as an explicit reconnect state instead of pretending
+     * the backup is still connected.
+     */
+    private suspend fun reconcileMigratedGoogleAuthorization() {
+        val playServicesAvailable = runCatching {
+            com.google.android.gms.common.GoogleApiAvailability.getInstance()
+                .isGooglePlayServicesAvailable(getApplication()) == 0
+        }.getOrDefault(false)
+        if (!playServicesAvailable) return
+
+        suspend fun reconcileScope(enabled: Boolean, scope: String, emailKey: String, reconnectKey: String) {
+            if (!enabled) {
+                settings.setBoolean(reconnectKey, false)
+                return
+            }
+            try {
+                val token = googleDrive.authorize(scope)
+                val storedLabel = settings.getString(emailKey).orEmpty()
+                val label = googleDrive.fetchAccountEmail(token).ifEmpty {
+                    storedLabel.ifEmpty { "Google" }
+                }
+                settings.setRawBatch(
+                    mapOf(
+                        emailKey to JsonPrimitive(label),
+                        reconnectKey to JsonPrimitive(false),
+                    )
+                )
+            } catch (_: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
+                settings.setBoolean(reconnectKey, true)
+            } catch (exception: Exception) {
+                // A transient network/Play-services error must not erase a
+                // previously valid account label or block app startup.
+                Log.w(GOOGLE_DRIVE_TAG, "Silent migrated Google state check failed", exception)
+            }
+        }
+
+        reconcileScope(
+            enabled = settings.getBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED),
+            scope = com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA,
+            emailKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL,
+            reconnectKey = KEY_GDRIVE_BACKUP_RECONNECT,
+        )
+        reconcileScope(
+            enabled = settings.getBoolean(com.estundnzettl.app.data.PdfArchiveManager.KEY_GDRIVE),
+            scope = com.estundnzettl.app.data.GoogleDriveManager.SCOPE_FILE,
+            emailKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL,
+            reconnectKey = KEY_GDRIVE_PDF_RECONNECT,
+        )
+    }
+
     private suspend fun refreshGoogleState() {
         val backupEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL) ?: ""
         val pdfEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL) ?: ""
+        val backupReconnect = settings.getBoolean(KEY_GDRIVE_BACKUP_RECONNECT)
+        val pdfReconnect = settings.getBoolean(KEY_GDRIVE_PDF_RECONNECT)
         val playServices = runCatching {
             googlePlayServicesStatus(
                 com.google.android.gms.common.GoogleApiAvailability.getInstance()
@@ -1392,10 +1448,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }.getOrDefault(GooglePlayServicesStatus.UNAVAILABLE)
         _state.value = _state.value.copy(
             googleDrive = GoogleDriveUiState(
-                backupConnected = backupEmail.isNotEmpty(),
+                backupConnected = backupEmail.isNotEmpty() && !backupReconnect,
                 backupEmail = backupEmail,
-                pdfConnected = pdfEmail.isNotEmpty(),
+                backupReconnectRequired = backupReconnect,
+                pdfConnected = pdfEmail.isNotEmpty() && !pdfReconnect,
                 pdfEmail = pdfEmail,
+                pdfReconnectRequired = pdfReconnect,
                 playServices = playServices,
             ),
         )
@@ -1506,10 +1564,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 mapOf(
                     com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
                     SettingsRepository.Keys.CLOUD_SYNC_ENABLED to JsonPrimitive(true),
+                    KEY_GDRIVE_BACKUP_RECONNECT to JsonPrimitive(false),
                 ),
             )
         } else {
-            settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, accountLabel)
+            settings.setRawBatch(
+                mapOf(
+                    com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
+                    KEY_GDRIVE_PDF_RECONNECT to JsonPrimitive(false),
+                )
+            )
         }
 
         // Erst UI und Erfolgsmeldung abschließen. Der ohnehin verzögerte
@@ -1532,9 +1596,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             if (forPdfArchive) {
                 settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, "")
+                settings.setBoolean(KEY_GDRIVE_PDF_RECONNECT, false)
                 settings.setBoolean(com.estundnzettl.app.data.PdfArchiveManager.KEY_GDRIVE, false)
             } else {
                 settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL, "")
+                settings.setBoolean(KEY_GDRIVE_BACKUP_RECONNECT, false)
                 settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, false)
                 settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_FAIL_COUNT, "0")
                 settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_ERROR, "")

@@ -19,6 +19,8 @@
     "title": "Deine Daten ziehen automatisch um",
     "items": [
      "Beim Update werden alle Einträge, Einstellungen, Tätigkeiten und Anhänge automatisch übernommen — du musst nichts tun.",
+     "Auch App-Sprache, Live-Timer, Backup-Verbindungen und das sicher gespeicherte Nextcloud-App-Passwort ziehen mit um.",
+     "Kann die Übernahme nicht vollständig geprüft werden, startet die App nicht leer, sondern bietet einen sicheren Wiederholungsweg.",
      "Ein einmaliges Willkommens-Popup erklärt kurz, was sich geändert hat.",
      "Die Berechnungen bleiben exakt gleich: Dieselben Daten ergeben denselben Stundenzettel — auf die Minute und aufs Byte."
     ]

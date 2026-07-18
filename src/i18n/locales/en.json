@@ -1201,6 +1201,14 @@
     "close": "Got it",
     "reviewMode": "Review recording mode"
   },
+  "migrationRecovery": {
+    "title": "Data transfer is not complete",
+    "body": "The app could not safely verify your existing data yet. It therefore does not start with an empty view. Please try the transfer again.",
+    "dataSafe": "Your existing database and attachments were not deleted or changed.",
+    "retry": "Try data transfer again",
+    "copyDiagnostic": "Copy technical diagnostic",
+    "contactSupport": "Contact support"
+  },
   "crashRecovery": {
     "title": "Something went wrong",
     "body": "The app ended unexpectedly last time. You can safely restart it or copy the technical diagnostic for support.",

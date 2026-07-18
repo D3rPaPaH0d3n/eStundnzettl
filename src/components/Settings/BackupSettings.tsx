@@ -164,6 +164,7 @@ const BackupSettings: React.FC<Props> = ({
     if (!lastBackupDate) return null;
     // Relative Zeitanzeige ("vor 5 Minuten") braucht die aktuelle Uhrzeit;
     // bewusst impur, Neuberechnung nur bei Backup-/Sprachwechsel.
+    // eslint-disable-next-line react-hooks/purity
     const diff = Date.now() - new Date(lastBackupDate).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return t("settings.backup.last.now");

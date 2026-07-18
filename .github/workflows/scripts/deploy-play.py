@@ -5,7 +5,7 @@ Release-Name und Release-Notes werden *dynamisch* abgeleitet:
 
     Release-Name:
         1. Env-Var RELEASE_NAME (falls gesetzt)
-        2. "v<package.json.version> — <erste Zeile aus fastlane de-DE/<code>.txt>"
+        2. "v<native versionName> — <erste Zeile aus fastlane de-DE/<code>.txt>"
         3. Fallback: "v<versionCode> (<track>)"
 
     Release-Notes:
@@ -21,7 +21,6 @@ des neuen versionCodes wird gewarnt (Hinweis auf Play-Console-seitige
 Auto-Promotion).
 """
 
-import json
 import os
 import pathlib
 import re
@@ -36,7 +35,7 @@ from googleapiclient.http import MediaFileUpload
 
 PACKAGE = "com.estundnzettl.app"
 AAB_PATH = os.environ.get(
-    "AAB_PATH", "android/app/build/outputs/bundle/release/app-release.aab"
+    "AAB_PATH", "native/app/build/outputs/bundle/release/app-release.aab"
 )
 TRACK = os.environ.get("PLAY_TRACK", "internal")
 ALL_TRACKS = ("internal", "alpha", "beta", "production")
@@ -44,18 +43,18 @@ RELEASE_NOTES_LIMIT = 500
 RELEASE_NAME_LIMIT = 50
 
 # ── Versionsinfo aus Repo lesen ──────────────────────────────────────────
-# Env-Overrides erlauben dem Workflow, die Werte der gewählten App-Variante
-# (Capacitor vs. natives Kotlin-Rewrite) direkt durchzureichen.
+# Env-Overrides erlauben dem Workflow weiterhin einen expliziten Legacy-Build.
 VERSION_CODE = os.environ.get("VERSION_CODE", "")
 if not VERSION_CODE:
-    build_gradle = pathlib.Path("android/app/build.gradle").read_text()
-    match = re.search(r"versionCode\s+(\d+)", build_gradle)
+    build_gradle = pathlib.Path("native/app/build.gradle.kts").read_text()
+    match = re.search(r"versionCode\s*=\s*(\d+)", build_gradle)
     VERSION_CODE = match.group(1) if match else "0"
 
 VERSION_NAME = os.environ.get("VERSION_NAME", "")
 if not VERSION_NAME:
-    pkg_json = json.loads(pathlib.Path("package.json").read_text(encoding="utf-8"))
-    VERSION_NAME = pkg_json.get("version", "0.0.0")
+    build_gradle = pathlib.Path("native/app/build.gradle.kts").read_text()
+    match = re.search(r'versionName\s*=\s*"([^"]+)"', build_gradle)
+    VERSION_NAME = match.group(1) if match else "0.0.0"
 
 # ── Release-Name ableiten ────────────────────────────────────────────────
 FASTLANE_DE = pathlib.Path(

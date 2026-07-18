@@ -1,5 +1,5 @@
 # ============================================================================
-# Deploy to Play Store (Internal Testing ODER Open Beta)
+# Deploy to Play Store (native Kotlin app by default)
 # ============================================================================
 #
 # WANN LÄUFT DAS?
@@ -8,19 +8,16 @@
 #
 # WAS PASSIERT? (in dieser Reihenfolge)
 #   1. Code auschecken
-#   2. Node.js + Dependencies installieren
-#   3. Tests ausführen
-#   4. Version hochzählen:
+#   2. Gewählte App-Variante prüfen (Kotlin ist Standard)
+#   3. Version hochzählen:
 #      - Play Console abfragen → höchsten versionCode +1
 #      - Internal: optional Semver-Bump
 #      - Beta: kein Semver-Bump, aber ebenfalls Play-safe versionCode
-#   5. Frontend bauen (Vite — injiziert Version via __APP_VERSION__)
-#   6. Capacitor Sync + Proguard-Fix
-#   7. Release AAB bauen + signieren
-#   8. AAB zum Play Store hochladen (NUR gewählter Track)
-#   9. Release-Name + Versionshinweise dynamisch aus package.json + Fastlane-Changelogs
-#  10. Version-Bump committen (nur Internal)
-#  11. Telegram Notification
+#   4. Native Release-AAB bauen und signieren
+#   5. AAB zum Play Store hochladen (NUR gewählter Track)
+#   6. Release-Name + Versionshinweise aus nativer Version + Fastlane-Changelogs
+#   7. Version-Bump committen
+#   8. Telegram Notification
 #
 # SECRETS (müssen in GitHub Repo Settings → Secrets gesetzt sein):
 #   - KEYSTORE_BASE64        → Base64-encoded Keystore (.jks)
@@ -54,13 +51,13 @@ on:
           - internal
           - beta
       app:
-        description: 'App-Variante (capacitor = android/, native = Kotlin-Rewrite in native/)'
+        description: 'App-Variante (native = aktuelle Kotlin-App, capacitor = nur Legacy-Hotfix)'
         required: true
-        default: 'capacitor'
+        default: 'native'
         type: choice
         options:
-          - capacitor
           - native
+          - capacitor
       version_bump:
         description: 'Version bump (nur bei Internal, bei Beta ignoriert)'
         required: false
@@ -78,7 +75,7 @@ on:
 
 jobs:
   deploy:
-    name: "Build & Deploy to ${{ github.event.inputs.track == 'beta' && 'Open Beta' || 'Internal Testing' }}"
+    name: "Build ${{ github.event.inputs.app }} & deploy to ${{ github.event.inputs.track == 'beta' && 'Open Beta' || 'Internal Testing' }}"
     runs-on: ubuntu-latest
     permissions:
       contents: write

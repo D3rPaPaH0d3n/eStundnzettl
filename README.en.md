@@ -29,7 +29,7 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/D3rPaPaH0d3n/eStundnzettl/main/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" width="120" alt="eStundnzettl logo" />
+  <img src="https://raw.githubusercontent.com/D3rPaPaH0d3n/eStundnzettl/main/native/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" width="120" alt="eStundnzettl logo" />
 </p>
 
 <h1 align="center">eStundnzettl</h1>
@@ -48,6 +48,28 @@
     <img src="https://img.shields.io/badge/GitHub_Release-Download_APK-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Release Download" />
   </a>
 </p>
+
+---
+
+## 🌲 Rebuilt for 5.0.0: fully native Android
+
+For version 5, eStundnzettl was rebuilt as a **native Kotlin Android app**. **Jetpack Compose, Material 3 and Room** now work directly with Android instead of running the UI inside a WebView. The result is faster, more robust and still unmistakably Styrian. This native generation is currently being tested in the **Google Play beta track**.
+
+The `main` branch contains the current Kotlin app. Capacitor 4.5.x remains available for emergency fixes and as a traceable migration reference in [`legacy/capacitor-4.5.x`](https://github.com/D3rPaPaH0d3n/eStundnzettl/tree/legacy/capacitor-4.5.x).
+
+### What the rebuild adds
+
+- 📱 **A truly native UI** — Jetpack Compose and Material You without a Capacitor WebView
+- 🧳 **Safe in-place migration** — existing entries and settings are imported while the old database remains untouched as a fallback
+- 🛡️ **Stronger recovery** — verified backups, conflict checks and protection against damaged snapshots
+- ☁️ **Backup health feedback** — Google Drive, Nextcloud and local backups with quiet but visible warnings when a target stays unavailable
+- 📄 **Native PDF reports** — fast preview, monthly or weekly reports, local archiving and direct sharing
+- ✉️ **Smarter PDF delivery** — configurable default recipient, subject, message and preferred sharing app
+- ✅ **Friendly hand-off feedback** — a small “All set, handed over!” confirmation after successful sharing
+- 🧹 **Cleaner settings** — compact expandable cards with clear status indicators
+- 🎯 **Flexible monthly targets** — target hours matching the user's work schedule
+
+> During the transition, the beta and the public Play Store release may be on different versions. Merging into `main` does not publish the app automatically; releases are deliberately promoted through Google Play tracks.
 
 ---
 
@@ -83,6 +105,8 @@
 
 | | Feature | Description |
 |---|---------|--------------|
+| 🌲 | **Native Kotlin app** | Fluid Compose UI without a WebView and with Material You support |
+| 🧳 | **Smooth 5.0 update** | Existing Capacitor data is imported automatically on first launch |
 | 🎯 | **Flexible work schedules** | 38.5h, 40h, 4-day week or fully custom |
 | ⏱️ | **Live timer** | Long-press, swipe up — timer running |
 | 📊 | **Real-time balance** | Overtime, extra hours and flex-time always in view |
@@ -185,14 +209,15 @@ The app UI ships with full **German and English** translations. Settings → **L
 
 > 💡 The app updates automatically via the Play Store — you always have the latest version.
 
+> 🧪 The native Kotlin 5.0.0 app is currently in beta. Until production promotion, the regular store listing may still deliver the stable Capacitor 4.5.x release.
+
 ---
 
 ## 🛡️ Data security
 
 - 🔒 **Local first:** All data stays on your device
 - 💾 **Backups:** Optional — local, Google Drive or Nextcloud
-- 🔐 **Secure passwords:** Nextcloud credentials live in Android Secure Storage, not in localStorage
-- 🩹 **Anonymous crash reporting:** Sentry only reports actual crashes, opt-out, no input or user data
+- 🔐 **Secure passwords:** Nextcloud credentials are encrypted in Android Keystore-backed storage
 - 🚫 **No tracking:** No ads, no analytics, no data collection
 - 📖 **Open source:** Full source code available, MIT-licensed
 - ✅ **Full control:** You decide where your data goes
@@ -220,16 +245,33 @@ If you find it useful and feel like saying thanks, a small tip via Revolut is al
 
 | | Technology |
 |---|-------------|
-| 🖥️ Frontend | TypeScript, React, Vite |
-| 🎨 UI | Tailwind CSS 4, Framer Motion, Lucide Icons |
-| 📱 Mobile | Capacitor (Android), Capacitor Secure Storage |
-| 🗄️ Database | SQLite (domain data), localStorage only for UI/cache/legacy migration |
-| 📄 PDF | @react-pdf/renderer (vector, searchable), pdfjs-dist (preview) |
-| ☁️ Cloud | Google Drive API, Nextcloud WebDAV |
-| 🌐 i18n | i18next + react-i18next (German & English) |
-| 🔍 Validation | Zod (backup schemas, import validation) |
-| 🛡️ Monitoring | Sentry (anonymous crash reporting, opt-out) |
-| 🧪 Tests | Vitest |
+| 📱 App | Kotlin, Android SDK 36, Coroutines |
+| 🎨 UI | Jetpack Compose, Material 3, Material You |
+| 🧠 Logic | Standalone Kotlin/JVM `core` module |
+| 🗄️ Database | Room on SQLite with compatible Capacitor database migration |
+| 📄 PDF | `PdfDocument` for vector PDFs and `PdfRenderer` for native previews |
+| ☁️ Cloud | Google Drive REST API, Nextcloud WebDAV, Storage Access Framework |
+| 🔐 Secrets | AndroidX Security Crypto and Android Keystore |
+| 🌐 Languages | Native German/English resources from a shared JSON source |
+| 🧪 Tests | JUnit, Kotlin Test, AndroidX instrumentation and Vitest parity tests |
+
+### Repository layout
+
+| Path | Purpose |
+|------|---------|
+| `native/` | Current Kotlin app and primary Android build |
+| `src/` and `android/` | Previous Capacitor app, retained temporarily for migration and parity tests |
+| `fastlane/metadata/` | Google Play release notes |
+| `.github/workflows/` | Native CI, APK, GitHub Release and Play Store builds |
+
+For a local debug build on Windows:
+
+```powershell
+cd native
+.\gradlew.bat :core:test :app:testDebugUnitTest :app:assembleDebug
+```
+
+`main` is the development base for the Kotlin app. The frozen Capacitor release is available in `legacy/capacitor-4.5.x`.
 
 ---
 

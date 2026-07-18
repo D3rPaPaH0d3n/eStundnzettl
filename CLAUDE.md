@@ -7,12 +7,22 @@
 
 ## Projekt
 
-- eStundnzettl: Elektronischer Stundenzettel (Ionic/Capacitor App)
-- Tech Stack: TypeScript, Vite, Vitest
+- eStundnzettl: Elektronischer Stundenzettel als native Android-App
+- Haupt-App: `native/` — Kotlin, Jetpack Compose, Material 3, Room
+- Legacy-/Migrationsreferenz: React/TypeScript und Capacitor unter `src/` und `android/`
+- `main` baut und veröffentlicht standardmäßig die Kotlin-App
 
-## PDF-Pipeline
+## Native PDF-Pipeline
 
-- Vektor-PDF via `@react-pdf/renderer`. Komponente:
+- Vektor-PDF via `android.graphics.pdf.PdfDocument` in
+  `native/app/src/main/kotlin/com/estundnzettl/app/pdf/ReportPdfGenerator.kt`.
+- Vorschau via Android `PdfRenderer` in der nativen Compose-Oberfläche.
+- Teilen erfolgt über `FileProvider`, Speichern über das Storage Access Framework.
+
+## Legacy-PDF-Pipeline
+
+- Die frühere Capacitor-Implementierung bleibt für Migration und
+  Vergleichstests erhalten. Vektor-PDF via `@react-pdf/renderer`. Komponente:
   `src/components/ReportPdfDocument.tsx` (Single Source of Truth fuer
   Vorschau und Export).
 - In-App-Vorschau nutzt `pdfjs-dist` Canvas-Render

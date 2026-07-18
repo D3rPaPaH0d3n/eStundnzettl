@@ -1,5 +1,5 @@
 # ============================================================================
-# Build Native Debug APK (Kotlin-Rewrite)
+# Build Kotlin Debug APK
 # ============================================================================
 #
 # Baut eine Debug-APK der nativen Kotlin-App (native/) und stellt sie als
@@ -14,7 +14,7 @@
 #
 # ============================================================================
 
-name: Build Native Debug APK
+name: Build Kotlin Debug APK
 
 # Nicht bei jedem Push: Der push-Trigger reagiert NUR auf Änderungen an
 # der Trigger-Datei .github/build-native.trigger. Ein Build wird also
@@ -25,13 +25,13 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'native/android-kotlin'
+      - 'main'
     paths:
       - '.github/build-native.trigger'
 
 jobs:
   build:
-    name: "Build Native Debug APK (${{ github.ref_name }})"
+    name: "Build Kotlin Debug APK (${{ github.ref_name }})"
     runs-on: ubuntu-latest
 
     steps:
@@ -98,8 +98,8 @@ jobs:
           APK=$(find native/app/build/outputs -name "*.apk" -type f | head -1)
           if [ -n "$APK" ]; then
             DIR=$(dirname "$APK")
-            mv "$APK" "$DIR/eStundnzettl-NATIVE-${BUILD_ID}.apk"
-            echo "✅ Renamed to: eStundnzettl-NATIVE-${BUILD_ID}.apk"
+            mv "$APK" "$DIR/eStundnzettl-KOTLIN-${BUILD_ID}.apk"
+            echo "✅ Renamed to: eStundnzettl-KOTLIN-${BUILD_ID}.apk"
             ls -la "$DIR/"
           else
             echo "❌ No APK found!"
@@ -125,7 +125,7 @@ jobs:
         id: upload
         uses: actions/upload-artifact@v7
         with:
-          name: eStundnzettl-NATIVE-${{ env.BUILD_ID }}
+          name: eStundnzettl-KOTLIN-${{ env.BUILD_ID }}
           path: |
             native/app/build/outputs/apk/**/*.apk
             native/app/build/outputs/apk/**/keystore-info.txt
@@ -145,9 +145,9 @@ jobs:
           fi
           if [ "${{ job.status }}" = "success" ]; then
             DOWNLOAD_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload.outputs.artifact-id }}"
-            MSG="📱 *eStundnzettl NATIVE Build fertig*%0A%0ABuild: \`${BUILD_ID}\`%0ABranch: ${{ github.ref_name }}%0A%0A⬇️ [APK herunterladen](${DOWNLOAD_URL})"
+            MSG="📱 *eStundnzettl Kotlin-Build fertig*%0A%0ABuild: \`${BUILD_ID}\`%0ABranch: ${{ github.ref_name }}%0A%0A⬇️ [APK herunterladen](${DOWNLOAD_URL})"
           else
-            MSG="❌ *eStundnzettl NATIVE Build fehlgeschlagen*%0A%0ABranch: ${{ github.ref_name }}%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            MSG="❌ *eStundnzettl Kotlin-Build fehlgeschlagen*%0A%0ABranch: ${{ github.ref_name }}%0AWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \

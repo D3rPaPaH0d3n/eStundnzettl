@@ -2,7 +2,7 @@
 
 Stand: 17. Juli 2026
 
-Branch: `claude/kotlin-app-rewrite-kqzifi`
+Hauptbranch: `main` (seit der nativen 5.0.0-Beta)
 
 Bewerteter Commit: `da70020`
 

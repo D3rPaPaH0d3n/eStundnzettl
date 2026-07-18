@@ -32,7 +32,7 @@ updates:
           - "*"
 
   - package-ecosystem: "gradle"
-    directory: "/android"
+    directory: "/native"
     schedule:
       interval: "monthly"
       time: "06:30"

@@ -1,9 +1,10 @@
 # ============================================================================
-# Build Debug APK
+# Legacy Capacitor Debug APK
 # ============================================================================
 #
-# Baut eine Debug-APK und stellt sie als Download bereit.
-# Wird manuell über GitHub Actions → "Run workflow" gestartet.
+# Baut ausschließlich den archivierten Capacitor-Stand. Auf main wird dieser
+# Job absichtlich übersprungen; für einen 4.5.x-Hotfix muss der Workflow vom
+# Branch legacy/capacitor-4.5.x gestartet werden.
 #
 # Branch-Auswahl über den "Use workflow from" Dropdown oben.
 # Die Debug-Konfiguration (parallele Installation, Badge, App-Name)
@@ -14,14 +15,15 @@
 #
 # ============================================================================
 
-name: Build Debug APK
+name: Legacy Capacitor Debug APK
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    name: "Build Debug APK (${{ github.ref_name }})"
+    if: github.ref == 'refs/heads/legacy/capacitor-4.5.x'
+    name: "Build Legacy Capacitor APK (${{ github.ref_name }})"
     runs-on: ubuntu-latest
 
     steps:

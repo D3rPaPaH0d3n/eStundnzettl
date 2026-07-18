@@ -27,20 +27,23 @@
    },
    {
     "iconName": "Sparkles",
-    "title": "Everything on board as usual",
+    "title": "Everything on board — neatly organised",
     "items": [
      "Reports with PDF preview, live timer, setup wizard, Google Drive, Nextcloud and local backups — all fully included.",
-     "The guided tours now highlight the relevant spots right on screen.",
-     "The PDF preview zooms sharper and stays under your fingers while pinching."
+     "The guided tours now highlight the relevant spots right on screen, and the PDF preview stays crisp and anchored under your fingers while pinching.",
+     "Settings are calmer and easier to scan: recording mode and other sections start collapsed and reveal their details only when you need them.",
+     "Simple mode now lets you set a flexible monthly target – ideal for mini-jobs, part-time work and changing workdays.",
+     "The dashboard, monthly report and backups all keep your monthly target properly in sync."
     ]
    },
    {
-    "iconName": "Calendar",
-    "title": "Monthly hours for mini-jobs & part-time work",
+    "iconName": "FileText",
+    "title": "PDF sharing, now properly smooth",
     "items": [
-     "Simple mode now lets you set a flexible monthly target – ideal for mini-jobs, part-time work and changing workdays.",
-     "The dashboard shows at a glance how many hours remain or whether you have already exceeded your monthly target.",
-     "Your monthly target is fully included in monthly reports, backups and restores."
+     "Sharing and saving are now clearly separated, dressed in a subtle Styrian green-and-white look and free from confusing headings.",
+     "After handing the PDF to Mail, WhatsApp & co., a small “All set, handed off!” animation confirms that it is ready in the selected app.",
+     "For email, you can prepare the recipient, subject and message and reset them to the defaults at any time; [Period] and [Name] are filled in automatically.",
+     "Optionally, eStundnzettl remembers your preferred sharing app and skips the chooser next time — if the app is no longer available, you are simply asked again."
     ]
    }
   ]

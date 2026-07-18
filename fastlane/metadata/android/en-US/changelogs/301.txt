@@ -1,1 +1,7 @@
-v5.0.0
+v5.0.0 — truly native and smoother 🚀
+
+• PDF sharing in a subtle Styrian green-and-white look
+• Prepare email recipient, subject and message
+• Remember your preferred sharing app
+• Cleaner, collapsible settings
+• Monthly targets for mini-jobs and part-time work

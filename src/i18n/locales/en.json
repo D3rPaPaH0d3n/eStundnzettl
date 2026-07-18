@@ -175,8 +175,25 @@
     "toast": {
       "downloadStarted": "🖨️ Download started!",
       "readyToShare": "Ready to share",
+      "saved": "PDF saved",
       "savedToDocuments": "Saved to 'Documents/eStundnzettl'",
       "error": "Error: {{message}}"
+    },
+    "shareHandoff": {
+      "title": "All set, handed off!",
+      "subtitle": "The PDF is ready to send in the selected app."
+    },
+    "shareMessage": {
+      "subject": "Timesheet – [Period]",
+      "weekPeriod": "CW {{week}} ({{range}})",
+      "body": "Hello,\n\nplease find attached my timesheet for [Period].\n\nKind regards,\n[Name]",
+      "bodyWithoutName": "Hello,\n\nplease find attached my timesheet for [Period].\n\nKind regards",
+      "periodToken": "[Period]",
+      "nameToken": "[Name]"
+    },
+    "shareTarget": {
+      "shareWith": "Send with {{app}}",
+      "directDescription": "Open directly in your preferred app"
     },
     "noteModal": {
       "title": "Note for PDF",
@@ -1106,6 +1123,30 @@
       "showWorkCodeColumnDesc": "The work-code column in the table",
       "showCustomNote": "Show notes",
       "showCustomNoteDesc": "Optional notes block at the end of the report"
+    },
+    "shareTarget": {
+      "title": "PDF sharing",
+      "subtitle": "Sharing app and direct launch",
+      "current": "Preferred app: {{app}}",
+      "directTitle": "Open preferred app directly",
+      "directDescription": "Skips the app picker when sharing a PDF.",
+      "waitingDescription": "Your choice will be saved the next time you share.",
+      "reset": "Reset preferred app",
+      "hint": "If the app is no longer available, the regular picker appears automatically.",
+      "emailTitle": "Email defaults",
+      "emailDescription": "Compatible email apps receive the recipient and subject automatically.",
+      "emailRecipientLabel": "Email recipient (optional)",
+      "emailRecipientHint": "Leave empty if no recipient should be prefilled.",
+      "emailRecipientInvalid": "Enter a valid email address.",
+      "subjectInputLabel": "Subject",
+      "autoFillHint": "The marked words are filled in automatically when sharing.",
+      "insertPeriod": "Insert period",
+      "insertName": "Insert name",
+      "resetSubject": "Restore default subject",
+      "messageTitle": "Default message",
+      "messageDescription": "This text is passed to the selected app together with the PDF. You can customize it at any time.",
+      "messageInputLabel": "Message text",
+      "resetMessage": "Restore default text"
     },
     "recordingMode": {
       "title": "Recording mode",

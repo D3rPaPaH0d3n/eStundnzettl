@@ -6,6 +6,7 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.util.Base64
+import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +30,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Calculate
@@ -70,6 +72,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.MainViewModel
+import com.estundnzettl.app.ShareHandoffStore
 import com.estundnzettl.app.ui.tourTarget
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
@@ -149,6 +152,7 @@ fun SettingsScreen(
             BackupSection(viewModel, t, colors.accent, onExportBackup, onImportBackup)
         }
         PdfArchiveSection(viewModel)
+        PreferredShareTargetSection()
         Box(Modifier.tourSection("appearanceHelp")) { AppearanceSection(viewModel) }
         ExpertModeSection(viewModel)
         // Column statt Box: AppInfoSection besteht aus mehreren Karten +
@@ -342,101 +346,90 @@ private fun RecordingModeSection(viewModel: MainViewModel) {
     var targetInput by remember(monthlyTarget) { mutableStateOf(formatMonthlyTargetInput(monthlyTarget)) }
     val targetInvalid = monthlyTarget != null && parseMonthlyTargetInput(targetInput) == null
 
-    com.estundnzettl.app.ui.AppCard {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                SectionIconBadge(Icons.Filled.Calculate, colors.accent)
-                Column {
-                    Text(
-                        t.t("settings.recordingMode.title"),
-                        color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp,
-                    )
-                    Text(
-                        if (simpleMode) t.t("settings.recordingMode.subtitleSimple")
-                        else t.t("settings.recordingMode.subtitleCalculated"),
-                        color = colors.textMuted, fontSize = 12.sp,
-                    )
-                }
-            }
+    CollapsibleSettingsCard(
+        title = t.t("settings.recordingMode.title"),
+        subtitle = if (simpleMode) t.t("settings.recordingMode.subtitleSimple")
+        else t.t("settings.recordingMode.subtitleCalculated"),
+        icon = { SectionIconBadge(Icons.Filled.Calculate, colors.accent) },
+        defaultExpanded = false,
+    ) {
+        ModeCard(
+            title = t.t("settings.recordingMode.simpleTitle"),
+            description = t.t("settings.recordingMode.simpleDescription"),
+            selected = simpleMode,
+            tint = colors.accent,
+            icon = Icons.Filled.Checklist,
+        ) { viewModel.setSimpleMode(true) }
+        ModeCard(
+            title = t.t("settings.recordingMode.calculatedTitle"),
+            description = t.t("settings.recordingMode.calculatedDescription"),
+            selected = !simpleMode,
+            tint = colors.info,
+            icon = Icons.Filled.Calculate,
+        ) { viewModel.setSimpleMode(false) }
 
-            ModeCard(
-                title = t.t("settings.recordingMode.simpleTitle"),
-                description = t.t("settings.recordingMode.simpleDescription"),
-                selected = simpleMode,
-                tint = colors.accent,
-                icon = Icons.Filled.Checklist,
-            ) { viewModel.setSimpleMode(true) }
-            ModeCard(
-                title = t.t("settings.recordingMode.calculatedTitle"),
-                description = t.t("settings.recordingMode.calculatedDescription"),
-                selected = !simpleMode,
-                tint = colors.info,
-                icon = Icons.Filled.Calculate,
-            ) { viewModel.setSimpleMode(false) }
-
-            if (simpleMode) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(colors.accent.copy(alpha = 0.08f))
-                        .border(1.dp, colors.accent.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-                        .padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                t.t("settings.recordingMode.monthlyTarget.title"),
-                                color = colors.textPrimary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                            )
-                            Text(
-                                t.t("settings.recordingMode.monthlyTarget.description"),
-                                color = colors.textMuted,
-                                fontSize = 12.sp,
-                                lineHeight = 17.sp,
-                            )
-                        }
-                        Switch(
-                            checked = monthlyTarget != null,
-                            onCheckedChange = { enabled ->
-                                val value = if (enabled) 1800 else null
-                                targetInput = formatMonthlyTargetInput(value)
-                                viewModel.setUserData { it.copy(monthlyTargetMinutes = value) }
-                            },
+        if (simpleMode) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(colors.accent.copy(alpha = 0.08f))
+                    .border(1.dp, colors.accent.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            t.t("settings.recordingMode.monthlyTarget.title"),
+                            color = colors.textPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                        )
+                        Text(
+                            t.t("settings.recordingMode.monthlyTarget.description"),
+                            color = colors.textMuted,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp,
                         )
                     }
-                    if (monthlyTarget != null) {
-                        OutlinedTextField(
-                            value = targetInput,
-                            onValueChange = { value ->
-                                targetInput = value
-                                parseMonthlyTargetInput(value)?.let { parsed ->
-                                    viewModel.setUserData { it.copy(monthlyTargetMinutes = parsed) }
-                                }
-                            },
-                            label = { Text(t.t("settings.recordingMode.monthlyTarget.inputLabel")) },
-                            supportingText = {
-                                Text(
-                                    t.t(
-                                        if (targetInvalid) "settings.recordingMode.monthlyTarget.invalid"
-                                        else "settings.recordingMode.monthlyTarget.hint"
-                                    )
+                    Switch(
+                        checked = monthlyTarget != null,
+                        onCheckedChange = { enabled ->
+                            val value = if (enabled) 1800 else null
+                            targetInput = formatMonthlyTargetInput(value)
+                            viewModel.setUserData { it.copy(monthlyTargetMinutes = value) }
+                        },
+                    )
+                }
+                if (monthlyTarget != null) {
+                    OutlinedTextField(
+                        value = targetInput,
+                        onValueChange = { value ->
+                            targetInput = value
+                            parseMonthlyTargetInput(value)?.let { parsed ->
+                                viewModel.setUserData { it.copy(monthlyTargetMinutes = parsed) }
+                            }
+                        },
+                        label = { Text(t.t("settings.recordingMode.monthlyTarget.inputLabel")) },
+                        supportingText = {
+                            Text(
+                                t.t(
+                                    if (targetInvalid) "settings.recordingMode.monthlyTarget.invalid"
+                                    else "settings.recordingMode.monthlyTarget.hint"
                                 )
-                            },
-                            isError = targetInvalid,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
+                            )
+                        },
+                        isError = targetInvalid,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
-
-            Text(t.t("settings.recordingMode.noDataLossHint"), color = colors.textFaint, fontSize = 11.sp)
         }
+
+        Text(t.t("settings.recordingMode.noDataLossHint"), color = colors.textFaint, fontSize = 11.sp)
     }
 }
 
@@ -768,6 +761,258 @@ private fun BackupSection(
 }
 
 // ─── 7. Darstellung ──────────────────────────────────────────
+
+@Composable
+private fun PreferredShareTargetSection() {
+    val context = LocalContext.current
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    var enabled by rememberSaveable {
+        mutableStateOf(ShareHandoffStore.usePreferredTarget(context))
+    }
+    var preferredLabel by remember {
+        mutableStateOf(ShareHandoffStore.preferredTargetLabel(context))
+    }
+    val defaultMessageTemplate = t.t("reports.shareMessage.body")
+    val defaultSubjectTemplate = t.t("reports.shareMessage.subject")
+    val periodToken = t.t("reports.shareMessage.periodToken")
+    val nameToken = t.t("reports.shareMessage.nameToken")
+
+    fun friendlyPlaceholders(template: String): String = template
+        .replace("{{period}}", periodToken)
+        .replace("{{name}}", nameToken)
+
+    var messageTemplate by remember(t.language) {
+        mutableStateOf(
+            friendlyPlaceholders(
+                ShareHandoffStore.customMessageTemplate(context) ?: defaultMessageTemplate,
+            ),
+        )
+    }
+    var hasCustomMessage by remember(t.language) {
+        mutableStateOf(ShareHandoffStore.customMessageTemplate(context) != null)
+    }
+    var subjectTemplate by remember(t.language) {
+        mutableStateOf(
+            friendlyPlaceholders(
+                ShareHandoffStore.customSubjectTemplate(context) ?: defaultSubjectTemplate,
+            ),
+        )
+    }
+    var hasCustomSubject by remember(t.language) {
+        mutableStateOf(ShareHandoffStore.customSubjectTemplate(context) != null)
+    }
+    var emailRecipient by remember {
+        mutableStateOf(ShareHandoffStore.emailRecipient(context))
+    }
+    val emailInvalid = emailRecipient.isNotBlank() &&
+        !Patterns.EMAIL_ADDRESS.matcher(emailRecipient.trim()).matches()
+
+    fun updateSubjectTemplate(template: String) {
+        subjectTemplate = template
+        if (template == defaultSubjectTemplate) {
+            ShareHandoffStore.resetCustomSubjectTemplate(context)
+            hasCustomSubject = false
+        } else {
+            ShareHandoffStore.setCustomSubjectTemplate(context, template)
+            hasCustomSubject = true
+        }
+    }
+
+    fun updateMessageTemplate(template: String) {
+        messageTemplate = template
+        if (template == defaultMessageTemplate) {
+            ShareHandoffStore.resetCustomMessageTemplate(context)
+            hasCustomMessage = false
+        } else {
+            ShareHandoffStore.setCustomMessageTemplate(context, template)
+            hasCustomMessage = true
+        }
+    }
+
+    CollapsibleSettingsCard(
+        title = t.t("settings.shareTarget.title"),
+        subtitle = preferredLabel?.let {
+            t.t("settings.shareTarget.current", "app" to it)
+        } ?: t.t("settings.shareTarget.subtitle"),
+        icon = { SectionIconBadge(Icons.AutoMirrored.Filled.Send, colors.accent) },
+        defaultExpanded = false,
+    ) {
+        SettingsToggleRow(
+            title = t.t("settings.shareTarget.directTitle"),
+            subtitle = if (preferredLabel == null) {
+                t.t("settings.shareTarget.waitingDescription")
+            } else {
+                t.t("settings.shareTarget.directDescription")
+            },
+            checked = enabled,
+            accent = colors.accent,
+            onToggle = { usePreferred ->
+                enabled = usePreferred
+                ShareHandoffStore.setUsePreferredTarget(context, usePreferred)
+            },
+        )
+        if (preferredLabel != null) {
+            TextButton(
+                onClick = {
+                    ShareHandoffStore.clearPreferredTarget(context)
+                    preferredLabel = null
+                },
+            ) {
+                Text(t.t("settings.shareTarget.reset"), color = colors.accent)
+            }
+        }
+        Text(
+            text = t.t("settings.shareTarget.hint"),
+            color = colors.textFaint,
+            fontSize = 11.sp,
+            lineHeight = 16.sp,
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = t.t("settings.shareTarget.emailTitle"),
+                color = colors.textPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+            )
+            Text(
+                text = t.t("settings.shareTarget.emailDescription"),
+                color = colors.textMuted,
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+            )
+            OutlinedTextField(
+                value = emailRecipient,
+                onValueChange = { recipient ->
+                    emailRecipient = recipient
+                    ShareHandoffStore.setEmailRecipient(context, recipient)
+                },
+                label = { Text(t.t("settings.shareTarget.emailRecipientLabel")) },
+                supportingText = {
+                    Text(
+                        t.t(
+                            if (emailInvalid) "settings.shareTarget.emailRecipientInvalid"
+                            else "settings.shareTarget.emailRecipientHint"
+                        )
+                    )
+                },
+                isError = emailInvalid,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = subjectTemplate,
+                onValueChange = ::updateSubjectTemplate,
+                label = { Text(t.t("settings.shareTarget.subjectInputLabel")) },
+                supportingText = { Text(t.t("settings.shareTarget.autoFillHint")) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            FriendlyPlaceholderChips(
+                periodLabel = t.t("settings.shareTarget.insertPeriod"),
+                nameLabel = t.t("settings.shareTarget.insertName"),
+                onPeriod = {
+                    updateSubjectTemplate(appendTemplateToken(subjectTemplate, periodToken))
+                },
+                onName = {
+                    updateSubjectTemplate(appendTemplateToken(subjectTemplate, nameToken))
+                },
+            )
+            if (hasCustomSubject) {
+                TextButton(
+                    onClick = {
+                        ShareHandoffStore.resetCustomSubjectTemplate(context)
+                        subjectTemplate = defaultSubjectTemplate
+                        hasCustomSubject = false
+                    },
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text(t.t("settings.shareTarget.resetSubject"), color = colors.accent)
+                }
+            }
+            Text(
+                text = t.t("settings.shareTarget.messageTitle"),
+                color = colors.textPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+            )
+            Text(
+                text = t.t("settings.shareTarget.messageDescription"),
+                color = colors.textMuted,
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+            )
+            OutlinedTextField(
+                value = messageTemplate,
+                onValueChange = ::updateMessageTemplate,
+                label = { Text(t.t("settings.shareTarget.messageInputLabel")) },
+                supportingText = { Text(t.t("settings.shareTarget.autoFillHint")) },
+                minLines = 5,
+                maxLines = 10,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            FriendlyPlaceholderChips(
+                periodLabel = t.t("settings.shareTarget.insertPeriod"),
+                nameLabel = t.t("settings.shareTarget.insertName"),
+                onPeriod = {
+                    updateMessageTemplate(appendTemplateToken(messageTemplate, periodToken))
+                },
+                onName = {
+                    updateMessageTemplate(appendTemplateToken(messageTemplate, nameToken))
+                },
+            )
+            if (hasCustomMessage) {
+                TextButton(
+                    onClick = {
+                        ShareHandoffStore.resetCustomMessageTemplate(context)
+                        messageTemplate = defaultMessageTemplate
+                        hasCustomMessage = false
+                    },
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text(t.t("settings.shareTarget.resetMessage"), color = colors.accent)
+                }
+            }
+        }
+    }
+}
+
+private fun appendTemplateToken(template: String, token: String): String = when {
+    template.isEmpty() -> token
+    template.last().isWhitespace() -> template + token
+    else -> "$template $token"
+}
+
+@Composable
+private fun FriendlyPlaceholderChips(
+    periodLabel: String,
+    nameLabel: String,
+    onPeriod: () -> Unit,
+    onName: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        PlaceholderInsertChip(label = periodLabel, onClick = onPeriod)
+        PlaceholderInsertChip(label = nameLabel, onClick = onName)
+    }
+}
+
+@Composable
+private fun PlaceholderInsertChip(label: String, onClick: () -> Unit) {
+    val colors = LocalAppColors.current
+    Text(
+        text = "+  $label",
+        color = colors.accent,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(colors.accent.copy(alpha = 0.09f))
+            .border(1.dp, colors.accent.copy(alpha = 0.25f), CircleShape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+    )
+}
 
 @Composable
 private fun AppearanceSection(viewModel: MainViewModel) {

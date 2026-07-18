@@ -110,13 +110,13 @@ fun WorkCodeManagerDialog(
     pendingPresetId?.let { presetId ->
         AlertDialog(
             onDismissRequest = { pendingPresetId = null },
-            title = { Text(t.t("workCodes.loadPreset")) },
-            text = { Text(t.t("workCodes.presetReplaceWarning")) },
+            title = { Text(t.t("workCodes.presetReplaceWarning.title")) },
+            text = { Text(t.t("workCodes.presetReplaceWarning.message")) },
             confirmButton = {
                 TextButton(onClick = {
                     onLoadPreset(presetId)
                     pendingPresetId = null
-                }) { Text(t.t("common.confirm"), color = colors.danger) }
+                }) { Text(t.t("workCodes.presetReplaceWarning.confirm"), color = colors.danger) }
             },
             dismissButton = {
                 TextButton(onClick = { pendingPresetId = null }) { Text(t.t("common.cancel")) }
@@ -127,13 +127,13 @@ fun WorkCodeManagerDialog(
     if (showClearAllWarning) {
         AlertDialog(
             onDismissRequest = { showClearAllWarning = false },
-            title = { Text(t.t("workCodes.deleteAll")) },
-            text = { Text(t.t("workCodes.deleteAllWarning")) },
+            title = { Text(t.t("workCodes.deleteAllWarning.title")) },
+            text = { Text(t.t("workCodes.deleteAllWarning.message")) },
             confirmButton = {
                 TextButton(onClick = {
                     onClearAll()
                     showClearAllWarning = false
-                }) { Text(t.t("common.delete"), color = colors.danger) }
+                }) { Text(t.t("workCodes.deleteAllWarning.confirm"), color = colors.danger) }
             },
             dismissButton = {
                 TextButton(onClick = { showClearAllWarning = false }) { Text(t.t("common.cancel")) }

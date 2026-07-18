@@ -101,8 +101,10 @@ fun CollapsibleSettingsCard(
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                     )
-                    if (subtitle != null) {
-                        Text(subtitle, color = colors.textMuted, fontSize = 12.sp)
+                    AnimatedVisibility(visible = expanded && subtitle != null) {
+                        subtitle?.let {
+                            Text(it, color = colors.textMuted, fontSize = 12.sp)
+                        }
                     }
                 }
             }

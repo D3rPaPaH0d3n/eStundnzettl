@@ -27,20 +27,23 @@
    },
    {
     "iconName": "Sparkles",
-    "title": "Alles drin wie gewohnt",
+    "title": "Alles drin – und sauber aufgeräumt",
     "items": [
      "Berichte mit PDF-Vorschau, Live-Timer, Einrichtungsassistent, Google-Drive-, Nextcloud- und lokale Backups — alles vollständig an Bord.",
-     "Die Einführungs-Touren markieren jetzt die passenden Stellen direkt am Bildschirm.",
-     "Die PDF-Vorschau zoomt schärfer und bleibt beim Zwei-Finger-Zoom unter deinen Fingern."
+     "Die Einführungs-Touren markieren jetzt die passenden Stellen direkt am Bildschirm, und die PDF-Vorschau bleibt auch beim Zwei-Finger-Zoom schön scharf unter deinen Fingern.",
+     "Die Einstellungen sind ruhiger und übersichtlicher: Aufzeichnungsart und weitere Bereiche starten eingeklappt und zeigen Details erst, wenn du sie brauchst.",
+     "Im einfachen Modus kannst du jetzt ein flexibles Monatsziel festlegen – ideal für Minijob, Teilzeit und wechselnde Arbeitstage.",
+     "Dashboard, Monatsbericht und Backups haben dein Monatsziel überall sauber mit dabei."
     ]
    },
    {
-    "iconName": "Calendar",
-    "title": "Monatsstunden für Minijob & Teilzeit",
+    "iconName": "FileText",
+    "title": "PDF-Versand, jetzt richtig gschmeidig",
     "items": [
-     "Im einfachen Modus kannst du jetzt ein flexibles Monatsziel festlegen – ideal für Minijob, Teilzeit und wechselnde Arbeitstage.",
-     "Das Dashboard zeigt dir auf einen Blick, wie viele Stunden noch offen sind oder ob du dein Monatsziel bereits überschritten hast.",
-     "Dein Monatsziel wird auch in Monatsberichten, Backups und bei der Wiederherstellung vollständig berücksichtigt."
+     "Teilen und Speichern sind jetzt sauber getrennt und kommen im grün-weißen Steiermark-Gwand daher — ganz ohne verwirrende Überschrift.",
+     "Nach der Übergabe an Mail, WhatsApp & Co. gibt’s ein kleines „Passt, übergeben!“ — so siehst du gleich, dass die PDF in der gewählten App bereitliegt.",
+     "Für E-Mails kannst du Empfänger, Betreff und Nachricht vorbereiten und jederzeit auf den Standard zurücksetzen; [Zeitraum] und [Name] setzt die App von selber ein.",
+     "Auf Wunsch merkt sich eStundnzettl deine bevorzugte Versand-App und spart dir beim nächsten Mal die Auswahl — und wenn’s die App nimmer gibt, wird einfach wieder gefragt."
     ]
    }
   ]

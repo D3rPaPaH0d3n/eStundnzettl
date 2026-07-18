@@ -175,8 +175,25 @@
     "toast": {
       "downloadStarted": "🖨️ Download gestartet!",
       "readyToShare": "Bereit zum Teilen",
+      "saved": "PDF gespeichert",
       "savedToDocuments": "Gespeichert in 'Dokumente/eStundnzettl'",
       "error": "Fehler: {{message}}"
+    },
+    "shareHandoff": {
+      "title": "Passt, übergeben!",
+      "subtitle": "Die PDF ist in der gewählten App bereit zum Senden."
+    },
+    "shareMessage": {
+      "subject": "Stundenzettel – [Zeitraum]",
+      "weekPeriod": "KW {{week}} ({{range}})",
+      "body": "Hallo,\n\nanbei mein Stundenzettel für [Zeitraum].\n\nLiebe Grüße\n[Name]",
+      "bodyWithoutName": "Hallo,\n\nanbei mein Stundenzettel für [Zeitraum].\n\nLiebe Grüße",
+      "periodToken": "[Zeitraum]",
+      "nameToken": "[Name]"
+    },
+    "shareTarget": {
+      "shareWith": "Mit {{app}} senden",
+      "directDescription": "Direkt in deiner bevorzugten App öffnen"
     },
     "noteModal": {
       "title": "Notiz für PDF",
@@ -1106,6 +1123,30 @@
       "showWorkCodeColumnDesc": "Die Tätigkeitscode-Spalte in der Tabelle",
       "showCustomNote": "Notizen anzeigen",
       "showCustomNoteDesc": "Optionaler Notiz-Block am Ende des Berichts"
+    },
+    "shareTarget": {
+      "title": "PDF-Versand",
+      "subtitle": "Versand-App und Direktstart",
+      "current": "Bevorzugte App: {{app}}",
+      "directTitle": "Bevorzugte App direkt öffnen",
+      "directDescription": "Überspringt beim PDF-Versand die App-Auswahl.",
+      "waitingDescription": "Beim nächsten Teilen wird deine Auswahl gespeichert.",
+      "reset": "Bevorzugte App zurücksetzen",
+      "hint": "Wenn die App nicht mehr verfügbar ist, erscheint automatisch wieder die normale Auswahl.",
+      "emailTitle": "E-Mail-Vorgaben",
+      "emailDescription": "Empfänger und Betreff werden von kompatiblen E-Mail-Apps direkt übernommen.",
+      "emailRecipientLabel": "E-Mail-Empfänger (optional)",
+      "emailRecipientHint": "Leer lassen, wenn kein Empfänger vorausgefüllt werden soll.",
+      "emailRecipientInvalid": "Bitte eine gültige E-Mail-Adresse eingeben.",
+      "subjectInputLabel": "Betreff",
+      "autoFillHint": "Die markierten Begriffe werden beim Versand automatisch ausgefüllt.",
+      "insertPeriod": "Zeitraum einsetzen",
+      "insertName": "Name einsetzen",
+      "resetSubject": "Standardbetreff wiederherstellen",
+      "messageTitle": "Standard-Nachricht",
+      "messageDescription": "Dieser Text wird gemeinsam mit dem PDF an die gewählte App übergeben. Du kannst ihn jederzeit anpassen.",
+      "messageInputLabel": "Nachrichtentext",
+      "resetMessage": "Standardtext wiederherstellen"
     },
     "recordingMode": {
       "title": "Aufzeichnungsart",

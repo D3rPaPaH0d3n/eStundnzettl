@@ -1,1 +1,7 @@
-v5.0.0
+v5.0.0 — echt nativ und gschmeidig 🚀
+
+• PDF-Versand im grün-weißen Steiermark-Gwand
+• Mail-Empfänger, Betreff und Nachricht vorbereiten
+• Bevorzugte Versand-App merken
+• Einstellungen kompakter und sauber einklappbar
+• Monatsziel für Minijob und Teilzeit

@@ -7,6 +7,8 @@
  * Tippfehler in JSON-Dateien oder fehlende Übersetzungen.
  */
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
 import i18n from "../../i18n";
 import de from "../locales/de.json";
 import en from "../locales/en.json";
@@ -111,6 +113,53 @@ describe("i18n smoke", () => {
         .filter(Boolean)
         .join("\n") || "",
     ).toBe(true);
+  });
+
+  it("contains every static translation key used by the native Kotlin app", () => {
+    const nativeRoot = resolve(__dirname, "../../../native/app/src/main/kotlin");
+    const sourceFiles: string[] = [];
+
+    const visit = (directory: string) => {
+      for (const entry of readdirSync(directory, { withFileTypes: true })) {
+        const path = resolve(directory, entry.name);
+        if (entry.isDirectory()) visit(path);
+        else if (entry.isFile() && entry.name.endsWith(".kt")) sourceFiles.push(path);
+      }
+    };
+    visit(nativeRoot);
+
+    const collectStringKeys = (node: unknown, prefix = ""): string[] => {
+      if (typeof node === "string") return [prefix];
+      if (node === null || typeof node !== "object") return [];
+      return Object.entries(node as Record<string, unknown>).flatMap(([name, value]) =>
+        collectStringKeys(value, prefix ? `${prefix}.${name}` : name),
+      );
+    };
+
+    const deKeys = new Set(collectStringKeys(de));
+    const enKeys = new Set(collectStringKeys(en));
+    const missing: string[] = [];
+    const literalCall = /\b(?:[A-Za-z_]\w*\.)?t\(\s*"([^"]+)"/g;
+
+    for (const file of sourceFiles) {
+      const source = readFileSync(file, "utf8");
+      for (const match of source.matchAll(literalCall)) {
+        const key = match[1];
+        if (key.includes("$")) continue;
+        const direct = deKeys.has(key) && enKeys.has(key);
+        const plural =
+          deKeys.has(`${key}_one`) && deKeys.has(`${key}_other`) &&
+          enKeys.has(`${key}_one`) && enKeys.has(`${key}_other`);
+        if (!direct && !plural) {
+          missing.push(`${key} (${file.slice(nativeRoot.length + 1)})`);
+        }
+      }
+    }
+
+    expect(
+      [...new Set(missing)].sort(),
+      `Native Kotlin translation keys missing in DE or EN:\n${missing.join("\n")}`,
+    ).toEqual([]);
   });
 
   it("returns distinct strings between DE and EN for most keys", async () => {

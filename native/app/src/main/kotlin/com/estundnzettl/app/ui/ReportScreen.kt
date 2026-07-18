@@ -1,15 +1,23 @@
 package com.estundnzettl.app.ui
 
+import android.app.PendingIntent
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
+import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,6 +36,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -62,9 +71,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -76,9 +87,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -88,8 +103,14 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.estundnzettl.app.MainViewModel
+import com.estundnzettl.app.ShareChosenReceiver
+import com.estundnzettl.app.ShareHandoffStore
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.pdf.ReportPdfGenerator
 import com.estundnzettl.app.pdf.ReportPdfInput
@@ -112,6 +133,8 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale as JavaLocale
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * PDF-Bericht mit Live-Vorschau — Port von PrintReport.tsx.
@@ -215,6 +238,30 @@ fun ReportScreen(viewModel: MainViewModel) {
     var layoutPanelOpen by remember { mutableStateOf(false) }
     var filterMenuOpen by remember { mutableStateOf(false) }
     var monthPickerOpen by remember { mutableStateOf(false) }
+    var shareHandoffVisible by remember { mutableStateOf(false) }
+    val preferredShareTargetLabel = if (ShareHandoffStore.usePreferredTarget(context)) {
+        ShareHandoffStore.preferredTargetLabel(context)
+    } else {
+        null
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, context) {
+        fun showPendingShareHandoff() {
+            if (ShareHandoffStore.consume(context)) {
+                shareHandoffVisible = true
+            }
+        }
+
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) showPendingShareHandoff()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            showPendingShareHandoff()
+        }
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val layoutTogglesAvailable = (userData?.expertMode == true) && config != null
 
@@ -284,6 +331,54 @@ fun ReportScreen(viewModel: MainViewModel) {
         return "${nameClean}_Stundenzettel_${timePeriod.replace(Regex("\\s+"), "_")}_$timestamp.pdf"
     }
 
+    fun buildSharePeriod(): String {
+        val week = filterWeek
+        return if (week == null) {
+            month.atDay(1).format(DateTimeFormatter.ofPattern("LLLL yyyy", javaLocale))
+        } else {
+            i18n.t(
+                "reports.shareMessage.weekPeriod",
+                "week" to week,
+                "range" to weekLabel(week),
+            )
+        }
+    }
+
+    fun buildShareMessage(): String {
+        val name = userData?.name?.trim().orEmpty()
+        val period = buildSharePeriod()
+        fun fillTemplate(template: String): String = template
+            .replace("{{period}}", period)
+            .replace("{{name}}", name)
+            .replace("[Zeitraum]", period)
+            .replace("[Period]", period)
+            .replace("[Name]", name)
+
+        ShareHandoffStore.customMessageTemplate(context)?.let { template ->
+            return fillTemplate(template).trimEnd()
+        }
+        val key = if (name.isEmpty()) {
+            "reports.shareMessage.bodyWithoutName"
+        } else {
+            "reports.shareMessage.body"
+        }
+        return i18n.t(key, "period" to buildSharePeriod(), "name" to name)
+    }
+
+    fun buildShareSubject(): String {
+        val period = buildSharePeriod()
+        val name = userData?.name?.trim().orEmpty()
+        val template = ShareHandoffStore.customSubjectTemplate(context)
+            ?: i18n.t("reports.shareMessage.subject")
+        return template
+            .replace("{{period}}", period)
+            .replace("{{name}}", name)
+            .replace("[Zeitraum]", period)
+            .replace("[Period]", period)
+            .replace("[Name]", name)
+            .trim()
+    }
+
     val saveLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/pdf"),
     ) { uri ->
@@ -291,7 +386,7 @@ fun ReportScreen(viewModel: MainViewModel) {
         if (uri != null && bytes != null) {
             try {
                 context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
-                viewModel.showRawMessage(("📂 " + i18n.t("reports.toast.readyToShare")))
+                viewModel.showRawMessage(("📂 " + i18n.t("reports.toast.saved")))
             } catch (e: Exception) {
                 viewModel.showRawMessage((i18n.t("reports.toast.error", "message" to (e.message ?: ""))))
             }
@@ -327,9 +422,59 @@ fun ReportScreen(viewModel: MainViewModel) {
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
                 }
             }
+            val shareSubject = buildShareSubject()
+            intent.putExtra(Intent.EXTRA_SUBJECT, shareSubject)
+            intent.putExtra(Intent.EXTRA_TEXT, buildShareMessage())
+            intent.putExtra(Intent.EXTRA_TITLE, shareSubject)
+            ShareHandoffStore.emailRecipient(context)
+                .trim()
+                .takeIf { Patterns.EMAIL_ADDRESS.matcher(it).matches() }
+                ?.let { recipient ->
+                    intent.putExtra(Intent.EXTRA_EMAIL, arrayOf(recipient))
+                }
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            context.startActivity(Intent.createChooser(intent, i18n.t("reports.title")))
-            viewModel.showRawMessage((i18n.t("reports.toast.readyToShare")))
+
+            val preferredComponent = if (ShareHandoffStore.usePreferredTarget(context)) {
+                ShareHandoffStore.preferredComponent(context)
+            } else {
+                null
+            }
+            if (preferredComponent != null) {
+                intent.component = preferredComponent
+                try {
+                    context.startActivity(intent)
+                    ShareHandoffStore.markChosen(
+                        context,
+                        selectedComponent = preferredComponent,
+                    )
+                    return
+                } catch (_: ActivityNotFoundException) {
+                    ShareHandoffStore.clearPreferredTarget(context)
+                    intent.component = null
+                } catch (_: SecurityException) {
+                    ShareHandoffStore.clearPreferredTarget(context)
+                    intent.component = null
+                }
+            }
+
+            val callbackIntent = Intent(context, ShareChosenReceiver::class.java).apply {
+                action = "${context.packageName}.SHARE_TARGET_CHOSEN"
+            }
+            val requestCode = (System.currentTimeMillis() and 0x7FFFFFFF).toInt()
+            val callback = PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                callbackIntent,
+                PendingIntent.FLAG_CANCEL_CURRENT or
+                    PendingIntent.FLAG_ONE_SHOT or
+                    PendingIntent.FLAG_MUTABLE,
+            )
+            val chooser = Intent.createChooser(
+                intent,
+                i18n.t("reports.title"),
+                callback.intentSender,
+            )
+            context.startActivity(chooser)
         } catch (e: Exception) {
             viewModel.showRawMessage((i18n.t("reports.toast.error", "message" to (e.message ?: ""))))
         }
@@ -360,6 +505,7 @@ fun ReportScreen(viewModel: MainViewModel) {
     if (exportDialogOpen) {
         ExportDialog(
             i18n = i18n,
+            preferredAppLabel = preferredShareTargetLabel,
             onShare = { exportDialogOpen = false; sharePdf() },
             onFolder = { exportDialogOpen = false; saveLauncher.launch(buildFilename()) },
             onDismiss = { exportDialogOpen = false },
@@ -770,6 +916,12 @@ fun ReportScreen(viewModel: MainViewModel) {
                 }
             }
         }
+
+        ShareHandoffAnimation(
+            visible = shareHandoffVisible,
+            i18n = i18n,
+            onFinished = { shareHandoffVisible = false },
+        )
     }
 }
 
@@ -815,59 +967,241 @@ private fun NoteDialog(
 @Composable
 private fun ExportDialog(
     i18n: I18n,
+    preferredAppLabel: String?,
     onShare: () -> Unit,
     onFolder: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = LocalAppColors.current
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(i18n.t("exportModal.titlePdf")) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            color = colors.surface,
+            shadowElevation = 24.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 ExportOptionRow(
-                    icon = { Icon(Icons.Filled.Share, contentDescription = null, tint = colors.accent) },
-                    title = i18n.t("exportModal.share"),
-                    subtitle = i18n.t("exportModal.shareDescription"),
+                    icon = Icons.Filled.Share,
+                    title = preferredAppLabel?.let {
+                        i18n.t("reports.shareTarget.shareWith", "app" to it)
+                    } ?: i18n.t("modals.export.share"),
+                    subtitle = if (preferredAppLabel != null) {
+                        i18n.t("reports.shareTarget.directDescription")
+                    } else {
+                        i18n.t("modals.export.shareDescription")
+                    },
+                    primary = true,
                     onClick = onShare,
                 )
                 ExportOptionRow(
-                    icon = { Icon(Icons.Filled.FolderOpen, contentDescription = null, tint = colors.info) },
-                    title = i18n.t("exportModal.folderData"),
-                    subtitle = i18n.t("exportModal.folderDataDescription"),
+                    icon = Icons.Filled.FolderOpen,
+                    title = i18n.t("modals.export.folderData"),
+                    subtitle = i18n.t("modals.export.folderDataDescription"),
+                    primary = false,
                     onClick = onFolder,
                 )
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text(i18n.t("common.cancel"), color = colors.textMuted)
+                }
             }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(i18n.t("common.cancel")) }
-        },
-    )
+        }
+    }
 }
 
 @Composable
 private fun ExportOptionRow(
-    icon: @Composable () -> Unit,
+    icon: ImageVector,
     title: String,
     subtitle: String,
+    primary: Boolean,
     onClick: () -> Unit,
 ) {
-    val colors = LocalAppColors.current
+    val styrianGreen = Color(0xFF08623B)
+    val deepGreen = Color(0xFF06472D)
+    val warmCream = Color(0xFFFFFCF3)
+    val lightLeaf = Color(0xFFEAF5E9)
+    val background = if (primary) {
+        Brush.linearGradient(listOf(deepGreen, Color(0xFF0B8050)))
+    } else {
+        Brush.linearGradient(listOf(warmCream, lightLeaf))
+    }
+    val titleColor = if (primary) Color.White else Color(0xFF153D2A)
+    val subtitleColor = if (primary) Color.White.copy(alpha = 0.82f) else Color(0xFF50685A)
+    val iconColor = if (primary) Color.White else styrianGreen
+    val iconBackground = if (primary) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.86f)
+    val outline = if (primary) Color.White.copy(alpha = 0.16f) else styrianGreen.copy(alpha = 0.48f)
+    val shape = RoundedCornerShape(20.dp)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(colors.surface)
+            .height(94.dp)
+            .shadow(5.dp, shape, spotColor = deepGreen.copy(alpha = 0.25f))
+            .clip(shape)
+            .background(background)
+            .border(if (primary) 1.dp else 2.dp, outline, shape)
             .clickable(onClick = onClick)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        icon()
-        Column {
-            Text(title, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Text(subtitle, color = colors.textMuted, fontSize = 12.sp)
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(iconBackground),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(title, color = titleColor, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+            Text(subtitle, color = subtitleColor, fontSize = 12.sp, lineHeight = 16.sp)
+        }
+        StyrianRibbon(inverted = primary)
+    }
+}
+
+@Composable
+private fun StyrianRibbon(inverted: Boolean) {
+    val green = if (inverted) Color(0xFFB7E2C5) else Color(0xFF087044)
+    Column(
+        modifier = Modifier
+            .width(7.dp)
+            .height(48.dp)
+            .clip(CircleShape),
+    ) {
+        Box(Modifier.weight(1f).fillMaxWidth().background(green))
+        Box(Modifier.weight(1f).fillMaxWidth().background(Color.White))
+    }
+}
+
+@Composable
+private fun ShareHandoffAnimation(
+    visible: Boolean,
+    i18n: I18n,
+    onFinished: () -> Unit,
+) {
+    val checkScale = remember { Animatable(0.55f) }
+    val particleProgress = remember { Animatable(0f) }
+
+    LaunchedEffect(visible) {
+        if (visible) {
+            checkScale.snapTo(0.55f)
+            particleProgress.snapTo(0f)
+            launch {
+                checkScale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow,
+                    ),
+                )
+            }
+            particleProgress.animateTo(1f, tween(durationMillis = 900))
+            delay(1_450)
+            onFinished()
+        }
+    }
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(180)),
+        exit = fadeOut(tween(280)),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.58f))
+                .clickable(onClick = onFinished),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(28.dp)
+                    .shadow(24.dp, RoundedCornerShape(32.dp), spotColor = Color(0xFF052F20))
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xFF0B8050), Color(0xFF06472D)),
+                        ),
+                    )
+                    .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(32.dp))
+                    .padding(horizontal = 30.dp, vertical = 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(
+                    modifier = Modifier.size(138.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Canvas(Modifier.fillMaxSize()) {
+                        val progress = particleProgress.value
+                        repeat(12) { index ->
+                            val angle = (Math.PI * 2.0 * index / 12.0).toFloat()
+                            val distance = size.minDimension * (0.24f + progress * 0.22f)
+                            val particleCenter = Offset(
+                                x = center.x + cos(angle) * distance,
+                                y = center.y + sin(angle) * distance,
+                            )
+                            val particleColor = when (index % 3) {
+                                0 -> Color.White
+                                1 -> Color(0xFFCDECD6)
+                                else -> Color(0xFFFFF2B8)
+                            }
+                            drawCircle(
+                                color = particleColor.copy(alpha = 1f - progress * 0.72f),
+                                radius = (3.5f + (index % 2) * 2f) * density,
+                                center = particleCenter,
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(82.dp)
+                            .scale(checkScale.value)
+                            .shadow(10.dp, CircleShape)
+                            .clip(CircleShape)
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Filled.Check,
+                            contentDescription = null,
+                            tint = Color(0xFF087044),
+                            modifier = Modifier.size(46.dp),
+                        )
+                    }
+                }
+                Text(
+                    text = i18n.t("reports.shareHandoff.title"),
+                    color = Color.White,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp,
+                )
+                Text(
+                    text = i18n.t("reports.shareHandoff.subtitle"),
+                    color = Color.White.copy(alpha = 0.82f),
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
         }
     }
 }

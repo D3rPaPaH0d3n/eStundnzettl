@@ -62,6 +62,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -83,6 +84,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.ShareHandoffStore
+import com.estundnzettl.app.ShareTemplateRenderer
 import com.estundnzettl.app.ShareTargetCapabilities
 import com.estundnzettl.app.ShareTargetOption
 import com.estundnzettl.app.ui.tourTarget
@@ -787,14 +789,36 @@ private fun PreferredShareTargetSection() {
     val context = LocalContext.current
     val colors = LocalAppColors.current
     val t = LocalI18n.current
+    val storedPreferredComponent = remember {
+        ShareHandoffStore.preferredComponent(context)
+    }
+    val initialPreferredComponent = remember(storedPreferredComponent) {
+        storedPreferredComponent?.takeIf {
+            ShareTargetCapabilities.isCommunicationTarget(context, it)
+        }
+    }
     var preferredComponent by remember {
-        mutableStateOf(ShareHandoffStore.preferredComponent(context))
+        mutableStateOf(initialPreferredComponent)
     }
     var enabled by rememberSaveable {
-        mutableStateOf(ShareHandoffStore.usePreferredTarget(context))
+        mutableStateOf(
+            initialPreferredComponent != null && ShareHandoffStore.usePreferredTarget(context),
+        )
     }
     var preferredLabel by remember {
-        mutableStateOf(ShareHandoffStore.preferredTargetLabel(context))
+        mutableStateOf(
+            if (initialPreferredComponent != null) {
+                ShareHandoffStore.preferredTargetLabel(context)
+            } else {
+                null
+            },
+        )
+    }
+    LaunchedEffect(storedPreferredComponent, initialPreferredComponent) {
+        if (storedPreferredComponent != null && initialPreferredComponent == null) {
+            ShareHandoffStore.clearPreferredTarget(context)
+            ShareHandoffStore.setUsePreferredTarget(context, false)
+        }
     }
     var appPickerOpen by remember { mutableStateOf(false) }
     var availableTargets by remember { mutableStateOf(emptyList<ShareTargetOption>()) }
@@ -810,14 +834,12 @@ private fun PreferredShareTargetSection() {
     val periodToken = t.t("reports.shareMessage.periodToken")
     val nameToken = t.t("reports.shareMessage.nameToken")
 
-    fun friendlyPlaceholders(template: String): String = template
-        .replace("{{period}}", periodToken)
-        .replace("{{name}}", nameToken)
-
     var messageTemplate by remember(t.language) {
         mutableStateOf(
-            friendlyPlaceholders(
+            ShareTemplateRenderer.friendly(
                 ShareHandoffStore.customMessageTemplate(context) ?: defaultMessageTemplate,
+                periodToken,
+                nameToken,
             ),
         )
     }
@@ -826,8 +848,10 @@ private fun PreferredShareTargetSection() {
     }
     var subjectTemplate by remember(t.language) {
         mutableStateOf(
-            friendlyPlaceholders(
+            ShareTemplateRenderer.friendly(
                 ShareHandoffStore.customSubjectTemplate(context) ?: defaultSubjectTemplate,
+                periodToken,
+                nameToken,
             ),
         )
     }
@@ -870,7 +894,10 @@ private fun PreferredShareTargetSection() {
             ShareHandoffStore.resetCustomSubjectTemplate(context)
             hasCustomSubject = false
         } else {
-            ShareHandoffStore.setCustomSubjectTemplate(context, template)
+            ShareHandoffStore.setCustomSubjectTemplate(
+                context,
+                ShareTemplateRenderer.canonicalize(template),
+            )
             hasCustomSubject = true
         }
     }
@@ -881,7 +908,10 @@ private fun PreferredShareTargetSection() {
             ShareHandoffStore.resetCustomMessageTemplate(context)
             hasCustomMessage = false
         } else {
-            ShareHandoffStore.setCustomMessageTemplate(context, template)
+            ShareHandoffStore.setCustomMessageTemplate(
+                context,
+                ShareTemplateRenderer.canonicalize(template),
+            )
             hasCustomMessage = true
         }
     }

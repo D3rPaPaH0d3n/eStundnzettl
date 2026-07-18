@@ -111,6 +111,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.ShareChosenReceiver
 import com.estundnzettl.app.ShareHandoffStore
+import com.estundnzettl.app.ShareTemplateRenderer
 import com.estundnzettl.app.ShareTargetCapabilities
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.pdf.ReportPdfGenerator
@@ -240,10 +241,19 @@ fun ReportScreen(viewModel: MainViewModel) {
     var filterMenuOpen by remember { mutableStateOf(false) }
     var monthPickerOpen by remember { mutableStateOf(false) }
     var shareHandoffVisible by remember { mutableStateOf(false) }
-    val preferredShareComponent = if (ShareHandoffStore.usePreferredTarget(context)) {
+    val storedPreferredShareComponent = if (ShareHandoffStore.usePreferredTarget(context)) {
         ShareHandoffStore.preferredComponent(context)
     } else {
         null
+    }
+    val preferredShareComponent = storedPreferredShareComponent?.takeIf {
+        ShareTargetCapabilities.isCommunicationTarget(context, it)
+    }
+    LaunchedEffect(storedPreferredShareComponent, preferredShareComponent) {
+        if (storedPreferredShareComponent != null && preferredShareComponent == null) {
+            ShareHandoffStore.clearPreferredTarget(context)
+            ShareHandoffStore.setUsePreferredTarget(context, false)
+        }
     }
     val preferredShareTargetLabel = preferredShareComponent?.let {
         ShareHandoffStore.preferredTargetLabel(context)
@@ -354,22 +364,12 @@ fun ReportScreen(viewModel: MainViewModel) {
     fun buildShareMessage(): String {
         val name = userData?.name?.trim().orEmpty()
         val period = buildSharePeriod()
-        fun fillTemplate(template: String): String = template
-            .replace("{{period}}", period)
-            .replace("{{name}}", name)
-            .replace("[Zeitraum]", period)
-            .replace("[Period]", period)
-            .replace("[Name]", name)
-
-        ShareHandoffStore.customMessageTemplate(context)?.let { template ->
-            return fillTemplate(template).trimEnd()
-        }
-        val key = if (name.isEmpty()) {
-            "reports.shareMessage.bodyWithoutName"
+        val template = ShareHandoffStore.customMessageTemplate(context) ?: if (name.isEmpty()) {
+            i18n.t("reports.shareMessage.bodyWithoutName")
         } else {
-            "reports.shareMessage.body"
+            i18n.t("reports.shareMessage.body")
         }
-        return i18n.t(key, "period" to buildSharePeriod(), "name" to name)
+        return ShareTemplateRenderer.render(template, period, name).trimEnd()
     }
 
     fun buildShareSubject(): String {
@@ -377,12 +377,7 @@ fun ReportScreen(viewModel: MainViewModel) {
         val name = userData?.name?.trim().orEmpty()
         val template = ShareHandoffStore.customSubjectTemplate(context)
             ?: i18n.t("reports.shareMessage.subject")
-        return template
-            .replace("{{period}}", period)
-            .replace("{{name}}", name)
-            .replace("[Zeitraum]", period)
-            .replace("[Period]", period)
-            .replace("[Name]", name)
+        return ShareTemplateRenderer.render(template, period, name)
             .trim()
     }
 
@@ -441,10 +436,17 @@ fun ReportScreen(viewModel: MainViewModel) {
                 }
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-            val preferredComponent = if (ShareHandoffStore.usePreferredTarget(context)) {
+            val storedPreferredComponent = if (ShareHandoffStore.usePreferredTarget(context)) {
                 ShareHandoffStore.preferredComponent(context)
             } else {
                 null
+            }
+            val preferredComponent = storedPreferredComponent?.takeIf {
+                ShareTargetCapabilities.isCommunicationTarget(context, it)
+            }
+            if (storedPreferredComponent != null && preferredComponent == null) {
+                ShareHandoffStore.clearPreferredTarget(context)
+                ShareHandoffStore.setUsePreferredTarget(context, false)
             }
             val preferredIsEmail = preferredComponent?.let {
                 ShareTargetCapabilities.isEmailTarget(context, it)

@@ -217,6 +217,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+                LaunchedEffect(Unit) { viewModel.onUiReady() }
 
                 // Google-Consent-Dialoge (AuthorizationClient-Resolution)
                 val googleAuthLauncher = rememberLauncherForActivityResult(

@@ -88,9 +88,13 @@ class AutoBackupManager(
         const val KEY_CLOUD_FAIL_COUNT = "backup_fail_count"
         const val KEY_CLOUD_LAST_ERROR = "backup_last_error"
         const val KEY_CLOUD_BACKOFF_UNTIL = "backup_backoff_until"
+        const val KEY_CLOUD_LAST_SUCCESS = "backup_google_drive_last_success"
+        const val KEY_CLOUD_WARNING_SHOWN = "backup_google_drive_warning_shown"
         const val KEY_NC_FAIL_COUNT = "nextcloud_backup_fail_count"
         const val KEY_NC_LAST_ERROR = "nextcloud_backup_last_error"
         const val KEY_NC_BACKOFF_UNTIL = "nextcloud_backoff_until"
+        const val KEY_NC_LAST_SUCCESS = "backup_nextcloud_last_success"
+        const val KEY_LOCAL_LAST_SUCCESS = "backup_local_last_success"
         const val KEY_LAST_BACKUP = "last_backup"
 
         /** 2/4/8/16/30-min-Backoff wie calculateBackoffDelay. */
@@ -103,7 +107,17 @@ class AutoBackupManager(
 
     enum class Source { AUTO, BACKGROUND, MANUAL }
 
-    data class Outcome(val ran: Boolean, val anySucceeded: Boolean = false, val allSatisfied: Boolean = false)
+    enum class Target { GOOGLE_DRIVE, NEXTCLOUD, LOCAL }
+
+    data class Outcome(
+        val ran: Boolean,
+        val anySucceeded: Boolean = false,
+        val allSatisfied: Boolean = false,
+        val succeededTargets: Set<Target> = emptySet(),
+        val failedTargets: Set<Target> = emptySet(),
+    ) {
+        val isPartial: Boolean get() = anySucceeded && !allSatisfied
+    }
 
     private val isUploading = AtomicBoolean(false)
     private var lastHash: String = ""
@@ -135,7 +149,7 @@ class AutoBackupManager(
         return hash.toString()
     }
 
-    private suspend fun registerCloudFailure(message: String) {
+    internal suspend fun registerGoogleDriveFailure(message: String, requiresReconnect: Boolean = false) {
         val count = (settings.getString(KEY_CLOUD_FAIL_COUNT)?.toIntOrNull() ?: 0) + 1
         settings.setString(KEY_CLOUD_FAIL_COUNT, count.toString())
         settings.setString(KEY_CLOUD_LAST_ERROR, message)
@@ -143,12 +157,17 @@ class AutoBackupManager(
             KEY_CLOUD_BACKOFF_UNTIL,
             Instant.ofEpochMilli(System.currentTimeMillis() + backoffDelayMs(count)).toString(),
         )
+        if (requiresReconnect) {
+            settings.setBoolean(GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED, true)
+        }
     }
 
-    private suspend fun clearCloudErrorState() {
+    internal suspend fun clearGoogleDriveErrorState() {
         settings.setString(KEY_CLOUD_FAIL_COUNT, "0")
         settings.setString(KEY_CLOUD_LAST_ERROR, "")
         settings.setString(KEY_CLOUD_BACKOFF_UNTIL, "")
+        settings.setBoolean(KEY_CLOUD_WARNING_SHOWN, false)
+        settings.setBoolean(GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED, false)
     }
 
     private suspend fun registerNextcloudFailure(message: String) {
@@ -214,13 +233,18 @@ class AutoBackupManager(
 
             var anySucceeded = false
             var allSatisfied = true
+            val succeededTargets = linkedSetOf<Target>()
+            val failedTargets = linkedSetOf<Target>()
 
             if (localActive) {
                 try {
                     writeLocalBackup(content)
                     anySucceeded = true
+                    succeededTargets += Target.LOCAL
+                    settings.setString(KEY_LOCAL_LAST_SUCCESS, Instant.now().toString())
                 } catch (e: Exception) {
                     allSatisfied = false
+                    failedTargets += Target.LOCAL
                     Log.w(TAG, "Lokales Backup fehlgeschlagen: ${e.message}")
                 }
             }
@@ -228,6 +252,7 @@ class AutoBackupManager(
             if (cloudActive) {
                 if (cloudBlocked || googleDrive == null) {
                     allSatisfied = false
+                    failedTargets += Target.GOOGLE_DRIVE
                 } else {
                     try {
                         // Stille Autorisierung — wenn Zustimmung nötig wäre,
@@ -236,15 +261,21 @@ class AutoBackupManager(
                         val token = googleDrive.authorize(GoogleDriveManager.SCOPE_APPDATA)
                         googleDrive.uploadOrUpdateBackup(token, NextcloudClient.BACKUP_FILENAME, content)
                         anySucceeded = true
-                        clearCloudErrorState()
+                        succeededTargets += Target.GOOGLE_DRIVE
+                        settings.setString(KEY_CLOUD_LAST_SUCCESS, Instant.now().toString())
+                        clearGoogleDriveErrorState()
                     } catch (e: Exception) {
                         allSatisfied = false
+                        failedTargets += Target.GOOGLE_DRIVE
                         val message = if (e is GoogleDriveManager.AuthRequiredException) {
                             "Google Drive Anmeldung erforderlich"
                         } else {
                             e.message ?: "Cloud-Backup fehlgeschlagen"
                         }
-                        registerCloudFailure(message)
+                        registerGoogleDriveFailure(
+                            message,
+                            requiresReconnect = googleDriveFailureNeedsReconnect(e),
+                        )
                         Log.w(TAG, "Cloud-Backup fehlgeschlagen: $message")
                     }
                 }
@@ -259,12 +290,17 @@ class AutoBackupManager(
                         if (creds != null) {
                             NextcloudClient.uploadBackup(creds.url, creds.user, creds.appPassword, content)
                             anySucceeded = true
+                            succeededTargets += Target.NEXTCLOUD
+                            settings.setString(KEY_NC_LAST_SUCCESS, Instant.now().toString())
                             clearNextcloudErrorState()
                         } else {
                             allSatisfied = false
+                            failedTargets += Target.NEXTCLOUD
+                            registerNextcloudFailure("Nextcloud-Verbindung nicht vollständig")
                         }
                     } catch (e: Exception) {
                         allSatisfied = false
+                        failedTargets += Target.NEXTCLOUD
                         registerNextcloudFailure(e.message ?: "Nextcloud-Backup fehlgeschlagen")
                         Log.w(TAG, "Nextcloud-Backup fehlgeschlagen: ${e.message}")
                     }
@@ -278,7 +314,13 @@ class AutoBackupManager(
                 lastHash = currentHash
             }
 
-            return Outcome(ran = true, anySucceeded = anySucceeded, allSatisfied = allSatisfied)
+            return Outcome(
+                ran = true,
+                anySucceeded = anySucceeded,
+                allSatisfied = allSatisfied,
+                succeededTargets = succeededTargets,
+                failedTargets = failedTargets,
+            )
         } catch (e: Exception) {
             Log.w(TAG, "Backup übersprungen: ${e.message}")
             return Outcome(ran = true, anySucceeded = false, allSatisfied = false)
@@ -287,3 +329,7 @@ class AutoBackupManager(
         }
     }
 }
+
+internal fun googleDriveFailureNeedsReconnect(error: Throwable): Boolean =
+    error is GoogleDriveManager.AuthRequiredException ||
+        (error is GoogleDriveManager.DriveApiException && error.statusCode == 401)

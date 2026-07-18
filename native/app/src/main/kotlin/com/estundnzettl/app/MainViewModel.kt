@@ -179,6 +179,8 @@ data class MainUiState(
     val nextcloud: NextcloudUiState = NextcloudUiState(),
     /** Google-Drive-Verbindungszustand (Backup + PDF-Archiv getrennt). */
     val googleDrive: GoogleDriveUiState = GoogleDriveUiState(),
+    /** Persistierter Zustand der letzten Google-Drive-Backupversuche. */
+    val backupHealth: BackupHealthUiState = BackupHealthUiState(),
     /** Neueres GitHub-Release (nur Sideload-Installationen). */
     val updateAvailable: com.estundnzettl.app.data.UpdateCheck.Release? = null,
     /** Einmaliges Willkommens-Popup nach der Migration von der Capacitor-App. */
@@ -204,6 +206,12 @@ data class GoogleDriveUiState(
     val playServices: GooglePlayServicesStatus = GooglePlayServicesStatus.CHECKING,
 )
 
+data class BackupHealthUiState(
+    val googleDriveFailureCount: Int = 0,
+    val googleDriveLastError: String = "",
+    val googleDriveLastSuccess: String = "",
+)
+
 enum class GooglePlayServicesStatus {
     CHECKING, AVAILABLE, MISSING, UPDATE_REQUIRED, DISABLED, INVALID, UNAVAILABLE,
 }
@@ -216,6 +224,12 @@ internal fun googlePlayServicesStatus(errorCode: Int): GooglePlayServicesStatus 
     9 -> GooglePlayServicesStatus.INVALID
     else -> GooglePlayServicesStatus.UNAVAILABLE
 }
+
+internal fun shouldShowGoogleDriveBackupWarning(
+    failureCount: Int,
+    reconnectRequired: Boolean,
+    alreadyShown: Boolean,
+): Boolean = !alreadyShown && (reconnectRequired || failureCount >= 3)
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -274,6 +288,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             refreshAttachments()
             refreshNextcloudState(connecting = false)
             refreshGoogleState()
+            refreshBackupHealth()
             // Startup-Check des PDF-Archivs (verzögert wie in der TS-App,
             // damit DB-/Settings-Loads abgeschlossen sind)
             viewModelScope.launch {
@@ -386,6 +401,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** App kam aus dem Hintergrund zurück (Port des appStateChange-Listeners). */
     fun onAppResume() {
         autoPdfArchiveRun("resume")
+        viewModelScope.launch { refreshBackupHealth(notifyUser = true) }
+    }
+
+    /** UI sammelt Meldungen; jetzt darf ein ausstehender Backup-Hinweis erscheinen. */
+    fun onUiReady() {
+        viewModelScope.launch { refreshBackupHealth(notifyUser = true) }
     }
 
     // ─── Formular ────────────────────────────────────────────
@@ -980,8 +1001,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         private const val KEY_NATIVE_WELCOME_SEEN = "estundnzettl_native_welcome_seen_v1"
-        private const val KEY_GDRIVE_BACKUP_RECONNECT = "gdrive_backup_reconnect_required"
-        private const val KEY_GDRIVE_PDF_RECONNECT = "gdrive_pdf_reconnect_required"
         private const val KEY_CHANGELOG_VERSION_CODE = "last_seen_changelog_version_code"
         private const val KEY_CHANGELOG_VERSION_NAME = "last_seen_changelog_version_name"
         private const val ATTACHMENTS_DIR = "attachments"
@@ -1323,7 +1342,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         autoBackupJob?.cancel()
         autoBackupJob = viewModelScope.launch {
             kotlinx.coroutines.delay(2000)
-            autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.AUTO)
+            val outcome = autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.AUTO)
+            refreshBackupStateAfter(outcome, notifyUser = true)
         }
     }
 
@@ -1333,13 +1353,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // WAL in die Hauptdatei schreiben, bevor das System den
             // Prozess killen darf (schützt vor Datenverlust bei Updates)
             db.checkpoint()
-            autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.BACKGROUND)
+            val outcome = autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.BACKGROUND)
+            refreshBackupStateAfter(outcome, notifyUser = false)
         }
     }
 
     /** "Jetzt sichern" aus den Einstellungen. */
-    suspend fun manualBackup(): com.estundnzettl.app.data.AutoBackupManager.Outcome =
-        autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.MANUAL)
+    suspend fun manualBackup(): com.estundnzettl.app.data.AutoBackupManager.Outcome {
+        val outcome = autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.MANUAL)
+        refreshBackupStateAfter(outcome, notifyUser = false)
+        return outcome
+    }
+
+    private suspend fun refreshBackupStateAfter(
+        outcome: com.estundnzettl.app.data.AutoBackupManager.Outcome,
+        notifyUser: Boolean,
+    ) {
+        if (
+            com.estundnzettl.app.data.AutoBackupManager.Target.GOOGLE_DRIVE in outcome.failedTargets ||
+            com.estundnzettl.app.data.AutoBackupManager.Target.GOOGLE_DRIVE in outcome.succeededTargets
+        ) {
+            refreshGoogleState()
+        }
+        refreshBackupHealth(
+            notifyUser = notifyUser &&
+                com.estundnzettl.app.data.AutoBackupManager.Target.GOOGLE_DRIVE in outcome.failedTargets,
+        )
+    }
 
     /** Toggle für das tägliche lokale Backup. */
     fun setLocalBackupEnabled(enabled: Boolean) {
@@ -1425,21 +1465,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             enabled = settings.getBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED),
             scope = com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA,
             emailKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL,
-            reconnectKey = KEY_GDRIVE_BACKUP_RECONNECT,
+            reconnectKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
         )
         reconcileScope(
             enabled = settings.getBoolean(com.estundnzettl.app.data.PdfArchiveManager.KEY_GDRIVE),
             scope = com.estundnzettl.app.data.GoogleDriveManager.SCOPE_FILE,
             emailKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL,
-            reconnectKey = KEY_GDRIVE_PDF_RECONNECT,
+            reconnectKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED,
         )
     }
 
     private suspend fun refreshGoogleState() {
         val backupEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL) ?: ""
         val pdfEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL) ?: ""
-        val backupReconnect = settings.getBoolean(KEY_GDRIVE_BACKUP_RECONNECT)
-        val pdfReconnect = settings.getBoolean(KEY_GDRIVE_PDF_RECONNECT)
+        val backupReconnect = settings.getBoolean(
+            com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
+        )
+        val pdfReconnect = settings.getBoolean(
+            com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED,
+        )
         val playServices = runCatching {
             googlePlayServicesStatus(
                 com.google.android.gms.common.GoogleApiAvailability.getInstance()
@@ -1459,6 +1503,56 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    private suspend fun refreshBackupHealth(notifyUser: Boolean = false) {
+        val failureCount = settings
+            .getString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_FAIL_COUNT)
+            ?.toIntOrNull()
+            ?: 0
+        val lastError = settings
+            .getString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_ERROR)
+            .orEmpty()
+        val lastSuccess = settings
+            .getString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_SUCCESS)
+            .orEmpty()
+        val warningShown = settings
+            .getBoolean(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN)
+        val reconnectRequired = settings.getBoolean(
+            com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
+        )
+
+        _state.value = _state.value.copy(
+            backupHealth = BackupHealthUiState(
+                googleDriveFailureCount = failureCount,
+                googleDriveLastError = lastError,
+                googleDriveLastSuccess = lastSuccess,
+            ),
+        )
+
+        if (
+            notifyUser && shouldShowGoogleDriveBackupWarning(
+                failureCount = failureCount,
+                reconnectRequired = reconnectRequired,
+                alreadyShown = warningShown,
+            )
+        ) {
+            settings.setBoolean(
+                com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN,
+                true,
+            )
+            emit(
+                UiMessage(
+                    key = if (reconnectRequired) {
+                        "settings.backup.toast.gdriveReconnectNeeded"
+                    } else {
+                        "toasts.autoBackup.driveNeedsAttention"
+                    },
+                    tone = UiMessageTone.WARNING,
+                    duration = UiMessageDuration.LONG,
+                )
+            )
+        }
+    }
+
     /** Bündelt alle Änderungen, die Backup oder Monats-PDF beeinflussen. */
     private fun scheduleDataProtection() {
         scheduleAutoBackup()
@@ -1475,7 +1569,67 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Beim Öffnen der Backup-Karte erneut prüfen, falls Dienste aktiviert/aktualisiert wurden. */
     fun refreshGooglePlayServices() {
-        viewModelScope.launch { refreshGoogleState() }
+        viewModelScope.launch {
+            refreshGoogleState()
+            refreshBackupHealth()
+        }
+    }
+
+    /** Prüft Autorisierung und Schreibzugriff mit einem echten aktuellen Drive-Backup. */
+    suspend fun testGoogleDriveBackup(): Boolean {
+        if (_state.value.googleDrive.playServices != GooglePlayServicesStatus.AVAILABLE) {
+            emit(UiMessage("settings.backup.toast.gdriveUnavailable"))
+            return false
+        }
+
+        return try {
+            val token = googleDrive.authorize(com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA)
+            val payload = backupRepo.createBackupPayload(note = "eStundnzettl Drive-Check")
+            val content = backupRepo.toFileContent(payload)
+            googleDrive.uploadOrUpdateBackup(
+                token,
+                com.estundnzettl.app.data.NextcloudClient.BACKUP_FILENAME,
+                content,
+            )
+            val completedAt = Instant.now().toString()
+            settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, completedAt)
+            settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_LAST_BACKUP, completedAt)
+            autoBackup.clearGoogleDriveErrorState()
+            refreshGoogleState()
+            refreshBackupHealth()
+            emit(
+                UiMessage(
+                    key = "settings.backup.toast.gdriveTestOk",
+                    tone = UiMessageTone.SUCCESS,
+                )
+            )
+            true
+        } catch (error: Exception) {
+            val reconnect = com.estundnzettl.app.data.googleDriveFailureNeedsReconnect(error)
+            autoBackup.registerGoogleDriveFailure(
+                message = error.message ?: "Google Drive Verbindung fehlgeschlagen",
+                requiresReconnect = reconnect,
+            )
+            if (reconnect) {
+                settings.setBoolean(
+                    com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN,
+                    true,
+                )
+            }
+            refreshGoogleState()
+            refreshBackupHealth()
+            emit(
+                UiMessage(
+                    key = if (reconnect) {
+                        "settings.backup.toast.gdriveReconnectNeeded"
+                    } else {
+                        "settings.backup.toast.gdriveTestFailed"
+                    },
+                    tone = if (reconnect) UiMessageTone.WARNING else UiMessageTone.ERROR,
+                )
+            )
+            false
+        }
     }
 
     fun connectGoogleDrive(forPdfArchive: Boolean = false) {
@@ -1564,14 +1718,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 mapOf(
                     com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
                     SettingsRepository.Keys.CLOUD_SYNC_ENABLED to JsonPrimitive(true),
-                    KEY_GDRIVE_BACKUP_RECONNECT to JsonPrimitive(false),
+                    com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED to JsonPrimitive(false),
                 ),
             )
+            autoBackup.clearGoogleDriveErrorState()
         } else {
             settings.setRawBatch(
                 mapOf(
                     com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
-                    KEY_GDRIVE_PDF_RECONNECT to JsonPrimitive(false),
+                    com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED to JsonPrimitive(false),
                 )
             )
         }
@@ -1579,6 +1734,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Erst UI und Erfolgsmeldung abschließen. Der ohnehin verzögerte
         // Backup-/PDF-Lauf darf die sichtbare Verbindung nicht beeinflussen.
         refreshGoogleState()
+        refreshBackupHealth()
         emit(UiMessage("settings.backup.toast.gdriveConnected", listOf("label" to accountLabel)))
         Log.i(GOOGLE_DRIVE_TAG, "Google Drive verbunden (scope=${googleScopeLabel(scope)}, account=$accountLabel)")
         if (scope == com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA) {
@@ -1596,17 +1752,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             if (forPdfArchive) {
                 settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, "")
-                settings.setBoolean(KEY_GDRIVE_PDF_RECONNECT, false)
+                settings.setBoolean(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED, false)
                 settings.setBoolean(com.estundnzettl.app.data.PdfArchiveManager.KEY_GDRIVE, false)
             } else {
                 settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL, "")
-                settings.setBoolean(KEY_GDRIVE_BACKUP_RECONNECT, false)
+                settings.setBoolean(com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED, false)
                 settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, false)
                 settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_FAIL_COUNT, "0")
                 settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_ERROR, "")
                 settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_BACKOFF_UNTIL, "")
+                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, "")
+                settings.setBoolean(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN, false)
             }
             refreshGoogleState()
+            refreshBackupHealth()
         }
     }
 

@@ -505,7 +505,9 @@
     "autoBackup": {
       "failed5x": "Cloud-Backup fehlgeschlagen (5x). Bitte Einstellungen prüfen.",
       "completed": "Backup abgeschlossen",
-      "failed": "Backup fehlgeschlagen"
+      "failed": "Backup fehlgeschlagen",
+      "partial": "Teilweise gesichert – {{targets}} nicht erreicht.",
+      "driveNeedsAttention": "Das Google-Drive-Backup braucht kurz deine Aufmerksamkeit. Bitte in den Einstellungen prüfen."
     },
     "autoCheckout": "⚠️ Automatisch ausgestempelt! Bitte prüfen.",
     "autoCheckout_one": "Der Timer war noch von gestern aktiv und wurde automatisch um 23:59 beendet. Bitte kontrolliere den Eintrag.",
@@ -833,7 +835,9 @@
         "expired": "Verbindung abgelaufen",
         "notConnected": "Nicht verbunden",
         "disconnect": "Trennen",
-        "connect": "Verbinden"
+        "connect": "Verbinden",
+        "testConnection": "Verbindung prüfen",
+        "testing": "Prüfe …"
       },
       "nextcloud": {
         "connectedAs": "Verbunden als {{user}}",
@@ -856,7 +860,10 @@
         "select": "Wählen"
       },
       "warning": {
-        "gdriveFailed": "⚠️ Letzte Backups fehlgeschlagen. Bitte Google Drive Verbindung prüfen.",
+        "gdriveFailed": "Google Drive konnte zuletzt nicht sichern.",
+        "gdriveFailureCount_one": "Der letzte Versuch ist fehlgeschlagen.",
+        "gdriveFailureCount_other": "{{count}} Versuche seit dem letzten Erfolg sind fehlgeschlagen.",
+        "lastSuccessfulAt": "Zuletzt erfolgreich: {{time}}",
         "gdriveReconnect": "⚠️ Google Drive muss neu verbunden werden, bevor wieder gesichert werden kann.",
         "nextcloudWithError": "Nextcloud-Backup fehlgeschlagen: {{error}}",
         "nextcloudGeneric": "Letzte Nextcloud-Backups sind fehlgeschlagen. Bitte Verbindung prüfen.",
@@ -887,6 +894,9 @@
         "gdriveCancelled": "Google-Anmeldung abgebrochen",
         "gdriveUnavailable": "Google Drive ist auf diesem Gerät noch nicht verfügbar",
         "gdriveFailed": "Google-Drive-Verbindung fehlgeschlagen",
+        "gdriveTestOk": "Google Drive schaut gut aus – Verbindung steht und das Backup ist aktuell.",
+        "gdriveTestFailed": "Google Drive konnte gerade nicht erreicht werden.",
+        "gdriveReconnectNeeded": "Google Drive braucht eine neue Anmeldung.",
         "localDisconnected": "Backup-Ordner getrennt",
         "localActivated": "Backup aktiviert!",
         "folderCancelled": "Ordnerauswahl abgebrochen",

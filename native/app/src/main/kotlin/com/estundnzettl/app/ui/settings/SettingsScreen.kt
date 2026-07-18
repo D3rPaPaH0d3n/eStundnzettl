@@ -742,10 +742,18 @@ private fun BackupSection(
     onImport: () -> Unit,
 ) {
     val colors = LocalAppColors.current
+    val state by viewModel.state.collectAsState()
+    val backupNeedsAttention = state.googleDrive.backupReconnectRequired ||
+        state.backupHealth.googleDriveFailureCount > 0
     CollapsibleSettingsCard(
         title = t.t("settings.backup.header"),
         subtitle = t.t("settings.backup.subtitle"),
-        icon = { SectionIconBadge(Icons.Filled.Save, accent) },
+        icon = {
+            SectionIconBadge(
+                icon = if (backupNeedsAttention) Icons.Filled.Warning else Icons.Filled.Save,
+                tint = if (backupNeedsAttention) colors.negative else accent,
+            )
+        },
         defaultExpanded = false,
     ) {
         CloudBackupContent(viewModel)

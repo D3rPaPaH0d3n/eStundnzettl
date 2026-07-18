@@ -43,6 +43,8 @@ class GoogleDriveManager(
         const val SCOPE_FILE = "https://www.googleapis.com/auth/drive.file"
         const val KEY_ACCOUNT_EMAIL = "gdrive_account_email"
         const val KEY_PDF_ACCOUNT_EMAIL = "gdrive_pdf_account_email"
+        const val KEY_BACKUP_RECONNECT_REQUIRED = "gdrive_backup_reconnect_required"
+        const val KEY_PDF_RECONNECT_REQUIRED = "gdrive_pdf_reconnect_required"
         private const val ARCHIVE_FOLDER_NAME = "eStundnzettl Archiv"
 
         /** Dateiname vor dem Rebranding — BACKUP_CONFIG.LEGACY_FILENAME. */
@@ -51,6 +53,11 @@ class GoogleDriveManager(
 
     class AuthRequiredException(val pendingIntent: PendingIntent?) :
         Exception("Google Drive Anmeldung erforderlich")
+
+    class DriveApiException(
+        val operation: String,
+        val statusCode: Int,
+    ) : Exception("Google Drive $operation fehlgeschlagen (HTTP $statusCode)")
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -145,7 +152,7 @@ class GoogleDriveManager(
                 "?q=${URLEncoder.encode(query, "UTF-8")}" +
                 "&spaces=$spaces&fields=files(id)"
             val (status, bodyText) = http(url, "GET", token)
-            if (status != 200) throw Exception("Drive-Suche fehlgeschlagen (HTTP $status)")
+            if (status != 200) throw DriveApiException("Suche", status)
             json.parseToJsonElement(bodyText).jsonObject["files"]?.jsonArray
                 ?.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content
         }
@@ -162,7 +169,7 @@ class GoogleDriveManager(
                     "https://www.googleapis.com/upload/drive/v3/files/$existingId?uploadType=media",
                     "PATCH", token, content.toByteArray(), "application/json",
                 )
-                if (status !in 200..299) throw Exception("Drive-Update fehlgeschlagen (HTTP $status)")
+                if (status !in 200..299) throw DriveApiException("Update", status)
             } else {
                 uploadMultipart(
                     token,
@@ -185,7 +192,7 @@ class GoogleDriveManager(
     suspend fun downloadBackup(token: String, fileName: String): String? = withContext(Dispatchers.IO) {
         val id = findFileId(token, fileName, spaces = "appDataFolder") ?: return@withContext null
         val (status, bodyText) = http("https://www.googleapis.com/drive/v3/files/$id?alt=media", "GET", token)
-        if (status !in 200..299) throw Exception("Drive-Download fehlgeschlagen (HTTP $status)")
+        if (status !in 200..299) throw DriveApiException("Download", status)
         bodyText
     }
 
@@ -202,7 +209,7 @@ class GoogleDriveManager(
                     "https://www.googleapis.com/upload/drive/v3/files/$existingId?uploadType=media",
                     "PATCH", token, bytes, "application/pdf",
                 )
-                if (status !in 200..299) throw Exception("Drive-Update fehlgeschlagen (HTTP $status)")
+                if (status !in 200..299) throw DriveApiException("Update", status)
             } else {
                 uploadMultipart(
                     token,
@@ -227,7 +234,7 @@ class GoogleDriveManager(
             "https://www.googleapis.com/drive/v3/files?fields=id",
             "POST", token, meta.toByteArray(), "application/json",
         )
-        if (createStatus !in 200..299) throw Exception("Archiv-Ordner konnte nicht erstellt werden (HTTP $createStatus)")
+        if (createStatus !in 200..299) throw DriveApiException("Archiv-Ordner", createStatus)
         json.parseToJsonElement(createBody).jsonObject["id"]?.jsonPrimitive?.content
             ?: throw Exception("Archiv-Ordner ohne ID")
     }
@@ -247,6 +254,9 @@ class GoogleDriveManager(
             "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
             "POST", token, body, "multipart/related; boundary=$boundary",
         )
-        if (status !in 200..299) throw Exception("Drive-Upload fehlgeschlagen (HTTP $status): ${bodyText.take(200)}")
+        if (status !in 200..299) {
+            Log.w(TAG, "Drive-Upload fehlgeschlagen (HTTP $status): ${bodyText.take(200)}")
+            throw DriveApiException("Upload", status)
+        }
     }
 }

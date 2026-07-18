@@ -2,16 +2,20 @@ package com.estundnzettl.app.ui.settings
 
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -23,7 +27,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,6 +38,7 @@ import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.GooglePlayServicesStatus
 import com.estundnzettl.app.data.AutoBackupManager
 import com.estundnzettl.app.data.SettingsRepository
+import com.estundnzettl.app.UiMessageTone
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import kotlinx.coroutines.launch
@@ -61,9 +68,11 @@ fun CloudBackupContent(viewModel: MainViewModel) {
     var lastBackup by remember { mutableStateOf("") }
     var ncLastError by remember { mutableStateOf("") }
     var saving by remember { mutableStateOf(false) }
+    var testingDrive by remember { mutableStateOf(false) }
     var refreshTick by remember { mutableStateOf(0) }
 
-    fun toast(message: String) = viewModel.showRawMessage(message)
+    fun toast(message: String, tone: UiMessageTone = UiMessageTone.INFO) =
+        viewModel.showRawMessage(message, tone)
 
     LaunchedEffect(refreshTick, nc.connected) {
         localEnabled = viewModel.settings.getBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED)
@@ -84,6 +93,20 @@ fun CloudBackupContent(viewModel: MainViewModel) {
         }
     }
 
+    fun formatTimestamp(value: String): String? {
+        if (value.isEmpty()) return null
+        return try {
+            val time = Instant.parse(value).atZone(ZoneId.systemDefault())
+            val pattern = if (t.language == "en") "MM/dd/yyyy HH:mm" else "dd.MM.yyyy HH:mm"
+            time.format(DateTimeFormatter.ofPattern(pattern))
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    val driveFailureCount = state.backupHealth.googleDriveFailureCount
+    val driveLastSuccess = formatTimestamp(state.backupHealth.googleDriveLastSuccess)
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
         // ── Google Drive ────────────────────────────────────────
@@ -96,6 +119,8 @@ fun CloudBackupContent(viewModel: MainViewModel) {
                 contentDescription = null,
                 tint = when {
                     !playServicesAvailable -> colors.danger
+                    state.googleDrive.backupReconnectRequired -> colors.danger
+                    driveFailureCount > 0 -> colors.negative
                     state.googleDrive.backupConnected -> colors.positive
                     else -> colors.textFaint
                 },
@@ -138,9 +163,36 @@ fun CloudBackupContent(viewModel: MainViewModel) {
                         t.t("settings.backup.gdrive.activeAppData"),
                         color = colors.textMuted, fontSize = 12.sp,
                     )
-                    ActionButton(label = t.t("settings.backup.gdrive.disconnect"), tint = colors.danger) {
-                        viewModel.disconnectGoogleDrive(forPdfArchive = false)
-                        refreshTick++
+                    if (driveFailureCount > 0) {
+                        GoogleDriveHealthNotice(
+                            failureCount = driveFailureCount,
+                            lastSuccess = driveLastSuccess,
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            ActionButton(
+                                label = t.t(
+                                    if (testingDrive) "settings.backup.gdrive.testing"
+                                    else "settings.backup.gdrive.testConnection"
+                                ),
+                                tint = colors.info,
+                                enabled = !testingDrive,
+                            ) {
+                                testingDrive = true
+                                scope.launch {
+                                    viewModel.testGoogleDriveBackup()
+                                    testingDrive = false
+                                    refreshTick++
+                                }
+                            }
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            ActionButton(label = t.t("settings.backup.gdrive.disconnect"), tint = colors.danger) {
+                                viewModel.disconnectGoogleDrive(forPdfArchive = false)
+                                refreshTick++
+                            }
+                        }
                     }
                 } else {
                     Text(
@@ -264,17 +316,75 @@ fun CloudBackupContent(viewModel: MainViewModel) {
             scope.launch {
                 try {
                     val outcome = viewModel.manualBackup()
-                    if (outcome.anySucceeded) {
-                        toast(t.t("toasts.autoBackup.completed"))
-                    } else {
-                        toast(t.t("toasts.autoBackup.failed"))
+                    when {
+                        outcome.anySucceeded && outcome.allSatisfied -> {
+                            toast(t.t("toasts.autoBackup.completed"), UiMessageTone.SUCCESS)
+                        }
+                        outcome.isPartial -> {
+                            val failedTargets = outcome.failedTargets.joinToString(", ") { target ->
+                                when (target) {
+                                    AutoBackupManager.Target.GOOGLE_DRIVE -> "Google Drive"
+                                    AutoBackupManager.Target.NEXTCLOUD -> "Nextcloud"
+                                    AutoBackupManager.Target.LOCAL -> t.t("settings.backup.targetLocal")
+                                }
+                            }
+                            toast(
+                                t.t("toasts.autoBackup.partial", "targets" to failedTargets),
+                                UiMessageTone.WARNING,
+                            )
+                        }
+                        else -> toast(t.t("toasts.autoBackup.failed"), UiMessageTone.ERROR)
                     }
                 } catch (_: Exception) {
-                    toast(t.t("toasts.autoBackup.failed"))
+                    toast(t.t("toasts.autoBackup.failed"), UiMessageTone.ERROR)
                 } finally {
                     saving = false
                     refreshTick++
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GoogleDriveHealthNotice(failureCount: Int, lastSuccess: String?) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    val shape = RoundedCornerShape(12.dp)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(colors.negative.copy(alpha = if (colors.isDark) 0.12f else 0.08f))
+            .border(1.dp, colors.negative.copy(alpha = 0.28f), shape)
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(
+            Icons.Outlined.WarningAmber,
+            contentDescription = null,
+            tint = colors.negative,
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(
+                t.t("settings.backup.warning.gdriveFailed"),
+                color = colors.textPrimary,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp,
+            )
+            Text(
+                t.t("settings.backup.warning.gdriveFailureCount", "count" to failureCount),
+                color = colors.textMuted,
+                fontSize = 11.sp,
+            )
+            if (lastSuccess != null) {
+                Text(
+                    t.t("settings.backup.warning.lastSuccessfulAt", "time" to lastSuccess),
+                    color = colors.textMuted,
+                    fontSize = 11.sp,
+                )
             }
         }
     }

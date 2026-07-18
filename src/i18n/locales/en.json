@@ -505,7 +505,9 @@
     "autoBackup": {
       "failed5x": "Cloud backup failed (5x). Please check settings.",
       "completed": "Backup complete",
-      "failed": "Backup failed"
+      "failed": "Backup failed",
+      "partial": "Partially backed up – {{targets}} could not be reached.",
+      "driveNeedsAttention": "Google Drive backup needs a moment of your attention. Please check it in Settings."
     },
     "autoCheckout": "⚠️ Auto-clocked out! Please review.",
     "autoCheckout_one": "The timer was still running from yesterday and was automatically stopped at 23:59. Please review the entry.",
@@ -833,7 +835,9 @@
         "expired": "Connection expired",
         "notConnected": "Not connected",
         "disconnect": "Disconnect",
-        "connect": "Connect"
+        "connect": "Connect",
+        "testConnection": "Check connection",
+        "testing": "Checking …"
       },
       "nextcloud": {
         "connectedAs": "Connected as {{user}}",
@@ -856,7 +860,10 @@
         "select": "Choose"
       },
       "warning": {
-        "gdriveFailed": "⚠️ Recent backups failed. Please check the Google Drive connection.",
+        "gdriveFailed": "Google Drive could not complete its latest backup.",
+        "gdriveFailureCount_one": "The latest attempt failed.",
+        "gdriveFailureCount_other": "{{count}} attempts since the last success have failed.",
+        "lastSuccessfulAt": "Last successful: {{time}}",
         "gdriveReconnect": "⚠️ Google Drive needs to be reconnected before backups can continue.",
         "nextcloudWithError": "Nextcloud backup failed: {{error}}",
         "nextcloudGeneric": "Recent Nextcloud backups failed. Please check the connection.",
@@ -887,6 +894,9 @@
         "gdriveCancelled": "Google sign-in cancelled",
         "gdriveUnavailable": "Google Drive is not available on this device yet",
         "gdriveFailed": "Google Drive connection failed",
+        "gdriveTestOk": "Google Drive looks good – the connection works and the backup is up to date.",
+        "gdriveTestFailed": "Google Drive could not be reached right now.",
+        "gdriveReconnectNeeded": "Google Drive needs you to sign in again.",
         "localDisconnected": "Backup folder disconnected",
         "localActivated": "Backup enabled!",
         "folderCancelled": "Folder selection cancelled",

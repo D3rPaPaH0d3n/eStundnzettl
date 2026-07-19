@@ -204,9 +204,8 @@ fun LiveTimerBar(
                     .background(
                         when {
                             timer.isRunning -> colors.surface
-                            swipeReady -> Palette.Emerald600
-                            colors.isDark -> Palette.Emerald600
-                            else -> Palette.Zinc900
+                            swipeReady -> colors.accentStrong
+                            else -> colors.primaryAction
                         },
                     )
                     .border(
@@ -282,12 +281,12 @@ fun LiveTimerBar(
                         Icon(
                             Icons.Filled.ArrowUpward,
                             contentDescription = t.t("timer.start"),
-                            tint = Color.White,
+                            tint = colors.onPrimaryAction,
                             modifier = Modifier.size(18.dp),
                         )
                         Text(
                             t.t("liveTimer.fabTimer"),
-                            color = Color.White,
+                            color = colors.onPrimaryAction,
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Black,
                         )
@@ -296,7 +295,7 @@ fun LiveTimerBar(
                         Icon(
                             Icons.Filled.Add,
                             contentDescription = t.t("timer.start"),
-                            tint = Color.White,
+                            tint = colors.onPrimaryAction,
                             modifier = Modifier.size(28.dp),
                         )
                     }

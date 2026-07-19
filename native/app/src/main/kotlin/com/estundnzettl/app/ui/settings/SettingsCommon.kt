@@ -22,7 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,24 +43,53 @@ import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import java.util.Locale as JavaLocale
 
-/** Farbiges Icon-Badge im Karten-Header (Pendant zu den p-2-rounded-lg-Divs). */
+/**
+ * Farbiges Icon-Badge im Karten-Header. Unter Material You verwenden normale
+ * Kategorien einheitlich die Primärfarbe; Warnungen und Fehler können diese
+ * mit [materialYouTint] gezielt überschreiben. Ohne Material You bleibt die
+ * bisherige Kategorienfarbe unverändert.
+ */
 @Composable
-fun SectionIconBadge(icon: ImageVector, tint: Color) {
+fun SectionIconBadge(
+    icon: ImageVector,
+    tint: Color,
+    materialYouTint: Color? = null,
+) {
+    val colors = LocalAppColors.current
+    val resolvedTint = resolveSectionIconTint(colors, tint, materialYouTint)
     Box(
         modifier = Modifier
             .size(40.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(
                 Brush.linearGradient(
-                    listOf(tint.copy(alpha = 0.22f), tint.copy(alpha = 0.09f)),
+                    listOf(
+                        resolvedTint.copy(alpha = 0.22f),
+                        resolvedTint.copy(alpha = 0.09f),
+                    ),
                 ),
             )
-            .border(1.dp, tint.copy(alpha = 0.18f), RoundedCornerShape(10.dp)),
+            .border(
+                1.dp,
+                resolvedTint.copy(alpha = 0.18f),
+                RoundedCornerShape(10.dp),
+            ),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = resolvedTint,
+            modifier = Modifier.size(22.dp),
+        )
     }
 }
+
+internal fun resolveSectionIconTint(
+    colors: com.estundnzettl.app.ui.theme.AppColors,
+    legacyTint: Color,
+    materialYouTint: Color? = null,
+): Color = if (colors.isMaterialYou) materialYouTint ?: colors.accent else legacyTint
 
 /** Einklappbare Settings-Karte — Port von CollapsibleCard.tsx. */
 @Composable
@@ -73,7 +102,7 @@ fun CollapsibleSettingsCard(
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
-    var expanded by remember { mutableStateOf(defaultExpanded) }
+    var expanded by rememberSaveable { mutableStateOf(defaultExpanded) }
 
     AppCard {
         Row(

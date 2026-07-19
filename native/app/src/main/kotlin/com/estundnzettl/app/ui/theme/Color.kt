@@ -1,5 +1,6 @@
 package com.estundnzettl.app.ui.theme
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 
 /**
@@ -78,15 +79,21 @@ data class AppColors(
     val textFaint: Color,      // zinc-400 / zinc-500
     val headerBackground: Color,
     val headerControl: Color,
+    val headerContent: Color,
+    val headerContentMuted: Color,
     val accent: Color,         // emerald-600 / emerald-400
     val accentStrong: Color,   // emerald-600
+    val primaryAction: Color,
+    val onPrimaryAction: Color,
     val positive: Color,       // emerald
     val negative: Color,       // orange (Saldo) / red (Woche)
     val danger: Color,
     val info: Color,           // blue
     val special: Color,        // purple (Zeitausgleich)
     val dayStrip: Color,       // zinc-800 / zinc-900
+    val dayStripContent: Color,
     val isDark: Boolean,
+    val isMaterialYou: Boolean,
 )
 
 val LightAppColors = AppColors(
@@ -101,15 +108,21 @@ val LightAppColors = AppColors(
     textFaint = Palette.Zinc400,
     headerBackground = Palette.Zinc900,
     headerControl = Palette.Zinc800,
+    headerContent = Color.White,
+    headerContentMuted = Palette.Zinc400,
     accent = Palette.Emerald600,
     accentStrong = Palette.Emerald600,
+    primaryAction = Palette.Zinc900,
+    onPrimaryAction = Color.White,
     positive = Palette.Emerald600,
     negative = Palette.Orange600,
     danger = Palette.Red600,
     info = Palette.Blue600,
     special = Palette.Purple700,
     dayStrip = Palette.Zinc800,
+    dayStripContent = Color.White,
     isDark = false,
+    isMaterialYou = false,
 )
 
 val DarkAppColors = AppColors(
@@ -124,13 +137,60 @@ val DarkAppColors = AppColors(
     textFaint = Palette.Zinc500,
     headerBackground = Palette.Zinc900,
     headerControl = Palette.Zinc800,
+    headerContent = Color.White,
+    headerContentMuted = Palette.Zinc400,
     accent = Palette.Emerald400,
     accentStrong = Palette.Emerald600,
+    primaryAction = Palette.Emerald600,
+    onPrimaryAction = Color.White,
     positive = Palette.Emerald400,
     negative = Palette.Orange500,
     danger = Palette.Red400,
     info = Palette.Blue400,
     special = Palette.Purple400,
     dayStrip = Palette.Zinc900,
+    dayStripContent = Color.White,
     isDark = true,
+    isMaterialYou = false,
 )
+
+/**
+ * Maps Android's complete dynamic Material color scheme to the semantic colors
+ * used by the custom app components. Status colors keep their established
+ * meaning; structural, accent, informational and special colors follow the
+ * wallpaper-derived system palette.
+ */
+internal fun materialYouAppColors(
+    colorScheme: ColorScheme,
+    darkTheme: Boolean,
+): AppColors {
+    val semanticFallback = if (darkTheme) DarkAppColors else LightAppColors
+    return AppColors(
+        background = colorScheme.background,
+        surface = colorScheme.surfaceContainerLow,
+        surfaceVariant = colorScheme.surfaceContainerHigh,
+        border = colorScheme.outlineVariant,
+        borderSubtle = colorScheme.outlineVariant.copy(alpha = 0.65f),
+        textPrimary = colorScheme.onSurface,
+        textSecondary = colorScheme.onSurfaceVariant,
+        textMuted = colorScheme.onSurfaceVariant.copy(alpha = 0.82f),
+        textFaint = colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+        headerBackground = colorScheme.primaryContainer,
+        headerControl = colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+        headerContent = colorScheme.onPrimaryContainer,
+        headerContentMuted = colorScheme.onPrimaryContainer.copy(alpha = 0.72f),
+        accent = colorScheme.primary,
+        accentStrong = colorScheme.primary,
+        primaryAction = colorScheme.primary,
+        onPrimaryAction = colorScheme.onPrimary,
+        positive = semanticFallback.positive,
+        negative = semanticFallback.negative,
+        danger = colorScheme.error,
+        info = colorScheme.secondary,
+        special = colorScheme.tertiary,
+        dayStrip = colorScheme.secondaryContainer,
+        dayStripContent = colorScheme.onSecondaryContainer,
+        isDark = darkTheme,
+        isMaterialYou = true,
+    )
+}

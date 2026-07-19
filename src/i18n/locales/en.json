@@ -1191,7 +1191,7 @@
       }
     },
     "workCodesCard": {
-      "title": "Activities",
+      "title": "Activity codes",
       "subtitle": "Categories for your entries, e.g. installation, travel, office work or project work.",
       "manageButton": "Manage"
     },

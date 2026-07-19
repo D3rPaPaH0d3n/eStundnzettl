@@ -117,6 +117,7 @@ import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.pdf.ReportPdfGenerator
 import com.estundnzettl.app.pdf.ReportPdfInput
 import com.estundnzettl.app.ui.settings.SettingsToggleRow
+import com.estundnzettl.app.ui.theme.AppColors
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
@@ -138,6 +139,64 @@ import java.util.Locale as JavaLocale
 import kotlin.math.cos
 import kotlin.math.sin
 
+internal data class ReportViewerPalette(
+    val toolbarBackground: Color,
+    val toolbarContent: Color,
+    val toolbarMuted: Color,
+    val controlBackground: Color,
+    val controlBorder: Color,
+    val primaryAccent: Color,
+    val secondaryAccent: Color,
+    val onPrimary: Color,
+    val menuBackground: Color,
+    val menuContent: Color,
+    val viewerBackground: Color,
+    val viewerSurface: Color,
+    val floatingBackground: Color,
+    val floatingBorder: Color,
+    val floatingContent: Color,
+)
+
+/** Viewer chrome follows Material You while the rendered PDF remains stable. */
+internal fun reportViewerPalette(colors: AppColors): ReportViewerPalette =
+    if (colors.isMaterialYou) {
+        ReportViewerPalette(
+            toolbarBackground = colors.headerBackground,
+            toolbarContent = colors.headerContent,
+            toolbarMuted = colors.headerContentMuted,
+            controlBackground = colors.headerControl,
+            controlBorder = colors.headerContent.copy(alpha = 0.18f),
+            primaryAccent = colors.accentStrong,
+            secondaryAccent = colors.special,
+            onPrimary = colors.onPrimaryAction,
+            menuBackground = colors.surface,
+            menuContent = colors.textSecondary,
+            viewerBackground = colors.background,
+            viewerSurface = colors.surfaceVariant.copy(alpha = 0.55f),
+            floatingBackground = colors.surface.copy(alpha = 0.92f),
+            floatingBorder = colors.border,
+            floatingContent = colors.textPrimary,
+        )
+    } else {
+        ReportViewerPalette(
+            toolbarBackground = Palette.Zinc900,
+            toolbarContent = Palette.Zinc100,
+            toolbarMuted = Palette.Zinc400,
+            controlBackground = Palette.Zinc800,
+            controlBorder = Palette.Zinc700,
+            primaryAccent = Palette.Emerald500,
+            secondaryAccent = Palette.Blue400,
+            onPrimary = Color.White,
+            menuBackground = Palette.Zinc800,
+            menuContent = Palette.Zinc300,
+            viewerBackground = Palette.Zinc950,
+            viewerSurface = Palette.Zinc800.copy(alpha = 0.5f),
+            floatingBackground = Palette.Zinc900.copy(alpha = 0.85f),
+            floatingBorder = Palette.Zinc700,
+            floatingContent = Palette.Zinc100,
+        )
+    }
+
 /**
  * PDF-Bericht mit Live-Vorschau — Port von PrintReport.tsx.
  *
@@ -151,6 +210,7 @@ import kotlin.math.sin
 fun ReportScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
     val colors = LocalAppColors.current
+    val viewerColors = reportViewerPalette(colors)
     val i18n = LocalI18n.current
     val s by viewModel.state.collectAsState()
 
@@ -548,7 +608,7 @@ fun ReportScreen(viewModel: MainViewModel) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Palette.Zinc900)
+                    .background(viewerColors.toolbarBackground)
                     .statusBarsPadding()
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -568,12 +628,12 @@ fun ReportScreen(viewModel: MainViewModel) {
                         Icon(
                             Icons.Outlined.Description,
                             contentDescription = null,
-                            tint = Palette.Emerald500,
+                            tint = viewerColors.primaryAccent,
                             modifier = Modifier.size(20.dp),
                         )
                         Text(
                             text = i18n.t("reports.preview"),
-                            color = Palette.Zinc100,
+                            color = viewerColors.toolbarContent,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                             maxLines = 1,
@@ -583,8 +643,8 @@ fun ReportScreen(viewModel: MainViewModel) {
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .clip(RoundedCornerShape(10.dp))
-                            .background(Palette.Zinc800)
-                            .border(1.dp, Palette.Zinc700, RoundedCornerShape(10.dp))
+                            .background(viewerColors.controlBackground)
+                            .border(1.dp, viewerColors.controlBorder, RoundedCornerShape(10.dp))
                             .padding(2.dp),
                     ) {
                         IconButton(
@@ -597,12 +657,12 @@ fun ReportScreen(viewModel: MainViewModel) {
                             Icon(
                                 Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                                 contentDescription = null,
-                                tint = Palette.Zinc300,
+                                tint = viewerColors.toolbarMuted,
                             )
                         }
                         Text(
                             text = month.atDay(1).format(DateTimeFormatter.ofPattern("MMM yy", javaLocale)),
-                            color = Color.White,
+                            color = viewerColors.toolbarContent,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -622,7 +682,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                             Icon(
                                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = null,
-                                tint = Palette.Zinc300,
+                                tint = viewerColors.toolbarMuted,
                             )
                         }
                     }
@@ -631,14 +691,14 @@ fun ReportScreen(viewModel: MainViewModel) {
                             .padding(start = 8.dp)
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(Palette.Zinc800)
+                            .background(viewerColors.controlBackground)
                             .clickable { viewModel.setView("dashboard") },
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             Icons.Filled.Close,
                             contentDescription = i18n.t("common.close"),
-                            tint = Color.White,
+                            tint = viewerColors.toolbarContent,
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -654,17 +714,33 @@ fun ReportScreen(viewModel: MainViewModel) {
                     DarkToolbarButton(
                         icon = Icons.Filled.AddComment,
                         contentDescription = i18n.t("reports.noteModal.title"),
-                        tint = if (hasNote) Palette.Blue400 else Palette.Zinc400,
-                        background = if (hasNote) Palette.Blue500.copy(alpha = 0.2f) else Palette.Zinc800,
-                        border = if (hasNote) Palette.Blue500.copy(alpha = 0.5f) else Palette.Zinc700,
+                        tint = if (hasNote) viewerColors.secondaryAccent else viewerColors.toolbarMuted,
+                        background = if (hasNote) {
+                            viewerColors.secondaryAccent.copy(alpha = 0.2f)
+                        } else {
+                            viewerColors.controlBackground
+                        },
+                        border = if (hasNote) {
+                            viewerColors.secondaryAccent.copy(alpha = 0.5f)
+                        } else {
+                            viewerColors.controlBorder
+                        },
                     ) { noteDialogOpen = true }
                     if (layoutTogglesAvailable) {
                         DarkToolbarButton(
                             icon = Icons.Filled.Tune,
                             contentDescription = i18n.t("reports.layoutPanel.title"),
-                            tint = if (layoutPanelOpen) Palette.Emerald400 else Palette.Zinc400,
-                            background = if (layoutPanelOpen) Palette.Emerald500.copy(alpha = 0.2f) else Palette.Zinc800,
-                            border = if (layoutPanelOpen) Palette.Emerald500.copy(alpha = 0.5f) else Palette.Zinc700,
+                            tint = if (layoutPanelOpen) viewerColors.primaryAccent else viewerColors.toolbarMuted,
+                            background = if (layoutPanelOpen) {
+                                viewerColors.primaryAccent.copy(alpha = 0.2f)
+                            } else {
+                                viewerColors.controlBackground
+                            },
+                            border = if (layoutPanelOpen) {
+                                viewerColors.primaryAccent.copy(alpha = 0.5f)
+                            } else {
+                                viewerColors.controlBorder
+                            },
                         ) { layoutPanelOpen = true }
                     }
                     Box(modifier = Modifier.weight(1f)) {
@@ -672,8 +748,8 @@ fun ReportScreen(viewModel: MainViewModel) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Palette.Zinc800)
-                                .border(1.dp, Palette.Zinc700, RoundedCornerShape(10.dp))
+                                .background(viewerColors.controlBackground)
+                                .border(1.dp, viewerColors.controlBorder, RoundedCornerShape(10.dp))
                                 .clickable { filterMenuOpen = true }
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -683,27 +759,31 @@ fun ReportScreen(viewModel: MainViewModel) {
                                 text = filterWeek?.let {
                                     i18n.t("dashboard.calendarWeekShort", "week" to it) + " (${weekLabel(it)})"
                                 } ?: i18n.t("reports.fullMonth"),
-                                color = Color.White,
+                                color = viewerColors.toolbarContent,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
                             )
                             Icon(
                                 Icons.Filled.KeyboardArrowDown,
                                 contentDescription = null,
-                                tint = Palette.Zinc400,
+                                tint = viewerColors.toolbarMuted,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
                         DropdownMenu(
                             expanded = filterMenuOpen,
                             onDismissRequest = { filterMenuOpen = false },
-                            modifier = Modifier.background(Palette.Zinc800),
+                            modifier = Modifier.background(viewerColors.menuBackground),
                         ) {
                             DropdownMenuItem(
                                 text = {
                                     Text(
                                         i18n.t("reports.fullMonth"),
-                                        color = if (filterWeek == null) Palette.Emerald500 else Palette.Zinc300,
+                                        color = if (filterWeek == null) {
+                                            viewerColors.primaryAccent
+                                        } else {
+                                            viewerColors.menuContent
+                                        },
                                     )
                                 },
                                 trailingIcon = {
@@ -711,7 +791,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                                         Icon(
                                             Icons.Filled.Check,
                                             contentDescription = null,
-                                            tint = Palette.Emerald500,
+                                            tint = viewerColors.primaryAccent,
                                             modifier = Modifier.size(16.dp),
                                         )
                                     }
@@ -724,7 +804,11 @@ fun ReportScreen(viewModel: MainViewModel) {
                                         Text(
                                             i18n.t("dashboard.calendarWeekShort", "week" to week) +
                                                 " (${weekLabel(week)})",
-                                            color = if (filterWeek == week) Palette.Emerald500 else Palette.Zinc300,
+                                            color = if (filterWeek == week) {
+                                                viewerColors.primaryAccent
+                                            } else {
+                                                viewerColors.menuContent
+                                            },
                                         )
                                     },
                                     trailingIcon = {
@@ -732,7 +816,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                                             Icon(
                                                 Icons.Filled.Check,
                                                 contentDescription = null,
-                                                tint = Palette.Emerald500,
+                                                tint = viewerColors.primaryAccent,
                                                 modifier = Modifier.size(16.dp),
                                             )
                                         }
@@ -751,7 +835,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(Palette.Zinc950),
+                    .background(viewerColors.viewerBackground),
             ) {
                 val baseWidth = maxWidth
                 val baseWidthPx = constraints.maxWidth.toFloat()
@@ -769,7 +853,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Palette.Zinc800.copy(alpha = 0.5f))
+                            .background(viewerColors.viewerSurface)
                             // Pinch-to-Zoom wie das Original: greift nur bei
                             // zwei Fingern ein, Ein-Finger-Scrollen bleibt frei.
                             // Die Scroll-Offsets folgen dem Finger-Mittelpunkt,
@@ -832,6 +916,10 @@ fun ReportScreen(viewModel: MainViewModel) {
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .aspectRatio(bitmap.width.toFloat() / bitmap.height)
+                                        .shadow(
+                                            if (colors.isMaterialYou) 5.dp else 0.dp,
+                                            RoundedCornerShape(4.dp),
+                                        )
                                         .clip(RoundedCornerShape(4.dp))
                                         .background(Color.White),
                                 )
@@ -846,8 +934,8 @@ fun ReportScreen(viewModel: MainViewModel) {
                         .align(Alignment.BottomStart)
                         .padding(start = 12.dp, bottom = 28.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Palette.Zinc900.copy(alpha = 0.85f))
-                        .border(1.dp, Palette.Zinc700, RoundedCornerShape(8.dp))
+                        .background(viewerColors.floatingBackground)
+                        .border(1.dp, viewerColors.floatingBorder, RoundedCornerShape(8.dp))
                         .padding(4.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -855,6 +943,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                     ZoomButton(
                         icon = Icons.Filled.Add,
                         enabled = userScale < ZOOM_MAX - 0.0001f,
+                        tint = viewerColors.floatingContent,
                     ) {
                         userScale = (userScale + ZOOM_STEP).coerceAtMost(ZOOM_MAX)
                         if (userScale > 1.05f) hiResPreview = true
@@ -870,13 +959,13 @@ fun ReportScreen(viewModel: MainViewModel) {
                             Icon(
                                 Icons.Filled.OpenInFull,
                                 contentDescription = null,
-                                tint = Palette.Zinc100,
+                                tint = viewerColors.floatingContent,
                                 modifier = Modifier.size(14.dp),
                             )
                         } else {
                             Text(
                                 text = "${(userScale * 100).toInt()}%",
-                                color = Palette.Zinc100,
+                                color = viewerColors.floatingContent,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
@@ -886,6 +975,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                     ZoomButton(
                         icon = Icons.Filled.Remove,
                         enabled = userScale > ZOOM_MIN + 0.0001f,
+                        tint = viewerColors.floatingContent,
                     ) { userScale = (userScale - ZOOM_STEP).coerceAtLeast(ZOOM_MIN) }
                 }
             }
@@ -896,10 +986,10 @@ fun ReportScreen(viewModel: MainViewModel) {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
-                .shadow(12.dp, CircleShape, spotColor = Palette.Emerald700)
+                .shadow(12.dp, CircleShape, spotColor = viewerColors.primaryAccent.copy(alpha = 0.55f))
                 .clip(CircleShape)
-                .background(Palette.Emerald500)
-                .border(2.dp, Palette.Emerald400.copy(alpha = 0.5f), CircleShape)
+                .background(viewerColors.primaryAccent)
+                .border(2.dp, viewerColors.onPrimary.copy(alpha = 0.28f), CircleShape)
                 .clickable { if (pdfBytes != null) exportDialogOpen = true }
                 .padding(horizontal = 20.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -908,12 +998,12 @@ fun ReportScreen(viewModel: MainViewModel) {
             Icon(
                 Icons.AutoMirrored.Filled.Send,
                 contentDescription = null,
-                tint = Color.White,
+                tint = viewerColors.onPrimary,
                 modifier = Modifier.size(20.dp),
             )
             Text(
                 i18n.t("reports.exportButton"),
-                color = Color.White,
+                color = viewerColors.onPrimary,
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
             )
@@ -1049,27 +1139,61 @@ private fun ExportOptionRow(
     primary: Boolean,
     onClick: () -> Unit,
 ) {
+    val colors = LocalAppColors.current
+    val materialYou = colors.isMaterialYou
     val styrianGreen = Color(0xFF08623B)
     val deepGreen = Color(0xFF06472D)
     val warmCream = Color(0xFFFFFCF3)
     val lightLeaf = Color(0xFFEAF5E9)
-    val background = if (primary) {
-        Brush.linearGradient(listOf(deepGreen, Color(0xFF0B8050)))
-    } else {
-        Brush.linearGradient(listOf(warmCream, lightLeaf))
+    val background = when {
+        materialYou && primary -> Brush.linearGradient(
+            listOf(colors.primaryAction, colors.accentStrong),
+        )
+        materialYou -> Brush.linearGradient(
+            listOf(colors.surfaceVariant, colors.surface),
+        )
+        primary -> Brush.linearGradient(listOf(deepGreen, Color(0xFF0B8050)))
+        else -> Brush.linearGradient(listOf(warmCream, lightLeaf))
     }
-    val titleColor = if (primary) Color.White else Color(0xFF153D2A)
-    val subtitleColor = if (primary) Color.White.copy(alpha = 0.82f) else Color(0xFF50685A)
-    val iconColor = if (primary) Color.White else styrianGreen
-    val iconBackground = if (primary) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.86f)
-    val outline = if (primary) Color.White.copy(alpha = 0.16f) else styrianGreen.copy(alpha = 0.48f)
+    val titleColor = when {
+        materialYou && primary -> colors.onPrimaryAction
+        materialYou -> colors.textPrimary
+        primary -> Color.White
+        else -> Color(0xFF153D2A)
+    }
+    val subtitleColor = when {
+        materialYou && primary -> colors.onPrimaryAction.copy(alpha = 0.82f)
+        materialYou -> colors.textMuted
+        primary -> Color.White.copy(alpha = 0.82f)
+        else -> Color(0xFF50685A)
+    }
+    val iconColor = when {
+        materialYou && primary -> colors.onPrimaryAction
+        materialYou -> colors.accent
+        primary -> Color.White
+        else -> styrianGreen
+    }
+    val iconBackground = when {
+        materialYou && primary -> colors.onPrimaryAction.copy(alpha = 0.15f)
+        materialYou -> colors.accent.copy(alpha = 0.12f)
+        primary -> Color.White.copy(alpha = 0.15f)
+        else -> Color.White.copy(alpha = 0.86f)
+    }
+    val outline = when {
+        materialYou && primary -> colors.onPrimaryAction.copy(alpha = 0.18f)
+        materialYou -> colors.border
+        primary -> Color.White.copy(alpha = 0.16f)
+        else -> styrianGreen.copy(alpha = 0.48f)
+    }
+    val shadowColor = if (materialYou) colors.accent.copy(alpha = 0.25f)
+        else deepGreen.copy(alpha = 0.25f)
     val shape = RoundedCornerShape(20.dp)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(94.dp)
-            .shadow(5.dp, shape, spotColor = deepGreen.copy(alpha = 0.25f))
+            .shadow(5.dp, shape, spotColor = shadowColor)
             .clip(shape)
             .background(background)
             .border(if (primary) 1.dp else 2.dp, outline, shape)
@@ -1099,21 +1223,31 @@ private fun ExportOptionRow(
             Text(title, color = titleColor, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
             Text(subtitle, color = subtitleColor, fontSize = 12.sp, lineHeight = 16.sp)
         }
-        StyrianRibbon(inverted = primary)
+        val ribbonTop = when {
+            materialYou && primary -> colors.onPrimaryAction.copy(alpha = 0.82f)
+            materialYou -> colors.accent
+            primary -> Color(0xFFB7E2C5)
+            else -> Color(0xFF087044)
+        }
+        val ribbonBottom = when {
+            materialYou && primary -> colors.onPrimaryAction.copy(alpha = 0.42f)
+            materialYou -> colors.special
+            else -> Color.White
+        }
+        ExportRibbon(topColor = ribbonTop, bottomColor = ribbonBottom)
     }
 }
 
 @Composable
-private fun StyrianRibbon(inverted: Boolean) {
-    val green = if (inverted) Color(0xFFB7E2C5) else Color(0xFF087044)
+private fun ExportRibbon(topColor: Color, bottomColor: Color) {
     Column(
         modifier = Modifier
             .width(7.dp)
             .height(48.dp)
             .clip(CircleShape),
     ) {
-        Box(Modifier.weight(1f).fillMaxWidth().background(green))
-        Box(Modifier.weight(1f).fillMaxWidth().background(Color.White))
+        Box(Modifier.weight(1f).fillMaxWidth().background(topColor))
+        Box(Modifier.weight(1f).fillMaxWidth().background(bottomColor))
     }
 }
 
@@ -1123,6 +1257,18 @@ private fun ShareHandoffAnimation(
     i18n: I18n,
     onFinished: () -> Unit,
 ) {
+    val colors = LocalAppColors.current
+    val materialYou = colors.isMaterialYou
+    val cardShadow = if (materialYou) colors.primaryAction.copy(alpha = 0.55f)
+        else Color(0xFF052F20)
+    val cardGradient = if (materialYou) {
+        Brush.verticalGradient(listOf(colors.primaryAction, colors.accentStrong))
+    } else {
+        Brush.verticalGradient(listOf(Color(0xFF0B8050), Color(0xFF06472D)))
+    }
+    val cardContent = if (materialYou) colors.onPrimaryAction else Color.White
+    val checkBackground = if (materialYou) colors.onPrimaryAction else Color.White
+    val checkTint = if (materialYou) colors.primaryAction else Color(0xFF087044)
     val checkScale = remember { Animatable(0.55f) }
     val particleProgress = remember { Animatable(0f) }
 
@@ -1160,14 +1306,10 @@ private fun ShareHandoffAnimation(
             Column(
                 modifier = Modifier
                     .padding(28.dp)
-                    .shadow(24.dp, RoundedCornerShape(32.dp), spotColor = Color(0xFF052F20))
+                    .shadow(24.dp, RoundedCornerShape(32.dp), spotColor = cardShadow)
                     .clip(RoundedCornerShape(32.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xFF0B8050), Color(0xFF06472D)),
-                        ),
-                    )
-                    .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(32.dp))
+                    .background(cardGradient)
+                    .border(1.dp, cardContent.copy(alpha = 0.2f), RoundedCornerShape(32.dp))
                     .padding(horizontal = 30.dp, vertical = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -1186,9 +1328,9 @@ private fun ShareHandoffAnimation(
                                 y = center.y + sin(angle) * distance,
                             )
                             val particleColor = when (index % 3) {
-                                0 -> Color.White
-                                1 -> Color(0xFFCDECD6)
-                                else -> Color(0xFFFFF2B8)
+                                0 -> cardContent
+                                1 -> if (materialYou) cardContent.copy(alpha = 0.78f) else Color(0xFFCDECD6)
+                                else -> if (materialYou) cardContent.copy(alpha = 0.56f) else Color(0xFFFFF2B8)
                             }
                             drawCircle(
                                 color = particleColor.copy(alpha = 1f - progress * 0.72f),
@@ -1203,26 +1345,26 @@ private fun ShareHandoffAnimation(
                             .scale(checkScale.value)
                             .shadow(10.dp, CircleShape)
                             .clip(CircleShape)
-                            .background(Color.White),
+                            .background(checkBackground),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             Icons.Filled.Check,
                             contentDescription = null,
-                            tint = Color(0xFF087044),
+                            tint = checkTint,
                             modifier = Modifier.size(46.dp),
                         )
                     }
                 }
                 Text(
                     text = i18n.t("reports.shareHandoff.title"),
-                    color = Color.White,
+                    color = cardContent,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 22.sp,
                 )
                 Text(
                     text = i18n.t("reports.shareHandoff.subtitle"),
-                    color = Color.White.copy(alpha = 0.82f),
+                    color = cardContent.copy(alpha = 0.82f),
                     fontSize = 13.sp,
                     lineHeight = 18.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -1305,6 +1447,7 @@ private const val ZOOM_STEP = 0.25f
 private fun ZoomButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     enabled: Boolean,
+    tint: Color,
     onClick: () -> Unit,
 ) {
     Box(
@@ -1317,7 +1460,7 @@ private fun ZoomButton(
         Icon(
             icon,
             contentDescription = null,
-            tint = Palette.Zinc100.copy(alpha = if (enabled) 1f else 0.3f),
+            tint = tint.copy(alpha = if (enabled) 1f else 0.3f),
             modifier = Modifier.size(16.dp),
         )
     }

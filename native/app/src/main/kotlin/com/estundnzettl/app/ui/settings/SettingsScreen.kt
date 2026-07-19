@@ -689,13 +689,14 @@ private fun DayDurationDialog(
     )
 }
 
-// ─── 4. Tätigkeiten ──────────────────────────────────────────
+// ─── 4. Tätigkeitscodes ─────────────────────────────────────
 
 @Composable
 private fun WorkCodesSection(viewModel: MainViewModel) {
     val state by viewModel.state.collectAsState()
     val colors = LocalAppColors.current
     val t = LocalI18n.current
+    val workCodesTint = if (colors.isMaterialYou) colors.accent else Palette.Blue500
     var managerOpen by remember { mutableStateOf(false) }
 
     if (managerOpen) {
@@ -723,21 +724,23 @@ private fun WorkCodesSection(viewModel: MainViewModel) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f),
             ) {
-                SectionIconBadge(Icons.Filled.Checklist, Palette.Blue500)
-                Column {
-                    Text(
-                        t.t("settings.workCodesCard.title"),
-                        color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp,
-                    )
-                    Text(t.t("settings.workCodesCard.subtitle"), color = colors.textMuted, fontSize = 12.sp)
-                }
+                SectionIconBadge(
+                    icon = Icons.Filled.Checklist,
+                    tint = workCodesTint,
+                )
+                Text(
+                    t.t("settings.workCodesCard.title"),
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                )
             }
             Text(
                 t.t("settings.workCodesCard.manageButton"),
-                color = Palette.Blue500, fontWeight = FontWeight.Bold, fontSize = 13.sp,
+                color = workCodesTint, fontWeight = FontWeight.Bold, fontSize = 13.sp,
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Palette.Blue500.copy(alpha = 0.12f))
+                    .background(workCodesTint.copy(alpha = 0.12f))
                     .clickable { managerOpen = true }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             )
@@ -766,6 +769,7 @@ private fun BackupSection(
             SectionIconBadge(
                 icon = if (backupNeedsAttention) Icons.Filled.Warning else Icons.Filled.Save,
                 tint = if (backupNeedsAttention) colors.negative else accent,
+                materialYouTint = if (backupNeedsAttention) colors.negative else colors.accent,
             )
         },
         defaultExpanded = false,
@@ -1256,7 +1260,12 @@ private fun AppearanceSection(viewModel: MainViewModel) {
     CollapsibleSettingsCard(
         title = t.t("settings.appearance.title"),
         subtitle = t.t("settings.appearance.subtitle"),
-        icon = { SectionIconBadge(Icons.Filled.ColorLens, Palette.Purple400) },
+        icon = {
+            SectionIconBadge(
+                icon = Icons.Filled.ColorLens,
+                tint = Palette.Purple400,
+            )
+        },
         defaultExpanded = false,
     ) {
         // Sprache
@@ -1310,7 +1319,7 @@ private fun AppearanceSection(viewModel: MainViewModel) {
         SettingsToggleRow(
             title = t.t("settings.materialYou.title"),
             checked = state.materialYouEnabled,
-            accent = Palette.Purple400,
+            accent = colors.accent,
             onToggle = { viewModel.setMaterialYou(it) },
         )
     }
@@ -1323,6 +1332,7 @@ private fun ExpertModeSection(viewModel: MainViewModel) {
     val state by viewModel.state.collectAsState()
     val colors = LocalAppColors.current
     val t = LocalI18n.current
+    val expertTint = if (colors.isMaterialYou) colors.special else Palette.Amber600
     val context = LocalContext.current
     val expertMode = state.userData?.expertMode == true
     var showRecalcWarning by remember { mutableStateOf(false) }
@@ -1367,20 +1377,25 @@ private fun ExpertModeSection(viewModel: MainViewModel) {
                 title = t.t("settings.expertMode.title"),
                 subtitle = if (expertMode) t.t("settings.expertMode.on") else t.t("settings.expertMode.off"),
                 checked = expertMode,
-                accent = Palette.Amber600,
-                icon = { SectionIconBadge(Icons.Filled.Build, Palette.Amber600) },
+                accent = expertTint,
+                icon = {
+                    SectionIconBadge(
+                        icon = Icons.Filled.Build,
+                        tint = expertTint,
+                    )
+                },
                 onToggle = { viewModel.setExpertMode(it) },
             )
             AnimatedVisibility(visible = expertMode) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         t.t("settings.expertMode.description"),
-                        color = Palette.Amber600, fontSize = 12.sp,
+                        color = expertTint, fontSize = 12.sp,
                     )
-                    ActionButton(label = t.t("settings.appInfo.recalc"), tint = Palette.Amber600) {
+                    ActionButton(label = t.t("settings.appInfo.recalc"), tint = expertTint) {
                         showRecalcWarning = true
                     }
-                    ActionButton(label = t.t("settings.appInfo.demoData"), tint = Palette.Amber600) {
+                    ActionButton(label = t.t("settings.appInfo.demoData"), tint = expertTint) {
                         showDemoWarning = true
                     }
                 }
@@ -1431,7 +1446,10 @@ private fun AppInfoSection(viewModel: MainViewModel) {
     com.estundnzettl.app.ui.AppCard {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                SectionIconBadge(Icons.Filled.Info, Palette.Blue500)
+                SectionIconBadge(
+                    icon = Icons.Filled.Info,
+                    tint = Palette.Blue500,
+                )
                 Text(t.t("settings.appInfo.sectionInfoTitle"), color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
             ActionButton(label = t.t("settings.appInfo.playStore"), tint = colors.accentStrong) {
@@ -1450,14 +1468,17 @@ private fun AppInfoSection(viewModel: MainViewModel) {
     com.estundnzettl.app.ui.AppCard {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                SectionIconBadge(Icons.Filled.Public, Palette.Purple500)
+                SectionIconBadge(
+                    icon = Icons.Filled.Public,
+                    tint = Palette.Purple500,
+                )
                 Text(t.t("settings.appInfo.sectionAboutTitle"), color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
             ActionButton(label = t.t("settings.appInfo.privacy"), tint = colors.textSecondary, outlined = true) {
                 openLink("https://d3rpapah0d3n.github.io/eStundnzettl/privacy.html")
             }
             ActionButton(label = t.t("settings.appInfo.website"), tint = colors.textSecondary, outlined = true) {
-                openLink("https://d3rpapah0d3n.github.io/eStundnzettl/")
+                openLink("https://kainer.co.at/projekte/estundnzettl/")
             }
             ActionButton(label = t.t("settings.appInfo.sourceCode"), tint = colors.textSecondary, outlined = true) {
                 openLink("https://github.com/D3rPaPaH0d3n/eStundnzettl")
@@ -1501,7 +1522,11 @@ private fun AppInfoSection(viewModel: MainViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SectionIconBadge(Icons.Filled.Warning, colors.danger)
+                SectionIconBadge(
+                    icon = Icons.Filled.Warning,
+                    tint = colors.danger,
+                    materialYouTint = colors.danger,
+                )
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(2.dp),

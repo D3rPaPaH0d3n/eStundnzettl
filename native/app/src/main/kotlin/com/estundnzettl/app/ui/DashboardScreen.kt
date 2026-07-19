@@ -639,14 +639,14 @@ private fun DayCard(
             ) {
                 Text(
                     date.dayOfWeek.getDisplayName(TextStyle.SHORT, javaLocale).take(2),
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = colors.dayStripContent.copy(alpha = 0.8f),
                     fontSize = 11.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
                     formatShortDate(date),
-                    color = Color.White,
+                    color = colors.dayStripContent,
                     fontSize = 13.sp,
                     lineHeight = 20.sp,
                     fontWeight = FontWeight.Bold,

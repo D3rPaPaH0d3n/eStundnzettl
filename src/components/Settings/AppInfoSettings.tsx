@@ -109,7 +109,7 @@ const AppInfoSettings: React.FC<Props> = ({
         </button>
 
         <button type="button"
-          onClick={() => openExternalLink("https://d3rpapah0d3n.github.io/eStundnzettl/")}
+          onClick={() => openExternalLink("https://kainer.co.at/projekte/estundnzettl/")}
           className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
         >
           <Globe size={18} /> {t("settings.appInfo.website")}

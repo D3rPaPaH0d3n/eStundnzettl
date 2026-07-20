@@ -116,6 +116,7 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.browser)
     implementation(libs.play.services.auth)
+    implementation(libs.play.review.ktx)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 

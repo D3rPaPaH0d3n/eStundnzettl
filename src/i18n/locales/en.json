@@ -770,6 +770,10 @@
     "appInfo": {
       "sectionInfoTitle": "App & information",
       "playStore": "Open in Play Store",
+      "recommend": "Recommend the app",
+      "recommendText": "I use eStundnzettl to track my work hours – free, ad-free and offline:",
+      "recommendChooser": "Recommend eStundnzettl",
+      "shareError": "Sharing isn't available on this device",
       "help": "Guide & Help",
       "changelog": "Changelog",
       "sectionAboutTitle": "About",

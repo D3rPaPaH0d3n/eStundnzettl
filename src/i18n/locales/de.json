@@ -770,6 +770,10 @@
     "appInfo": {
       "sectionInfoTitle": "App & Informationen",
       "playStore": "Im Play Store öffnen",
+      "recommend": "App empfehlen",
+      "recommendText": "Ich nutze eStundnzettl für meine Arbeitszeiten – kostenlos, werbefrei und offline:",
+      "recommendChooser": "eStundnzettl empfehlen",
+      "shareError": "Teilen ist auf diesem Gerät nicht verfügbar",
       "help": "Anleitung & Hilfe",
       "changelog": "Änderungsprotokoll",
       "sectionAboutTitle": "Über",

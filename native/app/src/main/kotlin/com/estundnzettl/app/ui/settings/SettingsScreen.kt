@@ -82,6 +82,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.estundnzettl.app.APP_PLAY_STORE_URL
+import com.estundnzettl.app.buildAppRecommendationText
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.ShareHandoffStore
 import com.estundnzettl.app.ShareTemplateRenderer
@@ -1441,6 +1443,24 @@ private fun AppInfoSection(viewModel: MainViewModel) {
             context.startActivity(android.content.Intent(android.content.Intent.ACTION_SENDTO, Uri.parse("mailto:$email")))
         }.onFailure { viewModel.showRawMessage(t.t("settings.appInfo.mailError")) }
     }
+    fun recommendApp() {
+        val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(android.content.Intent.EXTRA_SUBJECT, "eStundnzettl")
+            putExtra(
+                android.content.Intent.EXTRA_TEXT,
+                buildAppRecommendationText(t.t("settings.appInfo.recommendText")),
+            )
+        }
+        runCatching {
+            context.startActivity(
+                android.content.Intent.createChooser(
+                    sendIntent,
+                    t.t("settings.appInfo.recommendChooser"),
+                ),
+            )
+        }.onFailure { viewModel.showRawMessage(t.t("settings.appInfo.shareError")) }
+    }
 
     // App & Informationen — Port von AppInfoSettings.tsx
     com.estundnzettl.app.ui.AppCard {
@@ -1453,7 +1473,10 @@ private fun AppInfoSection(viewModel: MainViewModel) {
                 Text(t.t("settings.appInfo.sectionInfoTitle"), color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
             ActionButton(label = t.t("settings.appInfo.playStore"), tint = colors.accentStrong) {
-                openLink("https://play.google.com/store/apps/details?id=com.estundnzettl.app")
+                openLink(APP_PLAY_STORE_URL)
+            }
+            ActionButton(label = t.t("settings.appInfo.recommend"), tint = colors.positive) {
+                recommendApp()
             }
             ActionButton(label = t.t("settings.appInfo.help"), tint = colors.info) {
                 showHelp = true

@@ -122,4 +122,5 @@ App das Verzeichnis `native/` in Android Studio öffnen.
      in Formular + Arbeitszeitmodell
    - ✅ Feedback: Haptik an den Kernaktionen, Snackbars statt
      Standard-Toasts, einmalige Hinweis-Boxen (Report),
-     Einstellungen-Tour, Bewertungs-/Spenden-Hinweis nach 5 Tagen
+     Einstellungen-Tour, nativer Play-Bewertungsfluss nach echter Nutzung
+     und PDF-Export sowie getrennte Kaffee-Unterstützung in den Einstellungen

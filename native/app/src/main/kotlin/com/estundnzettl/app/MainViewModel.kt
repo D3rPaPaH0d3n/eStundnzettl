@@ -173,8 +173,8 @@ data class MainUiState(
     val attachmentEntry: Entry? = null,
     /** App-Tour sichtbar (einmalig nach dem Onboarding). */
     val showTour: Boolean = false,
-    /** Bewertungs-/Spenden-Hinweis (frühestens 5 Tage nach Erstnutzung). */
-    val showSupportPrompt: Boolean = false,
+    /** Einmaliges Signal für Googles unveränderten nativen In-App-Review-Dialog. */
+    val requestInAppReview: Boolean = false,
     /** Nextcloud-Verbindungszustand für Backup-/Archiv-UI. */
     val nextcloud: NextcloudUiState = NextcloudUiState(),
     /** Google-Drive-Verbindungszustand (Backup + PDF-Archiv getrennt). */
@@ -294,7 +294,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch {
                 kotlinx.coroutines.delay(3000)
                 autoPdfArchiveRun("startup")
-                maybeShowSupportPrompt()
+                maybeRequestInAppReview()
             }
             entriesRepo.observeAll().collect { entries ->
                 allEntries = entries
@@ -1003,6 +1003,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val KEY_NATIVE_WELCOME_SEEN = "estundnzettl_native_welcome_seen_v1"
         private const val KEY_CHANGELOG_VERSION_CODE = "last_seen_changelog_version_code"
         private const val KEY_CHANGELOG_VERSION_NAME = "last_seen_changelog_version_name"
+        private const val KEY_REVIEW_FIRST_ELIGIBLE = "estundnzettl_review_first_eligible_v2"
+        private const val KEY_REVIEW_REPORT_EXPORTED = "estundnzettl_review_report_exported_v2"
+        private const val KEY_REVIEW_LAST_REQUESTED = "estundnzettl_review_last_requested_v2"
+        private const val KEY_REVIEW_REQUEST_COUNT = "estundnzettl_review_request_count_v2"
+        private const val LEGACY_SUPPORT_FIRST_ELIGIBLE = "estundnzettl_support_prompt_first_eligible_v1"
         private const val ATTACHMENTS_DIR = "attachments"
         private const val MAX_ATTACHMENT_SIZE = 10L * 1024 * 1024
         private val ALLOWED_ATTACHMENT_TYPES = setOf(
@@ -1153,31 +1158,47 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { settings.setString(TOUR_SEEN_KEY, "1") }
     }
 
-    // ─── Support-Prompt (Port aus App.tsx) ───────────────────
+    // ─── Google Play In-App Review ───────────────────────────
 
-    private suspend fun maybeShowSupportPrompt() {
-        val dismissed = settings.getString("estundnzettl_support_prompt_dismissed_v1") == "true"
-        if (dismissed) return
-        if (_state.value.userData?.name.isNullOrBlank() || allEntries.isEmpty()) return
+    private suspend fun maybeRequestInAppReview() {
+        val hasProfile = !_state.value.userData?.name.isNullOrBlank()
+        if (!hasProfile || allEntries.size < ReviewPromptPolicy.MIN_ENTRY_COUNT) return
 
-        val key = "estundnzettl_support_prompt_first_eligible_v1"
         val now = System.currentTimeMillis()
-        val firstEligible = settings.getString(key)?.toLongOrNull() ?: 0L
-        if (firstEligible <= 0) {
-            settings.setString(key, now.toString())
+        val firstEligibleAt = settings.getString(KEY_REVIEW_FIRST_ELIGIBLE)?.toLongOrNull()
+            ?: settings.getString(LEGACY_SUPPORT_FIRST_ELIGIBLE)?.toLongOrNull()
+        if (firstEligibleAt == null) {
+            settings.setString(KEY_REVIEW_FIRST_ELIGIBLE, now.toString())
             return
         }
-        // Frühestens 5 Tage nach der ersten Eignung
-        if (now - firstEligible < 5L * 24 * 60 * 60 * 1000) return
-        if (!_state.value.onboarding.active) {
-            _state.value = _state.value.copy(showSupportPrompt = true)
+
+        val snapshot = ReviewPromptSnapshot(
+            hasProfile = hasProfile,
+            entryCount = allEntries.size,
+            reportExportedAt = settings.getString(KEY_REVIEW_REPORT_EXPORTED)?.toLongOrNull(),
+            firstEligibleAt = firstEligibleAt,
+            lastRequestedAt = settings.getString(KEY_REVIEW_LAST_REQUESTED)?.toLongOrNull(),
+            requestCount = settings.getString(KEY_REVIEW_REQUEST_COUNT)?.toIntOrNull() ?: 0,
+        )
+        if (ReviewPromptPolicy.shouldRequest(now, snapshot) && !_state.value.onboarding.active) {
+            _state.value = _state.value.copy(requestInAppReview = true)
         }
     }
 
-    fun dismissSupportPrompt() {
-        _state.value = _state.value.copy(showSupportPrompt = false)
+    fun onReportExported() {
         viewModelScope.launch {
-            settings.setString("estundnzettl_support_prompt_dismissed_v1", "true")
+            if (settings.getString(KEY_REVIEW_REPORT_EXPORTED).isNullOrBlank()) {
+                settings.setString(KEY_REVIEW_REPORT_EXPORTED, System.currentTimeMillis().toString())
+            }
+        }
+    }
+
+    fun markInAppReviewRequested() {
+        _state.value = _state.value.copy(requestInAppReview = false)
+        viewModelScope.launch {
+            val count = settings.getString(KEY_REVIEW_REQUEST_COUNT)?.toIntOrNull() ?: 0
+            settings.setString(KEY_REVIEW_REQUEST_COUNT, (count + 1).toString())
+            settings.setString(KEY_REVIEW_LAST_REQUESTED, System.currentTimeMillis().toString())
         }
     }
 

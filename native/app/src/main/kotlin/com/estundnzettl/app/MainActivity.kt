@@ -61,6 +61,7 @@ import com.estundnzettl.app.ui.settings.SettingsScreen
 import com.estundnzettl.app.ui.theme.EStundnzettlTheme
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
+import com.google.android.play.core.review.ReviewManagerFactory
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -219,6 +220,31 @@ class MainActivity : ComponentActivity() {
                 }
                 LaunchedEffect(Unit) { viewModel.onUiReady() }
 
+                // Google rendert diesen Dialog unverändert. Es gibt bewusst
+                // keine vorgeschaltete Zufriedenheitsfrage oder Spendenwerbung.
+                val reviewManager = remember { ReviewManagerFactory.create(this@MainActivity) }
+                LaunchedEffect(
+                    state.requestInAppReview,
+                    state.onboarding.active,
+                    state.showWhatsNew,
+                    state.showNativeWelcome,
+                    state.showTour,
+                    state.form.isLiveEntry,
+                ) {
+                    val canLaunchReview = state.requestInAppReview &&
+                        !state.onboarding.active &&
+                        !state.showWhatsNew &&
+                        !state.showNativeWelcome &&
+                        !state.showTour &&
+                        !state.form.isLiveEntry
+                    if (canLaunchReview) {
+                        viewModel.markInAppReviewRequested()
+                        reviewManager.requestReviewFlow().addOnSuccessListener { reviewInfo ->
+                            reviewManager.launchReviewFlow(this@MainActivity, reviewInfo)
+                        }
+                    }
+                }
+
                 // Google-Consent-Dialoge (AuthorizationClient-Resolution)
                 val googleAuthLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartIntentSenderForResult(),
@@ -236,11 +262,6 @@ class MainActivity : ComponentActivity() {
                         com.estundnzettl.app.ui.onboarding.OnboardingScreen(viewModel)
                     } else {
                         MainScreen(viewModel)
-                    }
-
-                    // Bewertungs-/Spenden-Hinweis (einmalig, 5 Tage nach Erstnutzung)
-                    if (state.showSupportPrompt && !state.onboarding.active && !state.showWhatsNew) {
-                        com.estundnzettl.app.ui.SupportPromptDialog(viewModel)
                     }
 
                     androidx.compose.material3.SnackbarHost(
@@ -630,7 +651,7 @@ private fun MainScreen(viewModel: MainViewModel) {
             !state.loading &&
             !state.showNativeWelcome &&
             !state.showTour &&
-            !state.showSupportPrompt &&
+            !state.requestInAppReview &&
             !state.form.isLiveEntry
         ) {
             com.estundnzettl.app.ui.ChangelogSheet(

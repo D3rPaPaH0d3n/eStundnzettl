@@ -1,7 +1,5 @@
 package com.estundnzettl.app.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,13 +25,11 @@ import androidx.compose.material.icons.outlined.Palette as OutlinedPaletteIcon
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Work
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,7 +42,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -163,46 +158,6 @@ fun FirstOpenHint(
             }
         }
     }
-}
-
-/**
- * "Gefällt dir eStundnzettl?" — Port von SupportPromptModal.tsx.
- * Erscheint frühestens 5 Tage nach der ersten Nutzung, einmalig.
- */
-@Composable
-fun SupportPromptDialog(viewModel: MainViewModel) {
-    val colors = LocalAppColors.current
-    val t = LocalI18n.current
-    val context = LocalContext.current
-
-    fun open(url: String) {
-        try {
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-        } catch (_: Exception) {
-        }
-        viewModel.dismissSupportPrompt()
-    }
-
-    AlertDialog(
-        onDismissRequest = { viewModel.dismissSupportPrompt() },
-        title = { Text(t.t("supportPrompt.title")) },
-        text = { Text(t.t("supportPrompt.body")) },
-        confirmButton = {
-            Row {
-                TextButton(onClick = { open("https://play.google.com/store/apps/details?id=com.estundnzettl.app") }) {
-                    Text(t.t("supportPrompt.rate"), color = colors.accent, fontWeight = FontWeight.Bold)
-                }
-                TextButton(onClick = { open("https://revolut.me/mkainer/pocket/QAt1Q0Ntsb") }) {
-                    Text("☕ " + t.t("supportPrompt.coffee"), color = colors.special, fontWeight = FontWeight.Bold)
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { viewModel.dismissSupportPrompt() }) {
-                Text(t.t("supportPrompt.noThanks"), color = colors.textMuted)
-            }
-        },
-    )
 }
 
 /** Farbtöne der Tour-Icon-Boxen (Port der colorClasses aus den Tour-Popups). */

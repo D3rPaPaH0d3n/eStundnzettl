@@ -448,6 +448,7 @@ fun ReportScreen(viewModel: MainViewModel) {
         if (uri != null && bytes != null) {
             try {
                 context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                viewModel.onReportExported()
                 viewModel.showRawMessage(("📂 " + i18n.t("reports.toast.saved")))
             } catch (e: Exception) {
                 viewModel.showRawMessage((i18n.t("reports.toast.error", "message" to (e.message ?: ""))))
@@ -515,6 +516,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                 intent.component = preferredComponent
                 try {
                     context.startActivity(intent)
+                    viewModel.onReportExported()
                     ShareHandoffStore.markChosen(
                         context,
                         selectedComponent = preferredComponent,
@@ -556,6 +558,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                 callback.intentSender,
             )
             context.startActivity(chooser)
+            viewModel.onReportExported()
         } catch (e: Exception) {
             viewModel.showRawMessage((i18n.t("reports.toast.error", "message" to (e.message ?: ""))))
         }

@@ -1,0 +1,7 @@
+Smoother in everyday use ✨
+
+• Activity codes now open in a clear popup right at the selected code
+• Saturdays and Sundays are easy to spot in the calendar
+• PDF display options now use a polished, scrollable dialog
+• Input fields stay visible above the keyboard
+• Long activity lists can be scrolled completely

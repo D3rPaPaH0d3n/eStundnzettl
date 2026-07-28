@@ -1,5 +1,31 @@
 [
  {
+  "version": "5.0.1",
+  "date": "2026-07-28",
+  "title": "Small details, noticeably smoother ✨",
+  "isMajor": false,
+  "playStoreText": "Smoother in everyday use ✨\n\n• Activity codes now open in a clear popup right at the selected code\n• Saturdays and Sundays are easy to spot in the calendar\n• PDF display options now use a polished, scrollable dialog\n• Input fields stay visible above the keyboard\n• Long activity lists can be scrolled completely",
+  "sections": [
+   {
+    "iconName": "Sparkles",
+    "title": "Popups instead of sliding panels",
+    "items": [
+     "Activity codes now open in a clear, scrollable popup. The list jumps straight to the currently selected code.",
+     "PDF display options now use a polished, compact dialog instead of a sliding panel, while every switch still updates the preview live.",
+     "Saturdays are shown in blue and Sundays in red in the calendar. The selected date remains clearly highlighted."
+    ]
+   },
+   {
+    "iconName": "Keyboard",
+    "title": "The keyboard stays out of the way",
+    "items": [
+     "Forms, onboarding, and full-screen dialogs now account for the on-screen keyboard.",
+     "The active input remains visible, and scrollable content stays fully reachable while the keyboard is open."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.0.0",
   "date": "17.07.2026",
   "title": "Rebuilt from the ground up — truly native 🚀",

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -69,7 +70,7 @@ fun AppFullScreenDialog(
             contentColor = colors.textPrimary,
             modifier = modifier.fillMaxSize(),
         ) {
-            Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+            Column(modifier = Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {
                 OverlayHeader(title = title, subtitle = subtitle, onDismiss = onDismiss)
                 HorizontalDivider(color = colors.borderSubtle)
                 Box(modifier = Modifier.fillMaxWidth().weight(1f), content = content)

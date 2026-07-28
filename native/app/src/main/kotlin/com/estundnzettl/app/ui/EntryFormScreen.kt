@@ -11,12 +11,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -27,17 +31,13 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,16 +62,14 @@ import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.UserData
 import com.estundnzettl.core.model.WorkCode
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 import java.time.format.TextStyle
 import java.util.Locale as JavaLocale
 
 /**
  * Eintragsformular — Port von EntryForm.tsx: Typ-Auswahl (Arbeit, Fahrt,
  * Krank, Urlaub, ZA), Datum mit Tages-Steppern, Material-Zeit-Picker,
- * Pause, Tätigkeitscode-Auswahl (Bottom Sheet), Projekt mit Vorschlägen.
+ * Pause, Tätigkeitscode-Auswahl (Dialog), Projekt mit Vorschlägen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,7 +101,7 @@ fun EntryFormScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     var activeTimeField by remember { mutableStateOf<String?>(null) }
     var showPausePicker by remember { mutableStateOf(false) }
-    var showCodeSheet by remember { mutableStateOf(false) }
+    var showCodeDialog by remember { mutableStateOf(false) }
     var quickAddOpen by remember { mutableStateOf(false) }
     var quickAddValue by remember { mutableStateOf("") }
     var showSuggestions by remember { mutableStateOf(false) }
@@ -117,26 +115,15 @@ fun EntryFormScreen(
     // ─── Picker-Dialoge ──────────────────────────────────────
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = formDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+        WeekendDatePickerDialog(
+            initialDate = formDate,
+            locale = javaLocale,
+            onConfirm = { date ->
+                onDateChanged(date.toDateString())
+                showDatePicker = false
+            },
+            onDismiss = { showDatePicker = false },
         )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                        onDateChanged(date.toDateString())
-                    }
-                    showDatePicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text(t.t("common.cancel")) }
-            },
-        ) {
-            DatePicker(state = datePickerState)
-        }
     }
 
     activeTimeField?.let { field ->
@@ -171,37 +158,73 @@ fun EntryFormScreen(
         )
     }
 
-    if (showCodeSheet) {
-        val sheetState = rememberModalBottomSheetState()
-        ModalBottomSheet(
-            onDismissRequest = { showCodeSheet = false },
-            sheetState = sheetState,
-        ) {
-            Column(modifier = Modifier.padding(bottom = 24.dp)) {
+    if (showCodeDialog) {
+        val selectableCodes = workCodes.filter {
+            it.id != WorkCodes.ARRIVAL && it.id != WorkCodes.DRIVE
+        }
+        val selectedIndex = selectableCodes.indexOfFirst { it.id == form.code }
+            .coerceAtLeast(0)
+        val listState = rememberLazyListState(
+            initialFirstVisibleItemIndex = selectedIndex,
+        )
+
+        AlertDialog(
+            onDismissRequest = { showCodeDialog = false },
+            title = {
                 Text(
                     t.t("entryForm.selectActivity"),
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )
-                workCodes
-                    .filter { it.id != WorkCodes.ARRIVAL && it.id != WorkCodes.DRIVE }
-                    .forEach { code ->
-                        Text(
-                            text = code.label,
-                            color = if (code.id == form.code) colors.accent else colors.textPrimary,
-                            fontWeight = if (code.id == form.code) FontWeight.Bold else FontWeight.Normal,
+            },
+            text = {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp),
+                ) {
+                    items(selectableCodes, key = { it.id }) { code ->
+                        val selected = code.id == form.code
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (selected) colors.accent.copy(alpha = 0.12f)
+                                    else Color.Transparent,
+                                )
                                 .clickable {
                                     onUpdateForm { it.copy(code = code.id) }
-                                    showCodeSheet = false
+                                    showCodeDialog = false
                                 }
-                                .padding(horizontal = 20.dp, vertical = 14.dp),
-                        )
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = selected,
+                                onClick = {
+                                    onUpdateForm { it.copy(code = code.id) }
+                                    showCodeDialog = false
+                                },
+                            )
+                            Text(
+                                text = code.label,
+                                color = if (selected) colors.accent else colors.textPrimary,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(vertical = 10.dp),
+                            )
+                        }
                     }
-            }
-        }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCodeDialog = false }) {
+                    Text(t.t("common.close"))
+                }
+            },
+        )
     }
 
     // ─── Formular ────────────────────────────────────────────
@@ -515,7 +538,7 @@ fun EntryFormScreen(
                                 value = currentCodeLabel,
                                 icon = { Icon(Icons.AutoMirrored.Filled.List, null, tint = colors.textFaint, modifier = Modifier.size(18.dp)) },
                                 centered = false,
-                            ) { showCodeSheet = true }
+                            ) { showCodeDialog = true }
                         }
                     }
 

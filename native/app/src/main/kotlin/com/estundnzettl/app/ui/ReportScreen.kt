@@ -37,10 +37,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -1012,24 +1014,13 @@ fun ReportScreen(viewModel: MainViewModel) {
             )
         }
 
-        // ── PDF-Einstellungen als Seitenleiste von rechts (Port des
-        //    Layout-Panels aus PrintReport.tsx, nur Hausmasta-Modus) ──
+        // ── PDF-Einstellungen als kompakter Material-Dialog
+        //    (nur Hausmasta-/Expertenmodus) ────────────────────────
         if (layoutPanelOpen && layoutTogglesAvailable) {
-            AppSelectionSheet(
-                title = i18n.t("reports.layoutPanel.title"),
-                subtitle = i18n.t("reports.layoutPanel.subtitle"),
-                icon = Icons.Filled.Tune,
+            PdfLayoutDialog(
+                viewModel = viewModel,
                 onDismiss = { layoutPanelOpen = false },
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .padding(12.dp),
-                ) {
-                    PdfDisplayToggles(viewModel = viewModel, showHeader = false)
-                }
-            }
+            )
         }
 
         ShareHandoffAnimation(
@@ -1037,6 +1028,119 @@ fun ReportScreen(viewModel: MainViewModel) {
             i18n = i18n,
             onFinished = { shareHandoffVisible = false },
         )
+    }
+}
+
+// ─── PDF-Anzeige-Dialog ─────────────────────────────────────────────
+
+@Composable
+private fun PdfLayoutDialog(
+    viewModel: MainViewModel,
+    onDismiss: () -> Unit,
+) {
+    val colors = LocalAppColors.current
+    val i18n = LocalI18n.current
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 560.dp)
+                .heightIn(max = 720.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = colors.surface,
+            contentColor = colors.textPrimary,
+            tonalElevation = 8.dp,
+            shadowElevation = 24.dp,
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    colors.accent.copy(alpha = 0.16f),
+                                    colors.info.copy(alpha = 0.08f),
+                                    Color.Transparent,
+                                ),
+                            ),
+                        )
+                        .padding(start = 20.dp, end = 12.dp, top = 18.dp, bottom = 18.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(15.dp))
+                            .background(colors.accent.copy(alpha = 0.16f))
+                            .border(
+                                1.dp,
+                                colors.accent.copy(alpha = 0.34f),
+                                RoundedCornerShape(15.dp),
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Filled.Tune,
+                            contentDescription = null,
+                            tint = colors.accent,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
+                        Text(
+                            i18n.t("reports.layoutPanel.title"),
+                            color = colors.textPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 20.sp,
+                        )
+                        Text(
+                            i18n.t("reports.layoutPanel.subtitle"),
+                            color = colors.textMuted,
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = i18n.t("common.close"),
+                            tint = colors.textMuted,
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = colors.borderSubtle)
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 18.dp),
+                ) {
+                    PdfDisplayToggles(viewModel = viewModel, showHeader = false)
+                }
+
+                HorizontalDivider(color = colors.borderSubtle)
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                ) {
+                    Text(
+                        i18n.t("common.close"),
+                        color = colors.accent,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
     }
 }
 

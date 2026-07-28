@@ -1,0 +1,9 @@
+Noch gschmeidiger im Alltag ✨
+
+• Tätigkeitscodes jetzt im übersichtlichen Popup – direkt beim gewählten Code
+• Samstage und Sonntage im Kalender farblich erkennbar
+• PDF-Anzeigeoptionen als schicker, scrollbarer Dialog
+• Eingabefelder bleiben über der Tastatur sichtbar
+• Lange Tätigkeitslisten lassen sich vollständig scrollen
+
+Kleine Details, spürbar angenehmer.

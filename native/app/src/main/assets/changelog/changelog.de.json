@@ -1,5 +1,31 @@
 [
  {
+  "version": "5.0.1",
+  "date": "28.07.2026",
+  "title": "Kleine Details, spürbar gschmeidiger ✨",
+  "isMajor": false,
+  "playStoreText": "Noch gschmeidiger im Alltag ✨\n\n• Tätigkeitscodes jetzt im übersichtlichen Popup – direkt beim gewählten Code\n• Samstage und Sonntage im Kalender farblich erkennbar\n• PDF-Anzeigeoptionen als schicker, scrollbarer Dialog\n• Eingabefelder bleiben über der Tastatur sichtbar\n• Lange Tätigkeitslisten lassen sich vollständig scrollen",
+  "sections": [
+   {
+    "iconName": "Sparkles",
+    "title": "Popups statt Schubladen",
+    "items": [
+     "Die Tätigkeitscodes öffnen jetzt in einem übersichtlichen, scrollbaren Popup. Beim Öffnen springt die Liste direkt zum aktuell ausgewählten Code.",
+     "Auch die PDF-Anzeigeoptionen kommen jetzt in einem schicken, kompakten Dialog statt in einer ausfahrenden Seitenleiste — alle Schalter bleiben live wirksam.",
+     "Im Kalender sind Samstage blau und Sonntage rot beschriftet. Der ausgewählte Tag bleibt wie gewohnt klar hervorgehoben."
+    ]
+   },
+   {
+    "iconName": "Keyboard",
+    "title": "Die Tastatur bleibt aus dem Weg",
+    "items": [
+     "Formulare, der Einrichtungsassistent und Vollbild-Dialoge berücksichtigen jetzt die Bildschirmtastatur.",
+     "Das aktive Eingabefeld bleibt sichtbar und scrollbare Inhalte lassen sich auch bei geöffneter Tastatur vollständig erreichen."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.0.0",
   "date": "17.07.2026",
   "title": "Komplett neu gebaut — jetzt echt nativ 🚀",

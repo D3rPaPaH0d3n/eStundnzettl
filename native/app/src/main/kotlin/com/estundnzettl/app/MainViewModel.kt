@@ -18,7 +18,9 @@ import com.estundnzettl.core.calc.SaveEntryResult
 import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.deriveAppData
 import com.estundnzettl.core.calc.getDefaultTimesForDate
+import com.estundnzettl.core.calc.latestEligibleWorkEntry
 import com.estundnzettl.core.calc.prepareEntryToSave
+import com.estundnzettl.core.calc.resolveDefaultWorkCode
 import com.estundnzettl.core.config.toJson
 import com.estundnzettl.core.locale.AppLocale
 import com.estundnzettl.core.locale.getLocale
@@ -55,6 +57,24 @@ private const val GOOGLE_DRIVE_TAG = "GoogleDriveFlow"
 internal fun autoCheckoutDays(startDate: LocalDate, today: LocalDate): Int =
     ChronoUnit.DAYS.between(startDate, today).toInt().coerceAtLeast(1)
 
+internal fun shouldResolveAutomaticWorkCode(form: FormUiState): Boolean =
+    form.entryType == "work" && form.code != WorkCodes.ARRIVAL &&
+        form.code != WorkCodes.DRIVE && form.codeIsAutomatic
+
+/** Immediate repository snapshot update while Room's observable query catches up. */
+internal fun withUpsertedEntry(entries: List<Entry>, saved: Entry): List<Entry> {
+    var replaced = false
+    val updated = entries.map { entry ->
+        if (entry.id == saved.id) {
+            replaced = true
+            saved
+        } else {
+            entry
+        }
+    }
+    return if (replaced) updated else listOf(saved) + updated
+}
+
 internal enum class WhatsNewDecision { SHOW, MARK_CURRENT, NONE }
 
 internal class AttachmentValidationException(val translationKey: String) : Exception()
@@ -81,6 +101,8 @@ data class FormUiState(
     val pauseDuration: Int = 30,
     val project: String = "",
     val code: Int = 1,
+    /** True until the user explicitly chooses a code in this form. */
+    val codeIsAutomatic: Boolean = true,
     val editingEntry: Entry? = null,
     val isLiveEntry: Boolean = false,
     val specialManualMode: Boolean = false,
@@ -253,6 +275,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val messages: SharedFlow<UiMessage> = _messages.asSharedFlow()
 
     private var allEntries: List<Entry> = emptyList()
+    private var persistedLastCode: Int? = null
 
     init {
         viewModelScope.launch {
@@ -277,6 +300,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             loadSettings()
+            // Timer-/Formular-Defaults brauchen Historie bereits vor dem Flow-Collect.
+            allEntries = entriesRepo.getAll()
             reconcileMigratedGoogleAuthorization()
             restoreTimer()
             // Onboarding zeigen, wenn noch kein Profil existiert (leerer
@@ -316,6 +341,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             ?: I18n.resolveSystemLanguage(JavaLocale.getDefault().language)
         val codes = workCodesRepo.getAll()
         val materialYou = settings.getBoolean("material_you_enabled")
+        persistedLastCode = settings.getInt("last_code")
         _state.value = _state.value.copy(
             userData = userData,
             locale = locale,
@@ -415,10 +441,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _state.value = _state.value.copy(form = transform(_state.value.form))
     }
 
-    private fun defaultCode(): Int {
-        val codes = _state.value.workCodes
-        return if (codes.isNotEmpty()) codes[0].id else 1
-    }
+    private fun defaultCode(date: String = LocalDate.now().toDateString()): Int =
+        resolveDefaultWorkCode(
+            entries = allEntries,
+            targetDate = runCatching { LocalDate.parse(date) }.getOrDefault(LocalDate.now()),
+            configuredCodes = _state.value.workCodes,
+            persistedLastCode = persistedLastCode,
+        )
+
+    private fun contextualLastEntry(date: String): Entry? =
+        latestEligibleWorkEntry(
+            entries = allEntries,
+            targetDate = runCatching { LocalDate.parse(date) }.getOrDefault(LocalDate.now()),
+            configuredCodes = _state.value.workCodes,
+        )
 
     /** Port von startNewEntry (useEntryActions). */
     fun startNewEntry() {
@@ -432,7 +468,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 endTime = end,
                 pauseDuration = 30,
                 project = "",
-                code = defaultCode(),
+                code = defaultCode(formDate),
+                codeIsAutomatic = true,
             ),
             view = "add",
         )
@@ -450,7 +487,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             formDate = entry.date,
             editingEntry = entry,
             specialManualMode = specialManual,
-            code = entry.code ?: defaultCode(),
+            code = entry.code ?: defaultCode(entry.date),
+            codeIsAutomatic = false,
         )
         form = when {
             entry.type == EntryType.WORK -> form.copy(
@@ -475,12 +513,48 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val s = _state.value
         var form = s.form.copy(formDate = date)
         val isWorkLike = form.entryType == "work" || form.entryType == "drive"
-        if (form.editingEntry == null && !form.isLiveEntry && isWorkLike) {
-            val (start, end) = getDefaultTimesForDate(allEntries, date)
-            form = form.copy(startTime = start, endTime = end)
+        if (form.editingEntry == null) {
+            if (!form.isLiveEntry && isWorkLike) {
+                val (start, end) = getDefaultTimesForDate(allEntries, date)
+                form = form.copy(startTime = start, endTime = end)
+            }
+            if (shouldResolveAutomaticWorkCode(form)) {
+                form = form.copy(code = defaultCode(date))
+            }
         }
         _state.value = s.copy(form = form)
     }
+
+    fun selectWorkType() {
+        val form = _state.value.form
+        updateForm {
+            it.copy(
+                entryType = "work",
+                code = defaultCode(form.formDate),
+                codeIsAutomatic = true,
+            )
+        }
+    }
+
+    fun selectWorkCode(code: Int) {
+        updateForm { it.copy(code = code, codeIsAutomatic = false) }
+    }
+
+    fun applyContextualLastEntry() {
+        val last = contextualLastEntry(_state.value.form.formDate) ?: return
+        updateForm {
+            it.copy(
+                startTime = last.start ?: "06:00",
+                endTime = last.end ?: "16:30",
+                pauseDuration = last.pause,
+                project = last.project ?: "",
+                code = last.code ?: it.code,
+                codeIsAutomatic = false,
+            )
+        }
+    }
+
+    fun hasContextualLastEntry(): Boolean = contextualLastEntry(_state.value.form.formDate) != null
 
     /** Port von handleSaveEntry — Validierung/Ableitung liegt im Core. */
     fun saveEntry() {
@@ -517,9 +591,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     emit(UiMessage(if (editing) "toasts.entry.updateFailed" else "toasts.entry.saveFailed"))
                     return@launch
                 }
+                // Do not wait for Room's Flow: immediate reopen must see the
+                // entry just saved when resolving activity/project defaults.
+                allEntries = withUpsertedEntry(allEntries, result.entry)
                 result.lastCodeToSave?.let { code ->
+                    persistedLastCode = code
                     runCatching { settings.setRaw("last_code", JsonPrimitive(code)) }
                 }
+                recompute()
                 emit(UiMessage(if (editing) "toasts.entry.updated" else "toasts.entry.saved"))
                 _state.value = _state.value.copy(
                     form = _state.value.form.copy(
@@ -590,7 +669,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         endTime = "23:59",
                         pauseDuration = pauseMinutes,
                         project = "",
-                        code = defaultCode(),
+                        code = defaultCode(start.toLocalDate().toDateString()),
+                        codeIsAutomatic = true,
                         isLiveEntry = true,
                     ),
                     view = "add",
@@ -675,7 +755,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 endTime = "%02d:%02d".format(end.hour, end.minute),
                 pauseDuration = pauseMinutes,
                 project = "",
-                code = defaultCode(),
+                code = defaultCode(start.toLocalDate().toDateString()),
+                codeIsAutomatic = true,
                 isLiveEntry = true,
             ),
             view = "add",
@@ -993,6 +1074,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // die Hauptdatei checkpointen — nicht nur im WAL lassen
         db.checkpoint()
         loadSettings()
+        allEntries = entriesRepo.getAll()
         recompute()
         refreshAttachments()
     }

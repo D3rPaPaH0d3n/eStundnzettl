@@ -179,4 +179,22 @@ class AppDataTest {
         assertEquals(1, data.entriesWithHolidays.size)
         assertEquals("2024-01-01", data.entriesWithHolidays[0].date)
     }
+
+    @Test
+    fun `project metadata uses all entries while stats stay in viewed month`() {
+        val january = listOf(work("2024-01-02", 510, 1, project = "Altprojekt"))
+        val february = listOf(work("2024-02-02", 510, 2, project = "Neu"))
+        val data = deriveAppData(
+            entries = february,
+            userData = noWorkDays,
+            viewYear = 2024,
+            viewMonth1Based = 2,
+            allEntries = january + february,
+            today = LocalDate.of(2024, 2, 2),
+            locale = austriaLocale,
+        )
+
+        assertEquals(listOf("Neu", "Altprojekt"), data.uniqueProjects)
+        assertEquals(510, data.entriesWithHolidays.filter { it.type == EntryType.WORK }.sumOf { it.netDuration })
+    }
 }

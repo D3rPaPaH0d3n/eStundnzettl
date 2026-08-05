@@ -77,6 +77,10 @@ class SettingsRepository(private val dao: SettingsDao) {
 
     suspend fun setBoolean(key: String, value: Boolean) = setRaw(key, JsonPrimitive(value))
 
+    /** Accepts both JSON numbers and legacy numeric JSON strings. */
+    suspend fun getInt(key: String): Int? =
+        (getRaw(key) as? JsonPrimitive)?.content?.trim()?.toIntOrNull()
+
     suspend fun getUserData(): UserData? = decodeUserData(getRaw(Keys.USER))
 
     suspend fun setUserData(user: UserData) = setRaw(Keys.USER, user.toJson())

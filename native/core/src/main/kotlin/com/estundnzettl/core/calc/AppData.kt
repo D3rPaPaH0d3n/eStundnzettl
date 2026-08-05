@@ -196,21 +196,12 @@ fun deriveAppData(
         stats.totalIst.toDouble() / (if (stats.totalTarget != 0) stats.totalTarget else 1) * 100.0,
     )
 
-    // Letzter Work-Eintrag: String-Vergleich über "date|id" wie in der TS-App
-    var lastWorkEntry: Entry? = null
-    for (entry in entries) {
-        if (entry.type != EntryType.WORK) continue
-        val latest = lastWorkEntry
-        if (latest == null || "${entry.date}|${entry.id}" > "${latest.date}|${latest.id}") {
-            lastWorkEntry = entry
-        }
-    }
-
-    val uniqueProjects = entries
-        .filter { it.type == EntryType.WORK && !it.project.isNullOrBlank() }
-        .map { it.project!!.trim() }
-        .distinct()
-        .sorted()
+    // Metadaten sind global; Dashboard-Statistiken bleiben monatsbezogen.
+    val metadataEntries = allEntries ?: entries
+    val lastWorkEntry = metadataEntries
+        .filter { it.type == EntryType.WORK }
+        .maxByOrNull { "${it.date}|${it.start.orEmpty()}|${it.end.orEmpty()}|${it.id}" }
+    val uniqueProjects = recentProjects(metadataEntries)
 
     return AppData(
         entriesWithHolidays = entriesWithHolidays,

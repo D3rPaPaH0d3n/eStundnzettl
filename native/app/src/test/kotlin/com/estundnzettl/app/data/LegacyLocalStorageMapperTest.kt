@@ -21,6 +21,7 @@ class LegacyLocalStorageMapperTest {
             "estundnzettl_live_timer" to
                 """{"isRunning":true,"isPaused":false,"startTime":"2026-07-18T08:00:00Z","pauseStartTime":null,"accumulatedPause":0}""",
             "estundnzettl_backup_fail_count" to "2",
+            "estundnzettl_last_code" to "7",
             "google_auth_state" to
                 """{"nativeConnected":true,"accountEmail":"backup@example.com"}""",
             "google_auth_state_pdf" to
@@ -37,12 +38,14 @@ class LegacyLocalStorageMapperTest {
         )
 
         assertEquals(42L, result.entries.single().id)
+        assertEquals("Lift", result.entries.single().project)
         assertEquals(42L, result.attachments.single().entryId)
         assertEquals("Montage", result.workCodes.single().label)
         assertEquals(listOf("Foto", "Rechnung"), result.labels.map { it.label })
         val settings = result.settings.associate { it.key to it.value }
         assertEquals("\"de\"", settings["language"])
         assertEquals("\"2\"", settings["backup_fail_count"])
+        assertEquals("7", settings["last_code"])
         assertEquals("\"backup@example.com\"", settings[GoogleDriveManager.KEY_ACCOUNT_EMAIL])
         assertEquals("\"pdf@example.com\"", settings[GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL])
         assertFalse(settings["live_timer"].isNullOrEmpty())

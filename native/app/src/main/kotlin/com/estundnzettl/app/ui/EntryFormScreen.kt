@@ -45,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -58,7 +59,6 @@ import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.isOvernightShift
 import com.estundnzettl.core.locale.holidays.toDateString
-import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.UserData
 import com.estundnzettl.core.model.WorkCode
@@ -78,9 +78,12 @@ fun EntryFormScreen(
     userData: UserData?,
     workCodes: List<WorkCode>,
     uniqueProjects: List<String>,
-    lastWorkEntry: Entry?,
+    hasLastWorkEntry: Boolean,
     language: String,
     onUpdateForm: ((FormUiState) -> FormUiState) -> Unit,
+    onSelectWorkType: () -> Unit,
+    onSelectWorkCode: (Int) -> Unit,
+    onUseLastEntry: () -> Unit,
     onDateChanged: (String) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
@@ -106,7 +109,6 @@ fun EntryFormScreen(
     var quickAddValue by remember { mutableStateOf("") }
     var showSuggestions by remember { mutableStateOf(false) }
 
-    val defaultCode = if (workCodes.isNotEmpty()) workCodes[0].id else 1
     val currentCodeLabel = workCodes.firstOrNull { it.id == form.code }?.label
         ?: t.t("entryForm.codePlaceholder")
 
@@ -194,7 +196,7 @@ fun EntryFormScreen(
                                     else Color.Transparent,
                                 )
                                 .clickable {
-                                    onUpdateForm { it.copy(code = code.id) }
+                                    onSelectWorkCode(code.id)
                                     showCodeDialog = false
                                 }
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -203,7 +205,7 @@ fun EntryFormScreen(
                             RadioButton(
                                 selected = selected,
                                 onClick = {
-                                    onUpdateForm { it.copy(code = code.id) }
+                                    onSelectWorkCode(code.id)
                                     showCodeDialog = false
                                 },
                             )
@@ -269,7 +271,7 @@ fun EntryFormScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     FieldLabel(t.t("entryForm.entryTypeLabel"))
-                    if (form.entryType == "work" && !isArrival && lastWorkEntry != null) {
+                    if (form.entryType == "work" && !isArrival && hasLastWorkEntry) {
                         Text(
                             text = "✨ " + t.t("entryForm.asLast"),
                             color = colors.accent,
@@ -278,17 +280,7 @@ fun EntryFormScreen(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(colors.accent.copy(alpha = 0.1f))
-                                .clickable {
-                                    onUpdateForm {
-                                        it.copy(
-                                            startTime = lastWorkEntry.start ?: "06:00",
-                                            endTime = lastWorkEntry.end ?: "16:30",
-                                            pauseDuration = lastWorkEntry.pause,
-                                            project = lastWorkEntry.project ?: "",
-                                            code = lastWorkEntry.code ?: it.code,
-                                        )
-                                    }
-                                }
+                                .clickable(onClick = onUseLastEntry)
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
@@ -304,7 +296,7 @@ fun EntryFormScreen(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     TypeSegment(t.t("entryForm.types.work"), form.entryType == "work" && !isArrival, colors.textPrimary) {
-                        onUpdateForm { it.copy(entryType = "work", code = defaultCode) }
+                        onSelectWorkType()
                     }
                     TypeSegment(t.t("entryForm.types.drive"), form.entryType == "drive" || isArrival, colors.accent) {
                         onUpdateForm { it.copy(entryType = "drive", code = WorkCodes.DRIVE, pauseDuration = 0) }
@@ -556,36 +548,46 @@ fun EntryFormScreen(
                                 value = form.project,
                                 onValueChange = { value ->
                                     onUpdateForm { it.copy(project = value) }
-                                    showSuggestions = value.isNotEmpty()
+                                    showSuggestions = true
                                 },
                                 placeholder = { Text(t.t("entryForm.projectPlaceholder")) },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions.Default,
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged { focus ->
+                                        if (focus.isFocused && form.entryType == "work" && !isArrival) {
+                                            showSuggestions = true
+                                        }
+                                    },
                             )
 
-                            val suggestions = remember(form.project, uniqueProjects) {
-                                if (form.project.isEmpty()) emptyList()
+                            val suggestions = remember(form.project, uniqueProjects, form.entryType, isArrival) {
+                                if (form.entryType != "work" || isArrival) emptyList()
                                 else uniqueProjects.filter {
-                                    it.contains(form.project, ignoreCase = true) && it != form.project
-                                }.take(5)
+                                    (form.project.isBlank() || it.contains(form.project.trim(), ignoreCase = true)) &&
+                                        !it.equals(form.project.trim(), ignoreCase = true)
+                                }
                             }
                             AnimatedVisibility(visible = showSuggestions && suggestions.isNotEmpty()) {
-                                Column(
+                                LazyColumn(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .heightIn(max = 240.dp)
                                         .clip(RoundedCornerShape(12.dp))
                                         .background(colors.surface)
                                         .border(1.dp, colors.border, RoundedCornerShape(12.dp)),
                                 ) {
-                                    Text(
-                                        t.t("entryForm.knownProjects").uppercase(),
-                                        color = colors.textFaint,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    )
-                                    suggestions.forEach { suggestion ->
+                                    item {
+                                        Text(
+                                            t.t("entryForm.knownProjects").uppercase(),
+                                            color = colors.textFaint,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        )
+                                    }
+                                    items(suggestions, key = { it.lowercase() }) { suggestion ->
                                         Text(
                                             suggestion,
                                             color = colors.textSecondary,

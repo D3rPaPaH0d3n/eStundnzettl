@@ -12,6 +12,20 @@ import kotlin.test.assertEquals
 class SettingsRepositoryTest {
 
     @Test
+    fun `getInt accepts json numbers and numeric strings`() = runBlocking {
+        val dao = RecordingSettingsDao()
+        val repository = SettingsRepository(dao)
+
+        dao.values["number"] = "7"
+        dao.values["string"] = "\"19\""
+        dao.values["broken"] = "\"nope\""
+
+        assertEquals(7, repository.getInt("number"))
+        assertEquals(19, repository.getInt("string"))
+        assertEquals(null, repository.getInt("broken"))
+    }
+
+    @Test
     fun `setRawBatch writes related settings together`() = runBlocking {
         val dao = RecordingSettingsDao()
         val repository = SettingsRepository(dao)

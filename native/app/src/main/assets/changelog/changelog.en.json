@@ -1,5 +1,32 @@
 [
  {
+  "version": "5.0.2",
+  "date": "2026-08-05",
+  "title": "Found quickly, entered cleanly 🧾",
+  "isMajor": false,
+  "playStoreText": "Found quickly, entered cleanly 🧾\n\n• Project suggestions are complete again – including earlier months\n• The activity code now follows the selected date intelligently\n• Compact code picker with search for longer lists\n• Create custom codes with separate number and name fields\n• Duplicate and reserved numbers are caught clearly\n\nSo nothing gets lost while entering your time!",
+  "sections": [
+   {
+    "iconName": "FolderOpen",
+    "title": "Projects ready when you need them",
+    "items": [
+     "Project suggestions now use your complete history instead of only the open month, with recently used projects shown first.",
+     "Tapping the project field immediately shows suitable suggestions, and names that only differ in capitalisation no longer appear twice.",
+     "When creating an entry, the app selects the latest suitable activity code up to the chosen date. Future, deleted, or internal codes never get in the way."
+    ]
+   },
+   {
+    "iconName": "ListChecks",
+    "title": "Compact, tidy activity codes",
+    "items": [
+     "The code picker now fits the native app style with compact rows, a clear selection marker, and a small single-line search field for longer lists.",
+     "Custom activities now have separate number and name fields while keeping the familiar stored format, so existing entries and backups remain fully compatible.",
+     "Duplicate or reserved numbers are explained right where they occur, and a sensible next free number is already prepared when adding a code."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.0.1",
   "date": "2026-07-28",
   "title": "Small details, noticeably smoother ✨",

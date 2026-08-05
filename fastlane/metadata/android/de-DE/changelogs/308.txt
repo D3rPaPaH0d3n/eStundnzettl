@@ -1,0 +1,9 @@
+Glei gefunden, sauber eingetragen 🧾
+
+• Projektvorschläge sind wieder vollständig da – auch aus früheren Monaten
+• Der Tätigkeitscode richtet sich gscheit nach dem gewählten Tag
+• Kompakte Codeauswahl mit Suche bei längeren Listen
+• Eigene Codes mit Nummer und Bezeichnung getrennt anlegen
+• Doppelte und reservierte Nummern werden sauber abgefangen
+
+So geht beim Eintragen nix mehr verloren!

@@ -1,5 +1,32 @@
 [
  {
+  "version": "5.0.2",
+  "date": "05.08.2026",
+  "title": "Glei gefunden, sauber eingetragen 🧾",
+  "isMajor": false,
+  "playStoreText": "Glei gefunden, sauber eingetragen 🧾\n\n• Projektvorschläge sind wieder vollständig da – auch aus früheren Monaten\n• Der Tätigkeitscode richtet sich gscheit nach dem gewählten Tag\n• Kompakte Codeauswahl mit Suche bei längeren Listen\n• Eigene Codes mit Nummer und Bezeichnung getrennt anlegen\n• Doppelte und reservierte Nummern werden sauber abgefangen\n\nSo geht beim Eintragen nix mehr verloren!",
+  "sections": [
+   {
+    "iconName": "FolderOpen",
+    "title": "Projekte wieder glei bei der Hand",
+    "items": [
+     "Die Projektvorschläge schauen jetzt in deine ganze Historie statt nur in den offenen Monat – zuletzt verwendete Projekte stehen dabei ganz vorn.",
+     "Schon beim Antippen zeigt das Projektfeld passende Vorschläge, und gleiche Namen mit unterschiedlicher Großschreibung tauchen nimmer doppelt auf.",
+     "Beim Anlegen eines Eintrags wählt die App den letzten passenden Tätigkeitscode bis zum gewählten Tag. Zukünftige, gelöschte oder interne Codes kommen dabei net dazwischen."
+    ]
+   },
+   {
+    "iconName": "ListChecks",
+    "title": "Tätigkeitscodes kompakt & ordentlich",
+    "items": [
+     "Die Codeauswahl passt jetzt sauber zum nativen App-Stil: kompakte Zeilen, klare Markierung und bei längeren Listen ein kleines einzeiliges Suchfeld.",
+     "Eigene Tätigkeiten legst du mit Nummer und Bezeichnung getrennt an – angezeigt und gespeichert wird weiterhin im vertrauten Format, damit bestehende Einträge und Backups vollständig kompatibel bleiben.",
+     "Doppelte oder reservierte Nummern werden direkt erklärt, und die nächste freie Nummer ist beim Anlegen schon sinnvoll vorbereitet."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.0.1",
   "date": "28.07.2026",
   "title": "Kleine Details, spürbar gschmeidiger ✨",

@@ -1,0 +1,9 @@
+Found quickly, entered cleanly 🧾
+
+• Project suggestions are complete again – including earlier months
+• The activity code now follows the selected date intelligently
+• Compact code picker with search for longer lists
+• Create custom codes with separate number and name fields
+• Duplicate and reserved numbers are caught clearly
+
+So nothing gets lost while entering your time!

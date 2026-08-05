@@ -12,6 +12,15 @@ SPEC.loader.exec_module(release_notes)
 
 
 class RenderReleaseNotesTest(unittest.TestCase):
+    def test_502_notes_cover_project_and_activity_code_improvements(self) -> None:
+        github_notes = release_notes.render_notes("5.0.2", "de-DE", "github")
+        play_notes = release_notes.render_notes("5.0.2", "de-DE", "play")
+
+        self.assertIn("Projekte wieder glei bei der Hand", github_notes)
+        self.assertIn("Tätigkeitscodes kompakt & ordentlich", github_notes)
+        self.assertIn("So geht beim Eintragen nix mehr verloren", play_notes)
+        self.assertLessEqual(len(play_notes), release_notes.PLAY_LIMIT)
+
     def test_github_notes_use_full_native_changelog(self) -> None:
         notes = release_notes.render_notes("5.0.0", "de-DE", "github")
 

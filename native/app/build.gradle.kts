@@ -18,7 +18,7 @@ android {
         targetSdk = 36
         // Muss über dem versionCode der Capacitor-Produktion (284) liegen,
         // damit Play die Beta als Update anbietet; Luft für Hotfixes gelassen.
-        versionCode = 308
+        versionCode = 309
         versionName = "5.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

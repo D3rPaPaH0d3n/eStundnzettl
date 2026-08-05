@@ -16,11 +16,13 @@ import com.estundnzettl.core.calc.AppData
 import com.estundnzettl.core.calc.EntryFormInput
 import com.estundnzettl.core.calc.SaveEntryResult
 import com.estundnzettl.core.calc.WorkCodes
+import com.estundnzettl.core.calc.WorkCodeDraftResult
 import com.estundnzettl.core.calc.deriveAppData
 import com.estundnzettl.core.calc.getDefaultTimesForDate
 import com.estundnzettl.core.calc.latestEligibleWorkEntry
 import com.estundnzettl.core.calc.prepareEntryToSave
 import com.estundnzettl.core.calc.resolveDefaultWorkCode
+import com.estundnzettl.core.calc.validateWorkCodeDraft
 import com.estundnzettl.core.config.toJson
 import com.estundnzettl.core.locale.AppLocale
 import com.estundnzettl.core.locale.getLocale
@@ -766,17 +768,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // ─── Work Codes ──────────────────────────────────────────
 
-    /** Quick-Add einer neuen Tätigkeit (Port von addWorkCode). */
-    fun addWorkCode(label: String): Boolean {
-        val trimmed = label.trim()
-        if (trimmed.isEmpty()) return false
-        val nextId = (_state.value.workCodes.maxOfOrNull { it.id } ?: 0) + 1
+    /** Neuen Tätigkeitscode mit expliziter betrieblicher Nummer anlegen. */
+    fun addWorkCode(number: String, name: String): WorkCodeDraftResult {
+        val currentCodes = _state.value.workCodes
+        val result = validateWorkCodeDraft(number, name, currentCodes)
+        val code = result.code ?: return result
+        _state.value = _state.value.copy(
+            workCodes = (currentCodes + code).sortedBy { it.id },
+        )
         viewModelScope.launch {
-            workCodesRepo.upsert(WorkCode(nextId, trimmed))
-            _state.value = _state.value.copy(workCodes = workCodesRepo.getAll())
-            scheduleDataProtection()
+            try {
+                workCodesRepo.upsert(code)
+                scheduleDataProtection()
+            } catch (_: Exception) {
+                val latest = _state.value.workCodes
+                if (latest.any { it == code }) {
+                    _state.value = _state.value.copy(
+                        workCodes = latest.filterNot { it == code },
+                    )
+                }
+                emit(UiMessage("workCodes.errors.saveFailed"))
+            }
         }
-        return true
+        return result
     }
 
     // ─── Settings-Aktionen (Port der Settings/*-Sektionen) ────
@@ -919,15 +933,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateWorkCode(id: Int, label: String): Boolean {
-        val trimmed = label.trim()
-        if (trimmed.isEmpty()) return false
+    fun updateWorkCode(id: Int, name: String): WorkCodeDraftResult {
+        val currentCodes = _state.value.workCodes
+        val result = validateWorkCodeDraft(
+            number = id.toString(),
+            name = name,
+            existingCodes = currentCodes,
+            editingId = id,
+        )
+        val code = result.code ?: return result
+        val previousCode = currentCodes.firstOrNull { it.id == id }
+        _state.value = _state.value.copy(
+            workCodes = currentCodes.map { if (it.id == id) code else it }.sortedBy { it.id },
+        )
         viewModelScope.launch {
-            workCodesRepo.upsert(WorkCode(id, trimmed))
-            refreshWorkCodes()
-            scheduleDataProtection()
+            try {
+                workCodesRepo.upsert(code)
+                scheduleDataProtection()
+            } catch (_: Exception) {
+                val latest = _state.value.workCodes
+                if (previousCode != null && latest.any { it == code }) {
+                    _state.value = _state.value.copy(
+                        workCodes = latest.map { if (it == code) previousCode else it }.sortedBy { it.id },
+                    )
+                }
+                emit(UiMessage("workCodes.errors.saveFailed"))
+            }
         }
-        return true
+        return result
     }
 
     fun deleteWorkCode(id: Int) {

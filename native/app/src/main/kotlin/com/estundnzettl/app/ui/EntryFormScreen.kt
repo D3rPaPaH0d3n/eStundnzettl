@@ -20,7 +20,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -30,14 +29,11 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,7 +53,9 @@ import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.calc.WorkCodes
+import com.estundnzettl.core.calc.WorkCodeDraftResult
 import com.estundnzettl.core.calc.isOvernightShift
+import com.estundnzettl.core.calc.nextAvailableWorkCodeId
 import com.estundnzettl.core.locale.holidays.toDateString
 import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.UserData
@@ -87,7 +85,7 @@ fun EntryFormScreen(
     onDateChanged: (String) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
-    onAddWorkCode: (String) -> Boolean,
+    onAddWorkCode: (String, String) -> WorkCodeDraftResult,
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
@@ -106,7 +104,6 @@ fun EntryFormScreen(
     var showPausePicker by remember { mutableStateOf(false) }
     var showCodeDialog by remember { mutableStateOf(false) }
     var quickAddOpen by remember { mutableStateOf(false) }
-    var quickAddValue by remember { mutableStateOf("") }
     var showSuggestions by remember { mutableStateOf(false) }
 
     val currentCodeLabel = workCodes.firstOrNull { it.id == form.code }?.label
@@ -161,71 +158,28 @@ fun EntryFormScreen(
     }
 
     if (showCodeDialog) {
-        val selectableCodes = workCodes.filter {
-            it.id != WorkCodes.ARRIVAL && it.id != WorkCodes.DRIVE
-        }
-        val selectedIndex = selectableCodes.indexOfFirst { it.id == form.code }
-            .coerceAtLeast(0)
-        val listState = rememberLazyListState(
-            initialFirstVisibleItemIndex = selectedIndex,
+        WorkCodeSelectionDialog(
+            workCodes = workCodes,
+            selectedId = form.code,
+            onSelect = { id ->
+                onSelectWorkCode(id)
+                showCodeDialog = false
+            },
+            onDismiss = { showCodeDialog = false },
         )
+    }
 
-        AlertDialog(
-            onDismissRequest = { showCodeDialog = false },
-            title = {
-                Text(
-                    t.t("entryForm.selectActivity"),
-                    fontWeight = FontWeight.Bold,
-                )
+    if (quickAddOpen) {
+        WorkCodeEditorDialog(
+            title = t.t("workCodes.addTitle"),
+            initialNumber = nextAvailableWorkCodeId(workCodes).toString(),
+            numberEditable = true,
+            onSave = onAddWorkCode,
+            onSaved = { code ->
+                onSelectWorkCode(code.id)
+                quickAddOpen = false
             },
-            text = {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 420.dp),
-                ) {
-                    items(selectableCodes, key = { it.id }) { code ->
-                        val selected = code.id == form.code
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (selected) colors.accent.copy(alpha = 0.12f)
-                                    else Color.Transparent,
-                                )
-                                .clickable {
-                                    onSelectWorkCode(code.id)
-                                    showCodeDialog = false
-                                }
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(
-                                selected = selected,
-                                onClick = {
-                                    onSelectWorkCode(code.id)
-                                    showCodeDialog = false
-                                },
-                            )
-                            Text(
-                                text = code.label,
-                                color = if (selected) colors.accent else colors.textPrimary,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(vertical = 10.dp),
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showCodeDialog = false }) {
-                    Text(t.t("common.close"))
-                }
-            },
+            onDismiss = { quickAddOpen = false },
         )
     }
 
@@ -493,36 +447,6 @@ fun EntryFormScreen(
                                 ) {
                                     Icon(Icons.Filled.Add, null, tint = colors.textFaint, modifier = Modifier.size(12.dp))
                                     Text(t.t("entryForm.newActivity"), color = colors.textFaint, fontSize = 12.sp)
-                                }
-                            }
-
-                            AnimatedVisibility(visible = quickAddOpen) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(bottom = 8.dp),
-                                ) {
-                                    OutlinedTextField(
-                                        value = quickAddValue,
-                                        onValueChange = { quickAddValue = it },
-                                        placeholder = { Text(t.t("entryForm.quickAddPlaceholder"), fontSize = 14.sp) },
-                                        singleLine = true,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    IconButton(
-                                        onClick = {
-                                            if (quickAddValue.trim().isNotEmpty()) {
-                                                onAddWorkCode(quickAddValue.trim())
-                                                quickAddValue = ""
-                                                quickAddOpen = false
-                                            }
-                                        },
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(Palette.Emerald500),
-                                    ) {
-                                        Icon(Icons.Filled.Add, null, tint = Color.White)
-                                    }
                                 }
                             }
 

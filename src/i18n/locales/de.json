@@ -1240,7 +1240,7 @@
     "codeNumber": "Nummer",
     "activityName": "Bezeichnung",
     "preview": "Vorschau: {{value}}",
-    "searchPlaceholder": "Code oder Tätigkeit suchen",
+    "searchPlaceholder": "Suchen",
     "clearSearch": "Suche löschen",
     "noSearchResults": "Keine passenden Tätigkeitscodes.",
     "selected": "Ausgewählt",

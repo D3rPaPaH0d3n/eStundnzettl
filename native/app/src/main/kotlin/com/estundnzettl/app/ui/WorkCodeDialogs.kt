@@ -93,7 +93,12 @@ fun WorkCodeSelectionDialog(
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text(t.t("workCodes.searchPlaceholder")) },
+                        placeholder = {
+                            Text(
+                                t.t("workCodes.searchPlaceholder"),
+                                maxLines = 1,
+                            )
+                        },
                         leadingIcon = {
                             Icon(Icons.Filled.Search, contentDescription = null)
                         },
@@ -110,7 +115,9 @@ fun WorkCodeSelectionDialog(
                             null
                         },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 56.dp),
                     )
                 }
 

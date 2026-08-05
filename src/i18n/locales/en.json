@@ -1240,7 +1240,7 @@
     "codeNumber": "Number",
     "activityName": "Name",
     "preview": "Preview: {{value}}",
-    "searchPlaceholder": "Search code or activity",
+    "searchPlaceholder": "Search",
     "clearSearch": "Clear search",
     "noSearchResults": "No matching activity codes.",
     "selected": "Selected",

@@ -73,6 +73,37 @@ class DataRestoreIntegrityTest {
         assertEquals("Neu", entries.single().project)
     }
 
+    /**
+     * Ein Backup ohne Einträge (etwa ein Uraltstand aus der Cloud) darf
+     * bestehende Einträge nicht löschen. Die leere Sektion bedeutet "nicht
+     * im Backup enthalten", nicht "alles weg".
+     */
+    @Test
+    fun backupWithoutEntriesKeepsExistingEntries() = runBlocking {
+        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+        database = db
+        db.entryDao().upsert(entry(id = 1, project = "Bestand").toRow())
+
+        val repo = com.estundnzettl.app.data.BackupRepository(
+            db,
+            com.estundnzettl.app.data.SettingsRepository(db.settingsDao()),
+        )
+        val analysis = com.estundnzettl.core.backup.BackupAnalysis(
+            valid = true,
+            hasSettings = true,
+            settings = kotlinx.serialization.json.buildJsonObject {
+                put("name", kotlinx.serialization.json.JsonPrimitive("Testperson"))
+            },
+            entries = emptyList(),
+        )
+
+        assertTrue(repo.apply(analysis, "ALL"))
+
+        val entries = db.entryDao().getAll()
+        assertEquals(1, entries.size)
+        assertEquals("Bestand", entries.single().project)
+    }
+
     private fun entry(id: Long, project: String) = Entry(
         id = EntryId.of(id),
         type = EntryType.WORK,

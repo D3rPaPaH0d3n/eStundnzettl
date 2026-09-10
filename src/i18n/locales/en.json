@@ -508,7 +508,8 @@
       "completed": "Backup complete",
       "failed": "Backup failed",
       "partial": "Partially backed up – {{targets}} could not be reached.",
-      "driveNeedsAttention": "Google Drive backup needs a moment of your attention. Please check it in Settings."
+      "driveNeedsAttention": "Google Drive backup needs a moment of your attention. Please check it in Settings.",
+      "noData": "No data to back up"
     },
     "autoCheckout": "⚠️ Auto-clocked out! Please review.",
     "autoCheckout_one": "The timer was still running from yesterday and was automatically stopped at 23:59. Please review the entry.",
@@ -1208,6 +1209,58 @@
       "off": "Additional options are hidden to keep the app simple.",
       "on": "Additional options are visible.",
       "description": "For Nextcloud, PDF archive, special rules, demo data and technical tools."
+    },
+    "diagnostics": {
+      "title": "Diagnostics",
+      "subtitle": "Technical self-report — read-only.",
+      "empty": "No data loaded.",
+      "refresh": "Refresh",
+      "privacyHint": "Credentials are never shown here. Accounts appear shortened.",
+      "yes": "yes",
+      "no": "no",
+      "group": {
+        "app": "App",
+        "data": "Data",
+        "backup": "Backup targets",
+        "local": "Local backup folder",
+        "drive": "Google Drive (app folder)"
+      },
+      "app": {
+        "version": "Version",
+        "versionCode": "Version code",
+        "dbSchema": "DB schema"
+      },
+      "data": {
+        "entries": "Entries",
+        "range": "Date range",
+        "workCodes": "Activity codes",
+        "attachments": "Attachments"
+      },
+      "backup": {
+        "cloudSync": "Google Drive enabled",
+        "cloudLast": "Drive last success",
+        "failCount": "Failed attempts",
+        "backoffUntil": "Blocked until",
+        "reconnect": "Reconnect required",
+        "googleAccount": "Google account",
+        "localEnabled": "Local enabled",
+        "localLast": "Local last success",
+        "nextcloudEnabled": "Nextcloud enabled",
+        "nextcloudLast": "Nextcloud last success",
+        "nextcloudUser": "Nextcloud user",
+        "secretSet": "Nextcloud password stored"
+      },
+      "local": {
+        "none": "No files"
+      },
+      "drive": {
+        "check": "Check Drive files",
+        "checking": "Checking …",
+        "none": "No files in app folder",
+        "duplicateWarning": "{{count}}× \"{{name}}\" — several files share this name. Backup and restore can point at different versions.",
+        "authRequired": "Google sign-in required. Connect Google Drive in the backup settings.",
+        "failed": "Query failed."
+      }
     }
   },
   "attachments": {

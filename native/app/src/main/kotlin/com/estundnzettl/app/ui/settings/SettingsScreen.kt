@@ -171,6 +171,7 @@ fun SettingsScreen(
         PreferredShareTargetSection()
         Box(Modifier.tourSection("appearanceHelp")) { AppearanceSection(viewModel) }
         ExpertModeSection(viewModel)
+        DiagnosticsSection(viewModel)
         // Column statt Box: AppInfoSection besteht aus mehreren Karten +
         // Footer — eine Box würde sie übereinander stapeln.
         Column(

@@ -508,7 +508,8 @@
       "completed": "Backup abgeschlossen",
       "failed": "Backup fehlgeschlagen",
       "partial": "Teilweise gesichert – {{targets}} nicht erreicht.",
-      "driveNeedsAttention": "Das Google-Drive-Backup braucht kurz deine Aufmerksamkeit. Bitte in den Einstellungen prüfen."
+      "driveNeedsAttention": "Das Google-Drive-Backup braucht kurz deine Aufmerksamkeit. Bitte in den Einstellungen prüfen.",
+      "noData": "Keine Daten zum Sichern"
     },
     "autoCheckout": "⚠️ Automatisch ausgestempelt! Bitte prüfen.",
     "autoCheckout_one": "Der Timer war noch von gestern aktiv und wurde automatisch um 23:59 beendet. Bitte kontrolliere den Eintrag.",
@@ -1208,6 +1209,58 @@
       "off": "Zusätzliche Optionen sind ausgeblendet, damit die App übersichtlich bleibt.",
       "on": "Zusätzliche Optionen sind sichtbar.",
       "description": "Für Nextcloud, PDF-Archiv, Spezialregeln, Demo-Daten und technische Werkzeuge."
+    },
+    "diagnostics": {
+      "title": "Diagnose",
+      "subtitle": "Technische Selbstauskunft — nur lesend.",
+      "empty": "Keine Daten geladen.",
+      "refresh": "Aktualisieren",
+      "privacyHint": "Zugangsdaten werden hier nie angezeigt. Konten erscheinen gekürzt.",
+      "yes": "ja",
+      "no": "nein",
+      "group": {
+        "app": "App",
+        "data": "Daten",
+        "backup": "Backup-Ziele",
+        "local": "Lokaler Backup-Ordner",
+        "drive": "Google Drive (App-Ordner)"
+      },
+      "app": {
+        "version": "Version",
+        "versionCode": "Version-Code",
+        "dbSchema": "DB-Schema"
+      },
+      "data": {
+        "entries": "Einträge",
+        "range": "Zeitraum",
+        "workCodes": "Tätigkeitscodes",
+        "attachments": "Anhänge"
+      },
+      "backup": {
+        "cloudSync": "Google Drive aktiv",
+        "cloudLast": "Drive zuletzt erfolgreich",
+        "failCount": "Fehlversuche",
+        "backoffUntil": "Gesperrt bis",
+        "reconnect": "Neuanmeldung nötig",
+        "googleAccount": "Google-Konto",
+        "localEnabled": "Lokal aktiv",
+        "localLast": "Lokal zuletzt erfolgreich",
+        "nextcloudEnabled": "Nextcloud aktiv",
+        "nextcloudLast": "Nextcloud zuletzt erfolgreich",
+        "nextcloudUser": "Nextcloud-Benutzer",
+        "secretSet": "Nextcloud-Passwort hinterlegt"
+      },
+      "local": {
+        "none": "Keine Dateien"
+      },
+      "drive": {
+        "check": "Drive-Dateien prüfen",
+        "checking": "Wird geprüft …",
+        "none": "Keine Dateien im App-Ordner",
+        "duplicateWarning": "{{count}}× \"{{name}}\" — mehrere Dateien mit gleichem Namen. Backup und Wiederherstellung können auf verschiedene Stände zeigen.",
+        "authRequired": "Google-Anmeldung erforderlich. Verbinde Google Drive in den Backup-Einstellungen.",
+        "failed": "Abfrage fehlgeschlagen."
+      }
     }
   },
   "attachments": {

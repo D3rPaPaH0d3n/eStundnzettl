@@ -61,13 +61,21 @@ class BackupRepository(
         )
     }
 
-    /** Vollständiger, checksummter v7-Payload des aktuellen App-Zustands. */
+    /**
+     * Vollständiger, checksummter v7-Payload des aktuellen App-Zustands.
+     *
+     * [sections] erlaubt dem Aufrufer, bereits gelesene Sektionen
+     * weiterzureichen. Das ist kein reiner Performance-Trick: wer die
+     * Sektionen vorher prüft (etwa auf leere Einträge), muss exakt den
+     * geprüften Stand verschicken und darf nicht zwischendurch neu lesen.
+     */
     suspend fun createBackupPayload(
         note: String = "eStundnzettl Manueller Backup",
         now: Instant = Instant.now(),
         zone: ZoneId = ZoneId.systemDefault(),
+        sections: BackupSections? = null,
     ): JsonObject = composeBackupPayload(
-        sections = collectSections(),
+        sections = sections ?: collectSections(),
         note = note,
         lastModified = ISO_MILLIS.format(now),
         timezone = zone.id,
@@ -96,7 +104,13 @@ class BackupRepository(
         return runCatching {
             db.replaceFullSnapshot(
                 ImportSnapshot(
-                    entries = analysis.entries,
+                    // Wie workCodes/attachments: eine leere Sektion bedeutet
+                    // "im Backup nicht enthalten", nicht "alles löschen".
+                    // replaceFullSnapshot lässt null-Felder unangetastet —
+                    // eine leere Liste würde dagegen deleteAll() auslösen und
+                    // bestehende Einträge gegen ein eintragsloses Backup
+                    // eintauschen.
+                    entries = analysis.entries.takeIf { it.isNotEmpty() },
                     userData = if (mode == "ALL" && analysis.hasSettings) analysis.settings else null,
                     workCodes = if (analysis.hasWorkCodes) analysis.workCodes else null,
                     attachments = if (analysis.hasAttachments) analysis.attachments else null,

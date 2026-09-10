@@ -212,6 +212,14 @@ data class MainUiState(
     /** Nach einem Update einmalig sichtbares Änderungsprotokoll. */
     val showWhatsNew: Boolean = false,
     val whatsNewVersion: String? = null,
+    /** Lesende Selbstauskunft im Hausmasta-Modus. */
+    val diagnostics: DiagnosticsUiState = DiagnosticsUiState(),
+)
+
+data class DiagnosticsUiState(
+    val report: com.estundnzettl.app.data.DiagnosticsReport? = null,
+    val loading: Boolean = false,
+    val drive: com.estundnzettl.app.data.DriveProbe = com.estundnzettl.app.data.DriveProbe.Idle,
 )
 
 data class NextcloudUiState(
@@ -903,6 +911,57 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setExpertMode(enabled: Boolean) {
         setUserData { it.copy(expertMode = enabled) }
         emit(UiMessage(if (enabled) "settings.toast.expertOn" else "settings.toast.expertOff"))
+    }
+
+    // ─── Diagnose (Hausmasta-Modus, ausschließlich lesend) ───
+
+    private val diagnosticsCollector by lazy {
+        com.estundnzettl.app.data.DiagnosticsCollector(getApplication(), db, settings, secrets)
+    }
+
+    private fun updateDiagnostics(transform: (DiagnosticsUiState) -> DiagnosticsUiState) {
+        _state.value = _state.value.copy(diagnostics = transform(_state.value.diagnostics))
+    }
+
+    /** Momentaufnahme des App-Zustands einsammeln. */
+    fun loadDiagnostics() {
+        updateDiagnostics { it.copy(loading = true) }
+        viewModelScope.launch {
+            val report = runCatching {
+                diagnosticsCollector.collect(
+                    appVersion = BuildConfig.VERSION_NAME,
+                    versionCode = BuildConfig.VERSION_CODE,
+                )
+            }.getOrNull()
+            updateDiagnostics { it.copy(report = report, loading = false) }
+        }
+    }
+
+    fun clearDiagnostics() {
+        _state.value = _state.value.copy(diagnostics = DiagnosticsUiState())
+    }
+
+    /**
+     * Listet die Dateien im Drive-appDataFolder auf. Bewusst ohne
+     * Consent-Intent und ohne [AutoBackupManager.registerGoogleDriveFailure]:
+     * Ein Blick in die Diagnose darf weder einen Anmeldedialog auslösen noch
+     * die Fehlerzähler des echten Backups hochtreiben und die App damit in
+     * den Backoff schieben.
+     */
+    fun probeGoogleDriveFiles() {
+        updateDiagnostics { it.copy(drive = com.estundnzettl.app.data.DriveProbe.Loading) }
+        viewModelScope.launch {
+            val probe = try {
+                val token = googleDrive.authorize(com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA)
+                com.estundnzettl.app.data.DriveProbe.Loaded(googleDrive.listAppDataFiles(token))
+            } catch (_: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
+                com.estundnzettl.app.data.DriveProbe.Failed("settings.diagnostics.drive.authRequired")
+            } catch (exception: Exception) {
+                Log.w(GOOGLE_DRIVE_TAG, "Diagnose-Abfrage fehlgeschlagen", exception)
+                com.estundnzettl.app.data.DriveProbe.Failed("settings.diagnostics.drive.failed")
+            }
+            updateDiagnostics { it.copy(drive = probe) }
+        }
     }
 
     /** Arbeitszeitmodell-Preset anwenden — Port von handlePresetSelect. */

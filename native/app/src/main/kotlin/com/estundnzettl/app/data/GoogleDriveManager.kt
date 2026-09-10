@@ -59,6 +59,15 @@ class GoogleDriveManager(
         val statusCode: Int,
     ) : Exception("Google Drive $operation fehlgeschlagen (HTTP $statusCode)")
 
+    /** Datei-Metadaten aus dem appDataFolder (Diagnose). */
+    data class AppDataFile(
+        val id: String,
+        val name: String,
+        val sizeBytes: Long?,
+        /** RFC-3339-Zeitstempel von Drive. */
+        val modifiedTime: String?,
+    )
+
     private val json = Json { ignoreUnknownKeys = true }
 
     // ─── Autorisierung ──────────────────────────────────────────────
@@ -144,18 +153,59 @@ class GoogleDriveManager(
         }
     }
 
+    /**
+     * ID der zuletzt geänderten Datei mit diesem Namen.
+     *
+     * Drive erlaubt mehrere Dateien mit gleichem Namen im selben Ordner.
+     * Ohne `orderBy` ist die Trefferreihenfolge undefiniert — Lesen und
+     * Schreiben könnten dann dauerhaft auf verschiedene Duplikate zeigen
+     * (Upload hält A aktuell, Restore liest den Uraltstand aus B). Deshalb
+     * wie findLatestBackupFile der Web-App immer nach `modifiedTime desc`
+     * sortieren und genau einen Treffer holen.
+     */
     private suspend fun findFileId(token: String, name: String, spaces: String, parentId: String? = null): String? =
         withContext(Dispatchers.IO) {
+            // Ohne expliziten Ordner den Space-Wurzelordner einschränken,
+            // damit die Suche nicht in andere Ablagen ausgreift.
+            val parent = parentId ?: spaces.takeIf { it == "appDataFolder" }
             var query = "name = '$name' and trashed = false"
-            if (parentId != null) query += " and '$parentId' in parents"
+            if (parent != null) query += " and '$parent' in parents"
             val url = "https://www.googleapis.com/drive/v3/files" +
                 "?q=${URLEncoder.encode(query, "UTF-8")}" +
-                "&spaces=$spaces&fields=files(id)"
+                "&spaces=$spaces" +
+                "&orderBy=${URLEncoder.encode("modifiedTime desc", "UTF-8")}" +
+                "&pageSize=1&fields=files(id)"
             val (status, bodyText) = http(url, "GET", token)
             if (status != 200) throw DriveApiException("Suche", status)
             json.parseToJsonElement(bodyText).jsonObject["files"]?.jsonArray
                 ?.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content
         }
+
+    /**
+     * Alle Dateien im appDataFolder (neueste zuerst) — nur für die
+     * Diagnose. Bewusst ohne Fehlerzähler/Backoff-Nebenwirkungen: ein
+     * Blick in die Diagnose darf den echten Backup-Zustand nicht
+     * verändern.
+     */
+    suspend fun listAppDataFiles(token: String): List<AppDataFile> = withContext(Dispatchers.IO) {
+        val query = "trashed = false and 'appDataFolder' in parents"
+        val url = "https://www.googleapis.com/drive/v3/files" +
+            "?q=${URLEncoder.encode(query, "UTF-8")}" +
+            "&spaces=appDataFolder" +
+            "&orderBy=${URLEncoder.encode("modifiedTime desc", "UTF-8")}" +
+            "&pageSize=100&fields=files(id,name,size,modifiedTime)"
+        val (status, bodyText) = http(url, "GET", token)
+        if (status != 200) throw DriveApiException("Suche", status)
+        json.parseToJsonElement(bodyText).jsonObject["files"]?.jsonArray.orEmpty().map { element ->
+            val file = element.jsonObject
+            AppDataFile(
+                id = file["id"]?.jsonPrimitive?.content ?: "",
+                name = file["name"]?.jsonPrimitive?.content ?: "",
+                sizeBytes = file["size"]?.jsonPrimitive?.content?.toLongOrNull(),
+                modifiedTime = file["modifiedTime"]?.jsonPrimitive?.content,
+            )
+        }
+    }
 
     /**
      * JSON-Backup in den appDataFolder hochladen (Update wenn vorhanden) —

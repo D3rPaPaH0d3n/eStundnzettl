@@ -115,6 +115,11 @@ class AutoBackupManager(
         val allSatisfied: Boolean = false,
         val succeededTargets: Set<Target> = emptySet(),
         val failedTargets: Set<Target> = emptySet(),
+        /**
+         * Übersprungen, weil es keine Einträge zu sichern gab. Kein Fehler —
+         * die UI meldet das wie die Web-App als "Keine Daten zum Sichern".
+         */
+        val skippedEmpty: Boolean = false,
     ) {
         val isPartial: Boolean get() = anySucceeded && !allSatisfied
     }
@@ -225,10 +230,20 @@ class AutoBackupManager(
         if (!isUploading.compareAndSet(false, true)) return Outcome(ran = false)
         try {
             val sections = backupRepo.collectSections()
+            // Ein leerer Datenstand darf ein vollständiges Backup niemals
+            // überschreiben — etwa direkt nach der Installation oder wenn
+            // ein Restore die Einträge (noch) nicht eingespielt hat.
+            // Entspricht den Guards in useAutoBackup.ts.
+            if (sections.entries.isEmpty()) return Outcome(ran = false, skippedEmpty = true)
+
             val currentHash = hashSections(sections)
             if (currentHash == lastHash && source == Source.AUTO) return Outcome(ran = false)
 
-            val payload = backupRepo.createBackupPayload(note = "eStundnzettl Auto-Sync")
+            // Exakt den geprüften Stand hochladen, nicht neu einlesen.
+            val payload = backupRepo.createBackupPayload(
+                note = "eStundnzettl Auto-Sync",
+                sections = sections,
+            )
             val content = backupRepo.toFileContent(payload)
 
             var anySucceeded = false

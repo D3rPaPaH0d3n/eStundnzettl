@@ -320,6 +320,10 @@ fun CloudBackupContent(viewModel: MainViewModel) {
                         outcome.anySucceeded && outcome.allSatisfied -> {
                             toast(t.t("toasts.autoBackup.completed"), UiMessageTone.SUCCESS)
                         }
+                        // Nichts zu sichern ist kein Fehlschlag.
+                        outcome.skippedEmpty -> {
+                            toast(t.t("toasts.autoBackup.noData"), UiMessageTone.WARNING)
+                        }
                         outcome.isPartial -> {
                             val failedTargets = outcome.failedTargets.joinToString(", ") { target ->
                                 when (target) {

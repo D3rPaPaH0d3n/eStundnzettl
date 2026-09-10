@@ -471,6 +471,16 @@
       "restoreProfileNeeded": "Dieses Backup enthält kein Profil — bitte kurz Name & Arbeitszeiten ergänzen. Deine Einträge werden am Ende trotzdem übernommen.",
       "restoreSuccess": "Daten wiederhergestellt!",
       "welcome": "Willkommen!"
+    },
+    "restore": {
+      "chooseTitle": "Mehrere Backups gefunden",
+      "chooseHint": "Wähle aus, welcher Stand wiederhergestellt werden soll.",
+      "entries_one": "1 Eintrag",
+      "entries_other": "{{count}} Einträge",
+      "profileYes": "Profil enthalten",
+      "profileNo": "kein Profil",
+      "noTimestamp": "Ohne Zeitstempel",
+      "legacyName": "{{file}} · altes Format"
     }
   },
   "toasts": {

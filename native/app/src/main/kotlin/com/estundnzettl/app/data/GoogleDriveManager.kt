@@ -231,17 +231,13 @@ class GoogleDriveManager(
         }
 
     /**
-     * Neuestes Backup aus dem appDataFolder laden — Port von
-     * findLatestBackupFile inkl. Legacy-Dateinamen-Fallback.
+     * Datei-Inhalt anhand der Drive-ID. Die Restore-Auswahl kennt die IDs
+     * bereits aus [listAppDataFiles] und muss nicht erneut suchen.
      */
-    suspend fun downloadLatestBackup(token: String): String? =
-        downloadBackup(token, NextcloudClient.BACKUP_FILENAME)
-            ?: downloadBackup(token, LEGACY_BACKUP_FILENAME)
-
-    /** Backup aus dem appDataFolder laden — null wenn keines existiert. */
-    suspend fun downloadBackup(token: String, fileName: String): String? = withContext(Dispatchers.IO) {
-        val id = findFileId(token, fileName, spaces = "appDataFolder") ?: return@withContext null
-        val (status, bodyText) = http("https://www.googleapis.com/drive/v3/files/$id?alt=media", "GET", token)
+    suspend fun downloadFileContent(token: String, fileId: String): String = withContext(Dispatchers.IO) {
+        val (status, bodyText) = http(
+            "https://www.googleapis.com/drive/v3/files/$fileId?alt=media", "GET", token,
+        )
         if (status !in 200..299) throw DriveApiException("Download", status)
         bodyText
     }

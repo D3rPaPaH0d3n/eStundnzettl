@@ -1570,6 +1570,14 @@ private fun RestoreOptions(viewModel: MainViewModel, ob: OnboardingUiState) {
         }
     }
 
+    // Mehrere Backups im Drive-Ordner → erst auswählen lassen. Die App
+    // greift bewusst nicht selbst zu; ein Uraltstand sieht sonst genauso
+    // aus wie ein frisches Backup.
+    if (ob.restoreChoices.isNotEmpty()) {
+        RestoreChoiceList(viewModel, ob.restoreChoices)
+        return
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         RestoreSourceRow(
             icon = Icons.Outlined.Cloud,
@@ -1699,6 +1707,98 @@ private fun RestoreOptions(viewModel: MainViewModel, ob: OnboardingUiState) {
     }
 }
 
+/**
+ * Auswahl unter mehreren Cloud-Backups. Bewusst schlank: Zeitstempel,
+ * Anzahl Einträge, Profil ja/nein — genug, um den richtigen Stand zu
+ * erkennen, ohne den Onboarding-Schritt zu überladen.
+ */
+@Composable
+private fun RestoreChoiceList(
+    viewModel: MainViewModel,
+    choices: List<com.estundnzettl.app.RestoreCandidate>,
+) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            t.t("onboarding.restore.chooseTitle"),
+            color = colors.textPrimary,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+        )
+        Text(
+            t.t("onboarding.restore.chooseHint"),
+            color = colors.textMuted,
+            fontSize = 12.sp,
+        )
+
+        choices.forEach { candidate ->
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+                    .clickable { viewModel.onboardingPickRestore(candidate) }
+                    .padding(12.dp),
+            ) {
+                Text(
+                    restoreCandidateTimestamp(candidate) ?: t.t("onboarding.restore.noTimestamp"),
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                )
+                Text(
+                    backupSummaryLine(candidate.entryCount, candidate.hasUserData),
+                    color = colors.textSecondary,
+                    fontSize = 12.sp,
+                )
+                Text(
+                    if (candidate.isLegacyName) {
+                        t.t("onboarding.restore.legacyName", "file" to candidate.fileName)
+                    } else {
+                        candidate.fileName
+                    },
+                    color = if (candidate.isLegacyName) Palette.Amber600 else colors.textFaint,
+                    fontSize = 11.sp,
+                )
+            }
+        }
+
+        Text(
+            t.t("common.cancel"),
+            color = colors.textMuted,
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { viewModel.onboardingDismissRestoreChoices() }
+                .padding(vertical = 10.dp),
+        )
+    }
+}
+
+/** Drive-Änderungszeit, sonst der Zeitstempel aus dem Backup selbst. */
+@Composable
+private fun restoreCandidateTimestamp(
+    candidate: com.estundnzettl.app.RestoreCandidate,
+): String? = com.estundnzettl.app.data.formatTimestamp(candidate.modifiedTime)
+    ?: com.estundnzettl.app.data.formatTimestamp(candidate.analysis.timestamp)
+
+/** "128 Einträge · Profil enthalten" — die kompakte Inhaltsangabe. */
+@Composable
+private fun backupSummaryLine(entryCount: Int, hasUserData: Boolean): String {
+    val t = LocalI18n.current
+    val entries = t.t("onboarding.restore.entries", "count" to entryCount)
+    val profile = t.t(
+        if (hasUserData) "onboarding.restore.profileYes" else "onboarding.restore.profileNo"
+    )
+    return "$entries · $profile"
+}
+
 /** Restore-Zeile in voller Breite (GDrive/Nextcloud). */
 @Composable
 private fun RestoreSourceRow(
@@ -1806,6 +1906,30 @@ private fun SummaryStep(viewModel: MainViewModel, ob: OnboardingUiState) {
             color = colors.textMuted, fontSize = 15.sp, textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp),
         )
+        // Vor dem Bestätigen zeigen, was tatsächlich eingespielt wird —
+        // sonst sieht ein Uraltstand wie ein vollständiges Backup aus.
+        ob.restoreData?.let { restore ->
+            Spacer(Modifier.height(8.dp))
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+                    .padding(12.dp),
+            ) {
+                Text(
+                    backupSummaryLine(restore.entryCount, restore.hasSettings),
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                )
+                com.estundnzettl.app.data.formatTimestamp(restore.timestamp)?.let { stamp ->
+                    Text(stamp, color = colors.textMuted, fontSize = 11.sp)
+                }
+            }
+        }
         Spacer(Modifier.height(4.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,

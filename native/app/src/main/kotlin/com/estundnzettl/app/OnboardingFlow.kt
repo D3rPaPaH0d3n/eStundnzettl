@@ -40,4 +40,27 @@ data class OnboardingUiState(
     val restoreData: BackupAnalysis? = null,
     /** true während ein Restore-Backup geladen wird (GDrive/Nextcloud/Ordner). */
     val restoreLoading: Boolean = false,
+    /**
+     * Zur Auswahl stehende Cloud-Backups. Nur belegt, wenn im Drive-Ordner
+     * mehr als ein brauchbares Backup liegt — dann entscheidet der Nutzer,
+     * statt dass die App still eines nimmt.
+     */
+    val restoreChoices: List<RestoreCandidate> = emptyList(),
 )
+
+/**
+ * Ein wählbares Backup samt der kleinen Übersicht, die vor dem
+ * Wiederherstellen zählt: Zeitstempel, Anzahl Einträge, Profil ja/nein.
+ */
+data class RestoreCandidate(
+    val fileId: String,
+    val fileName: String,
+    /** Änderungszeit laut Drive (ISO), null wenn unbekannt. */
+    val modifiedTime: String?,
+    /** Datei trägt den Namen von vor dem Rebranding (kogler_backup.json). */
+    val isLegacyName: Boolean,
+    val analysis: BackupAnalysis,
+) {
+    val entryCount: Int get() = analysis.entryCount
+    val hasUserData: Boolean get() = analysis.hasSettings
+}

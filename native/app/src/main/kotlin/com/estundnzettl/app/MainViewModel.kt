@@ -1174,6 +1174,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Anhänge (Port von useAttachments.ts) ────────────────
 
     companion object {
+        /**
+         * Obergrenze für die Restore-Auswahl. Jeder Kandidat wird geladen
+         * und geparst — der App-Ordner enthält normalerweise ein bis zwei
+         * Dateien, die Grenze schützt nur vor Ausreißern.
+         */
+        private const val MAX_RESTORE_CANDIDATES = 10
         private const val KEY_NATIVE_WELCOME_SEEN = "estundnzettl_native_welcome_seen_v1"
         private const val KEY_CHANGELOG_VERSION_CODE = "last_seen_changelog_version_code"
         private const val KEY_CHANGELOG_VERSION_NAME = "last_seen_changelog_version_name"
@@ -1976,6 +1982,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             it.copy(
                 isRestoreFlow = false,
                 restoreData = null,
+                restoreChoices = emptyList(),
                 simpleMode = true,
                 workDays = List(7) { 0 },
                 localeId = "neutral",
@@ -1989,12 +1996,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onboardingStartNew() {
         updateOnboarding {
-            it.copy(isRestoreFlow = false, restoreData = null, simpleMode = false, customCalc = false, step = 1)
+            it.copy(
+                isRestoreFlow = false,
+                restoreData = null,
+                restoreChoices = emptyList(),
+                simpleMode = false,
+                customCalc = false,
+                step = 1,
+            )
         }
     }
 
     fun onboardingStartRestore() {
-        updateOnboarding { it.copy(isRestoreFlow = true, step = 6) }
+        updateOnboarding { it.copy(isRestoreFlow = true, step = 6, restoreChoices = emptyList()) }
     }
 
     /** "Nur mal reinschnuppern (Demo)" — Port von handleDemoMode. */
@@ -2101,7 +2115,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             emit(UiMessage("onboarding.toast.integrityMismatch"))
         }
         emit(UiMessage(loadedKey))
-        updateOnboarding { it.copy(restoreData = analysis, step = 7) }
+        updateOnboarding { it.copy(restoreData = analysis, restoreChoices = emptyList(), step = 7) }
         return true
     }
 
@@ -2140,7 +2154,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Autorisiert: neuestes Drive-Backup herunterladen und übernehmen. */
+    /**
+     * Autorisiert: Drive-Backups sichten und wiederherstellen.
+     *
+     * Bewusst NICHT mehr blind das erstbeste Backup: Liegt im App-Ordner
+     * mehr als ein brauchbares Backup (etwa zusätzlich das alte
+     * kogler_backup.json von vor dem Rebranding), entscheidet der Nutzer
+     * anhand von Zeitstempel und Inhalt. Vorher konnte ein uralter
+     * Legacy-Stand still als "Backup geladen" durchgehen.
+     */
     private suspend fun finishGoogleDriveRestore(token: String) {
         try {
             // Konto wie im Original nach dem Sign-in merken (Anzeige-Status;
@@ -2152,20 +2174,64 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
             refreshGoogleState()
 
-            val content = googleDrive.downloadLatestBackup(token)
-            if (content == null) {
-                emit(UiMessage("onboarding.toast.backupNotFound"))
-                return
+            val candidates = collectDriveRestoreCandidates(token)
+            when {
+                candidates.isEmpty() -> emit(UiMessage("onboarding.toast.backupNotFound"))
+                candidates.size == 1 -> acceptRestoreCandidate(candidates.single())
+                else -> updateOnboarding { it.copy(restoreChoices = candidates) }
             }
-            applyRestoreContent(
-                content,
-                invalidKey = "onboarding.toast.backupInvalid",
-                loadedKey = "onboarding.toast.backupLoaded",
-            )
         } catch (e: Exception) {
             emit(UiMessage("settings.backup.toast.gdriveFailed"))
         } finally {
             updateOnboarding { it.copy(restoreLoading = false) }
+        }
+    }
+
+    /**
+     * Lädt und analysiert die Backup-Dateien aus dem Drive-App-Ordner
+     * (neueste zuerst). Unbrauchbare Dateien fallen still heraus; eine
+     * einzelne kaputte Datei darf die Auswahl nicht sprengen.
+     */
+    private suspend fun collectDriveRestoreCandidates(
+        token: String,
+    ): List<com.estundnzettl.app.RestoreCandidate> {
+        val files = googleDrive.listAppDataFiles(token)
+            .filter { it.name.endsWith(".json", ignoreCase = true) }
+            .take(MAX_RESTORE_CANDIDATES)
+
+        return files.mapNotNull { file ->
+            val content = runCatching { googleDrive.downloadFileContent(token, file.id) }.getOrNull()
+                ?: return@mapNotNull null
+            val analysis = backupRepo.analyze(content)
+            if (!analysis.valid) return@mapNotNull null
+            com.estundnzettl.app.RestoreCandidate(
+                fileId = file.id,
+                fileName = file.name,
+                modifiedTime = file.modifiedTime,
+                isLegacyName = file.name
+                    .equals(com.estundnzettl.app.data.GoogleDriveManager.LEGACY_BACKUP_FILENAME, ignoreCase = true),
+                analysis = analysis,
+            )
+        }
+    }
+
+    /** Ein Backup aus der Auswahl übernehmen (Nutzer-Tipp auf einen Eintrag). */
+    fun onboardingPickRestore(candidate: com.estundnzettl.app.RestoreCandidate) {
+        acceptRestoreCandidate(candidate)
+    }
+
+    /** Auswahl verwerfen und zurück zu den Restore-Quellen. */
+    fun onboardingDismissRestoreChoices() {
+        updateOnboarding { it.copy(restoreChoices = emptyList()) }
+    }
+
+    private fun acceptRestoreCandidate(candidate: com.estundnzettl.app.RestoreCandidate) {
+        if (candidate.analysis.integrity == com.estundnzettl.core.backup.BackupIntegrity.MISMATCH) {
+            emit(UiMessage("onboarding.toast.integrityMismatch"))
+        }
+        emit(UiMessage("onboarding.toast.backupLoaded"))
+        updateOnboarding {
+            it.copy(restoreData = candidate.analysis, restoreChoices = emptyList(), step = 7)
         }
     }
 

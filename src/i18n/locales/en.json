@@ -471,6 +471,16 @@
       "restoreProfileNeeded": "This backup has no profile — please add your name & working hours. Your entries will still be imported at the end.",
       "restoreSuccess": "Data restored!",
       "welcome": "Welcome!"
+    },
+    "restore": {
+      "chooseTitle": "Several backups found",
+      "chooseHint": "Choose which version to restore.",
+      "entries_one": "1 entry",
+      "entries_other": "{{count}} entries",
+      "profileYes": "profile included",
+      "profileNo": "no profile",
+      "noTimestamp": "No timestamp",
+      "legacyName": "{{file}} · old format"
     }
   },
   "toasts": {

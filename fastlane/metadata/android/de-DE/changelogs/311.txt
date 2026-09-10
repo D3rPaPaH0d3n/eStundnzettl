@@ -1,0 +1,9 @@
+Sicher wiederhergestellt, nix verloren ☁️
+
+• Bei mehreren Cloud-Backups wählst du selbst, welcher Stand kommt
+• Zeitstempel, Anzahl Einträge und Profil siehst du schon vorher
+• Alte Backups aus der Vorgängerversion sind klar gekennzeichnet
+• Ein leerer Stand überschreibt kein volles Backup mehr
+• Neue Diagnose-Ansicht im Hausmasta-Modus
+
+So kommt beim Handywechsel wirklich alles mit!

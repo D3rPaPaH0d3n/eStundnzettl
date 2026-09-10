@@ -1,5 +1,44 @@
 [
  {
+  "version": "5.1.0",
+  "date": "10.09.2026",
+  "title": "Sicher wiederhergestellt, nix verloren ☁️",
+  "isMajor": false,
+  "playStoreText": "Sicher wiederhergestellt, nix verloren ☁️\n\n• Bei mehreren Cloud-Backups wählst du selbst, welcher Stand kommt\n• Zeitstempel, Anzahl Einträge und Profil siehst du schon vorher\n• Alte Backups aus der Vorgängerversion sind klar gekennzeichnet\n• Ein leerer Stand überschreibt kein volles Backup mehr\n• Neue Diagnose-Ansicht im Hausmasta-Modus\n\nSo kommt beim Handywechsel wirklich alles mit!",
+  "sections": [
+   {
+    "iconName": "Cloud",
+    "title": "Du siehst, was zurückkommt",
+    "items": [
+     "Liegen mehrere Backups in der Cloud, greift die App nimmer selbst zu – du wählst den Stand aus, den du wirklich haben willst.",
+     "Zu jedem Backup stehen Zeitstempel, Anzahl der Einträge und ob ein Profil dabei ist. Ein Uraltstand schaut damit nimmer aus wie ein frisches Backup.",
+     "Backups aus der Vorgängerversion sind eigens gekennzeichnet, statt still als normales Backup durchzugehen.",
+     "Vor dem Abschließen zeigt dir die Zusammenfassung noch einmal, was gleich eingespielt wird – egal ob aus der Cloud, vom Ordner oder aus einer Datei."
+    ]
+   },
+   {
+    "iconName": "ShieldCheck",
+    "title": "Dein Backup bleibt, wie's ghört",
+    "items": [
+     "Ein leerer Datenstand wird nimmer in die Cloud geschrieben. Frisch installiert oder mitten im Wiederherstellen überschreibt die App kein vollständiges Backup mehr.",
+     "Beim manuellen Sichern sagt die App jetzt ehrlich „Keine Daten zum Sichern“, statt einen Fehler zu melden.",
+     "Ein Backup ohne Einträge löscht deine vorhandenen Einträge nimmer – fehlt eine Sektion, bleibt sie einfach unberührt.",
+     "Aus der Cloud wird verlässlich die zuletzt geänderte Datei geladen, auch wenn dort mehrere gleichnamige Backups liegen."
+    ]
+   },
+   {
+    "iconName": "Wrench",
+    "title": "Diagnose für den Hausmasta",
+    "items": [
+     "Im Hausmasta-Modus gibt's eine neue, rein lesende Diagnose: Anzahl Einträge, Zeitraum, Tätigkeitscodes und Anhänge auf einen Blick.",
+     "Dazu der Zustand aller Backup-Ziele – letzter Erfolg, Fehlversuche und ob eine Neuanmeldung nötig wäre.",
+     "Auf Knopfdruck listet sie die Dateien im Google-Drive-App-Ordner auf und warnt, wenn dort mehrere Backups mit gleichem Namen liegen.",
+     "Zugangsdaten werden dabei nie angezeigt, Konten erscheinen nur gekürzt."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.0.2",
   "date": "05.08.2026",
   "title": "Glei gefunden, sauber eingetragen 🧾",

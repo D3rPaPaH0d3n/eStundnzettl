@@ -12,6 +12,25 @@ SPEC.loader.exec_module(release_notes)
 
 
 class RenderReleaseNotesTest(unittest.TestCase):
+    def test_510_notes_cover_cloud_restore_and_backup_safeguards(self) -> None:
+        github_notes = release_notes.render_notes("5.1.0", "de-DE", "github")
+        play_notes = release_notes.render_notes("5.1.0", "de-DE", "play")
+
+        self.assertIn("Du siehst, was zurückkommt", github_notes)
+        self.assertIn("Dein Backup bleibt, wie's ghört", github_notes)
+        self.assertIn("Diagnose für den Hausmasta", github_notes)
+        self.assertIn("So kommt beim Handywechsel wirklich alles mit", play_notes)
+        self.assertLessEqual(len(play_notes), release_notes.PLAY_LIMIT)
+
+    def test_510_english_notes_render_for_play_and_github(self) -> None:
+        github_notes = release_notes.render_notes("5.1.0", "en-US", "github")
+        play_notes = release_notes.render_notes("5.1.0", "en-US", "play")
+
+        self.assertIn("You see what comes back", github_notes)
+        self.assertIn("Diagnostics for expert mode", github_notes)
+        self.assertIn("So everything really comes along when you switch phones", play_notes)
+        self.assertLessEqual(len(play_notes), release_notes.PLAY_LIMIT)
+
     def test_502_notes_cover_project_and_activity_code_improvements(self) -> None:
         github_notes = release_notes.render_notes("5.0.2", "de-DE", "github")
         play_notes = release_notes.render_notes("5.0.2", "de-DE", "play")

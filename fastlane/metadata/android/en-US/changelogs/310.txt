@@ -1,0 +1,9 @@
+Restored safely, nothing lost ☁️
+
+• With several cloud backups you pick which one to restore
+• See the timestamp, entry count and profile beforehand
+• Backups from the previous version are clearly marked
+• An empty state can no longer overwrite a complete backup
+• New diagnostics view in expert mode
+
+So everything really comes along when you switch phones!

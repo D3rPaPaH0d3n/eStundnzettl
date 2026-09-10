@@ -1,5 +1,44 @@
 [
  {
+  "version": "5.1.0",
+  "date": "2026-09-10",
+  "title": "Restored safely, nothing lost ☁️",
+  "isMajor": false,
+  "playStoreText": "Restored safely, nothing lost ☁️\n\n• With several cloud backups you pick which one to restore\n• See the timestamp, entry count and profile beforehand\n• Backups from the previous version are clearly marked\n• An empty state can no longer overwrite a complete backup\n• New diagnostics view in expert mode\n\nSo everything really comes along when you switch phones!",
+  "sections": [
+   {
+    "iconName": "Cloud",
+    "title": "You see what comes back",
+    "items": [
+     "When several backups sit in the cloud, the app no longer picks one on its own – you choose the version you actually want.",
+     "Every backup shows its timestamp, how many entries it holds and whether a profile is included. An ancient snapshot no longer looks like a fresh backup.",
+     "Backups from the previous version are marked as such instead of quietly passing as a regular backup.",
+     "Before you finish, the summary shows once more what is about to be restored – whether it comes from the cloud, a folder or a file."
+    ]
+   },
+   {
+    "iconName": "ShieldCheck",
+    "title": "Your backup stays intact",
+    "items": [
+     "An empty state is no longer written to the cloud. Freshly installed or halfway through a restore, the app can no longer overwrite a complete backup.",
+     "Backing up manually now honestly reports “no data to back up” instead of claiming a failure.",
+     "A backup without entries no longer deletes the entries you have – a missing section is simply left untouched.",
+     "The cloud restore reliably loads the most recently changed file, even when several backups there share a name."
+    ]
+   },
+   {
+    "iconName": "Wrench",
+    "title": "Diagnostics for expert mode",
+    "items": [
+     "Expert mode gains a new, strictly read-only diagnostics card: entry count, date range, activity codes and attachments at a glance.",
+     "Alongside it, the state of every backup target – last success, failed attempts and whether a reconnect would be needed.",
+     "At the tap of a button it lists the files in the Google Drive app folder and warns when several backups there share a name.",
+     "Credentials are never shown, and accounts appear shortened only."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.0.2",
   "date": "2026-08-05",
   "title": "Found quickly, entered cleanly 🧾",

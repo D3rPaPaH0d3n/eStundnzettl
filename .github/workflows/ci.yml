@@ -4,7 +4,9 @@
 #
 # Läuft auf Push nach main und für alle Pull Requests.
 # Die native Kotlin-App ist das Hauptprodukt. Die frühere Web-App bleibt
-# vorübergehend als Migrationsreferenz im Repository und wird separat geprüft.
+# als Migrationsreferenz im Repository, wird in diesem Workflow aber nicht
+# mehr gebaut oder getestet. Der Legacy-Debug-APK-Workflow bleibt manuell
+# (workflow_dispatch).
 #
 # Greift NICHT auf Secrets zu und baut keine signierte Release-APK; ist daher safe für PRs
 # aus Forks.
@@ -51,32 +53,3 @@ jobs:
       - name: Test and build native Android app
         working-directory: native
         run: ./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug --no-daemon
-
-  legacy-compatibility:
-    name: Legacy migration compatibility
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
-        run: npm test
-
-      - name: Build
-        run: npm run build

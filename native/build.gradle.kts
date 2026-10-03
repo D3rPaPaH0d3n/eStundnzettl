@@ -2,11 +2,12 @@
 //
 // Jedes Modul deklariert seine Plugins selbst (Versionen aus
 // gradle/libs.versions.toml): :core lädt kotlin-jvm/serialization,
-// :app lädt AGP + kotlin-android + compose + ksp gemeinsam in EINEM
-// Klassenpfad (AGP und das Kotlin-Android-Plugin müssen sich sehen).
+// :app lädt AGP (eingebautes Kotlin seit AGP 9) + compose + serialization
+// + ksp. Das separate kotlin-android-Plugin ist mit AGP 9 weder nötig
+// noch kompatibel.
 //
-// Würde der Root das Kotlin-Plugin laden, könnte :app entweder die
-// Version nicht prüfen ("already on the classpath") oder das Kotlin-
-// Android-Plugin fände die AGP-Klassen nicht (BaseVariant). Und AGP im
-// Root würde JVM-only-Umgebungen ohne Google-Maven-Zugriff blockieren —
-// dort wird :app über settings.gradle.kts gar nicht erst konfiguriert.
+// Kotlin-Plugins mit `apply false` im Root laden das Kotlin-Gradle-Plugin
+// in einem Klassenpfad ohne AGP. :app scheitert dann mit
+// NoClassDefFoundError: com.android.build.gradle.api.BaseVariant.
+// Die Gradle-Warnung, dass das Kotlin-Plugin in :core und :app getrennt
+// geladen wird, bleibt deshalb bestehen.

@@ -6,7 +6,7 @@ expects. The repo includes a minimal `Fastfile` + `Appfile` and a
 GitHub workflow (`update-store-listings.yml`) that uploads the
 listings — APKs/AABs and changelogs continue to be handled by
 `deploy-play-store.yml` and the Python script in
-`.github/scripts/deploy-play.py`.
+`.github/workflows/scripts/deploy-play.py`.
 
 The **single source of truth** for every text below remains
 `docs/play-store-listing.md`. Keep them in sync.

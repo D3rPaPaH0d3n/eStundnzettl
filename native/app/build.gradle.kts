@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -8,7 +7,13 @@ plugins {
 
 android {
     namespace = "com.estundnzettl.app"
-    compileSdk = 36
+    // Compose 1.12 und core-ktx 1.19 verlangen mindestens compileSdk 37.0.
+    // 37.2 ist das aktuelle stabile Plattformpaket.
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     defaultConfig {
         // Same application id as the Capacitor app so the native rewrite can
@@ -56,13 +61,15 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -72,19 +79,30 @@ ksp {
 
 // Die UI-Sprachdateien (848 Keys, de/en) kommen 1:1 aus der bestehenden
 // App (src/i18n/locales) — Single Source of Truth, kein Text-Drift.
+// AGP 9 nimmt keine Provider mehr im SourceSet-API entgegen; generierte
+// Assets hängen deshalb an der Variant-API.
+val i18nAssetRoot = layout.buildDirectory.dir("generated/i18nAssets")
 val syncI18n = tasks.register<Copy>("syncI18n") {
+    into(i18nAssetRoot)
     from(rootProject.layout.projectDirectory.dir("../src/i18n/locales")) {
         include("*.json")
+        eachFile {
+            path = "i18n/$name"
+        }
+        includeEmptyDirs = false
     }
-    into(layout.buildDirectory.dir("generated/i18nAssets/i18n"))
 }
 
-android.sourceSets.getByName("main") {
-    assets.srcDir(layout.buildDirectory.dir("generated/i18nAssets"))
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(syncI18n) { task ->
+            task.destinationDirectory
+        }
+    }
 }
 
 android.sourceSets.getByName("androidTest") {
-    assets.srcDir("$projectDir/schemas")
+    assets.directories.add("$projectDir/schemas")
 }
 
 tasks.named("preBuild") {
@@ -108,7 +126,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
     implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.kotlinx.coroutines.android)

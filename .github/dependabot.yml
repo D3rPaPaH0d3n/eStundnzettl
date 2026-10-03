@@ -1,24 +1,11 @@
 # Keep dependency maintenance inside GitHub instead of an external quality dashboard.
 # Dependabot opens pull requests; CI decides whether updates are safe.
 #
-# Monatlicher Rhythmus mit einem Sammel-PR pro Ökosystem (minor + patch).
-# Major-Updates kommen weiterhin einzeln, weil sie bewusste Entscheidungen
-# brauchen (siehe ESLint 10 / eslint-plugin-react).
+# Monatlicher Rhythmus mit genau einem Sammel-PR pro Ökosystem.
+# Die eingefrorene Legacy-App (npm im Repo-Root, Gradle unter /android)
+# wird nicht mehr von Dependabot angefasst.
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-      time: "06:00"
-      timezone: "Europe/Vienna"
-    open-pull-requests-limit: 5
-    groups:
-      npm-minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
-
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -39,7 +26,6 @@ updates:
       timezone: "Europe/Vienna"
     open-pull-requests-limit: 3
     groups:
-      gradle-minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
+      gradle-all:
+        patterns:
+          - "*"

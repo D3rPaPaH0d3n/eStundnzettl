@@ -59,6 +59,21 @@ private const val GOOGLE_DRIVE_TAG = "GoogleDriveFlow"
 internal fun autoCheckoutDays(startDate: LocalDate, today: LocalDate): Int =
     ChronoUnit.DAYS.between(startDate, today).toInt().coerceAtLeast(1)
 
+/** Pause already finished plus a pause that is still open at [until]. */
+internal fun timerPauseMinutes(
+    accumulatedPauseMs: Long,
+    pauseStartedAt: Instant?,
+    until: Instant,
+): Int {
+    val openPauseMs = if (pauseStartedAt == null) {
+        0L
+    } else {
+        (until.toEpochMilli() - pauseStartedAt.toEpochMilli()).coerceAtLeast(0L)
+    }
+    val totalMs = accumulatedPauseMs.coerceAtLeast(0L) + openPauseMs
+    return Math.round(totalMs / 1000.0 / 60.0).toInt().coerceAtLeast(0)
+}
+
 internal fun shouldResolveAutomaticWorkCode(form: FormUiState): Boolean =
     form.entryType == "work" && form.code != WorkCodes.ARRIVAL &&
         form.code != WorkCodes.DRIVE && form.codeIsAutomatic
@@ -118,6 +133,19 @@ data class TimerUiState(
     val startTime: String? = null,        // ISO string
     val pauseStartTime: String? = null,   // ISO string
     val accumulatedPause: Long = 0,       // milliseconds
+)
+
+/**
+ * Captured timer values kept until the entry is saved.
+ * The timer bar itself is cleared, so the screen stays the same.
+ */
+@Serializable
+internal data class PendingTimerCapture(
+    val formDate: String,
+    val startTime: String,
+    val endTime: String,
+    val pauseDuration: Int,
+    val code: Int,
 )
 
 /** One-shot Toast-Nachricht (i18n-Key + Argumente, oder bereits übersetzter Text). */
@@ -385,12 +413,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Navigation & Monat ──────────────────────────────────
 
     fun setView(view: String) {
+        val leavingCapturedEntry = _state.value.view == "add" && view != "add"
         _state.value = _state.value.copy(view = view)
         if (view == "dashboard") {
             _state.value = _state.value.copy(
                 form = _state.value.form.copy(editingEntry = null)
             )
         }
+        if (leavingCapturedEntry) clearPendingTimerCapture()
     }
 
     fun changeMonth(delta: Long) {
@@ -483,6 +513,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             ),
             view = "add",
         )
+        clearPendingTimerCapture()
     }
 
     /** Port von startEdit (useEntryActions). */
@@ -516,6 +547,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             else -> form.copy(pauseDuration = 0, project = "")
         }
         _state.value = _state.value.copy(form = form, view = "add")
+        clearPendingTimerCapture()
     }
 
     /** Neues Datum im Formular → Default-Zeiten anpassen (EntryForm-Effekt). */
@@ -609,6 +641,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     runCatching { settings.setRaw("last_code", JsonPrimitive(code)) }
                 }
                 recompute()
+                runCatching { settings.delete(KEY_PENDING_TIMER_CAPTURE) }
                 emit(UiMessage(if (editing) "toasts.entry.updated" else "toasts.entry.saved"))
                 _state.value = _state.value.copy(
                     form = _state.value.form.copy(
@@ -655,52 +688,90 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Live-Timer (Port von useLiveTimer + useTimerActions) ──
 
     private suspend fun restoreTimer() {
-        val raw = runCatching { settings.getRaw("live_timer") }.getOrNull() ?: return
-        val timer = runCatching {
-            timerJson.decodeFromString(TimerUiState.serializer(), raw.toString())
-        }.getOrNull() ?: return
-        _state.value = _state.value.copy(timer = timer)
-
-        // Auto-Checkout: Timer lief über den Tag hinaus → bei 23:59 des
-        // Start-Tags beenden und Formular vorbefüllen.
-        if (timer.isRunning && timer.startTime != null) {
-            val start = LocalDateTime.ofInstant(Instant.parse(timer.startTime), ZoneId.systemDefault())
-            val today = LocalDate.now()
-            if (start.toLocalDate() != today) {
-                val daysMissed = autoCheckoutDays(start.toLocalDate(), today)
-                val pauseMinutes = Math.round(timer.accumulatedPause / 1000.0 / 60.0).toInt()
-                persistTimer(TimerUiState())
-                _state.value = _state.value.copy(
-                    timer = TimerUiState(),
-                    form = FormUiState(
-                        entryType = "work",
+        val raw = runCatching { settings.getRaw("live_timer") }.getOrNull()
+        val timer = raw?.let {
+            runCatching {
+                timerJson.decodeFromString(TimerUiState.serializer(), it.toString())
+            }.getOrNull()
+        }
+        if (timer != null) {
+            _state.value = _state.value.copy(timer = timer)
+            val startInstant = timer.startTime?.let { runCatching { Instant.parse(it) }.getOrNull() }
+            if (timer.isRunning && startInstant != null) {
+                val zone = ZoneId.systemDefault()
+                val start = LocalDateTime.ofInstant(startInstant, zone)
+                val today = LocalDate.now()
+                if (start.toLocalDate() != today) {
+                    val daysMissed = autoCheckoutDays(start.toLocalDate(), today)
+                    val capturedEnd = start.toLocalDate().atTime(23, 59).atZone(zone).toInstant()
+                    val pauseStarted = if (timer.isPaused) {
+                        timer.pauseStartTime?.let { runCatching { Instant.parse(it) }.getOrNull() }
+                    } else {
+                        null
+                    }
+                    val capture = PendingTimerCapture(
                         formDate = start.toLocalDate().toDateString(),
                         startTime = "%02d:%02d".format(start.hour, start.minute),
                         endTime = "23:59",
-                        pauseDuration = pauseMinutes,
-                        project = "",
+                        pauseDuration = timerPauseMinutes(timer.accumulatedPause, pauseStarted, capturedEnd),
                         code = defaultCode(start.toLocalDate().toDateString()),
-                        codeIsAutomatic = true,
-                        isLiveEntry = true,
-                    ),
-                    view = "add",
-                )
-                Haptics.heavy(getApplication())
-                emit(
-                    UiMessage(
-                        key = "toasts.autoCheckout",
-                        args = listOf("count" to daysMissed),
-                        tone = UiMessageTone.WARNING,
                     )
-                )
+                    persistTimer(TimerUiState(), capture)
+                    showCapturedTimer(capture)
+                    Haptics.heavy(getApplication())
+                    emit(
+                        UiMessage(
+                            key = "toasts.autoCheckout",
+                            args = listOf("count" to daysMissed),
+                            tone = UiMessageTone.WARNING,
+                        )
+                    )
+                    return
+                }
             }
         }
+        if (_state.value.timer.isRunning) return
+        restorePendingTimerCapture()
     }
 
-    private fun persistTimer(timer: TimerUiState) {
+    private suspend fun restorePendingTimerCapture() {
+        val raw = runCatching { settings.getRaw(KEY_PENDING_TIMER_CAPTURE) }.getOrNull() ?: return
+        val pending = runCatching {
+            timerJson.decodeFromString(PendingTimerCapture.serializer(), raw.toString())
+        }.getOrNull() ?: return
+        showCapturedTimer(pending)
+    }
+
+    private fun showCapturedTimer(capture: PendingTimerCapture) {
+        _state.value = _state.value.copy(
+            timer = TimerUiState(),
+            form = FormUiState(
+                entryType = "work",
+                formDate = capture.formDate,
+                startTime = capture.startTime,
+                endTime = capture.endTime,
+                pauseDuration = capture.pauseDuration,
+                project = "",
+                code = capture.code,
+                codeIsAutomatic = true,
+                isLiveEntry = true,
+            ),
+            view = "add",
+        )
+    }
+
+    private fun persistTimer(timer: TimerUiState, pending: PendingTimerCapture? = null) {
         _state.value = _state.value.copy(timer = timer)
         viewModelScope.launch {
             runCatching {
+                if (pending != null) {
+                    settings.setRaw(
+                        KEY_PENDING_TIMER_CAPTURE,
+                        Json.parseToJsonElement(
+                            timerJson.encodeToString(PendingTimerCapture.serializer(), pending),
+                        ),
+                    )
+                }
                 settings.setRaw(
                     "live_timer",
                     Json.parseToJsonElement(timerJson.encodeToString(TimerUiState.serializer(), timer)),
@@ -709,7 +780,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun clearPendingTimerCapture() {
+        viewModelScope.launch {
+            runCatching { settings.delete(KEY_PENDING_TIMER_CAPTURE) }
+        }
+    }
+
     fun startTimer() {
+        clearPendingTimerCapture()
         persistTimer(
             TimerUiState(
                 isRunning = true,
@@ -743,34 +821,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun stopTimer() {
         val timer = _state.value.timer
         val startIso = timer.startTime ?: return
+        val startInstant = runCatching { Instant.parse(startIso) }.getOrNull() ?: return
         val now = Instant.now()
-
-        var pauseMs = timer.accumulatedPause
-        if (timer.isPaused && timer.pauseStartTime != null) {
-            pauseMs += now.toEpochMilli() - Instant.parse(timer.pauseStartTime).toEpochMilli()
+        val pauseStarted = if (timer.isPaused) {
+            timer.pauseStartTime?.let { runCatching { Instant.parse(it) }.getOrNull() }
+        } else {
+            null
         }
-        val pauseMinutes = Math.round(pauseMs / 1000.0 / 60.0).toInt()
-
         val zone = ZoneId.systemDefault()
-        val start = LocalDateTime.ofInstant(Instant.parse(startIso), zone)
+        val start = LocalDateTime.ofInstant(startInstant, zone)
         val end = LocalDateTime.ofInstant(now, zone)
-
-        persistTimer(TimerUiState())
-
-        _state.value = _state.value.copy(
-            form = FormUiState(
-                entryType = "work",
-                formDate = start.toLocalDate().toDateString(),
-                startTime = "%02d:%02d".format(start.hour, start.minute),
-                endTime = "%02d:%02d".format(end.hour, end.minute),
-                pauseDuration = pauseMinutes,
-                project = "",
-                code = defaultCode(start.toLocalDate().toDateString()),
-                codeIsAutomatic = true,
-                isLiveEntry = true,
-            ),
-            view = "add",
+        val capture = PendingTimerCapture(
+            formDate = start.toLocalDate().toDateString(),
+            startTime = "%02d:%02d".format(start.hour, start.minute),
+            endTime = "%02d:%02d".format(end.hour, end.minute),
+            pauseDuration = timerPauseMinutes(timer.accumulatedPause, pauseStarted, now),
+            code = defaultCode(start.toLocalDate().toDateString()),
         )
+        persistTimer(TimerUiState(), capture)
+        showCapturedTimer(capture)
         emit(UiMessage("toasts.timer.captured"))
     }
 
@@ -1189,6 +1258,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val KEY_REVIEW_REQUEST_COUNT = "estundnzettl_review_request_count_v2"
         private const val LEGACY_SUPPORT_FIRST_ELIGIBLE = "estundnzettl_support_prompt_first_eligible_v1"
         private const val ATTACHMENTS_DIR = "attachments"
+        private const val KEY_PENDING_TIMER_CAPTURE = "pending_timer_capture"
         private const val MAX_ATTACHMENT_SIZE = 10L * 1024 * 1024
         private val ALLOWED_ATTACHMENT_TYPES = setOf(
             "application/pdf", "image/jpeg", "image/png", "image/webp",
@@ -1293,12 +1363,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Datei-Inhalt eines Anhangs (für Teilen/Report-Bundle). */
     fun attachmentFile(attachment: com.estundnzettl.core.model.Attachment): java.io.File =
-        java.io.File(getApplication<Application>().filesDir, attachment.storagePath)
+        resolveAttachmentFile(attachment.storagePath) ?: java.io.File(attachmentsDir(), ".invalid")
 
     private fun deleteAttachmentFile(storagePath: String) {
-        runCatching {
-            java.io.File(getApplication<Application>().filesDir, storagePath).delete()
-        }
+        runCatching { resolveAttachmentFile(storagePath)?.delete() }
+    }
+
+    /** Imported backup paths stay inside the attachments directory. */
+    private fun resolveAttachmentFile(storagePath: String): java.io.File? {
+        if (storagePath.isBlank()) return null
+        val root = attachmentsDir().canonicalFile
+        val file = java.io.File(getApplication<Application>().filesDir, storagePath).canonicalFile
+        val rootPath = root.path + java.io.File.separator
+        return file.takeIf { it.path == root.path || it.path.startsWith(rootPath) }
     }
 
     // ─── Demo-Daten (Port von DataSettings.handleConfirmDemoData) ──
@@ -1480,7 +1557,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     when (val result = com.estundnzettl.app.data.NextcloudClient.pollLoginResult(pollEndpoint, token)) {
                         is com.estundnzettl.app.data.NextcloudClient.PollResult.Pending -> {}
                         is com.estundnzettl.app.data.NextcloudClient.PollResult.Complete -> {
-                            nextcloudManager.persistLogin(result.server, result.loginName, result.appPassword)
+                            if (!nextcloudManager.persistLogin(result.server, result.loginName, result.appPassword)) {
+                                refreshNextcloudState(connecting = false)
+                                emit(UiMessage("settings.backup.toast.nextcloudLoginFailed"))
+                                return@launch
+                            }
                             runCatching {
                                 com.estundnzettl.app.data.NextcloudClient
                                     .testConnection(result.server, result.loginName, result.appPassword)
@@ -1785,7 +1866,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         return try {
             val token = googleDrive.authorize(com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA)
-            val payload = backupRepo.createBackupPayload(note = "eStundnzettl Drive-Check")
+            val sections = backupRepo.collectSections()
+            if (sections.entries.isEmpty()) {
+                emit(UiMessage("toasts.autoBackup.noData", tone = UiMessageTone.WARNING))
+                return false
+            }
+            val payload = backupRepo.createBackupPayload(note = "eStundnzettl Drive-Check", sections = sections)
             val content = backupRepo.toFileContent(payload)
             googleDrive.uploadOrUpdateBackup(
                 token,
@@ -2085,7 +2171,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             ob.step == 3 && !ob.customCalc -> 5
             else -> ob.step + 1
         }
-        updateOnboarding { next.copy(step = target) }
+        updateOnboarding { current ->
+            next.copy(
+                step = target,
+                restoreData = current.restoreData,
+                restoreLoading = current.restoreLoading,
+                restoreChoices = current.restoreChoices,
+            )
+        }
     }
 
     fun onboardingBack() {

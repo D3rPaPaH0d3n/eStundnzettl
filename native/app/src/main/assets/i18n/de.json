@@ -1,0 +1,1369 @@
+{
+  "nativeWelcome": {
+    "title": "Willkommen in der neuen eStundnzettl!",
+    "body": "Servus! Deine App wurde von Grund auf neu gebaut — aus der bisherigen Web-Technik ist eine echte, native Android-App geworden. Warum der Wechsel? Die alte Basis war ein guter Start, aber man hat sie der App angemerkt: beim Öffnen, beim Scrollen, beim Akku. Die neue Version startet schneller, läuft flüssiger und ist bereit für alles, was noch kommt. Deine Daten wurden automatisch übernommen — alles ist noch genau da, wo es hingehört.",
+    "signature": "Danke, dass du dabei bist! – Markus",
+    "cta": "Los geht's!"
+  },
+  "common": {
+    "back": "Zurück",
+    "close": "Schließen",
+    "expand": "Aufklappen",
+    "collapse": "Zuklappen",
+    "expanded": "Aufgeklappt",
+    "collapsed": "Zugeklappt",
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "select": "Auswählen",
+    "apply": "Übernehmen",
+    "loading": "Lädt..."
+  },
+  "app": {
+    "subtitle": "Damit ka Stund verlorn geht",
+    "deleteEntryTitle": "Eintrag löschen?",
+    "deleteEntryMessage": "Möchtest du diesen Eintrag wirklich entfernen?",
+    "deleteAllTitle": "Alles löschen?",
+    "deleteAllMessage": "Möchtest du wirklich alle Einträge unwiderruflich löschen? Auch dein Profil wird zurückgesetzt."
+  },
+  "dashboard": {
+    "prevMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "selectMonth": "Monat wählen",
+    "monthPickerAria": "Monat wählen (aktuell {{value}})",
+    "previousYear": "Vorheriges Jahr",
+    "nextYear": "Nächstes Jahr",
+    "monthPickerFallback": "Monatsauswahl konnte nicht geöffnet werden.",
+    "actual": "IST",
+    "target": "SOLL",
+    "balance": "Saldo",
+    "monthlyTarget": "MONATSZIEL",
+    "monthlyRemaining": "NOCH OFFEN",
+    "monthlyExceeded": "DARÜBER",
+    "monthlyReached": "GESCHAFFT",
+    "driveTime": "Fahrzeit ({{code}})",
+    "overtimeShort": {
+      "extra": "MA",
+      "overtime": "ÜS"
+    },
+    "recentEntries": "Letzte Einträge (nach Kalenderwoche)",
+    "noEntries": "Keine Einträge vorhanden.",
+    "calendarWeek": "Kalenderwoche",
+    "calendarWeekShort": "KW {{week}}",
+    "total": "Gesamt",
+    "pause": "Pause: {{minutes}} Min",
+    "noPause": "Keine Pause",
+    "documentsLabel": "Dokumente",
+    "documentsCount_one": "{{count}} Dokument",
+    "documentsCount_other": "{{count}} Dokumente"
+  },
+  "entryTypes": {
+    "holiday": "Feiertag",
+    "allDay": "Ganztags",
+    "paidOff": "Bezahlt frei",
+    "timeComp": "Zeitausgleich",
+    "vacation": "Urlaub",
+    "sick": "Krank"
+  },
+  "entryForm": {
+    "copyLastError": "Kein vorheriger Eintrag gefunden.",
+    "copyLastSuccess": "Daten übernommen!",
+    "quickAddSuccess": "Tätigkeit hinzugefügt!",
+    "codePlaceholder": "Bitte wählen",
+    "startTime": "Startzeit",
+    "endTime": "Endzeit",
+    "nextDay": "+1 Tag",
+    "selectActivity": "Tätigkeit wählen",
+    "entryTypeLabel": "Eintragstyp",
+    "asLast": "Wie zuletzt",
+    "types": {
+      "work": "Arbeit",
+      "drive": "Fahrt",
+      "sick": "Krank",
+      "vacation": "Urlaub",
+      "timeCompShort": "ZA"
+    },
+    "driveSubtype": {
+      "arrival": "An/Abreise",
+      "arrivalBadge": "Bezahlt",
+      "driveTime": "Fahrtzeit",
+      "driveTimeBadge": "Unbezahlt"
+    },
+    "autoCalc": {
+      "title": "Automatische Berechnung",
+      "vacationType": "Urlaubstage",
+      "sickType": "Krankenstand",
+      "timeCompType": "Zeitausgleich",
+      "message": "Für {{type}} wird automatisch die tägliche Sollzeit gutgeschrieben."
+    },
+    "mode": {
+      "auto": "Automatisch",
+      "manual": "Manuell"
+    },
+    "date": "Datum",
+    "datePickerFallback": "Datumsauswahl konnte nicht geöffnet werden.",
+    "datePickerFallbackHint": "Native Datumsauswahl nicht verfügbar – bitte Datum manuell wählen.",
+    "start": "Start",
+    "end": "Ende",
+    "pause": "Pause",
+    "noPause": "Keine",
+    "pauseMinutes": "{{minutes}} Min",
+    "activity": "Tätigkeit",
+    "newActivity": "Neue",
+    "quickAddPlaceholder": "z.B. 99 - Sonstiges",
+    "distanceOrNote": "Strecke / Notiz",
+    "project": "Projekt",
+    "projectPlaceholder": "...",
+    "knownProjects": "Bekannte Projekte"
+  },
+  "reports": {
+    "title": "Stundenzettel",
+    "preview": "Vorschau",
+    "exportButton": "Senden",
+    "fullMonth": "Gesamter Monat",
+    "employeeAlt": "Mitarbeiter",
+    "layoutPanel": {
+      "title": "PDF-Anzeige",
+      "subtitle": "Felder live ein-/ausblenden"
+    },
+    "monthWithWeek": "{{month}} (KW {{week}})",
+    "columns": {
+      "date": "Datum",
+      "time": "Zeit",
+      "project": "Projekt",
+      "code": "Code",
+      "hours": "Std.",
+      "balance": "Saldo"
+    },
+    "pauseMin": "Pause: {{minutes}}m",
+    "noPauseUpper": "KEINE PAUSE",
+    "publicHoliday": "Gesetzlicher Feiertag",
+    "documentsLabel": "Dokumente:",
+    "summary": {
+      "title": "Zusammenfassung",
+      "work": "Arbeit (inkl. Anreise):",
+      "holidays": "Feiertage:",
+      "vacation": "Urlaub:",
+      "timeComp": "Zeitausgleich:",
+      "sickness": "Krankenstand:",
+      "totalActual": "Gesamt (IST):",
+      "monthlyTarget": "Monatsziel:",
+      "monthlyRemaining": "Noch offen:",
+      "monthlyExceeded": "Über Ziel:",
+      "monthlyReached": "Monatsziel geschafft:",
+      "targetTime": "Sollzeit (SOLL):",
+      "balance": "Saldo:",
+      "extraHours": "Mehrarbeit:",
+      "overtime": "Überstunden:",
+      "driveUnpaid": "Fahrtzeit (unbezahlt):"
+    },
+    "vacationBalance": {
+      "allowance": "Urlaubsanspruch:",
+      "days": "Tage",
+      "carryoverPositive": "Übertrag Vorjahr:",
+      "carryoverNegative": "Bereits verbraucht:",
+      "used": "Genommen ({{year}}):",
+      "remaining": "Verbleibend:"
+    },
+    "notesTitle": "Anmerkungen / Notiz:",
+    "largeExport": {
+      "title": "Großer Export",
+      "message": "{{count}} Einträge werden exportiert. Auf älteren Geräten kann das zu Speicherproblemen führen. Empfehlung: pro Monat oder einzelne Kalenderwoche exportieren.",
+      "confirm": "Trotzdem exportieren"
+    },
+    "toast": {
+      "downloadStarted": "🖨️ Download gestartet!",
+      "readyToShare": "Bereit zum Teilen",
+      "saved": "PDF gespeichert",
+      "savedToDocuments": "Gespeichert in 'Dokumente/eStundnzettl'",
+      "error": "Fehler: {{message}}"
+    },
+    "shareHandoff": {
+      "title": "Passt, übergeben!",
+      "subtitle": "Die PDF ist in der gewählten App bereit zum Senden."
+    },
+    "shareMessage": {
+      "subject": "Stundenzettel – [Zeitraum]",
+      "weekPeriod": "KW {{week}} ({{range}})",
+      "body": "Hallo,\n\nanbei mein Stundenzettel für [Zeitraum].\n\nLiebe Grüße\n[Name]",
+      "bodyWithoutName": "Hallo,\n\nanbei mein Stundenzettel für [Zeitraum].\n\nLiebe Grüße",
+      "periodToken": "[Zeitraum]",
+      "nameToken": "[Name]"
+    },
+    "shareTarget": {
+      "shareWith": "Mit {{app}} senden",
+      "directDescription": "Direkt in deiner bevorzugten E-Mail-App öffnen",
+      "contactDescription": "Kontakt in der gewählten App aussuchen"
+    },
+    "noteModal": {
+      "title": "Notiz für PDF",
+      "placeholder": "Z.B. Zusätzliche Infos, Bankverbindung, etc...",
+      "done": "Fertig"
+    },
+    "pdfElementMissing": "PDF-Element fehlt"
+  },
+  "drawers": {
+    "timePicker": {
+      "title": "Zeit wählen",
+      "confirmAria": "Auswahl bestätigen"
+    },
+    "decimalDuration": {
+      "title": "Stunden"
+    }
+  },
+  "helpModal": {
+    "title": "Anleitung & Hilfe",
+    "subtitle": "Dein Wegweiser durch den eStundnzettl",
+    "intro": {
+      "badge": "Servus, schön dass d' da bist!",
+      "body": "Mit dem eStundnzettl schreibst du deine Arbeitszeit direkt am Handy auf. Am Monatsende macht die App daraus einen sauberen Stundenzettel. Ka Hexerei: Geh die Punkte einfach der Reihe nach durch — du kannst dabei nichts kaputtmachen."
+    },
+    "firstSteps": {
+      "title": "Zuerst: Wo ist was?",
+      "addTitle": "Grüner Plus-Knopf = neuer Eintrag",
+      "addBody": "Der runde grüne Knopf unten rechts ist dein wichtigster Knopf. Kurz antippen öffnet ein Formular, in das du deine Arbeitszeit einträgst.",
+      "reportTitle": "Blatt-Symbol = Stundenzettel",
+      "reportBody": "Oben rechts öffnest du die Vorschau. Dort kontrollierst du deine Stunden und verschickst später das fertige PDF.",
+      "settingsTitle": "Zahnrad = Einstellungen",
+      "settingsBody": "Hier stehen dein Name, deine Arbeitszeiten, Backups und das Aussehen der App. Karten mit einem Pfeil kannst du antippen und aufklappen.",
+      "gestureHint": "<b>Kurz tippen</b> heißt: einmal antippen und gleich wieder loslassen. <b>Gedrückt halten</b> heißt: Finger ungefähr eine Sekunde liegen lassen. <b>Wischen</b> heißt: Finger auflegen und über den Bildschirm ziehen."
+    },
+    "step1": {
+      "title": "Stunden eintragen",
+      "lead": "Zwei Wege führen zum Ziel — such dir den aus, der dir taugt:",
+      "timerTitle": "Live-Timer (mitlaufen lassen)",
+      "timerBody": "In der Früh: Leg den Finger auf den grünen <plus>+</plus> Knopf, lass ihn kurz dort und schieb ihn nach oben. Sobald der Timer erscheint, kannst du loslassen. Am Feierabend tippst du den Timer an und bestätigst das Ende. Die App trägt Start, Ende und Dauer ein.",
+      "manualTitle": "Von Hand (nachtragen)",
+      "manualBody": "Tipp den <plus>+</plus> Knopf einmal kurz an. Wähle zuerst die Art des Eintrags, dann Start, Ende und Pause. Zum Schluss unten auf <b>„Speichern“</b> tippen. <b>„Wie zuletzt“</b> übernimmt die Zeiten deines letzten Eintrags."
+    },
+    "step2": {
+      "title": "Fahrtzeiten",
+      "lead": "Beim Eintragen oben den Typ <b>„Fahrt“</b> wählen — dann gibt's zwei Sorten:",
+      "arrival": "<b>An/Abreise:</b> Zählt als bezahlte Arbeitszeit — geht ins Tagessoll.",
+      "drive": "<b>Fahrtzeit:</b> Unbezahlte Wegzeit — steht extra am Stundenzettel."
+    },
+    "step3": {
+      "title": "Urlaub, Krank & ZA",
+      "body": "Einfach beim Eintragen <b>Urlaub</b>, <b>Krank</b> oder <b>ZA</b> (Zeitausgleich) auswählen — mehr brauchst du nicht. Die App rechnet die Soll-Stunden für den Tag automatisch richtig, und dein Resturlaub steht gleich am Monats-PDF. Wenn's sein muss, kannst du auch eigene Zeiten eingeben."
+    },
+    "step4": {
+      "title": "Dokumente anhängen",
+      "body": "Regieschein, Lieferschein oder Foto von der Baustelle: Öffne den Eintrag und tipp auf <b>„Dokumente“</b>. Danach wählst du ein Foto oder eine Datei vom Handy aus. Beim PDF-Export kannst du die Anhänge mitgeben — da geht nix verloren."
+    },
+    "step5": {
+      "title": "Monatsabschluss & PDF",
+      "preview": "Tipp oben rechts auf das grüne <icon/> Symbol. Da siehst du deinen fertigen Stundenzettel als Vorschau — nach Monat oder Kalenderwoche gefiltert. Mit zwei Fingern zoomst du rein, und übers Sprechblasen-Symbol gibst du bei Bedarf noch eine Notiz für den Chef dazu.",
+      "share": "Passt alles? Dann auf <b>„Senden“</b> — per Mail, WhatsApp oder als Datei speichern. Und fertig ist der Monat!"
+    },
+    "step6": {
+      "title": "Backup — sicher ist sicher",
+      "lead": "Handy kaputt oder verloren — und die Stunden weg? Na sicher nicht! Schalt dir eine automatische Sicherung ein, das dauert keine Minute:",
+      "gdriveTitle": "Google Drive",
+      "gdriveBody": "In den Einstellungen unter „Backup & Export“ dein Google-Konto verbinden — ab dann sichert die App jeden Tag von selbst in deine Cloud. Am neuen Handy tippst du beim Start einfach auf „Ich hab schon ein Backup“, und alles ist wieder da.",
+      "localTitle": "Lokales Backup",
+      "localBody": "Geht auch ohne Internet: Wähle einmal einen Backup-Ordner auf deinem Handy. Wichtig: Bei Verlust des Handys ist auch dieser Ordner weg — für diesen Fall ist Google Drive oder Nextcloud sicherer."
+    },
+    "step7": {
+      "title": "Hausmasta-Modus",
+      "lead": "Für alle, die's genauer wissen wollen: Aktivier ganz unten in den Einstellungen die <b>Erweiterten Einstellungen</b> — bei uns liebevoll Hausmasta-Modus genannt. Dann kommen die Profi-Werkzeuge zum Vorschein:",
+      "nextcloud": "<b>Nextcloud-Backup</b> — Sicherung in deine eigene Cloud",
+      "jsonIO": "<b>Import & Export</b> — Daten als Datei sichern und zurückholen",
+      "pdfArchive": "<b>PDF-Archiv</b> — legt automatisch jedes Monat ein PDF ab, für die gesetzliche Aufbewahrung",
+      "codes": "<b>Tätigkeitscodes</b> — Kürzel für Arbeiten, zum Beispiel M für Montage; sie sind auch ohne Hausmasta in den Einstellungen erreichbar",
+      "recordOnly": "<b>Nur Aufzeichnung</b> — Stunden notieren ganz ohne Soll/Ist-Rechnerei"
+    },
+    "newFeatures": {
+      "title": "Gut zu wissen — neu & praktisch",
+      "nightTitle": "Nachtschicht über Mitternacht",
+      "nightBody": "Du kannst zum Beispiel 22:00 bis 06:00 eintragen. Die App versteht von selbst, dass 06:00 am nächsten Morgen gemeint ist. Das kleine ⁺¹ neben der Endzeit erinnert dich daran.",
+      "materialTitle": "Farben passend zu deinem Handy",
+      "materialBody": "Unter <b>Einstellungen → Darstellung</b> kannst du Material You einschalten. Dann übernimmt die App Farben von deinem Android-Handy. Das ändert nur das Aussehen, nicht deine Daten.",
+      "tourTitle": "Die App kann dir alles zeigen",
+      "tourBody": "Beim ersten Start markieren kleine Hinweise die wichtigen Knöpfe. In den Einstellungen gibt es ebenfalls eine Führung. Tippe auf <b>„Weiter“</b>, bis du fertig bist — dabei wird nichts verstellt.",
+      "restoreTitle": "Umzug auf ein neues Handy",
+      "restoreBody": "Wähle beim Einrichten <b>„Ich hab schon ein Backup“</b>. Ein vollständiges Backup bringt Einträge, Name, Einstellungen, Tätigkeitscodes und Anhänge zurück. Lies die Zusammenfassung, bevor du bestätigst."
+    },
+    "tips": {
+      "title": "Tipps & Tricks",
+      "deleteTitle": "Löschen",
+      "deleteBody": "Finger auf einen Eintrag legen und nach <b>links ziehen</b>. Vor dem Löschen fragt die App noch einmal nach.",
+      "editTitle": "Bearbeiten",
+      "editBody": "Einfach auf einen Eintrag <b>tippen</b> und ändern.",
+      "autoBackupTitle": "Auto-Backup",
+      "autoBackupBody": "Einmal verbunden, sichert die App <b>täglich von selbst</b>. Du brauchst nix mehr tun.",
+      "themeTitle": "Design",
+      "themeBody": "Hell, dunkel oder wie's Handy mag — stellst du unter <b>Darstellung</b> ein."
+    },
+    "tagline": "\"Damit ka Stund verloren geht!\""
+  },
+  "onboarding": {
+    "nav": {
+      "back": "Zurück",
+      "next": "Weiter",
+      "finish": "Passt"
+    },
+    "welcome": {
+      "logoAlt": "eStundnzettl Logo",
+      "hello": "Servus! 👋",
+      "glad": "Schön, dass du da bist.",
+      "intro": "Dein <brand>eStundnzettl</brand> — die einfache Zeiterfassung, die einfach funktioniert. Ganz ohne Schnickschnack.",
+      "badgeMobile": "Alles am Handy",
+      "badgeOffline": "Offline nutzbar",
+      "badgePrivate": "Daten bleiben bei dir",
+      "startNew": "Los geht's — neu einrichten",
+      "restore": "Ich hab schon ein Backup",
+      "demo": "Nur mal reinschnuppern (Demo)",
+      "simpleStart": "Nur Arbeitszeiten eintragen",
+      "simpleStartHint": "Schnellstart: Profil ausfüllen und loslegen.",
+      "calculatedStart": "Mit Berechnung & Auswertung",
+      "calculatedStartHint": "Für Soll/Ist, Saldo, Überstunden und Berichte."
+    },
+    "profile": {
+      "title": "Sag uns wer du bist",
+      "subtitle": "Damit dein Stundenzettel auch deinen Namen trägt.",
+      "privacyHint": "<b>Keine Sorge:</b> Dein Name, das Foto und alle weiteren Daten bleiben ausschließlich auf deinem Handy. Es geht nix raus, außer du willst's so.",
+      "photoAlt": "Profil",
+      "photoLabel": "Profilbild (optional)",
+      "nameLabel": "Dein Name",
+      "namePlaceholder": "Max Mustermann",
+      "companyLabel": "Firma",
+      "companyPlaceholder": "Firmenname GmbH",
+      "roleLabel": "Tätigkeit / Anstellung",
+      "rolePlaceholder": "z.B. Monteur, Kellner, Pflege, Büro..."
+    },
+    "summary": {
+      "title": "Perfekt! 🎉",
+      "bodyRestore": "Deine Daten sind wieder da. Wir zeigen dir kurz, was die App alles kann.",
+      "bodyFresh": "Alles eingerichtet. Jetzt zeigen wir dir in wenigen Klicks, wo du was findest.",
+      "tourHint": "Kurze Tour — dauert nur a Minütchen",
+      "finishButton": "Los, zeig mir die App"
+    },
+    "backup": {
+      "titleSetup": "Sicher ist sicher",
+      "titleRestore": "Backup wiederherstellen",
+      "subtitleSetup": "Willst du deine Daten zusätzlich sichern?",
+      "subtitleRestore": "Wo liegt dein Backup?",
+      "optionalHint": "<b>Komplett optional.</b> Du kannst diesen Schritt einfach überspringen — die App funktioniert auch ohne Backup. Einstellen kannst du das jederzeit später.",
+      "bonusHint": "<b>Bonus:</b> Wenn du ein Backup aktivierst, legt die App <b>automatisch jeden Monat</b> einen fertigen PDF-Stundenzettel dazu — zum Abgeben oder Archivieren.",
+      "gdrive": {
+        "title": "Google Drive",
+        "subtitle": "Tägliches Backup + Monats-PDF in deine Cloud"
+      },
+      "local": {
+        "title": "Am Handy speichern",
+        "subtitle": "Backup + PDF in einen Ordner deiner Wahl"
+      },
+      "nextcloud": {
+        "title": "Nextcloud",
+        "subtitle": "Auf deiner eigenen Cloud — volle Datenhoheit",
+        "connectedAs": "Verbunden als {{user}}",
+        "awaiting": "Warte auf Anmeldung in Nextcloud...",
+        "urlPlaceholder": "https://cloud.example.com",
+        "connectButton": "Mit Nextcloud verbinden"
+      },
+      "skipHint": "Nix dabei? Kein Problem — tipp einfach auf ‚Weiter‘.",
+      "restoreFromGdrive": "Aus Google Drive",
+      "restoreFromNextcloud": "Aus Nextcloud",
+      "restoreFromFolder": "Lokaler Ordner",
+      "restoreFromFile": "Datei (.json)",
+      "ncLoading": "Lade..."
+    },
+    "locale": {
+      "title": "Stundenberechnung",
+      "subtitle": "Wähl, welche Regeln deine App verwenden soll.",
+      "infoHint": "Kannst du jederzeit in den Einstellungen ändern. Beeinflusst automatische Feiertage, Halbtage (24./31.12.) und die Aufteilung in Mehrarbeit/Überstunden.",
+      "neutralTitle": "Neutral",
+      "neutralDescription": "Keine automatischen Feiertage, keine Halbtage, kein MA/ÜS-Split. Für alle Berufe & Länder.",
+      "austriaTitle": "Österreich",
+      "austriaDescription": "13 gesetzliche Feiertage, 24./31.12. halbiert, Mehrarbeit/Überstunden nach AZG.",
+      "germanyTitle": "Deutschland",
+      "germanyDescription": "Bundesweite + regionale Feiertage, 40h-Woche, Mehrarbeit/Überstunden.",
+      "switzerlandTitle": "Schweiz",
+      "switzerlandDescription": "Kantonale Feiertage, Halbtage (24./31.12.), Überstunden ab 45h/Woche (ArG).",
+      "stateLabel": "Bundesland",
+      "kantonLabel": "Kanton",
+      "stateDrawerTitle": "Bundesland wählen",
+      "kantonDrawerTitle": "Kanton wählen",
+      "customTitle": "Eigener Plan",
+      "customDescription": "Ich bastle mir meine Rechenregeln im nächsten Schritt selbst zusammen (Überstunden, Krank, Feiertage)."
+    },
+    "workSchedule": {
+      "title": "Wie willst du erfassen?",
+      "subtitle": "Wähle den Modus, der am besten zu dir passt.",
+      "modeTargetActual": "Soll/Ist",
+      "modeTargetActualHint": "Mit Überstunden & Saldo",
+      "modeSimple": "Einfach",
+      "modeSimpleHint": "Nur Stunden aufzeichnen",
+      "simpleInfo": "Deine Stunden werden wochen- und monatsweise summiert — ohne Soll, Saldo oder Überstunden. Du kannst den Modus später in den Einstellungen ändern.",
+      "customInfo": "Stell deine Stunden pro Tag direkt ein. Unten findest du optionale Presets, die du bei Bedarf übernehmen kannst — später in den Einstellungen ebenfalls jederzeit änderbar.",
+      "dailyHoursTitle": "Tagesstunden (benutzerdefiniert)",
+      "weeklyHours": "Wochenstunden:",
+      "presetsTitle": "Presets (optional übernehmen)"
+    },
+    "workCodes": {
+      "title": "Tätigkeiten",
+      "subtitle": "Wähl, mit welchen Codes du deine Stunden zuordnen willst.",
+      "basic": {
+        "allgemeinTitle": "Allgemein",
+        "allgemeinSubtitle": "5 neutrale Codes (Arbeit, Büro, Besprechung, Fahrzeit, Sonstiges)",
+        "leerTitle": "Keine Codes",
+        "leerSubtitle": "Starte leer — du legst deine Tätigkeiten später selbst an"
+      },
+      "industryTitle": "Branchen-Presets (optional)",
+      "codeCount": "{{description}} ({{count}} Codes)",
+      "footerHint": "Codes kannst du später jederzeit in den Einstellungen ändern oder ergänzen."
+    },
+    "calc": {
+      "title": "Dein eigener Plan",
+      "subtitle": "Stell ein, wie wir rechnen sollen — oder lass die Vorschläge stehen.",
+      "infoHint": "Kein Stress — die Standardwerte sind schon okay. Jede Regel kannst du auch später jederzeit in den Einstellungen ändern.",
+      "contractedHoursAuto": "Wird automatisch aus deinen Arbeitstagen berechnet.",
+      "advancedOpen": "Erweitert öffnen",
+      "advancedClose": "Erweitert schließen",
+      "holidaysTitle": "Feiertage",
+      "halfDaysTitle": "Halbtage",
+      "customHolidayTitle": "Eigenen Feiertag hinzufügen",
+      "noHolidays": "Aktuell keine Feiertage aktiv.",
+      "noHalfDays": "Keine Halbtage hinterlegt.",
+      "classicHalfDays": "24.12. & 31.12. übernehmen",
+      "vacationTitle": "Urlaubstage",
+      "preview": {
+        "overtimeNone": "Beispiel: 10 h Arbeit bei {{weekTarget}}/Woche → Saldo {{balance}}.",
+        "overtimeAll": "Beispiel: 10 h Arbeit → {{balance}} Überstunden.",
+        "overtimeSplit": "Beispiel: 10 h Arbeit → {{ma}} Mehrarbeit, {{ue}} Überstunden.",
+        "sickCap": "Beispiel: 4 h Arbeit + danach krank bei 8,5 h Soll → Krank zählt 4,5 h (nur bis Soll).",
+        "sickAdditive": "Beispiel: 4 h Arbeit + 8 h Krank → zählen 12 h gesamt.",
+        "sickIgnore": "Beispiel: 4 h Arbeit + Krank → nur 4 h Arbeit, Krank fällt weg."
+      }
+    },
+    "toast": {
+      "demoLoaded": "Demo-Daten geladen! Du kannst die App jetzt ausprobieren.",
+      "nameRequired": "Bitte gib deinen Namen ein.",
+      "localeRequired": "Bitte wähle eine Stundenberechnung.",
+      "gdriveLinked": "Verknüpfung erfolgreich!",
+      "gdriveLoginFailed": "Anmeldung abgebrochen oder fehlgeschlagen.",
+      "folderLinked": "Ordner verknüpft!",
+      "folderCancelled": "Auswahl abgebrochen",
+      "ncDisconnected": "Nextcloud getrennt",
+      "ncEnterUrl": "Bitte Server-URL eingeben",
+      "ncConnected": "Nextcloud verbunden!",
+      "ncTimeout": "Zeitüberschreitung — bitte erneut versuchen",
+      "ncLoginFailed": "Nextcloud Login fehlgeschlagen",
+      "ncServerUnreachable": "Server nicht erreichbar",
+      "ncServerUnreachableRestore": "Server nicht erreichbar oder Login Flow v2 nicht unterstützt",
+      "ncRestoreNotFound": "Kein Backup auf Nextcloud gefunden",
+      "ncRestoreInvalid": "Ungültiges Backup-Format",
+      "ncRestoreLoaded": "Backup von Nextcloud geladen!",
+      "signinFailed": "Anmeldung fehlgeschlagen",
+      "tokenMissing": "Kein Zugriffstoken erhalten",
+      "backupNotFound": "Kein Backup gefunden.",
+      "backupEmpty": "Backup leer.",
+      "backupInvalid": "Format ungültig.",
+      "backupInvalidShort": "Ungültiges Backup.",
+      "backupInvalidFormat": "Ungültiges Format.",
+      "backupLoaded": "Backup geladen!",
+      "loadError": "Fehler beim Laden",
+      "folderAccessError": "Fehler beim Zugriff.",
+      "fileReadError": "Datei konnte nicht gelesen werden.",
+      "integrityMismatch": "⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",
+      "restoreError": "Wiederherstellung fehlgeschlagen — Backup konnte nicht gespeichert werden.",
+      "restoreProfileNeeded": "Dieses Backup enthält kein Profil — bitte kurz Name & Arbeitszeiten ergänzen. Deine Einträge werden am Ende trotzdem übernommen.",
+      "restoreSuccess": "Daten wiederhergestellt!",
+      "welcome": "Willkommen!"
+    },
+    "restore": {
+      "chooseTitle": "Mehrere Backups gefunden",
+      "chooseHint": "Wähle aus, welcher Stand wiederhergestellt werden soll.",
+      "entries_one": "1 Eintrag",
+      "entries_other": "{{count}} Einträge",
+      "profileYes": "Profil enthalten",
+      "profileNo": "kein Profil",
+      "noTimestamp": "Ohne Zeitstempel",
+      "legacyName": "{{file}} · altes Format"
+    }
+  },
+  "toasts": {
+    "entry": {
+      "deleted": "🗑️ Eintrag gelöscht",
+      "saved": "💾 Eintrag gespeichert",
+      "updated": "✏️ Eintrag aktualisiert",
+      "saveFailed": "Eintrag konnte nicht gespeichert werden",
+      "updateFailed": "Eintrag konnte nicht aktualisiert werden",
+      "deleteFailed": "Eintrag konnte nicht gelöscht werden",
+      "deleteAllFailed": "Einträge konnten nicht gelöscht werden",
+      "importFailed": "Import fehlgeschlagen",
+      "endBeforeStart": "⚠️ Endzeit muss nach Startzeit liegen!",
+      "startEqualsEnd": "⚠️ Start- und Endzeit dürfen nicht gleich sein!",
+      "overlap": "⚠️ Zeitüberschneidung!"
+    },
+    "appReset": "🧹 App vollständig zurückgesetzt",
+    "noInternet": "Keine Internetverbindung",
+    "playStore": {
+      "opening": "Öffne den Play Store...",
+      "failed": "Play Store konnte nicht geöffnet werden.",
+      "copiedClipboard": "Play-Store-Link in die Zwischenablage kopiert."
+    },
+    "onboardingCompleted": "Einrichtung abgeschlossen!",
+    "timer": {
+      "started": "⏱️ Stempeluhr gestartet!",
+      "captured": "🏁 Zeit wurde übernommen"
+    },
+    "attachments": {
+      "readyToShare_one": "1 Datei zum Teilen bereit",
+      "readyToShare_other": "{{count}} Dateien zum Teilen bereit"
+    },
+    "autoBackup": {
+      "failed5x": "Cloud-Backup fehlgeschlagen (5x). Bitte Einstellungen prüfen.",
+      "completed": "Backup abgeschlossen",
+      "failed": "Backup fehlgeschlagen",
+      "partial": "Teilweise gesichert – {{targets}} nicht erreicht.",
+      "driveNeedsAttention": "Das Google-Drive-Backup braucht kurz deine Aufmerksamkeit. Bitte in den Einstellungen prüfen.",
+      "noData": "Keine Daten zum Sichern"
+    },
+    "autoCheckout": "⚠️ Automatisch ausgestempelt! Bitte prüfen.",
+    "autoCheckout_one": "Der Timer war noch von gestern aktiv und wurde automatisch um 23:59 beendet. Bitte kontrolliere den Eintrag.",
+    "autoCheckout_other": "Der Timer lief seit {{count}} Tagen weiter und wurde am Starttag automatisch um 23:59 beendet. Bitte kontrolliere den Eintrag.",
+    "export": {
+      "exporting": "Exportiere Daten...",
+      "success": "📤 Export erfolgreich!",
+      "downloadStarted": "💾 Download gestartet!",
+      "error": "❌ Export Fehler: {{message}}",
+      "exportingFolder": "Exportiere in Ordner...",
+      "folderSuccess": "✅ Erfolgreich im Ordner gespeichert!",
+      "folderCancelled": "Export abgebrochen oder fehlgeschlagen",
+      "preparing": "Bereite Export vor...",
+      "ready": "📤 Export bereitgestellt!",
+      "shareTitle": "eStundnzettl Backup",
+      "shareText": "Backup vom {{date}}",
+      "shareDialogTitle": "Backup sichern"
+    },
+    "import": {
+      "fileTooLarge": "Datei zu groß (max. 10 MB)",
+      "success": "Daten erfolgreich importiert!",
+      "error": "Fehler: {{message}}",
+      "invalidFile": "Datei ungültig.",
+      "integrityMismatch": "⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",
+      "legacyChecksum": "ℹ️ Backup ohne Prüfsumme (Legacy-Format)",
+      "skippedEntries_one": "1 ungültiger Eintrag übersprungen",
+      "skippedEntries_other": "{{count}} ungültige Einträge übersprungen"
+    }
+  },
+  "changelogModal": {
+    "title": "Änderungsprotokoll",
+    "whatsNewTitle": "Servus, da gibt’s was Neues!",
+    "whatsNewSubtitle": "Wir haben eStundnzettl verbessert. Hier siehst du kurz und verständlich, was sich geändert hat.",
+    "olderChangesHint": "Ältere Änderungen kannst du jederzeit in den Einstellungen unter App-Info nachlesen.",
+    "allClear": "Alles klar",
+    "recentBugfixes": "Kürzliche Bugfixes",
+    "versionsCount_one": "({{count}} Version)",
+    "versionsCount_other": "({{count}} Versionen)"
+  },
+  "header": {
+    "settingsTitle": "Einstellungen",
+    "newEntryTitle": "Neuer Eintrag",
+    "editEntryTitle": "Eintrag bearbeiten",
+    "reportTitle": "Bericht",
+    "settings": "Einstellungen öffnen",
+    "report": "Bericht öffnen",
+    "backToOverview": "Zurück zur Übersicht",
+    "logoAlt": "Logo"
+  },
+  "timer": {
+    "start": "Neuen Eintrag hinzufügen oder Timer starten",
+    "stop": "Timer stoppen",
+    "pause": "Timer pausieren",
+    "resume": "Timer fortsetzen"
+  },
+  "liveTimer": {
+    "hours": "Std",
+    "paused": "Pausiert",
+    "swipeHint": "Nach oben wischen zum Einstempeln",
+    "fabOff": "AUS",
+    "fabTimer": "TIMER"
+  },
+  "appTour": {
+    "skipAria": "Tour überspringen",
+    "finish": "Fertig",
+    "next": "Weiter",
+    "steps": {
+      "welcome": {
+        "title": "Servus, schön dass du da bist!",
+        "body": "30 Sekunden Führung — dann weißt du, wo alles ist. Tippe auf Weiter oder überspring's mit dem X."
+      },
+      "dashboard": {
+        "title": "Deine Stunden auf einen Blick",
+        "body": "Hier siehst du sofort, ob du im Plus oder Minus bist. Tippe auf eine Woche, um einzelne Einträge aufzuklappen."
+      },
+      "fabTap": {
+        "title": "Eintrag nachtragen?",
+        "body": "Kurz auf den grünen Knopf tippen — das Formular öffnet sich sofort. Start, Ende, fertig."
+      },
+      "fabTimer": {
+        "title": "Schon am Arbeiten? Timer starten!",
+        "body": "Lang drücken und nach oben wischen: der Timer läuft mit. Nochmal tippen — er stoppt und trägt alles automatisch ein.",
+        "hint": "Lang drücken + hochwischen"
+      },
+      "report": {
+        "title": "Stundenzettel fertig?",
+        "body": "Tippe hier für deinen PDF-Bericht — unterschriftsreif und direkt teilbar per Mail oder WhatsApp."
+      },
+      "settings": {
+        "title": "Alles nach deinem Gusto",
+        "body": "Arbeitszeiten, Name, eigene Tätigkeits-Codes — alles hier. Und wenn du nicht weiterweißt: unten ist der Hilfe-Bereich."
+      },
+      "done": {
+        "title": "Los geht's!",
+        "body": "Das war alles — probier's einfach aus. Hilfe findest du jederzeit in den Einstellungen."
+      }
+    }
+  },
+  "hints": {
+    "gotIt": "Verstanden",
+    "reportTitle": "Kurz zur PDF-Vorschau",
+    "report": "Das ist dein Stundenzettel für den Monat. Zeitraum wählen, optional eine Notiz ergänzen, dann teilen."
+  },
+  "settingsTour": {
+    "steps": {
+      "overview": {
+        "title": "Kurz zu den Einstellungen",
+        "body": "Hier passt du eStundnzettl an deine Arbeit an. Du kannst jederzeit zurückkommen und nachjustieren."
+      },
+      "profile": {
+        "title": "Profil & Unterschrift",
+        "body": "Hier landen Name, Position, Logo oder Unterschrift — also alles, was später auf deinem PDF sauber aussehen soll."
+      },
+      "recording": {
+        "title": "Simple oder Hausmasta?",
+        "body": "Beim Aufzeichnungsmodus entscheidest du: nur Zeiten festhalten oder mit Soll/Ist, Saldo und erweiterten Berechnungen arbeiten."
+      },
+      "codes": {
+        "title": "Tätigkeits-Codes",
+        "body": "Hier pflegst du deine eigenen Codes für Arbeit, Projekte oder Tätigkeiten. Praktisch, wenn der Stundenzettel eindeutig sein soll."
+      },
+      "calculation": {
+        "title": "Stundenberechnung",
+        "body": "Hier sitzen Arbeitsmodell, Feiertage und Berechnungsregeln. Wenn sich dein Dienstmodell ändert, ist das der richtige Ort."
+      },
+      "backup": {
+        "title": "Backup & Export",
+        "body": "Hier sicherst du deine Daten, importierst Backups oder aktivierst automatische Sicherung. Wichtig, bevor etwas verloren geht."
+      },
+      "appearanceHelp": {
+        "title": "Darstellung & Hilfe",
+        "body": "Theme, Sprache und Hilfe findest du weiter unten. Wenn du unsicher bist, ist die Hilfe der schnellste Wegweiser."
+      },
+      "done": {
+        "title": "Alles kann später geändert werden",
+        "body": "Nichts davon ist in Stein gemeißelt. Wenn sich deine Arbeit ändert, kommst du einfach wieder hierher."
+      }
+    }
+  },
+  "skeleton": {
+    "default": "Lädt...",
+    "settings": "Lade Einstellungen...",
+    "entryForm": "Lade Eingabeformular...",
+    "onboarding": "Einrichtung wird geladen...",
+    "pdfModule": "Lade PDF-Modul...",
+    "preparing": "Ansicht wird vorbereitet...",
+    "preparingPdf": "Vorschau wird vorbereitet..."
+  },
+  "backup": {
+    "integrityMismatch": "Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",
+    "integrityUnverified": "Backup ohne Prüfsumme (Legacy-Format)"
+  },
+  "modals": {
+    "confirm": {
+      "defaultConfirmText": "Löschen"
+    },
+    "export": {
+      "titlePdf": "PDF speichern",
+      "titleData": "Daten exportieren",
+      "subtitle": "Wähle eine Methode",
+      "folderPdf": "In Dokumente speichern",
+      "folderData": "In Ordner speichern",
+      "folderPdfDescription": "Speichert die PDF im Ordner 'Documents'",
+      "folderDataDescription": "Wähle einen Speicherort (z.B. Downloads)",
+      "share": "Teilen / Senden",
+      "shareDescription": "Per WhatsApp, E-Mail oder andere Apps"
+    },
+    "importConflict": {
+      "title": "Backup Inhalt prüfen",
+      "description": "Wir haben Daten in diesem Backup gefunden. Da auch <b>Einstellungen</b> (Arbeitszeitmodell) enthalten sind, musst du entscheiden:",
+      "entriesLabel": "Zeiteinträge",
+      "settingsLabel": "Einstellungen",
+      "settingsIncluded": "Enthalten",
+      "warning": "Achtung: \"Alles importieren\" überschreibt dein aktuelles Arbeitszeitmodell!",
+      "importAll": "Alles überschreiben & Importieren",
+      "entriesOnly": "Nur Einträge (Einstellungen behalten)"
+    },
+    "localeMigration": {
+      "title": "Stundenberechnung wählen",
+      "description": "eStundnzettl kann jetzt neutral verwendet werden. Wähl einmalig, welche Berechnung zu dir passt — deine bestehenden Einträge bleiben unverändert.",
+      "austriaTitle": "Österreich",
+      "austriaNote": "(wie bisher — empfohlen)",
+      "austriaDescription": "Gesetzliche Feiertage, Halbtage (24./31.12.), Mehrarbeit/Überstunden nach AZG",
+      "germanyTitle": "Deutschland",
+      "germanyDescription": "Bundesweite + regionale Feiertage, 40h-Woche, Mehrarbeit/Überstunden",
+      "stateLabel": "Bundesland",
+      "stateSelect": "Bundesland wählen",
+      "neutralTitle": "Neutral",
+      "neutralDescription": "Keine automatischen Feiertage, keine Halbtage, kein Mehrarbeit/Überstunden-Split",
+      "changeLater": "Kannst du später in den Einstellungen jederzeit ändern."
+    },
+    "preset": {
+      "title": "Vorlage wählen",
+      "warning": "Achtung: Das Ändern der Vorlage berechnet die Überstunden aller vergangenen Einträge neu!"
+    }
+  },
+  "supportPrompt": {
+    "title": "Gefällt dir eStundnzettl?",
+    "body": "Wenn dir die App im Alltag hilft, freue ich mich über eine kurze Bewertung – oder über einen Kaffee als kleines Danke.",
+    "rate": "Bewerten",
+    "coffee": "Kaffee",
+    "noThanks": "Nein danke",
+    "linkError": "Link konnte nicht geöffnet werden"
+  },
+  "settings": {
+    "toast": {
+      "demoLoadFailed": "Demo-Daten konnten nicht geladen werden.",
+      "customModeRequired": "Bitte erst 'Benutzerdefiniert' wählen",
+      "unlockRequired": "Zum Bearbeiten erst Schloss öffnen",
+      "timeUpdated": "Zeit aktualisiert",
+      "customOnly": "Nur bei 'Benutzerdefiniert' möglich",
+      "unlocked": "Bearbeitung freigegeben",
+      "invalidBackup": "Ungültiges Backup-Format",
+      "restoreError": "Wiederherstellung fehlgeschlagen — es wurde nichts verändert.",
+      "integrityMismatch": "⚠️ Prüfsumme stimmt nicht — Backup wurde möglicherweise verändert",
+      "entriesImported_one": "{{count}} Eintrag importiert!",
+      "entriesImported_other": "{{count}} Einträge importiert!",
+      "fileReadError": "Fehler beim Lesen der Datei",
+      "restoreSuccess": "Erfolgreich wiederhergestellt!",
+      "expertOn": "Hausmasta-Modus aktiviert",
+      "expertOff": "Hausmasta-Modus deaktiviert",
+      "materialYouOn": "Android-Systemfarben aktiviert",
+      "materialYouOff": "Android-Systemfarben deaktiviert"
+    },
+    "weekdays": {
+      "sun": "So",
+      "mon": "Mo",
+      "tue": "Di",
+      "wed": "Mi",
+      "thu": "Do",
+      "fri": "Fr",
+      "sat": "Sa"
+    },
+    "editDay": "{{weekday}} bearbeiten",
+    "profile": {
+      "title": "Benutzerdaten",
+      "photoHint": "Tippe auf das Bild, um es zu ändern.",
+      "photoAlt": "Profil",
+      "nameLabel": "Dein Name",
+      "namePlaceholder": "Max Mustermann",
+      "companyLabel": "Firma",
+      "companyPlaceholder": "Firmenname GmbH",
+      "positionLabel": "Position / Job",
+      "positionPlaceholder": "Monteur",
+      "editHint": "Antippen zum Bearbeiten",
+      "toastPhotoUpdated": "Profilbild aktualisiert",
+      "toastPhotoError": "Fehler beim Bild",
+      "toastPhotoRemoved": "Bild entfernt"
+    },
+    "theme": {
+      "title": "Design / Theme",
+      "light": "Hell",
+      "dark": "Dunkel",
+      "system": "System"
+    },
+    "materialYou": {
+      "title": "Material You verwenden"
+    },
+    "appInfo": {
+      "sectionInfoTitle": "App & Informationen",
+      "playStore": "Im Play Store öffnen",
+      "recommend": "App empfehlen",
+      "recommendText": "Ich nutze eStundnzettl für meine Arbeitszeiten – kostenlos, werbefrei und offline:",
+      "recommendChooser": "eStundnzettl empfehlen",
+      "shareError": "Teilen ist auf diesem Gerät nicht verfügbar",
+      "help": "Anleitung & Hilfe",
+      "changelog": "Änderungsprotokoll",
+      "sectionAboutTitle": "Über",
+      "privacy": "Datenschutzerklärung",
+      "website": "Website",
+      "sourceCode": "Quellcode auf GitHub",
+      "imprint": "Impressum",
+      "license": "Lizenz",
+      "contact": "Kontakt",
+      "donate": "Kaffee spendieren",
+      "expertTitle": "Hausmasta-Modus",
+      "expertOn": "Alle Einstellungen sichtbar",
+      "expertOff": "Erweiterte Einstellungen ausgeblendet",
+      "recalc": "Neu berechnen",
+      "demoData": "Demo-Daten",
+      "dangerTitle": "Gefahrenzone",
+      "dangerHint": "Nur aufmachen, wenn’s wirklich sein muss.",
+      "dangerBody": "Hier kannst du die App komplett zurücksetzen und alle lokalen Daten unwiderruflich löschen. Das ermöglicht dir einen frischen Start – ideal, wenn du z.B. den Einrichtungs-Assistenten erneut durchlaufen möchtest, um dein Stundenmodell oder deine Arbeitszeiten zu ändern.",
+      "deleteAll": "Alles löschen & App zurücksetzen",
+      "versionLabel": "Version {{version}}",
+      "credits": "Ausgetüftelt 💭 von Markus 👨 und mit Herz ❤️, Hirn 🧠 und KI-Agenten 🤖 gebaut!",
+      "linkError": "Link konnte nicht geöffnet werden",
+      "mailError": "Mail-App konnte nicht geöffnet werden",
+      "recalcModalTitle": "Einträge neu berechnen?",
+      "recalcModalMessage": "Alle gespeicherten Arbeitszeit-Einträge werden anhand von Start, Ende und Pause neu berechnet. Dies korrigiert fehlerhafte Werte aus älteren App-Versionen. Korrekte Einträge bleiben unverändert.",
+      "recalcFixed": "{{fixed}} von {{total}} Einträgen korrigiert",
+      "recalcAllCorrect": "Alle {{total}} Einträge sind korrekt",
+      "recalcError": "Fehler bei der Neuberechnung"
+    },
+    "backup": {
+      "header": "Backup & Export",
+      "subtitle": "Sichere deine Daten auf Google Drive, Nextcloud oder lokal",
+      "last": {
+        "now": "gerade eben",
+        "minutes_one": "vor {{count}} Min.",
+        "minutes_other": "vor {{count}} Min.",
+        "hours_one": "vor {{count}} Std.",
+        "hours_other": "vor {{count}} Std.",
+        "days_one": "vor {{count}} Tag",
+        "days_other": "vor {{count}} Tagen",
+        "lastAt": "Zuletzt: {{time}}",
+        "never": "Noch nie gesichert"
+      },
+      "badge": {
+        "connected": "Verbunden"
+      },
+      "status": {
+        "title": "Status",
+        "targets": "Aktive Ziele: {{targets}}",
+        "noTargets": "Keine",
+        "last": "Letztes Backup: {{time}}"
+      },
+      "gdrive": {
+        "connectedAs": "Verbunden als {{label}}",
+        "activeAppData": "Aktiv (Google Drive App-Daten)",
+        "playServicesChecking": "Google-Play-Dienste werden geprüft …",
+        "playServicesMissing": "Google-Play-Dienste sind auf diesem Gerät nicht installiert.",
+        "playServicesUpdateRequired": "Google-Play-Dienste müssen aktualisiert werden.",
+        "playServicesDisabled": "Google-Play-Dienste sind auf diesem Gerät deaktiviert.",
+        "playServicesInvalid": "Die installierten Google-Play-Dienste sind nicht verwendbar.",
+        "playServicesUnavailable": "Google-Play-Dienste sind derzeit nicht verfügbar.",
+        "alternativesHint": "Du kannst deine Daten trotzdem sicher lokal oder über Nextcloud sichern.",
+        "unavailableButton": "Google Drive nicht verfügbar",
+        "expired": "Verbindung abgelaufen",
+        "notConnected": "Nicht verbunden",
+        "disconnect": "Trennen",
+        "connect": "Verbinden",
+        "testConnection": "Verbindung prüfen",
+        "testing": "Prüfe …"
+      },
+      "nextcloud": {
+        "connectedAs": "Verbunden als {{user}}",
+        "awaitingLogin": "Warte auf Anmeldung...",
+        "notConfigured": "Nicht konfiguriert",
+        "disconnect": "Trennen",
+        "setup": "Einrichten",
+        "pollingTitle": "Warte auf Anmeldung in Nextcloud...",
+        "pollingHint": "Bitte im Browser anmelden und Zugriff gewähren",
+        "serverUrlLabel": "Server-URL",
+        "serverUrlPlaceholder": "https://cloud.example.com",
+        "connectButton": "Mit Nextcloud verbinden",
+        "testConnection": "Verbindung testen"
+      },
+      "local": {
+        "title": "Lokales Backup",
+        "activeDaily": "Aktiv (Täglich)",
+        "notConfigured": "Nicht konfiguriert",
+        "disconnect": "Trennen",
+        "select": "Wählen"
+      },
+      "warning": {
+        "gdriveFailed": "Google Drive konnte zuletzt nicht sichern.",
+        "gdriveFailureCount_one": "Der letzte Versuch ist fehlgeschlagen.",
+        "gdriveFailureCount_other": "{{count}} Versuche seit dem letzten Erfolg sind fehlgeschlagen.",
+        "lastSuccessfulAt": "Zuletzt erfolgreich: {{time}}",
+        "gdriveReconnect": "⚠️ Google Drive muss neu verbunden werden, bevor wieder gesichert werden kann.",
+        "nextcloudWithError": "Nextcloud-Backup fehlgeschlagen: {{error}}",
+        "nextcloudGeneric": "Letzte Nextcloud-Backups sind fehlgeschlagen. Bitte Verbindung prüfen.",
+        "retrying": "Wird versucht…",
+        "retryNow": "Jetzt erneut versuchen"
+      },
+      "manual": {
+        "saving": "Sichere...",
+        "title": "Backup",
+        "saveNow": "Jetzt sichern"
+      },
+      "export": "Export",
+      "import": "Import",
+      "toast": {
+        "pollingTimeout": "Zeitüberschreitung — bitte erneut versuchen",
+        "nextcloudLoginFailed": "Nextcloud Login fehlgeschlagen",
+        "nextcloudLoginFailedWith": "Nextcloud Login fehlgeschlagen: {{message}}",
+        "ncConnectedAs": "Verbunden als {{loginName}}",
+        "ncPersistError": "Nextcloud verbunden, aber Speichern in der App fehlgeschlagen",
+        "ncEnterUrl": "Bitte Server-URL eingeben",
+        "ncDisconnected": "Nextcloud getrennt",
+        "ncConnectFirst": "Bitte zuerst Nextcloud verbinden",
+        "ncTestOk": "Verbindung OK!",
+        "ncTestFailed": "Verbindung fehlgeschlagen",
+        "ncTestError": "Test fehlgeschlagen",
+        "gdriveConnected": "Verbunden: {{label}}",
+        "gdriveDefaultLabel": "Drive",
+        "gdriveCancelled": "Google-Anmeldung abgebrochen",
+        "gdriveUnavailable": "Google Drive ist auf diesem Gerät noch nicht verfügbar",
+        "gdriveFailed": "Google-Drive-Verbindung fehlgeschlagen",
+        "gdriveTestOk": "Google Drive schaut gut aus – Verbindung steht und das Backup ist aktuell.",
+        "gdriveTestFailed": "Google Drive konnte gerade nicht erreicht werden.",
+        "gdriveReconnectNeeded": "Google Drive braucht eine neue Anmeldung.",
+        "localDisconnected": "Backup-Ordner getrennt",
+        "localActivated": "Backup aktiviert!",
+        "folderCancelled": "Ordnerauswahl abgebrochen",
+        "backupCreated": "Backup erstellt: {{targets}}",
+        "backupPartialFailed": "Fehlgeschlagen: {{targets}}",
+        "backupDebugTitle": "Backup-Fehler Details:\n\n{{details}}",
+        "backupFailed": "Backup fehlgeschlagen"
+      },
+      "targetLocal": "Lokal",
+      "unavailable": {
+        "hint": "Benötigt Google Play Services",
+        "bannerTitle": "Manche Funktionen sind hier nicht verfügbar",
+        "bannerBody": "Auf diesem Gerät wurden keine Google Play Services gefunden. Google Drive Backup braucht sie. Lokale Backups und Nextcloud funktionieren wie gewohnt weiter.",
+        "dismiss": "Verstanden"
+      }
+    },
+    "calc": {
+      "header": "Berechnung",
+      "subtitle": "Wie Überstunden, Krank und Feiertage gezählt werden",
+      "combinedTitle": "Berechnung",
+      "combinedSubtitle": "Stundenberechnung & Regeln",
+      "teaser": "{{overtime}} · Krank: {{sick}}",
+      "editRules": "Berechnungsregeln bearbeiten",
+      "showLess": "Weniger anzeigen",
+      "contractedHours": "Vertragsstunden",
+      "hoursPerWeek": "{{hours}} / Woche",
+      "overtimeRule": "Überstunden-Regel",
+      "overtimeThresholdLabel": "Überstunden ab Wochenstunden",
+      "hoursPerWeekUnit": "h / Woche",
+      "sickOnWorkDay": "Krank am Arbeitstag",
+      "holidaysHalfDays": "Feiertage & Halbtage",
+      "importHolidays": "Feiertage aus Vorlage importieren",
+      "noHolidaysActive": "Keine Feiertage aktiv.",
+      "removeHolidayAria": "{{name}} entfernen",
+      "dateLabel": "Datum",
+      "dateFormatPlaceholder": "DD.MM",
+      "nameLabel": "Bezeichnung",
+      "customHolidayPlaceholder": "z. B. Firmenjubiläum",
+      "add": "Hinzufügen",
+      "halfDays": "Halbtage",
+      "addHalfDayAria": "Halbtag hinzufügen",
+      "holidayWork": "Feiertag + Arbeit am selben Tag",
+      "advanced": "Erweitert",
+      "autoPauses": "Automatische Pausen",
+      "autoPauseInfo": "Wird nur bei Einträgen ohne manuelle Pause angewendet.",
+      "autoPauseRule": "ab {{fromHours}} → {{pauseMinutes}} min Pause",
+      "removeRuleAria": "Regel entfernen",
+      "noAutoPauseRule": "Keine Auto-Pause-Regel hinterlegt.",
+      "fromLabel": "ab",
+      "hoursToArrow": "h →",
+      "minUnit": "min",
+      "addPauseRuleAria": "Pausenregel hinzufügen",
+      "vacation": "Urlaub",
+      "yearlyAllowance": "Jahresanspruch",
+      "days": "Tage",
+      "remainingCarryover": "Resturlaub / Übertrag",
+      "carryoverHint": "Resttage vom Vorjahr oder bereits verbrauchte Tage (negativ).",
+      "recalcRunning": "Neuberechnung läuft...",
+      "recalcAll": "Alle Einträge neu berechnen",
+      "drawerHolidayWork": "Feiertag + Arbeit",
+      "drawerImportHolidays": "Feiertage importieren",
+      "overtimeOptions": {
+        "none": "Keine Unterscheidung",
+        "split": "Mehrarbeit & Überstunden trennen",
+        "ueberstunden_only": "Alles ist Überstunden"
+      },
+      "sickOptions": {
+        "cap_to_target": "Füllt bis Tagessoll auf",
+        "additive": "Zählt zusätzlich zur Arbeit",
+        "ignore": "Wird ignoriert"
+      },
+      "holidayOnWorkOptions": {
+        "additive": "Feiertag zählt zusätzlich",
+        "counts_as_overtime": "Feiertag zählt als Überstunde",
+        "cap_to_target": "Füllt bis Tagessoll auf"
+      },
+      "importOptions": {
+        "austria": "Österreich",
+        "germanyState": "Deutschland – {{state}}",
+        "swissKanton": "Schweiz – {{kanton}}",
+        "orthodox": "Orthodoxe Feiertage",
+        "islamic": "Islamische Feiertage (ca.)"
+      },
+      "fallbackOvertime": "Keine Unterscheidung",
+      "fallbackSick": "Zählt zusätzlich",
+      "fallbackHolidayOnWork": "Feiertag zählt zusätzlich",
+      "toast": {
+        "holidaysImported_one": "{{count}} Feiertag importiert",
+        "holidaysImported_other": "{{count}} Feiertage importiert",
+        "formatDateName": "Format: DD.MM + Name",
+        "formatDate": "Format: DD.MM",
+        "invalidValues": "Bitte gültige Werte eingeben",
+        "recalcFixed": "{{fixed}} von {{total}} Einträgen aktualisiert",
+        "recalcAllCorrect": "Alle {{total}} Einträge sind aktuell",
+        "recalcError": "Neuberechnung fehlgeschlagen"
+      }
+    },
+    "locale": {
+      "header": "Stundenberechnung",
+      "subtitle": "Feiertage, Halbtage, Mehrarbeit/Überstunden",
+      "group": {
+        "neutral": "Neutral",
+        "austria": "Österreich",
+        "germany": "Deutschland",
+        "switzerland": "Schweiz"
+      },
+      "stateLabel": "Bundesland",
+      "kantonLabel": "Kanton",
+      "stateDrawerTitle": "Bundesland wählen",
+      "kantonDrawerTitle": "Kanton wählen",
+      "active": "<b>Aktuell aktiv:</b> {{name}}. Zukünftige Berechnungen folgen der neuen Auswahl — vergangene Einträge bleiben unverändert.",
+      "confirmTitle": "Regeln zurücksetzen?",
+      "confirmMessage": "Möchtest du die Berechnungsregeln (Überstunden, Krank, Feiertage) auf die Defaults der neuen Locale zurücksetzen? Mit 'Abbrechen' bleibt deine aktuelle Konfiguration erhalten.",
+      "confirmConfirm": "Zurücksetzen",
+      "toast": {
+        "switchedNeutral": "Auf Neutral umgestellt",
+        "switchedAustria": "Auf Österreich umgestellt",
+        "switchedSwitzerland": "Auf Schweiz umgestellt",
+        "switchedGermany": "Auf Deutschland umgestellt",
+        "stateChanged": "Bundesland auf {{name}} geändert",
+        "kantonChanged": "Kanton auf {{name}} geändert",
+        "rulesReset": "Regeln zurückgesetzt",
+        "localeSwitchedKeepConfig": "Locale umgestellt, Regeln behalten"
+      }
+    },
+    "language": {
+      "header": "Sprache",
+      "subtitle": "UI-Sprache der App",
+      "de": "Deutsch",
+      "en": "English",
+      "toast": "Sprache geändert"
+    },
+    "data": {
+      "cardTitle": "Meine Arbeitszeit",
+      "cardSubtitle": "Wochenmodell, Tagesstunden und Eingaberaster",
+      "workModel": {
+        "heading": "Arbeitszeit Modell",
+        "currentLabel": "Aktuell: ",
+        "defaultLabel": "Benutzerdefiniert",
+        "templatesButton": "Vorlagen",
+        "weekHours": "Wochenstunden: {{hours}} h"
+      },
+      "simpleMode": {
+        "title": "Nur Aufzeichnung",
+        "on": "Keine Soll/Ist-Berechnung",
+        "off": "Soll, Saldo & Überstunden aktiv",
+        "toggleAria": "Erfassungsmodus umschalten",
+        "toastOn": "Nur Aufzeichnung aktiviert",
+        "toastOff": "Soll/Ist-Berechnung aktiviert"
+      },
+      "workCodes": {
+        "title": "Tätigkeitscodes",
+        "subtitle": "Presets für deine Branche laden",
+        "manageButton": "Verwalten"
+      },
+      "presetWarning": {
+        "title": "Arbeitszeitmodell ändern?",
+        "message": "Achtung: Eine Änderung des Modells führt zu einer Neuberechnung der Überstunden aller bisherigen Einträge! Möchtest du fortfahren?",
+        "confirm": "Verstanden"
+      },
+      "demoWarning": {
+        "title": "⚠️ Demo-Daten laden",
+        "noBackupHint": "🚨 Du hast keine Backup-Datei erstellt! Deine Daten sind unwiderruflich verloren wenn du fortfährst!",
+        "withBackupHint": "Stelle sicher dass du ein Backup hast bevor du fortfährst.",
+        "messageTemplate": "Achtung: Alle deine bisherigen Daten werden überschrieben! {{hint}}\n\nEinträge, Einstellungen und Tätigkeitscodes werden durch die Demo-Daten ersetzt.",
+        "confirm": "Ja, laden"
+      },
+      "toast": {
+        "customActivated": "Benutzerdefiniert aktiviert",
+        "templateApplied": "Vorlage übernommen",
+        "demoLoaded": "Demo-Daten geladen!"
+      },
+      "simpleWorkScheduleHint": "Für reine Aufzeichnung brauchst du kein Arbeitszeitmodell. Deine bisherigen Arbeitszeiten bleiben gespeichert, falls du später wieder Berechnung & Auswertung aktivierst."
+    },
+    "pdfArchive": {
+      "header": "Automatisches PDF-Archiv",
+      "subtitle": "Täglich ein Monats-PDF zur gesetzlich geforderten Langzeit-Aufbewahrung",
+      "local": {
+        "title": "Lokaler Ordner",
+        "path": "Dokumente/eStundnzettl/Archiv/"
+      },
+      "nextcloud": {
+        "title": "Nextcloud",
+        "path": "/eStundnzettl/Archiv/",
+        "requiresConnect": "Erst Nextcloud verbinden"
+      },
+      "gdrive": {
+        "title": "Google Drive",
+        "connectedBadge": "Verbunden",
+        "folderWithEmail": "Ordner eStundnzettl Archiv · {{email}}",
+        "folder": "Ordner eStundnzettl Archiv",
+        "info": "Separater Zugriff vom JSON-Backup (drive.file-Scope)",
+        "disconnect": "Trennen",
+        "connect": "Verbinden"
+      },
+      "lastRun": "Letzter Lauf: {{date}}",
+      "lastRunNever": "Noch nicht ausgeführt",
+      "runNow": "Jetzt ausführen",
+      "toast": {
+        "ncNotConnected": "Nextcloud muss zuerst verbunden sein (Karte 'Backup & Export').",
+        "gdriveConnected": "Google Drive (PDF-Archiv) verbunden",
+        "gdriveCancelled": "Verbindung abgebrochen",
+        "gdriveConnectFailed": "Verbindung fehlgeschlagen: {{message}}",
+        "gdriveDisconnected": "Google Drive (PDF-Archiv) getrennt",
+        "gdriveDisconnectFailed": "Trennen fehlgeschlagen: {{message}}",
+        "gdriveConnectFirst": "Bitte zuerst mit Google Drive verbinden.",
+        "archiveDisabled": "PDF-Archiv ist deaktiviert.",
+        "pickTarget": "Bitte mindestens ein Ziel auswählen.",
+        "generating": "Erzeuge Monats-PDF …",
+        "partiallyFailed": "Teilweise fehlgeschlagen — siehe Details unten",
+        "updated": "PDF-Archiv aktualisiert",
+        "upToDate": "Nichts zu tun — Daten sind aktuell",
+        "notRun": "Nicht ausgeführt: {{reason}}",
+        "unknownReason": "unbekannt",
+        "genericError": "Fehler: {{message}}"
+      }
+    },
+    "pdfLayout": {
+      "title": "PDF-Anzeige",
+      "subtitle": "Welche Felder im exportierten PDF erscheinen",
+      "showSummary": "Zusammenfassung anzeigen",
+      "showSummaryDesc": "Graue Box mit Gesamtwerten am Ende der Tabelle",
+      "showTargetTime": "Sollzeit anzeigen",
+      "showTargetTimeDesc": "Die Sollzeit-Zeile in der Zusammenfassung",
+      "showBalance": "Saldo anzeigen",
+      "showBalanceDesc": "Bottom Line der Zusammenfassung und tägliche Saldo-Spalte",
+      "showOvertimeSplit": "Mehrarbeit/Überstunden anzeigen",
+      "showOvertimeSplitDesc": "Aufgesplittete Überstunden in der Zusammenfassung",
+      "showVacationBalance": "Urlaubsbilanz anzeigen",
+      "showVacationBalanceDesc": "Resturlaub-Block am Ende der Zusammenfassung",
+      "showAttachmentsList": "Anhänge-Liste anzeigen",
+      "showAttachmentsListDesc": "Aufzählung verknüpfter Dokumente pro Eintrag",
+      "showWorkCodeColumn": "Code-Spalte anzeigen",
+      "showWorkCodeColumnDesc": "Die Tätigkeitscode-Spalte in der Tabelle",
+      "showCustomNote": "Notizen anzeigen",
+      "showCustomNoteDesc": "Optionaler Notiz-Block am Ende des Berichts"
+    },
+    "shareTarget": {
+      "title": "PDF-Versand",
+      "subtitle": "App wählen und nur passende Angaben sehen",
+      "current": "Bevorzugte App: {{app}}",
+      "chooseApp": "Versand-App auswählen",
+      "changeApp": "Versand-App: {{app}}",
+      "chooseAppTitle": "Womit magst versenden?",
+      "noApps": "Keine passende App für PDF-Dateien gefunden.",
+      "emailApp": "E-Mail-App",
+      "messagingApp": "Nachrichten oder andere App",
+      "directTitle": "Gewählte App bevorzugen",
+      "directDescription": "Überspringt beim PDF-Versand die App-Auswahl.",
+      "directEmailDescription": "Öffnet die E-Mail mit Empfänger, Betreff und PDF direkt in dieser App.",
+      "directMessageDescription": "Zeigt beim Senden die passenden Personen dieser App, soweit Android sie anbietet.",
+      "waitingDescription": "Beim nächsten Teilen wird deine Auswahl gespeichert.",
+      "reset": "Bevorzugte App zurücksetzen",
+      "hint": "Wenn die App nicht mehr verfügbar ist, erscheint automatisch wieder die normale Auswahl.",
+      "chooseHint": "Erst die Versand-App wählen – danach erscheinen nur die Angaben, die dort wirklich helfen.",
+      "emailContactHint": "Empfänger aus deinen Kontakten wählen oder die E-Mail-Adresse selbst eintragen. Die App liest dabei nicht dein ganzes Adressbuch.",
+      "messagingContactHint": "WhatsApp, Messenger & Co. verwalten ihre Kontakte selbst. Die passende Person wählst du beim Senden in der Android-Auswahl oder direkt in der App.",
+      "emailTitle": "E-Mail-Vorgaben",
+      "emailDescription": "Kontakt, Empfänger und Betreff werden von kompatiblen E-Mail-Apps direkt übernommen.",
+      "emailRecipientLabel": "E-Mail-Empfänger (optional)",
+      "emailRecipientHint": "Leer lassen, wenn kein Empfänger vorausgefüllt werden soll.",
+      "emailRecipientInvalid": "Bitte eine gültige E-Mail-Adresse eingeben.",
+      "chooseEmailContact": "E-Mail-Kontakt auswählen",
+      "subjectInputLabel": "Betreff",
+      "autoFillHint": "Die markierten Begriffe werden beim Versand automatisch ausgefüllt.",
+      "insertPeriod": "Zeitraum einsetzen",
+      "insertName": "Name einsetzen",
+      "resetSubject": "Standardbetreff wiederherstellen",
+      "messageTitle": "Standard-Nachricht",
+      "messageDescription": "Dieser Text wird gemeinsam mit dem PDF an die gewählte App übergeben. Du kannst ihn jederzeit anpassen.",
+      "messageInputLabel": "Nachrichtentext",
+      "resetMessage": "Standardtext wiederherstellen"
+    },
+    "recordingMode": {
+      "title": "Aufzeichnungsart",
+      "subtitleSimple": "Du nutzt eStundnzettl als einfache Stundenliste.",
+      "subtitleCalculated": "Du nutzt eStundnzettl mit Soll/Ist, Saldo und Auswertung.",
+      "simpleTitle": "Nur Arbeitszeiten eintragen",
+      "simpleDescription": "Zählt deine erfassten Stunden. Keine Sollzeit, kein Saldo, keine Überstundenberechnung.",
+      "calculatedTitle": "Mit Berechnung & Auswertung",
+      "calculatedDescription": "Vergleicht deine Zeiten mit deinem Arbeitszeitmodell und zeigt Saldo, Mehrarbeit und Überstunden.",
+      "noDataLossHint": "Hinweis: Diese Auswahl löscht keine Einträge und überschreibt dein Arbeitszeitmodell nicht.",
+      "toastSimple": "Nur Arbeitszeiten eintragen aktiviert",
+      "toastCalculated": "Berechnung & Auswertung aktiviert",
+      "monthlyTarget": {
+        "title": "Monatsstunden festlegen",
+        "description": "Ideal für Minijob, Teilzeit oder flexible Arbeitstage. Es zählt nur, wie viele Stunden du im Monat insgesamt arbeitest.",
+        "inputLabel": "Sollstunden im Monat (HH:MM)",
+        "hint": "Zum Beispiel 30:00 für 30 Stunden pro Monat.",
+        "invalid": "Bitte im Format Stunden:Minuten eingeben, zum Beispiel 30:00."
+      }
+    },
+    "workCodesCard": {
+      "title": "Tätigkeitscodes",
+      "subtitle": "Kategorien für deine Einträge, z.B. Montage, Fahrt, Büro oder Projektarbeit.",
+      "manageButton": "Verwalten"
+    },
+    "appearance": {
+      "title": "Darstellung",
+      "subtitle": "Sprache und Design"
+    },
+    "expertMode": {
+      "title": "Erweiterte Einstellungen",
+      "off": "Zusätzliche Optionen sind ausgeblendet, damit die App übersichtlich bleibt.",
+      "on": "Zusätzliche Optionen sind sichtbar.",
+      "description": "Für Nextcloud, PDF-Archiv, Spezialregeln, Demo-Daten und technische Werkzeuge."
+    },
+    "diagnostics": {
+      "title": "Diagnose",
+      "subtitle": "Technische Selbstauskunft — nur lesend.",
+      "empty": "Keine Daten geladen.",
+      "refresh": "Aktualisieren",
+      "privacyHint": "Zugangsdaten werden hier nie angezeigt. Konten erscheinen gekürzt.",
+      "yes": "ja",
+      "no": "nein",
+      "group": {
+        "app": "App",
+        "data": "Daten",
+        "backup": "Backup-Ziele",
+        "local": "Lokaler Backup-Ordner",
+        "drive": "Google Drive (App-Ordner)"
+      },
+      "app": {
+        "version": "Version",
+        "versionCode": "Version-Code",
+        "dbSchema": "DB-Schema"
+      },
+      "data": {
+        "entries": "Einträge",
+        "range": "Zeitraum",
+        "workCodes": "Tätigkeitscodes",
+        "attachments": "Anhänge"
+      },
+      "backup": {
+        "cloudSync": "Google Drive aktiv",
+        "cloudLast": "Drive zuletzt erfolgreich",
+        "failCount": "Fehlversuche",
+        "backoffUntil": "Gesperrt bis",
+        "reconnect": "Neuanmeldung nötig",
+        "googleAccount": "Google-Konto",
+        "localEnabled": "Lokal aktiv",
+        "localLast": "Lokal zuletzt erfolgreich",
+        "nextcloudEnabled": "Nextcloud aktiv",
+        "nextcloudLast": "Nextcloud zuletzt erfolgreich",
+        "nextcloudUser": "Nextcloud-Benutzer",
+        "secretSet": "Nextcloud-Passwort hinterlegt"
+      },
+      "local": {
+        "none": "Keine Dateien"
+      },
+      "drive": {
+        "check": "Drive-Dateien prüfen",
+        "checking": "Wird geprüft …",
+        "none": "Keine Dateien im App-Ordner",
+        "duplicateWarning": "{{count}}× \"{{name}}\" — mehrere Dateien mit gleichem Namen. Backup und Wiederherstellung können auf verschiedene Stände zeigen.",
+        "authRequired": "Google-Anmeldung erforderlich. Verbinde Google Drive in den Backup-Einstellungen.",
+        "failed": "Abfrage fehlgeschlagen."
+      }
+    }
+  },
+  "attachments": {
+    "title": "Dokumente",
+    "fieldDocument": "Dokument",
+    "fieldLabel": "Bezeichnung",
+    "placeholder": "z. B. Krankenstandsbestätigung",
+    "saving": "Speichere...",
+    "addButton": "Dokument hinzufügen",
+    "existingTitle": "Vorhandene Dokumente",
+    "empty": "Noch keine Dokumente für diesen Eintrag vorhanden.",
+    "toast": {
+      "entryMissing": "Eintrag fehlt.",
+      "selectFile": "Bitte zuerst ein Dokument auswählen.",
+      "labelRequired": "Bitte eine Bezeichnung eingeben.",
+      "invalidType": "Nur PDF, JPG, PNG oder WEBP sind erlaubt.",
+      "readError": "Datei konnte nicht gelesen werden.",
+      "fileTooLarge": "Datei ist größer als 10 MB.",
+      "added": "Dokument hinzugefügt",
+      "addError": "Dokument konnte nicht gespeichert werden.",
+      "deleted": "Dokument gelöscht",
+      "deleteError": "Dokument konnte nicht gelöscht werden."
+    }
+  },
+  "workCodes": {
+    "title": "Tätigkeitscodes",
+    "addTitle": "Tätigkeitscode anlegen",
+    "editTitle": "Tätigkeitscode bearbeiten",
+    "editCode": "Tätigkeitscode bearbeiten",
+    "codeNumber": "Nummer",
+    "activityName": "Bezeichnung",
+    "preview": "Vorschau: {{value}}",
+    "searchPlaceholder": "Suchen",
+    "clearSearch": "Suche löschen",
+    "noSearchResults": "Keine passenden Tätigkeitscodes.",
+    "selected": "Ausgewählt",
+    "notSelected": "Nicht ausgewählt",
+    "errors": {
+      "invalidNumber": "Bitte eine positive Nummer eingeben.",
+      "reservedNumber": "Die Nummern 19 und 190 sind für Fahrt und An/Abreise reserviert.",
+      "duplicateNumber": "Diese Nummer ist bereits vergeben.",
+      "emptyName": "Bitte eine Bezeichnung eingeben.",
+      "saveFailed": "Der Tätigkeitscode konnte nicht gespeichert werden."
+    },
+    "loadPreset": "Preset laden",
+    "presetCodesCount": "{{count}} Codes",
+    "loading": "Laden...",
+    "empty": "Keine Codes vorhanden.",
+    "emptyHint": "Lade ein Preset oder erstelle eigene Codes.",
+    "newCodePlaceholder": "Neuen Code hinzufügen...",
+    "deleteAll": "Alle Codes löschen",
+    "presetReplaceWarning": {
+      "title": "Achtung!",
+      "message": "Das Laden eines Presets ersetzt alle deine aktuellen Codes. Fortfahren?",
+      "confirm": "Ja, ersetzen"
+    },
+    "deleteAllWarning": {
+      "title": "Alle löschen?",
+      "message": "Möchtest du wirklich alle Tätigkeitscodes löschen? Dies kann nicht rückgängig gemacht werden.",
+      "confirm": "Ja, löschen"
+    }
+  },
+  "updates": {
+    "available": {
+      "title": "Neue Version verfügbar",
+      "body": "Version {{version}} steht auf GitHub bereit.",
+      "download": "Zum Download",
+      "dismiss": "Später"
+    }
+  },
+  "settingsUxMigration": {
+    "title": "Die Einstellungen wurden aufgeräumt",
+    "body": "Wir haben eStundnzettl übersichtlicher sortiert. Deine Daten und bisherigen Einstellungen bleiben unverändert.",
+    "pointData": "Deine Einträge, Tätigkeiten, Backups und Berechnungsregeln bleiben erhalten.",
+    "pointMode": "Deine Aufzeichnungsart wurde übernommen und kann nun direkt oben in den Einstellungen geprüft werden.",
+    "pointAdvanced": "Profi-Funktionen findest du unter „Erweiterte Einstellungen“.",
+    "close": "Verstanden",
+    "reviewMode": "Aufzeichnungsart prüfen"
+  },
+  "migrationRecovery": {
+    "title": "Datenübernahme noch nicht abgeschlossen",
+    "body": "Die App konnte deine bisherigen Daten noch nicht sicher prüfen. Deshalb startet sie absichtlich nicht mit einer leeren Ansicht. Versuche die Übernahme bitte noch einmal.",
+    "dataSafe": "Deine bisherige Datenbank und deine Anhänge wurden nicht gelöscht oder verändert.",
+    "retry": "Datenübernahme erneut versuchen",
+    "copyDiagnostic": "Technische Diagnose kopieren",
+    "contactSupport": "Support kontaktieren"
+  },
+  "crashRecovery": {
+    "title": "Da ist etwas schiefgegangen",
+    "body": "Die App wurde beim letzten Mal unerwartet beendet. Du kannst sie sicher neu starten oder die technische Diagnose für den Support kopieren.",
+    "dataSafe": "Deine Einträge, Anhänge und Backups werden dabei nicht verändert.",
+    "restart": "App sicher neu starten",
+    "copyDiagnostic": "Diagnose kopieren",
+    "contactSupport": "Support kontaktieren"
+  }
+}

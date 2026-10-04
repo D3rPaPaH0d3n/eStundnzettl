@@ -7,7 +7,6 @@ import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.UserData
 import com.estundnzettl.core.model.WorkCode
-import kotlin.math.max
 
 /**
  * Speicher-Logik des Eintragsformulars — Port von handleSaveEntry aus
@@ -126,7 +125,7 @@ fun prepareEntryToSave(
 
         if (existingWork > 0) {
             val dayTarget = getTargetMinutesForDate(form.formDate, userData?.workDays, locale, config)
-            net = max(0, dayTarget - existingWork)
+            net = adjustSickDuration(net, existingWork, dayTarget, locale, config)
         }
     }
 

@@ -293,13 +293,20 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Install Android SDK 37
+        run: |
+          if [ -n "${ANDROID_HOME:-}" ] && [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0"
+          fi
+
       - name: Build release AAB
         env:
           APP_VARIANT: ${{ github.event.inputs.app }}
         run: |
           if [ "$APP_VARIANT" = "native" ]; then
             # Core-Tests ersetzen hier die npm-Tests der Capacitor-Variante
-            cd native && chmod +x gradlew && ./gradlew :core:test :app:bundleRelease --no-daemon
+            cd native && chmod +x gradlew && ./gradlew :core:test :app:testDebugUnitTest :app:bundleRelease --no-daemon
           else
             cd android && chmod +x gradlew && ./gradlew bundleRelease --no-daemon
           fi

@@ -391,6 +391,7 @@ fun ReportScreen(viewModel: MainViewModel) {
             pageBitmaps = result.second
         } catch (e: Exception) {
             android.util.Log.e("ReportScreen", "PDF-Vorschau fehlgeschlagen", e)
+            pdfBytes = null
             pageBitmaps = emptyList()
         }
     }

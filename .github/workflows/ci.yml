@@ -45,6 +45,13 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x native/gradlew
 
+      - name: Install Android SDK 37
+        run: |
+          if [ -n "${ANDROID_HOME:-}" ] && [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0"
+          fi
+
       - name: Test release-note rendering
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 

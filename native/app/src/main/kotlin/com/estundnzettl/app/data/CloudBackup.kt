@@ -41,8 +41,8 @@ class NextcloudManager(
             if (!legacyRaw.isNullOrEmpty()) {
                 val masterKey = settings.getString("crypto_mk_v1")
                 val decrypted = secrets.deobfuscateLegacy(legacyRaw, masterKey)
-                if (decrypted.isNotEmpty()) {
-                    secrets.set(SecretStore.NEXTCLOUD_SECRET_KEY, decrypted)
+                if (decrypted.isNotEmpty() && secrets.set(SecretStore.NEXTCLOUD_SECRET_KEY, decrypted)) {
+                    clearLegacySecretMaterial()
                     pass = decrypted
                 }
             }
@@ -51,11 +51,17 @@ class NextcloudManager(
         return Credentials(url, user, pass)
     }
 
-    suspend fun persistLogin(server: String, loginName: String, appPassword: String) {
+    /**
+     * The app password is stored before the server address. A failed write
+     * must not leave a new server paired with an older password.
+     */
+    suspend fun persistLogin(server: String, loginName: String, appPassword: String): Boolean {
+        if (!secrets.set(SecretStore.NEXTCLOUD_SECRET_KEY, appPassword)) return false
         settings.setString(SettingsRepository.Keys.NEXTCLOUD_URL, server)
         settings.setString(SettingsRepository.Keys.NEXTCLOUD_USER, loginName)
-        secrets.set(SecretStore.NEXTCLOUD_SECRET_KEY, appPassword)
         settings.setBoolean(SettingsRepository.Keys.NEXTCLOUD_ENABLED, true)
+        clearLegacySecretMaterial()
+        return true
     }
 
     suspend fun disconnect() {
@@ -63,9 +69,15 @@ class NextcloudManager(
         settings.setString(SettingsRepository.Keys.NEXTCLOUD_URL, "")
         settings.setString(SettingsRepository.Keys.NEXTCLOUD_USER, "")
         secrets.delete(SecretStore.NEXTCLOUD_SECRET_KEY)
+        clearLegacySecretMaterial()
         settings.setString(AutoBackupManager.KEY_NC_FAIL_COUNT, "0")
         settings.setString(AutoBackupManager.KEY_NC_LAST_ERROR, "")
         settings.setString(AutoBackupManager.KEY_NC_BACKOFF_UNTIL, "")
+    }
+
+    private suspend fun clearLegacySecretMaterial() {
+        settings.delete("nextcloud_pass")
+        settings.delete("crypto_mk_v1")
     }
 }
 

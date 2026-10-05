@@ -66,6 +66,45 @@ class EntrySaveTest {
     }
 
     @Test
+    fun `Nachtschicht und Fruehschicht am Folgetag werden abgelehnt`() {
+        val night = Entry(
+            EntryId.of(1L), EntryType.WORK, "2024-01-01",
+            start = "22:00", end = "06:00", netDuration = 480,
+        )
+        val result = prepareEntryToSave(
+            form(date = "2024-01-02", start = "05:00", end = "13:00", pause = 0),
+            listOf(night), noWorkDays, codes, 2,
+        )
+        assertIs<SaveEntryResult.Overlap>(result)
+    }
+
+    @Test
+    fun `Schicht die genau am Ende der Nachtschicht beginnt ist erlaubt`() {
+        val night = Entry(
+            EntryId.of(1L), EntryType.WORK, "2024-01-01",
+            start = "22:00", end = "06:00", netDuration = 480,
+        )
+        val result = prepareEntryToSave(
+            form(date = "2024-01-02", start = "06:00", end = "14:00", pause = 0),
+            listOf(night), noWorkDays, codes, 2,
+        )
+        assertIs<SaveEntryResult.Success>(result)
+    }
+
+    @Test
+    fun `Nachtschicht ohne Beruehrung des naechsten Arbeitstags ist erlaubt`() {
+        val night = Entry(
+            EntryId.of(1L), EntryType.WORK, "2024-01-01",
+            start = "22:00", end = "06:00", netDuration = 480,
+        )
+        val result = prepareEntryToSave(
+            form(date = "2024-01-02", start = "08:00", end = "16:00", pause = 0),
+            listOf(night), noWorkDays, codes, 2,
+        )
+        assertIs<SaveEntryResult.Success>(result)
+    }
+
+    @Test
     fun `beim Editieren zaehlt der eigene Eintrag nicht als Ueberlappung`() {
         val existing = Entry(
             EntryId.of(1L), EntryType.WORK, "2024-01-02",

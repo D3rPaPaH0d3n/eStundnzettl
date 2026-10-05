@@ -9,6 +9,7 @@ import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.UserData
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import java.time.temporal.WeekFields
 import kotlin.math.max
 import kotlin.math.min
@@ -80,13 +81,37 @@ fun isOvernightShift(startTime: String, endTime: String): Boolean {
 
 /**
  * Eindeutige Minuten-Range relativ zum Beginn-Tag. Bei Nachtschicht wird
- * das Ende um 24h verschoben, damit Overlap-Checks funktionieren.
+ * das Ende um 24h verschoben. Eine Schicht reicht damit höchstens in den Folgetag.
  */
 fun toAbsoluteRange(startTime: String, endTime: String): Pair<Int, Int> {
     val s = parseTime(startTime)
     var e = parseTime(endTime)
     if (e <= s) e += 24 * 60
     return s to e
+}
+
+/**
+ * Zwei Schichten überlappen sich, Endpunkte zählen nicht.
+ * Nachtschichten werden mit dem Vortag und dem Folgetag verglichen,
+ * weil sie dort hineinreichen. Der Eintrag selbst bleibt am Beginn-Tag.
+ */
+fun shiftsOverlap(
+    date: String,
+    start: String,
+    end: String,
+    otherDate: String,
+    otherStart: String,
+    otherEnd: String,
+): Boolean {
+    val startDay = runCatching { LocalDate.parse(date) }.getOrNull() ?: return false
+    val otherDay = runCatching { LocalDate.parse(otherDate) }.getOrNull() ?: return false
+    val dayGap = ChronoUnit.DAYS.between(startDay, otherDay)
+    if (dayGap < -1 || dayGap > 1) return false
+    val (startMinute, endMinute) = toAbsoluteRange(start, end)
+    val (otherStartMinute, otherEndMinute) = toAbsoluteRange(otherStart, otherEnd)
+    val shiftedStart = otherStartMinute + dayGap * 24 * 60
+    val shiftedEnd = otherEndMinute + dayGap * 24 * 60
+    return startMinute < shiftedEnd && shiftedStart < endMinute
 }
 
 /** YYYY-MM-DD eines Folgetags. */

@@ -104,6 +104,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.MainViewModel
+import com.estundnzettl.app.UiMessageTone
 import com.estundnzettl.app.OnboardingUiState
 import com.estundnzettl.app.R
 import com.estundnzettl.app.ui.settings.OptionSheet
@@ -1314,6 +1315,32 @@ private fun BackupSetupOptions(viewModel: MainViewModel, ob: OnboardingUiState) 
     val nextcloud = state.nextcloud
     var ncPanelOpen by remember { mutableStateOf(false) }
     var ncUrl by remember { mutableStateOf("") }
+    val folderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree(),
+    ) { uri ->
+        if (uri == null) {
+            viewModel.showRawMessage(
+                t.t("onboarding.toast.folderCancelled"),
+                UiMessageTone.WARNING,
+            )
+        } else {
+            scope.launch {
+                val linked = viewModel.adoptLocalBackupFolder(uri)
+                if (linked) {
+                    viewModel.onboardingUpdate { it.copy(localBackupEnabled = true) }
+                    viewModel.showRawMessage(
+                        t.t("onboarding.toast.folderLinked"),
+                        UiMessageTone.SUCCESS,
+                    )
+                } else {
+                    viewModel.showRawMessage(
+                        t.t("onboarding.toast.folderCancelled"),
+                        UiMessageTone.WARNING,
+                    )
+                }
+            }
+        }
+    }
 
     // Erfolgreiche Google-Anmeldung aktiviert das Drive-Backup
     LaunchedEffect(state.googleDrive.backupConnected) {
@@ -1349,7 +1376,23 @@ private fun BackupSetupOptions(viewModel: MainViewModel, ob: OnboardingUiState) 
             active = ob.localBackupEnabled,
             toneName = "green",
         ) {
-            viewModel.onboardingUpdate { it.copy(localBackupEnabled = !it.localBackupEnabled) }
+            if (ob.localBackupEnabled) {
+                viewModel.onboardingUpdate { it.copy(localBackupEnabled = false) }
+                scope.launch { viewModel.clearLocalBackupFolder() }
+            } else {
+                scope.launch {
+                    if (viewModel.hasLocalBackupFolder()) {
+                        viewModel.setLocalBackupEnabled(true)
+                        viewModel.onboardingUpdate { it.copy(localBackupEnabled = true) }
+                        viewModel.showRawMessage(
+                            t.t("onboarding.toast.folderLinked"),
+                            UiMessageTone.SUCCESS,
+                        )
+                    } else {
+                        folderLauncher.launch(null)
+                    }
+                }
+            }
         }
 
         BackupOptionCard(
@@ -1554,6 +1597,19 @@ private fun RestoreOptions(viewModel: MainViewModel, ob: OnboardingUiState) {
         }
     }
 
+    val folderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree(),
+    ) { uri ->
+        if (uri == null) {
+            viewModel.showRawMessage(
+                t.t("onboarding.toast.folderCancelled"),
+                UiMessageTone.WARNING,
+            )
+        } else {
+            viewModel.restoreLocalBackupTree(uri)
+        }
+    }
+
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -1694,7 +1750,7 @@ private fun RestoreOptions(viewModel: MainViewModel, ob: OnboardingUiState) {
                 label = t.t("onboarding.backup.restoreFromFolder"),
                 enabled = !ob.restoreLoading,
                 modifier = Modifier.weight(1f),
-            ) { viewModel.onboardingFolderRestore() }
+            ) { folderLauncher.launch(null) }
 
             RestoreGridCell(
                 icon = Icons.Outlined.Upload,

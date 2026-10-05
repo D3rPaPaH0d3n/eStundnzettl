@@ -138,6 +138,7 @@ class AutoBackupManager(
 
     private val isUploading = AtomicBoolean(false)
     private var lastHash: String = ""
+    private val localFolder = LocalBackupFolder(context, settings)
 
     private suspend fun isBackoffActive(key: String): Boolean {
         val iso = settings.getString(key) ?: return false
@@ -203,8 +204,19 @@ class AutoBackupManager(
         settings.setString(KEY_NC_BACKOFF_UNTIL, "")
     }
 
-    /** Lokales Backup — wie writeBackupFile (Directory.Data/eStundnzettl/). */
-    private fun writeLocalBackup(content: String) {
+    /**
+     * Writes the chosen folder when one is persisted, and always keeps
+     * the private app copy. A chosen folder that cannot be written fails
+     * the local target.
+     */
+    private suspend fun writeLocalBackup(content: String) {
+        val folderOk = if (localFolder.hasPersistedTree()) localFolder.writeText(content) else true
+        writeInternalBackup(content)
+        if (!folderOk) error("Chosen backup folder could not be written")
+    }
+
+    /** Private copy — Directory.Data/eStundnzettl of the previous app. */
+    private fun writeInternalBackup(content: String) {
         val dir = File(context.filesDir, NextcloudClient.BACKUP_FOLDER).apply { mkdirs() }
         val target = File(dir, NextcloudClient.BACKUP_FILENAME)
         val temp = File(dir, ".${NextcloudClient.BACKUP_FILENAME}.tmp")

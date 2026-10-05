@@ -1461,10 +1461,52 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // ─── Nextcloud (Port von useNextcloudBackup) ─────────────
 
+    private val localBackupFolder by lazy {
+        com.estundnzettl.app.data.LocalBackupFolder(getApplication(), settings)
+    }
+
     private val autoBackup by lazy {
         com.estundnzettl.app.data.AutoBackupManager(
             getApplication(), settings, backupRepo, nextcloudManager, googleDrive,
         )
+    }
+
+    suspend fun hasLocalBackupFolder(): Boolean = localBackupFolder.hasPersistedTree()
+
+    /** Stores the folder from the system picker and turns local backup on. */
+    suspend fun adoptLocalBackupFolder(uri: android.net.Uri): Boolean {
+        if (!localBackupFolder.persist(uri)) return false
+        settings.setBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED, true)
+        scheduleDataProtection()
+        return true
+    }
+
+    suspend fun clearLocalBackupFolder() {
+        localBackupFolder.clear()
+        settings.setBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED, false)
+    }
+
+    /** Reads a backup from a folder the user just picked. Does not keep the grant. */
+    fun restoreLocalBackupTree(uri: android.net.Uri) {
+        viewModelScope.launch {
+            updateOnboarding { it.copy(restoreLoading = true) }
+            try {
+                val text = localBackupFolder.readBackup(uri)
+                if (text.isNullOrBlank()) {
+                    emit(UiMessage("onboarding.toast.backupNotFound"))
+                } else {
+                    applyRestoreContent(
+                        text,
+                        invalidKey = "onboarding.toast.backupInvalidShort",
+                        loadedKey = "onboarding.toast.backupLoaded",
+                    )
+                }
+            } catch (_: Exception) {
+                emit(UiMessage("onboarding.toast.folderAccessError"))
+            } finally {
+                updateOnboarding { it.copy(restoreLoading = false) }
+            }
+        }
     }
 
     /** Willkommens-Popup nach der Capacitor-Migration bestätigt. */
@@ -2351,33 +2393,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 )
             } catch (e: Exception) {
                 emit(UiMessage("onboarding.toast.ncLoginFailed"))
-            } finally {
-                updateOnboarding { it.copy(restoreLoading = false) }
-            }
-        }
-    }
-
-    /** Backup aus dem internen App-Ordner — Port von handleFolderRestore. */
-    fun onboardingFolderRestore() {
-        viewModelScope.launch {
-            updateOnboarding { it.copy(restoreLoading = true) }
-            try {
-                val file = java.io.File(
-                    getApplication<android.app.Application>().filesDir,
-                    "${com.estundnzettl.app.data.NextcloudClient.BACKUP_FOLDER}/" +
-                        com.estundnzettl.app.data.NextcloudClient.BACKUP_FILENAME,
-                )
-                if (!file.exists()) {
-                    emit(UiMessage("onboarding.toast.backupNotFound"))
-                    return@launch
-                }
-                applyRestoreContent(
-                    file.readText(),
-                    invalidKey = "onboarding.toast.backupInvalidShort",
-                    loadedKey = "onboarding.toast.backupLoaded",
-                )
-            } catch (_: Exception) {
-                emit(UiMessage("onboarding.toast.folderAccessError"))
             } finally {
                 updateOnboarding { it.copy(restoreLoading = false) }
             }

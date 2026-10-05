@@ -1,6 +1,8 @@
 package com.estundnzettl.app.ui.settings
 
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,7 +39,6 @@ import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.GooglePlayServicesStatus
 import com.estundnzettl.app.data.AutoBackupManager
-import com.estundnzettl.app.data.SettingsRepository
 import com.estundnzettl.app.UiMessageTone
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
@@ -74,8 +75,28 @@ fun CloudBackupContent(viewModel: MainViewModel) {
     fun toast(message: String, tone: UiMessageTone = UiMessageTone.INFO) =
         viewModel.showRawMessage(message, tone)
 
+    val folderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree(),
+    ) { uri ->
+        if (uri == null) {
+            localEnabled = false
+            toast(t.t("settings.backup.toast.folderCancelled"), UiMessageTone.WARNING)
+        } else {
+            scope.launch {
+                val linked = viewModel.adoptLocalBackupFolder(uri)
+                localEnabled = linked
+                if (linked) {
+                    toast(t.t("settings.backup.toast.localActivated"), UiMessageTone.SUCCESS)
+                } else {
+                    toast(t.t("settings.backup.toast.folderCancelled"), UiMessageTone.WARNING)
+                }
+                refreshTick++
+            }
+        }
+    }
+
     LaunchedEffect(refreshTick, nc.connected) {
-        localEnabled = viewModel.settings.getBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED)
+        localEnabled = viewModel.hasLocalBackupFolder()
         lastBackup = viewModel.settings.getString(AutoBackupManager.KEY_LAST_BACKUP) ?: ""
         ncLastError = viewModel.settings.getString(AutoBackupManager.KEY_NC_LAST_ERROR) ?: ""
     }
@@ -301,8 +322,25 @@ fun CloudBackupContent(viewModel: MainViewModel) {
             accent = colors.accentStrong,
             icon = { Icon(Icons.Filled.Folder, contentDescription = null, tint = if (localEnabled) colors.positive else colors.textFaint) },
         ) { next ->
-            localEnabled = next
-            viewModel.setLocalBackupEnabled(next)
+            if (!next) {
+                localEnabled = false
+                scope.launch {
+                    viewModel.clearLocalBackupFolder()
+                    toast(t.t("settings.backup.toast.localDisconnected"))
+                    refreshTick++
+                }
+            } else {
+                scope.launch {
+                    if (viewModel.hasLocalBackupFolder()) {
+                        viewModel.setLocalBackupEnabled(true)
+                        localEnabled = true
+                        toast(t.t("settings.backup.toast.localActivated"), UiMessageTone.SUCCESS)
+                        refreshTick++
+                    } else {
+                        folderLauncher.launch(null)
+                    }
+                }
+            }
         }
 
         // ── Status + Jetzt sichern ──────────────────────────────

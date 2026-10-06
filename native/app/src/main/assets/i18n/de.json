@@ -663,7 +663,7 @@
       },
       "calculation": {
         "title": "Stundenberechnung",
-        "body": "Hier sitzen Arbeitsmodell, Feiertage und Berechnungsregeln. Wenn sich dein Dienstmodell ändert, ist das der richtige Ort."
+        "body": "Hier sitzen Arbeitsmodell, Feiertage, Berechnungsregeln und das optionale Zeitausgleichskonto. Wenn sich dein Dienstmodell ändert, ist das der richtige Ort."
       },
       "backup": {
         "title": "Backup & Export",
@@ -1043,7 +1043,7 @@
     },
     "locale": {
       "header": "Stundenberechnung",
-      "subtitle": "Feiertage, Halbtage, Mehrarbeit/Überstunden",
+      "subtitle": "Feiertage, Halbtage, Überstunden & ZA-Konto",
       "group": {
         "neutral": "Neutral",
         "austria": "Österreich",

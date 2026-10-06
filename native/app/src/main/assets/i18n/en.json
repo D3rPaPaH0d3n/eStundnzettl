@@ -663,7 +663,7 @@
       },
       "calculation": {
         "title": "Hours calculation",
-        "body": "Work model, public holidays and calculation rules live here. If your schedule changes, this is the right place."
+        "body": "Work model, public holidays, calculation rules and the optional time-off account live here. If your schedule changes, this is the right place."
       },
       "backup": {
         "title": "Backup & export",
@@ -1043,7 +1043,7 @@
     },
     "locale": {
       "header": "Hours calculation",
-      "subtitle": "Holidays, half-days, extra hours/overtime",
+      "subtitle": "Holidays, half-days, overtime & time-off account",
       "group": {
         "neutral": "Neutral",
         "austria": "Austria",

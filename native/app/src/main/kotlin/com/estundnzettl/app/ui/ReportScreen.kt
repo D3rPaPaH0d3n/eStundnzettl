@@ -125,6 +125,7 @@ import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.calc.applyEffectiveDurations
 import com.estundnzettl.core.calc.calculatePeriodStats
+import com.estundnzettl.core.calc.getOvertimeAccountStart
 import com.estundnzettl.core.calc.getEffectivePdfDisplay
 import com.estundnzettl.core.calc.getWeekNumber
 import com.estundnzettl.core.calc.getWeekRangeInMonth
@@ -1507,13 +1508,20 @@ fun PdfDisplayToggles(viewModel: MainViewModel, showHeader: Boolean = true) {
         }
     }
 
-    val toggles = listOf(
+    // ZA-Konto-Schalter nur, wenn das Konto überhaupt läuft
+    val accountActive = getOvertimeAccountStart(s.userData, s.calculationConfig) != null
+
+    val toggles = listOfNotNull(
         ToggleSpec("showSummary", display.showSummary) { v -> patch { it.copy(showSummary = v) } },
         ToggleSpec("showTargetTime", display.showTargetTime) { v -> patch { it.copy(showTargetTime = v) } },
         ToggleSpec("showBalance", display.showBalance) { v -> patch { it.copy(showBalance = v) } },
         ToggleSpec("showOvertimeSplit", display.showOvertimeSplit) { v -> patch { it.copy(showOvertimeSplit = v) } },
         ToggleSpec("showVacationBalance", display.showVacationBalance) { v -> patch { it.copy(showVacationBalance = v) } },
-        ToggleSpec("showOvertimeAccount", display.showOvertimeAccount) { v -> patch { it.copy(showOvertimeAccount = v) } },
+        if (accountActive) {
+            ToggleSpec("showOvertimeAccount", display.showOvertimeAccount) { v -> patch { it.copy(showOvertimeAccount = v) } }
+        } else {
+            null
+        },
         ToggleSpec("showAttachmentsList", display.showAttachmentsList) { v -> patch { it.copy(showAttachmentsList = v) } },
         ToggleSpec("showWorkCodeColumn", display.showWorkCodeColumn) { v -> patch { it.copy(showWorkCodeColumn = v) } },
         ToggleSpec("showCustomNote", display.showCustomNote) { v -> patch { it.copy(showCustomNote = v) } },

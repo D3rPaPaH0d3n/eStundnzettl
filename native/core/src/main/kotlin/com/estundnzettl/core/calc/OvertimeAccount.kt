@@ -51,6 +51,14 @@ fun getOvertimeAccountStart(userData: UserData?, config: CalculationConfig?): Ye
 }
 
 /**
+ * Übernimmt das ZA-Konto aus [previous], wenn Regeln auf Defaults
+ * zurückgesetzt werden: Startmonat und Anfangsstand sind ein persönlicher
+ * Kontostand, keine Locale-Regel, und dürfen dabei nicht verloren gehen.
+ */
+fun CalculationConfig.keepingOvertimeAccountOf(previous: CalculationConfig?): CalculationConfig =
+    previous?.overtimeAccount?.let { copy(overtimeAccount = it) } ?: this
+
+/**
  * Letzter Tag, der in [month] auf das Konto gebucht wird. Abgeschlossene
  * Monate zählen voll, der laufende Monat bis heute: Heute zählt erst, wenn
  * schon etwas erfasst ist oder kein Soll ansteht — sonst stünde das Konto

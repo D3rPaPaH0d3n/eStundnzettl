@@ -20,6 +20,7 @@ import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.WorkCodeDraftResult
 import com.estundnzettl.core.calc.calculateOvertimeAccount
 import com.estundnzettl.core.calc.deriveAppData
+import com.estundnzettl.core.calc.keepingOvertimeAccountOf
 import com.estundnzettl.core.calc.getDefaultTimesForDate
 import com.estundnzettl.core.calc.latestEligibleWorkEntry
 import com.estundnzettl.core.calc.prepareEntryToSave
@@ -936,6 +937,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (resetConfig) {
                 val workDays = _state.value.userData?.workDays
                 val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(locale, workDays)
+                    .keepingOvertimeAccountOf(_state.value.calculationConfig)
                 _state.value = _state.value.copy(calculationConfig = fresh)
                 settings.setCalculationConfig(fresh)
             }
@@ -977,6 +979,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         if (!nextSimpleMode) {
             val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(targetLocale, nextWorkDays)
+                .keepingOvertimeAccountOf(s.calculationConfig)
             _state.value = _state.value.copy(calculationConfig = fresh)
             viewModelScope.launch { settings.setCalculationConfig(fresh) }
         }

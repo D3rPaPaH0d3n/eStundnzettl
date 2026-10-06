@@ -81,6 +81,18 @@ class OvertimeAccountTest {
     }
 
     @Test
+    fun `Zuruecksetzen auf Locale-Defaults behaelt das Konto`() {
+        val previous = config("2026-09", opening = -150)
+        val reset = getDefaultCalculationConfig(austriaLocale, workDays).keepingOvertimeAccountOf(previous)
+        assertEquals(previous.overtimeAccount, reset.overtimeAccount)
+        assertEquals(getDefaultCalculationConfig(austriaLocale, workDays).overtimeMode, reset.overtimeMode)
+
+        val withoutAccount = getDefaultCalculationConfig(austriaLocale, workDays)
+        assertEquals(withoutAccount, withoutAccount.keepingOvertimeAccountOf(getBlankCalculationConfig(workDays)))
+        assertEquals(withoutAccount, withoutAccount.keepingOvertimeAccountOf(null))
+    }
+
+    @Test
     fun `Monate vor dem Startmonat haben kein Konto`() {
         assertNull(account(emptyList(), YearMonth.of(2026, 8), LocalDate.of(2026, 10, 15)))
     }

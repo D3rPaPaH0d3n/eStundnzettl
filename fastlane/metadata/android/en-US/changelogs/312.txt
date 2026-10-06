@@ -1,0 +1,9 @@
+Picked by you, stored safely 📂
+
+• Local backup to a folder of your choice, optionally with the monthly PDF
+• Restore your backup straight from that folder during setup
+• A stopped timer is kept until you save it
+• Night shifts are checked for overlaps across midnight
+• More protection for your data and a steadier start
+
+So your backup ends up exactly where it belongs!

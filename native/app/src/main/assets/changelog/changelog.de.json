@@ -1,5 +1,44 @@
 [
  {
+  "version": "5.1.1",
+  "date": "06.10.2026",
+  "title": "Selber ausgsucht, sicher abglegt 📂",
+  "isMajor": false,
+  "playStoreText": "Selber ausgsucht, sicher abglegt 📂\n\n• Lokales Backup in einen Ordner deiner Wahl, auf Wunsch samt Monats-PDF\n• Beim Einrichten das Backup direkt aus dem Ordner zurückholen\n• Ein gestoppter Timer bleibt bis zum Speichern erhalten\n• Nachtschichten werden über Mitternacht auf Überschneidungen geprüft\n• Mehr Schutz für deine Daten und ein stabiler Start\n\nSo liegt dein Backup genau dort, wo's hinghört!",
+  "sections": [
+   {
+    "iconName": "FolderOpen",
+    "title": "Dein Backup, dein Ordner",
+    "items": [
+     "Schaltest du das lokale Backup ein, suchst du dir jetzt selber den Ordner aus – in den Einstellungen genauso wie beim Einrichten.",
+     "Die App legt dort einen Ordner „eStundnzettl“ an: mit deinem Backup, den letzten sieben Tageskopien und – wenn du's eingschaltet hast – dem Monats-PDF im Unterordner „Archiv“.",
+     "Am neuen Handy wählst du beim Einrichten einfach diesen Ordner aus und holst dein Backup direkt zurück.",
+     "Hast du das lokale Backup schon vorher verwendet, läuft es wie gwohnt weiter."
+    ]
+   },
+   {
+    "iconName": "Timer",
+    "title": "Zeiten, die zampassen",
+    "items": [
+     "Ein gestoppter Timer geht nimmer verloren: Die Zeiten bleiben im Formular, bis du speicherst – auch wenn Android die App zwischendurch zumacht.",
+     "Wird ein Timer über Mitternacht um 23:59 automatisch beendet, zählt eine gerade laufende Pause jetzt mit.",
+     "Nachtschichten werden auch mit dem Vortag und dem Folgetag verglichen. Überschneidungen über Mitternacht fallen auf, eine Schicht, die genau am Ende anschließt, passt weiterhin.",
+     "Ist der Krankenstand auf „Zählt zusätzlich zur Arbeit“ eingestellt, bleibt die volle Krankzeit stehen, auch wenn am selben Tag schon gearbeitet wurde."
+    ]
+   },
+   {
+    "iconName": "ShieldCheck",
+    "title": "Daten sicher, Start stabil",
+    "items": [
+     "Deine Zeiteinträge landen nimmer in der automatischen Gerätesicherung von Android. Gesichert wird über die Backups der App – lokal, in der Nextcloud oder auf Google Drive. Für'n Handywechsel also bitte eins davon einschalten.",
+     "Lässt sich ein altes Nextcloud-Passwort nimmer lesen, startet die App trotzdem – einfach neu anmelden, fertig.",
+     "Der Google-Drive-Verbindungstest schreibt kein leeres Backup mehr über ein vorhandenes.",
+     "Anhänge aus einem Backup bleiben brav in ihrem Ordner. Ein manipuliertes Backup kann damit keine anderen Dateien erwischen."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.1.0",
   "date": "10.09.2026",
   "title": "Sicher wiederhergestellt, nix verloren ☁️",

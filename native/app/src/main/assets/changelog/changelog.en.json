@@ -1,5 +1,44 @@
 [
  {
+  "version": "5.1.1",
+  "date": "2026-10-06",
+  "title": "Picked by you, stored safely 📂",
+  "isMajor": false,
+  "playStoreText": "Picked by you, stored safely 📂\n\n• Local backup to a folder of your choice, optionally with the monthly PDF\n• Restore your backup straight from that folder during setup\n• A stopped timer is kept until you save it\n• Night shifts are checked for overlaps across midnight\n• More protection for your data and a steadier start\n\nSo your backup ends up exactly where it belongs!",
+  "sections": [
+   {
+    "iconName": "FolderOpen",
+    "title": "Your backup, your folder",
+    "items": [
+     "When you turn on local backup, you now pick the folder yourself – in the settings as well as during setup.",
+     "The app creates an “eStundnzettl” folder there with your backup, the last seven daily copies and, if you turned it on, the monthly PDF in the “Archiv” subfolder.",
+     "On a new phone, just pick that folder during setup and bring your backup straight back.",
+     "If you already used local backup before, it keeps running as usual."
+    ]
+   },
+   {
+    "iconName": "Timer",
+    "title": "Times that fit together",
+    "items": [
+     "A stopped timer no longer gets lost: the times stay in the form until you save, even if Android closes the app in between.",
+     "When a timer running past midnight is stopped automatically at 23:59, a pause that is still running now counts too.",
+     "Night shifts are now also compared with the previous and the next day. Overlaps across midnight are caught, while a shift that starts exactly when the night shift ends is still fine.",
+     "With sick leave set to “Count in addition to work”, the full sick time stays in place even if you already worked that day."
+    ]
+   },
+   {
+    "iconName": "ShieldCheck",
+    "title": "Safe data, steady start",
+    "items": [
+     "Your time entries are no longer part of Android's automatic device backup. Backups run through the app instead – local, Nextcloud or Google Drive – so please turn one of them on before switching phones.",
+     "If an old Nextcloud password can no longer be read, the app still starts – just sign in again.",
+     "The Google Drive connection test no longer writes an empty backup over an existing one.",
+     "Attachments from a backup stay in their own folder, so a tampered backup cannot reach any other files."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.1.0",
   "date": "2026-09-10",
   "title": "Restored safely, nothing lost ☁️",

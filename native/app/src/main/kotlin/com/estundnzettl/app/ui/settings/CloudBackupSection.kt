@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.GooglePlayServicesStatus
 import com.estundnzettl.app.data.AutoBackupManager
+import com.estundnzettl.app.data.SettingsRepository
 import com.estundnzettl.app.UiMessageTone
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
@@ -96,7 +97,9 @@ fun CloudBackupContent(viewModel: MainViewModel) {
     }
 
     LaunchedEffect(refreshTick, nc.connected) {
-        localEnabled = viewModel.hasLocalBackupFolder()
+        // The switch shows the flag the backup run uses. Local backup that
+        // was turned on before folders existed has no folder and still runs.
+        localEnabled = viewModel.settings.getBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED)
         lastBackup = viewModel.settings.getString(AutoBackupManager.KEY_LAST_BACKUP) ?: ""
         ncLastError = viewModel.settings.getString(AutoBackupManager.KEY_NC_LAST_ERROR) ?: ""
     }

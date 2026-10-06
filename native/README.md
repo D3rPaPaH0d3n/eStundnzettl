@@ -58,8 +58,9 @@ App das Verzeichnis `native/` in Android Studio öffnen.
    bewiesen), Datenübernahme aus der Capacitor-DB.
 3. 🔶 **Phase 3 (in Arbeit)** — UI Screen für Screen:
    - ✅ App-Shell (Header, Navigation, Theme hell/dunkel, Toasts)
-   - ✅ i18n: identische de/en-Sprachdateien der Web-App (Gradle-Sync aus
-     `src/i18n/locales`, i18next-kompatibler Lookup inkl. Plurale)
+   - ✅ i18n: de/en-Sprachdateien unter `app/src/main/assets/i18n`
+     (ursprünglich aus `src/i18n/locales` übernommen, i18next-kompatibler
+     Lookup inkl. Plurale)
    - ✅ Dashboard (Monats-Statistik-Karte, Monats-Picker, Wochen-Gruppen
      mit Tages-Karten, Swipe-zum-Löschen, Tag-Saldo)
    - ✅ Eintragsformular (Typ-Segmente, Fahrt-Untertypen, Auto/Manuell für

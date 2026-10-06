@@ -415,7 +415,11 @@
       "customInfo": "Set your hours per day directly. Below you'll find optional presets you can apply if you want — later also changeable at any time in settings.",
       "dailyHoursTitle": "Daily hours (custom)",
       "weeklyHours": "Weekly hours:",
-      "presetsTitle": "Presets (optional)"
+      "presetsTitle": "Presets (optional)",
+      "overtimeAccountTitle": "Carry over overtime?",
+      "overtimeAccountHint": "Optional: a time-off account carries your balance into the next month and deducts time off. You can change this in the settings at any time.",
+      "overtimeAccountOpening": "Hours already on the account?",
+      "overtimeAccountOpeningHint": "Leave empty to start at 0. Use minus for negative hours."
     },
     "workCodes": {
       "title": "Activities",

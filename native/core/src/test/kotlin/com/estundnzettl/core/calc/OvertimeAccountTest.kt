@@ -69,6 +69,18 @@ class OvertimeAccountTest {
     }
 
     @Test
+    fun `Standard-Konfigurationen bringen kein Konto mit`() {
+        val defaults = listOf(
+            getDefaultCalculationConfig(austriaLocale, workDays),
+            getBlankCalculationConfig(workDays),
+        )
+        defaults.forEach { cfg ->
+            assertNull(cfg.overtimeAccount)
+            assertNull(account(exactMonth(sep), sep, LocalDate.of(2026, 10, 15), cfg))
+        }
+    }
+
+    @Test
     fun `Monate vor dem Startmonat haben kein Konto`() {
         assertNull(account(emptyList(), YearMonth.of(2026, 8), LocalDate.of(2026, 10, 15)))
     }

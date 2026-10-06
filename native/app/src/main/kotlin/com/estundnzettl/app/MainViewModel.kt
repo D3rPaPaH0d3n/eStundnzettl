@@ -2475,8 +2475,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             if (!ob.isRestoreFlow && !ob.simpleMode) {
-                val config = ob.calcConfig
+                val base = ob.calcConfig
                     ?: com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale(ob.localeId), ob.workDays)
+                // ZA-Konto nur, wenn es im Wizard ausdrücklich eingeschaltet wurde
+                val config = if (ob.overtimeAccountEnabled) {
+                    base.copy(
+                        overtimeAccount = com.estundnzettl.core.model.OvertimeAccountConfig(
+                            enabled = true,
+                            startMonth = YearMonth.now().toString(),
+                            openingBalanceMinutes = ob.overtimeAccountOpeningMinutes,
+                        ),
+                    )
+                } else {
+                    base
+                }
                 runCatching { settings.setCalculationConfig(config) }
             }
             if (!ob.isRestoreFlow && ob.localeId != null) {

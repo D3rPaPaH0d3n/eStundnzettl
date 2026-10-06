@@ -113,7 +113,9 @@ import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.calc.formatMonthlyTargetInput
+import com.estundnzettl.core.calc.formatSignedDurationInput
 import com.estundnzettl.core.calc.parseMonthlyTargetInput
+import com.estundnzettl.core.calc.parseSignedDurationInput
 import com.estundnzettl.core.locale.GERMANY_LOCALE_IDS
 import com.estundnzettl.core.locale.SWITZERLAND_LOCALE_IDS
 import com.estundnzettl.core.locale.getLocale
@@ -1125,6 +1127,66 @@ private fun WorkScheduleStep(viewModel: MainViewModel, ob: OnboardingUiState, la
                     viewModel.onboardingUpdate { it.copy(workDays = model.days) }
                 }
             }
+        }
+
+        OvertimeAccountSetup(viewModel, ob)
+    }
+}
+
+/** Optionales Zeitausgleichskonto — standardmäßig aus, nur auf Wunsch. */
+@Composable
+private fun OvertimeAccountSetup(viewModel: MainViewModel, ob: OnboardingUiState) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    // Ohne Key: Eingabe wird beim Tippen nicht umformatiert
+    var openingInput by remember {
+        mutableStateOf(
+            if (ob.overtimeAccountOpeningMinutes == 0) ""
+            else formatSignedDurationInput(ob.overtimeAccountOpeningMinutes)
+        )
+    }
+    val openingInvalid = openingInput.isNotBlank() && parseSignedDurationInput(openingInput) == null
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+            .background(if (colors.isDark) Palette.Zinc800.copy(alpha = 0.5f) else Palette.Zinc50)
+            .border(1.dp, colors.border, RoundedCornerShape(12.dp)).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(t.t("onboarding.workSchedule.overtimeAccountTitle"), color = colors.textPrimary, fontWeight = FontWeight.Bold)
+                Text(t.t("onboarding.workSchedule.overtimeAccountHint"), color = colors.textMuted, fontSize = 12.sp)
+            }
+            Switch(
+                checked = ob.overtimeAccountEnabled,
+                onCheckedChange = { enabled ->
+                    viewModel.onboardingUpdate { it.copy(overtimeAccountEnabled = enabled) }
+                },
+            )
+        }
+        if (ob.overtimeAccountEnabled) {
+            OutlinedTextField(
+                value = openingInput,
+                onValueChange = { value ->
+                    openingInput = value
+                    val parsed = if (value.isBlank()) 0 else parseSignedDurationInput(value)
+                    if (parsed != null) {
+                        viewModel.onboardingUpdate { it.copy(overtimeAccountOpeningMinutes = parsed) }
+                    }
+                },
+                label = { Text(t.t("onboarding.workSchedule.overtimeAccountOpening")) },
+                placeholder = { Text(t.t("settings.calc.overtimeAccount.openingPlaceholder")) },
+                supportingText = {
+                    Text(
+                        if (openingInvalid) t.t("settings.calc.overtimeAccount.openingInvalid")
+                        else t.t("onboarding.workSchedule.overtimeAccountOpeningHint")
+                    )
+                },
+                isError = openingInvalid,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

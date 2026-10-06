@@ -415,7 +415,11 @@
       "customInfo": "Stell deine Stunden pro Tag direkt ein. Unten findest du optionale Presets, die du bei Bedarf übernehmen kannst — später in den Einstellungen ebenfalls jederzeit änderbar.",
       "dailyHoursTitle": "Tagesstunden (benutzerdefiniert)",
       "weeklyHours": "Wochenstunden:",
-      "presetsTitle": "Presets (optional übernehmen)"
+      "presetsTitle": "Presets (optional übernehmen)",
+      "overtimeAccountTitle": "Überstunden übertragen?",
+      "overtimeAccountHint": "Optional: Ein Zeitausgleichskonto nimmt deinen Saldo in den nächsten Monat mit, ZA wird abgezogen. Kannst du jederzeit in den Einstellungen ändern.",
+      "overtimeAccountOpening": "Schon Stunden am Konto?",
+      "overtimeAccountOpeningHint": "Leer lassen, wenn du bei 0 startest. Minus für Minusstunden."
     },
     "workCodes": {
       "title": "Tätigkeiten",

@@ -56,7 +56,14 @@
     "noPause": "Keine Pause",
     "documentsLabel": "Dokumente",
     "documentsCount_one": "{{count}} Dokument",
-    "documentsCount_other": "{{count}} Dokumente"
+    "documentsCount_other": "{{count}} Dokumente",
+    "overtimeAccount": {
+      "title": "Zeitausgleichskonto",
+      "opening": "Übertrag",
+      "timeComp": "ZA genommen",
+      "closingMonthEnd": "Stand Monatsende",
+      "closingToday": "Stand heute"
+    }
   },
   "entryTypes": {
     "holiday": "Feiertag",
@@ -201,7 +208,16 @@
       "placeholder": "Z.B. Zusätzliche Infos, Bankverbindung, etc...",
       "done": "Fertig"
     },
-    "pdfElementMissing": "PDF-Element fehlt"
+    "pdfElementMissing": "PDF-Element fehlt",
+    "overtimeAccount": {
+      "title": "Zeitausgleichskonto",
+      "opening": "Übertrag Vormonat:",
+      "balance": "Saldo dieses Monats:",
+      "balanceUntil": "Saldo bis {{date}}:",
+      "timeComp": "Zeitausgleich genommen:",
+      "closing": "Stand Monatsende:",
+      "closingAt": "Stand per {{date}}:"
+    }
   },
   "drawers": {
     "timePicker": {
@@ -1008,6 +1024,17 @@
         "recalcFixed": "{{fixed}} von {{total}} Einträgen aktualisiert",
         "recalcAllCorrect": "Alle {{total}} Einträge sind aktuell",
         "recalcError": "Neuberechnung fehlgeschlagen"
+      },
+      "overtimeAccount": {
+        "title": "Zeitausgleichskonto",
+        "subtitle": "Überstunden in den nächsten Monat übertragen",
+        "startMonth": "Konto startet ab",
+        "opening": "Übertrag zu Beginn",
+        "openingPlaceholder": "z. B. 12:30 oder -4:15",
+        "openingHint": "Kontostand am Anfang von {{month}} (Stunden:Minuten, Minus für Minusstunden)",
+        "openingInvalid": "Bitte als Stunden:Minuten eingeben, z. B. 12:30 oder -4:15",
+        "currentBalance": "Aktueller Stand",
+        "hint": "Jeder Monatssaldo wird auf das Konto gebucht und in den nächsten Monat übertragen. Zeitausgleich-Einträge werden vom Konto abgezogen. Bei Auszahlungen oder Korrekturen einfach Startmonat und Übertrag neu setzen."
       }
     },
     "locale": {
@@ -1143,6 +1170,8 @@
       "showOvertimeSplitDesc": "Aufgesplittete Überstunden in der Zusammenfassung",
       "showVacationBalance": "Urlaubsbilanz anzeigen",
       "showVacationBalanceDesc": "Resturlaub-Block am Ende der Zusammenfassung",
+      "showOvertimeAccount": "Zeitausgleichskonto anzeigen",
+      "showOvertimeAccountDesc": "Übertrag Vormonat und Stand Monatsende in der Zusammenfassung",
       "showAttachmentsList": "Anhänge-Liste anzeigen",
       "showAttachmentsListDesc": "Aufzählung verknüpfter Dokumente pro Eintrag",
       "showWorkCodeColumn": "Code-Spalte anzeigen",

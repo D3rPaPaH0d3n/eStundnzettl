@@ -7,11 +7,13 @@ import com.estundnzettl.core.model.HalfDayMode
 import com.estundnzettl.core.model.HolidayOnWorkDayMode
 import com.estundnzettl.core.model.HolidaySetConfig
 import com.estundnzettl.core.model.HolidaySetMode
+import com.estundnzettl.core.model.OvertimeAccountConfig
 import com.estundnzettl.core.model.OvertimeMode
 import com.estundnzettl.core.model.PdfDisplayConfig
 import com.estundnzettl.core.model.SickOnWorkDayMode
 import com.estundnzettl.core.model.UserData
 import com.estundnzettl.core.calc.normalizeMonthlyTargetMinutes
+import com.estundnzettl.core.calc.parseYearMonthOrNull
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -80,6 +82,7 @@ private fun coerceHalfDayMode(v: JsonElement?, fallback: HalfDayConfig): HalfDay
 private val PDF_DISPLAY_KEYS = listOf(
     "showSummary", "showTargetTime", "showBalance", "showOvertimeSplit",
     "showVacationBalance", "showAttachmentsList", "showWorkCodeColumn", "showCustomNote",
+    "showOvertimeAccount",
 )
 
 private fun coercePdfDisplay(v: JsonElement?, fallback: PdfDisplayConfig?): PdfDisplayConfig? {
@@ -99,6 +102,17 @@ private fun coercePdfDisplay(v: JsonElement?, fallback: PdfDisplayConfig?): PdfD
         showAttachmentsList = explicit["showAttachmentsList"] ?: true,
         showWorkCodeColumn = explicit["showWorkCodeColumn"] ?: true,
         showCustomNote = explicit["showCustomNote"] ?: true,
+        showOvertimeAccount = explicit["showOvertimeAccount"] ?: true,
+    )
+}
+
+/** Ungültiger Startmonat wird verworfen; ohne Startmonat rechnet das Konto nicht. */
+private fun coerceOvertimeAccount(v: JsonElement?, fallback: OvertimeAccountConfig?): OvertimeAccountConfig? {
+    val obj = v as? JsonObject ?: return fallback
+    return OvertimeAccountConfig(
+        enabled = booleanOrNull(obj["enabled"]) ?: false,
+        startMonth = stringOrNull(obj["startMonth"])?.takeIf { parseYearMonthOrNull(it) != null },
+        openingBalanceMinutes = intOrNull(obj["openingBalanceMinutes"]) ?: 0,
     )
 }
 
@@ -133,6 +147,7 @@ fun coerceCalculationConfig(value: JsonElement?, fallback: CalculationConfig): C
         vacationAllowanceDays = intOrNull(v["vacationAllowanceDays"]) ?: fallback.vacationAllowanceDays,
         vacationCarryoverDays = intOrNull(v["vacationCarryoverDays"]) ?: fallback.vacationCarryoverDays,
         pdfDisplay = coercePdfDisplay(v["pdfDisplay"], fallback.pdfDisplay),
+        overtimeAccount = coerceOvertimeAccount(v["overtimeAccount"], fallback.overtimeAccount),
         configVersion = 1,
     )
 }
@@ -181,6 +196,14 @@ fun CalculationConfig.toJson(): JsonObject = buildJsonObject {
             put("showAttachmentsList", display.showAttachmentsList)
             put("showWorkCodeColumn", display.showWorkCodeColumn)
             put("showCustomNote", display.showCustomNote)
+            put("showOvertimeAccount", display.showOvertimeAccount)
+        })
+    }
+    overtimeAccount?.let { account ->
+        put("overtimeAccount", buildJsonObject {
+            put("enabled", account.enabled)
+            account.startMonth?.let { put("startMonth", it) }
+            put("openingBalanceMinutes", account.openingBalanceMinutes)
         })
     }
     put("configVersion", configVersion)

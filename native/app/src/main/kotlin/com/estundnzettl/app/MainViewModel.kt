@@ -14,9 +14,11 @@ import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.Haptics
 import com.estundnzettl.core.calc.AppData
 import com.estundnzettl.core.calc.EntryFormInput
+import com.estundnzettl.core.calc.OvertimeAccountMonth
 import com.estundnzettl.core.calc.SaveEntryResult
 import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.WorkCodeDraftResult
+import com.estundnzettl.core.calc.calculateOvertimeAccount
 import com.estundnzettl.core.calc.deriveAppData
 import com.estundnzettl.core.calc.getDefaultTimesForDate
 import com.estundnzettl.core.calc.latestEligibleWorkEntry
@@ -437,6 +439,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Rohliste aller Einträge (unkorrigiert) — für den PDF-Bericht. */
     fun rawAllEntries(): List<Entry> = allEntries
+
+    /** Aktueller ZA-Kontostand (heute), unabhängig vom angezeigten Monat. */
+    fun currentOvertimeAccount(): OvertimeAccountMonth? {
+        val s = _state.value
+        return calculateOvertimeAccount(
+            allEntries, s.userData, YearMonth.now(), LocalDate.now(), s.locale, s.calculationConfig,
+        )
+    }
 
     /** Alle Attachments — der Bericht filtert selbst nach Zeitraum. */
     suspend fun getAllAttachments(): List<com.estundnzettl.core.model.Attachment> =

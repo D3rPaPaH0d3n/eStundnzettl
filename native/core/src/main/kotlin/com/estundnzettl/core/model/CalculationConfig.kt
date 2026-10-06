@@ -85,6 +85,23 @@ data class PdfDisplayConfig(
     val showWorkCodeColumn: Boolean = true,
     /** Notizen-Block am Ende des Reports. */
     val showCustomNote: Boolean = true,
+    /** Zeitausgleichskonto-Block (Übertrag/Stand), nur bei aktivem Konto. */
+    val showOvertimeAccount: Boolean = true,
+)
+
+/**
+ * Optionales Zeitausgleichskonto: Der Monatssaldo wird ab [startMonth] von
+ * Monat zu Monat übertragen, Zeitausgleich-Einträge bauen ihn ab.
+ * Für Auszahlungen oder Korrekturen setzt der User Startmonat und
+ * Anfangsstand einfach neu.
+ */
+@Serializable
+data class OvertimeAccountConfig(
+    val enabled: Boolean = false,
+    /** YYYY-MM: erster Monat, den das Konto rechnet. */
+    val startMonth: String? = null,
+    /** Kontostand zu Beginn des Startmonats in Minuten (negativ = Minusstunden). */
+    val openingBalanceMinutes: Int = 0,
 )
 
 @Serializable
@@ -146,6 +163,8 @@ data class CalculationConfig(
     val vacationCarryoverDays: Int = 0,
     /** Optionale PDF-Anzeige-Toggles (Hausmasta). Wenn fehlt → alles AN. */
     val pdfDisplay: PdfDisplayConfig? = null,
+    /** Zeitausgleichskonto mit Monatsübertrag. Fehlt → aus. */
+    val overtimeAccount: OvertimeAccountConfig? = null,
 
     // --- META ---
     val configVersion: Int = 1,

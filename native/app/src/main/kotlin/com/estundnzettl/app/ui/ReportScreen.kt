@@ -287,6 +287,9 @@ fun ReportScreen(viewModel: MainViewModel) {
         calculatePeriodStats(entries, userData, period.first, period.second, allCorrected, locale, config)
     }
 
+    // ZA-Konto gehört nur in den Monatsbericht, nicht in den KW-Auszug
+    val overtimeAccount = if (filterWeek == null) s.appData?.overtimeAccount else null
+
     val allAttachments by produceState(initialValue = emptyList<Attachment>(), s.appData) {
         value = viewModel.getAllAttachments()
     }
@@ -372,12 +375,13 @@ fun ReportScreen(viewModel: MainViewModel) {
         locale = locale,
         calculationConfig = config,
         allEntries = allCorrected,
+        overtimeAccount = overtimeAccount,
     )
 
     LaunchedEffect(
         filteredEntries, userData, month, filterWeek, stats,
         s.workCodes, reportAttachments, customNote, locale, config, allCorrected, i18n,
-        previewWidthPx,
+        previewWidthPx, overtimeAccount,
     ) {
         // Debounce (PREVIEW_DEBOUNCE_MS) — Tippen im Notizfeld soll nicht
         // jeden Tastendruck ein PDF rendern lassen.
@@ -1509,6 +1513,7 @@ fun PdfDisplayToggles(viewModel: MainViewModel, showHeader: Boolean = true) {
         ToggleSpec("showBalance", display.showBalance) { v -> patch { it.copy(showBalance = v) } },
         ToggleSpec("showOvertimeSplit", display.showOvertimeSplit) { v -> patch { it.copy(showOvertimeSplit = v) } },
         ToggleSpec("showVacationBalance", display.showVacationBalance) { v -> patch { it.copy(showVacationBalance = v) } },
+        ToggleSpec("showOvertimeAccount", display.showOvertimeAccount) { v -> patch { it.copy(showOvertimeAccount = v) } },
         ToggleSpec("showAttachmentsList", display.showAttachmentsList) { v -> patch { it.copy(showAttachmentsList = v) } },
         ToggleSpec("showWorkCodeColumn", display.showWorkCodeColumn) { v -> patch { it.copy(showWorkCodeColumn = v) } },
         ToggleSpec("showCustomNote", display.showCustomNote) { v -> patch { it.copy(showCustomNote = v) } },

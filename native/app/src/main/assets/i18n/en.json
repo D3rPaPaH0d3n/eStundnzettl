@@ -56,7 +56,14 @@
     "noPause": "No break",
     "documentsLabel": "Documents",
     "documentsCount_one": "{{count}} document",
-    "documentsCount_other": "{{count}} documents"
+    "documentsCount_other": "{{count}} documents",
+    "overtimeAccount": {
+      "title": "Time-off account",
+      "opening": "Carried over",
+      "timeComp": "Time off taken",
+      "closingMonthEnd": "End of month",
+      "closingToday": "Balance today"
+    }
   },
   "entryTypes": {
     "holiday": "Holiday",
@@ -201,7 +208,16 @@
       "placeholder": "E.g. additional info, bank details, etc…",
       "done": "Done"
     },
-    "pdfElementMissing": "PDF element missing"
+    "pdfElementMissing": "PDF element missing",
+    "overtimeAccount": {
+      "title": "Time-off account",
+      "opening": "Carried over from previous month:",
+      "balance": "Balance this month:",
+      "balanceUntil": "Balance until {{date}}:",
+      "timeComp": "Time off taken:",
+      "closing": "Balance at end of month:",
+      "closingAt": "Balance as of {{date}}:"
+    }
   },
   "drawers": {
     "timePicker": {
@@ -1008,6 +1024,17 @@
         "recalcFixed": "Updated {{fixed}} of {{total}} entries",
         "recalcAllCorrect": "All {{total}} entries are up to date",
         "recalcError": "Recalculation failed"
+      },
+      "overtimeAccount": {
+        "title": "Time-off account",
+        "subtitle": "Carry overtime over into the next month",
+        "startMonth": "Account starts in",
+        "opening": "Opening balance",
+        "openingPlaceholder": "e.g. 12:30 or -4:15",
+        "openingHint": "Account balance at the start of {{month}} (hours:minutes, minus for negative hours)",
+        "openingInvalid": "Please enter hours:minutes, e.g. 12:30 or -4:15",
+        "currentBalance": "Current balance",
+        "hint": "Each month's balance is booked to the account and carried over into the next month. Time-off entries are deducted from the account. For payouts or corrections, simply set a new start month and opening balance."
       }
     },
     "locale": {
@@ -1143,6 +1170,8 @@
       "showOvertimeSplitDesc": "Split into extra hours and overtime in the summary",
       "showVacationBalance": "Show vacation balance",
       "showVacationBalanceDesc": "Remaining-vacation block at the end of the summary",
+      "showOvertimeAccount": "Show time-off account",
+      "showOvertimeAccountDesc": "Carryover and end-of-month balance in the summary",
       "showAttachmentsList": "Show attachments list",
       "showAttachmentsListDesc": "Linked documents enumerated per entry",
       "showWorkCodeColumn": "Show code column",

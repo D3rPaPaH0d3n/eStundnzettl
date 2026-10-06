@@ -62,6 +62,7 @@ import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.calc.AppData
+import com.estundnzettl.core.calc.OvertimeAccountMonth
 import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.calculateDisplayedDayMinutes
 import com.estundnzettl.core.calc.calculateMonthlyTargetProgress
@@ -405,8 +406,73 @@ private fun MonthStatsCard(
                     }
                 }
             }
+
+            appData.overtimeAccount?.let { OvertimeAccountPanel(it) }
         }
     }
+}
+
+/** Zeitausgleichskonto: Übertrag, genommener ZA und aktueller Stand. */
+@Composable
+private fun OvertimeAccountPanel(account: OvertimeAccountMonth) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(colors.special.copy(alpha = if (colors.isDark) 0.14f else 0.06f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        StatLabel(t.t("dashboard.overtimeAccount.title"), colors)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                AccountLabel(t.t("dashboard.overtimeAccount.opening"), colors)
+                Text(
+                    formatSignedTime(account.openingMinutes),
+                    color = colors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                AccountLabel(t.t("dashboard.overtimeAccount.timeComp"), colors)
+                Text(
+                    formatSignedTime(-account.timeCompMinutes),
+                    color = if (account.timeCompMinutes > 0) colors.special else colors.textSecondary,
+                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+                AccountLabel(
+                    t.t(
+                        if (account.isComplete) "dashboard.overtimeAccount.closingMonthEnd"
+                        else "dashboard.overtimeAccount.closingToday"
+                    ),
+                    colors,
+                )
+                Text(
+                    formatSignedTime(account.closingMinutes),
+                    color = if (account.closingMinutes >= 0) colors.positive else colors.negative,
+                    fontSize = 18.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountLabel(text: String, colors: AppColors) {
+    Text(
+        text = text,
+        color = colors.textMuted,
+        fontSize = 11.sp,
+        lineHeight = 14.sp,
+        fontWeight = FontWeight.Medium,
+        maxLines = 1,
+    )
 }
 
 @Composable

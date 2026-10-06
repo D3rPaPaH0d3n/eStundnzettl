@@ -153,9 +153,14 @@ fun SettingsScreen(
                     LocaleSection(viewModel)
                 }
                 state.calculationConfig?.let { config ->
+                    val overtimeAccountPreview = remember(config, state.appData, state.userData, state.locale) {
+                        viewModel.currentOvertimeAccount()
+                    }
                     CalculationSection(
                         config = config,
                         language = state.language,
+                        simpleMode = state.userData?.simpleMode == true,
+                        overtimeAccountPreview = overtimeAccountPreview,
                         onPatch = viewModel::patchCalculationConfig,
                         onRecalculate = viewModel::recalculateAllEntries,
                         onMessage = { viewModel.showRawMessage(it) },

@@ -68,6 +68,8 @@ data class AppData(
     val todayTarget: Int,
     val lastWorkEntry: Entry?,
     val uniqueProjects: List<String>,
+    /** Zeitausgleichskonto des Anzeige-Monats, null = aus/vor Startmonat. */
+    val overtimeAccount: OvertimeAccountMonth? = null,
 )
 
 /** Synthetische ID eines Auto-Feiertag-Eintrags (wie `auto-holiday-<date>`). */
@@ -203,6 +205,10 @@ fun deriveAppData(
         .maxByOrNull { "${it.date}|${it.start.orEmpty()}|${it.end.orEmpty()}|${it.id}" }
     val uniqueProjects = recentProjects(metadataEntries)
 
+    val overtimeAccount = calculateOvertimeAccount(
+        metadataEntries, userData, YearMonth.of(viewYear, viewMonth1Based), today, locale, config,
+    )
+
     return AppData(
         entriesWithHolidays = entriesWithHolidays,
         groupedByWeek = groupedByWeek,
@@ -212,5 +218,6 @@ fun deriveAppData(
         todayTarget = todayTarget,
         lastWorkEntry = lastWorkEntry,
         uniqueProjects = uniqueProjects,
+        overtimeAccount = overtimeAccount,
     )
 }

@@ -43,8 +43,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.i18n.I18n
+import com.estundnzettl.app.ui.MonthPickerDialog
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
+import com.estundnzettl.core.calc.OvertimeAccountMonth
+import com.estundnzettl.core.calc.formatSignedDurationInput
+import com.estundnzettl.core.calc.parseSignedDurationInput
+import com.estundnzettl.core.calc.parseYearMonthOrNull
+import com.estundnzettl.core.format.formatSignedTime
 import com.estundnzettl.core.locale.GERMANY_LOCALE_IDS
 import com.estundnzettl.core.locale.SWITZERLAND_LOCALE_IDS
 import com.estundnzettl.core.locale.getLocale
@@ -57,22 +63,29 @@ import com.estundnzettl.core.model.HalfDayMode
 import com.estundnzettl.core.model.HolidayOnWorkDayMode
 import com.estundnzettl.core.model.HolidaySetConfig
 import com.estundnzettl.core.model.HolidaySetMode
+import com.estundnzettl.core.model.OvertimeAccountConfig
 import com.estundnzettl.core.model.OvertimeMode
 import com.estundnzettl.core.model.SickOnWorkDayMode
 import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.TextStyle
+import java.util.Locale as JavaLocale
 import kotlin.math.roundToInt
 
 /**
  * Berechnungsregeln — Port von CalculationSettings.tsx (unwrapped-Variante):
  * Zusammenfassung mit "Regeln bearbeiten", darunter Überstunden-/Krank-Regel,
  * Feiertage & Halbtage (Import + eigene Liste), Auto-Pausen, Urlaub und der
- * "Alle Einträge neu berechnen"-Button.
+ * "Alle Einträge neu berechnen"-Button. Das Zeitausgleichskonto steht direkt
+ * unter der Zusammenfassung, damit der Monatsübertrag auffindbar bleibt.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalculationSection(
     config: CalculationConfig,
     language: String,
+    simpleMode: Boolean = false,
+    overtimeAccountPreview: OvertimeAccountMonth? = null,
     onPatch: ((CalculationConfig) -> CalculationConfig) -> Unit,
     onRecalculate: () -> Unit,
     onMessage: (String) -> Unit,
@@ -190,6 +203,11 @@ fun CalculationSection(
                 t.t("settings.calc.sickOnWorkDay") + ": " + sickLabel,
                 color = colors.textSecondary, fontSize = 14.sp,
             )
+        }
+
+        // Ohne Soll (einfacher Modus) gibt es keinen Saldo zum Übertragen
+        if (!simpleMode) {
+            OvertimeAccountEditor(config, t, language, overtimeAccountPreview, onPatch)
         }
 
         ActionButton(
@@ -415,6 +433,137 @@ private fun HolidaysEditor(
             t.t("settings.calc.holidayWork"),
             t.t("settings.calc.holidayOnWorkOptions.${config.holidayOnWorkDayMode.wireName}"),
         ) { openDrawer("holidayWork") }
+    }
+}
+
+// ─── Zeitausgleichskonto ─────────────────────────────────────
+
+@Composable
+private fun OvertimeAccountEditor(
+    config: CalculationConfig,
+    t: I18n,
+    language: String,
+    preview: OvertimeAccountMonth?,
+    onPatch: ((CalculationConfig) -> CalculationConfig) -> Unit,
+) {
+    val colors = LocalAppColors.current
+    val account = config.overtimeAccount ?: OvertimeAccountConfig()
+    val startMonth = parseYearMonthOrNull(account.startMonth) ?: YearMonth.now()
+    val javaLocale = if (language == "en") JavaLocale.ENGLISH else JavaLocale.GERMAN
+    val startLabel = startMonth.month.getDisplayName(TextStyle.FULL_STANDALONE, javaLocale)
+        .replaceFirstChar { it.uppercase(javaLocale) } + " " + startMonth.year
+
+    var monthPickerOpen by remember { mutableStateOf(false) }
+    var openingInput by remember(account.openingBalanceMinutes) {
+        mutableStateOf(formatSignedDurationInput(account.openingBalanceMinutes))
+    }
+    var hadFocus by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val openingInvalid = openingInput.isNotBlank() && parseSignedDurationInput(openingInput) == null
+
+    fun patchAccount(transform: (OvertimeAccountConfig) -> OvertimeAccountConfig) {
+        onPatch { cfg -> cfg.copy(overtimeAccount = transform(cfg.overtimeAccount ?: OvertimeAccountConfig())) }
+    }
+
+    // Erst beim Verlassen übernehmen — sonst formatiert der Patch die
+    // Eingabe mitten im Tippen um ("1" → "1:00").
+    fun commitOpening() {
+        val parsed = if (openingInput.isBlank()) 0 else parseSignedDurationInput(openingInput) ?: return
+        openingInput = formatSignedDurationInput(parsed)
+        if (parsed != account.openingBalanceMinutes) {
+            patchAccount { it.copy(openingBalanceMinutes = parsed) }
+        }
+    }
+
+    if (monthPickerOpen) {
+        MonthPickerDialog(
+            selected = startMonth,
+            onSelect = { picked ->
+                patchAccount { it.copy(startMonth = picked.toString()) }
+                monthPickerOpen = false
+            },
+            onDismiss = { monthPickerOpen = false },
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(colors.surfaceVariant.copy(alpha = 0.34f))
+            .border(1.dp, colors.borderSubtle, RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        SettingsToggleRow(
+            title = t.t("settings.calc.overtimeAccount.title"),
+            subtitle = t.t("settings.calc.overtimeAccount.subtitle"),
+            checked = account.enabled,
+            accent = colors.accentStrong,
+            onToggle = { enabled ->
+                patchAccount {
+                    it.copy(enabled = enabled, startMonth = it.startMonth ?: YearMonth.now().toString())
+                }
+            },
+        )
+
+        AnimatedVisibility(visible = account.enabled) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SelectRow(t.t("settings.calc.overtimeAccount.startMonth"), startLabel) {
+                    monthPickerOpen = true
+                }
+                OutlinedTextField(
+                    value = openingInput,
+                    onValueChange = { openingInput = it },
+                    label = { Text(t.t("settings.calc.overtimeAccount.opening")) },
+                    placeholder = { Text(t.t("settings.calc.overtimeAccount.openingPlaceholder")) },
+                    supportingText = {
+                        Text(
+                            t.t(
+                                if (openingInvalid) "settings.calc.overtimeAccount.openingInvalid"
+                                else "settings.calc.overtimeAccount.openingHint",
+                                "month" to startLabel,
+                            )
+                        )
+                    },
+                    isError = openingInvalid,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = {
+                        hadFocus = false
+                        commitOpening()
+                        focusManager.clearFocus()
+                    }),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { state ->
+                            if (hadFocus && !state.isFocused) commitOpening()
+                            hadFocus = state.isFocused
+                        },
+                )
+                if (preview != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            t.t("settings.calc.overtimeAccount.currentBalance"),
+                            color = colors.textSecondary, fontSize = 14.sp,
+                        )
+                        Text(
+                            formatSignedTime(preview.closingMinutes),
+                            color = if (preview.closingMinutes >= 0) colors.positive else colors.negative,
+                            fontWeight = FontWeight.Bold, fontSize = 16.sp,
+                        )
+                    }
+                }
+                Text(t.t("settings.calc.overtimeAccount.hint"), color = colors.textMuted, fontSize = 12.sp)
+            }
+        }
     }
 }
 

@@ -20,6 +20,7 @@ import com.estundnzettl.core.calc.buildDayBalanceMetaMap
 import com.estundnzettl.core.calc.calculateMonthlyTargetProgress
 import com.estundnzettl.core.calc.getEffectivePdfDisplay
 import com.estundnzettl.core.calc.isOvernightShift
+import com.estundnzettl.core.calc.OvertimeAccountMonth
 import com.estundnzettl.core.calc.resolveEffectiveRules
 import com.estundnzettl.core.calc.PeriodStatsResult
 import com.estundnzettl.core.format.formatSignedTime
@@ -58,6 +59,8 @@ data class ReportPdfInput(
     val locale: AppLocale,
     val calculationConfig: CalculationConfig? = null,
     val allEntries: List<Entry> = emptyList(),
+    /** ZA-Konto des Berichtsmonats (nur Monatsbericht, null = aus). */
+    val overtimeAccount: OvertimeAccountMonth? = null,
 )
 
 /**
@@ -289,9 +292,11 @@ class ReportPdfGenerator(
         // ── Summary (wrap=false → am Stück auf eine Seite) ──────────
         if (display.showSummary) {
             val vac = if (display.showVacationBalance) vacationBalance(input) else null
+            val account = input.overtimeAccount
+                ?.takeIf { display.showOvertimeAccount && input.filterWeek == null }
             val summaryHeight = drawSummary(
                 null, 0f, input, display.showTargetTime, display.showBalance,
-                display.showOvertimeSplit && showOvertimeColumns, vac,
+                display.showOvertimeSplit && showOvertimeColumns, vac, account,
             )
             ensureSpace(8f + summaryHeight)
             y += 8f
@@ -301,7 +306,7 @@ class ReportPdfGenerator(
             canvas!!.drawRoundRect(box, 4f, 4f, linePaint(C.borderLight, 0.5f))
             drawSummary(
                 canvas!!, y, input, display.showTargetTime, display.showBalance,
-                display.showOvertimeSplit && showOvertimeColumns, vac,
+                display.showOvertimeSplit && showOvertimeColumns, vac, account,
             )
             y += summaryHeight
         }
@@ -651,6 +656,7 @@ class ReportPdfGenerator(
         showBalance: Boolean,
         showOvertimeSplit: Boolean,
         vacation: VacationBalance?,
+        account: OvertimeAccountMonth?,
     ): Float {
         val stats = input.stats
         val simpleMode = input.userData?.simpleMode == true
@@ -807,6 +813,43 @@ class ReportPdfGenerator(
             canvas?.drawTextTop(t("reports.summary.driveUnpaid"), innerLeft, yy, drivePaint)
             canvas?.drawTextTopRight(formatTime(stats.drive), innerRight, yy, drivePaint)
             yy += drivePaint.lineHeight
+        }
+
+        // ── Zeitausgleichskonto ──────────────────────────────────
+        if (account != null) {
+            yy += 4f
+            canvas?.drawLine(innerLeft, yy, innerRight, yy, linePaint(C.borderLight, 0.5f))
+            yy += 0.5f + 3f
+            val headingPaint = textPaint(7f, C.textMedium, bold = true, letterSpacingPt = 0.3f)
+            canvas?.drawTextTop(t("reports.overtimeAccount.title").uppercase(javaLocale), innerLeft, yy, headingPaint)
+            yy += headingPaint.lineHeight + 2f
+            // Laufender Monat: Stichtag statt "Monatsende" ausweisen
+            val through = formatDateParts(account.evaluatedThrough.toString()).second
+            yy += sumRow(
+                canvas, yy, innerLeft, innerRight,
+                t("reports.overtimeAccount.opening"), formatSignedTime(account.openingMinutes),
+                C.textMedium, C.textBlack, size = 7.5f,
+            ) + 1.5f
+            yy += sumRow(
+                canvas, yy, innerLeft, innerRight,
+                if (account.isComplete) t("reports.overtimeAccount.balance")
+                else t("reports.overtimeAccount.balanceUntil", "date" to through),
+                formatSignedTime(account.balanceMinutes),
+                C.textMedium, C.textBlack, size = 7.5f,
+            ) + 1.5f
+            yy += sumRow(
+                canvas, yy, innerLeft, innerRight,
+                t("reports.overtimeAccount.timeComp"), formatSignedTime(-account.timeCompMinutes),
+                C.textMedium, C.textPurple, size = 7.5f,
+            ) + 1.5f
+            yy += sumRow(
+                canvas, yy, innerLeft, innerRight,
+                if (account.isComplete) t("reports.overtimeAccount.closing")
+                else t("reports.overtimeAccount.closingAt", "date" to through),
+                formatSignedTime(account.closingMinutes),
+                C.textBlack, if (account.closingMinutes >= 0) C.textGreen else C.textRed,
+                size = 7.5f, bothBold = true,
+            )
         }
 
         // ── Urlaubsbilanz ────────────────────────────────────────

@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -8,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.estundnzettl.app"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         // Same application id as the Capacitor app so the native rewrite can
@@ -18,8 +17,8 @@ android {
         targetSdk = 36
         // Muss über dem versionCode der Capacitor-Produktion (284) liegen,
         // damit Play die Beta als Update anbietet; Luft für Hotfixes gelassen.
-        versionCode = 311
-        versionName = "5.1.0"
+        versionCode = 312
+        versionName = "5.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -56,13 +55,15 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -70,25 +71,8 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
-// Die UI-Sprachdateien (848 Keys, de/en) kommen 1:1 aus der bestehenden
-// App (src/i18n/locales) — Single Source of Truth, kein Text-Drift.
-val syncI18n = tasks.register<Copy>("syncI18n") {
-    from(rootProject.layout.projectDirectory.dir("../src/i18n/locales")) {
-        include("*.json")
-    }
-    into(layout.buildDirectory.dir("generated/i18nAssets/i18n"))
-}
-
-android.sourceSets.getByName("main") {
-    assets.srcDir(layout.buildDirectory.dir("generated/i18nAssets"))
-}
-
 android.sourceSets.getByName("androidTest") {
     assets.srcDir("$projectDir/schemas")
-}
-
-tasks.named("preBuild") {
-    dependsOn(syncI18n)
 }
 
 dependencies {
@@ -105,7 +89,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
-    implementation(libs.androidx.navigation.compose)
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
@@ -115,6 +98,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.browser)
+    implementation(libs.androidx.documentfile)
     implementation(libs.play.services.auth)
     implementation(libs.play.review.ktx)
 

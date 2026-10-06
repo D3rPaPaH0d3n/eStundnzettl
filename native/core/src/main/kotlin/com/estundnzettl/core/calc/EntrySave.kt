@@ -7,7 +7,6 @@ import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.UserData
 import com.estundnzettl.core.model.WorkCode
-import kotlin.math.max
 
 /**
  * Speicher-Logik des Eintragsformulars — Port von handleSaveEntry aus
@@ -36,7 +35,7 @@ sealed class SaveEntryResult {
     /** Start- und Endzeit identisch. */
     object StartEqualsEnd : SaveEntryResult()
 
-    /** Zeitraum überlappt mit bestehendem Eintrag am selben Tag. */
+    /** Zeitraum überlappt mit einem bestehenden Eintrag, auch über Mitternacht. */
     object Overlap : SaveEntryResult()
 }
 
@@ -61,15 +60,11 @@ fun prepareEntryToSave(
         if (parseTime(form.startTime) == parseTime(form.endTime)) {
             return SaveEntryResult.StartEqualsEnd
         }
-        val (s, en) = toAbsoluteRange(form.startTime, form.endTime)
-
         val hasOverlap = entries.any { existing ->
-            if (existing.date != form.formDate) return@any false
             if (form.editingEntry != null && existing.id == form.editingEntry.id) return@any false
             val exStart = existing.start ?: return@any false
             val exEnd = existing.end ?: return@any false
-            val (exS, exE) = toAbsoluteRange(exStart, exEnd)
-            s < exE && exS < en
+            shiftsOverlap(form.formDate, form.startTime, form.endTime, existing.date, exStart, exEnd)
         }
         if (hasOverlap) return SaveEntryResult.Overlap
 
@@ -126,7 +121,7 @@ fun prepareEntryToSave(
 
         if (existingWork > 0) {
             val dayTarget = getTargetMinutesForDate(form.formDate, userData?.workDays, locale, config)
-            net = max(0, dayTarget - existingWork)
+            net = adjustSickDuration(net, existingWork, dayTarget, locale, config)
         }
     }
 

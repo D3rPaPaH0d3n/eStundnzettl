@@ -1,5 +1,6 @@
 package com.estundnzettl.app
 
+import java.time.Instant
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -37,5 +38,17 @@ class AutoCheckoutTest {
                 today = LocalDate.of(2026, 7, 17),
             ),
         )
+    }
+
+    @Test
+    fun `paused auto checkout counts the open pause until the captured end`() {
+        val pauseStart = Instant.parse("2026-07-16T10:00:00Z")
+        val capturedEnd = Instant.parse("2026-07-16T21:59:00Z")
+        assertEquals(11 * 60 + 59, timerPauseMinutes(0L, pauseStart, capturedEnd))
+    }
+
+    @Test
+    fun `finished pause is kept when no pause is still open`() {
+        assertEquals(30, timerPauseMinutes(30L * 60L * 1000L, null, Instant.parse("2026-07-16T21:59:00Z")))
     }
 }

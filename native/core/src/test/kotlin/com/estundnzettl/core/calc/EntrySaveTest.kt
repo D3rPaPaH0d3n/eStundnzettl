@@ -1,8 +1,10 @@
 package com.estundnzettl.core.calc
 
+import com.estundnzettl.core.locale.getLocale
 import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
+import com.estundnzettl.core.model.SickOnWorkDayMode
 import com.estundnzettl.core.model.UserData
 import com.estundnzettl.core.model.WorkCode
 import kotlin.test.Test
@@ -61,6 +63,45 @@ class EntrySaveTest {
             form(start = "11:00", end = "15:00"), listOf(existing), noWorkDays, codes, 2,
         )
         assertIs<SaveEntryResult.Overlap>(result)
+    }
+
+    @Test
+    fun `Nachtschicht und Fruehschicht am Folgetag werden abgelehnt`() {
+        val night = Entry(
+            EntryId.of(1L), EntryType.WORK, "2024-01-01",
+            start = "22:00", end = "06:00", netDuration = 480,
+        )
+        val result = prepareEntryToSave(
+            form(date = "2024-01-02", start = "05:00", end = "13:00", pause = 0),
+            listOf(night), noWorkDays, codes, 2,
+        )
+        assertIs<SaveEntryResult.Overlap>(result)
+    }
+
+    @Test
+    fun `Schicht die genau am Ende der Nachtschicht beginnt ist erlaubt`() {
+        val night = Entry(
+            EntryId.of(1L), EntryType.WORK, "2024-01-01",
+            start = "22:00", end = "06:00", netDuration = 480,
+        )
+        val result = prepareEntryToSave(
+            form(date = "2024-01-02", start = "06:00", end = "14:00", pause = 0),
+            listOf(night), noWorkDays, codes, 2,
+        )
+        assertIs<SaveEntryResult.Success>(result)
+    }
+
+    @Test
+    fun `Nachtschicht ohne Beruehrung des naechsten Arbeitstags ist erlaubt`() {
+        val night = Entry(
+            EntryId.of(1L), EntryType.WORK, "2024-01-01",
+            start = "22:00", end = "06:00", netDuration = 480,
+        )
+        val result = prepareEntryToSave(
+            form(date = "2024-01-02", start = "08:00", end = "16:00", pause = 0),
+            listOf(night), noWorkDays, codes, 2,
+        )
+        assertIs<SaveEntryResult.Success>(result)
     }
 
     @Test
@@ -143,6 +184,31 @@ class EntrySaveTest {
         )
         val success = assertIs<SaveEntryResult.Success>(result)
         assertEquals(210, success.entry.netDuration) // 510 - 300
+    }
+
+    @Test
+    fun `gemischter Krank-Tag im additiven Modus behaelt die Krankzeit`() {
+        val existingWork = Entry(
+            EntryId.of(1L), EntryType.WORK, "2024-01-02",
+            start = "06:00", end = "11:00", pause = 0,
+            code = WorkCodes.OFFICE, netDuration = 300,
+        )
+        val config = getDefaultCalculationConfig(getLocale("neutral"), null).copy(
+            sickOnWorkDayMode = SickOnWorkDayMode.ADDITIVE,
+        )
+        val full = assertIs<SaveEntryResult.Success>(
+            prepareEntryToSave(
+                form(entryType = "sick", date = "2024-01-02", start = "", end = ""),
+                emptyList(), noWorkDays, codes, 11, config = config,
+            ),
+        )
+        val mixed = assertIs<SaveEntryResult.Success>(
+            prepareEntryToSave(
+                form(entryType = "sick", date = "2024-01-02", start = "", end = ""),
+                listOf(existingWork), noWorkDays, codes, 12, config = config,
+            ),
+        )
+        assertEquals(full.entry.netDuration, mixed.entry.netDuration)
     }
 
     // ─── getDefaultTimesForDate ──────────────────────────────

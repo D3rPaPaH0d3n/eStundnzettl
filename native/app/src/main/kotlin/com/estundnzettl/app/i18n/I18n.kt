@@ -6,8 +6,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 /**
- * Minimaler i18next-kompatibler Lookup über den unveränderten
- * Sprachdateien der Web-App (assets/i18n/de.json bzw. en.json):
+ * Minimaler i18next-kompatibler Lookup über assets/i18n/de.json und en.json:
  * - Keys mit Punkt-Notation ("dashboard.actual")
  * - Interpolation mit {{name}}
  * - Plural-Suffixe key_one / key_other über das "count"-Argument

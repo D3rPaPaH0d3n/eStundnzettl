@@ -41,8 +41,8 @@ class NextcloudManager(
             if (!legacyRaw.isNullOrEmpty()) {
                 val masterKey = settings.getString("crypto_mk_v1")
                 val decrypted = secrets.deobfuscateLegacy(legacyRaw, masterKey)
-                if (decrypted.isNotEmpty()) {
-                    secrets.set(SecretStore.NEXTCLOUD_SECRET_KEY, decrypted)
+                if (decrypted.isNotEmpty() && secrets.set(SecretStore.NEXTCLOUD_SECRET_KEY, decrypted)) {
+                    clearLegacySecretMaterial()
                     pass = decrypted
                 }
             }
@@ -51,11 +51,17 @@ class NextcloudManager(
         return Credentials(url, user, pass)
     }
 
-    suspend fun persistLogin(server: String, loginName: String, appPassword: String) {
+    /**
+     * The app password is stored before the server address. A failed write
+     * must not leave a new server paired with an older password.
+     */
+    suspend fun persistLogin(server: String, loginName: String, appPassword: String): Boolean {
+        if (!secrets.set(SecretStore.NEXTCLOUD_SECRET_KEY, appPassword)) return false
         settings.setString(SettingsRepository.Keys.NEXTCLOUD_URL, server)
         settings.setString(SettingsRepository.Keys.NEXTCLOUD_USER, loginName)
-        secrets.set(SecretStore.NEXTCLOUD_SECRET_KEY, appPassword)
         settings.setBoolean(SettingsRepository.Keys.NEXTCLOUD_ENABLED, true)
+        clearLegacySecretMaterial()
+        return true
     }
 
     suspend fun disconnect() {
@@ -63,9 +69,15 @@ class NextcloudManager(
         settings.setString(SettingsRepository.Keys.NEXTCLOUD_URL, "")
         settings.setString(SettingsRepository.Keys.NEXTCLOUD_USER, "")
         secrets.delete(SecretStore.NEXTCLOUD_SECRET_KEY)
+        clearLegacySecretMaterial()
         settings.setString(AutoBackupManager.KEY_NC_FAIL_COUNT, "0")
         settings.setString(AutoBackupManager.KEY_NC_LAST_ERROR, "")
         settings.setString(AutoBackupManager.KEY_NC_BACKOFF_UNTIL, "")
+    }
+
+    private suspend fun clearLegacySecretMaterial() {
+        settings.delete("nextcloud_pass")
+        settings.delete("crypto_mk_v1")
     }
 }
 
@@ -126,6 +138,7 @@ class AutoBackupManager(
 
     private val isUploading = AtomicBoolean(false)
     private var lastHash: String = ""
+    private val localFolder = LocalBackupFolder(context, settings)
 
     private suspend fun isBackoffActive(key: String): Boolean {
         val iso = settings.getString(key) ?: return false
@@ -191,8 +204,19 @@ class AutoBackupManager(
         settings.setString(KEY_NC_BACKOFF_UNTIL, "")
     }
 
-    /** Lokales Backup — wie writeBackupFile (Directory.Data/eStundnzettl/). */
-    private fun writeLocalBackup(content: String) {
+    /**
+     * Writes the chosen folder when one is persisted, and always keeps
+     * the private app copy. A chosen folder that cannot be written fails
+     * the local target.
+     */
+    private suspend fun writeLocalBackup(content: String) {
+        val folderOk = if (localFolder.hasPersistedTree()) localFolder.writeText(content) else true
+        writeInternalBackup(content)
+        if (!folderOk) error("Chosen backup folder could not be written")
+    }
+
+    /** Private copy — Directory.Data/eStundnzettl of the previous app. */
+    private fun writeInternalBackup(content: String) {
         val dir = File(context.filesDir, NextcloudClient.BACKUP_FOLDER).apply { mkdirs() }
         val target = File(dir, NextcloudClient.BACKUP_FILENAME)
         val temp = File(dir, ".${NextcloudClient.BACKUP_FILENAME}.tmp")

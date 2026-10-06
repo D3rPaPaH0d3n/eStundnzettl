@@ -236,7 +236,10 @@ class PdfArchiveManager(
 
     // ─── Lokales Ziel (Port von writeLocalArchive) ──────────────────
 
-    private fun writeLocalArchive(filename: String, bytes: ByteArray): TargetResult {
+    private suspend fun writeLocalArchive(filename: String, bytes: ByteArray): TargetResult {
+        if (LocalBackupFolder(context, settings).writeArchive(filename, bytes)) {
+            return TargetResult(true, "local", note = "Gewählter Ordner/eStundnzettl/Archiv/")
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             // Stufe 1: Dokumente/eStundnzettl/Archiv/ (im Dateimanager sichtbar)
             try {

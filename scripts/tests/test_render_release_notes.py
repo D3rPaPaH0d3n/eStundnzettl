@@ -12,6 +12,25 @@ SPEC.loader.exec_module(release_notes)
 
 
 class RenderReleaseNotesTest(unittest.TestCase):
+    def test_511_notes_cover_backup_folder_timer_and_data_safety(self) -> None:
+        github_notes = release_notes.render_notes("5.1.1", "de-DE", "github")
+        play_notes = release_notes.render_notes("5.1.1", "de-DE", "play")
+
+        self.assertIn("Dein Backup, dein Ordner", github_notes)
+        self.assertIn("Zeiten, die zampassen", github_notes)
+        self.assertIn("Daten sicher, Start stabil", github_notes)
+        self.assertIn("So liegt dein Backup genau dort, wo's hinghört", play_notes)
+        self.assertLessEqual(len(play_notes), release_notes.PLAY_LIMIT)
+
+    def test_511_english_notes_render_for_play_and_github(self) -> None:
+        github_notes = release_notes.render_notes("5.1.1", "en-US", "github")
+        play_notes = release_notes.render_notes("5.1.1", "en-US", "play")
+
+        self.assertIn("Your backup, your folder", github_notes)
+        self.assertIn("Safe data, steady start", github_notes)
+        self.assertIn("So your backup ends up exactly where it belongs", play_notes)
+        self.assertLessEqual(len(play_notes), release_notes.PLAY_LIMIT)
+
     def test_510_notes_cover_cloud_restore_and_backup_safeguards(self) -> None:
         github_notes = release_notes.render_notes("5.1.0", "de-DE", "github")
         play_notes = release_notes.render_notes("5.1.0", "de-DE", "play")

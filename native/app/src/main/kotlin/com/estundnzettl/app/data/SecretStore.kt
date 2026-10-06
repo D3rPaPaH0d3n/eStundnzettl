@@ -45,10 +45,13 @@ class SecretStore(private val context: Context) {
         null
     }
 
-    /** Writes and immediately verifies a secret before reporting success. */
+    /**
+     * Writes a secret and waits until the encrypted file is on disk.
+     * `apply()` only updates the in-memory cache, so a process death
+     * immediately afterwards could report success and still lose the value.
+     */
     fun set(key: String, value: String): Boolean = try {
-        prefs.edit().putString(key, value).apply()
-        prefs.getString(key, null) == value
+        prefs.edit().putString(key, value).commit()
     } catch (exception: Exception) {
         Log.w(TAG, "Secret write failed", exception)
         false
@@ -67,6 +70,8 @@ class SecretStore(private val context: Context) {
         ALREADY_PRESENT,
         MIGRATED_CURRENT_KEY,
         MIGRATED_LEGACY_KEY,
+        /** Old secret is present but cannot be read. Startup must continue. */
+        UNREADABLE,
     }
 
     /**
@@ -89,20 +94,37 @@ class SecretStore(private val context: Context) {
                 LEGACY_NEXTCLOUD_SECRET_KEY to CapacitorMigrationStatus.MIGRATED_LEGACY_KEY
             else -> return CapacitorMigrationStatus.NOT_FOUND
         }
-        val encoded = legacyPrefs.getString(source.first, null)
-            ?: error("Capacitor secret preference exists but is not a string")
-        val password = decryptCapacitorValue(encoded)
-        check(password.isNotEmpty()) { "Capacitor Nextcloud secret decrypted to an empty value" }
-        check(set(NEXTCLOUD_SECRET_KEY, password)) { "Migrated Nextcloud secret could not be verified" }
-        return source.second
+        return try {
+            val encoded = legacyPrefs.getString(source.first, null)
+            if (encoded.isNullOrEmpty()) return CapacitorMigrationStatus.UNREADABLE
+            val password = decryptCapacitorValue(encoded)
+            if (password.isEmpty() || !set(NEXTCLOUD_SECRET_KEY, password)) {
+                Log.w(TAG, "Capacitor Nextcloud secret could not be migrated")
+                CapacitorMigrationStatus.UNREADABLE
+            } else {
+                source.second
+            }
+        } catch (exception: Exception) {
+            Log.w(TAG, "Capacitor Nextcloud secret migration skipped", exception)
+            CapacitorMigrationStatus.UNREADABLE
+        }
     }
 
-    /** Migrates the older SQLite/localStorage secret representation. */
+    /**
+     * Migrates the older SQLite/localStorage secret representation.
+     * A value that cannot be decrypted is left in place and does not block startup.
+     */
     fun migrateLegacyRawNextcloudSecret(value: String?, masterKeyBase64: String?): Boolean {
         if (!get(NEXTCLOUD_SECRET_KEY).isNullOrEmpty() || value.isNullOrEmpty()) return false
         val password = deobfuscateLegacy(value, masterKeyBase64)
-        check(password.isNotEmpty()) { "Legacy Nextcloud secret could not be decrypted" }
-        check(set(NEXTCLOUD_SECRET_KEY, password)) { "Legacy Nextcloud secret could not be verified" }
+        if (password.isEmpty()) {
+            Log.w(TAG, "Legacy Nextcloud secret could not be decrypted")
+            return false
+        }
+        if (!set(NEXTCLOUD_SECRET_KEY, password)) {
+            Log.w(TAG, "Legacy Nextcloud secret could not be stored")
+            return false
+        }
         return true
     }
 

@@ -61,7 +61,9 @@ class EStundnzettlApp : Application() {
             val secretStore = SecretStore(this@EStundnzettlApp)
             val capacitorSecret = withContext(Dispatchers.IO) {
                 val result = secretStore.migrateCapacitorNextcloudSecret()
-                if (result == SecretStore.CapacitorMigrationStatus.NOT_FOUND) {
+                if (result == SecretStore.CapacitorMigrationStatus.NOT_FOUND ||
+                    result == SecretStore.CapacitorMigrationStatus.UNREADABLE
+                ) {
                     val settings = SettingsRepository(database.settingsDao())
                     secretStore.migrateLegacyRawNextcloudSecret(
                         value = settings.getString("nextcloud_pass"),

@@ -13,12 +13,14 @@ import android.graphics.pdf.PdfDocument
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.text.TextUtils
 import android.util.Base64
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.buildDayBalanceMetaMap
 import com.estundnzettl.core.calc.calculateMonthlyTargetProgress
 import com.estundnzettl.core.calc.getEffectivePdfDisplay
+import com.estundnzettl.core.calc.getEffectiveReportBranding
 import com.estundnzettl.core.calc.isOvernightShift
 import com.estundnzettl.core.calc.OvertimeAccountMonth
 import com.estundnzettl.core.calc.resolveEffectiveRules
@@ -109,6 +111,13 @@ class ReportPdfGenerator(
         const val COL_CODE = 65f
         const val COL_HOURS = 38f
         const val COL_BALANCE = 42f
+
+        // Optionaler Firmen-Briefkopf
+        const val LOGO_MAX_W = 120f
+        const val LOGO_MAX_H = 42f
+        const val LOGO_GAP = 10f
+        const val FOOTER_BOTTOM = 14f
+        const val FOOTER_MAX_LINES = 5
     }
 
     private fun t(key: String, vararg args: Pair<String, Any?>): String = i18n.t(key, *args)
@@ -226,6 +235,12 @@ class ReportPdfGenerator(
             input.entries, input.userData, input.locale, input.calculationConfig,
         )
 
+        // Firmen-Briefkopf: null → Kopf, Seitenrand und Umbruch exakt wie bisher
+        val branding = getEffectiveReportBranding(input.userData)
+        val logoBitmap = branding?.logo?.let { decodeLogoDataUrl(it) }
+        val footer = branding?.footerLines?.takeIf { it.isNotEmpty() }?.let { buildFooter(it) }
+        val contentBottom = footer?.let { it.ruleY - 6f } ?: (PAGE_H - PAD_B)
+
         // Spaltengeometrie abhängig von den Anzeige-Toggles
         val xDate = PAD_L
         val xTime = xDate + COL_DATE
@@ -247,8 +262,9 @@ class ReportPdfGenerator(
                 PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNumber).create(),
             )
             canvas = page!!.canvas
+            footer?.let { drawFooter(canvas!!, it) }
             y = PAD_T
-            y = drawHeader(canvas!!, y, input)
+            y = drawHeader(canvas!!, y, input, logoBitmap)
             y = drawTableHead(canvas!!, y, showCode, showBalance, xDate, xTime, xProject, codeLeft, hoursRight, balanceRight)
         }
 
@@ -258,7 +274,7 @@ class ReportPdfGenerator(
         }
 
         fun ensureSpace(needed: Float) {
-            if (y + needed > PAGE_H - PAD_B) {
+            if (y + needed > contentBottom) {
                 endPage()
                 startPage()
             }
@@ -330,7 +346,7 @@ class ReportPdfGenerator(
 
     // ─── Kopfzeile (styles.headerRow, fixed) ────────────────────────
 
-    private fun drawHeader(canvas: Canvas, top: Float, input: ReportPdfInput): Float {
+    private fun drawHeader(canvas: Canvas, top: Float, input: ReportPdfInput, logo: Bitmap?): Float {
         val titlePaint = textPaint(18f, C.textDark, bold = true, letterSpacingPt = 0.4f)
         val companyPaint = textPaint(9f, C.textMedium, bold = true)
         val namePaint = textPaint(9.5f, C.textBlack, bold = true)
@@ -345,18 +361,32 @@ class ReportPdfGenerator(
         }
         val photoBitmap = decodeDataUrl(input.userData?.photo)
 
+        // Firmenlogo links vor dem Titel, Seitenverhältnis bleibt erhalten
+        val logoScale = logo?.let { minOf(LOGO_MAX_W / it.width, LOGO_MAX_H / it.height) } ?: 0f
+        val logoW = logo?.let { it.width * logoScale } ?: 0f
+        val logoH = logo?.let { it.height * logoScale } ?: 0f
+        val titleX = if (logo != null) PAD_L + logoW + LOGO_GAP else PAD_L
+
         val leftH = titlePaint.lineHeight +
             (if (company.isNotEmpty()) 2f + companyPaint.lineHeight else 0f)
         val metaH = namePaint.lineHeight + 1f + monthPaint.lineHeight
         val rightH = maxOf(metaH, if (photoBitmap != null) 38f else 0f)
-        val contentH = maxOf(leftH, rightH)
+        val contentH = maxOf(leftH, rightH, logoH)
+
+        if (logo != null) {
+            val logoTop = top + contentH - logoH
+            canvas.drawBitmap(
+                logo, null, RectF(PAD_L, logoTop, PAD_L + logoW, logoTop + logoH),
+                Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG),
+            )
+        }
 
         // alignItems flex-end → Blöcke an der Unterkante ausrichten
         var ly = top + contentH - leftH
-        canvas.drawTextTop(t("reports.title").uppercase(javaLocale), PAD_L, ly, titlePaint)
+        canvas.drawTextTop(t("reports.title").uppercase(javaLocale), titleX, ly, titlePaint)
         ly += titlePaint.lineHeight
         if (company.isNotEmpty()) {
-            canvas.drawTextTop(company, PAD_L, ly + 2f, companyPaint)
+            canvas.drawTextTop(company, titleX, ly + 2f, companyPaint)
         }
 
         val avatarSize = 38f
@@ -381,6 +411,33 @@ class ReportPdfGenerator(
         val borderY = top + contentH + 8f
         canvas.drawLine(PAD_L, borderY, CONTENT_RIGHT.toFloat(), borderY, linePaint(C.borderDark, 2f))
         return borderY + 2f + 10f
+    }
+
+    // ─── Firmen-Fußzeile (optional, auf jeder Seite) ────────────────
+
+    private class FooterLayout(val layout: StaticLayout, val textTop: Float, val ruleY: Float)
+
+    private fun buildFooter(lines: List<String>): FooterLayout {
+        val text = lines.joinToString("\n")
+        val paint = textPaint(7f, C.textMedium)
+        val width = (CONTENT_RIGHT - PAD_L).toInt()
+        val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
+            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+            .setLineSpacing(0f, 1.15f)
+            .setIncludePad(false)
+            .setMaxLines(FOOTER_MAX_LINES)
+            .setEllipsize(TextUtils.TruncateAt.END)
+            .build()
+        val textTop = PAGE_H - FOOTER_BOTTOM - layout.height
+        return FooterLayout(layout, textTop, textTop - 4f)
+    }
+
+    private fun drawFooter(canvas: Canvas, footer: FooterLayout) {
+        canvas.drawLine(PAD_L, footer.ruleY, CONTENT_RIGHT.toFloat(), footer.ruleY, linePaint(C.borderLight, 0.5f))
+        canvas.save()
+        canvas.translate(PAD_L, footer.textTop)
+        footer.layout.draw(canvas)
+        canvas.restore()
     }
 
     /** Skaliert das Bitmap auf "cover" innerhalb von [target]. */

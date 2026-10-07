@@ -106,6 +106,12 @@ fun hashMonthContent(
         put("company", userData?.company ?: "")
         put("position", userData?.position ?: "")
         put("photo", userData?.photo ?: "")
+        getEffectiveReportBranding(userData)?.let { branding ->
+            put("reportBranding", buildJsonObject {
+                put("logo", branding.logo ?: "")
+                putJsonArray("footer") { branding.footerLines.forEach { add(it) } }
+            })
+        }
         put("simpleMode", userData?.simpleMode ?: false)
         put("monthlyTargetMinutes", userData?.monthlyTargetMinutes ?: 0)
         put("language", language ?: "")

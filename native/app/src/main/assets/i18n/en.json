@@ -1304,6 +1304,24 @@
         "authRequired": "Google sign-in required. Connect Google Drive in the backup settings.",
         "failed": "Query failed."
       }
+    },
+    "branding": {
+      "title": "Company letterhead",
+      "subtitle": "Logo & footer for the PDF – optional",
+      "enable": "Use letterhead in the PDF",
+      "enableHint": "When turned off, the report stays exactly as before.",
+      "logo": "Company logo",
+      "logoAlt": "Company logo",
+      "noLogo": "No logo selected yet",
+      "chooseLogo": "Choose logo",
+      "changeLogo": "Change logo",
+      "removeLogo": "Remove logo",
+      "logoHint": "Shown at the top left of the PDF. A PNG with a transparent background looks best.",
+      "footer": "Footer",
+      "footerPlaceholder": "Example Ltd · 1 Main Street · 1010 Vienna\nReg. no. 123456a · VAT ATU12345678 · office@example.com",
+      "footerHint": "Up to 3 lines, small and centred at the bottom of every page.",
+      "toastLogoUpdated": "Logo saved",
+      "toastLogoError": "The image could not be loaded"
     }
   },
   "attachments": {

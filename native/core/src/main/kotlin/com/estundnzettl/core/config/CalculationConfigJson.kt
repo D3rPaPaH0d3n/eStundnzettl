@@ -10,6 +10,9 @@ import com.estundnzettl.core.model.HolidaySetMode
 import com.estundnzettl.core.model.OvertimeAccountConfig
 import com.estundnzettl.core.model.OvertimeMode
 import com.estundnzettl.core.model.PdfDisplayConfig
+import com.estundnzettl.core.model.REPORT_FOOTER_MAX_CHARS
+import com.estundnzettl.core.model.REPORT_LOGO_MAX_CHARS
+import com.estundnzettl.core.model.ReportBranding
 import com.estundnzettl.core.model.SickOnWorkDayMode
 import com.estundnzettl.core.model.UserData
 import com.estundnzettl.core.calc.normalizeMonthlyTargetMinutes
@@ -211,6 +214,17 @@ fun CalculationConfig.toJson(): JsonObject = buildJsonObject {
 
 // ─── UserData ────────────────────────────────────────────────
 
+/** Briefkopf aus dem Profil-JSON; fremde/kaputte Logos werden verworfen. */
+private fun decodeReportBranding(v: JsonElement?): ReportBranding? {
+    val obj = v as? JsonObject ?: return null
+    return ReportBranding(
+        enabled = booleanOrNull(obj["enabled"]) ?: false,
+        logo = stringOrNull(obj["logo"])
+            ?.takeIf { it.startsWith("data:image/") && it.length <= REPORT_LOGO_MAX_CHARS },
+        footer = stringOrNull(obj["footer"])?.take(REPORT_FOOTER_MAX_CHARS) ?: "",
+    )
+}
+
 /** Tolerantes Dekodieren des Settings-Keys "user". */
 fun decodeUserData(value: JsonElement?): UserData? {
     val obj = value as? JsonObject ?: return null
@@ -226,6 +240,7 @@ fun decodeUserData(value: JsonElement?): UserData? {
         monthlyTargetMinutes = normalizeMonthlyTargetMinutes(numberOrNull(obj["monthlyTargetMinutes"])?.toInt()),
         expertMode = booleanOrNull(obj["expertMode"]) ?: false,
         workModelId = stringOrNull(obj["workModelId"]),
+        reportBranding = decodeReportBranding(obj["reportBranding"]),
     )
 }
 
@@ -240,4 +255,11 @@ fun UserData.toJson(): JsonObject = buildJsonObject {
     monthlyTargetMinutes?.let { normalizeMonthlyTargetMinutes(it)?.let { value -> put("monthlyTargetMinutes", value) } }
     put("expertMode", expertMode)
     workModelId?.let { put("workModelId", it) }
+    reportBranding?.let { branding ->
+        put("reportBranding", buildJsonObject {
+            put("enabled", branding.enabled)
+            branding.logo?.let { put("logo", it) }
+            put("footer", branding.footer)
+        })
+    }
 }

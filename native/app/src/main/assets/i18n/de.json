@@ -1304,6 +1304,24 @@
         "authRequired": "Google-Anmeldung erforderlich. Verbinde Google Drive in den Backup-Einstellungen.",
         "failed": "Abfrage fehlgeschlagen."
       }
+    },
+    "branding": {
+      "title": "Firmen-Briefkopf",
+      "subtitle": "Logo & Fußzeile fürs PDF – optional",
+      "enable": "Briefkopf im PDF verwenden",
+      "enableHint": "Ohne Aktivierung bleibt der Bericht wie gewohnt.",
+      "logo": "Firmenlogo",
+      "logoAlt": "Firmenlogo",
+      "noLogo": "Noch kein Logo gewählt",
+      "chooseLogo": "Logo wählen",
+      "changeLogo": "Logo ändern",
+      "removeLogo": "Logo entfernen",
+      "logoHint": "Erscheint links oben im PDF. Am schönsten schaut ein PNG mit transparentem Hintergrund aus.",
+      "footer": "Fußzeile",
+      "footerPlaceholder": "Musterfirma GmbH · Hauptstraße 1 · 1010 Wien\nFN 123456a · UID ATU12345678 · office@firma.at",
+      "footerHint": "Bis zu 3 Zeilen, klein und zentriert unten auf jeder Seite.",
+      "toastLogoUpdated": "Logo übernommen",
+      "toastLogoError": "Das Bild konnte nicht geladen werden"
     }
   },
   "attachments": {

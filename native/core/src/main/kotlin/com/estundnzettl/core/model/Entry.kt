@@ -82,7 +82,26 @@ data class UserData(
     val expertMode: Boolean = false,
     /** Onboarding work-model preset (e.g. "38.5-classic") */
     val workModelId: String? = null,
+    /** Optionaler Firmen-Briefkopf fürs PDF (Logo + Fußzeile), Default aus. */
+    val reportBranding: ReportBranding? = null,
 )
+
+/**
+ * Firmen-Briefkopf für den PDF-Bericht. Greift nur bei [enabled] und
+ * vorhandenem Inhalt — sonst bleibt das PDF unverändert.
+ */
+data class ReportBranding(
+    val enabled: Boolean = false,
+    /** Firmenlogo als Data-URL (PNG mit Transparenz oder JPEG). */
+    val logo: String? = null,
+    /** Fußzeile, bis zu [REPORT_FOOTER_MAX_LINES] Zeilen (Adresse, FN/UID, Kontakt). */
+    val footer: String = "",
+)
+
+const val REPORT_FOOTER_MAX_LINES = 3
+const val REPORT_FOOTER_MAX_CHARS = 300
+/** Obergrenze für die Logo-Data-URL (~1 MB Bild) — schützt vor Riesen-Backups. */
+const val REPORT_LOGO_MAX_CHARS = 1_500_000
 
 data class WorkModel(
     val id: String,

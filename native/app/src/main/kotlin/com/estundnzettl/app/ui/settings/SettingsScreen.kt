@@ -172,6 +172,7 @@ fun SettingsScreen(
         Box(Modifier.tourSection("backup")) {
             BackupSection(viewModel, t, colors.accent, onExportBackup, onImportBackup)
         }
+        CompanyBrandingSection(viewModel)
         PdfArchiveSection(viewModel)
         PreferredShareTargetSection()
         Box(Modifier.tourSection("appearanceHelp")) { AppearanceSection(viewModel) }

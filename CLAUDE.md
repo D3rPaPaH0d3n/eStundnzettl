@@ -18,6 +18,9 @@
   `native/app/src/main/kotlin/com/estundnzettl/app/pdf/ReportPdfGenerator.kt`.
 - Vorschau via Android `PdfRenderer` in der nativen Compose-Oberfläche.
 - Teilen erfolgt über `FileProvider`, Speichern über das Storage Access Framework.
+- Optionaler Firmen-Briefkopf (Logo + Fußzeile) über `UserData.reportBranding`.
+  `getEffectiveReportBranding()` liefert `null`, solange er aus oder leer ist —
+  dann müssen Kopfzeile, Seitenrand und Umbruch exakt dem Standard-Layout entsprechen.
 
 ## Legacy-PDF-Pipeline
 

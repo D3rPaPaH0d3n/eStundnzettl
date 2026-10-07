@@ -1,5 +1,43 @@
 [
  {
+  "version": "5.2.0",
+  "date": "07.10.2026",
+  "title": "Ihr habt's gwünscht, i hob's gmocht 🏔️",
+  "isMajor": false,
+  "playStoreText": "Ihr habt's gwünscht, i hob's gmocht 🏔️\n\n• Zeitausgleichskonto: Überstunden wandern in den nächsten Monat mit\n• ZA wird automatisch vom Konto abzogn\n• Übertrag & Stand Monatsende am Dashboard und im Monats-PDF\n• Firmen-Briefkopf: euer Logo und a Fußzeile im PDF\n• Ois optional – ohne Einschalten bleibt alles wie gwohnt\n\nDanke für eure Ideen – schreibt's ma weiter, wos enk fehlt! – Markus",
+  "sections": [
+   {
+    "iconName": "Calculator",
+    "title": "Überstunden wandern mit",
+    "items": [
+     "Griaß enk! A User hot ma gschriebn: „Wo stell i ein, dass die Überstunden vom Vormonat in den nächsten Monat mitgehen?“ – Guate Frog. Jetzt gibt's des: das Zeitausgleichskonto.",
+     "Einschalten unter Einstellungen → Stundenberechnung: Startmonat aussuachn, Übertrag eintragen, fertig. Wer neu anfangt, wird beim Einrichten glei gfragt.",
+     "Jeder Monatssaldo kommt aufs Konto, Zeitausgleich-Einträge werden automatisch abzogn. Am Dashboard siehst Übertrag, genommenen ZA und den aktuellen Stand.",
+     "Im Monats-PDF stehen Übertrag Vormonat, Saldo, Zeitausgleich und Stand Monatsende – schwarz auf weiß für'n Chef.",
+     "Auszahlung oder Korrektur? Einfach Startmonat und Übertrag neu setzen. Und wer's ned braucht: Es bleibt aus, bis du's einschaltest."
+    ]
+   },
+   {
+    "iconName": "FileText",
+    "title": "Schaut aus wia vom Büro",
+    "items": [
+     "Auf Wunsch kommt euer Firmenlogo links oben in den Stundenzettel und a Fußzeile mit Adresse, FN/UID oder Kontakt unten auf jede Seite.",
+     "Einstellungen → Firmen-Briefkopf: Logo auswählen, Fußzeile eintippen, einschalten. A PNG mit durchsichtigem Hintergrund schaut am feschesten aus.",
+     "Ohne Briefkopf bleibt der Bericht genau wie bisher – nix verrutscht, nix verschoben."
+    ]
+   },
+   {
+    "iconName": "ShieldCheck",
+    "title": "A bissl Feinschliff",
+    "items": [
+     "Setzt du die Berechnungsregeln aufs Land zurück, bleibt dein ZA-Konto samt Übertrag erhalten.",
+     "Logo und Fußzeile reisen im Backup mit und kommen am neuen Handy wieder zruck.",
+     "Die Fußzeile speichert sich von selber – a, wenn du zwischendurch schnell in a andere App wechselst."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.1.1",
   "date": "06.10.2026",
   "title": "Selber ausgsucht, sicher abglegt 📂",

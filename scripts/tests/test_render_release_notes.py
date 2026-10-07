@@ -12,6 +12,34 @@ SPEC.loader.exec_module(release_notes)
 
 
 class RenderReleaseNotesTest(unittest.TestCase):
+    def test_520_notes_cover_time_off_account_and_letterhead(self) -> None:
+        github_notes = release_notes.render_notes("5.2.0", "de-DE", "github")
+        play_notes = release_notes.render_notes("5.2.0", "de-DE", "play")
+
+        self.assertIn("Überstunden wandern mit", github_notes)
+        self.assertIn("Schaut aus wia vom Büro", github_notes)
+        self.assertIn("A bissl Feinschliff", github_notes)
+        self.assertTrue(play_notes.startswith("Ihr habt's gwünscht, i hob's gmocht"))
+        self.assertIn("schreibt's ma weiter, wos enk fehlt! – Markus", play_notes)
+        self.assertLessEqual(len(play_notes), release_notes.PLAY_LIMIT)
+
+    def test_520_english_notes_render_for_play_and_github(self) -> None:
+        github_notes = release_notes.render_notes("5.2.0", "en-US", "github")
+        play_notes = release_notes.render_notes("5.2.0", "en-US", "play")
+
+        self.assertIn("Overtime carries over", github_notes)
+        self.assertIn("Looks like it came from the office", github_notes)
+        self.assertIn("keep telling me what you're missing! – Markus", play_notes)
+        self.assertLessEqual(len(play_notes), release_notes.PLAY_LIMIT)
+
+    def test_520_fastlane_notes_match_curated_play_text(self) -> None:
+        for language in ("de-DE", "en-US"):
+            fastlane = release_notes.REPO_ROOT / f"fastlane/metadata/android/{language}/changelogs/314.txt"
+            self.assertEqual(
+                fastlane.read_text(encoding="utf-8").strip(),
+                release_notes.render_notes("5.2.0", language, "play"),
+            )
+
     def test_511_notes_cover_backup_folder_timer_and_data_safety(self) -> None:
         github_notes = release_notes.render_notes("5.1.1", "de-DE", "github")
         play_notes = release_notes.render_notes("5.1.1", "de-DE", "play")

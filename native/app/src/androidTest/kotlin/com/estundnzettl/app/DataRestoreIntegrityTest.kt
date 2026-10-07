@@ -6,10 +6,13 @@ import androidx.room.testing.MigrationTestHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.estundnzettl.app.data.BackupRepository
 import com.estundnzettl.app.data.ImportSnapshot
+import com.estundnzettl.app.data.SettingsRepository
 import com.estundnzettl.app.data.db.AppDatabase
 import com.estundnzettl.app.data.replaceFullSnapshot
 import com.estundnzettl.app.data.toRow
+import com.estundnzettl.core.backup.BackupAnalysis
 import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
@@ -84,11 +87,11 @@ class DataRestoreIntegrityTest {
         database = db
         db.entryDao().upsert(entry(id = 1, project = "Bestand").toRow())
 
-        val repo = com.estundnzettl.app.data.BackupRepository(
+        val repo = BackupRepository(
             db,
-            com.estundnzettl.app.data.SettingsRepository(db.settingsDao()),
+            SettingsRepository(db.settingsDao()),
         )
-        val analysis = com.estundnzettl.core.backup.BackupAnalysis(
+        val analysis = BackupAnalysis(
             valid = true,
             hasSettings = true,
             settings = kotlinx.serialization.json.buildJsonObject {

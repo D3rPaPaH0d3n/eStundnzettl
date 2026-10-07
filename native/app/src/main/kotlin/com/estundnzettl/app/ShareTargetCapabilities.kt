@@ -36,7 +36,7 @@ object ShareTargetCapabilities {
                 val label = runCatching {
                     activity.applicationInfo.loadLabel(packageManager).toString()
                 }.getOrElse {
-                    info.loadLabel(packageManager)?.toString().orEmpty()
+                    info.loadLabel(packageManager).toString()
                 }.ifBlank { activity.packageName }
                 ShareTargetOption(
                     component = component,

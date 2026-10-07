@@ -107,13 +107,19 @@ import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.UiMessageTone
 import com.estundnzettl.app.OnboardingUiState
 import com.estundnzettl.app.R
+import com.estundnzettl.app.RestoreCandidate
+import com.estundnzettl.app.data.formatTimestamp
 import com.estundnzettl.app.ui.settings.OptionSheet
+import com.estundnzettl.app.ui.settings.dataUrlToBitmap
 import com.estundnzettl.app.ui.settings.formatHoursLocalized
+import com.estundnzettl.app.ui.settings.uriToJpegDataUrl
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.calc.formatMonthlyTargetInput
 import com.estundnzettl.core.calc.formatSignedDurationInput
+import com.estundnzettl.core.calc.getBlankCalculationConfig
+import com.estundnzettl.core.calc.getDefaultCalculationConfig
 import com.estundnzettl.core.calc.parseMonthlyTargetInput
 import com.estundnzettl.core.calc.parseSignedDurationInput
 import com.estundnzettl.core.locale.GERMANY_LOCALE_IDS
@@ -667,7 +673,7 @@ private fun ProfileStep(viewModel: MainViewModel, ob: OnboardingUiState) {
     ) { uri ->
         if (uri != null) {
             runCatching {
-                val dataUrl = com.estundnzettl.app.ui.settings.uriToJpegDataUrl(context, uri)
+                val dataUrl = uriToJpegDataUrl(context, uri)
                 viewModel.onboardingUpdate { it.copy(photo = dataUrl) }
             }.onFailure {
                 viewModel.showRawMessage(t.t("settings.profile.toastPhotoError"))
@@ -700,7 +706,7 @@ private fun ProfileStep(viewModel: MainViewModel, ob: OnboardingUiState) {
         ) {
             val photo = ob.photo
             val bitmap = if (photo != null) {
-                remember(photo) { com.estundnzettl.app.ui.settings.dataUrlToBitmap(photo) }
+                remember(photo) { dataUrlToBitmap(photo) }
             } else null
             if (bitmap != null) {
                 Image(
@@ -845,7 +851,7 @@ private fun LocaleStep(viewModel: MainViewModel, ob: OnboardingUiState) {
                     it.copy(
                         localeId = id,
                         customCalc = false,
-                        calcConfig = com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale(id), it.workDays),
+                        calcConfig = getDefaultCalculationConfig(getLocale(id), it.workDays),
                     )
                 }
                 regionSheet = null
@@ -863,7 +869,7 @@ private fun LocaleStep(viewModel: MainViewModel, ob: OnboardingUiState) {
             viewModel.onboardingUpdate {
                 it.copy(
                     localeId = "neutral", customCalc = false,
-                    calcConfig = com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale("neutral"), it.workDays),
+                    calcConfig = getDefaultCalculationConfig(getLocale("neutral"), it.workDays),
                 )
             }
         }
@@ -875,7 +881,7 @@ private fun LocaleStep(viewModel: MainViewModel, ob: OnboardingUiState) {
             viewModel.onboardingUpdate {
                 it.copy(
                     localeId = "at", customCalc = false,
-                    calcConfig = com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale("at"), it.workDays),
+                    calcConfig = getDefaultCalculationConfig(getLocale("at"), it.workDays),
                 )
             }
         }
@@ -890,7 +896,7 @@ private fun LocaleStep(viewModel: MainViewModel, ob: OnboardingUiState) {
             viewModel.onboardingUpdate {
                 it.copy(
                     localeId = id, customCalc = false,
-                    calcConfig = com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale(id), it.workDays),
+                    calcConfig = getDefaultCalculationConfig(getLocale(id), it.workDays),
                 )
             }
         }
@@ -912,7 +918,7 @@ private fun LocaleStep(viewModel: MainViewModel, ob: OnboardingUiState) {
             viewModel.onboardingUpdate {
                 it.copy(
                     localeId = id, customCalc = false,
-                    calcConfig = com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale(id), it.workDays),
+                    calcConfig = getDefaultCalculationConfig(getLocale(id), it.workDays),
                 )
             }
         }
@@ -933,7 +939,7 @@ private fun LocaleStep(viewModel: MainViewModel, ob: OnboardingUiState) {
             viewModel.onboardingUpdate {
                 it.copy(
                     localeId = "neutral", customCalc = true,
-                    calcConfig = com.estundnzettl.core.calc.getBlankCalculationConfig(it.workDays),
+                    calcConfig = getBlankCalculationConfig(it.workDays),
                 )
             }
         }
@@ -1833,7 +1839,7 @@ private fun RestoreOptions(viewModel: MainViewModel, ob: OnboardingUiState) {
 @Composable
 private fun RestoreChoiceList(
     viewModel: MainViewModel,
-    choices: List<com.estundnzettl.app.RestoreCandidate>,
+    choices: List<RestoreCandidate>,
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
@@ -1902,9 +1908,9 @@ private fun RestoreChoiceList(
 /** Drive-Änderungszeit, sonst der Zeitstempel aus dem Backup selbst. */
 @Composable
 private fun restoreCandidateTimestamp(
-    candidate: com.estundnzettl.app.RestoreCandidate,
-): String? = com.estundnzettl.app.data.formatTimestamp(candidate.modifiedTime)
-    ?: com.estundnzettl.app.data.formatTimestamp(candidate.analysis.timestamp)
+    candidate: RestoreCandidate,
+): String? = formatTimestamp(candidate.modifiedTime)
+    ?: formatTimestamp(candidate.analysis.timestamp)
 
 /** "128 Einträge · Profil enthalten" — die kompakte Inhaltsangabe. */
 @Composable
@@ -2043,7 +2049,7 @@ private fun SummaryStep(viewModel: MainViewModel, ob: OnboardingUiState) {
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                 )
-                com.estundnzettl.app.data.formatTimestamp(restore.timestamp)?.let { stamp ->
+                formatTimestamp(restore.timestamp)?.let { stamp ->
                     Text(stamp, color = colors.textMuted, fontSize = 11.sp)
                 }
             }

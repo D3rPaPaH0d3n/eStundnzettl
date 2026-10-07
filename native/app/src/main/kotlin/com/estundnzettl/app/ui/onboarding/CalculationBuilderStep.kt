@@ -56,6 +56,7 @@ import com.estundnzettl.app.ui.settings.formatHoursLocalized
 import com.estundnzettl.app.ui.settings.holidayImportOptions
 import com.estundnzettl.app.ui.settings.mmddToDisplay
 import com.estundnzettl.app.ui.theme.LocalAppColors
+import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.locale.getLocale
 import com.estundnzettl.core.locale.holidays.getIslamicHolidays
@@ -80,7 +81,7 @@ import java.time.LocalDate
 @Composable
 internal fun CalculationBuilderStep(viewModel: MainViewModel, ob: OnboardingUiState, language: String) {
     val colors = LocalAppColors.current
-    val t = com.estundnzettl.app.ui.theme.LocalI18n.current
+    val t = LocalI18n.current
     val config = ob.calcConfig ?: return
 
     fun patch(transform: (CalculationConfig) -> CalculationConfig) {

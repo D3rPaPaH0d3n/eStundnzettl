@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.ui.AppCard
+import com.estundnzettl.app.ui.theme.AppColors
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import java.util.Locale as JavaLocale
@@ -86,7 +87,7 @@ fun SectionIconBadge(
 }
 
 internal fun resolveSectionIconTint(
-    colors: com.estundnzettl.app.ui.theme.AppColors,
+    colors: AppColors,
     legacyTint: Color,
     materialYouTint: Color? = null,
 ): Color = if (colors.isMaterialYou) materialYouTint ?: colors.accent else legacyTint

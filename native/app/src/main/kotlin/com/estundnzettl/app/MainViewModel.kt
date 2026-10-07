@@ -5,14 +5,34 @@ import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.estundnzettl.app.data.AttachmentsRepository
+import com.estundnzettl.app.data.AutoBackupManager
+import com.estundnzettl.app.data.BackupRepository
+import com.estundnzettl.app.data.DiagnosticsCollector
+import com.estundnzettl.app.data.DiagnosticsReport
+import com.estundnzettl.app.data.DriveProbe
 import com.estundnzettl.app.data.EntriesRepository
 import com.estundnzettl.app.data.replaceFullSnapshot
 import com.estundnzettl.app.data.EntryIdGenerator
+import com.estundnzettl.app.data.GoogleDriveManager
+import com.estundnzettl.app.data.ImportSnapshot
+import com.estundnzettl.app.data.LegacyDbImporter
+import com.estundnzettl.app.data.LocalBackupFolder
+import com.estundnzettl.app.data.NextcloudClient
+import com.estundnzettl.app.data.NextcloudManager
+import com.estundnzettl.app.data.PdfArchiveManager
+import com.estundnzettl.app.data.SecretStore
 import com.estundnzettl.app.data.SettingsRepository
+import com.estundnzettl.app.data.UpdateCheck
 import com.estundnzettl.app.data.WorkCodesRepository
+import com.estundnzettl.app.data.googleDriveFailureNeedsReconnect
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.Haptics
+import com.estundnzettl.core.backup.BackupAnalysis
+import com.estundnzettl.core.backup.BackupIntegrity
 import com.estundnzettl.core.calc.AppData
+import com.estundnzettl.core.calc.DEMO_USER
+import com.estundnzettl.core.calc.DEMO_WORK_CODES
 import com.estundnzettl.core.calc.EntryFormInput
 import com.estundnzettl.core.calc.OvertimeAccountMonth
 import com.estundnzettl.core.calc.SaveEntryResult
@@ -20,6 +40,9 @@ import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.WorkCodeDraftResult
 import com.estundnzettl.core.calc.calculateOvertimeAccount
 import com.estundnzettl.core.calc.deriveAppData
+import com.estundnzettl.core.calc.generateDemoEntries
+import com.estundnzettl.core.calc.getBlankCalculationConfig
+import com.estundnzettl.core.calc.getDefaultCalculationConfig
 import com.estundnzettl.core.calc.keepingOvertimeAccountOf
 import com.estundnzettl.core.calc.getDefaultTimesForDate
 import com.estundnzettl.core.calc.latestEligibleWorkEntry
@@ -28,14 +51,20 @@ import com.estundnzettl.core.calc.resolveDefaultWorkCode
 import com.estundnzettl.core.calc.validateWorkCodeDraft
 import com.estundnzettl.core.config.toJson
 import com.estundnzettl.core.locale.AppLocale
+import com.estundnzettl.core.locale.DEFAULT_LOCALE_ID
 import com.estundnzettl.core.locale.getLocale
 import com.estundnzettl.core.locale.holidays.toDateString
+import com.estundnzettl.core.model.Attachment
 import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
+import com.estundnzettl.core.model.OvertimeAccountConfig
 import com.estundnzettl.core.model.UserData
+import com.estundnzettl.core.model.WORK_CODE_PRESETS
+import com.estundnzettl.core.model.WORK_MODELS
 import com.estundnzettl.core.model.WorkCode
+import com.estundnzettl.core.model.WorkModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -219,10 +248,10 @@ data class MainUiState(
     val deleteTarget: Entry? = null,
     val materialYouEnabled: Boolean = false,
     /** Backup-Analyse, die auf die Import-Entscheidung (ALL/ENTRIES_ONLY) wartet. */
-    val pendingImport: com.estundnzettl.core.backup.BackupAnalysis? = null,
+    val pendingImport: BackupAnalysis? = null,
     val onboarding: OnboardingUiState = OnboardingUiState(),
     /** Alle Anhänge (Metadaten) — Pendant zum useAttachments-State. */
-    val attachments: List<com.estundnzettl.core.model.Attachment> = emptyList(),
+    val attachments: List<Attachment> = emptyList(),
     /** MRU-Label-Vorschläge für neue Anhänge. */
     val labelSuggestions: List<String> = emptyList(),
     /** Entry, dessen Anhänge gerade verwaltet werden (AttachmentManager offen). */
@@ -238,7 +267,7 @@ data class MainUiState(
     /** Persistierter Zustand der letzten Google-Drive-Backupversuche. */
     val backupHealth: BackupHealthUiState = BackupHealthUiState(),
     /** Neueres GitHub-Release (nur Sideload-Installationen). */
-    val updateAvailable: com.estundnzettl.app.data.UpdateCheck.Release? = null,
+    val updateAvailable: UpdateCheck.Release? = null,
     /** Einmaliges Willkommens-Popup nach der Migration von der Capacitor-App. */
     val showNativeWelcome: Boolean = false,
     /** Nach einem Update einmalig sichtbares Änderungsprotokoll. */
@@ -249,9 +278,9 @@ data class MainUiState(
 )
 
 data class DiagnosticsUiState(
-    val report: com.estundnzettl.app.data.DiagnosticsReport? = null,
+    val report: DiagnosticsReport? = null,
     val loading: Boolean = false,
-    val drive: com.estundnzettl.app.data.DriveProbe = com.estundnzettl.app.data.DriveProbe.Idle,
+    val drive: DriveProbe = DriveProbe.Idle,
 )
 
 data class NextcloudUiState(
@@ -300,13 +329,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val db = (application as EStundnzettlApp).database
     private val entriesRepo = EntriesRepository(db)
     private val workCodesRepo = WorkCodesRepository(db)
-    private val attachmentsRepo = com.estundnzettl.app.data.AttachmentsRepository(db)
+    private val attachmentsRepo = AttachmentsRepository(db)
     val settings = SettingsRepository(db.settingsDao())
-    private val secrets = com.estundnzettl.app.data.SecretStore(application)
-    private val nextcloudManager = com.estundnzettl.app.data.NextcloudManager(settings, secrets)
-    private val googleDrive = com.estundnzettl.app.data.GoogleDriveManager(application, settings)
+    private val secrets = SecretStore(application)
+    private val nextcloudManager = NextcloudManager(settings, secrets)
+    private val googleDrive = GoogleDriveManager(application, settings)
     private val pdfArchive =
-        com.estundnzettl.app.data.PdfArchiveManager(application, settings, nextcloudManager, googleDrive)
+        PdfArchiveManager(application, settings, nextcloudManager, googleDrive)
 
     private val timerJson = Json { ignoreUnknownKeys = true }
 
@@ -323,7 +352,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             // Einmaliges Willkommens-Popup für Umsteiger von der
             // Capacitor-Version (Migration gelaufen, Popup noch nie gezeigt)
-            if (settings.getString(com.estundnzettl.app.data.LegacyDbImporter.MIGRATION_MARKER_KEY) != null &&
+            if (settings.getString(LegacyDbImporter.MIGRATION_MARKER_KEY) != null &&
                 settings.getString(KEY_NATIVE_WELCOME_SEEN) != "1"
             ) {
                 _state.update { it.copy(showNativeWelcome = true) }
@@ -331,11 +360,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             // GitHub-Update-Check (nur Sideload; Debug-Builds prüfen nie)
             launch {
-                val release = com.estundnzettl.app.data.UpdateCheck.check(
+                val release = UpdateCheck.check(
                     getApplication(),
                     settings,
-                    currentVersion = com.estundnzettl.app.BuildConfig.VERSION_NAME,
-                    isDebugBuild = com.estundnzettl.app.BuildConfig.DEBUG,
+                    currentVersion = BuildConfig.VERSION_NAME,
+                    isDebugBuild = BuildConfig.DEBUG,
                 )
                 if (release != null) {
                     _state.update { it.copy(updateAvailable = release) }
@@ -455,12 +484,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Alle Attachments — der Bericht filtert selbst nach Zeitraum. */
-    suspend fun getAllAttachments(): List<com.estundnzettl.core.model.Attachment> =
+    suspend fun getAllAttachments(): List<Attachment> =
         attachmentsRepo.getAll()
 
     // ─── Automatisches PDF-Archiv ────────────────────────────
 
-    private fun pdfArchiveData() = com.estundnzettl.app.data.PdfArchiveManager.Data(
+    private fun pdfArchiveData() = PdfArchiveManager.Data(
         entries = allEntries,
         userData = _state.value.userData,
         workCodes = _state.value.workCodes,
@@ -477,7 +506,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Manueller "Jetzt ausführen"-Lauf aus den Einstellungen. */
-    suspend fun runPdfArchiveNow(): com.estundnzettl.app.data.PdfArchiveManager.RunOutcome =
+    suspend fun runPdfArchiveNow(): PdfArchiveManager.RunOutcome =
         pdfArchive.performRun(pdfArchiveData(), source = "manual", force = true)
 
     /** App kam aus dem Hintergrund zurück (Port des appStateChange-Listeners). */
@@ -965,7 +994,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             settings.setLocaleId(locale.id)
             if (resetConfig) {
                 val workDays = _state.value.userData?.workDays
-                val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(locale, workDays)
+                val fresh = getDefaultCalculationConfig(locale, workDays)
                     .keepingOvertimeAccountOf(_state.value.calculationConfig)
                 _state.update { it.copy(calculationConfig = fresh) }
                 settings.setCalculationConfig(fresh)
@@ -993,7 +1022,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (nextSimpleMode == userData.simpleMode) return
 
         val targetLocale = if (!nextSimpleMode && s.locale.id == "neutral") {
-            getLocale(com.estundnzettl.core.locale.DEFAULT_LOCALE_ID)
+            getLocale(DEFAULT_LOCALE_ID)
         } else {
             s.locale
         }
@@ -1007,7 +1036,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             setLocaleId(targetLocale.id, resetConfig = false)
         }
         if (!nextSimpleMode) {
-            val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(targetLocale, nextWorkDays)
+            val fresh = getDefaultCalculationConfig(targetLocale, nextWorkDays)
                 .keepingOvertimeAccountOf(s.calculationConfig)
             _state.update { it.copy(calculationConfig = fresh) }
             viewModelScope.launch { settings.setCalculationConfig(fresh) }
@@ -1027,7 +1056,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Diagnose (Hausmasta-Modus, ausschließlich lesend) ───
 
     private val diagnosticsCollector by lazy {
-        com.estundnzettl.app.data.DiagnosticsCollector(getApplication(), db, settings, secrets)
+        DiagnosticsCollector(getApplication(), db, settings, secrets)
     }
 
     private fun updateDiagnostics(transform: (DiagnosticsUiState) -> DiagnosticsUiState) {
@@ -1056,23 +1085,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * den Backoff schieben.
      */
     fun probeGoogleDriveFiles() {
-        updateDiagnostics { it.copy(drive = com.estundnzettl.app.data.DriveProbe.Loading) }
+        updateDiagnostics { it.copy(drive = DriveProbe.Loading) }
         viewModelScope.launch {
             val probe = try {
-                val token = googleDrive.authorize(com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA)
-                com.estundnzettl.app.data.DriveProbe.Loaded(googleDrive.listAppDataFiles(token))
-            } catch (_: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
-                com.estundnzettl.app.data.DriveProbe.Failed("settings.diagnostics.drive.authRequired")
+                val token = googleDrive.authorize(GoogleDriveManager.SCOPE_APPDATA)
+                DriveProbe.Loaded(googleDrive.listAppDataFiles(token))
+            } catch (_: GoogleDriveManager.AuthRequiredException) {
+                DriveProbe.Failed("settings.diagnostics.drive.authRequired")
             } catch (exception: Exception) {
                 Log.w(GOOGLE_DRIVE_TAG, "Diagnose-Abfrage fehlgeschlagen", exception)
-                com.estundnzettl.app.data.DriveProbe.Failed("settings.diagnostics.drive.failed")
+                DriveProbe.Failed("settings.diagnostics.drive.failed")
             }
             updateDiagnostics { it.copy(drive = probe) }
         }
     }
 
     /** Arbeitszeitmodell-Preset anwenden — Port von handlePresetSelect. */
-    fun applyWorkModel(model: com.estundnzettl.core.model.WorkModel) {
+    fun applyWorkModel(model: WorkModel) {
         setUserData {
             if (model.id != "custom") it.copy(workModelId = model.id, workDays = model.days)
             else it.copy(workModelId = model.id)
@@ -1143,7 +1172,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun loadWorkCodePreset(presetId: String): Boolean {
-        val preset = com.estundnzettl.core.model.WORK_CODE_PRESETS.firstOrNull { it.id == presetId }
+        val preset = WORK_CODE_PRESETS.firstOrNull { it.id == presetId }
             ?: return false
         viewModelScope.launch {
             workCodesRepo.replaceAll(preset.codes)
@@ -1223,7 +1252,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // ─── Backup Export / Import ──────────────────────────────
 
-    private val backupRepo by lazy { com.estundnzettl.app.data.BackupRepository(db, settings) }
+    private val backupRepo by lazy { BackupRepository(db, settings) }
 
     /** Datei-Inhalt für den manuellen Export (checksummter v7-Payload). */
     suspend fun createBackupFileContent(): String =
@@ -1236,7 +1265,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             emit(UiMessage("settings.toast.invalidBackup"))
             return
         }
-        if (analysis.integrity == com.estundnzettl.core.backup.BackupIntegrity.MISMATCH) {
+        if (analysis.integrity == BackupIntegrity.MISMATCH) {
             emit(UiMessage("settings.toast.integrityMismatch"))
         }
         if (analysis.hasSettings) {
@@ -1376,7 +1405,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val file = java.io.File(attachmentsDir(), "$id.$extension")
         file.writeBytes(bytes)
 
-        val attachment = com.estundnzettl.core.model.Attachment(
+        val attachment = Attachment(
             id = id,
             entryId = entryId,
             label = trimmedLabel,
@@ -1407,7 +1436,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Datei-Inhalt eines Anhangs (für Teilen/Report-Bundle). */
-    fun attachmentFile(attachment: com.estundnzettl.core.model.Attachment): java.io.File =
+    fun attachmentFile(attachment: Attachment): java.io.File =
         resolveAttachmentFile(attachment.storagePath) ?: java.io.File(attachmentsDir(), ".invalid")
 
     private fun deleteAttachmentFile(storagePath: String) {
@@ -1428,12 +1457,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun loadDemoData() {
         viewModelScope.launch {
             try {
-                val entries = com.estundnzettl.core.calc.generateDemoEntries()
+                val entries = generateDemoEntries()
                 db.replaceFullSnapshot(
-                    com.estundnzettl.app.data.ImportSnapshot(
+                    ImportSnapshot(
                         entries = entries,
-                        userData = com.estundnzettl.core.calc.DEMO_USER.toJson(),
-                        workCodes = com.estundnzettl.core.calc.DEMO_WORK_CODES,
+                        userData = DEMO_USER.toJson(),
+                        workCodes = DEMO_WORK_CODES,
                     ),
                 )
                 runCatching { db.settingsDao().delete("last_code") }
@@ -1507,11 +1536,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Nextcloud (Port von useNextcloudBackup) ─────────────
 
     private val localBackupFolder by lazy {
-        com.estundnzettl.app.data.LocalBackupFolder(getApplication(), settings)
+        LocalBackupFolder(getApplication(), settings)
     }
 
     private val autoBackup by lazy {
-        com.estundnzettl.app.data.AutoBackupManager(
+        AutoBackupManager(
             getApplication(), settings, backupRepo, nextcloudManager, googleDrive,
         )
     }
@@ -1608,7 +1637,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val tag = _state.value.updateAvailable?.tag ?: return
         _state.update { it.copy(updateAvailable = null) }
         viewModelScope.launch {
-            settings.setString(com.estundnzettl.app.data.UpdateCheck.KEY_DISMISSED, tag)
+            settings.setString(UpdateCheck.KEY_DISMISSED, tag)
         }
     }
 
@@ -1632,7 +1661,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Startet Login Flow v2; liefert die Browser-URL. Wirft bei Fehlern. */
     suspend fun nextcloudInitiate(serverUrl: String): String {
-        val flow = com.estundnzettl.app.data.NextcloudClient.initiateLoginFlow(serverUrl)
+        val flow = NextcloudClient.initiateLoginFlow(serverUrl)
         _state.update { it.copy(nextcloud = it.nextcloud.copy(connecting = true)) }
         startNextcloudPolling(flow.pollEndpoint, flow.token)
         return flow.loginUrl
@@ -1645,20 +1674,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repeat(100) {
                 kotlinx.coroutines.delay(3000)
                 try {
-                    when (val result = com.estundnzettl.app.data.NextcloudClient.pollLoginResult(pollEndpoint, token)) {
-                        is com.estundnzettl.app.data.NextcloudClient.PollResult.Pending -> {}
-                        is com.estundnzettl.app.data.NextcloudClient.PollResult.Complete -> {
+                    when (val result = NextcloudClient.pollLoginResult(pollEndpoint, token)) {
+                        is NextcloudClient.PollResult.Pending -> {}
+                        is NextcloudClient.PollResult.Complete -> {
                             if (!nextcloudManager.persistLogin(result.server, result.loginName, result.appPassword)) {
                                 refreshNextcloudState(connecting = false)
                                 emit(UiMessage("settings.backup.toast.nextcloudLoginFailed"))
                                 return@launch
                             }
                             runCatching {
-                                com.estundnzettl.app.data.NextcloudClient
-                                    .testConnection(result.server, result.loginName, result.appPassword)
-                                com.estundnzettl.app.data.NextcloudClient
-                                    .ensureFolderPath(result.server, result.loginName, result.appPassword,
-                                        listOf(com.estundnzettl.app.data.NextcloudClient.BACKUP_FOLDER))
+                                NextcloudClient.testConnection(result.server, result.loginName, result.appPassword)
+                                NextcloudClient.ensureFolderPath(result.server, result.loginName, result.appPassword,
+                                        listOf(NextcloudClient.BACKUP_FOLDER))
                             }
                             refreshNextcloudState(connecting = false)
                             scheduleDataProtection()
@@ -1698,8 +1725,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 emit(UiMessage("settings.backup.toast.ncConnectFirst"))
                 return@launch
             }
-            val result = com.estundnzettl.app.data.NextcloudClient
-                .testConnection(creds.url, creds.user, creds.appPassword)
+            val result = NextcloudClient.testConnection(creds.url, creds.user, creds.appPassword)
             if (result.isSuccess) {
                 emit(UiMessage("settings.backup.toast.ncTestOk"))
             } else {
@@ -1715,7 +1741,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         autoBackupJob?.cancel()
         autoBackupJob = viewModelScope.launch {
             kotlinx.coroutines.delay(2000)
-            val outcome = autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.AUTO)
+            val outcome = autoBackup.performBackup(AutoBackupManager.Source.AUTO)
             refreshBackupStateAfter(outcome, notifyUser = true)
         }
     }
@@ -1726,31 +1752,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // WAL in die Hauptdatei schreiben, bevor das System den
             // Prozess killen darf (schützt vor Datenverlust bei Updates)
             db.checkpoint()
-            val outcome = autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.BACKGROUND)
+            val outcome = autoBackup.performBackup(AutoBackupManager.Source.BACKGROUND)
             refreshBackupStateAfter(outcome, notifyUser = false)
         }
     }
 
     /** "Jetzt sichern" aus den Einstellungen. */
-    suspend fun manualBackup(): com.estundnzettl.app.data.AutoBackupManager.Outcome {
-        val outcome = autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.MANUAL)
+    suspend fun manualBackup(): AutoBackupManager.Outcome {
+        val outcome = autoBackup.performBackup(AutoBackupManager.Source.MANUAL)
         refreshBackupStateAfter(outcome, notifyUser = false)
         return outcome
     }
 
     private suspend fun refreshBackupStateAfter(
-        outcome: com.estundnzettl.app.data.AutoBackupManager.Outcome,
+        outcome: AutoBackupManager.Outcome,
         notifyUser: Boolean,
     ) {
         if (
-            com.estundnzettl.app.data.AutoBackupManager.Target.GOOGLE_DRIVE in outcome.failedTargets ||
-            com.estundnzettl.app.data.AutoBackupManager.Target.GOOGLE_DRIVE in outcome.succeededTargets
+            AutoBackupManager.Target.GOOGLE_DRIVE in outcome.failedTargets ||
+            AutoBackupManager.Target.GOOGLE_DRIVE in outcome.succeededTargets
         ) {
             refreshGoogleState()
         }
         refreshBackupHealth(
             notifyUser = notifyUser &&
-                com.estundnzettl.app.data.AutoBackupManager.Target.GOOGLE_DRIVE in outcome.failedTargets,
+                AutoBackupManager.Target.GOOGLE_DRIVE in outcome.failedTargets,
         )
     }
 
@@ -1768,15 +1794,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (allEntries.isEmpty()) return@launch
             val now = YearMonth.now()
             settings.setString(
-                com.estundnzettl.app.data.PdfArchiveManager.hashKey(now.year, now.monthValue),
+                PdfArchiveManager.hashKey(now.year, now.monthValue),
                 "",
             )
-            settings.getString(com.estundnzettl.app.data.PdfArchiveManager.KEY_LAST_MONTH)
+            settings.getString(PdfArchiveManager.KEY_LAST_MONTH)
                 ?.split("-")
                 ?.mapNotNull { it.toIntOrNull() }
                 ?.takeIf { it.size == 2 && it[1] in 1..12 }
                 ?.let { (year, month) ->
-                    settings.setString(com.estundnzettl.app.data.PdfArchiveManager.hashKey(year, month), "")
+                    settings.setString(PdfArchiveManager.hashKey(year, month), "")
                 }
             pdfArchive.performRun(pdfArchiveData(), source = "target-change", force = true)
         }
@@ -1825,7 +1851,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         reconnectKey to JsonPrimitive(false),
                     )
                 )
-            } catch (_: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
+            } catch (_: GoogleDriveManager.AuthRequiredException) {
                 settings.setBoolean(reconnectKey, true)
             } catch (exception: Exception) {
                 // A transient network/Play-services error must not erase a
@@ -1836,26 +1862,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         reconcileScope(
             enabled = settings.getBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED),
-            scope = com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA,
-            emailKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL,
-            reconnectKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
+            scope = GoogleDriveManager.SCOPE_APPDATA,
+            emailKey = GoogleDriveManager.KEY_ACCOUNT_EMAIL,
+            reconnectKey = GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
         )
         reconcileScope(
-            enabled = settings.getBoolean(com.estundnzettl.app.data.PdfArchiveManager.KEY_GDRIVE),
-            scope = com.estundnzettl.app.data.GoogleDriveManager.SCOPE_FILE,
-            emailKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL,
-            reconnectKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED,
+            enabled = settings.getBoolean(PdfArchiveManager.KEY_GDRIVE),
+            scope = GoogleDriveManager.SCOPE_FILE,
+            emailKey = GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL,
+            reconnectKey = GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED,
         )
     }
 
     private suspend fun refreshGoogleState() {
-        val backupEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL) ?: ""
-        val pdfEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL) ?: ""
+        val backupEmail = settings.getString(GoogleDriveManager.KEY_ACCOUNT_EMAIL) ?: ""
+        val pdfEmail = settings.getString(GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL) ?: ""
         val backupReconnect = settings.getBoolean(
-            com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
+            GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
         )
         val pdfReconnect = settings.getBoolean(
-            com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED,
+            GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED,
         )
         val playServices = runCatching {
             googlePlayServicesStatus(
@@ -1880,19 +1906,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun refreshBackupHealth(notifyUser: Boolean = false) {
         val failureCount = settings
-            .getString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_FAIL_COUNT)
+            .getString(AutoBackupManager.KEY_CLOUD_FAIL_COUNT)
             ?.toIntOrNull()
             ?: 0
         val lastError = settings
-            .getString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_ERROR)
+            .getString(AutoBackupManager.KEY_CLOUD_LAST_ERROR)
             .orEmpty()
         val lastSuccess = settings
-            .getString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_SUCCESS)
+            .getString(AutoBackupManager.KEY_CLOUD_LAST_SUCCESS)
             .orEmpty()
         val warningShown = settings
-            .getBoolean(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN)
+            .getBoolean(AutoBackupManager.KEY_CLOUD_WARNING_SHOWN)
         val reconnectRequired = settings.getBoolean(
-            com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
+            GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
         )
 
         _state.update {
@@ -1913,7 +1939,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
         ) {
             settings.setBoolean(
-                com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN,
+                AutoBackupManager.KEY_CLOUD_WARNING_SHOWN,
                 true,
             )
             emit(
@@ -1960,7 +1986,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         return try {
-            val token = googleDrive.authorize(com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA)
+            val token = googleDrive.authorize(GoogleDriveManager.SCOPE_APPDATA)
             val sections = backupRepo.collectSections()
             if (sections.entries.isEmpty()) {
                 emit(UiMessage("toasts.autoBackup.noData", tone = UiMessageTone.WARNING))
@@ -1970,12 +1996,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val content = backupRepo.toFileContent(payload)
             googleDrive.uploadOrUpdateBackup(
                 token,
-                com.estundnzettl.app.data.NextcloudClient.BACKUP_FILENAME,
+                NextcloudClient.BACKUP_FILENAME,
                 content,
             )
             val completedAt = Instant.now().toString()
-            settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, completedAt)
-            settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_LAST_BACKUP, completedAt)
+            settings.setString(AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, completedAt)
+            settings.setString(AutoBackupManager.KEY_LAST_BACKUP, completedAt)
             autoBackup.clearGoogleDriveErrorState()
             refreshGoogleState()
             refreshBackupHealth()
@@ -1987,14 +2013,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
             true
         } catch (error: Exception) {
-            val reconnect = com.estundnzettl.app.data.googleDriveFailureNeedsReconnect(error)
+            val reconnect = googleDriveFailureNeedsReconnect(error)
             autoBackup.registerGoogleDriveFailure(
                 message = error.message ?: "Google Drive Verbindung fehlgeschlagen",
                 requiresReconnect = reconnect,
             )
             if (reconnect) {
                 settings.setBoolean(
-                    com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN,
+                    AutoBackupManager.KEY_CLOUD_WARNING_SHOWN,
                     true,
                 )
             }
@@ -2020,9 +2046,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         val scope = if (forPdfArchive) {
-            com.estundnzettl.app.data.GoogleDriveManager.SCOPE_FILE
+            GoogleDriveManager.SCOPE_FILE
         } else {
-            com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA
+            GoogleDriveManager.SCOPE_APPDATA
         }
         viewModelScope.launch {
             try {
@@ -2030,7 +2056,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val token = googleDrive.authorize(scope)
                 Log.i(GOOGLE_DRIVE_TAG, "Autorisierung ohne Dialog erfolgreich (scope=${googleScopeLabel(scope)})")
                 onGoogleConnected(scope, token)
-            } catch (e: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
+            } catch (e: GoogleDriveManager.AuthRequiredException) {
                 val intent = e.pendingIntent
                 if (intent != null) {
                     pendingGoogleScope = scope
@@ -2092,23 +2118,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun onGoogleConnected(scope: String, token: String) {
         val email = googleDrive.fetchAccountEmail(token)
         val accountLabel = email.ifEmpty { "Google" }
-        if (scope == com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA) {
+        if (scope == GoogleDriveManager.SCOPE_APPDATA) {
             // Konto und Aktivierungsflag gehören logisch zusammen. Ein
             // einzelner Batch verhindert den zuvor beobachteten Halbzustand
             // (Konto gespeichert, Cloud-Backup aber nicht aktiviert).
             settings.setRawBatch(
                 mapOf(
-                    com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
+                    GoogleDriveManager.KEY_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
                     SettingsRepository.Keys.CLOUD_SYNC_ENABLED to JsonPrimitive(true),
-                    com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED to JsonPrimitive(false),
+                    GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED to JsonPrimitive(false),
                 ),
             )
             autoBackup.clearGoogleDriveErrorState()
         } else {
             settings.setRawBatch(
                 mapOf(
-                    com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
-                    com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED to JsonPrimitive(false),
+                    GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
+                    GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED to JsonPrimitive(false),
                 )
             )
         }
@@ -2119,32 +2145,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         refreshBackupHealth()
         emit(UiMessage("settings.backup.toast.gdriveConnected", listOf("label" to accountLabel)))
         Log.i(GOOGLE_DRIVE_TAG, "Google Drive verbunden (scope=${googleScopeLabel(scope)}, account=$accountLabel)")
-        if (scope == com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA) {
+        if (scope == GoogleDriveManager.SCOPE_APPDATA) {
             scheduleDataProtection()
         }
     }
 
     private fun googleScopeLabel(scope: String): String = when (scope) {
-        com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA -> "backup"
-        com.estundnzettl.app.data.GoogleDriveManager.SCOPE_FILE -> "pdf"
+        GoogleDriveManager.SCOPE_APPDATA -> "backup"
+        GoogleDriveManager.SCOPE_FILE -> "pdf"
         else -> "unknown"
     }
 
     fun disconnectGoogleDrive(forPdfArchive: Boolean = false) {
         viewModelScope.launch {
             if (forPdfArchive) {
-                settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, "")
-                settings.setBoolean(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED, false)
-                settings.setBoolean(com.estundnzettl.app.data.PdfArchiveManager.KEY_GDRIVE, false)
+                settings.setString(GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, "")
+                settings.setBoolean(GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED, false)
+                settings.setBoolean(PdfArchiveManager.KEY_GDRIVE, false)
             } else {
-                settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL, "")
-                settings.setBoolean(com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED, false)
+                settings.setString(GoogleDriveManager.KEY_ACCOUNT_EMAIL, "")
+                settings.setBoolean(GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED, false)
                 settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, false)
-                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_FAIL_COUNT, "0")
-                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_ERROR, "")
-                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_BACKOFF_UNTIL, "")
-                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, "")
-                settings.setBoolean(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN, false)
+                settings.setString(AutoBackupManager.KEY_CLOUD_FAIL_COUNT, "0")
+                settings.setString(AutoBackupManager.KEY_CLOUD_LAST_ERROR, "")
+                settings.setString(AutoBackupManager.KEY_CLOUD_BACKOFF_UNTIL, "")
+                settings.setString(AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, "")
+                settings.setBoolean(AutoBackupManager.KEY_CLOUD_WARNING_SHOWN, false)
             }
             refreshGoogleState()
             refreshBackupHealth()
@@ -2168,7 +2194,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 workDays = List(7) { 0 },
                 localeId = "neutral",
                 workCodePresetId = "allgemein",
-                calcConfig = com.estundnzettl.core.calc.getBlankCalculationConfig(List(7) { 0 }),
+                calcConfig = getBlankCalculationConfig(List(7) { 0 }),
                 customCalc = false,
                 step = 1,
             )
@@ -2197,15 +2223,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 val demoLocale = getLocale("at")
-                val demoConfig = com.estundnzettl.core.calc
-                    .getDefaultCalculationConfig(demoLocale, com.estundnzettl.core.calc.DEMO_USER.workDays)
+                val demoConfig = getDefaultCalculationConfig(demoLocale, DEMO_USER.workDays)
                     .copy(vacationCarryoverDays = 3)
 
                 db.replaceFullSnapshot(
-                    com.estundnzettl.app.data.ImportSnapshot(
-                        entries = com.estundnzettl.core.calc.generateDemoEntries(),
-                        userData = com.estundnzettl.core.calc.DEMO_USER.toJson(),
-                        workCodes = com.estundnzettl.core.calc.DEMO_WORK_CODES,
+                    ImportSnapshot(
+                        entries = generateDemoEntries(),
+                        userData = DEMO_USER.toJson(),
+                        workCodes = DEMO_WORK_CODES,
                     ),
                 )
                 runCatching {
@@ -2252,14 +2277,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Locale-Wahl belegt Default-WorkDays vor, wenn noch das
         // Initial-Modell (38,5h klassisch) aktiv ist.
         if (ob.step == 2 && ob.localeId != null) {
-            if (ob.workDays == com.estundnzettl.core.model.WORK_MODELS[0].days) {
+            if (ob.workDays == WORK_MODELS[0].days) {
                 next = next.copy(workDays = getLocale(ob.localeId).defaultWorkDays)
             }
         }
         // Beim Verlassen von WorkSchedule: weeklyTargetMinutes aktualisieren
         if (ob.step == 3) {
             val config = next.calcConfig
-                ?: com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale(ob.localeId), next.workDays)
+                ?: getDefaultCalculationConfig(getLocale(ob.localeId), next.workDays)
             next = next.copy(calcConfig = config.copy(weeklyTargetMinutes = next.workDays.sum()))
         }
 
@@ -2301,7 +2326,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             emit(UiMessage(invalidKey))
             return false
         }
-        if (analysis.integrity == com.estundnzettl.core.backup.BackupIntegrity.MISMATCH) {
+        if (analysis.integrity == BackupIntegrity.MISMATCH) {
             emit(UiMessage("onboarding.toast.integrityMismatch"))
         }
         emit(UiMessage(loadedKey))
@@ -2323,14 +2348,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             updateOnboarding { it.copy(restoreLoading = true) }
             try {
-                val token = googleDrive.authorize(com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA)
+                val token = googleDrive.authorize(GoogleDriveManager.SCOPE_APPDATA)
                 finishGoogleDriveRestore(token)
-            } catch (e: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
+            } catch (e: GoogleDriveManager.AuthRequiredException) {
                 val intent = e.pendingIntent
                 if (intent != null) {
                     // Consent nötig — restoreLoading bleibt aktiv, bis der
                     // Callback (onGoogleAuthResult) den Restore fortsetzt.
-                    pendingGoogleScope = com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA
+                    pendingGoogleScope = GoogleDriveManager.SCOPE_APPDATA
                     pendingGoogleRestore = true
                     _googleAuthIntents.tryEmit(intent)
                 } else {
@@ -2359,7 +2384,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // die Sync-Flags kommen aus dem Backup selbst).
             val email = googleDrive.fetchAccountEmail(token)
             settings.setString(
-                com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL,
+                GoogleDriveManager.KEY_ACCOUNT_EMAIL,
                 email.ifEmpty { "Google" },
             )
             refreshGoogleState()
@@ -2384,7 +2409,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     private suspend fun collectDriveRestoreCandidates(
         token: String,
-    ): List<com.estundnzettl.app.RestoreCandidate> {
+    ): List<RestoreCandidate> {
         val files = googleDrive.listAppDataFiles(token)
             .filter { it.name.endsWith(".json", ignoreCase = true) }
             .take(MAX_RESTORE_CANDIDATES)
@@ -2394,19 +2419,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 ?: return@mapNotNull null
             val analysis = backupRepo.analyze(content)
             if (!analysis.valid) return@mapNotNull null
-            com.estundnzettl.app.RestoreCandidate(
+            RestoreCandidate(
                 fileId = file.id,
                 fileName = file.name,
                 modifiedTime = file.modifiedTime,
                 isLegacyName = file.name
-                    .equals(com.estundnzettl.app.data.GoogleDriveManager.LEGACY_BACKUP_FILENAME, ignoreCase = true),
+                    .equals(GoogleDriveManager.LEGACY_BACKUP_FILENAME, ignoreCase = true),
                 analysis = analysis,
             )
         }
     }
 
     /** Ein Backup aus der Auswahl übernehmen (Nutzer-Tipp auf einen Eintrag). */
-    fun onboardingPickRestore(candidate: com.estundnzettl.app.RestoreCandidate) {
+    fun onboardingPickRestore(candidate: RestoreCandidate) {
         acceptRestoreCandidate(candidate)
     }
 
@@ -2415,8 +2440,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         updateOnboarding { it.copy(restoreChoices = emptyList()) }
     }
 
-    private fun acceptRestoreCandidate(candidate: com.estundnzettl.app.RestoreCandidate) {
-        if (candidate.analysis.integrity == com.estundnzettl.core.backup.BackupIntegrity.MISMATCH) {
+    private fun acceptRestoreCandidate(candidate: RestoreCandidate) {
+        if (candidate.analysis.integrity == BackupIntegrity.MISMATCH) {
             emit(UiMessage("onboarding.toast.integrityMismatch"))
         }
         emit(UiMessage("onboarding.toast.backupLoaded"))
@@ -2435,8 +2460,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     emit(UiMessage("onboarding.toast.ncLoginFailed"))
                     return@launch
                 }
-                val content = com.estundnzettl.app.data.NextcloudClient
-                    .downloadBackup(creds.url, creds.user, creds.appPassword)
+                val content = NextcloudClient.downloadBackup(creds.url, creds.user, creds.appPassword)
                 if (content == null) {
                     emit(UiMessage("onboarding.toast.ncRestoreNotFound"))
                     return@launch
@@ -2521,11 +2545,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             if (!ob.isRestoreFlow && !ob.simpleMode) {
                 val base = ob.calcConfig
-                    ?: com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale(ob.localeId), ob.workDays)
+                    ?: getDefaultCalculationConfig(getLocale(ob.localeId), ob.workDays)
                 // ZA-Konto nur, wenn es im Wizard ausdrücklich eingeschaltet wurde
                 val config = if (ob.overtimeAccountEnabled) {
                     base.copy(
-                        overtimeAccount = com.estundnzettl.core.model.OvertimeAccountConfig(
+                        overtimeAccount = OvertimeAccountConfig(
                             enabled = true,
                             startMonth = YearMonth.now().toString(),
                             openingBalanceMinutes = ob.overtimeAccountOpeningMinutes,
@@ -2540,8 +2564,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 runCatching { settings.setLocaleId(ob.localeId) }
             }
             if (!ob.isRestoreFlow) {
-                com.estundnzettl.core.model.WORK_CODE_PRESETS
-                    .firstOrNull { it.id == ob.workCodePresetId }
+                WORK_CODE_PRESETS.firstOrNull { it.id == ob.workCodePresetId }
                     ?.let { preset -> runCatching { workCodesRepo.replaceAll(preset.codes) } }
             }
 

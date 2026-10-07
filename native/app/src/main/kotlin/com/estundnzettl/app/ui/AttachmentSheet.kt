@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.estundnzettl.app.AttachmentValidationException
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
@@ -213,7 +214,7 @@ fun AttachmentSheet(viewModel: MainViewModel) {
                                             pickedUri = null
                                             pickedName = ""
                                             label = ""
-                                        } catch (e: com.estundnzettl.app.AttachmentValidationException) {
+                                        } catch (e: AttachmentValidationException) {
                                             toast(t.t(e.translationKey))
                                         } catch (_: Exception) {
                                             toast(t.t("attachments.toast.addError"))

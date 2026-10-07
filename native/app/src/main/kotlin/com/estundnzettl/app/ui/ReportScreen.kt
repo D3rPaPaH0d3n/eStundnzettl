@@ -130,6 +130,7 @@ import com.estundnzettl.core.calc.getEffectivePdfDisplay
 import com.estundnzettl.core.calc.getWeekNumber
 import com.estundnzettl.core.calc.getWeekRangeInMonth
 import com.estundnzettl.core.model.Attachment
+import com.estundnzettl.core.model.PdfDisplayConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -1502,7 +1503,7 @@ fun PdfDisplayToggles(viewModel: MainViewModel, showHeader: Boolean = true) {
         val update: (Boolean) -> Unit,
     )
 
-    fun patch(transform: (com.estundnzettl.core.model.PdfDisplayConfig) -> com.estundnzettl.core.model.PdfDisplayConfig) {
+    fun patch(transform: (PdfDisplayConfig) -> PdfDisplayConfig) {
         viewModel.patchCalculationConfig { cfg ->
             cfg.copy(pdfDisplay = transform(getEffectivePdfDisplay(cfg)))
         }

@@ -7,6 +7,9 @@ import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.CalculationConfig
+import com.estundnzettl.core.model.HolidayOnWorkDayMode
+import com.estundnzettl.core.model.OvertimeMode
+import com.estundnzettl.core.model.SickOnWorkDayMode
 import com.estundnzettl.core.model.UserData
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -221,13 +224,13 @@ fun calculateOvertimeSplit(
     val effective = resolveEffectiveRules(loc, config)
 
     // Kein Split: Aufrufer zeigt nur Saldo, wir liefern 0/0 zurück
-    if (effective.overtimeMode == com.estundnzettl.core.model.OvertimeMode.NONE) {
+    if (effective.overtimeMode == OvertimeMode.NONE) {
         return OvertimeSplit(0, 0)
     }
 
     // Alles gilt als Überstunden (neutraler Split-Ersatz)
     val weeklyLimit = effective.weeklyLimitMinutes
-    if (effective.overtimeMode == com.estundnzettl.core.model.OvertimeMode.UEBERSTUNDEN_ONLY || weeklyLimit == null) {
+    if (effective.overtimeMode == OvertimeMode.UEBERSTUNDEN_ONLY || weeklyLimit == null) {
         return OvertimeSplit(0, balanceMinutes)
     }
 
@@ -259,9 +262,9 @@ fun adjustSickDuration(
     val loc = locale ?: getLocale(null)
     val effective = resolveEffectiveRules(loc, config)
 
-    if (effective.sickMode == com.estundnzettl.core.model.SickOnWorkDayMode.ADDITIVE) return sickNetDuration
+    if (effective.sickMode == SickOnWorkDayMode.ADDITIVE) return sickNetDuration
 
-    if (effective.sickMode == com.estundnzettl.core.model.SickOnWorkDayMode.IGNORE) {
+    if (effective.sickMode == SickOnWorkDayMode.IGNORE) {
         return if (workMinutesOnDay > 0) 0 else sickNetDuration
     }
 
@@ -334,8 +337,8 @@ fun applyEffectiveDurations(
 
     // Bei sickMode ADDITIVE UND holidayOnWorkDayMode nicht CAP_TO_TARGET: nichts zu tun
     if (
-        effective.sickMode == com.estundnzettl.core.model.SickOnWorkDayMode.ADDITIVE &&
-        effective.holidayOnWorkDayMode != com.estundnzettl.core.model.HolidayOnWorkDayMode.CAP_TO_TARGET
+        effective.sickMode == SickOnWorkDayMode.ADDITIVE &&
+        effective.holidayOnWorkDayMode != HolidayOnWorkDayMode.CAP_TO_TARGET
     ) {
         return entries
     }
@@ -359,7 +362,7 @@ fun applyEffectiveDurations(
             }
 
             e.type == EntryType.PUBLIC_HOLIDAY &&
-                effective.holidayOnWorkDayMode == com.estundnzettl.core.model.HolidayOnWorkDayMode.CAP_TO_TARGET -> {
+                effective.holidayOnWorkDayMode == HolidayOnWorkDayMode.CAP_TO_TARGET -> {
                 val dayWork = dayWorkMap[e.date] ?: 0
                 if (dayWork <= 0) return@map e
                 val target = getTargetMinutesForDate(e.date, userData?.workDays, loc, config)
@@ -395,7 +398,7 @@ fun buildDayBalanceMetaMap(
     // Eintrag selbst bleibt sichtbar am Beginn-Tag (siehe entry.date).
     val loc = locale ?: getLocale(null)
     val effective = resolveEffectiveRules(loc, config)
-    val splitOvernight = effective.overtimeMode != com.estundnzettl.core.model.OvertimeMode.NONE
+    val splitOvernight = effective.overtimeMode != OvertimeMode.NONE
 
     for (entry in entries) {
         if (entry.type == EntryType.WORK && entry.code == WorkCodes.DRIVE) continue
@@ -462,7 +465,7 @@ fun calculatePeriodStats(
     // Nachtschichten werden bei der Wochen-Aggregation auf Beginn- und
     // Folgetag aufgeteilt, sobald die App MA/ÜS überhaupt berechnet
     // (overtimeMode != NONE) — sonst landet alles am Beginn-Tag.
-    val splitOvernight = effective.overtimeMode != com.estundnzettl.core.model.OvertimeMode.NONE
+    val splitOvernight = effective.overtimeMode != OvertimeMode.NONE
 
     for (e in entries) {
         // TODO(nightshift edge case, wie in der TS-Vorlage): Eine Nachtschicht
@@ -507,7 +510,7 @@ fun calculatePeriodStats(
     //
     // Wenn der effektive overtimeMode NONE ist, wird dieser Block
     // übersprungen — der Saldo wird dann nur als totalSaldo angezeigt.
-    if (effective.overtimeMode == com.estundnzettl.core.model.OvertimeMode.NONE) {
+    if (effective.overtimeMode == OvertimeMode.NONE) {
         return PeriodStatsResult(
             work = work, drive = drive, holiday = holiday, vacation = vacation,
             sick = sick, timeComp = timeComp, totalIst = totalIst,

@@ -20,11 +20,8 @@
   <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/ci.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/ci.yml?branch=main&label=CI&color=2ea44f&style=for-the-badge&logo=githubactions&logoColor=white" alt="CI Status" />
   </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/codeql.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/codeql.yml?branch=main&label=CodeQL&color=2563eb&style=for-the-badge&logo=github&logoColor=white" alt="CodeQL Security Analysis" />
-  </a>
   <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/coverage-badge.yml">
-    <img src="./badges/coverage.svg" alt="Test Coverage" />
+    <img src="./badges/coverage.svg" alt="Test Coverage (Kotlin Core)" />
   </a>
 </p>
 
@@ -252,16 +249,15 @@ If you find it useful and feel like saying thanks, a small tip via Revolut is al
 | 📄 PDF | `PdfDocument` for vector PDFs and `PdfRenderer` for native previews |
 | ☁️ Cloud | Google Drive REST API, Nextcloud WebDAV, Storage Access Framework |
 | 🔐 Secrets | AndroidX Security Crypto and Android Keystore |
-| 🌐 Languages | Native German/English resources from a shared JSON source |
-| 🧪 Tests | JUnit, Kotlin Test, AndroidX instrumentation and Vitest parity tests |
+| 🌐 Languages | German/English translations as JSON files in the app assets (`assets/i18n`) |
+| 🧪 Tests | JUnit, Kotlin Test, AndroidX instrumentation and Kover coverage for the `core` module |
 
 ### Repository layout
 
 | Path | Purpose |
 |------|---------|
 | `native/` | Current Kotlin app and primary Android build |
-| `src/` and `android/` | Previous Capacitor app, retained temporarily for migration and parity tests |
-| `fastlane/metadata/` | Google Play release notes |
+| `fastlane/metadata/` | Google Play store listing and release notes |
 | `.github/workflows/` | Native CI, APK, GitHub Release and Play Store builds |
 
 For a local debug build on Windows:
@@ -271,7 +267,9 @@ cd native
 .\gradlew.bat :core:test :app:testDebugUnitTest :app:assembleDebug
 ```
 
-`main` is the development base for the Kotlin app. The frozen Capacitor release is available in `legacy/capacitor-4.5.x`.
+The coverage report for the `core` module (the source of the coverage badge) is generated with `.\gradlew.bat :core:koverHtmlReport`; the HTML report ends up in `native/core/build/reports/kover/html/`.
+
+`main` is the development base for the Kotlin app. The frozen Capacitor release is available in the [`legacy/capacitor-4.5.x`](https://github.com/D3rPaPaH0d3n/eStundnzettl/tree/legacy/capacitor-4.5.x) branch; the last `main` state that still contained the former Capacitor sources (`src/`, `android/`) is archived as the `archive/capacitor-on-main` tag.
 
 ---
 

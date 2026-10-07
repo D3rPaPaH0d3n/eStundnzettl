@@ -12,8 +12,7 @@
   <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases"><img src="https://img.shields.io/github/downloads/D3rPaPaH0d3n/eStundnzettl/total?label=Downloads&color=8b5cf6&style=for-the-badge&logo=github&logoColor=white" alt="GitHub-Downloads" /></a>
   <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/blob/main/LICENSE"><img src="https://img.shields.io/badge/Lizenz-MIT-blue?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="Lizenz MIT" /></a>
   <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/ci.yml?branch=main&label=CI&color=2ea44f&style=for-the-badge&logo=githubactions&logoColor=white" alt="CI Status" /></a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/codeql.yml"><img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/codeql.yml?branch=main&label=CodeQL&color=2563eb&style=for-the-badge&logo=github&logoColor=white" alt="CodeQL Security Analysis" /></a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/coverage-badge.yml"><img src="./badges/coverage.svg" alt="Test Coverage" /></a>
+  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/coverage-badge.yml"><img src="./badges/coverage.svg" alt="Test Coverage (Kotlin Core)" /></a>
 </p>
 
 <p align="center">
@@ -240,16 +239,15 @@ Wennst magst und dir die App wos wert is, freu i mi über a kloane Anerkennung v
 | 📄 PDF | `PdfDocument` für Vektor-PDFs, `PdfRenderer` für die native Vorschau |
 | ☁️ Cloud | Google Drive REST API, Nextcloud WebDAV, Storage Access Framework |
 | 🔐 Geheimnisse | AndroidX Security Crypto und Android Keystore |
-| 🌐 Sprachen | Native DE/EN-Ressourcen aus einer gemeinsamen JSON-Quelle |
-| 🧪 Tests | JUnit, Kotlin Test, AndroidX Instrumentation und Vitest-Paritätstests |
+| 🌐 Sprachen | DE/EN-Übersetzungen als JSON-Dateien in den App-Assets (`assets/i18n`) |
+| 🧪 Tests | JUnit, Kotlin Test, AndroidX Instrumentation und Kover-Coverage für das `core`-Modul |
 
 ### Repository-Aufbau
 
 | Pfad | Aufgabe |
 |------|---------|
 | `native/` | Aktuelle Kotlin-App und primärer Android-Build |
-| `src/` und `android/` | Frühere Capacitor-App — vorerst für Migration und Vergleichstests erhalten |
-| `fastlane/metadata/` | Versionshinweise für Google Play |
+| `fastlane/metadata/` | Store-Eintrag und Versionshinweise für Google Play |
 | `.github/workflows/` | Native CI-, APK-, GitHub-Release- und Play-Store-Builds |
 
 Für einen lokalen Debug-Build unter Windows:
@@ -259,7 +257,9 @@ cd native
 .\gradlew.bat :core:test :app:testDebugUnitTest :app:assembleDebug
 ```
 
-`main` ist die Entwicklungsbasis der Kotlin-App. Der eingefrorene Capacitor-Stand liegt unter `legacy/capacitor-4.5.x`.
+Den Coverage-Bericht des `core`-Moduls (Grundlage des Coverage-Badges) erzeugt `.\gradlew.bat :core:koverHtmlReport`; das HTML liegt danach unter `native/core/build/reports/kover/html/`.
+
+`main` ist die Entwicklungsbasis der Kotlin-App. Der eingefrorene Capacitor-Stand liegt im Branch [`legacy/capacitor-4.5.x`](https://github.com/D3rPaPaH0d3n/eStundnzettl/tree/legacy/capacitor-4.5.x); der letzte `main`-Stand mit dem früheren Capacitor-Quellcode (`src/`, `android/`) ist als Tag `archive/capacitor-on-main` archiviert.
 
 ---
 

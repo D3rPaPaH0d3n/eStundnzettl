@@ -56,7 +56,14 @@
     "noPause": "No break",
     "documentsLabel": "Documents",
     "documentsCount_one": "{{count}} document",
-    "documentsCount_other": "{{count}} documents"
+    "documentsCount_other": "{{count}} documents",
+    "overtimeAccount": {
+      "title": "Time-off account",
+      "opening": "Carried over",
+      "timeComp": "Time off taken",
+      "closingMonthEnd": "End of month",
+      "closingToday": "Balance today"
+    }
   },
   "entryTypes": {
     "holiday": "Holiday",
@@ -201,7 +208,16 @@
       "placeholder": "E.g. additional info, bank details, etc…",
       "done": "Done"
     },
-    "pdfElementMissing": "PDF element missing"
+    "pdfElementMissing": "PDF element missing",
+    "overtimeAccount": {
+      "title": "Time-off account",
+      "opening": "Carried over from previous month:",
+      "balance": "Balance this month:",
+      "balanceUntil": "Balance until {{date}}:",
+      "timeComp": "Time off taken:",
+      "closing": "Balance at end of month:",
+      "closingAt": "Balance as of {{date}}:"
+    }
   },
   "drawers": {
     "timePicker": {
@@ -399,7 +415,11 @@
       "customInfo": "Set your hours per day directly. Below you'll find optional presets you can apply if you want — later also changeable at any time in settings.",
       "dailyHoursTitle": "Daily hours (custom)",
       "weeklyHours": "Weekly hours:",
-      "presetsTitle": "Presets (optional)"
+      "presetsTitle": "Presets (optional)",
+      "overtimeAccountTitle": "Carry over overtime?",
+      "overtimeAccountHint": "Optional: a time-off account carries your balance into the next month and deducts time off. You can change this in the settings at any time.",
+      "overtimeAccountOpening": "Hours already on the account?",
+      "overtimeAccountOpeningHint": "Leave empty to start at 0. Use minus for negative hours."
     },
     "workCodes": {
       "title": "Activities",
@@ -643,7 +663,7 @@
       },
       "calculation": {
         "title": "Hours calculation",
-        "body": "Work model, public holidays and calculation rules live here. If your schedule changes, this is the right place."
+        "body": "Work model, public holidays, calculation rules and the optional time-off account live here. If your schedule changes, this is the right place."
       },
       "backup": {
         "title": "Backup & export",
@@ -1008,11 +1028,22 @@
         "recalcFixed": "Updated {{fixed}} of {{total}} entries",
         "recalcAllCorrect": "All {{total}} entries are up to date",
         "recalcError": "Recalculation failed"
+      },
+      "overtimeAccount": {
+        "title": "Time-off account",
+        "subtitle": "Carry overtime over into the next month",
+        "startMonth": "Account starts in",
+        "opening": "Opening balance",
+        "openingPlaceholder": "e.g. 12:30 or -4:15",
+        "openingHint": "Account balance at the start of {{month}} (hours:minutes, minus for negative hours)",
+        "openingInvalid": "Please enter hours:minutes, e.g. 12:30 or -4:15",
+        "currentBalance": "Current balance",
+        "hint": "Each month's balance is booked to the account and carried over into the next month. Time-off entries are deducted from the account. For payouts or corrections, simply set a new start month and opening balance."
       }
     },
     "locale": {
       "header": "Hours calculation",
-      "subtitle": "Holidays, half-days, extra hours/overtime",
+      "subtitle": "Holidays, half-days, overtime & time-off account",
       "group": {
         "neutral": "Neutral",
         "austria": "Austria",
@@ -1143,6 +1174,8 @@
       "showOvertimeSplitDesc": "Split into extra hours and overtime in the summary",
       "showVacationBalance": "Show vacation balance",
       "showVacationBalanceDesc": "Remaining-vacation block at the end of the summary",
+      "showOvertimeAccount": "Show time-off account",
+      "showOvertimeAccountDesc": "Carryover and end-of-month balance in the summary",
       "showAttachmentsList": "Show attachments list",
       "showAttachmentsListDesc": "Linked documents enumerated per entry",
       "showWorkCodeColumn": "Show code column",
@@ -1271,6 +1304,25 @@
         "authRequired": "Google sign-in required. Connect Google Drive in the backup settings.",
         "failed": "Query failed."
       }
+    },
+    "branding": {
+      "title": "Company letterhead",
+      "subtitle": "Logo & footer for the PDF – optional",
+      "enable": "Use letterhead in the PDF",
+      "enableHint": "When turned off, the report stays exactly as before.",
+      "logo": "Company logo",
+      "logoAlt": "Company logo",
+      "noLogo": "No logo selected yet",
+      "chooseLogo": "Choose logo",
+      "changeLogo": "Change logo",
+      "removeLogo": "Remove logo",
+      "logoHint": "Shown at the top left of the PDF. A PNG with a transparent background looks best.",
+      "footer": "Footer",
+      "footerPlaceholder": "Example Ltd · 1 Main Street · 1010 Vienna\nReg. no. 123456a · VAT ATU12345678 · office@example.com",
+      "footerHint": "Up to 3 lines or 300 characters, small and centred at the bottom of every page.",
+      "toastLogoUpdated": "Logo saved",
+      "toastLogoError": "The image could not be loaded",
+      "footerTruncated": "Shortened: at most 3 lines or 300 characters."
     }
   },
   "attachments": {

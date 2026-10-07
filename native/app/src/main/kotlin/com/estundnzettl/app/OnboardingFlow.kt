@@ -36,6 +36,13 @@ data class OnboardingUiState(
     val calcConfig: CalculationConfig? = null,
     /** true wenn in Step 2 "Eigener Plan" gewählt wurde → Step 4 wird gezeigt. */
     val customCalc: Boolean = false,
+    /**
+     * Zeitausgleichskonto im Arbeitszeit-Schritt eingeschaltet — bewusst
+     * getrennt von [calcConfig], weil die Locale-Wahl die Config neu setzt.
+     */
+    val overtimeAccountEnabled: Boolean = false,
+    /** Stunden, die beim Start schon am Konto sind (Minuten, darf negativ sein). */
+    val overtimeAccountOpeningMinutes: Int = 0,
     /** Analysiertes Backup für den Restore-Flow. */
     val restoreData: BackupAnalysis? = null,
     /** true während ein Restore-Backup geladen wird (GDrive/Nextcloud/Ordner). */

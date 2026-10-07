@@ -3,6 +3,7 @@ package com.estundnzettl.core.config
 import com.estundnzettl.core.calc.getDefaultCalculationConfig
 import com.estundnzettl.core.locale.austriaLocale
 import com.estundnzettl.core.model.AutoPauseRule
+import com.estundnzettl.core.model.OvertimeAccountConfig
 import com.estundnzettl.core.model.OvertimeMode
 import com.estundnzettl.core.model.PdfDisplayConfig
 import com.estundnzettl.core.model.UserData
@@ -10,6 +11,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
 /**
@@ -89,6 +91,30 @@ class CalculationConfigJsonTest {
         )
         val roundtripped = coerceCalculationConfig(config.toJson(), fallback)
         assertEquals(config, roundtripped)
+    }
+
+    @Test
+    fun `ZA-Konto-JSON-Roundtrip ist verlustfrei`() {
+        val config = fallback.copy(
+            pdfDisplay = PdfDisplayConfig(showOvertimeAccount = false),
+            overtimeAccount = OvertimeAccountConfig(enabled = true, startMonth = "2026-09", openingBalanceMinutes = -150),
+        )
+        assertEquals(config, coerceCalculationConfig(config.toJson(), fallback))
+    }
+
+    @Test
+    fun `ZA-Konto mit ungueltigem Startmonat verliert nur den Startmonat`() {
+        val coerced = coerceCalculationConfig(
+            parse("""{"overtimeAccount":{"enabled":true,"startMonth":"2026-13","openingBalanceMinutes":90}}"""),
+            fallback,
+        )
+        assertEquals(OvertimeAccountConfig(enabled = true, startMonth = null, openingBalanceMinutes = 90), coerced.overtimeAccount)
+    }
+
+    @Test
+    fun `Config ohne ZA-Konto bleibt ohne Konto`() {
+        assertNull(coerceCalculationConfig(parse("""{"weeklyTargetMinutes":2310}"""), fallback).overtimeAccount)
+        assertFalse(fallback.toJson().containsKey("overtimeAccount"))
     }
 
     @Test

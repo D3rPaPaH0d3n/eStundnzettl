@@ -96,6 +96,8 @@ fun hashMonthContent(
     currentDate: LocalDate = LocalDate.now(),
     workCodes: List<WorkCode> = emptyList(),
     language: String? = null,
+    /** Übertrag + Abschluss-Status des ZA-Kontos; hängt an Vormonaten bzw. am Datum. */
+    overtimeAccount: OvertimeAccountMonth? = null,
 ): String {
     val holidayEntries = generateHolidayEntries(year, month, userData, locale, config, currentDate)
     val relevant = buildJsonObject {
@@ -104,6 +106,12 @@ fun hashMonthContent(
         put("company", userData?.company ?: "")
         put("position", userData?.position ?: "")
         put("photo", userData?.photo ?: "")
+        getEffectiveReportBranding(userData)?.let { branding ->
+            put("reportBranding", buildJsonObject {
+                put("logo", branding.logo ?: "")
+                putJsonArray("footer") { branding.footerLines.forEach { add(it) } }
+            })
+        }
         put("simpleMode", userData?.simpleMode ?: false)
         put("monthlyTargetMinutes", userData?.monthlyTargetMinutes ?: 0)
         put("language", language ?: "")
@@ -112,6 +120,12 @@ fun hashMonthContent(
         } ?: put("workDays", JsonNull)
         put("workModel", JsonNull)
         put("calculationConfig", config?.toJson() ?: JsonNull)
+        overtimeAccount?.let { account ->
+            put("overtimeAccount", buildJsonObject {
+                put("opening", account.openingMinutes)
+                put("complete", account.isComplete)
+            })
+        }
         putJsonArray("workCodes") {
             workCodes.sortedBy { it.id }.forEach { code ->
                 add(buildJsonObject {

@@ -14,10 +14,13 @@ import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.Haptics
 import com.estundnzettl.core.calc.AppData
 import com.estundnzettl.core.calc.EntryFormInput
+import com.estundnzettl.core.calc.OvertimeAccountMonth
 import com.estundnzettl.core.calc.SaveEntryResult
 import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.WorkCodeDraftResult
+import com.estundnzettl.core.calc.calculateOvertimeAccount
 import com.estundnzettl.core.calc.deriveAppData
+import com.estundnzettl.core.calc.keepingOvertimeAccountOf
 import com.estundnzettl.core.calc.getDefaultTimesForDate
 import com.estundnzettl.core.calc.latestEligibleWorkEntry
 import com.estundnzettl.core.calc.prepareEntryToSave
@@ -437,6 +440,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Rohliste aller Einträge (unkorrigiert) — für den PDF-Bericht. */
     fun rawAllEntries(): List<Entry> = allEntries
+
+    /** Aktueller ZA-Kontostand (heute), unabhängig vom angezeigten Monat. */
+    fun currentOvertimeAccount(): OvertimeAccountMonth? {
+        val s = _state.value
+        return calculateOvertimeAccount(
+            allEntries, s.userData, YearMonth.now(), LocalDate.now(), s.locale, s.calculationConfig,
+        )
+    }
 
     /** Alle Attachments — der Bericht filtert selbst nach Zeitraum. */
     suspend fun getAllAttachments(): List<com.estundnzettl.core.model.Attachment> =
@@ -872,6 +883,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // ─── Settings-Aktionen (Port der Settings/*-Sektionen) ────
 
+    /**
+     * Profil still speichern (Entwurf beim Tippen): State + Datenbank, aber
+     * ohne Neuberechnung und ohne Backup-/Archiv-Planung — die folgt erst
+     * beim abschließenden [setUserData]. Schon geplante Läufe werden
+     * verschoben, damit kein halbfertiger Entwurf hochgeladen wird.
+     */
+    fun saveUserDataQuietly(transform: (UserData) -> UserData) {
+        val next = transform(_state.value.userData ?: UserData())
+        _state.value = _state.value.copy(userData = next)
+        autoBackupJob?.cancel()
+        pdfArchiveRefreshJob?.cancel()
+        viewModelScope.launch { settings.setUserData(next) }
+    }
+
     /** UserData ändern und persistieren; weeklyTargetMinutes bleibt synchron. */
     fun setUserData(transform: (UserData) -> UserData) {
         val current = _state.value.userData ?: UserData()
@@ -926,6 +951,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (resetConfig) {
                 val workDays = _state.value.userData?.workDays
                 val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(locale, workDays)
+                    .keepingOvertimeAccountOf(_state.value.calculationConfig)
                 _state.value = _state.value.copy(calculationConfig = fresh)
                 settings.setCalculationConfig(fresh)
             }
@@ -967,6 +993,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         if (!nextSimpleMode) {
             val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(targetLocale, nextWorkDays)
+                .keepingOvertimeAccountOf(s.calculationConfig)
             _state.value = _state.value.copy(calculationConfig = fresh)
             viewModelScope.launch { settings.setCalculationConfig(fresh) }
         }
@@ -2465,8 +2492,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             if (!ob.isRestoreFlow && !ob.simpleMode) {
-                val config = ob.calcConfig
+                val base = ob.calcConfig
                     ?: com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale(ob.localeId), ob.workDays)
+                // ZA-Konto nur, wenn es im Wizard ausdrücklich eingeschaltet wurde
+                val config = if (ob.overtimeAccountEnabled) {
+                    base.copy(
+                        overtimeAccount = com.estundnzettl.core.model.OvertimeAccountConfig(
+                            enabled = true,
+                            startMonth = YearMonth.now().toString(),
+                            openingBalanceMinutes = ob.overtimeAccountOpeningMinutes,
+                        ),
+                    )
+                } else {
+                    base
+                }
                 runCatching { settings.setCalculationConfig(config) }
             }
             if (!ob.isRestoreFlow && ob.localeId != null) {

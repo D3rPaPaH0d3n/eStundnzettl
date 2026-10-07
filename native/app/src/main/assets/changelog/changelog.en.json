@@ -1,5 +1,43 @@
 [
  {
+  "version": "5.2.0",
+  "date": "2026-10-07",
+  "title": "You asked, I built it 🏔️",
+  "isMajor": false,
+  "playStoreText": "You asked, I built it 🏔️\n\n• Time-off account: overtime now carries over into the next month\n• Time off is deducted from the account automatically\n• Carryover & end-of-month balance on the dashboard and in the monthly PDF\n• Company letterhead: your logo and a footer in the PDF\n• All optional – if you don't turn it on, everything stays as before\n\nThanks for your ideas – keep telling me what you're missing! – Markus",
+  "sections": [
+   {
+    "iconName": "Calculator",
+    "title": "Overtime carries over",
+    "items": [
+     "Hi everyone! A user wrote to me: “Where do I set it so overtime from last month carries over into the next one?” – Good question. Now there's an answer: the time-off account.",
+     "Turn it on under Settings → Hours calculation: pick the start month, enter the carryover, done. New users are asked right during setup.",
+     "Every month's balance goes onto the account, and time-off entries are deducted automatically. The dashboard shows the carryover, time off taken and the current balance.",
+     "The monthly PDF lists the carryover from last month, the balance, time off taken and the end-of-month balance – in black and white for your boss.",
+     "Payout or correction? Just set a new start month and carryover. And if you don't need it: it stays off until you turn it on."
+    ]
+   },
+   {
+    "iconName": "FileText",
+    "title": "Looks like it came from the office",
+    "items": [
+     "If you like, your company logo now sits at the top left of the timesheet, with a footer for address, registration/VAT number or contact details at the bottom of every page.",
+     "Settings → Company letterhead: choose a logo, type the footer, switch it on. A PNG with a transparent background looks best.",
+     "Without a letterhead the report stays exactly as before – nothing moves, nothing shifts."
+    ]
+   },
+   {
+    "iconName": "ShieldCheck",
+    "title": "A bit of polish",
+    "items": [
+     "If you reset the calculation rules to your country's defaults, your time-off account and its carryover stay in place.",
+     "Logo and footer travel along in the backup and come back on your new phone.",
+     "The footer saves itself – even if you quickly switch to another app in between."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.1.1",
   "date": "2026-10-06",
   "title": "Picked by you, stored safely 📂",

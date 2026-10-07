@@ -56,7 +56,14 @@
     "noPause": "Keine Pause",
     "documentsLabel": "Dokumente",
     "documentsCount_one": "{{count}} Dokument",
-    "documentsCount_other": "{{count}} Dokumente"
+    "documentsCount_other": "{{count}} Dokumente",
+    "overtimeAccount": {
+      "title": "Zeitausgleichskonto",
+      "opening": "Übertrag",
+      "timeComp": "ZA genommen",
+      "closingMonthEnd": "Stand Monatsende",
+      "closingToday": "Stand heute"
+    }
   },
   "entryTypes": {
     "holiday": "Feiertag",
@@ -201,7 +208,16 @@
       "placeholder": "Z.B. Zusätzliche Infos, Bankverbindung, etc...",
       "done": "Fertig"
     },
-    "pdfElementMissing": "PDF-Element fehlt"
+    "pdfElementMissing": "PDF-Element fehlt",
+    "overtimeAccount": {
+      "title": "Zeitausgleichskonto",
+      "opening": "Übertrag Vormonat:",
+      "balance": "Saldo dieses Monats:",
+      "balanceUntil": "Saldo bis {{date}}:",
+      "timeComp": "Zeitausgleich genommen:",
+      "closing": "Stand Monatsende:",
+      "closingAt": "Stand per {{date}}:"
+    }
   },
   "drawers": {
     "timePicker": {
@@ -399,7 +415,11 @@
       "customInfo": "Stell deine Stunden pro Tag direkt ein. Unten findest du optionale Presets, die du bei Bedarf übernehmen kannst — später in den Einstellungen ebenfalls jederzeit änderbar.",
       "dailyHoursTitle": "Tagesstunden (benutzerdefiniert)",
       "weeklyHours": "Wochenstunden:",
-      "presetsTitle": "Presets (optional übernehmen)"
+      "presetsTitle": "Presets (optional übernehmen)",
+      "overtimeAccountTitle": "Überstunden übertragen?",
+      "overtimeAccountHint": "Optional: Ein Zeitausgleichskonto nimmt deinen Saldo in den nächsten Monat mit, ZA wird abgezogen. Kannst du jederzeit in den Einstellungen ändern.",
+      "overtimeAccountOpening": "Schon Stunden am Konto?",
+      "overtimeAccountOpeningHint": "Leer lassen, wenn du bei 0 startest. Minus für Minusstunden."
     },
     "workCodes": {
       "title": "Tätigkeiten",
@@ -643,7 +663,7 @@
       },
       "calculation": {
         "title": "Stundenberechnung",
-        "body": "Hier sitzen Arbeitsmodell, Feiertage und Berechnungsregeln. Wenn sich dein Dienstmodell ändert, ist das der richtige Ort."
+        "body": "Hier sitzen Arbeitsmodell, Feiertage, Berechnungsregeln und das optionale Zeitausgleichskonto. Wenn sich dein Dienstmodell ändert, ist das der richtige Ort."
       },
       "backup": {
         "title": "Backup & Export",
@@ -1008,11 +1028,22 @@
         "recalcFixed": "{{fixed}} von {{total}} Einträgen aktualisiert",
         "recalcAllCorrect": "Alle {{total}} Einträge sind aktuell",
         "recalcError": "Neuberechnung fehlgeschlagen"
+      },
+      "overtimeAccount": {
+        "title": "Zeitausgleichskonto",
+        "subtitle": "Überstunden in den nächsten Monat übertragen",
+        "startMonth": "Konto startet ab",
+        "opening": "Übertrag zu Beginn",
+        "openingPlaceholder": "z. B. 12:30 oder -4:15",
+        "openingHint": "Kontostand am Anfang von {{month}} (Stunden:Minuten, Minus für Minusstunden)",
+        "openingInvalid": "Bitte als Stunden:Minuten eingeben, z. B. 12:30 oder -4:15",
+        "currentBalance": "Aktueller Stand",
+        "hint": "Jeder Monatssaldo wird auf das Konto gebucht und in den nächsten Monat übertragen. Zeitausgleich-Einträge werden vom Konto abgezogen. Bei Auszahlungen oder Korrekturen einfach Startmonat und Übertrag neu setzen."
       }
     },
     "locale": {
       "header": "Stundenberechnung",
-      "subtitle": "Feiertage, Halbtage, Mehrarbeit/Überstunden",
+      "subtitle": "Feiertage, Halbtage, Überstunden & ZA-Konto",
       "group": {
         "neutral": "Neutral",
         "austria": "Österreich",
@@ -1143,6 +1174,8 @@
       "showOvertimeSplitDesc": "Aufgesplittete Überstunden in der Zusammenfassung",
       "showVacationBalance": "Urlaubsbilanz anzeigen",
       "showVacationBalanceDesc": "Resturlaub-Block am Ende der Zusammenfassung",
+      "showOvertimeAccount": "Zeitausgleichskonto anzeigen",
+      "showOvertimeAccountDesc": "Übertrag Vormonat und Stand Monatsende in der Zusammenfassung",
       "showAttachmentsList": "Anhänge-Liste anzeigen",
       "showAttachmentsListDesc": "Aufzählung verknüpfter Dokumente pro Eintrag",
       "showWorkCodeColumn": "Code-Spalte anzeigen",
@@ -1271,6 +1304,25 @@
         "authRequired": "Google-Anmeldung erforderlich. Verbinde Google Drive in den Backup-Einstellungen.",
         "failed": "Abfrage fehlgeschlagen."
       }
+    },
+    "branding": {
+      "title": "Firmen-Briefkopf",
+      "subtitle": "Logo & Fußzeile fürs PDF – optional",
+      "enable": "Briefkopf im PDF verwenden",
+      "enableHint": "Ohne Aktivierung bleibt der Bericht wie gewohnt.",
+      "logo": "Firmenlogo",
+      "logoAlt": "Firmenlogo",
+      "noLogo": "Noch kein Logo gewählt",
+      "chooseLogo": "Logo wählen",
+      "changeLogo": "Logo ändern",
+      "removeLogo": "Logo entfernen",
+      "logoHint": "Erscheint links oben im PDF. Am schönsten schaut ein PNG mit transparentem Hintergrund aus.",
+      "footer": "Fußzeile",
+      "footerPlaceholder": "Musterfirma GmbH · Hauptstraße 1 · 1010 Wien\nFN 123456a · UID ATU12345678 · office@firma.at",
+      "footerHint": "Bis zu 3 Zeilen bzw. 300 Zeichen, klein und zentriert unten auf jeder Seite.",
+      "toastLogoUpdated": "Logo übernommen",
+      "toastLogoError": "Das Bild konnte nicht geladen werden",
+      "footerTruncated": "Gekürzt: höchstens 3 Zeilen bzw. 300 Zeichen."
     }
   },
   "attachments": {

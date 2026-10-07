@@ -22,9 +22,6 @@ class NextcloudManager(
 
     data class Credentials(val url: String, val user: String, val appPassword: String)
 
-    /** Verbunden = URL + User + Passwort vorhanden UND Toggle aktiv. */
-    suspend fun isConnected(): Boolean = getCredentials() != null
-
     /**
      * Credentials laden; migriert dabei einmalig das Legacy-Passwort
      * ("nextcloud_pass" + "crypto_mk_v1" aus der importierten DB) in den

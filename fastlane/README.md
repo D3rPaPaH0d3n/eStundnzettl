@@ -6,7 +6,7 @@ expects. The repo includes a minimal `Fastfile` + `Appfile` and a
 GitHub workflow (`update-store-listings.yml`) that uploads the
 listings — APKs/AABs and changelogs continue to be handled by
 `deploy-play-store.yml` and the Python script in
-`.github/scripts/deploy-play.py`.
+`.github/workflows/scripts/deploy-play.py`.
 
 The **single source of truth** for every text below remains
 `docs/play-store-listing.md`. Keep them in sync.
@@ -28,11 +28,11 @@ fastlane/
 ```
 
 Changelog file names match the Android `versionCode` (not
-`versionName`). Current release is `251` (= `versionName 4.1.0`, see
-`android/app/build.gradle`). Older codes aren't committed — they
-correspond to development builds that were never in Play Store
-production. Add a new `<code>.txt` file per language for each
-release going forward.
+`versionName`; both live in `native/app/build.gradle.kts`). The
+oldest committed file is `251` (= `versionName 4.1.0`). Older codes
+aren't committed — they correspond to development builds that were
+never in Play Store production. The deploy workflow adds a new
+`<code>.txt` file per language for each release (see below).
 
 ## Upload via GitHub Actions
 
@@ -72,13 +72,21 @@ SUPPLY_JSON_KEY=/path/to/play-key.json fastlane android validate_listings
 
 ## Adding a new release
 
-1. Bump `versionCode` in `android/app/build.gradle` as usual.
-2. Add the release note:
+1. Add the release to the in-app changelog
+   (`native/app/src/main/assets/changelog/changelog.de.json` and
+   `changelog.en.json`) with the same `version` and a `playStoreText`
+   (≤ 500 characters; its first line becomes the Play release name).
+   Without `playStoreText` the workflow falls back to the previous
+   release's fastlane text. Details: `docs/release-workflow.md`.
+2. Run the `Deploy to Play Store` workflow. It bumps `versionCode`
+   (and optionally `versionName`) in `native/app/build.gradle.kts`,
+   renders the release notes with `scripts/render_release_notes.py`
+   (capped at 500 characters, the Play Console limit) into
    ```
    fastlane/metadata/android/de-DE/changelogs/<newCode>.txt
    fastlane/metadata/android/en-US/changelogs/<newCode>.txt
    ```
-   Keep each file ≤ 500 characters (Play Console limit).
+   and commits both together.
 3. Mirror the new release note into `docs/play-store-listing.md`
    under the right language section so the Markdown doc stays
    complete.

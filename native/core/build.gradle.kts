@@ -1,10 +1,12 @@
-// Pure-JVM core module: domain models, locales/holidays and the complete
-// calculation logic ported 1:1 from src/utils/timeCalculations.ts and
-// src/utils/calculationConfig.ts. No Android dependencies, so the ported
-// Vitest suites run as plain JUnit tests.
+// Pure-JVM core module: domain models, locales/holidays, backup format and
+// the complete calculation logic (originally ported 1:1 from the Capacitor
+// app's src/utils/timeCalculations.ts and calculationConfig.ts, see branch
+// legacy/capacitor-4.5.x). No Android dependencies, so the tests run as
+// plain JUnit tests; Kover measures their line coverage for the README badge.
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kover)
 }
 
 // JVM-Target 17 (kompatibel mit dem :app-Modul), aber ohne fixe Toolchain,

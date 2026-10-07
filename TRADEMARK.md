@@ -12,8 +12,8 @@ The MIT License, however, does **NOT** grant any rights to the project's name, b
 The following are trademarks and branding assets of **Markus Kainer** and are **not** covered by the MIT License:
 
 - The name **"eStundnzettl"** (including any styling, capitalization, or obvious variations)
-- The **app logo** (`src/assets/logo.png`, `docs/logo.png`) and all launcher icons
-  under `android/app/src/main/res/mipmap-*/`
+- The **app logo** (`native/app/src/main/res/drawable-nodpi/app_logo.png`, `docs/logo.png`)
+  and all launcher icons under `native/app/src/main/res/mipmap-*/`
 - The **splash screen**, app icons and visual identity in general
 - All **screenshots** used in marketing material (`docs/screenshots/`)
 - Marketing copy, taglines and slogans ("Damit ka Stund verloren geht!", "Die smarte
@@ -58,8 +58,8 @@ Die folgenden Elemente sind Marken und Markenauftritt von **Markus Kainer** und 
 
 - Der Name **"eStundnzettl"** (inklusive Stylings, Schreibweisen und offensichtlicher
   Varianten)
-- Das **App-Logo** (`src/assets/logo.png`, `docs/logo.png`) und sämtliche Launcher-Icons
-  unter `android/app/src/main/res/mipmap-*/`
+- Das **App-Logo** (`native/app/src/main/res/drawable-nodpi/app_logo.png`, `docs/logo.png`)
+  und sämtliche Launcher-Icons unter `native/app/src/main/res/mipmap-*/`
 - Der **Splash-Screen**, App-Icons und das visuelle Erscheinungsbild im Allgemeinen
 - Alle **Screenshots**, die im Marketing verwendet werden (`docs/screenshots/`)
 - Marketing-Texte, Taglines und Slogans ("Damit ka Stund verloren geht!", "Die smarte

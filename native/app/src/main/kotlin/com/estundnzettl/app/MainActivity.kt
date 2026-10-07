@@ -51,17 +51,30 @@ import androidx.compose.runtime.rememberCoroutineScope
 import com.estundnzettl.app.data.BackupRepository
 import com.estundnzettl.app.data.CrashRecoveryStore
 import com.estundnzettl.app.i18n.I18n
+import com.estundnzettl.app.ui.AppConfirmDialog
 import com.estundnzettl.app.ui.AppHeader
 import com.estundnzettl.app.ui.AppErrorScreen
+import com.estundnzettl.app.ui.AppTourOverlay
+import com.estundnzettl.app.ui.AttachmentSheet
+import com.estundnzettl.app.ui.ChangelogSheet
 import com.estundnzettl.app.ui.MigrationRecoveryScreen
 import com.estundnzettl.app.ui.DashboardScreen
 import com.estundnzettl.app.ui.EntryFormScreen
 import com.estundnzettl.app.ui.LiveTimerBar
+import com.estundnzettl.app.ui.LocalTourTargets
+import com.estundnzettl.app.ui.NativeWelcomeDialog
 import com.estundnzettl.app.ui.ReportScreen
+import com.estundnzettl.app.ui.SettingsTourOverlay
+import com.estundnzettl.app.ui.SkeletonScreen
+import com.estundnzettl.app.ui.TourTargetRegistry
+import com.estundnzettl.app.ui.UpdateAvailableBanner
+import com.estundnzettl.app.ui.appTourStepHasTarget
+import com.estundnzettl.app.ui.onboarding.OnboardingScreen
 import com.estundnzettl.app.ui.settings.SettingsScreen
 import com.estundnzettl.app.ui.theme.EStundnzettlTheme
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
+import com.estundnzettl.app.ui.theme.Palette
 import com.google.android.play.core.review.ReviewManagerFactory
 import kotlinx.coroutines.launch
 
@@ -264,7 +277,7 @@ class MainActivity : ComponentActivity() {
                         .imePadding(),
                 ) {
                     if (state.onboarding.active) {
-                        com.estundnzettl.app.ui.onboarding.OnboardingScreen(viewModel)
+                        OnboardingScreen(viewModel)
                     } else {
                         MainScreen(viewModel)
                     }
@@ -303,7 +316,7 @@ private fun AppToast(snackbarData: androidx.compose.material3.SnackbarData) {
     val tone = runCatching { UiMessageTone.valueOf(toneName) }.getOrDefault(UiMessageTone.INFO)
     val tint = when (tone) {
         UiMessageTone.SUCCESS -> colors.positive
-        UiMessageTone.WARNING -> com.estundnzettl.app.ui.theme.Palette.Amber600
+        UiMessageTone.WARNING -> Palette.Amber600
         UiMessageTone.ERROR -> colors.danger
         else -> colors.info
     }
@@ -445,7 +458,7 @@ private fun MainScreen(viewModel: MainViewModel) {
 
     // Lösch-Bestätigung (Port von ConfirmModal + app.deleteEntry*)
     state.deleteTarget?.let {
-        com.estundnzettl.app.ui.AppConfirmDialog(
+        AppConfirmDialog(
             title = t.t("app.deleteEntryTitle"),
             message = t.t("app.deleteEntryMessage"),
             confirmLabel = t.t("common.delete"),
@@ -459,13 +472,13 @@ private fun MainScreen(viewModel: MainViewModel) {
     // App-Tour: Ziel-Registry (Spotlight-Positionen) + aktueller Schritt.
     // Blur nur bei Schritten ohne markiertes Ziel — mit Spotlight bleibt
     // der Inhalt scharf (wie AppTour.tsx: backdrop-blur nur ohne Target).
-    val tourTargets = remember { com.estundnzettl.app.ui.TourTargetRegistry() }
+    val tourTargets = remember { TourTargetRegistry() }
     var tourIndex by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     LaunchedEffect(state.showTour) {
         if (state.showTour) tourIndex = 0
     }
     val tourBlur = if (
-        (state.showTour && !com.estundnzettl.app.ui.appTourStepHasTarget(tourIndex)) ||
+        (state.showTour && !appTourStepHasTarget(tourIndex)) ||
         tourTargets.settingsTourBlur.value
     ) {
         Modifier.blur(4.dp)
@@ -474,7 +487,7 @@ private fun MainScreen(viewModel: MainViewModel) {
     }
 
     androidx.compose.runtime.CompositionLocalProvider(
-        com.estundnzettl.app.ui.LocalTourTargets provides tourTargets,
+        LocalTourTargets provides tourTargets,
     ) {
     Box(
         modifier = Modifier
@@ -498,7 +511,7 @@ private fun MainScreen(viewModel: MainViewModel) {
             val bannerContext = androidx.compose.ui.platform.LocalContext.current
             val release = state.updateAvailable
             if (state.view == "dashboard" && release != null) {
-                com.estundnzettl.app.ui.UpdateAvailableBanner(
+                UpdateAvailableBanner(
                     release = release,
                     onOpen = {
                         runCatching {
@@ -529,7 +542,7 @@ private fun MainScreen(viewModel: MainViewModel) {
                 label = "viewTransition",
             ) { view ->
                 when (view) {
-                    "loading" -> com.estundnzettl.app.ui.SkeletonScreen()
+                    "loading" -> SkeletonScreen()
 
                     "add" -> EntryFormScreen(
                         form = state.form,
@@ -627,13 +640,13 @@ private fun MainScreen(viewModel: MainViewModel) {
 
         // Dokumente-Verwaltung pro Eintrag (Port von AttachmentManager)
         if (state.attachmentEntry != null) {
-            com.estundnzettl.app.ui.AttachmentSheet(viewModel)
+            AttachmentSheet(viewModel)
         }
 
         // Einmalige App-Tour nach dem Onboarding — Overlay mit Spotlight
         // auf FAB/Bericht/Einstellungen (Port von AppTour.tsx)
         if (state.showTour && !state.showWhatsNew) {
-            com.estundnzettl.app.ui.AppTourOverlay(
+            AppTourOverlay(
                 i18n = t,
                 index = tourIndex,
                 onIndexChange = { tourIndex = it },
@@ -644,12 +657,12 @@ private fun MainScreen(viewModel: MainViewModel) {
         // Einmalige Einstellungen-Tour — markiert die Sektionen per
         // Spotlight und scrollt sie mittig (Port von SettingsTourPopup.tsx)
         if (state.view == "settings" && !state.loading) {
-            com.estundnzettl.app.ui.SettingsTourOverlay(viewModel)
+            SettingsTourOverlay(viewModel)
         }
 
         // Einmaliges Willkommens-Popup nach der Capacitor-Migration
         if (state.showNativeWelcome && !state.loading) {
-            com.estundnzettl.app.ui.NativeWelcomeDialog(viewModel)
+            NativeWelcomeDialog(viewModel)
         }
 
         // Nach einem echten App-Update einmalig die aktuelle Version zeigen.
@@ -662,7 +675,7 @@ private fun MainScreen(viewModel: MainViewModel) {
             !state.requestInAppReview &&
             !state.form.isLiveEntry
         ) {
-            com.estundnzettl.app.ui.ChangelogSheet(
+            ChangelogSheet(
                 onDismiss = viewModel::dismissWhatsNew,
                 focusVersion = state.whatsNewVersion,
                 automatic = true,

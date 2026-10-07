@@ -86,6 +86,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
@@ -582,7 +583,7 @@ private val SETTINGS_TOUR_STEP_DEFS = listOf(
 
 @Composable
 fun SettingsTourOverlay(
-    viewModel: com.estundnzettl.app.MainViewModel,
+    viewModel: MainViewModel,
     storageKey: String = "estundnzettl_settings_tour_seen_v2",
 ) {
     val t = LocalI18n.current

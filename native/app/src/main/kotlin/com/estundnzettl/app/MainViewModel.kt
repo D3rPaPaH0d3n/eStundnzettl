@@ -5,14 +5,34 @@ import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.estundnzettl.app.data.AttachmentsRepository
+import com.estundnzettl.app.data.AutoBackupManager
+import com.estundnzettl.app.data.BackupRepository
+import com.estundnzettl.app.data.DiagnosticsCollector
+import com.estundnzettl.app.data.DiagnosticsReport
+import com.estundnzettl.app.data.DriveProbe
 import com.estundnzettl.app.data.EntriesRepository
 import com.estundnzettl.app.data.replaceFullSnapshot
 import com.estundnzettl.app.data.EntryIdGenerator
+import com.estundnzettl.app.data.GoogleDriveManager
+import com.estundnzettl.app.data.ImportSnapshot
+import com.estundnzettl.app.data.LegacyDbImporter
+import com.estundnzettl.app.data.LocalBackupFolder
+import com.estundnzettl.app.data.NextcloudClient
+import com.estundnzettl.app.data.NextcloudManager
+import com.estundnzettl.app.data.PdfArchiveManager
+import com.estundnzettl.app.data.SecretStore
 import com.estundnzettl.app.data.SettingsRepository
+import com.estundnzettl.app.data.UpdateCheck
 import com.estundnzettl.app.data.WorkCodesRepository
+import com.estundnzettl.app.data.googleDriveFailureNeedsReconnect
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.Haptics
+import com.estundnzettl.core.backup.BackupAnalysis
+import com.estundnzettl.core.backup.BackupIntegrity
 import com.estundnzettl.core.calc.AppData
+import com.estundnzettl.core.calc.DEMO_USER
+import com.estundnzettl.core.calc.DEMO_WORK_CODES
 import com.estundnzettl.core.calc.EntryFormInput
 import com.estundnzettl.core.calc.OvertimeAccountMonth
 import com.estundnzettl.core.calc.SaveEntryResult
@@ -20,6 +40,9 @@ import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.WorkCodeDraftResult
 import com.estundnzettl.core.calc.calculateOvertimeAccount
 import com.estundnzettl.core.calc.deriveAppData
+import com.estundnzettl.core.calc.generateDemoEntries
+import com.estundnzettl.core.calc.getBlankCalculationConfig
+import com.estundnzettl.core.calc.getDefaultCalculationConfig
 import com.estundnzettl.core.calc.keepingOvertimeAccountOf
 import com.estundnzettl.core.calc.getDefaultTimesForDate
 import com.estundnzettl.core.calc.latestEligibleWorkEntry
@@ -28,20 +51,27 @@ import com.estundnzettl.core.calc.resolveDefaultWorkCode
 import com.estundnzettl.core.calc.validateWorkCodeDraft
 import com.estundnzettl.core.config.toJson
 import com.estundnzettl.core.locale.AppLocale
+import com.estundnzettl.core.locale.DEFAULT_LOCALE_ID
 import com.estundnzettl.core.locale.getLocale
 import com.estundnzettl.core.locale.holidays.toDateString
+import com.estundnzettl.core.model.Attachment
 import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
+import com.estundnzettl.core.model.OvertimeAccountConfig
 import com.estundnzettl.core.model.UserData
+import com.estundnzettl.core.model.WORK_CODE_PRESETS
+import com.estundnzettl.core.model.WORK_MODELS
 import com.estundnzettl.core.model.WorkCode
+import com.estundnzettl.core.model.WorkModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -218,10 +248,10 @@ data class MainUiState(
     val deleteTarget: Entry? = null,
     val materialYouEnabled: Boolean = false,
     /** Backup-Analyse, die auf die Import-Entscheidung (ALL/ENTRIES_ONLY) wartet. */
-    val pendingImport: com.estundnzettl.core.backup.BackupAnalysis? = null,
+    val pendingImport: BackupAnalysis? = null,
     val onboarding: OnboardingUiState = OnboardingUiState(),
     /** Alle Anhänge (Metadaten) — Pendant zum useAttachments-State. */
-    val attachments: List<com.estundnzettl.core.model.Attachment> = emptyList(),
+    val attachments: List<Attachment> = emptyList(),
     /** MRU-Label-Vorschläge für neue Anhänge. */
     val labelSuggestions: List<String> = emptyList(),
     /** Entry, dessen Anhänge gerade verwaltet werden (AttachmentManager offen). */
@@ -237,7 +267,7 @@ data class MainUiState(
     /** Persistierter Zustand der letzten Google-Drive-Backupversuche. */
     val backupHealth: BackupHealthUiState = BackupHealthUiState(),
     /** Neueres GitHub-Release (nur Sideload-Installationen). */
-    val updateAvailable: com.estundnzettl.app.data.UpdateCheck.Release? = null,
+    val updateAvailable: UpdateCheck.Release? = null,
     /** Einmaliges Willkommens-Popup nach der Migration von der Capacitor-App. */
     val showNativeWelcome: Boolean = false,
     /** Nach einem Update einmalig sichtbares Änderungsprotokoll. */
@@ -248,9 +278,9 @@ data class MainUiState(
 )
 
 data class DiagnosticsUiState(
-    val report: com.estundnzettl.app.data.DiagnosticsReport? = null,
+    val report: DiagnosticsReport? = null,
     val loading: Boolean = false,
-    val drive: com.estundnzettl.app.data.DriveProbe = com.estundnzettl.app.data.DriveProbe.Idle,
+    val drive: DriveProbe = DriveProbe.Idle,
 )
 
 data class NextcloudUiState(
@@ -299,13 +329,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val db = (application as EStundnzettlApp).database
     private val entriesRepo = EntriesRepository(db)
     private val workCodesRepo = WorkCodesRepository(db)
-    private val attachmentsRepo = com.estundnzettl.app.data.AttachmentsRepository(db)
+    private val attachmentsRepo = AttachmentsRepository(db)
     val settings = SettingsRepository(db.settingsDao())
-    private val secrets = com.estundnzettl.app.data.SecretStore(application)
-    private val nextcloudManager = com.estundnzettl.app.data.NextcloudManager(settings, secrets)
-    private val googleDrive = com.estundnzettl.app.data.GoogleDriveManager(application, settings)
+    private val secrets = SecretStore(application)
+    private val nextcloudManager = NextcloudManager(settings, secrets)
+    private val googleDrive = GoogleDriveManager(application, settings)
     private val pdfArchive =
-        com.estundnzettl.app.data.PdfArchiveManager(application, settings, nextcloudManager, googleDrive)
+        PdfArchiveManager(application, settings, nextcloudManager, googleDrive)
 
     private val timerJson = Json { ignoreUnknownKeys = true }
 
@@ -322,22 +352,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             // Einmaliges Willkommens-Popup für Umsteiger von der
             // Capacitor-Version (Migration gelaufen, Popup noch nie gezeigt)
-            if (settings.getString(com.estundnzettl.app.data.LegacyDbImporter.MIGRATION_MARKER_KEY) != null &&
+            if (settings.getString(LegacyDbImporter.MIGRATION_MARKER_KEY) != null &&
                 settings.getString(KEY_NATIVE_WELCOME_SEEN) != "1"
             ) {
-                _state.value = _state.value.copy(showNativeWelcome = true)
+                _state.update { it.copy(showNativeWelcome = true) }
             }
 
             // GitHub-Update-Check (nur Sideload; Debug-Builds prüfen nie)
             launch {
-                val release = com.estundnzettl.app.data.UpdateCheck.check(
+                val release = UpdateCheck.check(
                     getApplication(),
                     settings,
-                    currentVersion = com.estundnzettl.app.BuildConfig.VERSION_NAME,
-                    isDebugBuild = com.estundnzettl.app.BuildConfig.DEBUG,
+                    currentVersion = BuildConfig.VERSION_NAME,
+                    isDebugBuild = BuildConfig.DEBUG,
                 )
                 if (release != null) {
-                    _state.value = _state.value.copy(updateAvailable = release)
+                    _state.update { it.copy(updateAvailable = release) }
                 }
             }
             loadSettings()
@@ -348,7 +378,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // Onboarding zeigen, wenn noch kein Profil existiert (leerer
             // Name = Onboarding-Check der Web-App).
             if (_state.value.userData?.name.isNullOrBlank()) {
-                _state.value = _state.value.copy(onboarding = OnboardingUiState(active = true))
+                _state.update { it.copy(onboarding = OnboardingUiState(active = true)) }
             }
             prepareWhatsNew()
             refreshAttachments()
@@ -365,7 +395,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             entriesRepo.observeAll().collect { entries ->
                 allEntries = entries
                 recompute()
-                _state.value = _state.value.copy(loading = false)
+                _state.update { it.copy(loading = false) }
                 // Debounced Auto-Save wie useAutoBackup (2 s nach Änderung)
                 scheduleDataProtection()
             }
@@ -383,15 +413,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val codes = workCodesRepo.getAll()
         val materialYou = settings.getBoolean("material_you_enabled")
         persistedLastCode = settings.getInt("last_code")
-        _state.value = _state.value.copy(
-            userData = userData,
-            locale = locale,
-            calculationConfig = config,
-            theme = theme,
-            language = language,
-            workCodes = codes,
-            materialYouEnabled = materialYou,
-        )
+        _state.update {
+            it.copy(
+                userData = userData,
+                locale = locale,
+                calculationConfig = config,
+                theme = theme,
+                language = language,
+                workCodes = codes,
+                materialYouEnabled = materialYou,
+            )
+        }
     }
 
     private fun recompute() {
@@ -410,29 +442,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             locale = s.locale,
             config = s.calculationConfig,
         )
-        _state.value = s.copy(appData = appData)
+        _state.update { it.copy(appData = appData) }
     }
 
     // ─── Navigation & Monat ──────────────────────────────────
 
     fun setView(view: String) {
         val leavingCapturedEntry = _state.value.view == "add" && view != "add"
-        _state.value = _state.value.copy(view = view)
+        _state.update { it.copy(view = view) }
         if (view == "dashboard") {
-            _state.value = _state.value.copy(
-                form = _state.value.form.copy(editingEntry = null)
-            )
+            _state.update {
+                it.copy(
+                    form = it.form.copy(editingEntry = null)
+                )
+            }
         }
         if (leavingCapturedEntry) clearPendingTimerCapture()
     }
 
     fun changeMonth(delta: Long) {
-        _state.value = _state.value.copy(currentMonth = _state.value.currentMonth.plusMonths(delta))
+        _state.update { it.copy(currentMonth = it.currentMonth.plusMonths(delta)) }
         recompute()
     }
 
     fun setMonth(month: YearMonth) {
-        _state.value = _state.value.copy(currentMonth = month)
+        _state.update { it.copy(currentMonth = month) }
         recompute()
     }
 
@@ -450,12 +484,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Alle Attachments — der Bericht filtert selbst nach Zeitraum. */
-    suspend fun getAllAttachments(): List<com.estundnzettl.core.model.Attachment> =
+    suspend fun getAllAttachments(): List<Attachment> =
         attachmentsRepo.getAll()
 
     // ─── Automatisches PDF-Archiv ────────────────────────────
 
-    private fun pdfArchiveData() = com.estundnzettl.app.data.PdfArchiveManager.Data(
+    private fun pdfArchiveData() = PdfArchiveManager.Data(
         entries = allEntries,
         userData = _state.value.userData,
         workCodes = _state.value.workCodes,
@@ -472,7 +506,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Manueller "Jetzt ausführen"-Lauf aus den Einstellungen. */
-    suspend fun runPdfArchiveNow(): com.estundnzettl.app.data.PdfArchiveManager.RunOutcome =
+    suspend fun runPdfArchiveNow(): PdfArchiveManager.RunOutcome =
         pdfArchive.performRun(pdfArchiveData(), source = "manual", force = true)
 
     /** App kam aus dem Hintergrund zurück (Port des appStateChange-Listeners). */
@@ -489,7 +523,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Formular ────────────────────────────────────────────
 
     fun updateForm(transform: (FormUiState) -> FormUiState) {
-        _state.value = _state.value.copy(form = transform(_state.value.form))
+        _state.update { it.copy(form = transform(it.form)) }
     }
 
     private fun defaultCode(date: String = LocalDate.now().toDateString()): Int =
@@ -511,19 +545,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun startNewEntry() {
         val formDate = LocalDate.now().toDateString()
         val (start, end) = getDefaultTimesForDate(allEntries, formDate)
-        _state.value = _state.value.copy(
-            form = FormUiState(
-                entryType = "work",
-                formDate = formDate,
-                startTime = start,
-                endTime = end,
-                pauseDuration = 30,
-                project = "",
-                code = defaultCode(formDate),
-                codeIsAutomatic = true,
-            ),
-            view = "add",
-        )
+        _state.update {
+            it.copy(
+                form = FormUiState(
+                    entryType = "work",
+                    formDate = formDate,
+                    startTime = start,
+                    endTime = end,
+                    pauseDuration = 30,
+                    project = "",
+                    code = defaultCode(formDate),
+                    codeIsAutomatic = true,
+                ),
+                view = "add",
+            )
+        }
         clearPendingTimerCapture()
     }
 
@@ -557,7 +593,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
             else -> form.copy(pauseDuration = 0, project = "")
         }
-        _state.value = _state.value.copy(form = form, view = "add")
+        _state.update { it.copy(form = form, view = "add") }
         clearPendingTimerCapture()
     }
 
@@ -575,7 +611,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 form = form.copy(code = defaultCode(date))
             }
         }
-        _state.value = s.copy(form = form)
+        _state.update { it.copy(form = form) }
     }
 
     fun selectWorkType() {
@@ -654,13 +690,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 recompute()
                 runCatching { settings.delete(KEY_PENDING_TIMER_CAPTURE) }
                 emit(UiMessage(if (editing) "toasts.entry.updated" else "toasts.entry.saved"))
-                _state.value = _state.value.copy(
-                    form = _state.value.form.copy(
-                        editingEntry = null, project = "", entryType = "work",
-                        specialManualMode = false, isLiveEntry = false,
-                    ),
-                    view = "dashboard",
-                )
+                _state.update {
+                    it.copy(
+                        form = it.form.copy(
+                            editingEntry = null, project = "", entryType = "work",
+                            specialManualMode = false, isLiveEntry = false,
+                        ),
+                        view = "dashboard",
+                    )
+                }
             }
         }
     }
@@ -668,16 +706,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Löschen ─────────────────────────────────────────────
 
     fun requestDeleteEntry(entry: Entry) {
-        _state.value = _state.value.copy(deleteTarget = entry)
+        _state.update { it.copy(deleteTarget = entry) }
     }
 
     fun cancelDelete() {
-        _state.value = _state.value.copy(deleteTarget = null)
+        _state.update { it.copy(deleteTarget = null) }
     }
 
     fun confirmDelete() {
         val target = _state.value.deleteTarget ?: return
-        _state.value = _state.value.copy(deleteTarget = null)
+        _state.update { it.copy(deleteTarget = null) }
         val id = (target.id as? EntryId.Numeric)?.value ?: return
         viewModelScope.launch {
             try {
@@ -706,7 +744,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }.getOrNull()
         }
         if (timer != null) {
-            _state.value = _state.value.copy(timer = timer)
+            _state.update { it.copy(timer = timer) }
             val startInstant = timer.startTime?.let { runCatching { Instant.parse(it) }.getOrNull() }
             if (timer.isRunning && startInstant != null) {
                 val zone = ZoneId.systemDefault()
@@ -754,25 +792,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun showCapturedTimer(capture: PendingTimerCapture) {
-        _state.value = _state.value.copy(
-            timer = TimerUiState(),
-            form = FormUiState(
-                entryType = "work",
-                formDate = capture.formDate,
-                startTime = capture.startTime,
-                endTime = capture.endTime,
-                pauseDuration = capture.pauseDuration,
-                project = "",
-                code = capture.code,
-                codeIsAutomatic = true,
-                isLiveEntry = true,
-            ),
-            view = "add",
-        )
+        _state.update {
+            it.copy(
+                timer = TimerUiState(),
+                form = FormUiState(
+                    entryType = "work",
+                    formDate = capture.formDate,
+                    startTime = capture.startTime,
+                    endTime = capture.endTime,
+                    pauseDuration = capture.pauseDuration,
+                    project = "",
+                    code = capture.code,
+                    codeIsAutomatic = true,
+                    isLiveEntry = true,
+                ),
+                view = "add",
+            )
+        }
     }
 
     private fun persistTimer(timer: TimerUiState, pending: PendingTimerCapture? = null) {
-        _state.value = _state.value.copy(timer = timer)
+        _state.update { it.copy(timer = timer) }
         viewModelScope.launch {
             runCatching {
                 if (pending != null) {
@@ -861,9 +901,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val currentCodes = _state.value.workCodes
         val result = validateWorkCodeDraft(number, name, currentCodes)
         val code = result.code ?: return result
-        _state.value = _state.value.copy(
-            workCodes = (currentCodes + code).sortedBy { it.id },
-        )
+        _state.update { state ->
+            state.copy(
+                workCodes = (currentCodes + code).sortedBy { it.id },
+            )
+        }
         viewModelScope.launch {
             try {
                 workCodesRepo.upsert(code)
@@ -871,9 +913,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (_: Exception) {
                 val latest = _state.value.workCodes
                 if (latest.any { it == code }) {
-                    _state.value = _state.value.copy(
-                        workCodes = latest.filterNot { it == code },
-                    )
+                    _state.update { state ->
+                        state.copy(
+                            workCodes = latest.filterNot { it == code },
+                        )
+                    }
                 }
                 emit(UiMessage("workCodes.errors.saveFailed"))
             }
@@ -891,7 +935,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun saveUserDataQuietly(transform: (UserData) -> UserData) {
         val next = transform(_state.value.userData ?: UserData())
-        _state.value = _state.value.copy(userData = next)
+        _state.update { it.copy(userData = next) }
         autoBackupJob?.cancel()
         pdfArchiveRefreshJob?.cancel()
         viewModelScope.launch { settings.setUserData(next) }
@@ -901,7 +945,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setUserData(transform: (UserData) -> UserData) {
         val current = _state.value.userData ?: UserData()
         val next = transform(current)
-        _state.value = _state.value.copy(userData = next)
+        _state.update { it.copy(userData = next) }
         viewModelScope.launch {
             settings.setUserData(next)
             if (next.workDays != current.workDays && next.workDays != null) {
@@ -917,7 +961,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setTheme(theme: String) {
-        _state.value = _state.value.copy(theme = theme)
+        _state.update { it.copy(theme = theme) }
         viewModelScope.launch {
             settings.setTheme(theme)
             scheduleDataProtection()
@@ -925,7 +969,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setLanguage(language: String) {
-        _state.value = _state.value.copy(language = language)
+        _state.update { it.copy(language = language) }
         viewModelScope.launch {
             settings.setString(SettingsRepository.Keys.LANGUAGE, language)
             scheduleDataProtection()
@@ -934,7 +978,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setMaterialYou(enabled: Boolean) {
-        _state.value = _state.value.copy(materialYouEnabled = enabled)
+        _state.update { it.copy(materialYouEnabled = enabled) }
         viewModelScope.launch { settings.setBoolean("material_you_enabled", enabled) }
         emit(UiMessage(if (enabled) "settings.toast.materialYouOn" else "settings.toast.materialYouOff"))
     }
@@ -945,14 +989,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun setLocaleId(localeId: String, resetConfig: Boolean) {
         val locale = getLocale(localeId)
-        _state.value = _state.value.copy(locale = locale)
+        _state.update { it.copy(locale = locale) }
         viewModelScope.launch {
             settings.setLocaleId(locale.id)
             if (resetConfig) {
                 val workDays = _state.value.userData?.workDays
-                val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(locale, workDays)
+                val fresh = getDefaultCalculationConfig(locale, workDays)
                     .keepingOvertimeAccountOf(_state.value.calculationConfig)
-                _state.value = _state.value.copy(calculationConfig = fresh)
+                _state.update { it.copy(calculationConfig = fresh) }
                 settings.setCalculationConfig(fresh)
             }
             recompute()
@@ -963,7 +1007,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun patchCalculationConfig(transform: (CalculationConfig) -> CalculationConfig) {
         val current = _state.value.calculationConfig ?: return
         val next = transform(current)
-        _state.value = _state.value.copy(calculationConfig = next)
+        _state.update { it.copy(calculationConfig = next) }
         viewModelScope.launch {
             settings.setCalculationConfig(next)
             recompute()
@@ -978,7 +1022,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (nextSimpleMode == userData.simpleMode) return
 
         val targetLocale = if (!nextSimpleMode && s.locale.id == "neutral") {
-            getLocale(com.estundnzettl.core.locale.DEFAULT_LOCALE_ID)
+            getLocale(DEFAULT_LOCALE_ID)
         } else {
             s.locale
         }
@@ -992,9 +1036,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             setLocaleId(targetLocale.id, resetConfig = false)
         }
         if (!nextSimpleMode) {
-            val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(targetLocale, nextWorkDays)
+            val fresh = getDefaultCalculationConfig(targetLocale, nextWorkDays)
                 .keepingOvertimeAccountOf(s.calculationConfig)
-            _state.value = _state.value.copy(calculationConfig = fresh)
+            _state.update { it.copy(calculationConfig = fresh) }
             viewModelScope.launch { settings.setCalculationConfig(fresh) }
         }
         setUserData { it.copy(simpleMode = nextSimpleMode, workDays = nextWorkDays) }
@@ -1012,11 +1056,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Diagnose (Hausmasta-Modus, ausschließlich lesend) ───
 
     private val diagnosticsCollector by lazy {
-        com.estundnzettl.app.data.DiagnosticsCollector(getApplication(), db, settings, secrets)
+        DiagnosticsCollector(getApplication(), db, settings, secrets)
     }
 
     private fun updateDiagnostics(transform: (DiagnosticsUiState) -> DiagnosticsUiState) {
-        _state.value = _state.value.copy(diagnostics = transform(_state.value.diagnostics))
+        _state.update { it.copy(diagnostics = transform(it.diagnostics)) }
     }
 
     /** Momentaufnahme des App-Zustands einsammeln. */
@@ -1033,10 +1077,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun clearDiagnostics() {
-        _state.value = _state.value.copy(diagnostics = DiagnosticsUiState())
-    }
-
     /**
      * Listet die Dateien im Drive-appDataFolder auf. Bewusst ohne
      * Consent-Intent und ohne [AutoBackupManager.registerGoogleDriveFailure]:
@@ -1045,23 +1085,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * den Backoff schieben.
      */
     fun probeGoogleDriveFiles() {
-        updateDiagnostics { it.copy(drive = com.estundnzettl.app.data.DriveProbe.Loading) }
+        updateDiagnostics { it.copy(drive = DriveProbe.Loading) }
         viewModelScope.launch {
             val probe = try {
-                val token = googleDrive.authorize(com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA)
-                com.estundnzettl.app.data.DriveProbe.Loaded(googleDrive.listAppDataFiles(token))
-            } catch (_: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
-                com.estundnzettl.app.data.DriveProbe.Failed("settings.diagnostics.drive.authRequired")
+                val token = googleDrive.authorize(GoogleDriveManager.SCOPE_APPDATA)
+                DriveProbe.Loaded(googleDrive.listAppDataFiles(token))
+            } catch (_: GoogleDriveManager.AuthRequiredException) {
+                DriveProbe.Failed("settings.diagnostics.drive.authRequired")
             } catch (exception: Exception) {
                 Log.w(GOOGLE_DRIVE_TAG, "Diagnose-Abfrage fehlgeschlagen", exception)
-                com.estundnzettl.app.data.DriveProbe.Failed("settings.diagnostics.drive.failed")
+                DriveProbe.Failed("settings.diagnostics.drive.failed")
             }
             updateDiagnostics { it.copy(drive = probe) }
         }
     }
 
     /** Arbeitszeitmodell-Preset anwenden — Port von handlePresetSelect. */
-    fun applyWorkModel(model: com.estundnzettl.core.model.WorkModel) {
+    fun applyWorkModel(model: WorkModel) {
         setUserData {
             if (model.id != "custom") it.copy(workModelId = model.id, workDays = model.days)
             else it.copy(workModelId = model.id)
@@ -1084,7 +1124,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun refreshWorkCodes() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(workCodes = workCodesRepo.getAll())
+            val codes = workCodesRepo.getAll()
+            _state.update { it.copy(workCodes = codes) }
         }
     }
 
@@ -1098,9 +1139,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
         val code = result.code ?: return result
         val previousCode = currentCodes.firstOrNull { it.id == id }
-        _state.value = _state.value.copy(
-            workCodes = currentCodes.map { if (it.id == id) code else it }.sortedBy { it.id },
-        )
+        _state.update { state ->
+            state.copy(
+                workCodes = currentCodes.map { if (it.id == id) code else it }.sortedBy { it.id },
+            )
+        }
         viewModelScope.launch {
             try {
                 workCodesRepo.upsert(code)
@@ -1108,9 +1151,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (_: Exception) {
                 val latest = _state.value.workCodes
                 if (previousCode != null && latest.any { it == code }) {
-                    _state.value = _state.value.copy(
-                        workCodes = latest.map { if (it == code) previousCode else it }.sortedBy { it.id },
-                    )
+                    _state.update { state ->
+                        state.copy(
+                            workCodes = latest.map { if (it == code) previousCode else it }.sortedBy { it.id },
+                        )
+                    }
                 }
                 emit(UiMessage("workCodes.errors.saveFailed"))
             }
@@ -1127,7 +1172,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun loadWorkCodePreset(presetId: String): Boolean {
-        val preset = com.estundnzettl.core.model.WORK_CODE_PRESETS.firstOrNull { it.id == presetId }
+        val preset = WORK_CODE_PRESETS.firstOrNull { it.id == presetId }
             ?: return false
         viewModelScope.launch {
             workCodesRepo.replaceAll(preset.codes)
@@ -1191,11 +1236,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 // Zurück in den Einrichtungs-Assistenten (wie die Web-App,
                 // deren Router bei leerem Profilnamen den Wizard zeigt)
-                _state.value = _state.value.copy(
-                    userData = resetUser,
-                    view = "dashboard",
-                    onboarding = OnboardingUiState(active = true),
-                )
+                _state.update {
+                    it.copy(
+                        userData = resetUser,
+                        view = "dashboard",
+                        onboarding = OnboardingUiState(active = true),
+                    )
+                }
                 emit(UiMessage("toasts.appReset"))
             } catch (_: Exception) {
                 emit(UiMessage("toasts.entry.deleteAllFailed"))
@@ -1205,7 +1252,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // ─── Backup Export / Import ──────────────────────────────
 
-    private val backupRepo by lazy { com.estundnzettl.app.data.BackupRepository(db, settings) }
+    private val backupRepo by lazy { BackupRepository(db, settings) }
 
     /** Datei-Inhalt für den manuellen Export (checksummter v7-Payload). */
     suspend fun createBackupFileContent(): String =
@@ -1218,11 +1265,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             emit(UiMessage("settings.toast.invalidBackup"))
             return
         }
-        if (analysis.integrity == com.estundnzettl.core.backup.BackupIntegrity.MISMATCH) {
+        if (analysis.integrity == BackupIntegrity.MISMATCH) {
             emit(UiMessage("settings.toast.integrityMismatch"))
         }
         if (analysis.hasSettings) {
-            _state.value = _state.value.copy(pendingImport = analysis)
+            _state.update { it.copy(pendingImport = analysis) }
         } else {
             viewModelScope.launch {
                 val ok = backupRepo.apply(analysis, "ALL")
@@ -1241,7 +1288,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun confirmImport(mode: String) {
         val pending = _state.value.pendingImport ?: return
-        _state.value = _state.value.copy(pendingImport = null)
+        _state.update { it.copy(pendingImport = null) }
         viewModelScope.launch {
             val ok = backupRepo.apply(pending, mode)
             if (ok) {
@@ -1254,7 +1301,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun cancelImport() {
-        _state.value = _state.value.copy(pendingImport = null)
+        _state.update { it.copy(pendingImport = null) }
     }
 
     private suspend fun reloadAfterImport() {
@@ -1301,16 +1348,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val all = attachmentsRepo.getAll()
                 .sortedByDescending { it.createdAt }
             val labels = attachmentsRepo.getLabelSuggestions()
-            _state.value = _state.value.copy(attachments = all, labelSuggestions = labels)
+            _state.update { it.copy(attachments = all, labelSuggestions = labels) }
         }
     }
 
     fun openAttachments(entry: Entry) {
-        _state.value = _state.value.copy(attachmentEntry = entry)
+        _state.update { it.copy(attachmentEntry = entry) }
     }
 
     fun closeAttachments() {
-        _state.value = _state.value.copy(attachmentEntry = null)
+        _state.update { it.copy(attachmentEntry = null) }
     }
 
     /**
@@ -1358,7 +1405,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val file = java.io.File(attachmentsDir(), "$id.$extension")
         file.writeBytes(bytes)
 
-        val attachment = com.estundnzettl.core.model.Attachment(
+        val attachment = Attachment(
             id = id,
             entryId = entryId,
             label = trimmedLabel,
@@ -1389,7 +1436,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Datei-Inhalt eines Anhangs (für Teilen/Report-Bundle). */
-    fun attachmentFile(attachment: com.estundnzettl.core.model.Attachment): java.io.File =
+    fun attachmentFile(attachment: Attachment): java.io.File =
         resolveAttachmentFile(attachment.storagePath) ?: java.io.File(attachmentsDir(), ".invalid")
 
     private fun deleteAttachmentFile(storagePath: String) {
@@ -1410,12 +1457,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun loadDemoData() {
         viewModelScope.launch {
             try {
-                val entries = com.estundnzettl.core.calc.generateDemoEntries()
+                val entries = generateDemoEntries()
                 db.replaceFullSnapshot(
-                    com.estundnzettl.app.data.ImportSnapshot(
+                    ImportSnapshot(
                         entries = entries,
-                        userData = com.estundnzettl.core.calc.DEMO_USER.toJson(),
-                        workCodes = com.estundnzettl.core.calc.DEMO_WORK_CODES,
+                        userData = DEMO_USER.toJson(),
+                        workCodes = DEMO_WORK_CODES,
                     ),
                 )
                 runCatching { db.settingsDao().delete("last_code") }
@@ -1433,12 +1480,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val seen = settings.getString(TOUR_SEEN_KEY) == "1"
         if (!seen) {
             kotlinx.coroutines.delay(350)
-            _state.value = _state.value.copy(showTour = true)
+            _state.update { it.copy(showTour = true) }
         }
     }
 
     fun closeTour() {
-        _state.value = _state.value.copy(showTour = false)
+        _state.update { it.copy(showTour = false) }
         viewModelScope.launch { settings.setString(TOUR_SEEN_KEY, "1") }
     }
 
@@ -1465,7 +1512,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             requestCount = settings.getString(KEY_REVIEW_REQUEST_COUNT)?.toIntOrNull() ?: 0,
         )
         if (ReviewPromptPolicy.shouldRequest(now, snapshot) && !_state.value.onboarding.active) {
-            _state.value = _state.value.copy(requestInAppReview = true)
+            _state.update { it.copy(requestInAppReview = true) }
         }
     }
 
@@ -1478,7 +1525,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun markInAppReviewRequested() {
-        _state.value = _state.value.copy(requestInAppReview = false)
+        _state.update { it.copy(requestInAppReview = false) }
         viewModelScope.launch {
             val count = settings.getString(KEY_REVIEW_REQUEST_COUNT)?.toIntOrNull() ?: 0
             settings.setString(KEY_REVIEW_REQUEST_COUNT, (count + 1).toString())
@@ -1489,11 +1536,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Nextcloud (Port von useNextcloudBackup) ─────────────
 
     private val localBackupFolder by lazy {
-        com.estundnzettl.app.data.LocalBackupFolder(getApplication(), settings)
+        LocalBackupFolder(getApplication(), settings)
     }
 
     private val autoBackup by lazy {
-        com.estundnzettl.app.data.AutoBackupManager(
+        AutoBackupManager(
             getApplication(), settings, backupRepo, nextcloudManager, googleDrive,
         )
     }
@@ -1538,13 +1585,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Willkommens-Popup nach der Capacitor-Migration bestätigt. */
     fun dismissNativeWelcome() {
-        _state.value = _state.value.copy(showNativeWelcome = false)
+        _state.update { it.copy(showNativeWelcome = false) }
         viewModelScope.launch { settings.setString(KEY_NATIVE_WELCOME_SEEN, "1") }
     }
 
     /** Automatisches Änderungsprotokoll bestätigt; manuell bleibt es in den Einstellungen erreichbar. */
     fun dismissWhatsNew() {
-        _state.value = _state.value.copy(showWhatsNew = false)
+        _state.update { it.copy(showWhatsNew = false) }
         viewModelScope.launch { markCurrentChangelogSeen() }
     }
 
@@ -1569,10 +1616,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 hasCurrentChangelog = hasEntry,
             )
         ) {
-            WhatsNewDecision.SHOW -> _state.value = _state.value.copy(
-                showWhatsNew = true,
-                whatsNewVersion = currentName,
-            )
+            WhatsNewDecision.SHOW -> _state.update {
+                it.copy(
+                    showWhatsNew = true,
+                    whatsNewVersion = currentName,
+                )
+            }
             WhatsNewDecision.MARK_CURRENT -> markCurrentChangelogSeen()
             WhatsNewDecision.NONE -> Unit
         }
@@ -1586,9 +1635,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** Update-Banner für genau diese Version wegklicken. */
     fun dismissUpdateBanner() {
         val tag = _state.value.updateAvailable?.tag ?: return
-        _state.value = _state.value.copy(updateAvailable = null)
+        _state.update { it.copy(updateAvailable = null) }
         viewModelScope.launch {
-            settings.setString(com.estundnzettl.app.data.UpdateCheck.KEY_DISMISSED, tag)
+            settings.setString(UpdateCheck.KEY_DISMISSED, tag)
         }
     }
 
@@ -1599,19 +1648,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun refreshNextcloudState(connecting: Boolean = _state.value.nextcloud.connecting) {
         val creds = runCatching { nextcloudManager.getCredentials() }.getOrNull()
         val enabled = settings.getBoolean(SettingsRepository.Keys.NEXTCLOUD_ENABLED)
-        _state.value = _state.value.copy(
-            nextcloud = NextcloudUiState(
-                connected = creds != null && enabled,
-                user = creds?.user ?: "",
-                connecting = connecting,
-            ),
-        )
+        _state.update {
+            it.copy(
+                nextcloud = NextcloudUiState(
+                    connected = creds != null && enabled,
+                    user = creds?.user ?: "",
+                    connecting = connecting,
+                ),
+            )
+        }
     }
 
     /** Startet Login Flow v2; liefert die Browser-URL. Wirft bei Fehlern. */
     suspend fun nextcloudInitiate(serverUrl: String): String {
-        val flow = com.estundnzettl.app.data.NextcloudClient.initiateLoginFlow(serverUrl)
-        _state.value = _state.value.copy(nextcloud = _state.value.nextcloud.copy(connecting = true))
+        val flow = NextcloudClient.initiateLoginFlow(serverUrl)
+        _state.update { it.copy(nextcloud = it.nextcloud.copy(connecting = true)) }
         startNextcloudPolling(flow.pollEndpoint, flow.token)
         return flow.loginUrl
     }
@@ -1623,20 +1674,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repeat(100) {
                 kotlinx.coroutines.delay(3000)
                 try {
-                    when (val result = com.estundnzettl.app.data.NextcloudClient.pollLoginResult(pollEndpoint, token)) {
-                        is com.estundnzettl.app.data.NextcloudClient.PollResult.Pending -> {}
-                        is com.estundnzettl.app.data.NextcloudClient.PollResult.Complete -> {
+                    when (val result = NextcloudClient.pollLoginResult(pollEndpoint, token)) {
+                        is NextcloudClient.PollResult.Pending -> {}
+                        is NextcloudClient.PollResult.Complete -> {
                             if (!nextcloudManager.persistLogin(result.server, result.loginName, result.appPassword)) {
                                 refreshNextcloudState(connecting = false)
                                 emit(UiMessage("settings.backup.toast.nextcloudLoginFailed"))
                                 return@launch
                             }
                             runCatching {
-                                com.estundnzettl.app.data.NextcloudClient
-                                    .testConnection(result.server, result.loginName, result.appPassword)
-                                com.estundnzettl.app.data.NextcloudClient
-                                    .ensureFolderPath(result.server, result.loginName, result.appPassword,
-                                        listOf(com.estundnzettl.app.data.NextcloudClient.BACKUP_FOLDER))
+                                NextcloudClient.testConnection(result.server, result.loginName, result.appPassword)
+                                NextcloudClient.ensureFolderPath(result.server, result.loginName, result.appPassword,
+                                        listOf(NextcloudClient.BACKUP_FOLDER))
                             }
                             refreshNextcloudState(connecting = false)
                             scheduleDataProtection()
@@ -1676,8 +1725,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 emit(UiMessage("settings.backup.toast.ncConnectFirst"))
                 return@launch
             }
-            val result = com.estundnzettl.app.data.NextcloudClient
-                .testConnection(creds.url, creds.user, creds.appPassword)
+            val result = NextcloudClient.testConnection(creds.url, creds.user, creds.appPassword)
             if (result.isSuccess) {
                 emit(UiMessage("settings.backup.toast.ncTestOk"))
             } else {
@@ -1693,7 +1741,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         autoBackupJob?.cancel()
         autoBackupJob = viewModelScope.launch {
             kotlinx.coroutines.delay(2000)
-            val outcome = autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.AUTO)
+            val outcome = autoBackup.performBackup(AutoBackupManager.Source.AUTO)
             refreshBackupStateAfter(outcome, notifyUser = true)
         }
     }
@@ -1704,31 +1752,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // WAL in die Hauptdatei schreiben, bevor das System den
             // Prozess killen darf (schützt vor Datenverlust bei Updates)
             db.checkpoint()
-            val outcome = autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.BACKGROUND)
+            val outcome = autoBackup.performBackup(AutoBackupManager.Source.BACKGROUND)
             refreshBackupStateAfter(outcome, notifyUser = false)
         }
     }
 
     /** "Jetzt sichern" aus den Einstellungen. */
-    suspend fun manualBackup(): com.estundnzettl.app.data.AutoBackupManager.Outcome {
-        val outcome = autoBackup.performBackup(com.estundnzettl.app.data.AutoBackupManager.Source.MANUAL)
+    suspend fun manualBackup(): AutoBackupManager.Outcome {
+        val outcome = autoBackup.performBackup(AutoBackupManager.Source.MANUAL)
         refreshBackupStateAfter(outcome, notifyUser = false)
         return outcome
     }
 
     private suspend fun refreshBackupStateAfter(
-        outcome: com.estundnzettl.app.data.AutoBackupManager.Outcome,
+        outcome: AutoBackupManager.Outcome,
         notifyUser: Boolean,
     ) {
         if (
-            com.estundnzettl.app.data.AutoBackupManager.Target.GOOGLE_DRIVE in outcome.failedTargets ||
-            com.estundnzettl.app.data.AutoBackupManager.Target.GOOGLE_DRIVE in outcome.succeededTargets
+            AutoBackupManager.Target.GOOGLE_DRIVE in outcome.failedTargets ||
+            AutoBackupManager.Target.GOOGLE_DRIVE in outcome.succeededTargets
         ) {
             refreshGoogleState()
         }
         refreshBackupHealth(
             notifyUser = notifyUser &&
-                com.estundnzettl.app.data.AutoBackupManager.Target.GOOGLE_DRIVE in outcome.failedTargets,
+                AutoBackupManager.Target.GOOGLE_DRIVE in outcome.failedTargets,
         )
     }
 
@@ -1746,15 +1794,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (allEntries.isEmpty()) return@launch
             val now = YearMonth.now()
             settings.setString(
-                com.estundnzettl.app.data.PdfArchiveManager.hashKey(now.year, now.monthValue),
+                PdfArchiveManager.hashKey(now.year, now.monthValue),
                 "",
             )
-            settings.getString(com.estundnzettl.app.data.PdfArchiveManager.KEY_LAST_MONTH)
+            settings.getString(PdfArchiveManager.KEY_LAST_MONTH)
                 ?.split("-")
                 ?.mapNotNull { it.toIntOrNull() }
                 ?.takeIf { it.size == 2 && it[1] in 1..12 }
                 ?.let { (year, month) ->
-                    settings.setString(com.estundnzettl.app.data.PdfArchiveManager.hashKey(year, month), "")
+                    settings.setString(PdfArchiveManager.hashKey(year, month), "")
                 }
             pdfArchive.performRun(pdfArchiveData(), source = "target-change", force = true)
         }
@@ -1803,7 +1851,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         reconnectKey to JsonPrimitive(false),
                     )
                 )
-            } catch (_: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
+            } catch (_: GoogleDriveManager.AuthRequiredException) {
                 settings.setBoolean(reconnectKey, true)
             } catch (exception: Exception) {
                 // A transient network/Play-services error must not erase a
@@ -1814,26 +1862,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         reconcileScope(
             enabled = settings.getBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED),
-            scope = com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA,
-            emailKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL,
-            reconnectKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
+            scope = GoogleDriveManager.SCOPE_APPDATA,
+            emailKey = GoogleDriveManager.KEY_ACCOUNT_EMAIL,
+            reconnectKey = GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
         )
         reconcileScope(
-            enabled = settings.getBoolean(com.estundnzettl.app.data.PdfArchiveManager.KEY_GDRIVE),
-            scope = com.estundnzettl.app.data.GoogleDriveManager.SCOPE_FILE,
-            emailKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL,
-            reconnectKey = com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED,
+            enabled = settings.getBoolean(PdfArchiveManager.KEY_GDRIVE),
+            scope = GoogleDriveManager.SCOPE_FILE,
+            emailKey = GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL,
+            reconnectKey = GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED,
         )
     }
 
     private suspend fun refreshGoogleState() {
-        val backupEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL) ?: ""
-        val pdfEmail = settings.getString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL) ?: ""
+        val backupEmail = settings.getString(GoogleDriveManager.KEY_ACCOUNT_EMAIL) ?: ""
+        val pdfEmail = settings.getString(GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL) ?: ""
         val backupReconnect = settings.getBoolean(
-            com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
+            GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
         )
         val pdfReconnect = settings.getBoolean(
-            com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED,
+            GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED,
         )
         val playServices = runCatching {
             googlePlayServicesStatus(
@@ -1841,43 +1889,47 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     .isGooglePlayServicesAvailable(getApplication()),
             )
         }.getOrDefault(GooglePlayServicesStatus.UNAVAILABLE)
-        _state.value = _state.value.copy(
-            googleDrive = GoogleDriveUiState(
-                backupConnected = backupEmail.isNotEmpty() && !backupReconnect,
-                backupEmail = backupEmail,
-                backupReconnectRequired = backupReconnect,
-                pdfConnected = pdfEmail.isNotEmpty() && !pdfReconnect,
-                pdfEmail = pdfEmail,
-                pdfReconnectRequired = pdfReconnect,
-                playServices = playServices,
-            ),
-        )
+        _state.update {
+            it.copy(
+                googleDrive = GoogleDriveUiState(
+                    backupConnected = backupEmail.isNotEmpty() && !backupReconnect,
+                    backupEmail = backupEmail,
+                    backupReconnectRequired = backupReconnect,
+                    pdfConnected = pdfEmail.isNotEmpty() && !pdfReconnect,
+                    pdfEmail = pdfEmail,
+                    pdfReconnectRequired = pdfReconnect,
+                    playServices = playServices,
+                ),
+            )
+        }
     }
 
     private suspend fun refreshBackupHealth(notifyUser: Boolean = false) {
         val failureCount = settings
-            .getString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_FAIL_COUNT)
+            .getString(AutoBackupManager.KEY_CLOUD_FAIL_COUNT)
             ?.toIntOrNull()
             ?: 0
         val lastError = settings
-            .getString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_ERROR)
+            .getString(AutoBackupManager.KEY_CLOUD_LAST_ERROR)
             .orEmpty()
         val lastSuccess = settings
-            .getString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_SUCCESS)
+            .getString(AutoBackupManager.KEY_CLOUD_LAST_SUCCESS)
             .orEmpty()
         val warningShown = settings
-            .getBoolean(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN)
+            .getBoolean(AutoBackupManager.KEY_CLOUD_WARNING_SHOWN)
         val reconnectRequired = settings.getBoolean(
-            com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
+            GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
         )
 
-        _state.value = _state.value.copy(
-            backupHealth = BackupHealthUiState(
-                googleDriveFailureCount = failureCount,
-                googleDriveLastError = lastError,
-                googleDriveLastSuccess = lastSuccess,
-            ),
-        )
+        _state.update {
+            it.copy(
+                backupHealth = BackupHealthUiState(
+                    googleDriveFailureCount = failureCount,
+                    googleDriveLastError = lastError,
+                    googleDriveLastSuccess = lastSuccess,
+                ),
+            )
+        }
 
         if (
             notifyUser && shouldShowGoogleDriveBackupWarning(
@@ -1887,7 +1939,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
         ) {
             settings.setBoolean(
-                com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN,
+                AutoBackupManager.KEY_CLOUD_WARNING_SHOWN,
                 true,
             )
             emit(
@@ -1934,7 +1986,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         return try {
-            val token = googleDrive.authorize(com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA)
+            val token = googleDrive.authorize(GoogleDriveManager.SCOPE_APPDATA)
             val sections = backupRepo.collectSections()
             if (sections.entries.isEmpty()) {
                 emit(UiMessage("toasts.autoBackup.noData", tone = UiMessageTone.WARNING))
@@ -1944,12 +1996,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val content = backupRepo.toFileContent(payload)
             googleDrive.uploadOrUpdateBackup(
                 token,
-                com.estundnzettl.app.data.NextcloudClient.BACKUP_FILENAME,
+                NextcloudClient.BACKUP_FILENAME,
                 content,
             )
             val completedAt = Instant.now().toString()
-            settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, completedAt)
-            settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_LAST_BACKUP, completedAt)
+            settings.setString(AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, completedAt)
+            settings.setString(AutoBackupManager.KEY_LAST_BACKUP, completedAt)
             autoBackup.clearGoogleDriveErrorState()
             refreshGoogleState()
             refreshBackupHealth()
@@ -1961,14 +2013,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
             true
         } catch (error: Exception) {
-            val reconnect = com.estundnzettl.app.data.googleDriveFailureNeedsReconnect(error)
+            val reconnect = googleDriveFailureNeedsReconnect(error)
             autoBackup.registerGoogleDriveFailure(
                 message = error.message ?: "Google Drive Verbindung fehlgeschlagen",
                 requiresReconnect = reconnect,
             )
             if (reconnect) {
                 settings.setBoolean(
-                    com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN,
+                    AutoBackupManager.KEY_CLOUD_WARNING_SHOWN,
                     true,
                 )
             }
@@ -1994,9 +2046,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         val scope = if (forPdfArchive) {
-            com.estundnzettl.app.data.GoogleDriveManager.SCOPE_FILE
+            GoogleDriveManager.SCOPE_FILE
         } else {
-            com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA
+            GoogleDriveManager.SCOPE_APPDATA
         }
         viewModelScope.launch {
             try {
@@ -2004,7 +2056,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val token = googleDrive.authorize(scope)
                 Log.i(GOOGLE_DRIVE_TAG, "Autorisierung ohne Dialog erfolgreich (scope=${googleScopeLabel(scope)})")
                 onGoogleConnected(scope, token)
-            } catch (e: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
+            } catch (e: GoogleDriveManager.AuthRequiredException) {
                 val intent = e.pendingIntent
                 if (intent != null) {
                     pendingGoogleScope = scope
@@ -2066,23 +2118,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun onGoogleConnected(scope: String, token: String) {
         val email = googleDrive.fetchAccountEmail(token)
         val accountLabel = email.ifEmpty { "Google" }
-        if (scope == com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA) {
+        if (scope == GoogleDriveManager.SCOPE_APPDATA) {
             // Konto und Aktivierungsflag gehören logisch zusammen. Ein
             // einzelner Batch verhindert den zuvor beobachteten Halbzustand
             // (Konto gespeichert, Cloud-Backup aber nicht aktiviert).
             settings.setRawBatch(
                 mapOf(
-                    com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
+                    GoogleDriveManager.KEY_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
                     SettingsRepository.Keys.CLOUD_SYNC_ENABLED to JsonPrimitive(true),
-                    com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED to JsonPrimitive(false),
+                    GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED to JsonPrimitive(false),
                 ),
             )
             autoBackup.clearGoogleDriveErrorState()
         } else {
             settings.setRawBatch(
                 mapOf(
-                    com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
-                    com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED to JsonPrimitive(false),
+                    GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
+                    GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED to JsonPrimitive(false),
                 )
             )
         }
@@ -2093,32 +2145,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         refreshBackupHealth()
         emit(UiMessage("settings.backup.toast.gdriveConnected", listOf("label" to accountLabel)))
         Log.i(GOOGLE_DRIVE_TAG, "Google Drive verbunden (scope=${googleScopeLabel(scope)}, account=$accountLabel)")
-        if (scope == com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA) {
+        if (scope == GoogleDriveManager.SCOPE_APPDATA) {
             scheduleDataProtection()
         }
     }
 
     private fun googleScopeLabel(scope: String): String = when (scope) {
-        com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA -> "backup"
-        com.estundnzettl.app.data.GoogleDriveManager.SCOPE_FILE -> "pdf"
+        GoogleDriveManager.SCOPE_APPDATA -> "backup"
+        GoogleDriveManager.SCOPE_FILE -> "pdf"
         else -> "unknown"
     }
 
     fun disconnectGoogleDrive(forPdfArchive: Boolean = false) {
         viewModelScope.launch {
             if (forPdfArchive) {
-                settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, "")
-                settings.setBoolean(com.estundnzettl.app.data.GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED, false)
-                settings.setBoolean(com.estundnzettl.app.data.PdfArchiveManager.KEY_GDRIVE, false)
+                settings.setString(GoogleDriveManager.KEY_PDF_ACCOUNT_EMAIL, "")
+                settings.setBoolean(GoogleDriveManager.KEY_PDF_RECONNECT_REQUIRED, false)
+                settings.setBoolean(PdfArchiveManager.KEY_GDRIVE, false)
             } else {
-                settings.setString(com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL, "")
-                settings.setBoolean(com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED, false)
+                settings.setString(GoogleDriveManager.KEY_ACCOUNT_EMAIL, "")
+                settings.setBoolean(GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED, false)
                 settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, false)
-                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_FAIL_COUNT, "0")
-                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_ERROR, "")
-                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_BACKOFF_UNTIL, "")
-                settings.setString(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, "")
-                settings.setBoolean(com.estundnzettl.app.data.AutoBackupManager.KEY_CLOUD_WARNING_SHOWN, false)
+                settings.setString(AutoBackupManager.KEY_CLOUD_FAIL_COUNT, "0")
+                settings.setString(AutoBackupManager.KEY_CLOUD_LAST_ERROR, "")
+                settings.setString(AutoBackupManager.KEY_CLOUD_BACKOFF_UNTIL, "")
+                settings.setString(AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, "")
+                settings.setBoolean(AutoBackupManager.KEY_CLOUD_WARNING_SHOWN, false)
             }
             refreshGoogleState()
             refreshBackupHealth()
@@ -2128,7 +2180,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Onboarding (Port von useOnboardingFlow.ts) ──────────
 
     private fun updateOnboarding(transform: (OnboardingUiState) -> OnboardingUiState) {
-        _state.value = _state.value.copy(onboarding = transform(_state.value.onboarding))
+        _state.update { it.copy(onboarding = transform(it.onboarding)) }
     }
 
     /** "Nur Arbeitszeiten eintragen" — Simple-Modus-Schnellstart. */
@@ -2142,7 +2194,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 workDays = List(7) { 0 },
                 localeId = "neutral",
                 workCodePresetId = "allgemein",
-                calcConfig = com.estundnzettl.core.calc.getBlankCalculationConfig(List(7) { 0 }),
+                calcConfig = getBlankCalculationConfig(List(7) { 0 }),
                 customCalc = false,
                 step = 1,
             )
@@ -2171,15 +2223,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 val demoLocale = getLocale("at")
-                val demoConfig = com.estundnzettl.core.calc
-                    .getDefaultCalculationConfig(demoLocale, com.estundnzettl.core.calc.DEMO_USER.workDays)
+                val demoConfig = getDefaultCalculationConfig(demoLocale, DEMO_USER.workDays)
                     .copy(vacationCarryoverDays = 3)
 
                 db.replaceFullSnapshot(
-                    com.estundnzettl.app.data.ImportSnapshot(
-                        entries = com.estundnzettl.core.calc.generateDemoEntries(),
-                        userData = com.estundnzettl.core.calc.DEMO_USER.toJson(),
-                        workCodes = com.estundnzettl.core.calc.DEMO_WORK_CODES,
+                    ImportSnapshot(
+                        entries = generateDemoEntries(),
+                        userData = DEMO_USER.toJson(),
+                        workCodes = DEMO_WORK_CODES,
                     ),
                 )
                 runCatching {
@@ -2189,10 +2240,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 loadSettings()
                 reloadAfterImport()
-                _state.value = _state.value.copy(
-                    onboarding = OnboardingUiState(active = false),
-                    view = "dashboard",
-                )
+                _state.update {
+                    it.copy(
+                        onboarding = OnboardingUiState(active = false),
+                        view = "dashboard",
+                    )
+                }
                 emit(UiMessage("onboarding.toast.demoLoaded"))
                 maybeStartTour()
             } catch (_: Exception) {
@@ -2224,14 +2277,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Locale-Wahl belegt Default-WorkDays vor, wenn noch das
         // Initial-Modell (38,5h klassisch) aktiv ist.
         if (ob.step == 2 && ob.localeId != null) {
-            if (ob.workDays == com.estundnzettl.core.model.WORK_MODELS[0].days) {
+            if (ob.workDays == WORK_MODELS[0].days) {
                 next = next.copy(workDays = getLocale(ob.localeId).defaultWorkDays)
             }
         }
         // Beim Verlassen von WorkSchedule: weeklyTargetMinutes aktualisieren
         if (ob.step == 3) {
             val config = next.calcConfig
-                ?: com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale(ob.localeId), next.workDays)
+                ?: getDefaultCalculationConfig(getLocale(ob.localeId), next.workDays)
             next = next.copy(calcConfig = config.copy(weeklyTargetMinutes = next.workDays.sum()))
         }
 
@@ -2273,7 +2326,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             emit(UiMessage(invalidKey))
             return false
         }
-        if (analysis.integrity == com.estundnzettl.core.backup.BackupIntegrity.MISMATCH) {
+        if (analysis.integrity == BackupIntegrity.MISMATCH) {
             emit(UiMessage("onboarding.toast.integrityMismatch"))
         }
         emit(UiMessage(loadedKey))
@@ -2295,14 +2348,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             updateOnboarding { it.copy(restoreLoading = true) }
             try {
-                val token = googleDrive.authorize(com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA)
+                val token = googleDrive.authorize(GoogleDriveManager.SCOPE_APPDATA)
                 finishGoogleDriveRestore(token)
-            } catch (e: com.estundnzettl.app.data.GoogleDriveManager.AuthRequiredException) {
+            } catch (e: GoogleDriveManager.AuthRequiredException) {
                 val intent = e.pendingIntent
                 if (intent != null) {
                     // Consent nötig — restoreLoading bleibt aktiv, bis der
                     // Callback (onGoogleAuthResult) den Restore fortsetzt.
-                    pendingGoogleScope = com.estundnzettl.app.data.GoogleDriveManager.SCOPE_APPDATA
+                    pendingGoogleScope = GoogleDriveManager.SCOPE_APPDATA
                     pendingGoogleRestore = true
                     _googleAuthIntents.tryEmit(intent)
                 } else {
@@ -2331,7 +2384,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // die Sync-Flags kommen aus dem Backup selbst).
             val email = googleDrive.fetchAccountEmail(token)
             settings.setString(
-                com.estundnzettl.app.data.GoogleDriveManager.KEY_ACCOUNT_EMAIL,
+                GoogleDriveManager.KEY_ACCOUNT_EMAIL,
                 email.ifEmpty { "Google" },
             )
             refreshGoogleState()
@@ -2356,7 +2409,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     private suspend fun collectDriveRestoreCandidates(
         token: String,
-    ): List<com.estundnzettl.app.RestoreCandidate> {
+    ): List<RestoreCandidate> {
         val files = googleDrive.listAppDataFiles(token)
             .filter { it.name.endsWith(".json", ignoreCase = true) }
             .take(MAX_RESTORE_CANDIDATES)
@@ -2366,19 +2419,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 ?: return@mapNotNull null
             val analysis = backupRepo.analyze(content)
             if (!analysis.valid) return@mapNotNull null
-            com.estundnzettl.app.RestoreCandidate(
+            RestoreCandidate(
                 fileId = file.id,
                 fileName = file.name,
                 modifiedTime = file.modifiedTime,
                 isLegacyName = file.name
-                    .equals(com.estundnzettl.app.data.GoogleDriveManager.LEGACY_BACKUP_FILENAME, ignoreCase = true),
+                    .equals(GoogleDriveManager.LEGACY_BACKUP_FILENAME, ignoreCase = true),
                 analysis = analysis,
             )
         }
     }
 
     /** Ein Backup aus der Auswahl übernehmen (Nutzer-Tipp auf einen Eintrag). */
-    fun onboardingPickRestore(candidate: com.estundnzettl.app.RestoreCandidate) {
+    fun onboardingPickRestore(candidate: RestoreCandidate) {
         acceptRestoreCandidate(candidate)
     }
 
@@ -2387,8 +2440,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         updateOnboarding { it.copy(restoreChoices = emptyList()) }
     }
 
-    private fun acceptRestoreCandidate(candidate: com.estundnzettl.app.RestoreCandidate) {
-        if (candidate.analysis.integrity == com.estundnzettl.core.backup.BackupIntegrity.MISMATCH) {
+    private fun acceptRestoreCandidate(candidate: RestoreCandidate) {
+        if (candidate.analysis.integrity == BackupIntegrity.MISMATCH) {
             emit(UiMessage("onboarding.toast.integrityMismatch"))
         }
         emit(UiMessage("onboarding.toast.backupLoaded"))
@@ -2407,8 +2460,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     emit(UiMessage("onboarding.toast.ncLoginFailed"))
                     return@launch
                 }
-                val content = com.estundnzettl.app.data.NextcloudClient
-                    .downloadBackup(creds.url, creds.user, creds.appPassword)
+                val content = NextcloudClient.downloadBackup(creds.url, creds.user, creds.appPassword)
                 if (content == null) {
                     emit(UiMessage("onboarding.toast.ncRestoreNotFound"))
                     return@launch
@@ -2493,11 +2545,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             if (!ob.isRestoreFlow && !ob.simpleMode) {
                 val base = ob.calcConfig
-                    ?: com.estundnzettl.core.calc.getDefaultCalculationConfig(getLocale(ob.localeId), ob.workDays)
+                    ?: getDefaultCalculationConfig(getLocale(ob.localeId), ob.workDays)
                 // ZA-Konto nur, wenn es im Wizard ausdrücklich eingeschaltet wurde
                 val config = if (ob.overtimeAccountEnabled) {
                     base.copy(
-                        overtimeAccount = com.estundnzettl.core.model.OvertimeAccountConfig(
+                        overtimeAccount = OvertimeAccountConfig(
                             enabled = true,
                             startMonth = YearMonth.now().toString(),
                             openingBalanceMinutes = ob.overtimeAccountOpeningMinutes,
@@ -2512,18 +2564,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 runCatching { settings.setLocaleId(ob.localeId) }
             }
             if (!ob.isRestoreFlow) {
-                com.estundnzettl.core.model.WORK_CODE_PRESETS
-                    .firstOrNull { it.id == ob.workCodePresetId }
+                WORK_CODE_PRESETS.firstOrNull { it.id == ob.workCodePresetId }
                     ?.let { preset -> runCatching { workCodesRepo.replaceAll(preset.codes) } }
             }
 
             db.checkpoint()
             loadSettings()
             recompute()
-            _state.value = _state.value.copy(
-                onboarding = OnboardingUiState(active = false),
-                view = "dashboard",
-            )
+            _state.update {
+                it.copy(
+                    onboarding = OnboardingUiState(active = false),
+                    view = "dashboard",
+                )
+            }
             emit(UiMessage(
                 if (ob.restoreData != null) "onboarding.toast.restoreSuccess"
                 else "onboarding.toast.welcome"

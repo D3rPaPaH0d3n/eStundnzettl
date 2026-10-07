@@ -76,10 +76,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-/** Entfernt die Trans-Markup-Tags (<b>, <plus>, <icon/>) aus i18n-Texten. */
-private fun stripMarkup(text: String): String =
-    text.replace(Regex("</?(b|plus|icon)\\s*/?>"), "")
-
 // ─────────────────────────────────────────────────────────────────
 // Hilfe — Port von HelpModal.tsx (Inhalte aus helpModal.* i18n-Keys):
 // nummerierte Schritt-Kreise mit Einrück-Linie, Info-Karten, farbige

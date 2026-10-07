@@ -5,7 +5,7 @@
 # full descriptions, plus localized assets that live under
 # `fastlane/metadata/android/<locale>/`). Build, signing and AAB upload
 # stay in the existing GitHub workflow `deploy-play-store.yml` which
-# uses a custom Python script (`.github/scripts/deploy-play.py`).
+# uses a custom Python script (`.github/workflows/scripts/deploy-play.py`).
 #
 # Why split? The deploy workflow tightly couples version bumps,
 # signing and track promotion. Listing metadata changes much more

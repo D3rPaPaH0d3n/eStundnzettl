@@ -3,22 +3,9 @@
 #
 # Monatlicher Rhythmus mit einem Sammel-PR pro Ökosystem (minor + patch).
 # Major-Updates kommen weiterhin einzeln, weil sie bewusste Entscheidungen
-# brauchen (siehe ESLint 10 / eslint-plugin-react).
+# brauchen (z. B. AGP- oder Kotlin-Sprünge).
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-      time: "06:00"
-      timezone: "Europe/Vienna"
-    open-pull-requests-limit: 5
-    groups:
-      npm-minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
-
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

@@ -10,8 +10,8 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        // Same application id as the Capacitor app so the native rewrite can
-        // eventually replace it as an in-place update on the Play Store.
+        // Same application id as the former Capacitor app, so the native app
+        // ships as an in-place update of the existing Play Store listing.
         applicationId = "com.estundnzettl.app"
         minSdk = 26
         targetSdk = 36
@@ -37,8 +37,8 @@ android {
 
     buildTypes {
         debug {
-            // Side-by-side install next to the production Capacitor app
-            // while both versions are being compared.
+            // Side-by-side install next to the Play Store build. Keep the
+            // suffix: the Google Drive OAuth client is registered for it.
             applicationIdSuffix = ".native"
         }
         release {
@@ -86,7 +86,6 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
 

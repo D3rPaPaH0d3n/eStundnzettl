@@ -10,12 +10,9 @@ import com.estundnzettl.core.locale.getLocale
 import com.estundnzettl.core.locale.isLocaleId
 import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.UserData
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Typisierter Settings-Store über der Key-Value-Tabelle.
@@ -39,8 +36,6 @@ class SettingsRepository(private val dao: SettingsDao) {
         const val NEXTCLOUD_ENABLED = "nextcloud_enabled"
         const val NEXTCLOUD_URL = "nextcloud_url"
         const val NEXTCLOUD_USER = "nextcloud_user"
-        const val BACKUP_TARGET = "backup_target"
-        const val LAST_BACKUP = "last_backup"
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -105,10 +100,4 @@ class SettingsRepository(private val dao: SettingsDao) {
 
     suspend fun setCalculationConfig(config: CalculationConfig) =
         setRaw(Keys.CALCULATION_CONFIG, config.toJson())
-
-    fun observeTheme(): Flow<String> = dao.observeValue(Keys.THEME).map { value ->
-        value?.let { raw ->
-            runCatching { json.parseToJsonElement(raw).jsonPrimitive.content }.getOrNull()
-        } ?: "system"
-    }
 }

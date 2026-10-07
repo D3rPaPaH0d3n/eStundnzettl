@@ -16,6 +16,7 @@ import android.text.TextPaint
 import android.text.TextUtils
 import android.util.Base64
 import com.estundnzettl.app.i18n.I18n
+import com.estundnzettl.core.calc.DayBalanceMeta
 import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.buildDayBalanceMetaMap
 import com.estundnzettl.core.calc.calculateMonthlyTargetProgress
@@ -245,7 +246,7 @@ class ReportPdfGenerator(
         val xDate = PAD_L
         val xTime = xDate + COL_DATE
         val xProject = xTime + COL_TIME
-        val balanceRight = CONTENT_RIGHT.toFloat()
+        val balanceRight = CONTENT_RIGHT
         val hoursRight = balanceRight - (if (showBalance) COL_BALANCE else 0f)
         val codeLeft = hoursRight - COL_HOURS - (if (showCode) COL_CODE else 0f)
         val projectWidth = codeLeft - xProject - 6f // paddingRight 6
@@ -265,7 +266,7 @@ class ReportPdfGenerator(
             footer?.let { drawFooter(canvas!!, it) }
             y = PAD_T
             y = drawHeader(canvas!!, y, input, logoBitmap)
-            y = drawTableHead(canvas!!, y, showCode, showBalance, xDate, xTime, xProject, codeLeft, hoursRight, balanceRight)
+            y = drawTableHead(canvas, y, showCode, showBalance, xDate, xTime, xProject, codeLeft, hoursRight, balanceRight)
         }
 
         fun endPage() {
@@ -317,11 +318,11 @@ class ReportPdfGenerator(
             ensureSpace(8f + summaryHeight)
             y += 8f
             // Box-Hintergrund + Rahmen zuerst (Höhe aus dem Messdurchlauf)
-            val box = RectF(PAD_L, y, CONTENT_RIGHT.toFloat(), y + summaryHeight)
+            val box = RectF(PAD_L, y, CONTENT_RIGHT, y + summaryHeight)
             canvas!!.drawRoundRect(box, 4f, 4f, fillPaint(C.bgGray))
-            canvas!!.drawRoundRect(box, 4f, 4f, linePaint(C.borderLight, 0.5f))
+            canvas.drawRoundRect(box, 4f, 4f, linePaint(C.borderLight, 0.5f))
             drawSummary(
-                canvas!!, y, input, display.showTargetTime, display.showBalance,
+                canvas, y, input, display.showTargetTime, display.showBalance,
                 display.showOvertimeSplit && showOvertimeColumns, vac, account,
             )
             y += summaryHeight
@@ -390,7 +391,7 @@ class ReportPdfGenerator(
         }
 
         val avatarSize = 38f
-        val metaRight = if (photoBitmap != null) CONTENT_RIGHT - avatarSize - 8f else CONTENT_RIGHT.toFloat()
+        val metaRight = if (photoBitmap != null) CONTENT_RIGHT - avatarSize - 8f else CONTENT_RIGHT
         var ry = top + contentH - metaH
         canvas.drawTextTopRight(name, metaRight, ry, namePaint)
         ry += namePaint.lineHeight + 1f
@@ -409,7 +410,7 @@ class ReportPdfGenerator(
         }
 
         val borderY = top + contentH + 8f
-        canvas.drawLine(PAD_L, borderY, CONTENT_RIGHT.toFloat(), borderY, linePaint(C.borderDark, 2f))
+        canvas.drawLine(PAD_L, borderY, CONTENT_RIGHT, borderY, linePaint(C.borderDark, 2f))
         return borderY + 2f + 10f
     }
 
@@ -433,7 +434,7 @@ class ReportPdfGenerator(
     }
 
     private fun drawFooter(canvas: Canvas, footer: FooterLayout) {
-        canvas.drawLine(PAD_L, footer.ruleY, CONTENT_RIGHT.toFloat(), footer.ruleY, linePaint(C.borderLight, 0.5f))
+        canvas.drawLine(PAD_L, footer.ruleY, CONTENT_RIGHT, footer.ruleY, linePaint(C.borderLight, 0.5f))
         canvas.save()
         canvas.translate(PAD_L, footer.textTop)
         footer.layout.draw(canvas)
@@ -489,7 +490,7 @@ class ReportPdfGenerator(
             canvas.drawTextTopRight(t("reports.columns.balance").uppercase(javaLocale), balanceRight, textTop, th)
         }
         val bottom = textTop + th.lineHeight + 4f
-        canvas.drawLine(PAD_L, bottom, CONTENT_RIGHT.toFloat(), bottom, linePaint(C.borderDark, 2f))
+        canvas.drawLine(PAD_L, bottom, CONTENT_RIGHT, bottom, linePaint(C.borderDark, 2f))
         return bottom + 2f
     }
 
@@ -510,7 +511,7 @@ class ReportPdfGenerator(
         val hoursPaint: TextPaint,
         val balanceText: String?,
         val balancePaint: TextPaint?,
-        val meta: com.estundnzettl.core.calc.DayBalanceMeta?,
+        val meta: DayBalanceMeta?,
     )
 
     private fun buildRow(
@@ -519,7 +520,7 @@ class ReportPdfGenerator(
         lastOfDay: Boolean,
         workCodeLabels: Map<Int, String>,
         attachments: List<Attachment>,
-        meta: com.estundnzettl.core.calc.DayBalanceMeta?,
+        meta: DayBalanceMeta?,
         showAttachments: Boolean,
         projectWidth: Float,
     ): RowLayout {
@@ -647,7 +648,7 @@ class ReportPdfGenerator(
             else -> null
         }
         if (bg != null) {
-            canvas.drawRect(PAD_L, top, CONTENT_RIGHT.toFloat(), top + row.height, fillPaint(bg))
+            canvas.drawRect(PAD_L, top, CONTENT_RIGHT, top + row.height, fillPaint(bg))
         }
 
         val contentTop = top + 4f
@@ -698,7 +699,7 @@ class ReportPdfGenerator(
         // Untere Trennlinie nur bei letzter Zeile des Tages
         if (row.lastOfDay) {
             val by = top + row.height - 0.25f
-            canvas.drawLine(PAD_L, by, CONTENT_RIGHT.toFloat(), by, linePaint(C.borderLight, 0.5f))
+            canvas.drawLine(PAD_L, by, CONTENT_RIGHT, by, linePaint(C.borderLight, 0.5f))
         }
     }
 
@@ -727,7 +728,7 @@ class ReportPdfGenerator(
 
         val pad = 8f
         val boxLeft = PAD_L
-        val boxRight = CONTENT_RIGHT.toFloat()
+        val boxRight = CONTENT_RIGHT
         val innerLeft = boxLeft + pad
         val innerRight = boxRight - pad
         val innerWidth = innerRight - innerLeft
@@ -957,7 +958,7 @@ class ReportPdfGenerator(
         val layout = staticLayout(note, notePaint, CONTENT_RIGHT - PAD_L, spacingMult = 1.2f)
 
         var yy = top
-        canvas?.drawLine(PAD_L, yy, CONTENT_RIGHT.toFloat(), yy, linePaint(C.borderLight, 1f, dashed = true))
+        canvas?.drawLine(PAD_L, yy, CONTENT_RIGHT, yy, linePaint(C.borderLight, 1f, dashed = true))
         yy += 1f + 8f
         canvas?.drawTextTop(t("reports.notesTitle").uppercase(javaLocale), PAD_L, yy, titlePaint)
         yy += titlePaint.lineHeight + 4f

@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,12 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -111,30 +108,6 @@ fun AppConfirmDialog(
         },
         containerColor = colors.surface,
     )
-}
-
-/** Einheitliches Material-Sheet für kurze, kontextbezogene Auswahlen. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AppSelectionSheet(
-    title: String,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    icon: ImageVector? = null,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val colors = LocalAppColors.current
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = colors.background,
-    ) {
-        Column(modifier = modifier.fillMaxWidth()) {
-            OverlayHeader(title = title, subtitle = subtitle, onDismiss = onDismiss, icon = icon)
-            HorizontalDivider(color = colors.borderSubtle)
-            content()
-        }
-    }
 }
 
 @Composable

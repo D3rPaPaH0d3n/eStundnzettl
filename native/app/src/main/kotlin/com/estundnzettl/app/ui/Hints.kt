@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.estundnzettl.app.MainViewModel
+import com.estundnzettl.app.data.UpdateCheck
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
@@ -276,7 +277,7 @@ fun NativeWelcomeDialog(viewModel: MainViewModel) {
  */
 @Composable
 fun UpdateAvailableBanner(
-    release: com.estundnzettl.app.data.UpdateCheck.Release,
+    release: UpdateCheck.Release,
     onOpen: () -> Unit,
     onDismiss: () -> Unit,
 ) {

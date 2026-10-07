@@ -83,12 +83,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.APP_PLAY_STORE_URL
+import com.estundnzettl.app.BuildConfig
 import com.estundnzettl.app.buildAppRecommendationText
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.ShareHandoffStore
 import com.estundnzettl.app.ShareTemplateRenderer
 import com.estundnzettl.app.ShareTargetCapabilities
 import com.estundnzettl.app.ShareTargetOption
+import com.estundnzettl.app.i18n.I18n
+import com.estundnzettl.app.ui.AppCard
+import com.estundnzettl.app.ui.AppConfirmDialog
+import com.estundnzettl.app.ui.ChangelogSheet
+import com.estundnzettl.app.ui.DurationWheelSheet
+import com.estundnzettl.app.ui.Haptics
+import com.estundnzettl.app.ui.HelpSheet
+import com.estundnzettl.app.ui.LocalTourTargets
 import com.estundnzettl.app.ui.tourTarget
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
@@ -97,6 +106,7 @@ import com.estundnzettl.core.model.WORK_CODE_PRESETS
 import com.estundnzettl.core.model.WORK_MODELS
 import com.estundnzettl.core.calc.formatMonthlyTargetInput
 import com.estundnzettl.core.calc.parseMonthlyTargetInput
+import com.estundnzettl.core.model.UserData
 import java.io.ByteArrayOutputStream
 
 /**
@@ -116,13 +126,13 @@ fun SettingsScreen(
     val state by viewModel.state.collectAsState()
     val colors = LocalAppColors.current
     val t = LocalI18n.current
-    val userData = state.userData ?: com.estundnzettl.core.model.UserData()
+    val userData = state.userData ?: UserData()
     val expertMode = userData.expertMode
 
     // Tour-Ziele + Scroll-Hook für die Einstellungen-Tour (Spotlight
     // scrollt die jeweilige Sektion mittig ins Bild)
     val scrollState = rememberScrollState()
-    val tourTargets = com.estundnzettl.app.ui.LocalTourTargets.current
+    val tourTargets = LocalTourTargets.current
     androidx.compose.runtime.DisposableEffect(scrollState) {
         tourTargets.settingsScroll = { delta -> scrollState.animateScrollBy(delta) }
         onDispose { tourTargets.settingsScroll = null }
@@ -199,7 +209,7 @@ private fun ProfileSection(viewModel: MainViewModel) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
     val context = LocalContext.current
-    val userData = state.userData ?: com.estundnzettl.core.model.UserData()
+    val userData = state.userData ?: UserData()
     var expanded by rememberSaveable { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
@@ -216,7 +226,7 @@ private fun ProfileSection(viewModel: MainViewModel) {
         }
     }
 
-    com.estundnzettl.app.ui.AppCard {
+    AppCard {
         Column {
             Row(
                 modifier = Modifier
@@ -500,7 +510,7 @@ private fun WorkScheduleSection(viewModel: MainViewModel) {
     val state by viewModel.state.collectAsState()
     val colors = LocalAppColors.current
     val t = LocalI18n.current
-    val userData = state.userData ?: com.estundnzettl.core.model.UserData()
+    val userData = state.userData ?: UserData()
     val workDays = userData.workDays ?: List(7) { 0 }
     val activeModelId = userData.workModelId ?: "custom"
     val isCustomMode = activeModelId == "custom"
@@ -689,7 +699,7 @@ private fun DayDurationDialog(
     onDismiss: () -> Unit,
 ) {
     // Dauer-Wheel im Original-Stil (Port von DecimalDurationPicker)
-    com.estundnzettl.app.ui.DurationWheelSheet(
+    DurationWheelSheet(
         title = title,
         initialMinutes = initialMinutes,
         maxHours = 16,
@@ -720,7 +730,7 @@ private fun WorkCodesSection(viewModel: MainViewModel) {
         )
     }
 
-    com.estundnzettl.app.ui.AppCard {
+    AppCard {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -762,7 +772,7 @@ private fun WorkCodesSection(viewModel: MainViewModel) {
 @Composable
 private fun BackupSection(
     viewModel: MainViewModel,
-    t: com.estundnzettl.app.i18n.I18n,
+    t: I18n,
     accent: Color,
     onExport: () -> Unit,
     onImport: () -> Unit,
@@ -1348,7 +1358,7 @@ private fun ExpertModeSection(viewModel: MainViewModel) {
     var showDemoWarning by remember { mutableStateOf(false) }
 
     if (showDemoWarning) {
-        com.estundnzettl.app.ui.AppConfirmDialog(
+        AppConfirmDialog(
             title = t.t("settings.data.demoWarning.title"),
             message = t.t(
                 "settings.data.demoWarning.messageTemplate",
@@ -1360,14 +1370,14 @@ private fun ExpertModeSection(viewModel: MainViewModel) {
             onDismiss = { showDemoWarning = false },
             onConfirm = {
                 showDemoWarning = false
-                com.estundnzettl.app.ui.Haptics.medium(context)
+                Haptics.medium(context)
                 viewModel.loadDemoData()
             },
         )
     }
 
     if (showRecalcWarning) {
-        com.estundnzettl.app.ui.AppConfirmDialog(
+        AppConfirmDialog(
             title = t.t("settings.appInfo.recalcModalTitle"),
             message = t.t("settings.appInfo.recalcModalMessage"),
             confirmLabel = t.t("settings.appInfo.recalc"),
@@ -1380,7 +1390,7 @@ private fun ExpertModeSection(viewModel: MainViewModel) {
         )
     }
 
-    com.estundnzettl.app.ui.AppCard {
+    AppCard {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SettingsToggleRow(
                 title = t.t("settings.expertMode.title"),
@@ -1423,7 +1433,7 @@ private fun AppInfoSection(viewModel: MainViewModel) {
     var dangerExpanded by rememberSaveable { mutableStateOf(false) }
 
     if (showDeleteAll) {
-        com.estundnzettl.app.ui.AppConfirmDialog(
+        AppConfirmDialog(
             title = t.t("app.deleteAllTitle"),
             message = t.t("app.deleteAllMessage"),
             confirmLabel = t.t("common.delete"),
@@ -1436,8 +1446,8 @@ private fun AppInfoSection(viewModel: MainViewModel) {
 
     var showHelp by remember { mutableStateOf(false) }
     var showChangelog by remember { mutableStateOf(false) }
-    if (showHelp) com.estundnzettl.app.ui.HelpSheet(onDismiss = { showHelp = false })
-    if (showChangelog) com.estundnzettl.app.ui.ChangelogSheet(onDismiss = { showChangelog = false })
+    if (showHelp) HelpSheet(onDismiss = { showHelp = false })
+    if (showChangelog) ChangelogSheet(onDismiss = { showChangelog = false })
 
     val context = LocalContext.current
     fun openLink(url: String) {
@@ -1470,7 +1480,7 @@ private fun AppInfoSection(viewModel: MainViewModel) {
     }
 
     // App & Informationen — Port von AppInfoSettings.tsx
-    com.estundnzettl.app.ui.AppCard {
+    AppCard {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 SectionIconBadge(
@@ -1495,7 +1505,7 @@ private fun AppInfoSection(viewModel: MainViewModel) {
     }
 
     // Über — Datenschutz, Website, GitHub, Rechtliches, Spenden
-    com.estundnzettl.app.ui.AppCard {
+    AppCard {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 SectionIconBadge(
@@ -1530,7 +1540,7 @@ private fun AppInfoSection(viewModel: MainViewModel) {
                     }
                 }
             }
-            ActionButton(label = "☕ " + t.t("settings.appInfo.donate"), tint = com.estundnzettl.app.ui.theme.Palette.Amber600) {
+            ActionButton(label = "☕ " + t.t("settings.appInfo.donate"), tint = Palette.Amber600) {
                 openLink("https://revolut.me/mkainer/pocket/QAt1Q0Ntsb")
             }
         }
@@ -1538,7 +1548,7 @@ private fun AppInfoSection(viewModel: MainViewModel) {
 
     // Gefahrenzone: bewusst kompakt und standardmäßig geschlossen. Die
     // destruktive Aktion wird erst nach dem Aufklappen angeboten.
-    com.estundnzettl.app.ui.AppCard(
+    AppCard(
         containerColor = colors.danger.copy(alpha = if (colors.isDark) 0.075f else 0.025f),
         borderColor = colors.danger.copy(alpha = if (dangerExpanded) 0.26f else 0.16f),
         shadowElevation = 0.dp,
@@ -1619,7 +1629,7 @@ private fun AppInfoSection(viewModel: MainViewModel) {
         Text(
             t.t(
                 "settings.appInfo.versionLabel",
-                "version" to com.estundnzettl.app.BuildConfig.VERSION_NAME,
+                "version" to BuildConfig.VERSION_NAME,
             ),
             color = colors.textFaint, fontSize = 12.sp, fontWeight = FontWeight.Bold,
         )

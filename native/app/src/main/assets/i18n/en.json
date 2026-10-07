@@ -16,8 +16,6 @@
     "confirm": "Confirm",
     "save": "Save",
     "delete": "Delete",
-    "select": "Select",
-    "apply": "Apply",
     "loading": "Loading..."
   },
   "app": {
@@ -31,10 +29,8 @@
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
     "selectMonth": "Select month",
-    "monthPickerAria": "Select month (currently {{value}})",
     "previousYear": "Previous year",
     "nextYear": "Next year",
-    "monthPickerFallback": "Month picker could not be opened.",
     "actual": "ACTUAL",
     "target": "TARGET",
     "balance": "Balance",
@@ -74,9 +70,6 @@
     "sick": "Sick"
   },
   "entryForm": {
-    "copyLastError": "No previous entry found.",
-    "copyLastSuccess": "Data copied!",
-    "quickAddSuccess": "Activity added!",
     "codePlaceholder": "Please select",
     "startTime": "Start time",
     "endTime": "End time",
@@ -109,8 +102,6 @@
       "manual": "Manual"
     },
     "date": "Date",
-    "datePickerFallback": "Date picker could not be opened.",
-    "datePickerFallbackHint": "Native date picker unavailable – please choose the date manually.",
     "start": "Start",
     "end": "End",
     "pause": "Break",
@@ -118,7 +109,6 @@
     "pauseMinutes": "{{minutes}} min",
     "activity": "Activity",
     "newActivity": "New",
-    "quickAddPlaceholder": "e.g. 99 - Other",
     "distanceOrNote": "Route / Note",
     "project": "Project",
     "projectPlaceholder": "…",
@@ -129,12 +119,10 @@
     "preview": "Preview",
     "exportButton": "Send",
     "fullMonth": "Entire month",
-    "employeeAlt": "Employee",
     "layoutPanel": {
       "title": "PDF display",
       "subtitle": "Toggle fields live"
     },
-    "monthWithWeek": "{{month}} (CW {{week}})",
     "columns": {
       "date": "Date",
       "time": "Time",
@@ -174,16 +162,8 @@
       "remaining": "Remaining:"
     },
     "notesTitle": "Notes:",
-    "largeExport": {
-      "title": "Large export",
-      "message": "{{count}} entries will be exported. On older devices this may cause memory issues. Recommended: export one month or a single calendar week at a time.",
-      "confirm": "Export anyway"
-    },
     "toast": {
-      "downloadStarted": "🖨️ Download started!",
-      "readyToShare": "Ready to share",
       "saved": "PDF saved",
-      "savedToDocuments": "Saved to 'Documents/eStundnzettl'",
       "error": "Error: {{message}}"
     },
     "shareHandoff": {
@@ -208,7 +188,6 @@
       "placeholder": "E.g. additional info, bank details, etc…",
       "done": "Done"
     },
-    "pdfElementMissing": "PDF element missing",
     "overtimeAccount": {
       "title": "Time-off account",
       "opening": "Carried over from previous month:",
@@ -217,15 +196,6 @@
       "timeComp": "Time off taken:",
       "closing": "Balance at end of month:",
       "closingAt": "Balance as of {{date}}:"
-    }
-  },
-  "drawers": {
-    "timePicker": {
-      "title": "Select time",
-      "confirmAria": "Confirm selection"
-    },
-    "decimalDuration": {
-      "title": "Hours"
     }
   },
   "helpModal": {
@@ -327,7 +297,6 @@
       "badgeMobile": "All on your phone",
       "badgeOffline": "Works offline",
       "badgePrivate": "Your data stays yours",
-      "startNew": "Let's go — fresh setup",
       "restore": "I already have a backup",
       "demo": "Just take a look (demo)",
       "simpleStart": "Only record working hours",
@@ -382,8 +351,7 @@
       "restoreFromGdrive": "From Google Drive",
       "restoreFromNextcloud": "From Nextcloud",
       "restoreFromFolder": "Local folder",
-      "restoreFromFile": "File (.json)",
-      "ncLoading": "Loading…"
+      "restoreFromFile": "File (.json)"
     },
     "locale": {
       "title": "Hours calculation",
@@ -461,31 +429,17 @@
       "demoLoaded": "Demo data loaded! You can try out the app now.",
       "nameRequired": "Please enter your name.",
       "localeRequired": "Please pick an hours calculation.",
-      "gdriveLinked": "Linked successfully!",
-      "gdriveLoginFailed": "Sign-in cancelled or failed.",
       "folderLinked": "Folder linked!",
       "folderCancelled": "Selection cancelled",
-      "ncDisconnected": "Nextcloud disconnected",
-      "ncEnterUrl": "Please enter the server URL",
-      "ncConnected": "Nextcloud connected!",
-      "ncTimeout": "Timed out — please try again",
       "ncLoginFailed": "Nextcloud login failed",
-      "ncServerUnreachable": "Server unreachable",
-      "ncServerUnreachableRestore": "Server unreachable or Login Flow v2 not supported",
       "ncRestoreNotFound": "No backup found on Nextcloud",
       "ncRestoreInvalid": "Invalid backup format",
       "ncRestoreLoaded": "Backup loaded from Nextcloud!",
-      "signinFailed": "Sign-in failed",
-      "tokenMissing": "No access token received",
       "backupNotFound": "No backup found.",
-      "backupEmpty": "Backup is empty.",
-      "backupInvalid": "Invalid format.",
       "backupInvalidShort": "Invalid backup.",
       "backupInvalidFormat": "Invalid format.",
       "backupLoaded": "Backup loaded!",
-      "loadError": "Error while loading",
       "folderAccessError": "Error accessing folder.",
-      "fileReadError": "Could not read file.",
       "integrityMismatch": "⚠️ Checksum mismatch — backup may have been tampered with",
       "restoreError": "Restore failed — backup could not be saved.",
       "restoreProfileNeeded": "This backup has no profile — please add your name & working hours. Your entries will still be imported at the end.",
@@ -512,29 +466,15 @@
       "updateFailed": "Couldn't update entry",
       "deleteFailed": "Couldn't delete entry",
       "deleteAllFailed": "Couldn't delete entries",
-      "importFailed": "Import failed",
-      "endBeforeStart": "⚠️ End time must be after start time!",
       "startEqualsEnd": "⚠️ Start and end time must not be equal!",
       "overlap": "⚠️ Time overlap!"
     },
     "appReset": "🧹 App fully reset",
-    "noInternet": "No internet connection",
-    "playStore": {
-      "opening": "Opening the Play Store...",
-      "failed": "Couldn't open the Play Store.",
-      "copiedClipboard": "Play Store link copied to clipboard."
-    },
-    "onboardingCompleted": "Setup complete!",
     "timer": {
       "started": "⏱️ Time clock started!",
       "captured": "🏁 Time captured"
     },
-    "attachments": {
-      "readyToShare_one": "1 file ready to share",
-      "readyToShare_other": "{{count}} files ready to share"
-    },
     "autoBackup": {
-      "failed5x": "Cloud backup failed (5x). Please check settings.",
       "completed": "Backup complete",
       "failed": "Backup failed",
       "partial": "Partially backed up – {{targets}} could not be reached.",
@@ -543,31 +483,7 @@
     },
     "autoCheckout": "⚠️ Auto-clocked out! Please review.",
     "autoCheckout_one": "The timer was still running from yesterday and was automatically stopped at 23:59. Please review the entry.",
-    "autoCheckout_other": "The timer had been running for {{count}} days and was automatically stopped at 23:59 on its start day. Please review the entry.",
-    "export": {
-      "exporting": "Exporting data...",
-      "success": "📤 Export successful!",
-      "downloadStarted": "💾 Download started!",
-      "error": "❌ Export error: {{message}}",
-      "exportingFolder": "Exporting to folder...",
-      "folderSuccess": "✅ Saved to folder successfully!",
-      "folderCancelled": "Export cancelled or failed",
-      "preparing": "Preparing export...",
-      "ready": "📤 Export ready!",
-      "shareTitle": "eStundnzettl backup",
-      "shareText": "Backup from {{date}}",
-      "shareDialogTitle": "Save backup"
-    },
-    "import": {
-      "fileTooLarge": "File too large (max. 10 MB)",
-      "success": "Data imported successfully!",
-      "error": "Error: {{message}}",
-      "invalidFile": "Invalid file.",
-      "integrityMismatch": "⚠️ Checksum mismatch — backup may have been tampered with",
-      "legacyChecksum": "ℹ️ Backup without checksum (legacy format)",
-      "skippedEntries_one": "1 invalid entry skipped",
-      "skippedEntries_other": "{{count}} invalid entries skipped"
-    }
+    "autoCheckout_other": "The timer had been running for {{count}} days and was automatically stopped at 23:59 on its start day. Please review the entry."
   },
   "changelogModal": {
     "title": "Changelog",
@@ -575,7 +491,6 @@
     "whatsNewSubtitle": "We’ve improved eStundnzettl. Here’s a quick and simple look at what changed.",
     "olderChangesHint": "You can revisit older changes anytime in Settings under App info.",
     "allClear": "Got it",
-    "recentBugfixes": "Recent bug fixes",
     "versionsCount_one": "({{count}} version)",
     "versionsCount_other": "({{count}} versions)"
   },
@@ -586,8 +501,7 @@
     "reportTitle": "Report",
     "settings": "Open settings",
     "report": "Open report",
-    "backToOverview": "Back to overview",
-    "logoAlt": "Logo"
+    "backToOverview": "Back to overview"
   },
   "timer": {
     "start": "Add new entry or start timer",
@@ -679,30 +593,9 @@
       }
     }
   },
-  "skeleton": {
-    "default": "Loading...",
-    "settings": "Loading settings...",
-    "entryForm": "Loading entry form...",
-    "onboarding": "Loading setup wizard...",
-    "pdfModule": "Loading PDF module...",
-    "preparing": "Preparing view...",
-    "preparingPdf": "Preparing preview..."
-  },
-  "backup": {
-    "integrityMismatch": "Checksum mismatch — backup may have been tampered with",
-    "integrityUnverified": "Backup without checksum (legacy format)"
-  },
   "modals": {
-    "confirm": {
-      "defaultConfirmText": "Delete"
-    },
     "export": {
-      "titlePdf": "Save PDF",
-      "titleData": "Export data",
-      "subtitle": "Choose a method",
-      "folderPdf": "Save to Documents",
       "folderData": "Save to folder",
-      "folderPdfDescription": "Saves the PDF to the 'Documents' folder",
       "folderDataDescription": "Choose a location (e.g. Downloads)",
       "share": "Share / Send",
       "shareDescription": "Via WhatsApp, email or other apps"
@@ -711,38 +604,10 @@
       "title": "Review backup content",
       "description": "We found data in this backup. Because it also contains <b>settings</b> (work-hours model), you need to decide:",
       "entriesLabel": "Time entries",
-      "settingsLabel": "Settings",
-      "settingsIncluded": "Included",
       "warning": "Warning: \"Import everything\" overwrites your current work-hours model!",
       "importAll": "Overwrite & import everything",
       "entriesOnly": "Entries only (keep settings)"
-    },
-    "localeMigration": {
-      "title": "Pick hours calculation",
-      "description": "eStundnzettl can now be used neutrally. Pick once which calculation suits you — your existing entries stay unchanged.",
-      "austriaTitle": "Austria",
-      "austriaNote": "(same as before — recommended)",
-      "austriaDescription": "Public holidays, half-days (Dec 24/31), extra hours/overtime per Austrian labor law (AZG)",
-      "germanyTitle": "Germany",
-      "germanyDescription": "Federal + regional holidays, 40h week, extra hours/overtime",
-      "stateLabel": "State",
-      "stateSelect": "Select state",
-      "neutralTitle": "Neutral",
-      "neutralDescription": "No automatic holidays, no half-days, no extra hours/overtime split",
-      "changeLater": "You can change this later in settings at any time."
-    },
-    "preset": {
-      "title": "Pick template",
-      "warning": "Warning: Changing the template recalculates overtime for all previous entries!"
     }
-  },
-  "supportPrompt": {
-    "title": "Enjoying eStundnzettl?",
-    "body": "If the app helps you in everyday work, a quick review would mean a lot – or you can buy me a coffee as a small thank-you.",
-    "rate": "Rate it",
-    "coffee": "Coffee",
-    "noThanks": "No thanks",
-    "linkError": "Couldn't open link"
   },
   "settings": {
     "toast": {
@@ -750,7 +615,6 @@
       "customModeRequired": "Pick 'Custom' first",
       "unlockRequired": "Unlock the padlock first to edit",
       "timeUpdated": "Time updated",
-      "customOnly": "Only available in 'Custom' mode",
       "unlocked": "Editing unlocked",
       "invalidBackup": "Invalid backup format",
       "restoreError": "Restore failed — nothing was changed.",
@@ -775,7 +639,6 @@
     },
     "editDay": "Edit {{weekday}}",
     "profile": {
-      "title": "Profile",
       "photoHint": "Tap the picture to change it.",
       "photoAlt": "Profile",
       "nameLabel": "Your name",
@@ -815,9 +678,6 @@
       "license": "License",
       "contact": "Contact",
       "donate": "Buy me a coffee",
-      "expertTitle": "Power-user mode",
-      "expertOn": "All settings visible",
-      "expertOff": "Advanced settings hidden",
       "recalc": "Recalculate",
       "demoData": "Demo data",
       "dangerTitle": "Danger zone",
@@ -829,33 +689,14 @@
       "linkError": "Couldn't open link",
       "mailError": "Couldn't open the mail app",
       "recalcModalTitle": "Recalculate entries?",
-      "recalcModalMessage": "All saved work-time entries will be recalculated from start, end and break. This fixes incorrect values from older app versions. Correct entries stay unchanged.",
-      "recalcFixed": "Fixed {{fixed}} of {{total}} entries",
-      "recalcAllCorrect": "All {{total}} entries are correct",
-      "recalcError": "Recalculation failed"
+      "recalcModalMessage": "All saved work-time entries will be recalculated from start, end and break. This fixes incorrect values from older app versions. Correct entries stay unchanged."
     },
     "backup": {
       "header": "Backup & Export",
       "subtitle": "Back up your data to Google Drive, Nextcloud or locally",
       "last": {
-        "now": "just now",
-        "minutes_one": "{{count}} min ago",
-        "minutes_other": "{{count}} min ago",
-        "hours_one": "{{count}} hr ago",
-        "hours_other": "{{count}} hrs ago",
-        "days_one": "{{count}} day ago",
-        "days_other": "{{count}} days ago",
         "lastAt": "Last: {{time}}",
         "never": "Never backed up"
-      },
-      "badge": {
-        "connected": "Connected"
-      },
-      "status": {
-        "title": "Status",
-        "targets": "Active targets: {{targets}}",
-        "noTargets": "None",
-        "last": "Last backup: {{time}}"
       },
       "gdrive": {
         "connectedAs": "Connected as {{label}}",
@@ -868,7 +709,6 @@
         "playServicesUnavailable": "Google Play services are currently unavailable.",
         "alternativesHint": "You can still keep your data safe with a local or Nextcloud backup.",
         "unavailableButton": "Google Drive unavailable",
-        "expired": "Connection expired",
         "notConnected": "Not connected",
         "disconnect": "Disconnect",
         "connect": "Connect",
@@ -877,10 +717,8 @@
       },
       "nextcloud": {
         "connectedAs": "Connected as {{user}}",
-        "awaitingLogin": "Waiting for login…",
         "notConfigured": "Not configured",
         "disconnect": "Disconnect",
-        "setup": "Set up",
         "pollingTitle": "Waiting for Nextcloud login…",
         "pollingHint": "Please sign in in the browser and grant access",
         "serverUrlLabel": "Server URL",
@@ -891,9 +729,7 @@
       "local": {
         "title": "Local backup",
         "activeDaily": "Active (daily)",
-        "notConfigured": "Not configured",
-        "disconnect": "Disconnect",
-        "select": "Choose"
+        "notConfigured": "Not configured"
       },
       "warning": {
         "gdriveFailed": "Google Drive could not complete its latest backup.",
@@ -901,14 +737,10 @@
         "gdriveFailureCount_other": "{{count}} attempts since the last success have failed.",
         "lastSuccessfulAt": "Last successful: {{time}}",
         "gdriveReconnect": "⚠️ Google Drive needs to be reconnected before backups can continue.",
-        "nextcloudWithError": "Nextcloud backup failed: {{error}}",
-        "nextcloudGeneric": "Recent Nextcloud backups failed. Please check the connection.",
-        "retrying": "Retrying…",
-        "retryNow": "Retry now"
+        "nextcloudWithError": "Nextcloud backup failed: {{error}}"
       },
       "manual": {
         "saving": "Backing up…",
-        "title": "Backup",
         "saveNow": "Back up now"
       },
       "export": "Export",
@@ -916,17 +748,13 @@
       "toast": {
         "pollingTimeout": "Timed out — please try again",
         "nextcloudLoginFailed": "Nextcloud login failed",
-        "nextcloudLoginFailedWith": "Nextcloud login failed: {{message}}",
         "ncConnectedAs": "Connected as {{loginName}}",
-        "ncPersistError": "Connected to Nextcloud, but saving settings in the app failed",
         "ncEnterUrl": "Please enter the server URL",
         "ncDisconnected": "Nextcloud disconnected",
         "ncConnectFirst": "Please connect Nextcloud first",
         "ncTestOk": "Connection OK!",
         "ncTestFailed": "Connection failed",
-        "ncTestError": "Test failed",
         "gdriveConnected": "Connected: {{label}}",
-        "gdriveDefaultLabel": "Drive",
         "gdriveCancelled": "Google sign-in cancelled",
         "gdriveUnavailable": "Google Drive is not available on this device yet",
         "gdriveFailed": "Google Drive connection failed",
@@ -935,26 +763,11 @@
         "gdriveReconnectNeeded": "Google Drive needs you to sign in again.",
         "localDisconnected": "Backup folder disconnected",
         "localActivated": "Backup enabled!",
-        "folderCancelled": "Folder selection cancelled",
-        "backupCreated": "Backup created: {{targets}}",
-        "backupPartialFailed": "Failed: {{targets}}",
-        "backupDebugTitle": "Backup error details:\n\n{{details}}",
-        "backupFailed": "Backup failed"
+        "folderCancelled": "Folder selection cancelled"
       },
-      "targetLocal": "Local",
-      "unavailable": {
-        "hint": "Requires Google Play Services",
-        "bannerTitle": "Some features are unavailable on this device",
-        "bannerBody": "No Google Play Services were detected on this device. Google Drive backup relies on them. Local backups and Nextcloud continue to work as usual.",
-        "dismiss": "Got it"
-      }
+      "targetLocal": "Local"
     },
     "calc": {
-      "header": "Calculation",
-      "subtitle": "How overtime, sick leave and holidays are counted",
-      "combinedTitle": "Calculation",
-      "combinedSubtitle": "Locale & rules",
-      "teaser": "{{overtime}} · Sick: {{sick}}",
       "editRules": "Edit calculation rules",
       "showLess": "Show less",
       "contractedHours": "Contracted hours",
@@ -990,7 +803,6 @@
       "days": "days",
       "remainingCarryover": "Remaining / carryover",
       "carryoverHint": "Remaining days from last year or days already used (negative).",
-      "recalcRunning": "Recalculating…",
       "recalcAll": "Recalculate all entries",
       "drawerHolidayWork": "Holiday + work",
       "drawerImportHolidays": "Import holidays",
@@ -1016,9 +828,6 @@
         "orthodox": "Orthodox holidays",
         "islamic": "Islamic holidays (approx.)"
       },
-      "fallbackOvertime": "No distinction",
-      "fallbackSick": "Count in addition",
-      "fallbackHolidayOnWork": "Holiday counts in addition",
       "toast": {
         "holidaysImported_one": "{{count}} holiday imported",
         "holidaysImported_other": "{{count}} holidays imported",
@@ -1054,20 +863,8 @@
       "kantonLabel": "Canton",
       "stateDrawerTitle": "Select state",
       "kantonDrawerTitle": "Select canton",
-      "active": "<b>Currently active:</b> {{name}}. Future calculations follow the new selection — past entries stay unchanged.",
       "confirmTitle": "Reset rules?",
-      "confirmMessage": "Do you want to reset the calculation rules (overtime, sick leave, holidays) to the new locale's defaults? If you cancel, your current configuration stays.",
-      "confirmConfirm": "Reset",
-      "toast": {
-        "switchedNeutral": "Switched to Neutral",
-        "switchedAustria": "Switched to Austria",
-        "switchedSwitzerland": "Switched to Switzerland",
-        "switchedGermany": "Switched to Germany",
-        "stateChanged": "State changed to {{name}}",
-        "kantonChanged": "Canton changed to {{name}}",
-        "rulesReset": "Rules reset",
-        "localeSwitchedKeepConfig": "Locale switched, rules kept"
-      }
+      "confirmMessage": "Do you want to reset the calculation rules (overtime, sick leave, holidays) to the new locale's defaults? If you cancel, your current configuration stays."
     },
     "language": {
       "header": "Language",
@@ -1086,19 +883,6 @@
         "templatesButton": "Templates",
         "weekHours": "Weekly hours: {{hours}} h"
       },
-      "simpleMode": {
-        "title": "Record only",
-        "on": "No target/actual calculation",
-        "off": "Target, balance & overtime active",
-        "toggleAria": "Toggle recording mode",
-        "toastOn": "Record-only mode enabled",
-        "toastOff": "Target/actual calculation enabled"
-      },
-      "workCodes": {
-        "title": "Activity codes",
-        "subtitle": "Load presets for your industry",
-        "manageButton": "Manage"
-      },
       "presetWarning": {
         "title": "Change work-schedule model?",
         "message": "Warning: Changing the model recalculates overtime for all previous entries! Do you want to continue?",
@@ -1106,7 +890,6 @@
       },
       "demoWarning": {
         "title": "⚠️ Load demo data",
-        "noBackupHint": "🚨 You have no backup file! Your data will be lost permanently if you continue!",
         "withBackupHint": "Make sure you have a backup before you continue.",
         "messageTemplate": "Warning: All your previous data will be overwritten! {{hint}}\n\nEntries, settings and activity codes will be replaced by demo data.",
         "confirm": "Yes, load"
@@ -1132,9 +915,7 @@
       },
       "gdrive": {
         "title": "Google Drive",
-        "connectedBadge": "Connected",
         "folderWithEmail": "Folder eStundnzettl Archive · {{email}}",
-        "folder": "Folder eStundnzettl Archive",
         "info": "Separate access from the JSON backup (drive.file scope)",
         "disconnect": "Disconnect",
         "connect": "Connect"
@@ -1144,11 +925,6 @@
       "runNow": "Run now",
       "toast": {
         "ncNotConnected": "Nextcloud must be connected first (card 'Backup & Export').",
-        "gdriveConnected": "Google Drive (PDF archive) connected",
-        "gdriveCancelled": "Connection cancelled",
-        "gdriveConnectFailed": "Connection failed: {{message}}",
-        "gdriveDisconnected": "Google Drive (PDF archive) disconnected",
-        "gdriveDisconnectFailed": "Disconnect failed: {{message}}",
         "gdriveConnectFirst": "Please connect to Google Drive first.",
         "archiveDisabled": "PDF archive is disabled.",
         "pickTarget": "Please pick at least one target.",
@@ -1194,12 +970,9 @@
       "emailApp": "Email app",
       "messagingApp": "Messaging or other app",
       "directTitle": "Prefer selected app",
-      "directDescription": "Skips the app picker when sharing a PDF.",
       "directEmailDescription": "Opens the email with recipient, subject and PDF directly in this app.",
       "directMessageDescription": "Shows matching people from this app when Android makes them available.",
-      "waitingDescription": "Your choice will be saved the next time you share.",
       "reset": "Reset preferred app",
-      "hint": "If the app is no longer available, the regular picker appears automatically.",
       "chooseHint": "Choose the sharing app first. Only the details that are useful there appear afterwards.",
       "emailContactHint": "Pick a recipient from your contacts or enter the email address yourself. The app does not read your entire address book.",
       "messagingContactHint": "WhatsApp, Messenger and similar apps manage their own contacts. Choose the person while sharing through Android or in the app itself.",
@@ -1240,7 +1013,6 @@
     },
     "workCodesCard": {
       "title": "Activity codes",
-      "subtitle": "Categories for your entries, e.g. installation, travel, office work or project work.",
       "manageButton": "Manage"
     },
     "appearance": {
@@ -1335,7 +1107,6 @@
     "existingTitle": "Existing documents",
     "empty": "No documents attached to this entry yet.",
     "toast": {
-      "entryMissing": "Entry missing.",
       "selectFile": "Please pick a document first.",
       "labelRequired": "Please enter a label.",
       "invalidType": "Only PDF, JPG, PNG or WEBP files are allowed.",
@@ -1369,10 +1140,8 @@
     },
     "loadPreset": "Load preset",
     "presetCodesCount": "{{count}} codes",
-    "loading": "Loading...",
     "empty": "No codes yet.",
     "emptyHint": "Load a preset or create your own codes.",
-    "newCodePlaceholder": "Add new code…",
     "deleteAll": "Delete all codes",
     "presetReplaceWarning": {
       "title": "Warning!",
@@ -1392,15 +1161,6 @@
       "download": "Download",
       "dismiss": "Later"
     }
-  },
-  "settingsUxMigration": {
-    "title": "Settings have been reorganized",
-    "body": "We made eStundnzettl easier to navigate. Your data and existing settings stay unchanged.",
-    "pointData": "Your entries, activities, backups and calculation rules are preserved.",
-    "pointMode": "Your recording mode was kept and can now be reviewed at the top of settings.",
-    "pointAdvanced": "Pro features are available under “Advanced settings”.",
-    "close": "Got it",
-    "reviewMode": "Review recording mode"
   },
   "migrationRecovery": {
     "title": "Data transfer is not complete",

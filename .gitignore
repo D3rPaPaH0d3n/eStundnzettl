@@ -1,42 +1,21 @@
-# Node / Vite / React
-node_modules/
-dist/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Vite
-.vite/
-
 # IDE
 .vscode/
 .idea/
 .claude/
 
-# Test coverage
-coverage/
-
 # Python workflow helpers
 __pycache__/
 *.py[cod]
 
-# Capacitor / Android — Gradle local JVM hint
-android/gradle/gradle-daemon-jvm.properties
-
-# Capacitor / Android
-android/.gradle/
-android/.idea/
-android/local.properties
-android/app/build/
-android/build/
-android/app/release/
-
 # Expanded/decompiled APK dumps
 expanded_apk/
 
-# iOS (falls irgendwann dazu kommt)
-ios/App/App.xcworkspace/
-ios/App/build/
+# Leftovers from legacy/capacitor-4.5.x checkouts (not tracked on main)
+/node_modules/
+/dist/
+/coverage/
+/.vite/
+/android/
 
 # Fastlane — Secrets dürfen NIE ins Repo
 fastlane/report.xml

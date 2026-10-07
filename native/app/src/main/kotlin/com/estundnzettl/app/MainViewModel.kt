@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -325,7 +326,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (settings.getString(com.estundnzettl.app.data.LegacyDbImporter.MIGRATION_MARKER_KEY) != null &&
                 settings.getString(KEY_NATIVE_WELCOME_SEEN) != "1"
             ) {
-                _state.value = _state.value.copy(showNativeWelcome = true)
+                _state.update { it.copy(showNativeWelcome = true) }
             }
 
             // GitHub-Update-Check (nur Sideload; Debug-Builds prüfen nie)
@@ -337,7 +338,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     isDebugBuild = com.estundnzettl.app.BuildConfig.DEBUG,
                 )
                 if (release != null) {
-                    _state.value = _state.value.copy(updateAvailable = release)
+                    _state.update { it.copy(updateAvailable = release) }
                 }
             }
             loadSettings()
@@ -348,7 +349,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // Onboarding zeigen, wenn noch kein Profil existiert (leerer
             // Name = Onboarding-Check der Web-App).
             if (_state.value.userData?.name.isNullOrBlank()) {
-                _state.value = _state.value.copy(onboarding = OnboardingUiState(active = true))
+                _state.update { it.copy(onboarding = OnboardingUiState(active = true)) }
             }
             prepareWhatsNew()
             refreshAttachments()
@@ -365,7 +366,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             entriesRepo.observeAll().collect { entries ->
                 allEntries = entries
                 recompute()
-                _state.value = _state.value.copy(loading = false)
+                _state.update { it.copy(loading = false) }
                 // Debounced Auto-Save wie useAutoBackup (2 s nach Änderung)
                 scheduleDataProtection()
             }
@@ -383,15 +384,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val codes = workCodesRepo.getAll()
         val materialYou = settings.getBoolean("material_you_enabled")
         persistedLastCode = settings.getInt("last_code")
-        _state.value = _state.value.copy(
-            userData = userData,
-            locale = locale,
-            calculationConfig = config,
-            theme = theme,
-            language = language,
-            workCodes = codes,
-            materialYouEnabled = materialYou,
-        )
+        _state.update {
+            it.copy(
+                userData = userData,
+                locale = locale,
+                calculationConfig = config,
+                theme = theme,
+                language = language,
+                workCodes = codes,
+                materialYouEnabled = materialYou,
+            )
+        }
     }
 
     private fun recompute() {
@@ -410,29 +413,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             locale = s.locale,
             config = s.calculationConfig,
         )
-        _state.value = s.copy(appData = appData)
+        _state.update { it.copy(appData = appData) }
     }
 
     // ─── Navigation & Monat ──────────────────────────────────
 
     fun setView(view: String) {
         val leavingCapturedEntry = _state.value.view == "add" && view != "add"
-        _state.value = _state.value.copy(view = view)
+        _state.update { it.copy(view = view) }
         if (view == "dashboard") {
-            _state.value = _state.value.copy(
-                form = _state.value.form.copy(editingEntry = null)
-            )
+            _state.update {
+                it.copy(
+                    form = it.form.copy(editingEntry = null)
+                )
+            }
         }
         if (leavingCapturedEntry) clearPendingTimerCapture()
     }
 
     fun changeMonth(delta: Long) {
-        _state.value = _state.value.copy(currentMonth = _state.value.currentMonth.plusMonths(delta))
+        _state.update { it.copy(currentMonth = it.currentMonth.plusMonths(delta)) }
         recompute()
     }
 
     fun setMonth(month: YearMonth) {
-        _state.value = _state.value.copy(currentMonth = month)
+        _state.update { it.copy(currentMonth = month) }
         recompute()
     }
 
@@ -489,7 +494,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Formular ────────────────────────────────────────────
 
     fun updateForm(transform: (FormUiState) -> FormUiState) {
-        _state.value = _state.value.copy(form = transform(_state.value.form))
+        _state.update { it.copy(form = transform(it.form)) }
     }
 
     private fun defaultCode(date: String = LocalDate.now().toDateString()): Int =
@@ -511,19 +516,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun startNewEntry() {
         val formDate = LocalDate.now().toDateString()
         val (start, end) = getDefaultTimesForDate(allEntries, formDate)
-        _state.value = _state.value.copy(
-            form = FormUiState(
-                entryType = "work",
-                formDate = formDate,
-                startTime = start,
-                endTime = end,
-                pauseDuration = 30,
-                project = "",
-                code = defaultCode(formDate),
-                codeIsAutomatic = true,
-            ),
-            view = "add",
-        )
+        _state.update {
+            it.copy(
+                form = FormUiState(
+                    entryType = "work",
+                    formDate = formDate,
+                    startTime = start,
+                    endTime = end,
+                    pauseDuration = 30,
+                    project = "",
+                    code = defaultCode(formDate),
+                    codeIsAutomatic = true,
+                ),
+                view = "add",
+            )
+        }
         clearPendingTimerCapture()
     }
 
@@ -557,7 +564,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
             else -> form.copy(pauseDuration = 0, project = "")
         }
-        _state.value = _state.value.copy(form = form, view = "add")
+        _state.update { it.copy(form = form, view = "add") }
         clearPendingTimerCapture()
     }
 
@@ -575,7 +582,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 form = form.copy(code = defaultCode(date))
             }
         }
-        _state.value = s.copy(form = form)
+        _state.update { it.copy(form = form) }
     }
 
     fun selectWorkType() {
@@ -654,13 +661,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 recompute()
                 runCatching { settings.delete(KEY_PENDING_TIMER_CAPTURE) }
                 emit(UiMessage(if (editing) "toasts.entry.updated" else "toasts.entry.saved"))
-                _state.value = _state.value.copy(
-                    form = _state.value.form.copy(
-                        editingEntry = null, project = "", entryType = "work",
-                        specialManualMode = false, isLiveEntry = false,
-                    ),
-                    view = "dashboard",
-                )
+                _state.update {
+                    it.copy(
+                        form = it.form.copy(
+                            editingEntry = null, project = "", entryType = "work",
+                            specialManualMode = false, isLiveEntry = false,
+                        ),
+                        view = "dashboard",
+                    )
+                }
             }
         }
     }
@@ -668,16 +677,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Löschen ─────────────────────────────────────────────
 
     fun requestDeleteEntry(entry: Entry) {
-        _state.value = _state.value.copy(deleteTarget = entry)
+        _state.update { it.copy(deleteTarget = entry) }
     }
 
     fun cancelDelete() {
-        _state.value = _state.value.copy(deleteTarget = null)
+        _state.update { it.copy(deleteTarget = null) }
     }
 
     fun confirmDelete() {
         val target = _state.value.deleteTarget ?: return
-        _state.value = _state.value.copy(deleteTarget = null)
+        _state.update { it.copy(deleteTarget = null) }
         val id = (target.id as? EntryId.Numeric)?.value ?: return
         viewModelScope.launch {
             try {
@@ -706,7 +715,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }.getOrNull()
         }
         if (timer != null) {
-            _state.value = _state.value.copy(timer = timer)
+            _state.update { it.copy(timer = timer) }
             val startInstant = timer.startTime?.let { runCatching { Instant.parse(it) }.getOrNull() }
             if (timer.isRunning && startInstant != null) {
                 val zone = ZoneId.systemDefault()
@@ -754,25 +763,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun showCapturedTimer(capture: PendingTimerCapture) {
-        _state.value = _state.value.copy(
-            timer = TimerUiState(),
-            form = FormUiState(
-                entryType = "work",
-                formDate = capture.formDate,
-                startTime = capture.startTime,
-                endTime = capture.endTime,
-                pauseDuration = capture.pauseDuration,
-                project = "",
-                code = capture.code,
-                codeIsAutomatic = true,
-                isLiveEntry = true,
-            ),
-            view = "add",
-        )
+        _state.update {
+            it.copy(
+                timer = TimerUiState(),
+                form = FormUiState(
+                    entryType = "work",
+                    formDate = capture.formDate,
+                    startTime = capture.startTime,
+                    endTime = capture.endTime,
+                    pauseDuration = capture.pauseDuration,
+                    project = "",
+                    code = capture.code,
+                    codeIsAutomatic = true,
+                    isLiveEntry = true,
+                ),
+                view = "add",
+            )
+        }
     }
 
     private fun persistTimer(timer: TimerUiState, pending: PendingTimerCapture? = null) {
-        _state.value = _state.value.copy(timer = timer)
+        _state.update { it.copy(timer = timer) }
         viewModelScope.launch {
             runCatching {
                 if (pending != null) {
@@ -861,9 +872,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val currentCodes = _state.value.workCodes
         val result = validateWorkCodeDraft(number, name, currentCodes)
         val code = result.code ?: return result
-        _state.value = _state.value.copy(
-            workCodes = (currentCodes + code).sortedBy { it.id },
-        )
+        _state.update { state ->
+            state.copy(
+                workCodes = (currentCodes + code).sortedBy { it.id },
+            )
+        }
         viewModelScope.launch {
             try {
                 workCodesRepo.upsert(code)
@@ -871,9 +884,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (_: Exception) {
                 val latest = _state.value.workCodes
                 if (latest.any { it == code }) {
-                    _state.value = _state.value.copy(
-                        workCodes = latest.filterNot { it == code },
-                    )
+                    _state.update { state ->
+                        state.copy(
+                            workCodes = latest.filterNot { it == code },
+                        )
+                    }
                 }
                 emit(UiMessage("workCodes.errors.saveFailed"))
             }
@@ -891,7 +906,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun saveUserDataQuietly(transform: (UserData) -> UserData) {
         val next = transform(_state.value.userData ?: UserData())
-        _state.value = _state.value.copy(userData = next)
+        _state.update { it.copy(userData = next) }
         autoBackupJob?.cancel()
         pdfArchiveRefreshJob?.cancel()
         viewModelScope.launch { settings.setUserData(next) }
@@ -901,7 +916,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setUserData(transform: (UserData) -> UserData) {
         val current = _state.value.userData ?: UserData()
         val next = transform(current)
-        _state.value = _state.value.copy(userData = next)
+        _state.update { it.copy(userData = next) }
         viewModelScope.launch {
             settings.setUserData(next)
             if (next.workDays != current.workDays && next.workDays != null) {
@@ -917,7 +932,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setTheme(theme: String) {
-        _state.value = _state.value.copy(theme = theme)
+        _state.update { it.copy(theme = theme) }
         viewModelScope.launch {
             settings.setTheme(theme)
             scheduleDataProtection()
@@ -925,7 +940,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setLanguage(language: String) {
-        _state.value = _state.value.copy(language = language)
+        _state.update { it.copy(language = language) }
         viewModelScope.launch {
             settings.setString(SettingsRepository.Keys.LANGUAGE, language)
             scheduleDataProtection()
@@ -934,7 +949,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setMaterialYou(enabled: Boolean) {
-        _state.value = _state.value.copy(materialYouEnabled = enabled)
+        _state.update { it.copy(materialYouEnabled = enabled) }
         viewModelScope.launch { settings.setBoolean("material_you_enabled", enabled) }
         emit(UiMessage(if (enabled) "settings.toast.materialYouOn" else "settings.toast.materialYouOff"))
     }
@@ -945,14 +960,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun setLocaleId(localeId: String, resetConfig: Boolean) {
         val locale = getLocale(localeId)
-        _state.value = _state.value.copy(locale = locale)
+        _state.update { it.copy(locale = locale) }
         viewModelScope.launch {
             settings.setLocaleId(locale.id)
             if (resetConfig) {
                 val workDays = _state.value.userData?.workDays
                 val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(locale, workDays)
                     .keepingOvertimeAccountOf(_state.value.calculationConfig)
-                _state.value = _state.value.copy(calculationConfig = fresh)
+                _state.update { it.copy(calculationConfig = fresh) }
                 settings.setCalculationConfig(fresh)
             }
             recompute()
@@ -963,7 +978,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun patchCalculationConfig(transform: (CalculationConfig) -> CalculationConfig) {
         val current = _state.value.calculationConfig ?: return
         val next = transform(current)
-        _state.value = _state.value.copy(calculationConfig = next)
+        _state.update { it.copy(calculationConfig = next) }
         viewModelScope.launch {
             settings.setCalculationConfig(next)
             recompute()
@@ -994,7 +1009,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (!nextSimpleMode) {
             val fresh = com.estundnzettl.core.calc.getDefaultCalculationConfig(targetLocale, nextWorkDays)
                 .keepingOvertimeAccountOf(s.calculationConfig)
-            _state.value = _state.value.copy(calculationConfig = fresh)
+            _state.update { it.copy(calculationConfig = fresh) }
             viewModelScope.launch { settings.setCalculationConfig(fresh) }
         }
         setUserData { it.copy(simpleMode = nextSimpleMode, workDays = nextWorkDays) }
@@ -1016,7 +1031,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun updateDiagnostics(transform: (DiagnosticsUiState) -> DiagnosticsUiState) {
-        _state.value = _state.value.copy(diagnostics = transform(_state.value.diagnostics))
+        _state.update { it.copy(diagnostics = transform(it.diagnostics)) }
     }
 
     /** Momentaufnahme des App-Zustands einsammeln. */
@@ -1080,7 +1095,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun refreshWorkCodes() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(workCodes = workCodesRepo.getAll())
+            val codes = workCodesRepo.getAll()
+            _state.update { it.copy(workCodes = codes) }
         }
     }
 
@@ -1094,9 +1110,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
         val code = result.code ?: return result
         val previousCode = currentCodes.firstOrNull { it.id == id }
-        _state.value = _state.value.copy(
-            workCodes = currentCodes.map { if (it.id == id) code else it }.sortedBy { it.id },
-        )
+        _state.update { state ->
+            state.copy(
+                workCodes = currentCodes.map { if (it.id == id) code else it }.sortedBy { it.id },
+            )
+        }
         viewModelScope.launch {
             try {
                 workCodesRepo.upsert(code)
@@ -1104,9 +1122,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (_: Exception) {
                 val latest = _state.value.workCodes
                 if (previousCode != null && latest.any { it == code }) {
-                    _state.value = _state.value.copy(
-                        workCodes = latest.map { if (it == code) previousCode else it }.sortedBy { it.id },
-                    )
+                    _state.update { state ->
+                        state.copy(
+                            workCodes = latest.map { if (it == code) previousCode else it }.sortedBy { it.id },
+                        )
+                    }
                 }
                 emit(UiMessage("workCodes.errors.saveFailed"))
             }
@@ -1187,11 +1207,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 // Zurück in den Einrichtungs-Assistenten (wie die Web-App,
                 // deren Router bei leerem Profilnamen den Wizard zeigt)
-                _state.value = _state.value.copy(
-                    userData = resetUser,
-                    view = "dashboard",
-                    onboarding = OnboardingUiState(active = true),
-                )
+                _state.update {
+                    it.copy(
+                        userData = resetUser,
+                        view = "dashboard",
+                        onboarding = OnboardingUiState(active = true),
+                    )
+                }
                 emit(UiMessage("toasts.appReset"))
             } catch (_: Exception) {
                 emit(UiMessage("toasts.entry.deleteAllFailed"))
@@ -1218,7 +1240,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             emit(UiMessage("settings.toast.integrityMismatch"))
         }
         if (analysis.hasSettings) {
-            _state.value = _state.value.copy(pendingImport = analysis)
+            _state.update { it.copy(pendingImport = analysis) }
         } else {
             viewModelScope.launch {
                 val ok = backupRepo.apply(analysis, "ALL")
@@ -1237,7 +1259,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun confirmImport(mode: String) {
         val pending = _state.value.pendingImport ?: return
-        _state.value = _state.value.copy(pendingImport = null)
+        _state.update { it.copy(pendingImport = null) }
         viewModelScope.launch {
             val ok = backupRepo.apply(pending, mode)
             if (ok) {
@@ -1250,7 +1272,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun cancelImport() {
-        _state.value = _state.value.copy(pendingImport = null)
+        _state.update { it.copy(pendingImport = null) }
     }
 
     private suspend fun reloadAfterImport() {
@@ -1297,16 +1319,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val all = attachmentsRepo.getAll()
                 .sortedByDescending { it.createdAt }
             val labels = attachmentsRepo.getLabelSuggestions()
-            _state.value = _state.value.copy(attachments = all, labelSuggestions = labels)
+            _state.update { it.copy(attachments = all, labelSuggestions = labels) }
         }
     }
 
     fun openAttachments(entry: Entry) {
-        _state.value = _state.value.copy(attachmentEntry = entry)
+        _state.update { it.copy(attachmentEntry = entry) }
     }
 
     fun closeAttachments() {
-        _state.value = _state.value.copy(attachmentEntry = null)
+        _state.update { it.copy(attachmentEntry = null) }
     }
 
     /**
@@ -1429,12 +1451,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val seen = settings.getString(TOUR_SEEN_KEY) == "1"
         if (!seen) {
             kotlinx.coroutines.delay(350)
-            _state.value = _state.value.copy(showTour = true)
+            _state.update { it.copy(showTour = true) }
         }
     }
 
     fun closeTour() {
-        _state.value = _state.value.copy(showTour = false)
+        _state.update { it.copy(showTour = false) }
         viewModelScope.launch { settings.setString(TOUR_SEEN_KEY, "1") }
     }
 
@@ -1461,7 +1483,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             requestCount = settings.getString(KEY_REVIEW_REQUEST_COUNT)?.toIntOrNull() ?: 0,
         )
         if (ReviewPromptPolicy.shouldRequest(now, snapshot) && !_state.value.onboarding.active) {
-            _state.value = _state.value.copy(requestInAppReview = true)
+            _state.update { it.copy(requestInAppReview = true) }
         }
     }
 
@@ -1474,7 +1496,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun markInAppReviewRequested() {
-        _state.value = _state.value.copy(requestInAppReview = false)
+        _state.update { it.copy(requestInAppReview = false) }
         viewModelScope.launch {
             val count = settings.getString(KEY_REVIEW_REQUEST_COUNT)?.toIntOrNull() ?: 0
             settings.setString(KEY_REVIEW_REQUEST_COUNT, (count + 1).toString())
@@ -1534,13 +1556,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Willkommens-Popup nach der Capacitor-Migration bestätigt. */
     fun dismissNativeWelcome() {
-        _state.value = _state.value.copy(showNativeWelcome = false)
+        _state.update { it.copy(showNativeWelcome = false) }
         viewModelScope.launch { settings.setString(KEY_NATIVE_WELCOME_SEEN, "1") }
     }
 
     /** Automatisches Änderungsprotokoll bestätigt; manuell bleibt es in den Einstellungen erreichbar. */
     fun dismissWhatsNew() {
-        _state.value = _state.value.copy(showWhatsNew = false)
+        _state.update { it.copy(showWhatsNew = false) }
         viewModelScope.launch { markCurrentChangelogSeen() }
     }
 
@@ -1565,10 +1587,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 hasCurrentChangelog = hasEntry,
             )
         ) {
-            WhatsNewDecision.SHOW -> _state.value = _state.value.copy(
-                showWhatsNew = true,
-                whatsNewVersion = currentName,
-            )
+            WhatsNewDecision.SHOW -> _state.update {
+                it.copy(
+                    showWhatsNew = true,
+                    whatsNewVersion = currentName,
+                )
+            }
             WhatsNewDecision.MARK_CURRENT -> markCurrentChangelogSeen()
             WhatsNewDecision.NONE -> Unit
         }
@@ -1582,7 +1606,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** Update-Banner für genau diese Version wegklicken. */
     fun dismissUpdateBanner() {
         val tag = _state.value.updateAvailable?.tag ?: return
-        _state.value = _state.value.copy(updateAvailable = null)
+        _state.update { it.copy(updateAvailable = null) }
         viewModelScope.launch {
             settings.setString(com.estundnzettl.app.data.UpdateCheck.KEY_DISMISSED, tag)
         }
@@ -1595,19 +1619,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun refreshNextcloudState(connecting: Boolean = _state.value.nextcloud.connecting) {
         val creds = runCatching { nextcloudManager.getCredentials() }.getOrNull()
         val enabled = settings.getBoolean(SettingsRepository.Keys.NEXTCLOUD_ENABLED)
-        _state.value = _state.value.copy(
-            nextcloud = NextcloudUiState(
-                connected = creds != null && enabled,
-                user = creds?.user ?: "",
-                connecting = connecting,
-            ),
-        )
+        _state.update {
+            it.copy(
+                nextcloud = NextcloudUiState(
+                    connected = creds != null && enabled,
+                    user = creds?.user ?: "",
+                    connecting = connecting,
+                ),
+            )
+        }
     }
 
     /** Startet Login Flow v2; liefert die Browser-URL. Wirft bei Fehlern. */
     suspend fun nextcloudInitiate(serverUrl: String): String {
         val flow = com.estundnzettl.app.data.NextcloudClient.initiateLoginFlow(serverUrl)
-        _state.value = _state.value.copy(nextcloud = _state.value.nextcloud.copy(connecting = true))
+        _state.update { it.copy(nextcloud = it.nextcloud.copy(connecting = true)) }
         startNextcloudPolling(flow.pollEndpoint, flow.token)
         return flow.loginUrl
     }
@@ -1837,17 +1863,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     .isGooglePlayServicesAvailable(getApplication()),
             )
         }.getOrDefault(GooglePlayServicesStatus.UNAVAILABLE)
-        _state.value = _state.value.copy(
-            googleDrive = GoogleDriveUiState(
-                backupConnected = backupEmail.isNotEmpty() && !backupReconnect,
-                backupEmail = backupEmail,
-                backupReconnectRequired = backupReconnect,
-                pdfConnected = pdfEmail.isNotEmpty() && !pdfReconnect,
-                pdfEmail = pdfEmail,
-                pdfReconnectRequired = pdfReconnect,
-                playServices = playServices,
-            ),
-        )
+        _state.update {
+            it.copy(
+                googleDrive = GoogleDriveUiState(
+                    backupConnected = backupEmail.isNotEmpty() && !backupReconnect,
+                    backupEmail = backupEmail,
+                    backupReconnectRequired = backupReconnect,
+                    pdfConnected = pdfEmail.isNotEmpty() && !pdfReconnect,
+                    pdfEmail = pdfEmail,
+                    pdfReconnectRequired = pdfReconnect,
+                    playServices = playServices,
+                ),
+            )
+        }
     }
 
     private suspend fun refreshBackupHealth(notifyUser: Boolean = false) {
@@ -1867,13 +1895,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             com.estundnzettl.app.data.GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED,
         )
 
-        _state.value = _state.value.copy(
-            backupHealth = BackupHealthUiState(
-                googleDriveFailureCount = failureCount,
-                googleDriveLastError = lastError,
-                googleDriveLastSuccess = lastSuccess,
-            ),
-        )
+        _state.update {
+            it.copy(
+                backupHealth = BackupHealthUiState(
+                    googleDriveFailureCount = failureCount,
+                    googleDriveLastError = lastError,
+                    googleDriveLastSuccess = lastSuccess,
+                ),
+            )
+        }
 
         if (
             notifyUser && shouldShowGoogleDriveBackupWarning(
@@ -2124,7 +2154,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ─── Onboarding (Port von useOnboardingFlow.ts) ──────────
 
     private fun updateOnboarding(transform: (OnboardingUiState) -> OnboardingUiState) {
-        _state.value = _state.value.copy(onboarding = transform(_state.value.onboarding))
+        _state.update { it.copy(onboarding = transform(it.onboarding)) }
     }
 
     /** "Nur Arbeitszeiten eintragen" — Simple-Modus-Schnellstart. */
@@ -2185,10 +2215,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 loadSettings()
                 reloadAfterImport()
-                _state.value = _state.value.copy(
-                    onboarding = OnboardingUiState(active = false),
-                    view = "dashboard",
-                )
+                _state.update {
+                    it.copy(
+                        onboarding = OnboardingUiState(active = false),
+                        view = "dashboard",
+                    )
+                }
                 emit(UiMessage("onboarding.toast.demoLoaded"))
                 maybeStartTour()
             } catch (_: Exception) {
@@ -2516,10 +2548,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             db.checkpoint()
             loadSettings()
             recompute()
-            _state.value = _state.value.copy(
-                onboarding = OnboardingUiState(active = false),
-                view = "dashboard",
-            )
+            _state.update {
+                it.copy(
+                    onboarding = OnboardingUiState(active = false),
+                    view = "dashboard",
+                )
+            }
             emit(UiMessage(
                 if (ob.restoreData != null) "onboarding.toast.restoreSuccess"
                 else "onboarding.toast.welcome"

@@ -3,6 +3,7 @@ package com.estundnzettl.app
 import android.app.Activity
 import android.app.Application
 import android.util.Log
+import com.estundnzettl.app.data.AppVisibility
 import com.estundnzettl.app.data.CrashRecoveryStore
 import com.estundnzettl.app.data.LegacyDbImportResult
 import com.estundnzettl.app.data.LegacyDbImporter
@@ -27,6 +28,9 @@ data class MigrationRunResult(
 class EStundnzettlApp : Application() {
 
     val database: AppDatabase by lazy { AppDatabase.get(this) }
+
+    /** Fed by MainActivity.onStart/onStop; read by the backup code. */
+    val visibility = AppVisibility()
 
     private val migrationMutex = Mutex()
     @Volatile private var completedMigration: MigrationRunResult? = null

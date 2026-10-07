@@ -26,6 +26,7 @@ import com.estundnzettl.app.data.SettingsRepository
 import com.estundnzettl.app.data.UpdateCheck
 import com.estundnzettl.app.data.WorkCodesRepository
 import com.estundnzettl.app.data.googleDriveFailureNeedsReconnect
+import com.estundnzettl.app.data.isConnectivityFailure
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.Haptics
 import com.estundnzettl.core.backup.BackupAnalysis
@@ -65,6 +66,7 @@ import com.estundnzettl.core.model.WORK_CODE_PRESETS
 import com.estundnzettl.core.model.WORK_MODELS
 import com.estundnzettl.core.model.WorkCode
 import com.estundnzettl.core.model.WorkModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,6 +74,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -353,6 +356,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var persistedLastCode: Int? = null
 
     init {
+        // Jede Rückkehr in den Vordergrund (auch mit neu erzeugter Activity)
+        // holt Cloud-Ziele nach, die im Hintergrund kein Netz hatten. Ziele
+        // mit aktuellem Stand werden dabei nicht erneut hochgeladen.
+        viewModelScope.launch {
+            (application as EStundnzettlApp).visibility.foregroundEntries.drop(1).collect {
+                if (!_state.value.loading) scheduleAutoBackup()
+            }
+        }
         viewModelScope.launch {
             // Einmaliges Willkommens-Popup für Umsteiger von der
             // Capacitor-Version (Migration gelaufen, Popup noch nie gezeigt)
@@ -517,20 +528,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun onAppResume() {
         autoPdfArchiveRun("resume")
         viewModelScope.launch { refreshBackupHealth(notifyUser = true) }
-        // Holt Cloud-Ziele nach, die im Hintergrund kein Netz hatten. Ziele
-        // mit aktuellem Stand werden dabei nicht erneut hochgeladen.
-        if (!_state.value.loading) scheduleAutoBackup()
-    }
-
-    /**
-     * Sichtbarkeit der Activity (onStart/onStop). Android sperrt das Netz
-     * für Apps im Hintergrund; Uploads, die dann scheitern, sind kein
-     * Backup-Fehler, sondern werden im Vordergrund nachgeholt.
-     */
-    @Volatile private var appInForeground = true
-
-    fun onAppVisibilityChanged(visible: Boolean) {
-        appInForeground = visible
     }
 
     /** UI sammelt Meldungen; jetzt darf ein ausstehender Backup-Hinweis erscheinen. */
@@ -1560,7 +1557,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val autoBackup by lazy {
         AutoBackupManager(
             getApplication(), settings, backupRepo, nextcloudManager, googleDrive,
-            isAppInForeground = { appInForeground },
+            visibility = (getApplication() as EStundnzettlApp).visibility,
         )
     }
 
@@ -1714,7 +1711,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             return@launch
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
+                    // Solange der Browser offen ist, ist die App im Hintergrund
+                    // und hat oft kein Netz. Weiter abfragen, statt die bereits
+                    // erteilte Anmeldung zu verwerfen.
+                    if (isConnectivityFailure(e)) return@repeat
                     refreshNextcloudState(connecting = false)
                     emit(UiMessage("settings.backup.toast.nextcloudLoginFailed"))
                     return@launch

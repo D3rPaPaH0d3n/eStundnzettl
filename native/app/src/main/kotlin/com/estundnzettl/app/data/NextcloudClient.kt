@@ -204,6 +204,8 @@ object NextcloudClient {
      * Echte uid via OCS auflösen (loginName kann E-Mail/Display-Name sein).
      * null, wenn der Server keine verwertbare Antwort liefert (kein Netz,
      * Wartung, Captive Portal) — dann ist noch nichts entschieden.
+     * Bei 401 gleich abbrechen: der DAV-Aufruf würde nur einen zweiten
+     * Fehl-Login erzeugen und die Brute-Force-Sperre schneller auslösen.
      */
     private suspend fun resolveUserId(serverUrl: String, loginName: String, appPassword: String): String? {
         val res = try {
@@ -216,6 +218,7 @@ object NextcloudClient {
         } catch (_: Exception) {
             return null
         }
+        if (res.status == 401) throw NextcloudException("Nicht autorisiert (401)")
         if (res.status != 200 || res.body.isEmpty()) return null
         val ocs = runCatching { json.parseToJsonElement(res.body).jsonObject }.getOrNull() ?: return null
         val uid = runCatching {
@@ -274,19 +277,43 @@ object NextcloudClient {
     // ─── Backup Upload / Download ───────────────────────────────────
 
     suspend fun uploadBackup(url: String, user: String, pass: String, jsonContent: String) {
-        ensureFolderPath(url, user, pass, listOf(BACKUP_FOLDER))
-        val davUser = getDavUser(url, user, pass)
-        val target = "${davPath(url, davUser)}/$BACKUP_FOLDER/$BACKUP_FILENAME"
-        val res = http(
-            target, "PUT", user, pass,
-            body = jsonContent.toByteArray(),
-            contentType = "application/json",
-            timeoutMs = 60_000,
+        putIntoFolders(
+            url, user, pass, listOf(BACKUP_FOLDER), BACKUP_FILENAME,
+            jsonContent.toByteArray(), "application/json", timeoutMs = 60_000,
         )
-        when (res.status) {
-            201, 204 -> return
-            401 -> throw NextcloudException("Nicht autorisiert (401)")
-            else -> throw NextcloudException("Upload ${res.status} auf $target")
+    }
+
+    /**
+     * PUT unter einen Ordner-Pfad. Fehlt der Ordner trotz Cache-Eintrag
+     * (auf dem Server gelöscht oder verschoben), wird der Cache verworfen
+     * und der Ordner einmal neu angelegt — sonst hälfe nur ein App-Neustart.
+     */
+    private suspend fun putIntoFolders(
+        url: String,
+        user: String,
+        pass: String,
+        folders: List<String>,
+        filename: String,
+        bytes: ByteArray,
+        mimeType: String,
+        timeoutMs: Int,
+    ) {
+        repeat(2) { attempt ->
+            ensureFolderPath(url, user, pass, folders)
+            val base = davPath(url, getDavUser(url, user, pass))
+            val folderPath = folders.joinToString("/") { encodePath(it) }
+            val target = "$base/$folderPath/${encodePath(filename)}"
+            val res = http(target, "PUT", user, pass, body = bytes, contentType = mimeType, timeoutMs = timeoutMs)
+            when (res.status) {
+                201, 204 -> return
+                401 -> throw NextcloudException("Nicht autorisiert (401)")
+                404, 409 -> if (attempt == 0) {
+                    verifiedFolders.removeIf { it.startsWith("$base::") }
+                } else {
+                    throw NextcloudException("Upload ${res.status} auf $target")
+                }
+                else -> throw NextcloudException("Upload ${res.status} auf $target")
+            }
         }
     }
 
@@ -322,15 +349,6 @@ object NextcloudClient {
         bytes: ByteArray,
         mimeType: String = "application/octet-stream",
     ) {
-        ensureFolderPath(url, user, pass, folders)
-        val davUser = getDavUser(url, user, pass)
-        val folderPath = folders.joinToString("/") { encodePath(it) }
-        val target = "${davPath(url, davUser)}/$folderPath/${encodePath(filename)}"
-        val res = http(target, "PUT", user, pass, body = bytes, contentType = mimeType, timeoutMs = 120_000)
-        when (res.status) {
-            201, 204 -> return
-            401 -> throw NextcloudException("Nicht autorisiert (401)")
-            else -> throw NextcloudException("Upload ${res.status} auf $target")
-        }
+        putIntoFolders(url, user, pass, folders, filename, bytes, mimeType, timeoutMs = 120_000)
     }
 }

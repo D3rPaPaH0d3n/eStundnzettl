@@ -15,6 +15,9 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.time.Instant
 import java.time.LocalDate
+import javax.net.ssl.SSLException
+import javax.net.ssl.SSLHandshakeException
+import javax.net.ssl.SSLPeerUnverifiedException
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
@@ -98,11 +101,10 @@ class AutoBackupManager(
     private val nextcloud: NextcloudManager,
     private val googleDrive: GoogleDriveManager? = null,
     /**
-     * Android cuts the network of an app that is no longer visible (from
-     * Android 15 on, earlier on many OEM builds). A cloud upload that fails
-     * then is not a broken target; it waits for the next foreground run.
+     * A cloud upload that loses its network because the app left the
+     * foreground is not a broken target; it waits for the next foreground run.
      */
-    private val isAppInForeground: () -> Boolean = { true },
+    private val visibility: AppVisibility,
 ) {
 
     companion object {
@@ -291,11 +293,15 @@ class AutoBackupManager(
             val localState = "${settings.getString(LocalBackupFolder.KEY_TREE_URI).orEmpty()}|$dataHash"
             val driveState = "${settings.getString(GoogleDriveManager.KEY_ACCOUNT_EMAIL).orEmpty()}|$dataHash"
             val ncState = "${ncCreds?.url}|${ncCreds?.user}|$dataHash"
-            fun needsRun(target: Target, state: String) =
-                source == Source.MANUAL || uploadedStates[target] != state
+            // Ein gemeldeter Fehler (auch aus "Verbindung prüfen") bleibt nur
+            // stehen, bis der nächste Lauf das Ziel erneut versucht.
+            val driveHasError = (settings.getString(KEY_CLOUD_FAIL_COUNT)?.toIntOrNull() ?: 0) > 0
+            val ncHasError = (settings.getString(KEY_NC_FAIL_COUNT)?.toIntOrNull() ?: 0) > 0
+            fun needsRun(target: Target, state: String, hasError: Boolean = false) =
+                source == Source.MANUAL || hasError || uploadedStates[target] != state
             val runLocal = localActive && needsRun(Target.LOCAL, localState)
-            val runCloud = cloudActive && needsRun(Target.GOOGLE_DRIVE, driveState)
-            val runNc = ncActive && needsRun(Target.NEXTCLOUD, ncState)
+            val runCloud = cloudActive && needsRun(Target.GOOGLE_DRIVE, driveState, driveHasError)
+            val runNc = ncActive && needsRun(Target.NEXTCLOUD, ncState, ncHasError)
             if (!runLocal && !runCloud && !runNc) return Outcome(ran = false)
 
             // Exakt den geprüften Stand hochladen, nicht neu einlesen.
@@ -311,10 +317,15 @@ class AutoBackupManager(
             val failedTargets = linkedSetOf<Target>()
             val deferredTargets = linkedSetOf<Target>()
 
-            // Im Hintergrund heißt ein Netzwerkfehler "kein Netz für die
-            // App", nicht "Ziel kaputt" — kein Fehlerzähler, kein Backoff.
-            fun deferInsteadOfFailing(error: Exception): Boolean =
-                source != Source.MANUAL && !isAppInForeground() && isConnectivityFailure(error)
+            // War die App während des Laufs im Hintergrund, heißt ein
+            // Netzwerkfehler "kein Netz für die App", nicht "Ziel kaputt" —
+            // kein Fehlerzähler, kein Backoff.
+            val backgroundEntriesAtStart = visibility.backgroundEntries
+            fun deferInsteadOfFailing(error: Exception): Boolean {
+                val leftForeground = !visibility.isForeground ||
+                    visibility.backgroundEntries != backgroundEntriesAtStart
+                return source != Source.MANUAL && leftForeground && isConnectivityFailure(error)
+            }
 
             if (runLocal) {
                 try {
@@ -429,14 +440,18 @@ internal fun googleDriveFailureNeedsReconnect(error: Throwable): Boolean =
         (error is GoogleDriveManager.DriveApiException && error.statusCode == 401)
 
 /**
- * True when the request never reached the server: DNS, connect or socket
- * errors. Android reports an app whose network was cut in the background
- * as "Unable to resolve host".
+ * True for transport errors without a server answer: DNS, connect, socket
+ * and aborted TLS reads. Android reports an app whose network was cut in
+ * the background as "Unable to resolve host". TLS handshake and certificate
+ * errors are not included; they point at a misconfigured server.
  */
 internal fun isConnectivityFailure(error: Throwable): Boolean =
     generateSequence(error) { it.cause }.take(8).any { cause ->
         cause is UnknownHostException ||
             cause is SocketException ||
             cause is SocketTimeoutException ||
+            (cause is SSLException &&
+                cause !is SSLHandshakeException &&
+                cause !is SSLPeerUnverifiedException) ||
             (cause is ApiException && cause.statusCode == CommonStatusCodes.NETWORK_ERROR)
     }

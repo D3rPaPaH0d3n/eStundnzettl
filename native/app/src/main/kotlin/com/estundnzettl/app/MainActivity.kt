@@ -95,14 +95,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Sichtbarkeit über die Application melden: das ViewModel darf vor dem
+    // Migrations-Gate nicht entstehen (siehe EStundnzettlApp.runMigrations).
     override fun onStart() {
         super.onStart()
-        viewModel.onAppVisibilityChanged(true)
+        (application as EStundnzettlApp).visibility.onStart()
     }
 
     override fun onStop() {
         super.onStop()
-        viewModel.onAppVisibilityChanged(false)
+        (application as EStundnzettlApp).visibility.onStop()
         // Background-Backup wie der appStateChange-Listener der Web-App
         if (appReady) viewModel.onAppBackground()
     }

@@ -13,6 +13,8 @@ import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import javax.net.ssl.SSLException
+import javax.net.ssl.SSLHandshakeException
 
 class BackupHealthTest {
 
@@ -97,6 +99,12 @@ class BackupHealthTest {
         assertTrue(isConnectivityFailure(SocketTimeoutException("timeout")))
         assertTrue(isConnectivityFailure(SocketException("Software caused connection abort")))
         assertTrue(isConnectivityFailure(IOException("wrapped", UnknownHostException("www.googleapis.com"))))
+        // Conscrypt reports a TLS socket the system tore down without a cause chain.
+        assertTrue(
+            isConnectivityFailure(
+                SSLException("Read error: ssl=0x0: I/O error during system call, Software caused connection abort"),
+            ),
+        )
     }
 
     @Test
@@ -104,5 +112,7 @@ class BackupHealthTest {
         assertFalse(isConnectivityFailure(GoogleDriveManager.DriveApiException("Update", 500)))
         assertFalse(isConnectivityFailure(GoogleDriveManager.AuthRequiredException(null)))
         assertFalse(isConnectivityFailure(NextcloudClient.NextcloudException("Nicht autorisiert (401)")))
+        // A certificate problem is a server misconfiguration, not a missing network.
+        assertFalse(isConnectivityFailure(SSLHandshakeException("PKIX path building failed")))
     }
 }

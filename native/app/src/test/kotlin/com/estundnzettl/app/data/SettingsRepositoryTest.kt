@@ -2,8 +2,6 @@ package com.estundnzettl.app.data
 
 import com.estundnzettl.app.data.db.SettingRow
 import com.estundnzettl.app.data.db.SettingsDao
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Test
@@ -50,8 +48,6 @@ private class RecordingSettingsDao : SettingsDao {
     var putAllCalls = 0
 
     override suspend fun getValue(key: String): String? = values[key]
-
-    override fun observeValue(key: String): Flow<String?> = flowOf(values[key])
 
     override suspend fun getAll(): List<SettingRow> =
         values.map { (key, value) -> SettingRow(key, value) }

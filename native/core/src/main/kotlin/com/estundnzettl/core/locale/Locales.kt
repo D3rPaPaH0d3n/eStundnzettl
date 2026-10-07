@@ -122,6 +122,3 @@ val GERMANY_LOCALE_IDS: List<String> = GERMAN_STATE_IDS.map { "de-$it" }
 
 /** Alle Schweiz-Locale-IDs (für UI-Kantons-Dropdown). */
 val SWITZERLAND_LOCALE_IDS: List<String> = SWISS_KANTON_IDS.map { "ch-$it" }
-
-/** Alle Top-Level-Locales für den Onboarding-Picker. */
-val TOP_LEVEL_LOCALES: List<String> = listOf("neutral", "at", "de", "ch")

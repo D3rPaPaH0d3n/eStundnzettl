@@ -1033,10 +1033,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun clearDiagnostics() {
-        _state.value = _state.value.copy(diagnostics = DiagnosticsUiState())
-    }
-
     /**
      * Listet die Dateien im Drive-appDataFolder auf. Bewusst ohne
      * Consent-Intent und ohne [AutoBackupManager.registerGoogleDriveFailure]:

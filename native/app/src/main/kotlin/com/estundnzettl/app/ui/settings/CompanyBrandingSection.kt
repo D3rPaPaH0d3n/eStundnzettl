@@ -196,6 +196,7 @@ fun CompanyBrandingSection(viewModel: MainViewModel) {
                     footerValue = TextFieldValue(branding.footer)
                     syncedFooter = branding.footer
                     unsaved = false
+                    truncated = false
                 }
             }
             LaunchedEffect(footerValue.text) {
@@ -218,10 +219,22 @@ fun CompanyBrandingSection(viewModel: MainViewModel) {
                 value = footerValue,
                 // Gekürzt wird nur der eingefügte Teil, nie bestehender Text
                 onValueChange = { value ->
-                    val edit = limitReportFooterEdit(footerValue.text, value.text)
+                    val previous = footerValue
+                    val edit = limitReportFooterEdit(
+                        old = previous.text,
+                        new = value.text,
+                        replacedStart = previous.selection.min,
+                        replacedEnd = previous.selection.max,
+                        newCursor = value.selection.end,
+                    )
                     val cursor = edit.cursor
-                    truncated = edit.truncated
-                    footerValue = if (cursor == null) value else TextFieldValue(edit.text, TextRange(cursor))
+                    // Reine Cursor-/Vorschlags-Updates der Tastatur lassen den Hinweis stehen
+                    if (value.text != previous.text) truncated = edit.truncated
+                    footerValue = when {
+                        cursor == null -> value
+                        edit.text == previous.text -> previous // ganz abgelehnt: Cursor bleibt stehen
+                        else -> TextFieldValue(edit.text, TextRange(cursor))
+                    }
                 },
                 label = { Text(t.t("settings.branding.footer")) },
                 placeholder = { Text(t.t("settings.branding.footerPlaceholder")) },

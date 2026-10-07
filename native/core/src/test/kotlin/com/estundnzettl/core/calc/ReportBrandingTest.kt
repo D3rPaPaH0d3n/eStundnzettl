@@ -103,6 +103,51 @@ class ReportBrandingTest {
     }
 
     @Test
+    fun `gekuerztes Einfuegen klebt nie an die folgende Zeile`() {
+        val before = "Musterfirma GmbH\noffice@firma.at"
+        val pasted = "Musterfirma GmbH\nHauptstraße 1\n1010 Wien\noffice@firma.at"
+        val edit = limitReportFooterEdit(before, pasted)
+        assertEquals(listOf("Musterfirma GmbH", "Hauptstraße 1", "office@firma.at"), normalizeReportFooter(edit.text))
+
+        // Volle Fußzeile: eingefügte Zeile passt nicht mehr → Altbestand bleibt unverändert
+        assertEquals("A\nB\nC", limitReportFooterEdit("A\nB\nC", "A\nB\nX\nC").text)
+    }
+
+    @Test
+    fun `mit Cursor-Angabe reisst Einfuegen vor gleichen Zeichen kein Wort auseinander`() {
+        val before = "Firma\nWien"
+        val pasted = "\nWels\nLinz\nGraz"
+        val new = "Firma" + pasted + "\nWien"
+        // Ohne Cursor würde der gemeinsame Anfang "\nW" die Einfügestelle verschieben
+        val edit = limitReportFooterEdit(before, new, replacedStart = 5, replacedEnd = 5, newCursor = 5 + pasted.length)
+        assertTrue("Wien" in edit.text.lines(), edit.text)
+        assertEquals(listOf("Firma", "Wels", "Wien"), normalizeReportFooter(edit.text))
+    }
+
+    @Test
+    fun `unpassende Cursor-Angaben fallen auf die Schaetzung zurueck`() {
+        val edit = limitReportFooterEdit("A\nB\nC", "A\nB\nX\nC", replacedStart = 99, replacedEnd = 0, newCursor = -1)
+        assertEquals("A\nB\nC", edit.text)
+    }
+
+    @Test
+    fun `CRLF wird nie zwischen Wagenruecklauf und Zeilenumbruch geteilt`() {
+        val edit = limitReportFooterEdit("A\nB", "A\nB\r\nC\r\nD\r\n")
+        assertFalse(edit.text.endsWith("\r"))
+        assertEquals(listOf("A", "B", "C"), normalizeReportFooter(edit.text))
+    }
+
+    @Test
+    fun `riesiges Einfuegen bleibt schnell und begrenzt`() {
+        val huge = "x".repeat(100_000)
+        val started = System.nanoTime()
+        val edit = limitReportFooterEdit("", huge)
+        val millis = (System.nanoTime() - started) / 1_000_000
+        assertEquals(300, edit.text.length)
+        assertTrue(millis < 500, "dauerte $millis ms")
+    }
+
+    @Test
     fun `Emoji an der Grenze wird nicht halbiert`() {
         val almostFull = "x".repeat(299)
         val edit = limitReportFooterEdit(almostFull, almostFull + "😀")

@@ -883,18 +883,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // ─── Settings-Aktionen (Port der Settings/*-Sektionen) ────
 
-    /** UserData ändern und persistieren; weeklyTargetMinutes bleibt synchron. */
     /**
      * Profil still speichern (Entwurf beim Tippen): State + Datenbank, aber
      * ohne Neuberechnung und ohne Backup-/Archiv-Planung — die folgt erst
-     * beim abschließenden [setUserData].
+     * beim abschließenden [setUserData]. Schon geplante Läufe werden
+     * verschoben, damit kein halbfertiger Entwurf hochgeladen wird.
      */
     fun saveUserDataQuietly(transform: (UserData) -> UserData) {
         val next = transform(_state.value.userData ?: UserData())
         _state.value = _state.value.copy(userData = next)
+        autoBackupJob?.cancel()
+        pdfArchiveRefreshJob?.cancel()
         viewModelScope.launch { settings.setUserData(next) }
     }
 
+    /** UserData ändern und persistieren; weeklyTargetMinutes bleibt synchron. */
     fun setUserData(transform: (UserData) -> UserData) {
         val current = _state.value.userData ?: UserData()
         val next = transform(current)

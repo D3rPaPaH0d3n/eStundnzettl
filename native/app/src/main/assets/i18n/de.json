@@ -1319,9 +1319,10 @@
       "logoHint": "Erscheint links oben im PDF. Am schönsten schaut ein PNG mit transparentem Hintergrund aus.",
       "footer": "Fußzeile",
       "footerPlaceholder": "Musterfirma GmbH · Hauptstraße 1 · 1010 Wien\nFN 123456a · UID ATU12345678 · office@firma.at",
-      "footerHint": "Bis zu 3 Zeilen, klein und zentriert unten auf jeder Seite.",
+      "footerHint": "Bis zu 3 Zeilen bzw. 300 Zeichen, klein und zentriert unten auf jeder Seite.",
       "toastLogoUpdated": "Logo übernommen",
-      "toastLogoError": "Das Bild konnte nicht geladen werden"
+      "toastLogoError": "Das Bild konnte nicht geladen werden",
+      "footerTruncated": "Gekürzt: höchstens 3 Zeilen bzw. 300 Zeichen."
     }
   },
   "attachments": {

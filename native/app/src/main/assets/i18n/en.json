@@ -1319,9 +1319,10 @@
       "logoHint": "Shown at the top left of the PDF. A PNG with a transparent background looks best.",
       "footer": "Footer",
       "footerPlaceholder": "Example Ltd · 1 Main Street · 1010 Vienna\nReg. no. 123456a · VAT ATU12345678 · office@example.com",
-      "footerHint": "Up to 3 lines, small and centred at the bottom of every page.",
+      "footerHint": "Up to 3 lines or 300 characters, small and centred at the bottom of every page.",
       "toastLogoUpdated": "Logo saved",
-      "toastLogoError": "The image could not be loaded"
+      "toastLogoError": "The image could not be loaded",
+      "footerTruncated": "Shortened: at most 3 lines or 300 characters."
     }
   },
   "attachments": {

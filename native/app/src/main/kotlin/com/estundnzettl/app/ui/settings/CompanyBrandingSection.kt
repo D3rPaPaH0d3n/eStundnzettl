@@ -36,6 +36,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,7 +50,7 @@ import com.estundnzettl.app.pdf.uriToLogoDataUrl
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
-import com.estundnzettl.core.model.REPORT_FOOTER_MAX_CHARS
+import com.estundnzettl.core.calc.limitReportFooterEdit
 import com.estundnzettl.core.model.REPORT_FOOTER_MAX_LINES
 import com.estundnzettl.core.model.ReportBranding
 import kotlinx.coroutines.Dispatchers
@@ -151,30 +153,54 @@ fun CompanyBrandingSection(viewModel: MainViewModel) {
             Text(t.t("settings.branding.logoHint"), color = colors.textMuted, fontSize = 12.sp)
 
             // ── Fußzeile ────────────────────────────────────────
-            // Entwurf + zuletzt gespeicherter Stand. Gespeichert wird kurz
-            // nach dem Tippen (nicht pro Taste — das Profil-JSON trägt auch
-            // das Logo), beim Wechsel in den Hintergrund und beim Verlassen.
-            var footerText by rememberSaveable { mutableStateOf(branding.footer) }
+            // Nach einer Tipp-Pause wird der Entwurf still gespeichert (State +
+            // DB, ohne Backup-/Archiv-Planung); abgeschlossen samt Planung wird
+            // beim Verlassen des Felds, im Hintergrund und beim Verlassen der Seite.
+            var footerValue by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+                mutableStateOf(TextFieldValue(branding.footer))
+            }
             var syncedFooter by rememberSaveable { mutableStateOf(branding.footer) }
+            var unsaved by rememberSaveable { mutableStateOf(false) }
+            var truncated by remember { mutableStateOf(false) }
+
+            fun currentFooter() = viewModel.state.value.userData?.reportBranding?.footer.orEmpty()
+
+            // false = Profil wurde inzwischen ersetzt (Restore, Löschen, Demo) → nichts zurückschreiben
+            fun pushDraft(): Boolean {
+                if (currentFooter() != syncedFooter) return false
+                val text = footerValue.text
+                if (text != syncedFooter) {
+                    syncedFooter = text
+                    unsaved = true
+                    viewModel.saveUserDataQuietly {
+                        it.copy(reportBranding = (it.reportBranding ?: ReportBranding()).copy(footer = text))
+                    }
+                }
+                return true
+            }
 
             fun commitFooter() {
-                val stored = viewModel.state.value.userData?.reportBranding?.footer.orEmpty()
-                // Profil wurde inzwischen ersetzt (Restore, Löschen, Demo) → nichts zurückschreiben
-                if (stored != syncedFooter || footerText == stored) return
-                syncedFooter = footerText
-                patch { it.copy(footer = footerText) }
+                if (!pushDraft()) {
+                    unsaved = false
+                    return
+                }
+                if (unsaved) {
+                    unsaved = false
+                    patch { it } // schließt ab: Neuberechnung + Backup-/Archiv-Planung
+                }
             }
 
             // Externe Änderung übernehmen statt den Entwurf drüberzuschreiben
             LaunchedEffect(branding.footer) {
                 if (branding.footer != syncedFooter) {
-                    footerText = branding.footer
+                    footerValue = TextFieldValue(branding.footer)
                     syncedFooter = branding.footer
+                    unsaved = false
                 }
             }
-            LaunchedEffect(footerText) {
-                delay(500)
-                commitFooter()
+            LaunchedEffect(footerValue.text) {
+                delay(300)
+                pushDraft()
             }
             val lifecycleOwner = LocalLifecycleOwner.current
             DisposableEffect(lifecycleOwner) {
@@ -189,17 +215,20 @@ fun CompanyBrandingSection(viewModel: MainViewModel) {
             }
 
             OutlinedTextField(
-                value = footerText,
-                // Zu langes Einfügen kürzen statt kommentarlos verwerfen
+                value = footerValue,
+                // Gekürzt wird nur der eingefügte Teil, nie bestehender Text
                 onValueChange = { value ->
-                    footerText = value.lines()
-                        .take(REPORT_FOOTER_MAX_LINES)
-                        .joinToString("\n")
-                        .take(REPORT_FOOTER_MAX_CHARS)
+                    val edit = limitReportFooterEdit(footerValue.text, value.text)
+                    val cursor = edit.cursor
+                    truncated = edit.truncated
+                    footerValue = if (cursor == null) value else TextFieldValue(edit.text, TextRange(cursor))
                 },
                 label = { Text(t.t("settings.branding.footer")) },
                 placeholder = { Text(t.t("settings.branding.footerPlaceholder")) },
-                supportingText = { Text(t.t("settings.branding.footerHint")) },
+                supportingText = {
+                    Text(t.t(if (truncated) "settings.branding.footerTruncated" else "settings.branding.footerHint"))
+                },
+                isError = truncated,
                 minLines = 2,
                 maxLines = REPORT_FOOTER_MAX_LINES,
                 modifier = Modifier

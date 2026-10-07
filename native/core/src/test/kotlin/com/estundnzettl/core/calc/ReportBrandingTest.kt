@@ -12,6 +12,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ReportBrandingTest {
 
@@ -55,6 +56,65 @@ class ReportBrandingTest {
             listOf("Musterfirma GmbH", "Hauptstraße 1 · 1010 Wien", "FN 123456a"),
             normalizeReportFooter(footer),
         )
+    }
+
+    // ─── Eingabe der Fußzeile ────────────────────────────────
+
+    @Test
+    fun `Eingabe innerhalb der Grenzen bleibt unveraendert`() {
+        assertEquals(ReportFooterEdit("Firma\nWien", null, false), limitReportFooterEdit("Firma", "Firma\nWien"))
+    }
+
+    @Test
+    fun `Leerzeilen zaehlen nicht zum Zeilenlimit`() {
+        val full = "Firma GmbH\nHauptstraße 1\n1010 Wien"
+        val withBlank = "Firma GmbH\n\nHauptstraße 1\n1010 Wien"
+        assertEquals(ReportFooterEdit(withBlank, null, false), limitReportFooterEdit(full, withBlank))
+    }
+
+    @Test
+    fun `vierte Inhaltszeile in der Mitte loescht keinen bestehenden Text`() {
+        val before = "Firma GmbH\n\nHauptstraße 1\n1010 Wien"
+        val typed = "Firma GmbH\nX\nHauptstraße 1\n1010 Wien"
+        val edit = limitReportFooterEdit(before, typed)
+        assertEquals(before, edit.text)
+        assertEquals(11, edit.cursor)
+        assertTrue(edit.truncated)
+    }
+
+    @Test
+    fun `volle 300 Zeichen - Tippen in der Mitte frisst nichts vom Ende`() {
+        val full = "a".repeat(150) + "b".repeat(150)
+        val typed = "a".repeat(150) + "X" + "b".repeat(150)
+        val edit = limitReportFooterEdit(full, typed)
+        assertEquals(full, edit.text)
+        assertEquals(150, edit.cursor)
+    }
+
+    @Test
+    fun `zu langes Einfuegen wird am Einfuegeende gekuerzt, Rest bleibt`() {
+        val paste = "Firma GmbH\nHauptstraße 1\n1010 Wien\nUID ATU12345678\noffice@firma.at"
+        val edit = limitReportFooterEdit("", paste)
+        assertEquals("Firma GmbH\nHauptstraße 1\n1010 Wien\n", edit.text)
+        assertTrue(edit.truncated)
+
+        val windows = limitReportFooterEdit("", "A\r\nB\r\nC\r\nD")
+        assertEquals(listOf("A", "B", "C"), normalizeReportFooter(windows.text))
+    }
+
+    @Test
+    fun `Emoji an der Grenze wird nicht halbiert`() {
+        val almostFull = "x".repeat(299)
+        val edit = limitReportFooterEdit(almostFull, almostFull + "😀")
+        assertEquals(almostFull, edit.text)
+        assertFalse(edit.text.last().isHighSurrogate())
+    }
+
+    @Test
+    fun `zu langen Altbestand darf man kuerzen, aber nicht verlaengern`() {
+        val legacy = "A\nB\nC\nD"
+        assertEquals(ReportFooterEdit("A\nB\nC\n", null, false), limitReportFooterEdit(legacy, "A\nB\nC\n"))
+        assertEquals(legacy, limitReportFooterEdit(legacy, "A\nB\nC\nDE").text)
     }
 
     // ─── Profil-JSON (Settings + Backup) ─────────────────────

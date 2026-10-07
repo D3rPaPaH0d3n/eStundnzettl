@@ -1,0 +1,9 @@
+Selber ausgsucht, sicher abglegt 📂
+
+• Lokales Backup in einen Ordner deiner Wahl, auf Wunsch samt Monats-PDF
+• Beim Einrichten das Backup direkt aus dem Ordner zurückholen
+• Ein gestoppter Timer bleibt bis zum Speichern erhalten
+• Nachtschichten werden über Mitternacht auf Überschneidungen geprüft
+• Mehr Schutz für deine Daten und ein stabiler Start
+
+So liegt dein Backup genau dort, wo's hinghört!

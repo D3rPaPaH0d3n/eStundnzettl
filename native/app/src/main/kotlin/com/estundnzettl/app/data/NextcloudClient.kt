@@ -10,6 +10,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * WebDAV-/Login-Flow-Client für Nextcloud — Port von nextcloudClient.ts
@@ -35,11 +37,12 @@ object NextcloudClient {
         data class Complete(val server: String, val loginName: String, val appPassword: String) : PollResult()
     }
 
-    // In-Memory-Caches wie im Original (Ordner-Existenz, aufgelöste DAV-UID)
-    private val verifiedFolders = HashSet<String>()
-    private val resolvedDavUsers = HashMap<String, String>()
+    // In-Memory-Caches wie im Original (Ordner-Existenz, aufgelöste DAV-UID).
+    // Backup und PDF-Archiv laden parallel hoch — daher thread-sicher.
+    private val verifiedFolders: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    private val resolvedDavUsers = ConcurrentHashMap<String, String>()
     /** 429-Drossel: Zeitstempel, bis wann keine Requests gesendet werden. */
-    private var rateLimitedUntil = 0L
+    @Volatile private var rateLimitedUntil = 0L
 
     private fun normalizeUrl(url: String): String = url.trimEnd('/')
 
@@ -197,31 +200,39 @@ object NextcloudClient {
 
     // ─── DAV-User-Auflösung + Verbindung ────────────────────────────
 
-    /** Echte uid via OCS auflösen (loginName kann E-Mail/Display-Name sein). */
-    private suspend fun resolveUserId(serverUrl: String, loginName: String, appPassword: String): String {
-        return try {
-            val res = http(
+    /**
+     * Echte uid via OCS auflösen (loginName kann E-Mail/Display-Name sein).
+     * null, wenn der Server keine verwertbare Antwort liefert (kein Netz,
+     * Wartung, Captive Portal) — dann ist noch nichts entschieden.
+     */
+    private suspend fun resolveUserId(serverUrl: String, loginName: String, appPassword: String): String? {
+        val res = try {
+            http(
                 "${normalizeUrl(serverUrl)}/ocs/v1.php/cloud/user?format=json",
                 "GET", loginName, appPassword,
             )
-            if (res.status == 200 && res.body.isNotEmpty()) {
-                val uid = json.parseToJsonElement(res.body)
-                    .jsonObject["ocs"]?.jsonObject
-                    ?.get("data")?.jsonObject
-                    ?.get("id")?.jsonPrimitive?.content
-                uid?.trim().takeUnless { it.isNullOrEmpty() } ?: loginName
-            } else {
-                loginName
-            }
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
-            loginName
+            return null
         }
+        if (res.status != 200 || res.body.isEmpty()) return null
+        val ocs = runCatching { json.parseToJsonElement(res.body).jsonObject }.getOrNull() ?: return null
+        val uid = runCatching {
+            ocs["ocs"]?.jsonObject?.get("data")?.jsonObject?.get("id")?.jsonPrimitive?.content
+        }.getOrNull()
+        return uid?.trim().takeUnless { it.isNullOrEmpty() } ?: loginName
     }
 
+    /**
+     * Ohne Server-Antwort gilt der loginName nur für diesen Aufruf. Im
+     * Cache würde er sonst bis zum App-Neustart alle Uploads auf einen
+     * falschen DAV-Pfad lenken, falls die uid vom loginName abweicht.
+     */
     private suspend fun getDavUser(url: String, user: String, pass: String): String {
         val key = "${normalizeUrl(url)}|${user.trim()}"
         resolvedDavUsers[key]?.let { return it }
-        val davUser = resolveUserId(url, user, pass)
+        val davUser = resolveUserId(url, user, pass) ?: return user
         resolvedDavUsers[key] = davUser
         return davUser
     }
@@ -249,7 +260,7 @@ object NextcloudClient {
         for (segment in segments) {
             if (segment.isEmpty()) continue
             acc += "/" + encodePath(segment)
-            val cacheKey = "${normalizeUrl(url)}|$user::$acc"
+            val cacheKey = "$base::$acc"
             if (cacheKey in verifiedFolders) continue
             val res = http("$base$acc/", "MKCOL", user, pass)
             when (res.status) {

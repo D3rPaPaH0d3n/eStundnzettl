@@ -65,6 +65,7 @@ import com.estundnzettl.core.model.WORK_CODE_PRESETS
 import com.estundnzettl.core.model.WORK_MODELS
 import com.estundnzettl.core.model.WorkCode
 import com.estundnzettl.core.model.WorkModel
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -73,6 +74,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
@@ -287,6 +289,8 @@ data class NextcloudUiState(
     val connected: Boolean = false,
     val user: String = "",
     val connecting: Boolean = false,
+    /** Fehler des letzten Backup-Versuchs; leer nach Erfolg. */
+    val lastError: String = "",
 )
 
 data class GoogleDriveUiState(
@@ -513,6 +517,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun onAppResume() {
         autoPdfArchiveRun("resume")
         viewModelScope.launch { refreshBackupHealth(notifyUser = true) }
+        // Holt Cloud-Ziele nach, die im Hintergrund kein Netz hatten. Ziele
+        // mit aktuellem Stand werden dabei nicht erneut hochgeladen.
+        if (!_state.value.loading) scheduleAutoBackup()
+    }
+
+    /**
+     * Sichtbarkeit der Activity (onStart/onStop). Android sperrt das Netz
+     * für Apps im Hintergrund; Uploads, die dann scheitern, sind kein
+     * Backup-Fehler, sondern werden im Vordergrund nachgeholt.
+     */
+    @Volatile private var appInForeground = true
+
+    fun onAppVisibilityChanged(visible: Boolean) {
+        appInForeground = visible
     }
 
     /** UI sammelt Meldungen; jetzt darf ein ausstehender Backup-Hinweis erscheinen. */
@@ -1542,6 +1560,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val autoBackup by lazy {
         AutoBackupManager(
             getApplication(), settings, backupRepo, nextcloudManager, googleDrive,
+            isAppInForeground = { appInForeground },
         )
     }
 
@@ -1648,12 +1667,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun refreshNextcloudState(connecting: Boolean = _state.value.nextcloud.connecting) {
         val creds = runCatching { nextcloudManager.getCredentials() }.getOrNull()
         val enabled = settings.getBoolean(SettingsRepository.Keys.NEXTCLOUD_ENABLED)
+        val lastError = settings.getString(AutoBackupManager.KEY_NC_LAST_ERROR).orEmpty()
         _state.update {
             it.copy(
                 nextcloud = NextcloudUiState(
                     connected = creds != null && enabled,
                     user = creds?.user ?: "",
                     connecting = connecting,
+                    lastError = lastError,
                 ),
             )
         }
@@ -1727,6 +1748,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             val result = NextcloudClient.testConnection(creds.url, creds.user, creds.appPassword)
             if (result.isSuccess) {
+                // Verbindung steht: alten Fehler samt Backoff verwerfen und
+                // ein ausstehendes Backup gleich nachholen.
+                autoBackup.clearNextcloudErrorState()
+                refreshNextcloudState()
+                scheduleAutoBackup()
                 emit(UiMessage("settings.backup.toast.ncTestOk"))
             } else {
                 emit(UiMessage("settings.backup.toast.ncTestFailed"))
@@ -1741,8 +1767,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         autoBackupJob?.cancel()
         autoBackupJob = viewModelScope.launch {
             kotlinx.coroutines.delay(2000)
-            val outcome = autoBackup.performBackup(AutoBackupManager.Source.AUTO)
-            refreshBackupStateAfter(outcome, notifyUser = true)
+            // Nur die Wartezeit ist abbrechbar. Ein laufender Upload wird zu
+            // Ende geführt und sein Ergebnis gespeichert; der nächste Lauf
+            // wartet darauf und lädt nur noch Neues hoch.
+            withContext(NonCancellable) {
+                val outcome = autoBackup.performBackup(AutoBackupManager.Source.AUTO)
+                refreshBackupStateAfter(outcome, notifyUser = true)
+            }
         }
     }
 
@@ -1774,6 +1805,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         ) {
             refreshGoogleState()
         }
+        refreshNextcloudState()
         refreshBackupHealth(
             notifyUser = notifyUser &&
                 AutoBackupManager.Target.GOOGLE_DRIVE in outcome.failedTargets,
@@ -1975,6 +2007,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             refreshGoogleState()
             refreshBackupHealth()
+            refreshNextcloudState()
         }
     }
 

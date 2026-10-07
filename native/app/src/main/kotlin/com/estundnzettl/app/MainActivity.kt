@@ -95,8 +95,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        viewModel.onAppVisibilityChanged(true)
+    }
+
     override fun onStop() {
         super.onStop()
+        viewModel.onAppVisibilityChanged(false)
         // Background-Backup wie der appStateChange-Listener der Web-App
         if (appReady) viewModel.onAppBackground()
     }

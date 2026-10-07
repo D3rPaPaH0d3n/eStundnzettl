@@ -68,7 +68,6 @@ fun CloudBackupContent(viewModel: MainViewModel) {
     var serverUrl by remember { mutableStateOf("") }
     var localEnabled by remember { mutableStateOf(false) }
     var lastBackup by remember { mutableStateOf("") }
-    var ncLastError by remember { mutableStateOf("") }
     var saving by remember { mutableStateOf(false) }
     var testingDrive by remember { mutableStateOf(false) }
     var refreshTick by remember { mutableStateOf(0) }
@@ -101,7 +100,6 @@ fun CloudBackupContent(viewModel: MainViewModel) {
         // was turned on before folders existed has no folder and still runs.
         localEnabled = viewModel.settings.getBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED)
         lastBackup = viewModel.settings.getString(AutoBackupManager.KEY_LAST_BACKUP) ?: ""
-        ncLastError = viewModel.settings.getString(AutoBackupManager.KEY_NC_LAST_ERROR) ?: ""
     }
 
     LaunchedEffect(Unit) { viewModel.refreshGooglePlayServices() }
@@ -249,9 +247,9 @@ fun CloudBackupContent(viewModel: MainViewModel) {
                             t.t("settings.backup.nextcloud.connectedAs", "user" to nc.user),
                             color = colors.positive, fontSize = 12.sp,
                         )
-                        if (ncLastError.isNotEmpty()) {
+                        if (nc.lastError.isNotEmpty()) {
                             Text(
-                                t.t("settings.backup.warning.nextcloudWithError", "error" to ncLastError),
+                                t.t("settings.backup.warning.nextcloudWithError", "error" to nc.lastError),
                                 color = colors.danger, fontSize = 12.sp,
                             )
                         }

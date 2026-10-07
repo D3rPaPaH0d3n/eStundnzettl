@@ -3,12 +3,19 @@ package com.estundnzettl.app.data
 import android.content.Context
 import android.util.Log
 import com.estundnzettl.core.backup.BackupSections
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.time.Instant
 import java.time.LocalDate
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Nextcloud-Verbindungsverwaltung — Port von nextcloudSecret.ts +
@@ -90,6 +97,12 @@ class AutoBackupManager(
     private val backupRepo: BackupRepository,
     private val nextcloud: NextcloudManager,
     private val googleDrive: GoogleDriveManager? = null,
+    /**
+     * Android cuts the network of an app that is no longer visible (from
+     * Android 15 on, earlier on many OEM builds). A cloud upload that fails
+     * then is not a broken target; it waits for the next foreground run.
+     */
+    private val isAppInForeground: () -> Boolean = { true },
 ) {
 
     companion object {
@@ -129,12 +142,25 @@ class AutoBackupManager(
          * die UI meldet das wie die Web-App als "Keine Daten zum Sichern".
          */
         val skippedEmpty: Boolean = false,
+        /**
+         * Cloud targets that had no network while the app was in the
+         * background. Not a failure: they stay pending and run again on
+         * the next foreground backup.
+         */
+        val deferredTargets: Set<Target> = emptySet(),
     ) {
         val isPartial: Boolean get() = anySucceeded && !allSatisfied
     }
 
-    private val isUploading = AtomicBoolean(false)
-    private var lastHash: String = ""
+    /** Runs wait for each other instead of being dropped while one uploads. */
+    private val backupLock = Mutex()
+
+    /**
+     * Per target: destination + data hash of the last successful upload in
+     * this process. A target that already holds the current state is not
+     * uploaded again by automatic runs.
+     */
+    private val uploadedStates = HashMap<Target, String>()
     private val localFolder = LocalBackupFolder(context, settings)
 
     private suspend fun isBackoffActive(key: String): Boolean {
@@ -195,7 +221,7 @@ class AutoBackupManager(
         )
     }
 
-    private suspend fun clearNextcloudErrorState() {
+    internal suspend fun clearNextcloudErrorState() {
         settings.setString(KEY_NC_FAIL_COUNT, "0")
         settings.setString(KEY_NC_LAST_ERROR, "")
         settings.setString(KEY_NC_BACKOFF_UNTIL, "")
@@ -235,7 +261,9 @@ class AutoBackupManager(
         }?.sortedByDescending { it.name }?.drop(7)?.forEach { it.delete() }
     }
 
-    suspend fun performBackup(source: Source): Outcome {
+    suspend fun performBackup(source: Source): Outcome = backupLock.withLock { runBackup(source) }
+
+    private suspend fun runBackup(source: Source): Outcome {
         val cloudActive = settings.getBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED)
         val localActive = settings.getBoolean(SettingsRepository.Keys.LOCAL_BACKUP_ENABLED)
         val ncActive = settings.getBoolean(SettingsRepository.Keys.NEXTCLOUD_ENABLED)
@@ -248,7 +276,6 @@ class AutoBackupManager(
         val anyRunnable = localActive || (cloudActive && !cloudBlocked) || (ncActive && !ncBlocked)
         if (!anyRunnable) return Outcome(ran = false)
 
-        if (!isUploading.compareAndSet(false, true)) return Outcome(ran = false)
         try {
             val sections = backupRepo.collectSections()
             // Ein leerer Datenstand darf ein vollständiges Backup niemals
@@ -257,8 +284,19 @@ class AutoBackupManager(
             // Entspricht den Guards in useAutoBackup.ts.
             if (sections.entries.isEmpty()) return Outcome(ran = false, skippedEmpty = true)
 
-            val currentHash = hashSections(sections)
-            if (currentHash == lastHash && source == Source.AUTO) return Outcome(ran = false)
+            // Ziel + Datenstand: ein neu verbundenes Konto oder ein anderer
+            // Ordner zählt als neues Ziel und bekommt sofort eine Kopie.
+            val dataHash = hashSections(sections)
+            val ncCreds = if (ncActive && !ncBlocked) nextcloud.getCredentials() else null
+            val localState = "${settings.getString(LocalBackupFolder.KEY_TREE_URI).orEmpty()}|$dataHash"
+            val driveState = "${settings.getString(GoogleDriveManager.KEY_ACCOUNT_EMAIL).orEmpty()}|$dataHash"
+            val ncState = "${ncCreds?.url}|${ncCreds?.user}|$dataHash"
+            fun needsRun(target: Target, state: String) =
+                source == Source.MANUAL || uploadedStates[target] != state
+            val runLocal = localActive && needsRun(Target.LOCAL, localState)
+            val runCloud = cloudActive && needsRun(Target.GOOGLE_DRIVE, driveState)
+            val runNc = ncActive && needsRun(Target.NEXTCLOUD, ncState)
+            if (!runLocal && !runCloud && !runNc) return Outcome(ran = false)
 
             // Exakt den geprüften Stand hochladen, nicht neu einlesen.
             val payload = backupRepo.createBackupPayload(
@@ -271,13 +309,22 @@ class AutoBackupManager(
             var allSatisfied = true
             val succeededTargets = linkedSetOf<Target>()
             val failedTargets = linkedSetOf<Target>()
+            val deferredTargets = linkedSetOf<Target>()
 
-            if (localActive) {
+            // Im Hintergrund heißt ein Netzwerkfehler "kein Netz für die
+            // App", nicht "Ziel kaputt" — kein Fehlerzähler, kein Backoff.
+            fun deferInsteadOfFailing(error: Exception): Boolean =
+                source != Source.MANUAL && !isAppInForeground() && isConnectivityFailure(error)
+
+            if (runLocal) {
                 try {
                     writeLocalBackup(content)
                     anySucceeded = true
                     succeededTargets += Target.LOCAL
+                    uploadedStates[Target.LOCAL] = localState
                     settings.setString(KEY_LOCAL_LAST_SUCCESS, Instant.now().toString())
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     allSatisfied = false
                     failedTargets += Target.LOCAL
@@ -285,7 +332,7 @@ class AutoBackupManager(
                 }
             }
 
-            if (cloudActive) {
+            if (runCloud) {
                 if (cloudBlocked || googleDrive == null) {
                     allSatisfied = false
                     failedTargets += Target.GOOGLE_DRIVE
@@ -298,56 +345,66 @@ class AutoBackupManager(
                         googleDrive.uploadOrUpdateBackup(token, NextcloudClient.BACKUP_FILENAME, content)
                         anySucceeded = true
                         succeededTargets += Target.GOOGLE_DRIVE
+                        uploadedStates[Target.GOOGLE_DRIVE] = driveState
                         settings.setString(KEY_CLOUD_LAST_SUCCESS, Instant.now().toString())
                         clearGoogleDriveErrorState()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         allSatisfied = false
-                        failedTargets += Target.GOOGLE_DRIVE
-                        val message = if (e is GoogleDriveManager.AuthRequiredException) {
-                            "Google Drive Anmeldung erforderlich"
+                        if (deferInsteadOfFailing(e)) {
+                            deferredTargets += Target.GOOGLE_DRIVE
+                            Log.i(TAG, "Cloud-Backup im Hintergrund ohne Netz, folgt später: ${e.message}")
                         } else {
-                            e.message ?: "Cloud-Backup fehlgeschlagen"
+                            failedTargets += Target.GOOGLE_DRIVE
+                            val message = if (e is GoogleDriveManager.AuthRequiredException) {
+                                "Google Drive Anmeldung erforderlich"
+                            } else {
+                                e.message ?: "Cloud-Backup fehlgeschlagen"
+                            }
+                            registerGoogleDriveFailure(
+                                message,
+                                requiresReconnect = googleDriveFailureNeedsReconnect(e),
+                            )
+                            Log.w(TAG, "Cloud-Backup fehlgeschlagen: $message")
                         }
-                        registerGoogleDriveFailure(
-                            message,
-                            requiresReconnect = googleDriveFailureNeedsReconnect(e),
-                        )
-                        Log.w(TAG, "Cloud-Backup fehlgeschlagen: $message")
                     }
                 }
             }
 
-            if (ncActive) {
+            if (runNc) {
                 if (ncBlocked) {
                     allSatisfied = false
+                } else if (ncCreds == null) {
+                    allSatisfied = false
+                    failedTargets += Target.NEXTCLOUD
+                    registerNextcloudFailure("Nextcloud-Verbindung nicht vollständig")
                 } else {
                     try {
-                        val creds = nextcloud.getCredentials()
-                        if (creds != null) {
-                            NextcloudClient.uploadBackup(creds.url, creds.user, creds.appPassword, content)
-                            anySucceeded = true
-                            succeededTargets += Target.NEXTCLOUD
-                            settings.setString(KEY_NC_LAST_SUCCESS, Instant.now().toString())
-                            clearNextcloudErrorState()
-                        } else {
-                            allSatisfied = false
-                            failedTargets += Target.NEXTCLOUD
-                            registerNextcloudFailure("Nextcloud-Verbindung nicht vollständig")
-                        }
+                        NextcloudClient.uploadBackup(ncCreds.url, ncCreds.user, ncCreds.appPassword, content)
+                        anySucceeded = true
+                        succeededTargets += Target.NEXTCLOUD
+                        uploadedStates[Target.NEXTCLOUD] = ncState
+                        settings.setString(KEY_NC_LAST_SUCCESS, Instant.now().toString())
+                        clearNextcloudErrorState()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         allSatisfied = false
-                        failedTargets += Target.NEXTCLOUD
-                        registerNextcloudFailure(e.message ?: "Nextcloud-Backup fehlgeschlagen")
-                        Log.w(TAG, "Nextcloud-Backup fehlgeschlagen: ${e.message}")
+                        if (deferInsteadOfFailing(e)) {
+                            deferredTargets += Target.NEXTCLOUD
+                            Log.i(TAG, "Nextcloud-Backup im Hintergrund ohne Netz, folgt später: ${e.message}")
+                        } else {
+                            failedTargets += Target.NEXTCLOUD
+                            registerNextcloudFailure(e.message ?: "Nextcloud-Backup fehlgeschlagen")
+                            Log.w(TAG, "Nextcloud-Backup fehlgeschlagen: ${e.message}")
+                        }
                     }
                 }
             }
 
             if (anySucceeded) {
                 settings.setString(KEY_LAST_BACKUP, Instant.now().toString())
-            }
-            if (anySucceeded && allSatisfied) {
-                lastHash = currentHash
             }
 
             return Outcome(
@@ -356,12 +413,13 @@ class AutoBackupManager(
                 allSatisfied = allSatisfied,
                 succeededTargets = succeededTargets,
                 failedTargets = failedTargets,
+                deferredTargets = deferredTargets,
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "Backup übersprungen: ${e.message}")
             return Outcome(ran = true, anySucceeded = false, allSatisfied = false)
-        } finally {
-            isUploading.set(false)
         }
     }
 }
@@ -369,3 +427,16 @@ class AutoBackupManager(
 internal fun googleDriveFailureNeedsReconnect(error: Throwable): Boolean =
     error is GoogleDriveManager.AuthRequiredException ||
         (error is GoogleDriveManager.DriveApiException && error.statusCode == 401)
+
+/**
+ * True when the request never reached the server: DNS, connect or socket
+ * errors. Android reports an app whose network was cut in the background
+ * as "Unable to resolve host".
+ */
+internal fun isConnectivityFailure(error: Throwable): Boolean =
+    generateSequence(error) { it.cause }.take(8).any { cause ->
+        cause is UnknownHostException ||
+            cause is SocketException ||
+            cause is SocketTimeoutException ||
+            (cause is ApiException && cause.statusCode == CommonStatusCodes.NETWORK_ERROR)
+    }

@@ -2,10 +2,17 @@ package com.estundnzettl.app
 
 import com.estundnzettl.app.data.AutoBackupManager
 import com.estundnzettl.app.data.GoogleDriveManager
+import com.estundnzettl.app.data.NextcloudClient
 import com.estundnzettl.app.data.googleDriveFailureNeedsReconnect
+import com.estundnzettl.app.data.isConnectivityFailure
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 class BackupHealthTest {
 
@@ -74,5 +81,28 @@ class BackupHealthTest {
         )
 
         assertTrue(outcome.isPartial)
+    }
+
+    @Test
+    fun `network cut in the background counts as connectivity failure`() {
+        // Android reports a blocked background app exactly like this.
+        assertTrue(
+            isConnectivityFailure(
+                UnknownHostException(
+                    "Unable to resolve host \"cloud.example.org\": No address associated with hostname",
+                ),
+            ),
+        )
+        assertTrue(isConnectivityFailure(ConnectException("Connection refused")))
+        assertTrue(isConnectivityFailure(SocketTimeoutException("timeout")))
+        assertTrue(isConnectivityFailure(SocketException("Software caused connection abort")))
+        assertTrue(isConnectivityFailure(IOException("wrapped", UnknownHostException("www.googleapis.com"))))
+    }
+
+    @Test
+    fun `server answers are real backup failures`() {
+        assertFalse(isConnectivityFailure(GoogleDriveManager.DriveApiException("Update", 500)))
+        assertFalse(isConnectivityFailure(GoogleDriveManager.AuthRequiredException(null)))
+        assertFalse(isConnectivityFailure(NextcloudClient.NextcloudException("Nicht autorisiert (401)")))
     }
 }

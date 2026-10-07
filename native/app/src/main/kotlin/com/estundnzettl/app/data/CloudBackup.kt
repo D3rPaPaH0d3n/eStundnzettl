@@ -13,10 +13,10 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.security.cert.CertificateException
 import java.time.Instant
 import java.time.LocalDate
 import javax.net.ssl.SSLException
-import javax.net.ssl.SSLHandshakeException
 import javax.net.ssl.SSLPeerUnverifiedException
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -441,17 +441,19 @@ internal fun googleDriveFailureNeedsReconnect(error: Throwable): Boolean =
 
 /**
  * True for transport errors without a server answer: DNS, connect, socket
- * and aborted TLS reads. Android reports an app whose network was cut in
- * the background as "Unable to resolve host". TLS handshake and certificate
- * errors are not included; they point at a misconfigured server.
+ * and aborted TLS connections. Android reports an app whose network was cut
+ * in the background as "Unable to resolve host", a cut TLS connection as an
+ * SSLException without cause. Certificate errors are not included; they
+ * point at a misconfigured server.
  */
-internal fun isConnectivityFailure(error: Throwable): Boolean =
-    generateSequence(error) { it.cause }.take(8).any { cause ->
+internal fun isConnectivityFailure(error: Throwable): Boolean {
+    val chain = generateSequence(error) { it.cause }.take(8).toList()
+    if (chain.any { it is CertificateException || it is SSLPeerUnverifiedException }) return false
+    return chain.any { cause ->
         cause is UnknownHostException ||
             cause is SocketException ||
             cause is SocketTimeoutException ||
-            (cause is SSLException &&
-                cause !is SSLHandshakeException &&
-                cause !is SSLPeerUnverifiedException) ||
+            cause is SSLException ||
             (cause is ApiException && cause.statusCode == CommonStatusCodes.NETWORK_ERROR)
     }
+}

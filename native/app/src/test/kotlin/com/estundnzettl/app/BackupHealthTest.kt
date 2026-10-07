@@ -13,8 +13,10 @@ import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.security.cert.CertificateException
 import javax.net.ssl.SSLException
 import javax.net.ssl.SSLHandshakeException
+import javax.net.ssl.SSLPeerUnverifiedException
 
 class BackupHealthTest {
 
@@ -105,6 +107,13 @@ class BackupHealthTest {
                 SSLException("Read error: ssl=0x0: I/O error during system call, Software caused connection abort"),
             ),
         )
+        assertTrue(
+            isConnectivityFailure(
+                SSLHandshakeException(
+                    "SSL handshake aborted: ssl=0x0: I/O error during system call, Software caused connection abort",
+                ),
+            ),
+        )
     }
 
     @Test
@@ -113,6 +122,12 @@ class BackupHealthTest {
         assertFalse(isConnectivityFailure(GoogleDriveManager.AuthRequiredException(null)))
         assertFalse(isConnectivityFailure(NextcloudClient.NextcloudException("Nicht autorisiert (401)")))
         // A certificate problem is a server misconfiguration, not a missing network.
-        assertFalse(isConnectivityFailure(SSLHandshakeException("PKIX path building failed")))
+        assertFalse(
+            isConnectivityFailure(
+                SSLHandshakeException("Trust anchor for certification path not found.")
+                    .apply { initCause(CertificateException("CertPathValidatorException")) },
+            ),
+        )
+        assertFalse(isConnectivityFailure(SSLPeerUnverifiedException("Hostname not verified")))
     }
 }

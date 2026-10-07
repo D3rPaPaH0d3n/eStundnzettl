@@ -21,12 +21,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.pdf.decodeLogoDataUrl
 import com.estundnzettl.app.pdf.uriToLogoDataUrl
@@ -48,6 +52,7 @@ import com.estundnzettl.core.model.REPORT_FOOTER_MAX_CHARS
 import com.estundnzettl.core.model.REPORT_FOOTER_MAX_LINES
 import com.estundnzettl.core.model.ReportBranding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -146,22 +151,51 @@ fun CompanyBrandingSection(viewModel: MainViewModel) {
             Text(t.t("settings.branding.logoHint"), color = colors.textMuted, fontSize = 12.sp)
 
             // ── Fußzeile ────────────────────────────────────────
-            // Gespeichert wird beim Verlassen des Felds bzw. der Seite —
-            // nicht pro Tastendruck, das Profil-JSON trägt auch das Logo.
-            var footerText by remember(branding.footer) { mutableStateOf(branding.footer) }
-            val latestFooter by rememberUpdatedState(footerText)
-            fun commitFooter(text: String) {
+            // Entwurf + zuletzt gespeicherter Stand. Gespeichert wird kurz
+            // nach dem Tippen (nicht pro Taste — das Profil-JSON trägt auch
+            // das Logo), beim Wechsel in den Hintergrund und beim Verlassen.
+            var footerText by rememberSaveable { mutableStateOf(branding.footer) }
+            var syncedFooter by rememberSaveable { mutableStateOf(branding.footer) }
+
+            fun commitFooter() {
                 val stored = viewModel.state.value.userData?.reportBranding?.footer.orEmpty()
-                if (text != stored) patch { it.copy(footer = text) }
+                // Profil wurde inzwischen ersetzt (Restore, Löschen, Demo) → nichts zurückschreiben
+                if (stored != syncedFooter || footerText == stored) return
+                syncedFooter = footerText
+                patch { it.copy(footer = footerText) }
             }
-            DisposableEffect(Unit) { onDispose { commitFooter(latestFooter) } }
+
+            // Externe Änderung übernehmen statt den Entwurf drüberzuschreiben
+            LaunchedEffect(branding.footer) {
+                if (branding.footer != syncedFooter) {
+                    footerText = branding.footer
+                    syncedFooter = branding.footer
+                }
+            }
+            LaunchedEffect(footerText) {
+                delay(500)
+                commitFooter()
+            }
+            val lifecycleOwner = LocalLifecycleOwner.current
+            DisposableEffect(lifecycleOwner) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_STOP) commitFooter()
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose {
+                    lifecycleOwner.lifecycle.removeObserver(observer)
+                    commitFooter()
+                }
+            }
 
             OutlinedTextField(
                 value = footerText,
+                // Zu langes Einfügen kürzen statt kommentarlos verwerfen
                 onValueChange = { value ->
-                    if (value.lines().size <= REPORT_FOOTER_MAX_LINES && value.length <= REPORT_FOOTER_MAX_CHARS) {
-                        footerText = value
-                    }
+                    footerText = value.lines()
+                        .take(REPORT_FOOTER_MAX_LINES)
+                        .joinToString("\n")
+                        .take(REPORT_FOOTER_MAX_CHARS)
                 },
                 label = { Text(t.t("settings.branding.footer")) },
                 placeholder = { Text(t.t("settings.branding.footerPlaceholder")) },
@@ -170,7 +204,7 @@ fun CompanyBrandingSection(viewModel: MainViewModel) {
                 maxLines = REPORT_FOOTER_MAX_LINES,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .onFocusChanged { focus -> if (!focus.isFocused) commitFooter(footerText) },
+                    .onFocusChanged { focus -> if (!focus.isFocused) commitFooter() },
             )
         }
     }

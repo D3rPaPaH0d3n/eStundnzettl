@@ -581,6 +581,10 @@ private fun MainScreen(viewModel: MainViewModel) {
                             state.attachments.groupingBy { it.entryId }.eachCount()
                         },
                         onManageAttachments = viewModel::openAttachments,
+                        overtimeAccountHintDismissed = state.overtimeAccountHintDismissed,
+                        onEnableOvertimeAccount = viewModel::enableOvertimeAccount,
+                        onDismissOvertimeAccountHint = viewModel::dismissOvertimeAccountHint,
+                        onBookOvertimePayout = viewModel::bookOvertimePayout,
                     )
 
                     else -> {}

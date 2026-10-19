@@ -6,6 +6,7 @@ import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.OvertimeAccountConfig
+import com.estundnzettl.core.model.OvertimeAccountPayout
 import com.estundnzettl.core.model.UserData
 import java.time.LocalDate
 import java.time.YearMonth
@@ -130,11 +131,87 @@ class OvertimeAccountTest {
     }
 
     @Test
+    fun `Zeitausgleich bei Minusstunden vertieft das Minus`() {
+        // Support-Fall: -5h aus dem Vormonat, halber Tag ZA (4h) → -9h
+        val zaDay = LocalDate.of(2026, 10, 9)
+        val entries = exactMonth(oct).filter { it.date != zaDay.toString() } +
+            work(zaDay, 240) + timeComp(zaDay, 240)
+        val result = account(entries, oct, LocalDate.of(2026, 11, 3), config("2026-10", opening = -300))!!
+
+        assertEquals(0, result.balanceMinutes)
+        assertEquals(240, result.timeCompMinutes)
+        assertEquals(-540, result.closingMinutes)
+    }
+
+    @Test
     fun `Minusstunden werden ebenfalls uebertragen`() {
         val shortDay = LocalDate.of(2026, 9, 1)
         val entries = exactMonth(sep).map { if (it.date == shortDay.toString()) work(shortDay, 240) else it }
         val result = account(entries, oct, LocalDate.of(2026, 10, 1), config(opening = 60))!!
         assertEquals(-180, result.openingMinutes)
+    }
+
+    // ─── Auszahlung ──────────────────────────────────────────
+
+    @Test
+    fun `Auszahlung geht am Monatsende vom Konto ab und wirkt im Folgemonat weiter`() {
+        val overtimeDay = LocalDate.of(2026, 9, 15)
+        val entries = exactMonth(sep).map { if (it.date == overtimeDay.toString()) work(overtimeDay, 600) else it }
+        val base = config(opening = 300)
+        val cfg = base.copy(overtimeAccount = base.overtimeAccount!!.withPayout(sep, 420))
+        val today = LocalDate.of(2026, 10, 1)
+
+        val september = account(entries, sep, today, cfg)!!
+        assertEquals(420, september.payoutMinutes)
+        assertEquals(0, september.closingMinutes)
+        assertEquals(420, september.payableMinutes)
+        assertEquals(0, account(entries, oct, today, cfg)!!.openingMinutes)
+    }
+
+    @Test
+    fun `Auszahlung ersetzt die Buchung des Monats und laesst sich entfernen`() {
+        val account = OvertimeAccountConfig(true, "2026-09", 0)
+            .withPayout(oct, 120)
+            .withPayout(sep, 60)
+            .withPayout(oct, 300)
+        assertEquals(listOf(OvertimeAccountPayout("2026-09", 60), OvertimeAccountPayout("2026-10", 300)), account.payouts)
+        assertEquals(listOf(OvertimeAccountPayout("2026-10", 300)), account.withPayout(sep, 0).payouts)
+    }
+
+    @Test
+    fun `Auszahlungen vor dem Startmonat werden ignoriert`() {
+        val base = config("2026-10", opening = 120)
+        val cfg = base.copy(overtimeAccount = base.overtimeAccount!!.withPayout(sep, 600))
+        assertEquals(120, account(emptyList(), oct, LocalDate.of(2026, 10, 1), cfg)!!.openingMinutes)
+    }
+
+    // ─── Hinweis: Konto aktivieren ───────────────────────────
+
+    @Test
+    fun `Hinweis schlaegt den Vormonat mit offenem Saldo vor`() {
+        val shortDay = LocalDate.of(2026, 9, 1)
+        val entries = exactMonth(sep).map { if (it.date == shortDay.toString()) work(shortDay, 180) else it }
+        val today = LocalDate.of(2026, 10, 19)
+        val blank = getBlankCalculationConfig(workDays)
+
+        assertEquals(OvertimeAccountSuggestion(sep, -300), suggestOvertimeAccount(entries, user, today, null, blank))
+        assertEquals(
+            OvertimeAccountSuggestion(sep, -300),
+            suggestOvertimeAccount(entries, user, today, null, config(enabled = false)),
+        )
+    }
+
+    @Test
+    fun `kein Hinweis bei aktivem Konto, ausgeglichenem oder leerem Vormonat`() {
+        val today = LocalDate.of(2026, 10, 19)
+        val blank = getBlankCalculationConfig(workDays)
+        val shortSep = exactMonth(sep).drop(1)
+
+        assertNull(suggestOvertimeAccount(shortSep, user, today, null, config()))
+        assertNull(suggestOvertimeAccount(exactMonth(sep), user, today, null, blank))
+        assertNull(suggestOvertimeAccount(exactMonth(oct), user, today, null, blank))
+        assertNull(suggestOvertimeAccount(shortSep, user.copy(simpleMode = true), today, null, blank))
+        assertNull(suggestOvertimeAccount(shortSep, user, today, null, null))
     }
 
     // ─── Laufender Monat ─────────────────────────────────────
@@ -236,7 +313,7 @@ class OvertimeAccountTest {
     @Test
     fun `Archiv-Hash reagiert auf Uebertrag und Monatsabschluss`() {
         val entries = exactMonth(sep)
-        val base = OvertimeAccountMonth(sep, 0, 0, 0, 0, sep.atEndOfMonth())
+        val base = OvertimeAccountMonth(sep, 0, 0, 0, 0, 0, sep.atEndOfMonth())
         fun hash(account: OvertimeAccountMonth?) = hashMonthContent(
             entries, user, 2026, 9, null, config(), LocalDate.of(2026, 10, 1),
             overtimeAccount = account,

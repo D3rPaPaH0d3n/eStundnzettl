@@ -182,12 +182,7 @@ fun getTargetMinutesForDate(
     val effective = resolveEffectiveRules(loc, config)
     val isHalfDay = effective.halfDays.any { suffix -> dateStr.endsWith("-$suffix") }
 
-    val day = getDayOfWeek(dateStr)
-    val dailyTarget = if (customWorkDays != null && customWorkDays.size == 7) {
-        customWorkDays[day]
-    } else {
-        loc.defaultWorkDays.getOrElse(day) { 0 }
-    }
+    val dailyTarget = getWeekdayTargetMinutes(dateStr, customWorkDays, loc)
 
     if (isHalfDay && dailyTarget > 0) {
         // Math.round der TS-Vorlage
@@ -195,6 +190,20 @@ fun getTargetMinutesForDate(
     }
 
     return dailyTarget
+}
+
+/** Tagessoll laut Arbeitszeitmodell für den Wochentag, ohne Halbtags-Kürzung. */
+fun getWeekdayTargetMinutes(
+    dateStr: String,
+    customWorkDays: List<Int>? = null,
+    locale: AppLocale? = null,
+): Int {
+    val day = getDayOfWeek(dateStr)
+    return if (customWorkDays != null && customWorkDays.size == 7) {
+        customWorkDays[day]
+    } else {
+        (locale ?: getLocale(null)).defaultWorkDays.getOrElse(day) { 0 }
+    }
 }
 
 /** ISO-Wochennummer. */

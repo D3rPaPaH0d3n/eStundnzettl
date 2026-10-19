@@ -228,7 +228,7 @@ fun ReportScreen(viewModel: MainViewModel) {
     // Korrigierte Monats-Einträge inkl. Auto-Feiertage (Single Source of Truth)
     val entries = s.appData?.entriesWithHolidays ?: emptyList()
 
-    // Komplette Liste mit Krank-Korrektur — für Urlaubsbilanz + Wochen-Stats
+    // Komplette Liste mit Krank-Korrektur — für die Wochen-Stats
     val allCorrected = remember(s.appData, userData, locale, config) {
         applyEffectiveDurations(viewModel.rawAllEntries(), userData, locale, config)
     }
@@ -376,14 +376,14 @@ fun ReportScreen(viewModel: MainViewModel) {
         customNote = note,
         locale = locale,
         calculationConfig = config,
-        allEntries = allCorrected,
         overtimeAccount = overtimeAccount,
+        vacationBalance = s.appData?.vacationBalance,
     )
 
     LaunchedEffect(
         filteredEntries, userData, month, filterWeek, stats,
         s.workCodes, reportAttachments, customNote, locale, config, allCorrected, i18n,
-        previewWidthPx, overtimeAccount,
+        previewWidthPx, overtimeAccount, s.appData?.vacationBalance,
     ) {
         // Debounce (PREVIEW_DEBOUNCE_MS) — Tippen im Notizfeld soll nicht
         // jeden Tastendruck ein PDF rendern lassen.

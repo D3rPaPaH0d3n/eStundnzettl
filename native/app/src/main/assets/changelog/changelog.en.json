@@ -1,5 +1,33 @@
 [
  {
+  "version": "5.2.1",
+  "date": "2026-10-19",
+  "title": "Vacation & overtime at a glance 🧾",
+  "isMajor": false,
+  "playStoreText": "Vacation & overtime at a glance 🧾\n\n• Remaining vacation on the dashboard: taken, planned, remaining\n• Vacation from previous months is now counted correctly, half days count as half\n• Overtime paid out? Deduct it from the time-off account with one tap\n• A hint so last month's balance doesn't get lost\n\nThanks for your feedback – keep it coming! – Markus",
+  "sections": [
+   {
+    "iconName": "Calendar",
+    "title": "How much vacation do I have left?",
+    "items": [
+     "A user wrote to me: 25 days in September, took one – and October showed 25 again. Right, that was a bug. Vacation from previous months is now counted correctly.",
+     "New on the dashboard: this year's vacation with days taken, planned and remaining – as of the end of the month you're viewing.",
+     "Half vacation days count as half, public holidays and days off don't cost any vacation.",
+     "The monthly PDF now shows vacation “through the end of the month” – vacation entered for later in the year only counts once it's due."
+    ]
+   },
+   {
+    "iconName": "Calculator",
+    "title": "Overtime paid out",
+    "items": [
+     "Did your boss pay out overtime? On the dashboard, tap “Overtime paid out?” in the time-off account – the full balance is suggested, so the account goes back to 0. Partial payouts work too.",
+     "The payout is deducted at the end of the month and shows up in the monthly PDF. Typo? Just change or remove it.",
+     "If the time-off account is still off and last month left an open balance, the app suggests turning it on – so plus and minus hours don't get lost."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.0",
   "date": "2026-10-07",
   "title": "You asked, I built it 🏔️",

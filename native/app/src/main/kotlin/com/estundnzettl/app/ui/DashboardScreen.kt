@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,10 +30,12 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -50,6 +53,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -63,13 +68,18 @@ import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.calc.AppData
 import com.estundnzettl.core.calc.OvertimeAccountMonth
+import com.estundnzettl.core.calc.OvertimeAccountSuggestion
+import com.estundnzettl.core.calc.VacationBalance
 import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.calculateDisplayedDayMinutes
 import com.estundnzettl.core.calc.calculateMonthlyTargetProgress
 import com.estundnzettl.core.calc.calculatePeriodStats
 import com.estundnzettl.core.calc.calculateWeekStats
+import com.estundnzettl.core.calc.formatHalfDays
+import com.estundnzettl.core.calc.formatSignedDurationInput
 import com.estundnzettl.core.calc.getTargetMinutesForDate
 import com.estundnzettl.core.calc.getWeekNumber
+import com.estundnzettl.core.calc.parseSignedDurationInput
 import com.estundnzettl.core.format.formatSignedTime
 import com.estundnzettl.core.format.formatTime
 import com.estundnzettl.core.locale.AppLocale
@@ -104,6 +114,10 @@ fun DashboardScreen(
     onDeleteEntry: (Entry) -> Unit,
     attachmentCounts: Map<EntryId, Int> = emptyMap(),
     onManageAttachments: (Entry) -> Unit = {},
+    overtimeAccountHintDismissed: Boolean = true,
+    onEnableOvertimeAccount: (YearMonth) -> Unit = {},
+    onDismissOvertimeAccountHint: () -> Unit = {},
+    onBookOvertimePayout: (YearMonth, Int) -> Unit = { _, _ -> },
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
@@ -147,8 +161,22 @@ fun DashboardScreen(
                     simpleMode = simpleMode,
                     monthlyTargetMinutes = userData?.monthlyTargetMinutes,
                     javaLocale = javaLocale,
+                    language = language,
                     onChangeMonth = onChangeMonth,
                     onOpenPicker = { monthPickerOpen = true },
+                    onBookPayout = { minutes -> onBookOvertimePayout(currentMonth, minutes) },
+                )
+            }
+        }
+
+        val suggestion = appData.overtimeAccountSuggestion
+        if (suggestion != null && !overtimeAccountHintDismissed && currentMonth == YearMonth.now()) {
+            item(key = "overtime-account-hint") {
+                OvertimeAccountHint(
+                    suggestion = suggestion,
+                    javaLocale = javaLocale,
+                    onEnable = { onEnableOvertimeAccount(suggestion.startMonth) },
+                    onDismiss = onDismissOvertimeAccountHint,
                 )
             }
         }
@@ -208,8 +236,10 @@ private fun MonthStatsCard(
     simpleMode: Boolean,
     monthlyTargetMinutes: Int?,
     javaLocale: JavaLocale,
+    language: String,
     onChangeMonth: (Long) -> Unit,
     onOpenPicker: () -> Unit,
+    onBookPayout: (Int) -> Unit,
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
@@ -407,16 +437,35 @@ private fun MonthStatsCard(
                 }
             }
 
-            appData.overtimeAccount?.let { OvertimeAccountPanel(it) }
+            appData.overtimeAccount?.let { OvertimeAccountPanel(it, javaLocale, onBookPayout) }
+            appData.vacationBalance?.let { VacationPanel(it, language) }
         }
     }
 }
 
-/** Zeitausgleichskonto: Übertrag, genommener ZA und aktueller Stand. */
+/** Zeitausgleichskonto: Übertrag, genommener ZA, Auszahlung und aktueller Stand. */
 @Composable
-private fun OvertimeAccountPanel(account: OvertimeAccountMonth) {
+private fun OvertimeAccountPanel(
+    account: OvertimeAccountMonth,
+    javaLocale: JavaLocale,
+    onBookPayout: (Int) -> Unit,
+) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
+    var payoutDialogOpen by remember { mutableStateOf(false) }
+
+    if (payoutDialogOpen) {
+        PayoutDialog(
+            account = account,
+            javaLocale = javaLocale,
+            onConfirm = { minutes ->
+                payoutDialogOpen = false
+                onBookPayout(minutes)
+            },
+            onDismiss = { payoutDialogOpen = false },
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -458,6 +507,224 @@ private fun OvertimeAccountPanel(account: OvertimeAccountMonth) {
                     color = if (account.closingMinutes >= 0) colors.positive else colors.negative,
                     fontSize = 18.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold,
                 )
+            }
+        }
+        // Auszahlung nur bei Plusstunden anbieten; eine gebuchte bleibt änderbar
+        if (account.payoutMinutes > 0 || account.payableMinutes > 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (account.payoutMinutes > 0) {
+                    Text(
+                        t.t("dashboard.payout.paid", "time" to formatTime(account.payoutMinutes)),
+                        color = colors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                    )
+                } else {
+                    Spacer(Modifier.width(1.dp))
+                }
+                Text(
+                    t.t(if (account.payoutMinutes > 0) "dashboard.payout.edit" else "dashboard.payout.action"),
+                    color = colors.special,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(role = Role.Button) { payoutDialogOpen = true }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Auszahlung des Anzeige-Monats buchen: vorbefüllt mit dem ganzen
+ * auszahlbaren Stand (Konto danach auf 0), Teilbeträge sind möglich.
+ */
+@Composable
+private fun PayoutDialog(
+    account: OvertimeAccountMonth,
+    javaLocale: JavaLocale,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    val monthLabel = account.month.month.getDisplayName(TextStyle.FULL_STANDALONE, javaLocale)
+        .replaceFirstChar { it.uppercase(javaLocale) } + " " + account.month.year
+    var input by remember {
+        mutableStateOf(
+            formatSignedDurationInput(
+                if (account.payoutMinutes > 0) account.payoutMinutes else account.payableMinutes,
+            ),
+        )
+    }
+    val parsed = parseSignedDurationInput(input)?.takeIf { it > 0 }
+    val invalid = input.isNotBlank() && parsed == null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(t.t("dashboard.payout.title"), color = colors.textPrimary, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    t.t("dashboard.payout.body", "month" to monthLabel),
+                    color = colors.textSecondary,
+                    fontSize = 14.sp,
+                )
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    label = { Text(t.t("dashboard.payout.amount")) },
+                    supportingText = {
+                        Text(
+                            if (invalid) t.t("dashboard.payout.invalid")
+                            else t.t("dashboard.payout.available", "time" to formatSignedTime(account.payableMinutes)),
+                        )
+                    },
+                    isError = invalid,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { parsed?.let(onConfirm) }, enabled = parsed != null) {
+                Text(
+                    t.t("dashboard.payout.confirm"),
+                    color = if (parsed != null) colors.accent else colors.textFaint,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        },
+        dismissButton = {
+            Row {
+                if (account.payoutMinutes > 0) {
+                    TextButton(onClick = { onConfirm(0) }) {
+                        Text(t.t("dashboard.payout.remove"), color = colors.danger)
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(t.t("common.cancel"), color = colors.accent)
+                }
+            }
+        },
+        containerColor = colors.surface,
+    )
+}
+
+/** Urlaubsbilanz des Kalenderjahres, Stand Ende des Anzeige-Monats. */
+@Composable
+private fun VacationPanel(balance: VacationBalance, language: String) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    fun days(halfDays: Int): String = formatHalfDays(halfDays, language) + " " +
+        t.t(if (halfDays == 2 || halfDays == -2) "dashboard.vacation.day" else "dashboard.vacation.days")
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(colors.info.copy(alpha = if (colors.isDark) 0.14f else 0.06f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        StatLabel(t.t("dashboard.vacation.title", "year" to balance.month.year), colors)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                AccountLabel(t.t("dashboard.vacation.used"), colors)
+                Text(
+                    days(balance.usedHalfDays),
+                    color = colors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                AccountLabel(t.t("dashboard.vacation.planned"), colors)
+                Text(
+                    days(balance.plannedHalfDays),
+                    color = if (balance.plannedHalfDays > 0) colors.info else colors.textSecondary,
+                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+                AccountLabel(t.t("dashboard.vacation.remaining"), colors)
+                Text(
+                    days(balance.remainingHalfDays),
+                    color = if (balance.remainingHalfDays >= 0) colors.positive else colors.negative,
+                    fontSize = 18.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
+/** Hinweis: Saldo des Vormonats mit dem ZA-Konto in den laufenden Monat übertragen. */
+@Composable
+private fun OvertimeAccountHint(
+    suggestion: OvertimeAccountSuggestion,
+    javaLocale: JavaLocale,
+    onEnable: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    fun monthName(month: YearMonth) = month.month.getDisplayName(TextStyle.FULL_STANDALONE, javaLocale)
+
+    AppCard {
+        Column(
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                StatLabel(t.t("dashboard.overtimeHint.title"), colors)
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = t.t("common.close"),
+                        tint = colors.textFaint,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+            Text(
+                t.t(
+                    "dashboard.overtimeHint.body",
+                    "month" to monthName(suggestion.startMonth),
+                    "balance" to formatSignedTime(suggestion.balanceMinutes),
+                    "next" to monthName(suggestion.startMonth.plusMonths(1)),
+                ),
+                color = colors.textSecondary,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Text(
+                t.t("dashboard.overtimeHint.settings"),
+                color = colors.textMuted,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(t.t("dashboard.overtimeHint.dismiss"), color = colors.textMuted)
+                }
+                TextButton(onClick = onEnable) {
+                    Text(t.t("dashboard.overtimeHint.enable"), color = colors.accent, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

@@ -12,11 +12,13 @@ import com.estundnzettl.app.pdf.ReportPdfInput
 import com.estundnzettl.core.calc.applyEffectiveDurations
 import com.estundnzettl.core.calc.buildArchiveFilename
 import com.estundnzettl.core.calc.calculateOvertimeAccount
+import com.estundnzettl.core.calc.calculateVacationBalance
 import com.estundnzettl.core.calc.calculatePeriodStats
 import com.estundnzettl.core.calc.filterEntriesForMonth
 import com.estundnzettl.core.calc.generateHolidayEntries
 import com.estundnzettl.core.calc.hashMonthContent
 import com.estundnzettl.core.calc.OvertimeAccountMonth
+import com.estundnzettl.core.calc.VacationBalance
 import com.estundnzettl.core.locale.AppLocale
 import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.Entry
@@ -129,12 +131,16 @@ class PdfArchiveManager(
             data.entries, data.userData, YearMonth.of(year, month),
             currentDate, data.locale, data.calculationConfig,
         )
+        val vacationBalance = calculateVacationBalance(
+            data.entries, data.userData, YearMonth.of(year, month), data.locale, data.calculationConfig,
+        )
         val newHash = hashMonthContent(
             data.entries, data.userData, year, month,
             data.locale, data.calculationConfig, currentDate,
             workCodes = data.workCodes,
             language = language,
             overtimeAccount = overtimeAccount,
+            vacationBalance = vacationBalance,
         )
         val key = hashKey(year, month)
         val prevHash = settings.getString(key)
@@ -149,7 +155,7 @@ class PdfArchiveManager(
             return MonthResult(ym, skipped = true, filename = filename)
         }
 
-        val bytes = generateMonthlyPdf(data, year, month, currentDate, overtimeAccount)
+        val bytes = generateMonthlyPdf(data, year, month, currentDate, overtimeAccount, vacationBalance)
 
         val results = ArrayList<TargetResult>()
         if (localTarget) results.add(writeLocalArchive(filename, bytes))
@@ -174,6 +180,7 @@ class PdfArchiveManager(
         month: Int,
         currentDate: LocalDate,
         overtimeAccount: OvertimeAccountMonth?,
+        vacationBalance: VacationBalance?,
     ): ByteArray {
         val holidays = generateHolidayEntries(
             year, month, data.userData, data.locale, data.calculationConfig, currentDate,
@@ -205,8 +212,8 @@ class PdfArchiveManager(
                 customNote = "",
                 locale = data.locale,
                 calculationConfig = data.calculationConfig,
-                allEntries = corrected,
                 overtimeAccount = overtimeAccount,
+                vacationBalance = vacationBalance,
             ),
         )
     }

@@ -98,6 +98,8 @@ fun hashMonthContent(
     language: String? = null,
     /** Übertrag + Abschluss-Status des ZA-Kontos; hängt an Vormonaten bzw. am Datum. */
     overtimeAccount: OvertimeAccountMonth? = null,
+    /** Urlaubsbilanz des Monats; der Verbrauch hängt an den Vormonaten. */
+    vacationBalance: VacationBalance? = null,
 ): String {
     val holidayEntries = generateHolidayEntries(year, month, userData, locale, config, currentDate)
     val relevant = buildJsonObject {
@@ -126,6 +128,7 @@ fun hashMonthContent(
                 put("complete", account.isComplete)
             })
         }
+        vacationBalance?.let { put("vacationUsedHalfDays", it.usedHalfDays) }
         putJsonArray("workCodes") {
             workCodes.sortedBy { it.id }.forEach { code ->
                 add(buildJsonObject {

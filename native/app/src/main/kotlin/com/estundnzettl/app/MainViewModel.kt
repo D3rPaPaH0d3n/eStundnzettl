@@ -49,6 +49,7 @@ import com.estundnzettl.core.calc.latestEligibleWorkEntry
 import com.estundnzettl.core.calc.prepareEntryToSave
 import com.estundnzettl.core.calc.resolveDefaultWorkCode
 import com.estundnzettl.core.calc.validateWorkCodeDraft
+import com.estundnzettl.core.calc.withPayout
 import com.estundnzettl.core.config.toJson
 import com.estundnzettl.core.locale.AppLocale
 import com.estundnzettl.core.locale.DEFAULT_LOCALE_ID
@@ -275,6 +276,8 @@ data class MainUiState(
     val whatsNewVersion: String? = null,
     /** Lesende Selbstauskunft im Hausmasta-Modus. */
     val diagnostics: DiagnosticsUiState = DiagnosticsUiState(),
+    /** Hinweis aufs ZA-Konto weggeklickt (bis zum Laden: true, damit nichts aufblitzt). */
+    val overtimeAccountHintDismissed: Boolean = true,
 )
 
 data class DiagnosticsUiState(
@@ -357,6 +360,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             ) {
                 _state.update { it.copy(showNativeWelcome = true) }
             }
+            val hintDismissed = settings.getString(KEY_OVERTIME_ACCOUNT_HINT_DISMISSED) == "1"
+            _state.update { it.copy(overtimeAccountHintDismissed = hintDismissed) }
 
             // GitHub-Update-Check (nur Sideload; Debug-Builds prüfen nie)
             launch {
@@ -1015,6 +1020,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** ZA-Konto über den Dashboard-Hinweis einschalten; ein Anfangsstand bleibt erhalten. */
+    fun enableOvertimeAccount(startMonth: YearMonth) {
+        patchCalculationConfig { cfg ->
+            val account = cfg.overtimeAccount ?: OvertimeAccountConfig()
+            cfg.copy(overtimeAccount = account.copy(enabled = true, startMonth = startMonth.toString()))
+        }
+        emit(UiMessage("dashboard.overtimeHint.enabled", tone = UiMessageTone.SUCCESS))
+    }
+
+    fun dismissOvertimeAccountHint() {
+        _state.update { it.copy(overtimeAccountHintDismissed = true) }
+        viewModelScope.launch { settings.setString(KEY_OVERTIME_ACCOUNT_HINT_DISMISSED, "1") }
+    }
+
+    /** Auszahlung für [month] buchen; 0 entfernt sie. */
+    fun bookOvertimePayout(month: YearMonth, minutes: Int) {
+        if (_state.value.calculationConfig?.overtimeAccount == null) return
+        patchCalculationConfig { cfg ->
+            cfg.overtimeAccount?.let { cfg.copy(overtimeAccount = it.withPayout(month, minutes)) } ?: cfg
+        }
+        emit(
+            UiMessage(
+                if (minutes > 0) "dashboard.payout.booked" else "dashboard.payout.removed",
+                tone = UiMessageTone.SUCCESS,
+            ),
+        )
+    }
+
     /** Aufzeichnungsart wechseln — Port von RecordingModeSettings.setSimpleMode. */
     fun setSimpleMode(nextSimpleMode: Boolean) {
         val s = _state.value
@@ -1324,6 +1357,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
          */
         private const val MAX_RESTORE_CANDIDATES = 10
         private const val KEY_NATIVE_WELCOME_SEEN = "estundnzettl_native_welcome_seen_v1"
+        private const val KEY_OVERTIME_ACCOUNT_HINT_DISMISSED = "estundnzettl_overtime_account_hint_dismissed_v1"
         private const val KEY_CHANGELOG_VERSION_CODE = "last_seen_changelog_version_code"
         private const val KEY_CHANGELOG_VERSION_NAME = "last_seen_changelog_version_name"
         private const val KEY_REVIEW_FIRST_ELIGIBLE = "estundnzettl_review_first_eligible_v2"

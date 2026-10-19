@@ -70,6 +70,10 @@ data class AppData(
     val uniqueProjects: List<String>,
     /** Zeitausgleichskonto des Anzeige-Monats, null = aus/vor Startmonat. */
     val overtimeAccount: OvertimeAccountMonth? = null,
+    /** Hinweis aufs ZA-Konto, solange es aus ist (bezogen auf heute). */
+    val overtimeAccountSuggestion: OvertimeAccountSuggestion? = null,
+    /** Urlaubsbilanz Stand Ende des Anzeige-Monats, null = kein Anspruch. */
+    val vacationBalance: VacationBalance? = null,
 )
 
 /** Synthetische ID eines Auto-Feiertag-Eintrags (wie `auto-holiday-<date>`). */
@@ -205,9 +209,10 @@ fun deriveAppData(
         .maxByOrNull { "${it.date}|${it.start.orEmpty()}|${it.end.orEmpty()}|${it.id}" }
     val uniqueProjects = recentProjects(metadataEntries)
 
-    val overtimeAccount = calculateOvertimeAccount(
-        metadataEntries, userData, YearMonth.of(viewYear, viewMonth1Based), today, locale, config,
-    )
+    val viewMonth = YearMonth.of(viewYear, viewMonth1Based)
+    val overtimeAccount = calculateOvertimeAccount(metadataEntries, userData, viewMonth, today, locale, config)
+    val overtimeAccountSuggestion = suggestOvertimeAccount(metadataEntries, userData, today, locale, config)
+    val vacationBalance = calculateVacationBalance(metadataEntries, userData, viewMonth, locale, config)
 
     return AppData(
         entriesWithHolidays = entriesWithHolidays,
@@ -219,5 +224,7 @@ fun deriveAppData(
         lastWorkEntry = lastWorkEntry,
         uniqueProjects = uniqueProjects,
         overtimeAccount = overtimeAccount,
+        overtimeAccountSuggestion = overtimeAccountSuggestion,
+        vacationBalance = vacationBalance,
     )
 }

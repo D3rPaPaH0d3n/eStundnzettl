@@ -4,6 +4,8 @@ import com.estundnzettl.core.locale.AppLocale
 import com.estundnzettl.core.locale.holidays.toDateString
 import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.Entry
+import com.estundnzettl.core.model.OvertimeAccountConfig
+import com.estundnzettl.core.model.OvertimeAccountPayout
 import com.estundnzettl.core.model.UserData
 import java.time.LocalDate
 import java.time.YearMonth
@@ -12,9 +14,10 @@ import kotlin.math.roundToInt
 
 /**
  * Zeitausgleichskonto (ZA-Konto): Der Monatssaldo wird ab dem Startmonat
- * von Monat zu Monat übertragen, Zeitausgleich-Einträge bauen ihn ab.
+ * von Monat zu Monat übertragen, Zeitausgleich-Einträge und Auszahlungen
+ * bauen ihn ab.
  *
- *   Stand = Übertrag + Saldo (IST − SOLL) − genommener Zeitausgleich
+ *   Stand = Übertrag + Saldo (IST − SOLL) − genommener Zeitausgleich − Auszahlung
  *
  * ZA-Einträge zählen wie bisher als IST (sie füllen das Tagessoll), damit
  * bleibt der Monatssaldo identisch mit Dashboard und Bericht. Abgebaut wird
@@ -28,6 +31,8 @@ data class OvertimeAccountMonth(
     val balanceMinutes: Int,
     /** Im ausgewerteten Zeitraum genommener Zeitausgleich. */
     val timeCompMinutes: Int,
+    /** In diesem Monat ausbezahlte Stunden. */
+    val payoutMinutes: Int,
     /** Kontostand am Ende des ausgewerteten Zeitraums. */
     val closingMinutes: Int,
     /**
@@ -37,6 +42,9 @@ data class OvertimeAccountMonth(
     val evaluatedThrough: LocalDate,
 ) {
     val isComplete: Boolean get() = !evaluatedThrough.isBefore(month.atEndOfMonth())
+
+    /** Kontostand ohne die Auszahlung dieses Monats — so viel ist auszahlbar. */
+    val payableMinutes: Int get() = closingMinutes + payoutMinutes
 }
 
 /** "YYYY-MM" → YearMonth, sonst null. */
@@ -132,19 +140,63 @@ fun calculateOvertimeAccount(
     if (month.isBefore(start)) return null
 
     val byMonth = allEntries.groupBy { it.date.take(7) }
+    val payouts = config?.overtimeAccount?.payouts.orEmpty().associate { it.month to it.minutes }
     var opening = config?.overtimeAccount?.openingBalanceMinutes ?: 0
     var cursor = start
     while (true) {
         val monthEntries = byMonth[cursor.toString()].orEmpty()
         val cutoff = overtimeAccountCutoff(cursor, today, monthEntries, userData, locale, config)
         val (balance, timeComp) = evaluateAccountMonth(monthEntries, cursor, cutoff, userData, locale, config)
-        val closing = opening + balance - timeComp
+        val payout = payouts[cursor.toString()] ?: 0
+        val closing = opening + balance - timeComp - payout
         if (cursor == month) {
-            return OvertimeAccountMonth(cursor, opening, balance, timeComp, closing, cutoff)
+            return OvertimeAccountMonth(cursor, opening, balance, timeComp, payout, closing, cutoff)
         }
         opening = closing
         cursor = cursor.plusMonths(1)
     }
+}
+
+/**
+ * Bucht für [month] eine Auszahlung von [minutes]; ersetzt eine vorhandene
+ * Buchung dieses Monats, 0 oder weniger entfernt sie.
+ */
+fun OvertimeAccountConfig.withPayout(month: YearMonth, minutes: Int): OvertimeAccountConfig {
+    val key = month.toString()
+    val others = payouts.filter { it.month != key }
+    val next = if (minutes > 0) others + OvertimeAccountPayout(key, minutes) else others
+    return copy(payouts = next.sortedBy { it.month })
+}
+
+// ─── Hinweis: Konto aktivieren ──────────────────────────────
+
+/** Vorschlag, das Konto mit dem Saldo von [startMonth] zu starten. */
+data class OvertimeAccountSuggestion(
+    val startMonth: YearMonth,
+    val balanceMinutes: Int,
+)
+
+/**
+ * Konto aus, aber im Vormonat von [today] wurde erfasst und der Saldo ist
+ * nicht ausgeglichen: Dann lohnt sich der Hinweis, den Saldo mit dem Konto
+ * in den laufenden Monat zu übertragen. Sonst `null`.
+ */
+fun suggestOvertimeAccount(
+    allEntries: List<Entry>,
+    userData: UserData?,
+    today: LocalDate = LocalDate.now(),
+    locale: AppLocale? = null,
+    config: CalculationConfig? = null,
+): OvertimeAccountSuggestion? {
+    if (config == null || userData?.simpleMode == true) return null
+    if (config.overtimeAccount?.enabled == true) return null
+    val previous = YearMonth.from(today).minusMonths(1)
+    val monthEntries = allEntries.filter { it.date.startsWith(previous.toString()) }
+    if (monthEntries.isEmpty()) return null
+    val (balance, _) = evaluateAccountMonth(
+        monthEntries, previous, previous.atEndOfMonth(), userData, locale, config,
+    )
+    return if (balance != 0) OvertimeAccountSuggestion(previous, balance) else null
 }
 
 // ─── Eingabe des Anfangsstands ──────────────────────────────

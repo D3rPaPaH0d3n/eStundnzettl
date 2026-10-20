@@ -1,10 +1,13 @@
 package com.estundnzettl.app.data
 
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import com.estundnzettl.app.data.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.security.MessageDigest
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -33,6 +36,9 @@ data class LocalBackupFile(
 data class DiagnosticsReport(
     val appVersion: String,
     val versionCode: Int,
+    /** Paketname + Signatur-SHA-1: genau das prüft Google gegen den OAuth-Client. */
+    val packageName: String,
+    val signingSha1: List<String>,
     val dbSchemaVersion: Int,
     val entryCount: Int,
     val oldestEntryDate: String?,
@@ -48,6 +54,8 @@ data class DiagnosticsReport(
     val cloudFailCount: Int,
     val cloudBackoffUntil: String?,
     val cloudReconnectRequired: Boolean,
+    val cloudLastErrorKind: GoogleDriveErrorKind?,
+    val cloudLastErrorDetail: String?,
     /** Maskiert — nie die vollständige Adresse. */
     val googleAccount: String?,
     /** Maskiert — nie der vollständige Benutzername. */
@@ -67,7 +75,7 @@ sealed interface DriveProbe {
             get() = files.groupingBy { it.name }.eachCount().filterValues { it > 1 }
     }
 
-    data class Failed(val message: String) : DriveProbe
+    data class Failed(val message: String, val detail: String? = null) : DriveProbe
 }
 
 /**
@@ -89,6 +97,11 @@ internal fun formatTimestamp(iso: String?): String? {
     }.getOrDefault(iso)
 }
 
+/** Zertifikat → "AB:CD:…" wie in der Cloud Console und `keytool -list`. */
+internal fun sha1Fingerprint(certificate: ByteArray): String =
+    MessageDigest.getInstance("SHA-1").digest(certificate)
+        .joinToString(":") { "%02X".format(it) }
+
 private val LOCAL_MINUTES: DateTimeFormatter = DateTimeFormatter
     .ofPattern("yyyy-MM-dd HH:mm")
     .withZone(ZoneId.systemDefault())
@@ -107,6 +120,8 @@ class DiagnosticsCollector(
         return DiagnosticsReport(
             appVersion = appVersion,
             versionCode = versionCode,
+            packageName = context.packageName,
+            signingSha1 = readSigningSha1(),
             dbSchemaVersion = readSchemaVersion(),
             entryCount = entries.size,
             oldestEntryDate = entryDates.minOrNull(),
@@ -122,12 +137,31 @@ class DiagnosticsCollector(
             cloudFailCount = settings.getString(AutoBackupManager.KEY_CLOUD_FAIL_COUNT)?.toIntOrNull() ?: 0,
             cloudBackoffUntil = formatTimestamp(settings.getString(AutoBackupManager.KEY_CLOUD_BACKOFF_UNTIL)),
             cloudReconnectRequired = settings.getBoolean(GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED),
+            cloudLastErrorKind = GoogleDriveErrorKind.fromName(
+                settings.getString(AutoBackupManager.KEY_CLOUD_LAST_ERROR_KIND),
+            ),
+            cloudLastErrorDetail = settings.getString(AutoBackupManager.KEY_CLOUD_LAST_ERROR)
+                ?.takeIf { it.isNotBlank() },
             googleAccount = maskAccount(settings.getString(GoogleDriveManager.KEY_ACCOUNT_EMAIL)),
             nextcloudUser = maskAccount(settings.getString(SettingsRepository.Keys.NEXTCLOUD_USER)),
             nextcloudSecretSet = readSecretPresent(),
             localBackupFiles = readLocalBackupFiles(),
         )
     }
+
+    /** Signatur-Zertifikat(e) der installierten APK als SHA-1. */
+    private fun readSigningSha1(): List<String> = runCatching {
+        val pm = context.packageManager
+        val certificates = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val signing = pm.getPackageInfo(context.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+                .signingInfo ?: return@runCatching emptyList()
+            if (signing.hasMultipleSigners()) signing.apkContentsSigners else signing.signingCertificateHistory
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getPackageInfo(context.packageName, PackageManager.GET_SIGNATURES).signatures
+        }
+        certificates.orEmpty().map { sha1Fingerprint(it.toByteArray()) }.distinct()
+    }.getOrDefault(emptyList())
 
     /** Schema-Version der geöffneten DB — Datei-I/O, daher nie auf dem Main-Thread. */
     private suspend fun readSchemaVersion(): Int = withContext(Dispatchers.IO) {

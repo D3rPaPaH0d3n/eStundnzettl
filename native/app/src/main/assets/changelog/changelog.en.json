@@ -24,6 +24,14 @@
      "The payout is deducted at the end of the month and shows up in the monthly PDF. Typo? Just change or remove it.",
      "If the time-off account is still off and last month left an open balance, the app suggests turning it on – so plus and minus hours don't get lost."
     ]
+   },
+   {
+    "iconName": "Cloud",
+    "title": "Google Drive now tells you what's wrong",
+    "items": [
+     "If the Drive backup fails, the backup settings now show the reason – e.g. no connection, storage full or Google refusing the sign-in for the app – instead of just “failed”.",
+     "In expert mode, diagnostics also show the last Drive error in detail plus the app's package name and signature, so support can track down problems quickly."
+    ]
    }
   ]
  },

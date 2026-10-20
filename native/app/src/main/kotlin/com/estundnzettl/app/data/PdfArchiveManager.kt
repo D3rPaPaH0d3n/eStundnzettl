@@ -246,7 +246,7 @@ class PdfArchiveManager(
             TargetResult(false, "gdrive", error = "Google Drive Anmeldung erforderlich")
         } catch (e: Exception) {
             Log.w(TAG, "GDrive PDF-Archiv fehlgeschlagen", e)
-            TargetResult(false, "gdrive", error = e.message)
+            TargetResult(false, "gdrive", error = describeGoogleDriveError(e).detail)
         }
     }
 

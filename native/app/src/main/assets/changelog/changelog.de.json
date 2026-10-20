@@ -24,6 +24,14 @@
      "Die Auszahlung geht am Monatsende vom Konto ab und steht a im Monats-PDF. Vertippt? Einfach ändern oder entfernen.",
      "Is des ZA-Konto no aus und der Vormonat hot an offenen Saldo, schlagt di App vor, es einzuschalten – damit Plus- und Minusstunden ned verloren gehen."
     ]
+   },
+   {
+    "iconName": "Cloud",
+    "title": "Google Drive sagt jetzt, wo's hakt",
+    "items": [
+     "Klappt das Drive-Backup ned, steht in den Backup-Einstellungen jetzt der Grund – z. B. keine Verbindung, Speicher voll oder dass Google die App ned anmelden lasst – statt nur „fehlgeschlagen“.",
+     "Im Hausmasta-Modus zeigt die Diagnose zusätzlich den letzten Drive-Fehler im Detail sowie Paketname und Signatur der App. Damit lasst si a Problem beim Support schnell finden."
+    ]
    }
   ]
  },

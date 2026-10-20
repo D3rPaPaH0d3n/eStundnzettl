@@ -791,13 +791,26 @@
         "gdriveUnavailable": "Google Drive is not available on this device yet",
         "gdriveFailed": "Google Drive connection failed",
         "gdriveTestOk": "Google Drive looks good – the connection works and the backup is up to date.",
-        "gdriveTestFailed": "Google Drive could not be reached right now.",
         "gdriveReconnectNeeded": "Google Drive needs you to sign in again.",
         "localDisconnected": "Backup folder disconnected",
         "localActivated": "Backup enabled!",
         "folderCancelled": "Folder selection cancelled"
       },
-      "targetLocal": "Local"
+      "targetLocal": "Local",
+      "gdriveError": {
+        "notRegistered": "Google rejects the sign-in: this app version is not registered with Google (package name/signature). Only the developer can fix this – please contact support.",
+        "signInRequired": "Google consent is missing or was revoked. Please reconnect Google Drive.",
+        "cancelled": "Google sign-in cancelled.",
+        "tokenRejected": "Google Drive rejected the sign-in. Please reconnect Google Drive.",
+        "apiDisabled": "Google Drive is not enabled for this app at Google (Drive API disabled). Please contact support.",
+        "storageFull": "Your Google Drive storage is full.",
+        "rateLimited": "Google Drive is throttling too many requests. Please try again later.",
+        "accessDenied": "Google Drive denies access. Please reconnect Google Drive.",
+        "network": "No connection to Google. Please check your internet connection.",
+        "server": "Google Drive is not reachable right now. Please try again later.",
+        "unknown": "Google Drive reports an unknown error.",
+        "detail": "Details: {{detail}}"
+      }
     },
     "calc": {
       "editRules": "Edit calculation rules",
@@ -1075,7 +1088,9 @@
       "app": {
         "version": "Version",
         "versionCode": "Version code",
-        "dbSchema": "DB schema"
+        "dbSchema": "DB schema",
+        "package": "Package name",
+        "signingSha1": "Signature (SHA-1)"
       },
       "data": {
         "entries": "Entries",
@@ -1095,7 +1110,8 @@
         "nextcloudEnabled": "Nextcloud enabled",
         "nextcloudLast": "Nextcloud last success",
         "nextcloudUser": "Nextcloud user",
-        "secretSet": "Nextcloud password stored"
+        "secretSet": "Nextcloud password stored",
+        "lastError": "Last Drive error"
       },
       "local": {
         "none": "No files"

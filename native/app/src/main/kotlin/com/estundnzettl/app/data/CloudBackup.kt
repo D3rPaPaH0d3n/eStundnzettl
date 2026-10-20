@@ -96,6 +96,8 @@ class AutoBackupManager(
         private const val TAG = "AutoBackup"
         const val KEY_CLOUD_FAIL_COUNT = "backup_fail_count"
         const val KEY_CLOUD_LAST_ERROR = "backup_last_error"
+        /** [GoogleDriveErrorKind]-Name zum letzten Fehler; leer = unbekannt. */
+        const val KEY_CLOUD_LAST_ERROR_KIND = "backup_last_error_kind"
         const val KEY_CLOUD_BACKOFF_UNTIL = "backup_backoff_until"
         const val KEY_CLOUD_LAST_SUCCESS = "backup_google_drive_last_success"
         const val KEY_CLOUD_WARNING_SHOWN = "backup_google_drive_warning_shown"
@@ -164,10 +166,15 @@ class AutoBackupManager(
         return hash.toString()
     }
 
-    internal suspend fun registerGoogleDriveFailure(message: String, requiresReconnect: Boolean = false) {
+    internal suspend fun registerGoogleDriveFailure(
+        message: String,
+        requiresReconnect: Boolean = false,
+        kind: GoogleDriveErrorKind? = null,
+    ) {
         val count = (settings.getString(KEY_CLOUD_FAIL_COUNT)?.toIntOrNull() ?: 0) + 1
         settings.setString(KEY_CLOUD_FAIL_COUNT, count.toString())
         settings.setString(KEY_CLOUD_LAST_ERROR, message)
+        settings.setString(KEY_CLOUD_LAST_ERROR_KIND, kind?.name.orEmpty())
         settings.setString(
             KEY_CLOUD_BACKOFF_UNTIL,
             Instant.ofEpochMilli(System.currentTimeMillis() + backoffDelayMs(count)).toString(),
@@ -177,9 +184,19 @@ class AutoBackupManager(
         }
     }
 
+    /**
+     * Fehlgeschlagene Anmeldung festhalten, damit Einstellungen und Diagnose
+     * die Ursache zeigen — ohne Zähler und Backoff, denn es lief kein Backup.
+     */
+    internal suspend fun recordGoogleDriveError(error: GoogleDriveError) {
+        settings.setString(KEY_CLOUD_LAST_ERROR, error.detail)
+        settings.setString(KEY_CLOUD_LAST_ERROR_KIND, error.kind.name)
+    }
+
     internal suspend fun clearGoogleDriveErrorState() {
         settings.setString(KEY_CLOUD_FAIL_COUNT, "0")
         settings.setString(KEY_CLOUD_LAST_ERROR, "")
+        settings.setString(KEY_CLOUD_LAST_ERROR_KIND, "")
         settings.setString(KEY_CLOUD_BACKOFF_UNTIL, "")
         settings.setBoolean(KEY_CLOUD_WARNING_SHOWN, false)
         settings.setBoolean(GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED, false)
@@ -303,16 +320,13 @@ class AutoBackupManager(
                     } catch (e: Exception) {
                         allSatisfied = false
                         failedTargets += Target.GOOGLE_DRIVE
-                        val message = if (e is GoogleDriveManager.AuthRequiredException) {
-                            "Google Drive Anmeldung erforderlich"
-                        } else {
-                            e.message ?: "Cloud-Backup fehlgeschlagen"
-                        }
+                        val error = describeGoogleDriveError(e)
                         registerGoogleDriveFailure(
-                            message,
+                            error.detail,
                             requiresReconnect = googleDriveFailureNeedsReconnect(e),
+                            kind = error.kind,
                         )
-                        Log.w(TAG, "Cloud-Backup fehlgeschlagen: $message")
+                        Log.w(TAG, "Cloud-Backup fehlgeschlagen: ${error.kind} – ${error.detail}")
                     }
                 }
             }

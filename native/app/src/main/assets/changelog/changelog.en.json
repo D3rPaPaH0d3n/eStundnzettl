@@ -1,5 +1,22 @@
 [
  {
+  "version": "5.2.4",
+  "date": "2026-10-21",
+  "title": "A little polish ✨",
+  "isMajor": false,
+  "playStoreText": "A little polish ✨\n\n• The project field moves up while typing – suggestions stay visible above the keyboard\n• Tidier overnight stay switch\n\nThanks for your feedback! – Markus",
+  "sections": [
+   {
+    "iconName": "Sparkles",
+    "title": "Polish",
+    "items": [
+     "When you tap the project field, it now moves all the way up – so the known projects appear above the keyboard and you can pick one right away.",
+     "The overnight stay switch now just says “Overnight stay” – no extra explanation."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.3",
   "date": "2026-10-21",
   "title": "Friday off & overnight stays 🛏️",

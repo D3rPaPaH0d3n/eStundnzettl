@@ -171,8 +171,7 @@
       "message": "Für Tage, an denen du bewusst nicht arbeitest, etwa weil die Wochenstunden schon erfüllt sind. Zählt 0 Stunden und nimmt nichts vom ZA-Konto – der Tag gilt nur nicht als vergessen."
     },
     "overnight": {
-      "title": "Nächtigung",
-      "subtitle": "Auswärts übernachtet – steht im Bericht, rechnet nichts"
+      "title": "Nächtigung"
     }
   },
   "reports": {

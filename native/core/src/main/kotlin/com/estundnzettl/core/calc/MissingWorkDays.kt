@@ -1,10 +1,12 @@
 package com.estundnzettl.core.calc
 
 import com.estundnzettl.core.locale.AppLocale
+import com.estundnzettl.core.locale.getLocale
 import com.estundnzettl.core.locale.holidays.toDateString
 import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryType
+import com.estundnzettl.core.model.OvertimeMode
 import com.estundnzettl.core.model.UserData
 import java.time.LocalDate
 import java.time.YearMonth
@@ -52,7 +54,7 @@ fun findMissingWorkDays(
         val target = getTargetMinutesForDate(dateStr, userData?.workDays, locale, config)
         if (target > 0 && isMissingWorkDay(byDate[dateStr].orEmpty())) {
             val fulfilled = fulfilledByWeek.getOrPut(getISOWeekMonday(day)) {
-                isWeekFulfilled(getISOWeekMonday(day), weekContext, userData, locale, config)
+                isWeekFulfilled(getISOWeekMonday(day), through, weekContext, userData, locale, config)
             }
             if (!fulfilled) missing += MissingWorkDay(day, target)
         }
@@ -62,22 +64,31 @@ fun findMissingWorkDays(
 }
 
 /**
- * Hat die Woche ab [monday] ihr Soll schon erreicht? Ist ohne Fahrzeit,
- * wie bei der Mehrarbeit/Überstunden-Berechnung.
+ * Hat die Woche ab [monday] ihr Soll bis [through] schon erreicht? Ist ohne
+ * Fahrzeit und mit aufgeteilten Nachtschichten — genau wie die
+ * Mehrarbeit/Überstunden-Berechnung. Vorausgeplante Einträge nach [through]
+ * zählen noch nicht: Die Stunden sind ja noch nicht geleistet.
  */
 internal fun isWeekFulfilled(
     monday: LocalDate,
+    through: LocalDate,
     weekContext: List<Entry>,
     userData: UserData?,
     locale: AppLocale?,
     config: CalculationConfig?,
 ): Boolean {
-    val days = (0L..6L).map { monday.plusDays(it).toDateString() }
+    val days = (0L..6L).map { monday.plusDays(it).toDateString() }.toSet()
     val weekTarget = days.sumOf { getTargetMinutesForDate(it, userData?.workDays, locale, config) }
     if (weekTarget <= 0) return false
-    val weekActual = weekContext
-        .filter { it.date in days && !(it.type == EntryType.WORK && it.code == WorkCodes.DRIVE) }
-        .sumOf { it.netDuration }
+    val splitOvernight = resolveEffectiveRules(locale ?: getLocale(null), config).overtimeMode != OvertimeMode.NONE
+    val throughStr = through.toDateString()
+    var weekActual = 0
+    for (entry in weekContext) {
+        if (entry.type == EntryType.WORK && entry.code == WorkCodes.DRIVE) continue
+        for ((date, minutes) in getEntryDayContributions(entry, splitOvernight)) {
+            if (date in days && date <= throughStr) weekActual += minutes
+        }
+    }
     return weekActual >= weekTarget
 }
 

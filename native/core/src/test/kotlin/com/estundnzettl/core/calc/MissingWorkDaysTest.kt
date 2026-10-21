@@ -160,6 +160,30 @@ class MissingWorkDaysTest {
     }
 
     @Test
+    fun `kuenftige Eintraege erfuellen die Woche noch nicht`() {
+        // KW 43, heute Mi 21.10.: Mo 19. vergessen, Di 20. erfasst, Rest schon vorausgeplant
+        val entries = exactDays(through = 18) + listOf(
+            work("2026-10-20", 510), work("2026-10-21", 600),
+            work("2026-10-22", 720), work("2026-10-23", 600),
+        )
+        assertEquals(listOf(MissingWorkDay(LocalDate.of(2026, 10, 19), 510)), appData(entries).missingWorkDays)
+    }
+
+    @Test
+    fun `Nachtschicht zaehlt nur mit ihrem Anteil zur Woche`() {
+        // KW 42: Mo–Do je 9h = 36h, dazu So 18.10. 22:00–08:00 (10h, davon 2h am Sonntag)
+        val night = Entry(
+            id = EntryId.of(nextId++), type = EntryType.WORK, date = "2026-10-18",
+            start = "22:00", end = "08:00", pause = 0, code = WorkCodes.OFFICE, netDuration = 600,
+        )
+        val entries = exactDays(through = 11) +
+            (12..15).map { work("2026-10-%02d".format(it), 540) } + night +
+            exactDays(through = 20).filter { it.date >= "2026-10-19" }
+        // 36h + 2h = 38h < 38,5h → Fr 16.10. bleibt vergessen
+        assertTrue(appData(entries).missingWorkDays.any { it.date == LocalDate.of(2026, 10, 16) })
+    }
+
+    @Test
     fun `Starthinweis findet auch den Vormonat`() {
         // Am 2.11.: Fr 30.10. vergessen, Mo 2.11. ist heute und noch offen
         // (26.10. ist Nationalfeiertag und kommt automatisch)

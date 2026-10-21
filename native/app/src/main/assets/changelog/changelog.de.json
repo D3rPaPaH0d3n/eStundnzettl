@@ -1,5 +1,39 @@
 [
  {
+  "version": "5.2.2",
+  "date": "21.10.2026",
+  "title": "Nix geht mehr verlorn 🔍",
+  "isMajor": false,
+  "playStoreText": "Nix geht mehr verlorn 🔍\n\n• Vergessene Arbeitstage stehn jetzt im Dashboard – mit Minus und Tipp zum Nachtragen\n• Hinweis beim Start, wenn Tage ohne Eintrag dazukommen (abschaltbar)\n• Im ZA-Konto steht extra, was davon „ohne Eintrag“ is\n• Monatskarte aufgeräumt: ZA & Urlaub zum Aufklappen\n\nDanke fürs Feedback! – Markus",
+  "sections": [
+   {
+    "iconName": "CalendarX",
+    "title": "Vergessene Tage",
+    "items": [
+     "Hast an Arbeitstag nix eingetragen, steht er jetzt in der Woche als „Kein Eintrag“ – dezent markiert, mit dem fehlenden Soll als Minus. Antippen, und du kannst ihn glei nachtragen.",
+     "Beim Start weist di die App drauf hin, wenn im laufenden oder letzten Monat Tage ohne Eintrag dabei san. „Ausblenden“ gilt für genau diese Tage, erst a neuer meldet si wieder.",
+     "Den Hinweis kannst unter Einstellungen → Darstellung abschalten."
+    ]
+   },
+   {
+    "iconName": "Calculator",
+    "title": "Ehrliches ZA-Konto",
+    "items": [
+     "A vergessener Tag zählt im ZA-Konto weiter als Minus – schließlich fehlt die Zeit. Er steht aber extra als „Davon ohne Eintrag“ do und ned beim Zeitausgleich. Im Monats-PDF genauso.",
+     "„ZA genommen“ zeigt nur mehr, was wirklich als Zeitausgleich eingetragen is."
+    ]
+   },
+   {
+    "iconName": "Sparkles",
+    "title": "Aufgeräumtes Dashboard",
+    "items": [
+     "ZA-Konto und Urlaub san jetzt unter der Monatskarte zum Aufklappen. Zugeklappt siehst trotzdem auf an Blick den ZA-Stand und deinen Resturlaub.",
+     "„Überstunden ausbezahlt“ is jetzt a richtiger, dezenter Button."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.1",
   "date": "21.10.2026",
   "title": "Urlaub & Überstunden mit Durchblick 🧾",

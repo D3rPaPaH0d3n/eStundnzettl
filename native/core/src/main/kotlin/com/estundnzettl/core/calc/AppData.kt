@@ -76,6 +76,8 @@ data class AppData(
     val vacationBalance: VacationBalance? = null,
     /** Vergangene Arbeitstage des Anzeige-Monats ohne Eintrag (bis gestern). */
     val missingWorkDays: List<MissingWorkDay> = emptyList(),
+    /** Tage ohne Eintrag in Vor- und laufendem Monat (Hinweis beim Start). */
+    val recentMissingWorkDays: List<MissingWorkDay> = emptyList(),
 )
 
 /** Synthetische ID eines Auto-Feiertag-Eintrags (wie `auto-holiday-<date>`). */
@@ -215,14 +217,10 @@ fun deriveAppData(
     val overtimeAccount = calculateOvertimeAccount(metadataEntries, userData, viewMonth, today, locale, config)
     val overtimeAccountSuggestion = suggestOvertimeAccount(metadataEntries, userData, today, locale, config)
     val vacationBalance = calculateVacationBalance(metadataEntries, userData, viewMonth, locale, config)
-    // Erst ab dem allerersten Eintrag: davor wurde die App noch nicht genutzt
-    val firstEntryDate = metadataEntries.minOfOrNull { it.date }?.let(LocalDate::parse)
-    val missingWorkDays = if (firstEntryDate == null) emptyList() else findMissingWorkDays(
-        entriesWithHolidays,
-        maxOf(periodStart, firstEntryDate),
-        minOf(periodEnd, today.minusDays(1)),
-        userData, locale, config,
+    val missingWorkDays = missingWorkDaysOfMonth(
+        entriesWithHolidays, viewMonth, firstEntryDateOf(metadataEntries), today, userData, locale, config,
     )
+    val recentMissingWorkDays = findRecentMissingWorkDays(metadataEntries, userData, today, locale, config)
 
     return AppData(
         entriesWithHolidays = entriesWithHolidays,
@@ -237,5 +235,6 @@ fun deriveAppData(
         overtimeAccountSuggestion = overtimeAccountSuggestion,
         vacationBalance = vacationBalance,
         missingWorkDays = missingWorkDays,
+        recentMissingWorkDays = recentMissingWorkDays,
     )
 }

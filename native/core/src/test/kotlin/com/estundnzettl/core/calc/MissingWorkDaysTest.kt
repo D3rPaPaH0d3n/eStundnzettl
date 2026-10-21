@@ -88,22 +88,46 @@ class MissingWorkDaysTest {
     }
 
     @Test
-    fun `vergessener Tag zaehlt im Monatssaldo, aber nicht im ZA-Konto`() {
+    fun `vergessener Tag zaehlt im Konto, aber getrennt vom Zeitausgleich`() {
         val complete = appData(exactDays(through = 20))
         val gap = appData(exactDays(through = 20, skip = setOf(14)))
 
         assertEquals(complete.stats.totalSaldo - 510, gap.stats.totalSaldo)
         assertEquals(0, complete.overtimeAccount!!.closingMinutes)
-        assertEquals(0, gap.overtimeAccount!!.closingMinutes)
+        val account = gap.overtimeAccount!!
+        assertEquals(-510, account.closingMinutes)
+        assertEquals(510, account.missingDayMinutes)
+        assertEquals(0, account.timeCompMinutes)
     }
 
     @Test
-    fun `nur echter Zeitausgleich baut das Konto ab`() {
+    fun `eingetragener Zeitausgleich ist kein Tag ohne Eintrag`() {
         val entries = exactDays(through = 20, skip = setOf(14)) + timeComp("2026-10-14", 510)
         val result = appData(entries)
         assertTrue(result.missingWorkDays.isEmpty())
-        assertEquals(510, result.overtimeAccount!!.timeCompMinutes)
-        assertEquals(-510, result.overtimeAccount!!.closingMinutes)
+        val account = result.overtimeAccount!!
+        assertEquals(510, account.timeCompMinutes)
+        assertEquals(0, account.missingDayMinutes)
+        assertEquals(-510, account.closingMinutes)
+    }
+
+    @Test
+    fun `Starthinweis findet auch den Vormonat`() {
+        // Am 2.11.: Fr 30.10. vergessen, Mo 2.11. ist heute und noch offen
+        val entries = exactDays(through = 31, skip = setOf(30))
+        val recent = findRecentMissingWorkDays(entries, user, LocalDate.of(2026, 11, 2), austriaLocale, config())
+        assertEquals(listOf(MissingWorkDay(LocalDate.of(2026, 10, 30), 270)), recent)
+    }
+
+    @Test
+    fun `ausgeblendete Tage kommen erst mit einem neuen Tag wieder`() {
+        val d14 = MissingWorkDay(LocalDate.of(2026, 10, 14), 510)
+        val d15 = MissingWorkDay(LocalDate.of(2026, 10, 15), 510)
+        val d20 = MissingWorkDay(LocalDate.of(2026, 10, 20), 510)
+
+        assertEquals(listOf(d14, d15), pendingMissingDayHint(listOf(d14, d15), null))
+        assertTrue(pendingMissingDayHint(listOf(d14, d15), d15.date).isEmpty())
+        assertEquals(listOf(d20), pendingMissingDayHint(listOf(d14, d15, d20), d15.date))
     }
 
     @Test

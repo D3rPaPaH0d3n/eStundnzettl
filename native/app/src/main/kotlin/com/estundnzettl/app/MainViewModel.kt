@@ -281,6 +281,10 @@ data class MainUiState(
     val diagnostics: DiagnosticsUiState = DiagnosticsUiState(),
     /** Hinweis aufs ZA-Konto weggeklickt (bis zum Laden: true, damit nichts aufblitzt). */
     val overtimeAccountHintDismissed: Boolean = true,
+    /** Hinweis auf Tage ohne Eintrag (Einstellung; bis zum Laden aus, damit nichts aufblitzt). */
+    val missingDaysHintEnabled: Boolean = false,
+    /** Bis zu diesem Tag sind Tage ohne Eintrag schon ausgeblendet. */
+    val missingDaysAcknowledgedThrough: LocalDate? = null,
 )
 
 data class DiagnosticsUiState(
@@ -366,7 +370,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _state.update { it.copy(showNativeWelcome = true) }
             }
             val hintDismissed = settings.getString(KEY_OVERTIME_ACCOUNT_HINT_DISMISSED) == "1"
-            _state.update { it.copy(overtimeAccountHintDismissed = hintDismissed) }
+            val missingDaysHintEnabled = !settings.getBoolean(KEY_MISSING_DAYS_HINT_DISABLED)
+            val missingDaysAck = settings.getString(KEY_MISSING_DAYS_ACK)
+                ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            _state.update {
+                it.copy(
+                    overtimeAccountHintDismissed = hintDismissed,
+                    missingDaysHintEnabled = missingDaysHintEnabled,
+                    missingDaysAcknowledgedThrough = missingDaysAck,
+                )
+            }
 
             // GitHub-Update-Check (nur Sideload; Debug-Builds prüfen nie)
             launch {
@@ -1042,6 +1055,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { settings.setString(KEY_OVERTIME_ACCOUNT_HINT_DISMISSED, "1") }
     }
 
+    fun setMissingDaysHintEnabled(enabled: Boolean) {
+        _state.update { it.copy(missingDaysHintEnabled = enabled) }
+        viewModelScope.launch { settings.setBoolean(KEY_MISSING_DAYS_HINT_DISABLED, !enabled) }
+    }
+
+    /** Tage ohne Eintrag bis [through] ausblenden — erst ein neuer Tag zeigt den Hinweis wieder. */
+    fun dismissMissingDaysHint(through: LocalDate) {
+        val current = _state.value.missingDaysAcknowledgedThrough
+        val next = if (current != null && current.isAfter(through)) current else through
+        _state.update { it.copy(missingDaysAcknowledgedThrough = next) }
+        viewModelScope.launch { settings.setString(KEY_MISSING_DAYS_ACK, next.toString()) }
+    }
+
     /** Auszahlung für [month] buchen; 0 entfernt sie. */
     fun bookOvertimePayout(month: YearMonth, minutes: Int) {
         if (_state.value.calculationConfig?.overtimeAccount == null) return
@@ -1367,6 +1393,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val MAX_RESTORE_CANDIDATES = 10
         private const val KEY_NATIVE_WELCOME_SEEN = "estundnzettl_native_welcome_seen_v1"
         private const val KEY_OVERTIME_ACCOUNT_HINT_DISMISSED = "estundnzettl_overtime_account_hint_dismissed_v1"
+        /** Negativ benannt, damit der Hinweis ohne gespeicherten Wert an ist. */
+        private const val KEY_MISSING_DAYS_HINT_DISABLED = "estundnzettl_missing_days_hint_disabled_v1"
+        private const val KEY_MISSING_DAYS_ACK = "estundnzettl_missing_days_ack_v1"
         private const val KEY_CHANGELOG_VERSION_CODE = "last_seen_changelog_version_code"
         private const val KEY_CHANGELOG_VERSION_NAME = "last_seen_changelog_version_name"
         private const val KEY_REVIEW_FIRST_ELIGIBLE = "estundnzettl_review_first_eligible_v2"

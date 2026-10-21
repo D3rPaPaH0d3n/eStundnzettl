@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +60,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.i18n.I18n
@@ -80,6 +82,7 @@ import com.estundnzettl.core.calc.formatSignedDurationInput
 import com.estundnzettl.core.calc.getTargetMinutesForDate
 import com.estundnzettl.core.calc.getWeekNumber
 import com.estundnzettl.core.calc.parseSignedDurationInput
+import com.estundnzettl.core.calc.pendingMissingDayHint
 import com.estundnzettl.core.format.formatSignedTime
 import com.estundnzettl.core.format.formatTime
 import com.estundnzettl.core.locale.AppLocale
@@ -119,6 +122,9 @@ fun DashboardScreen(
     onDismissOvertimeAccountHint: () -> Unit = {},
     onBookOvertimePayout: (YearMonth, Int) -> Unit = { _, _ -> },
     onAddEntryForDate: (LocalDate) -> Unit = {},
+    missingDaysHintEnabled: Boolean = false,
+    missingDaysAcknowledgedThrough: LocalDate? = null,
+    onDismissMissingDaysHint: (LocalDate) -> Unit = {},
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
@@ -171,6 +177,23 @@ fun DashboardScreen(
                     onChangeMonth = onChangeMonth,
                     onOpenPicker = { monthPickerOpen = true },
                     onBookPayout = { minutes -> onBookOvertimePayout(currentMonth, minutes) },
+                )
+            }
+        }
+
+        // Hinweis auf vergessene Tage (Vor- und laufender Monat), nur neue seit dem Ausblenden
+        val pendingMissing = if (missingDaysHintEnabled && currentMonth == YearMonth.now()) {
+            pendingMissingDayHint(appData.recentMissingWorkDays, missingDaysAcknowledgedThrough)
+        } else {
+            emptyList()
+        }
+        if (pendingMissing.isNotEmpty()) {
+            item(key = "missing-days-hint") {
+                MissingDaysHint(
+                    days = pendingMissing,
+                    javaLocale = javaLocale,
+                    onAdd = { onAddEntryForDate(pendingMissing.first().date) },
+                    onDismiss = { onDismissMissingDaysHint(pendingMissing.last().date) },
                 )
             }
         }
@@ -445,8 +468,11 @@ private fun MonthStatsCard(
                 }
             }
 
-            appData.overtimeAccount?.let { OvertimeAccountPanel(it, javaLocale, onBookPayout) }
-            appData.vacationBalance?.let { VacationPanel(it, language) }
+            val account = appData.overtimeAccount
+            val vacation = appData.vacationBalance
+            if (account != null || vacation != null) {
+                MonthDetails(account, vacation, javaLocale, language, onBookPayout)
+            }
         }
     }
 }
@@ -517,10 +543,21 @@ private fun OvertimeAccountPanel(
                 )
             }
         }
+        // Im Stand enthalten, aber getrennt vom ZA: vergessen ist nicht genommen
+        if (account.missingDayMinutes > 0) {
+            Text(
+                t.t("dashboard.overtimeAccount.missingDays", "time" to formatSignedTime(-account.missingDayMinutes)),
+                color = colors.negative,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
         // Auszahlung nur bei Plusstunden anbieten; eine gebuchte bleibt änderbar
         if (account.payoutMinutes > 0 || account.payableMinutes > 0) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -532,16 +569,10 @@ private fun OvertimeAccountPanel(
                 } else {
                     Spacer(Modifier.width(1.dp))
                 }
-                Text(
-                    t.t(if (account.payoutMinutes > 0) "dashboard.payout.edit" else "dashboard.payout.action"),
-                    color = colors.special,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable(role = Role.Button) { payoutDialogOpen = true }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                )
+                TonalButton(
+                    label = t.t(if (account.payoutMinutes > 0) "dashboard.payout.edit" else "dashboard.payout.action"),
+                    tint = colors.special,
+                ) { payoutDialogOpen = true }
             }
         }
     }
@@ -631,8 +662,7 @@ private fun PayoutDialog(
 private fun VacationPanel(balance: VacationBalance, language: String) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
-    fun days(halfDays: Int): String = formatHalfDays(halfDays, language) + " " +
-        t.t(if (halfDays == 2 || halfDays == -2) "dashboard.vacation.day" else "dashboard.vacation.days")
+    fun days(halfDays: Int): String = vacationDaysText(halfDays, language, t)
 
     Column(
         modifier = Modifier
@@ -737,6 +767,203 @@ private fun OvertimeAccountHint(
         }
     }
 }
+
+/**
+ * ZA-Konto und Urlaub unter der Monatskarte: startet immer zugeklappt, damit
+ * das Dashboard ruhig bleibt; die Leiste zeigt die zwei wichtigsten Werte
+ * trotzdem. Animation wie beim Aufklappen der Kalenderwochen.
+ */
+@Composable
+private fun MonthDetails(
+    account: OvertimeAccountMonth?,
+    vacation: VacationBalance?,
+    javaLocale: JavaLocale,
+    language: String,
+    onBookPayout: (Int) -> Unit,
+) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    // Bewusst nicht gespeichert: Jeder App-Start beginnt zugeklappt
+    var expanded by remember { mutableStateOf(false) }
+    val chevronRotation by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "monthDetailsChevron",
+    )
+    val expandSpec = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntSize>(
+        durationMillis = 220,
+        easing = androidx.compose.animation.core.FastOutSlowInEasing,
+    )
+    val fadeSpec = androidx.compose.animation.core.tween<Float>(
+        durationMillis = 220,
+        easing = androidx.compose.animation.core.FastOutSlowInEasing,
+    )
+
+    Column {
+        HorizontalDivider(colors)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(
+                    onClickLabel = t.t(if (expanded) "dashboard.details.hide" else "dashboard.details.show"),
+                    role = Role.Button,
+                ) { expanded = !expanded }
+                .semantics {
+                    stateDescription = t.t(if (expanded) "common.expanded" else "common.collapsed")
+                }
+                .padding(vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (account != null) {
+                    DetailsSummary(
+                        t.t("dashboard.details.overtime"),
+                        formatSignedTime(account.closingMinutes),
+                        if (account.closingMinutes >= 0) colors.positive else colors.negative,
+                    )
+                }
+                if (account != null && vacation != null) {
+                    Text("·", color = colors.textFaint, fontSize = 13.sp)
+                }
+                if (vacation != null) {
+                    DetailsSummary(
+                        t.t("dashboard.details.vacation"),
+                        vacationDaysText(vacation.remainingHalfDays, language, t),
+                        if (vacation.remainingHalfDays >= 0) colors.textSecondary else colors.negative,
+                    )
+                }
+            }
+            Icon(
+                Icons.Filled.KeyboardArrowDown,
+                contentDescription = null,
+                tint = colors.textMuted,
+                modifier = Modifier
+                    .size(20.dp)
+                    .rotate(chevronRotation),
+            )
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = androidx.compose.animation.expandVertically(animationSpec = expandSpec) +
+                androidx.compose.animation.fadeIn(animationSpec = fadeSpec),
+            exit = androidx.compose.animation.shrinkVertically(animationSpec = expandSpec) +
+                androidx.compose.animation.fadeOut(animationSpec = fadeSpec),
+        ) {
+            Column(
+                modifier = Modifier.padding(top = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                account?.let { OvertimeAccountPanel(it, javaLocale, onBookPayout) }
+                vacation?.let { VacationPanel(it, language) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailsSummary(label: String, value: String, valueColor: Color) {
+    val colors = LocalAppColors.current
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = colors.textMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        Text(value, color = valueColor, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+/** "12 Tage", "1 Tag", "0,5 Tage". */
+private fun vacationDaysText(halfDays: Int, language: String, t: I18n): String =
+    formatHalfDays(halfDays, language) + " " +
+        t.t(if (halfDays == 2 || halfDays == -2) "dashboard.vacation.day" else "dashboard.vacation.days")
+
+/**
+ * Dezenter Button im Stil von ActionButton (Einstellungen): Farbe mit 10 %
+ * Fläche und 40 % Rahmen — aber kompakt statt über die volle Breite.
+ */
+@Composable
+private fun TonalButton(label: String, tint: Color, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(12.dp)
+    Text(
+        text = label,
+        color = tint,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        maxLines = 1,
+        modifier = Modifier
+            .clip(shape)
+            .background(tint.copy(alpha = 0.1f))
+            .border(1.dp, tint.copy(alpha = 0.4f), shape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 7.dp),
+    )
+}
+
+/** Hinweis beim Start: vergangene Arbeitstage ohne Eintrag, mit Nachtragen/Ausblenden. */
+@Composable
+private fun MissingDaysHint(
+    days: List<MissingWorkDay>,
+    javaLocale: JavaLocale,
+    onAdd: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    val shown = days.take(MISSING_HINT_MAX_DAYS).joinToString(", ") { day ->
+        day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, javaLocale).take(2) + " " + formatShortDate(day.date)
+    }
+    val list = if (days.size > MISSING_HINT_MAX_DAYS) {
+        shown + " " + t.t("dashboard.missingHint.more", "count" to days.size - MISSING_HINT_MAX_DAYS)
+    } else {
+        shown
+    }
+
+    AppCard(
+        borderColor = colors.negative.copy(alpha = 0.3f),
+    ) {
+        Column(
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                StatLabel(t.t("dashboard.missingHint.title"), colors)
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = t.t("common.close"),
+                        tint = colors.textFaint,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+            Text(
+                if (days.size == 1) t.t("dashboard.missingHint.one", "days" to list)
+                else t.t("dashboard.missingHint.many", "count" to days.size, "days" to list),
+                color = colors.textSecondary,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(t.t("dashboard.missingHint.dismiss"), color = colors.textMuted)
+                }
+                TextButton(onClick = onAdd) {
+                    Text(t.t("dashboard.missingHint.add"), color = colors.accent, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+private const val MISSING_HINT_MAX_DAYS = 4
 
 @Composable
 private fun AccountLabel(text: String, colors: AppColors) {

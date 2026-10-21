@@ -6,11 +6,13 @@ import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.UserData
 import java.time.LocalDate
+import java.time.YearMonth
 
 /**
- * Vergangener Arbeitstag ohne Eintrag ("Kein Eintrag"). Das Dashboard zeigt
- * ihn mit seinem Minus, damit Vergessenes auffällt. Das ZA-Konto bucht ihn
- * bewusst nicht ab: Abgebaut wird es nur durch echte Zeitausgleich-Einträge.
+ * Vergangener Arbeitstag ohne Eintrag ("Kein Eintrag"). Er zählt mit seinem
+ * Soll als Minus — im Saldo wie im ZA-Konto, das ihn aber getrennt vom
+ * genommenen Zeitausgleich ausweist. Das Dashboard zeigt ihn, damit
+ * Vergessenes auffällt und nachgetragen werden kann.
  */
 data class MissingWorkDay(
     val date: LocalDate,
@@ -48,12 +50,66 @@ fun findMissingWorkDays(
 }
 
 /**
- * Gilt ein Arbeitstag (Soll > 0, kein Feiertag) mit diesen Einträgen als
- * "Kein Eintrag"? Dieselbe Regel entscheidet, was das Dashboard als
- * vergessen markiert UND was das ZA-Konto nicht abbucht.
+ * Ein Arbeitstag (Soll > 0, kein Feiertag) gilt als "Kein Eintrag", wenn
+ * gar nichts erfasst ist. Sobald irgendetwas eingetragen ist, ist es ein
+ * normaler Tag mit seinem echten Saldo.
  */
-internal fun isMissingWorkDay(dayEntries: List<Entry>): Boolean {
-    // Vorläufig: jeder Eintrag zählt als erfasst. Offen sind Grenzfälle wie
-    // ein Tag nur mit Fahrzeit oder Einträge mit 0 Minuten.
-    return dayEntries.isEmpty()
+internal fun isMissingWorkDay(dayEntries: List<Entry>): Boolean = dayEntries.isEmpty()
+
+/**
+ * Tage ohne Eintrag eines Monats — erst ab dem allerersten Eintrag (davor
+ * wurde die App nicht genutzt) und nur bis gestern (heute ist noch offen).
+ */
+internal fun missingWorkDaysOfMonth(
+    entriesWithHolidays: List<Entry>,
+    month: YearMonth,
+    firstEntryDate: LocalDate?,
+    today: LocalDate,
+    userData: UserData?,
+    locale: AppLocale?,
+    config: CalculationConfig?,
+): List<MissingWorkDay> {
+    firstEntryDate ?: return emptyList()
+    return findMissingWorkDays(
+        entriesWithHolidays,
+        maxOf(month.atDay(1), firstEntryDate),
+        minOf(month.atEndOfMonth(), today.minusDays(1)),
+        userData, locale, config,
+    )
 }
+
+/**
+ * Tage ohne Eintrag im Vormonat und im laufenden Monat — für den Hinweis
+ * beim App-Start, unabhängig vom angezeigten Monat. Der Vormonat zählt
+ * mit, damit ein vergessener 30. am Monatsanfang nicht untergeht.
+ * [allEntries] sind die unkorrigierten Einträge aller Monate.
+ */
+fun findRecentMissingWorkDays(
+    allEntries: List<Entry>,
+    userData: UserData?,
+    today: LocalDate = LocalDate.now(),
+    locale: AppLocale? = null,
+    config: CalculationConfig? = null,
+): List<MissingWorkDay> {
+    val firstEntryDate = firstEntryDateOf(allEntries) ?: return emptyList()
+    val current = YearMonth.from(today)
+    return listOf(current.minusMonths(1), current).flatMap { month ->
+        val withHolidays = buildEntriesWithHolidays(
+            allEntries, userData, month.year, month.monthValue, today, locale, config,
+        )
+        missingWorkDaysOfMonth(withHolidays, month, firstEntryDate, today, userData, locale, config)
+    }
+}
+
+/**
+ * Was der Hinweis noch zeigt: nur Tage nach [acknowledgedThrough]. Einmal
+ * ausgeblendete Tage kommen nicht wieder, erst ein neuer Tag ohne Eintrag.
+ */
+fun pendingMissingDayHint(
+    recent: List<MissingWorkDay>,
+    acknowledgedThrough: LocalDate?,
+): List<MissingWorkDay> =
+    if (acknowledgedThrough == null) recent else recent.filter { it.date.isAfter(acknowledgedThrough) }
+
+internal fun firstEntryDateOf(entries: List<Entry>): LocalDate? =
+    entries.minOfOrNull { it.date }?.let { runCatching { LocalDate.parse(it) }.getOrNull() }

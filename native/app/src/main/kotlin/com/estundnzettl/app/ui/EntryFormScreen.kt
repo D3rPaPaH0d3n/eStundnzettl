@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.outlined.Hotel
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.FormUiState
+import com.estundnzettl.app.ui.settings.SettingsToggleRow
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
@@ -240,7 +243,7 @@ fun EntryFormScreen(
                     }
                 }
 
-                // Typ-Auswahl (5 Segmente)
+                // Typ-Auswahl; "Frei" nur mit Soll — ohne Soll gibt es keinen freien Tag
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -263,6 +266,31 @@ fun EntryFormScreen(
                     }
                     TypeSegment(t.t("entryForm.types.timeCompShort"), form.entryType == "time_comp", colors.special) {
                         onUpdateForm { it.copy(entryType = "time_comp") }
+                    }
+                    if (!simpleMode) {
+                        TypeSegment(t.t("entryForm.types.dayOff"), form.entryType == "day_off", colors.textSecondary) {
+                            onUpdateForm { it.copy(entryType = "day_off") }
+                        }
+                    }
+                }
+
+                // Frei: kein Zeitausgleich, nur "bewusst nicht gearbeitet"
+                if (form.entryType == "day_off") {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(colors.surfaceVariant.copy(alpha = 0.6f))
+                            .border(1.dp, colors.border, RoundedCornerShape(8.dp))
+                            .padding(12.dp),
+                    ) {
+                        Text(
+                            t.t("entryForm.dayOff.title"),
+                            color = colors.textPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                        )
+                        Text(t.t("entryForm.dayOff.message"), color = colors.textSecondary, fontSize = 14.sp)
                     }
                 }
 
@@ -529,6 +557,33 @@ fun EntryFormScreen(
                                 }
                             }
                         }
+                    }
+                }
+
+                // Nächtigung: reine Markierung hinter dem Code, rechnet nichts
+                if (form.entryType == "work" && !isArrival) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                    ) {
+                        SettingsToggleRow(
+                            title = t.t("entryForm.overnight.title"),
+                            subtitle = t.t("entryForm.overnight.subtitle"),
+                            checked = form.overnight,
+                            accent = colors.accentStrong,
+                            icon = {
+                                Icon(
+                                    Icons.Outlined.Hotel,
+                                    contentDescription = null,
+                                    tint = if (form.overnight) colors.special else colors.textFaint,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            onToggle = { checked -> onUpdateForm { it.copy(overnight = checked) } },
+                        )
                     }
                 }
 

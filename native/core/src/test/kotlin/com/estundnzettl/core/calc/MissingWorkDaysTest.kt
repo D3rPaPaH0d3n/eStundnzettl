@@ -112,9 +112,58 @@ class MissingWorkDaysTest {
     }
 
     @Test
+    fun `erfuellte Woche laesst den freien Freitag in Ruhe`() {
+        // KW 42: Mo–Do je 10h = 40h >= 38,5h Wochensoll, Fr 16.10. bleibt leer
+        val entries = exactDays(through = 11) +
+            (12..15).map { work("2026-10-%02d".format(it), 600) } +
+            exactDays(through = 20).filter { it.date >= "2026-10-19" }
+        val result = appData(entries)
+        assertTrue(result.missingWorkDays.none { it.date == LocalDate.of(2026, 10, 16) })
+        // Gerechnet wird trotzdem: Woche +1:30, Konto ohne "ohne Eintrag"-Anteil
+        assertEquals(90, result.overtimeAccount!!.closingMinutes)
+        assertEquals(0, result.overtimeAccount!!.missingDayMinutes)
+    }
+
+    @Test
+    fun `nicht erfuellte Woche meldet den leeren Freitag`() {
+        // Mo–Do je 9h = 36h < 38,5h
+        val entries = exactDays(through = 11) +
+            (12..15).map { work("2026-10-%02d".format(it), 540) } +
+            exactDays(through = 20).filter { it.date >= "2026-10-19" }
+        val missing = appData(entries).missingWorkDays
+        assertEquals(listOf(MissingWorkDay(LocalDate.of(2026, 10, 16), 270)), missing)
+    }
+
+    @Test
+    fun `Woche ueber die Monatsgrenze zaehlt die Tage des Vormonats mit`() {
+        // KW 40: Mo 28.9.–Do 1.10. je 10h = 40h, Fr 2.10. bleibt leer
+        val entries = listOf("2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01").map { work(it, 600) } +
+            exactDays(through = 20).filter { it.date >= "2026-10-05" }
+        val result = appData(entries)
+        assertTrue(result.missingWorkDays.none { it.date == LocalDate.of(2026, 10, 2) }, "${result.missingWorkDays}")
+        assertEquals(0, result.overtimeAccount!!.missingDayMinutes)
+    }
+
+    @Test
+    fun `Fahrzeit zaehlt nicht zur erfuellten Woche`() {
+        val drive = (12..15).map {
+            Entry(
+                id = EntryId.of(nextId++), type = EntryType.WORK, date = "2026-10-%02d".format(it),
+                start = "05:00", end = "07:00", code = WorkCodes.DRIVE, netDuration = 120,
+            )
+        }
+        // Mo–Do je 9h Arbeit + 2h Fahrzeit: ohne Fahrzeit 36h < 38,5h
+        val entries = exactDays(through = 11) +
+            (12..15).map { work("2026-10-%02d".format(it), 540) } + drive +
+            exactDays(through = 20).filter { it.date >= "2026-10-19" }
+        assertTrue(appData(entries).missingWorkDays.any { it.date == LocalDate.of(2026, 10, 16) })
+    }
+
+    @Test
     fun `Starthinweis findet auch den Vormonat`() {
         // Am 2.11.: Fr 30.10. vergessen, Mo 2.11. ist heute und noch offen
-        val entries = exactDays(through = 31, skip = setOf(30))
+        // (26.10. ist Nationalfeiertag und kommt automatisch)
+        val entries = exactDays(through = 31, skip = setOf(26, 30))
         val recent = findRecentMissingWorkDays(entries, user, LocalDate.of(2026, 11, 2), austriaLocale, config())
         assertEquals(listOf(MissingWorkDay(LocalDate.of(2026, 10, 30), 270)), recent)
     }

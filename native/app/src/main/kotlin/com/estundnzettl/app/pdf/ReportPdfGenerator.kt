@@ -493,6 +493,8 @@ class ReportPdfGenerator(
         val balanceText: String?,
         val balancePaint: TextPaint?,
         val meta: DayBalanceMeta?,
+        /** "Nächtigung" unter der Tätigkeit — unabhängig von der Code-Spalte sichtbar. */
+        val overnightLayout: StaticLayout? = null,
     )
 
     private fun buildRow(
@@ -546,9 +548,16 @@ class ReportPdfGenerator(
             }
             EntryType.VACATION -> projectText = t("entryTypes.vacation")
             EntryType.SICK -> projectText = t("entryTypes.sick")
+            EntryType.DAY_OFF -> projectText = t("entryTypes.dayOff")
             else -> {}
         }
         val projectLayout = staticLayout(projectText, textPaint(9f, projectColor, bold = true), projectWidth)
+
+        val overnightLayout = if (e.overnight) {
+            staticLayout(t("reports.overnight"), textPaint(7f, C.textPurple, bold = true), projectWidth)
+        } else {
+            null
+        }
 
         val attachmentLayout = if (showAttachments && attachments.isNotEmpty()) {
             val text = t("reports.documentsLabel") + " " + attachments.joinToString(", ") { it.label }
@@ -568,6 +577,9 @@ class ReportPdfGenerator(
         } else if (e.type == EntryType.TIME_COMP) {
             hoursText = "—"
             hoursPaint = textPaint(9f, C.textPurple, bold = true)
+        } else if (e.type == EntryType.DAY_OFF) {
+            hoursText = "—"
+            hoursPaint = textPaint(9f, C.textLight)
         }
 
         // Saldo
@@ -592,6 +604,7 @@ class ReportPdfGenerator(
 
         val timeH = line1Paint.lineHeight + (line2Paint?.let { 1f + it.lineHeight } ?: 0f)
         val projectH = projectLayout.height.toFloat() +
+            (overnightLayout?.let { 1.5f + it.height.toFloat() } ?: 0f) +
             (attachmentLayout?.let { 2f + it.height.toFloat() } ?: 0f)
         val codeH = codeLayout?.height?.toFloat() ?: 0f
         val contentH = maxOf(timeH, projectH, codeH, textPaint(9f, C.textDark).lineHeight)
@@ -605,6 +618,7 @@ class ReportPdfGenerator(
             hoursText = hoursText, hoursPaint = hoursPaint,
             balanceText = balanceText, balancePaint = balancePaint,
             meta = meta,
+            overnightLayout = overnightLayout,
         )
     }
 
@@ -651,12 +665,18 @@ class ReportPdfGenerator(
             )
         }
 
-        // Projekt (+ Anhänge)
+        // Projekt (+ Nächtigung + Anhänge)
         canvas.save()
         canvas.translate(xProject, contentTop)
         row.projectLayout.draw(canvas)
+        var below = row.projectLayout.height.toFloat()
+        row.overnightLayout?.let {
+            canvas.translate(0f, below + 1.5f)
+            it.draw(canvas)
+            below = it.height.toFloat()
+        }
         row.attachmentLayout?.let {
-            canvas.translate(0f, row.projectLayout.height + 2f)
+            canvas.translate(0f, below + 2f)
             it.draw(canvas)
         }
         canvas.restore()
@@ -774,6 +794,14 @@ class ReportPdfGenerator(
             leftY += sumRow(
                 canvas, leftY, innerLeft, leftColRight, t("reports.summary.sickness"),
                 formatTime(stats.sick), C.textRed, C.textRed,
+            ) + 1f
+        }
+        // Nächtigungen zählen Tage, nicht Einträge (zwei Baustellen, eine Nacht)
+        val overnights = input.entries.filter { it.overnight }.map { it.date }.distinct().size
+        if (overnights > 0) {
+            leftY += sumRow(
+                canvas, leftY, innerLeft, leftColRight, t("reports.summary.overnights"),
+                overnights.toString(), C.textPurple, C.textPurple,
             ) + 1f
         }
 

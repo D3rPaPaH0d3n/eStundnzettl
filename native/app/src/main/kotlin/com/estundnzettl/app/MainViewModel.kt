@@ -160,6 +160,8 @@ data class FormUiState(
     val editingEntry: Entry? = null,
     val isLiveEntry: Boolean = false,
     val specialManualMode: Boolean = false,
+    /** Nächtigung (nur Arbeit). */
+    val overnight: Boolean = false,
 )
 
 /** Live-Timer-Zustand — Persistenz-Shape identisch zur TS-App. */
@@ -603,6 +605,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             specialManualMode = specialManual,
             code = entry.code ?: defaultCode(entry.date),
             codeIsAutomatic = false,
+            overnight = entry.overnight,
         )
         form = when {
             entry.type == EntryType.WORK -> form.copy(
@@ -686,6 +689,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 code = form.code,
                 specialManualMode = form.specialManualMode,
                 editingEntry = form.editingEntry,
+                overnight = form.overnight,
             ),
             entries = allEntries,
             userData = s.userData,

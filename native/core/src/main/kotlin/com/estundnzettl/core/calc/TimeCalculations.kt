@@ -303,6 +303,9 @@ fun calculateEntryNetDuration(
     val isDrive = entryType == "drive" || code == WorkCodes.DRIVE
     val isSpecial = entryType == "vacation" || entryType == "sick" || entryType == "time_comp"
 
+    // "Frei" zählt nie — ohne diese Zeile fiele es unten aufs Tagessoll zurück
+    if (entryType == EntryType.DAY_OFF.wireName) return 0
+
     if (entryType == "work" || isDrive) {
         val rawDuration = calculateRawDuration(startTime, endTime)
         var usedPause = if (isDrive) 0 else pauseDuration
@@ -488,6 +491,7 @@ fun calculatePeriodStats(
             EntryType.SICK -> sick += dur
             EntryType.PUBLIC_HOLIDAY -> holiday += dur
             EntryType.TIME_COMP -> timeComp += dur
+            EntryType.DAY_OFF -> Unit
         }
 
         // dayActualMap für Wochen-Berechnung (exkl. Fahrzeit)
@@ -647,6 +651,8 @@ fun computeExpectedNetDuration(
             config = config,
         )
     }
+
+    if (entry.type == EntryType.DAY_OFF) return 0
 
     val isManualSpecial = entry.type == EntryType.VACATION ||
         entry.type == EntryType.SICK || entry.type == EntryType.TIME_COMP

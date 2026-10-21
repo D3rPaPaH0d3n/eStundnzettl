@@ -60,6 +60,27 @@ class DataRestoreIntegrityTest {
         assertTrue("backup_metadata" in tables)
     }
 
+    /** v1 → v2 (Nächtigung): bestehende Einträge bleiben, overnight startet mit 0. */
+    @Test
+    fun versionOneMigratesToTwoWithoutLosingEntries() {
+        migrationHelper.createDatabase("migration-1-2.db", 1).apply {
+            execSQL(
+                "INSERT INTO entries (id, type, date, start, `end`, pause, project, code, netDuration) " +
+                    "VALUES (1, 'work', '2026-10-20', '06:00', '17:00', 30, 'Spielberg', 22, 630)"
+            )
+            close()
+        }
+
+        val migrated = migrationHelper.runMigrationsAndValidate("migration-1-2.db", 2, true)
+        migrated.query("SELECT project, netDuration, overnight FROM entries WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Spielberg", cursor.getString(0))
+            assertEquals(630, cursor.getInt(1))
+            assertEquals(0, cursor.getInt(2))
+        }
+        migrated.close()
+    }
+
     @Test
     fun fullSnapshotReplacesEntriesAtomically() = runBlocking {
         val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()

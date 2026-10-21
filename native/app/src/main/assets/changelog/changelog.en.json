@@ -1,5 +1,39 @@
 [
  {
+  "version": "5.2.3",
+  "date": "2026-10-21",
+  "title": "Friday off & overnight stays 🛏️",
+  "isMajor": false,
+  "playStoreText": "Friday off & overnight stays 🛏️\n\n• Weekly hours already reached? A free Friday is no longer flagged as forgotten\n• New entry type “Day off” – 0 hours, no time off taken\n• Overnight stay per work entry, in the report with a count\n• Swipe to delete: with one entry, the whole card swipes\n• Time-off entries subtle again instead of bright red\n\nThanks for your feedback! – Markus",
+  "sections": [
+   {
+    "iconName": "CalendarCheck",
+    "title": "Friday at home? Fine!",
+    "items": [
+     "If you've already reached your weekly hours by Thursday, an empty Friday is no longer flagged as forgotten – no “No entry” card, no hint. The numbers stay correct: the week shows your real plus.",
+     "Prefer it in writing? Use the new entry type “Day off”. It counts 0 hours, takes nothing from the time-off account and appears as “Day off” in the monthly PDF.",
+     "Important: don't book time off for such a day – otherwise it looks like overtime that never happened."
+    ]
+   },
+   {
+    "iconName": "Moon",
+    "title": "Overnight stays",
+    "items": [
+     "Work entries now have an “Overnight stay” switch for when you have to sleep away from home. It doesn't calculate anything.",
+     "The dashboard shows it subtly after the code, the monthly PDF below the activity – plus the number of overnight stays in the summary. Without it, everything stays as before."
+    ]
+   },
+   {
+    "iconName": "Sparkles",
+    "title": "Polish",
+    "items": [
+     "If a day has only one entry, the whole card now swipes to delete. With several entries, it's still the single row.",
+     "Time-off entries are a soft purple again – the delete red was showing through."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.2",
   "date": "2026-10-21",
   "title": "Nothing gets lost anymore 🔍",

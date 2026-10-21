@@ -109,7 +109,8 @@
       "more": "+{{count}} more",
       "add": "Add now",
       "dismiss": "Hide"
-    }
+    },
+    "overnight": "Overnight stay"
   },
   "entryTypes": {
     "holiday": "Holiday",
@@ -117,7 +118,8 @@
     "paidOff": "Paid off",
     "timeComp": "Time off",
     "vacation": "Vacation",
-    "sick": "Sick"
+    "sick": "Sick",
+    "dayOff": "Day off"
   },
   "entryForm": {
     "codePlaceholder": "Please select",
@@ -132,7 +134,8 @@
       "drive": "Drive",
       "sick": "Sick",
       "vacation": "Vacation",
-      "timeCompShort": "TO"
+      "timeCompShort": "TO",
+      "dayOff": "Off"
     },
     "driveSubtype": {
       "arrival": "Arrival/Departure",
@@ -162,7 +165,15 @@
     "distanceOrNote": "Route / Note",
     "project": "Project",
     "projectPlaceholder": "…",
-    "knownProjects": "Known projects"
+    "knownProjects": "Known projects",
+    "dayOff": {
+      "title": "Day off – not time off",
+      "message": "For days you deliberately don't work, e.g. because you've already reached your weekly hours. Counts 0 hours and takes nothing from the time-off account – the day just isn't flagged as forgotten."
+    },
+    "overnight": {
+      "title": "Overnight stay",
+      "subtitle": "Stayed away overnight – shown in the report, no calculation"
+    }
   },
   "reports": {
     "title": "Timesheet",
@@ -201,7 +212,8 @@
       "balance": "Balance:",
       "extraHours": "Extra hours:",
       "overtime": "Overtime:",
-      "driveUnpaid": "Drive time (unpaid):"
+      "driveUnpaid": "Drive time (unpaid):",
+      "overnights": "Overnight stays:"
     },
     "vacationBalance": {
       "allowance": "Vacation allowance:",
@@ -249,7 +261,8 @@
       "closingAt": "Balance as of {{date}}:",
       "payout": "Paid out:",
       "missingDays": "of which without entries:"
-    }
+    },
+    "overnight": "Overnight stay"
   },
   "helpModal": {
     "title": "Guide & Help",

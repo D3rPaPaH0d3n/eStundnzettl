@@ -47,12 +47,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -1195,8 +1200,6 @@ private fun DayCard(
     attachmentCounts: Map<EntryId, Int> = emptyMap(),
     onManageAttachments: (Entry) -> Unit = {},
 ) {
-    val colors = LocalAppColors.current
-    val t = LocalI18n.current
     val daySum = calculateDisplayedDayMinutes(dayEntries)
     val dayTarget = if (!simpleMode) {
         getTargetMinutesForDate(dateStr, userData?.workDays, locale, config)
@@ -1204,6 +1207,41 @@ private fun DayCard(
     val dayBalance = if (dayTarget > 0) daySum - dayTarget else null
     val date = LocalDate.parse(dateStr)
     val sortedEntries = dayEntries.sortedBy { it.start ?: "" }
+    // Ein einzelner Eintrag: die ganze Karte wischt. Bei mehreren bleibt es
+    // pro Zeile, sonst wäre unklar, welcher Eintrag gelöscht wird.
+    val cardEntry = sortedEntries.singleOrNull()?.takeIf { it.type != EntryType.PUBLIC_HOLIDAY }
+
+    if (cardEntry != null) {
+        SwipeToDelete(onDelete = { onDeleteEntry(cardEntry) }, shape = RoundedCornerShape(12.dp)) {
+            DayCardContent(
+                date, sortedEntries, daySum, dayBalance, rowSwipe = false, workCodeLabelMap, javaLocale,
+                onEditEntry, onDeleteEntry, attachmentCounts, onManageAttachments,
+            )
+        }
+    } else {
+        DayCardContent(
+            date, sortedEntries, daySum, dayBalance, rowSwipe = true, workCodeLabelMap, javaLocale,
+            onEditEntry, onDeleteEntry, attachmentCounts, onManageAttachments,
+        )
+    }
+}
+
+@Composable
+private fun DayCardContent(
+    date: LocalDate,
+    sortedEntries: List<Entry>,
+    daySum: Int,
+    dayBalance: Int?,
+    rowSwipe: Boolean,
+    workCodeLabelMap: Map<Int, String>,
+    javaLocale: JavaLocale,
+    onEditEntry: (Entry) -> Unit,
+    onDeleteEntry: (Entry) -> Unit,
+    attachmentCounts: Map<EntryId, Int>,
+    onManageAttachments: (Entry) -> Unit,
+) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
 
     AppCard {
         Row(modifier = Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Min)) {
@@ -1238,6 +1276,7 @@ private fun DayCard(
                 sortedEntries.forEachIndexed { index, entry ->
                     EntryRow(
                         entry = entry,
+                        swipeToDelete = rowSwipe,
                         showDivider = index < sortedEntries.size - 1,
                         workCodeLabelMap = workCodeLabelMap,
                         t = t,
@@ -1407,6 +1446,7 @@ private data class WeekRows(
 @Composable
 private fun EntryRow(
     entry: Entry,
+    swipeToDelete: Boolean,
     showDivider: Boolean,
     workCodeLabelMap: Map<Int, String>,
     t: I18n,
@@ -1416,7 +1456,6 @@ private fun EntryRow(
     attachmentCount: Int = 0,
     onManageAttachments: (Entry) -> Unit = {},
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
     val isHoliday = entry.type == EntryType.PUBLIC_HOLIDAY
     val isTimeComp = entry.type == EntryType.TIME_COMP
     val hasExplicitTime = !entry.start.isNullOrEmpty() && !entry.end.isNullOrEmpty()
@@ -1434,6 +1473,7 @@ private fun EntryRow(
         when (entry.type) {
             EntryType.PUBLIC_HOLIDAY -> t.t("entryTypes.paidOff")
             EntryType.TIME_COMP -> t.t("entryTypes.timeComp")
+            EntryType.DAY_OFF -> t.t("entryTypes.dayOff")
             EntryType.VACATION -> t.t("entryTypes.vacation")
             EntryType.SICK -> t.t("entryTypes.sick")
             else -> ""
@@ -1450,12 +1490,13 @@ private fun EntryRow(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // Deckend gemischt: Unter der Zeile liegt beim Wischen das Rot
                     .background(
                         when {
                             isHoliday -> colors.info.copy(alpha = if (colors.isDark) 0.2f else 0.06f)
                             isTimeComp -> colors.special.copy(alpha = if (colors.isDark) 0.1f else 0.04f)
                             else -> colors.surface
-                        }
+                        }.compositeOver(colors.surface)
                     )
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1495,8 +1536,18 @@ private fun EntryRow(
                             fontWeight = FontWeight.Medium,
                         )
                     }
-                    if (codeLabel.isNotEmpty()) {
-                        Text(codeLabel, color = colors.textMuted, fontSize = 12.sp, lineHeight = 15.sp)
+                    // Nächtigung dezent hinter dem Code
+                    val codeLine = buildAnnotatedString {
+                        append(codeLabel)
+                        if (entry.overnight) {
+                            if (codeLabel.isNotEmpty()) append(" · ")
+                            withStyle(SpanStyle(color = colors.special, fontWeight = FontWeight.Medium)) {
+                                append(t.t("dashboard.overnight"))
+                            }
+                        }
+                    }
+                    if (codeLine.isNotEmpty()) {
+                        Text(codeLine, color = colors.textMuted, fontSize = 12.sp, lineHeight = 15.sp)
                     }
                     if (!isHoliday) {
                         Row(
@@ -1548,13 +1599,42 @@ private fun EntryRow(
         return
     }
 
+    if (!swipeToDelete) {
+        // Gewischt wird die ganze Tageskarte (DayCard)
+        Box(modifier = Modifier.clickable { onEditEntry(entry) }) {
+            rowContent()
+        }
+        return
+    }
+
+    SwipeToDelete(onDelete = { onDeleteEntry(entry) }) {
+        Box(modifier = Modifier.clickable { onEditEntry(entry) }) {
+            rowContent()
+        }
+    }
+}
+
+/**
+ * Nach links wischen → Löschen (bestätigt über den Dialog, der Inhalt
+ * bleibt stehen). Das Rot liegt nur während des Wischens darunter —
+ * vorher schien es dauerhaft durch die halbtransparente ZA-Zeile.
+ */
+@Composable
+private fun SwipeToDelete(
+    onDelete: () -> Unit,
+    shape: Shape = RectangleShape,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) {
                 Haptics.heavy(context)
-                onDeleteEntry(entry)
+                onDelete()
             }
-            false // Row bleibt sichtbar; Löschen läuft über Bestätigungs-Dialog
+            false // Inhalt bleibt sichtbar; Löschen läuft über Bestätigungs-Dialog
         },
     )
 
@@ -1562,25 +1642,25 @@ private fun EntryRow(
         state = dismissState,
         enableDismissFromStartToEnd = false,
         backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(colors.danger),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = t.t("common.delete"),
-                    tint = Color.White,
-                    modifier = Modifier.padding(end = 16.dp),
-                )
+            if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(shape)
+                        .background(colors.danger),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = t.t("common.delete"),
+                        tint = Color.White,
+                        modifier = Modifier.padding(end = 16.dp),
+                    )
+                }
             }
         },
-    ) {
-        Box(modifier = Modifier.clickable { onEditEntry(entry) }) {
-            rowContent()
-        }
-    }
+        content = content,
+    )
 }
 
 @Composable

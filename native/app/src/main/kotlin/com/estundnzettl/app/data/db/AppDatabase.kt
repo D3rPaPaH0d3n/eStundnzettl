@@ -1,6 +1,7 @@
 package com.estundnzettl.app.data.db
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -19,8 +20,11 @@ import androidx.room.RoomDatabase
         AttachmentLabelRow::class,
         BackupMetadataRow::class,
     ],
-    version = 1,
+    // v2: entries.overnight (Nächtigung). Neue Spalte mit Standardwert —
+    // Room erzeugt die Migration aus schemas/1.json und 2.json.
+    version = 2,
     exportSchema = true,
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
 )
 abstract class AppDatabase : RoomDatabase() {
 

@@ -28,13 +28,15 @@ class CloudBackupWorker(
             AutoBackupManager.Source.BACKGROUND,
             AutoBackupManager.CLOUD_TARGETS,
         )
+        // Ohne Obergrenze: Nachgeholt wird nur innerhalb der Frist
+        // (CONNECTIVITY_GRACE), danach meldet performBackup einen echten
+        // Fehler und der Auftrag endet. Die Abstände wachsen bis 5 h.
         val tryAgain = outcome.busy || outcome.deferredTargets.isNotEmpty()
-        return if (tryAgain && runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.success()
+        return if (tryAgain) Result.retry() else Result.success()
     }
 
     companion object {
         private const val WORK_NAME = "cloud-backup"
-        private const val MAX_ATTEMPTS = 5
 
         /**
          * Höchstens ein offener Auftrag. KEEP statt REPLACE: Ein laufender

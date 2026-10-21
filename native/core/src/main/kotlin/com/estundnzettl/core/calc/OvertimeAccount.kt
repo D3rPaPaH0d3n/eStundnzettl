@@ -125,6 +125,7 @@ private fun evaluateAccountMonth(
     userData: UserData?,
     locale: AppLocale?,
     config: CalculationConfig?,
+    weekContext: List<Entry>? = null,
 ): AccountMonthFigures {
     val monthStart = month.atDay(1)
     if (cutoff.isBefore(monthStart)) return AccountMonthFigures(0, 0, 0)
@@ -133,8 +134,9 @@ private fun evaluateAccountMonth(
         monthEntries, userData, month.year, month.monthValue, cutoff, locale, config,
     ).filter { it.date <= cutoffStr }
     val stats = calculatePeriodStats(evaluated, userData, monthStart, cutoff, null, locale, config)
-    val missing = findMissingWorkDays(evaluated, monthStart, cutoff, userData, locale, config)
-        .sumOf { it.targetMinutes }
+    val missing = findMissingWorkDays(
+        evaluated, monthStart, cutoff, userData, locale, config, weekContext ?: evaluated,
+    ).sumOf { it.targetMinutes }
     return AccountMonthFigures(stats.totalSaldo, stats.timeComp, missing)
 }
 
@@ -161,7 +163,10 @@ fun calculateOvertimeAccount(
     while (true) {
         val monthEntries = byMonth[cursor.toString()].orEmpty()
         val cutoff = overtimeAccountCutoff(cursor, today, monthEntries, userData, locale, config)
-        val (balance, timeComp, missing) = evaluateAccountMonth(monthEntries, cursor, cutoff, userData, locale, config)
+        // Wochen-Kontext, damit "Woche erfüllt" auch an Monatsgrenzen greift
+        val weekContext = weekContextEntries(allEntries, cursor, today, userData, locale, config)
+        val (balance, timeComp, missing) =
+            evaluateAccountMonth(monthEntries, cursor, cutoff, userData, locale, config, weekContext)
         val payout = payouts[cursor.toString()] ?: 0
         val closing = opening + balance - timeComp - payout
         if (cursor == month) {

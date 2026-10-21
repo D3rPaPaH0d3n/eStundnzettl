@@ -25,6 +25,7 @@ fun EntryRow.toDomain(): Entry = Entry(
     project = project?.takeIf { it.isNotEmpty() },
     code = code,
     netDuration = netDuration,
+    overnight = overnight,
 )
 
 fun Entry.toRow(): EntryRow = EntryRow(
@@ -42,6 +43,7 @@ fun Entry.toRow(): EntryRow = EntryRow(
     project = project,
     code = code,
     netDuration = netDuration,
+    overnight = overnight,
 )
 
 fun WorkCodeRow.toDomain(): WorkCode = WorkCode(id = id.toInt(), label = label)

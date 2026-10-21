@@ -162,6 +162,7 @@ fun hashMonthContent(
                         put("pr", e.project?.let { JsonPrimitive(it) } ?: JsonNull)
                         put("c", e.code?.let { JsonPrimitive(it) } ?: JsonNull)
                         put("n", e.netDuration)
+                        if (e.overnight) put("o", true)
                     },
                 )
             }

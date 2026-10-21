@@ -1,9 +1,12 @@
 package com.estundnzettl.core.calc
 
 import com.estundnzettl.core.locale.AppLocale
+import com.estundnzettl.core.locale.getLocale
 import com.estundnzettl.core.locale.holidays.toDateString
 import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.Entry
+import com.estundnzettl.core.model.EntryType
+import com.estundnzettl.core.model.OvertimeMode
 import com.estundnzettl.core.model.UserData
 import java.time.LocalDate
 import java.time.YearMonth
@@ -24,6 +27,12 @@ data class MissingWorkDay(
  * Tage mit Soll von [from] bis [through], die [isMissingWorkDay] als
  * "Kein Eintrag" einstuft. [entries] müssen die Auto-Feiertage bereits
  * enthalten ([buildEntriesWithHolidays]) — sonst gälten Feiertage als vergessen.
+ *
+ * Ist die Kalenderwoche schon erfüllt, gilt keiner ihrer leeren Tage als
+ * vergessen ([isWeekFulfilled]) — wer Mo–Do die Wochenstunden schafft,
+ * bleibt freitags daheim. [weekContext] liefert dafür die Einträge der
+ * ganzen Woche, an Monatsgrenzen auch aus dem Nachbarmonat
+ * ([weekContextEntries]).
  */
 fun findMissingWorkDays(
     entries: List<Entry>,
@@ -32,21 +41,70 @@ fun findMissingWorkDays(
     userData: UserData?,
     locale: AppLocale? = null,
     config: CalculationConfig? = null,
+    weekContext: List<Entry> = entries,
 ): List<MissingWorkDay> {
     // Ohne Soll (einfacher Modus) gibt es nichts zu vergessen
     if (userData?.simpleMode == true || through.isBefore(from)) return emptyList()
     val byDate = entries.groupBy { it.date }
+    val fulfilledByWeek = HashMap<LocalDate, Boolean>()
     val missing = ArrayList<MissingWorkDay>()
     var day = from
     while (!day.isAfter(through)) {
         val dateStr = day.toDateString()
         val target = getTargetMinutesForDate(dateStr, userData?.workDays, locale, config)
         if (target > 0 && isMissingWorkDay(byDate[dateStr].orEmpty())) {
-            missing += MissingWorkDay(day, target)
+            val fulfilled = fulfilledByWeek.getOrPut(getISOWeekMonday(day)) {
+                isWeekFulfilled(getISOWeekMonday(day), through, weekContext, userData, locale, config)
+            }
+            if (!fulfilled) missing += MissingWorkDay(day, target)
         }
         day = day.plusDays(1)
     }
     return missing
+}
+
+/**
+ * Hat die Woche ab [monday] ihr Soll bis [through] schon erreicht? Ist ohne
+ * Fahrzeit und mit aufgeteilten Nachtschichten — genau wie die
+ * Mehrarbeit/Überstunden-Berechnung. Vorausgeplante Einträge nach [through]
+ * zählen noch nicht: Die Stunden sind ja noch nicht geleistet.
+ */
+internal fun isWeekFulfilled(
+    monday: LocalDate,
+    through: LocalDate,
+    weekContext: List<Entry>,
+    userData: UserData?,
+    locale: AppLocale?,
+    config: CalculationConfig?,
+): Boolean {
+    val days = (0L..6L).map { monday.plusDays(it).toDateString() }.toSet()
+    val weekTarget = days.sumOf { getTargetMinutesForDate(it, userData?.workDays, locale, config) }
+    if (weekTarget <= 0) return false
+    val splitOvernight = resolveEffectiveRules(locale ?: getLocale(null), config).overtimeMode != OvertimeMode.NONE
+    val throughStr = through.toDateString()
+    var weekActual = 0
+    for (entry in weekContext) {
+        if (entry.type == EntryType.WORK && entry.code == WorkCodes.DRIVE) continue
+        for ((date, minutes) in getEntryDayContributions(entry, splitOvernight)) {
+            if (date in days && date <= throughStr) weekActual += minutes
+        }
+    }
+    return weekActual >= weekTarget
+}
+
+/**
+ * Einträge inkl. Auto-Feiertage aus Vormonat, [month] und Folgemonat —
+ * deckt jede Kalenderwoche ab, die [month] berührt.
+ */
+internal fun weekContextEntries(
+    allEntries: List<Entry>,
+    month: YearMonth,
+    today: LocalDate,
+    userData: UserData?,
+    locale: AppLocale?,
+    config: CalculationConfig?,
+): List<Entry> = listOf(month.minusMonths(1), month, month.plusMonths(1)).flatMap { m ->
+    buildEntriesWithHolidays(allEntries, userData, m.year, m.monthValue, today, locale, config)
 }
 
 /**
@@ -68,13 +126,14 @@ internal fun missingWorkDaysOfMonth(
     userData: UserData?,
     locale: AppLocale?,
     config: CalculationConfig?,
+    weekContext: List<Entry> = entriesWithHolidays,
 ): List<MissingWorkDay> {
     firstEntryDate ?: return emptyList()
     return findMissingWorkDays(
         entriesWithHolidays,
         maxOf(month.atDay(1), firstEntryDate),
         minOf(month.atEndOfMonth(), today.minusDays(1)),
-        userData, locale, config,
+        userData, locale, config, weekContext,
     )
 }
 
@@ -97,7 +156,8 @@ fun findRecentMissingWorkDays(
         val withHolidays = buildEntriesWithHolidays(
             allEntries, userData, month.year, month.monthValue, today, locale, config,
         )
-        missingWorkDaysOfMonth(withHolidays, month, firstEntryDate, today, userData, locale, config)
+        val weekContext = weekContextEntries(allEntries, month, today, userData, locale, config)
+        missingWorkDaysOfMonth(withHolidays, month, firstEntryDate, today, userData, locale, config, weekContext)
     }
 }
 

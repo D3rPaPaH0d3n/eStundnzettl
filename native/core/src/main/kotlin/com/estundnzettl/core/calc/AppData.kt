@@ -219,6 +219,7 @@ fun deriveAppData(
     val vacationBalance = calculateVacationBalance(metadataEntries, userData, viewMonth, locale, config)
     val missingWorkDays = missingWorkDaysOfMonth(
         entriesWithHolidays, viewMonth, firstEntryDateOf(metadataEntries), today, userData, locale, config,
+        weekContextEntries(metadataEntries, viewMonth, today, userData, locale, config),
     )
     val recentMissingWorkDays = findRecentMissingWorkDays(metadataEntries, userData, today, locale, config)
 

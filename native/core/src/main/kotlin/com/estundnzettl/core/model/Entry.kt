@@ -31,7 +31,13 @@ enum class EntryType(val wireName: String) {
     @SerialName("vacation") VACATION("vacation"),
     @SerialName("sick") SICK("sick"),
     @SerialName("public_holiday") PUBLIC_HOLIDAY("public_holiday"),
-    @SerialName("time_comp") TIME_COMP("time_comp");
+    @SerialName("time_comp") TIME_COMP("time_comp"),
+    /**
+     * Bewusst nicht gearbeitet, etwa weil die Wochenstunden schon erfüllt
+     * sind: 0 Stunden, kein Zeitausgleich — nur, damit der Tag nicht als
+     * vergessen gilt und im Bericht als "Frei" steht.
+     */
+    @SerialName("day_off") DAY_OFF("day_off");
 
     companion object {
         /** Unknown/empty values fall back to WORK, matching `row.type || "work"`. */
@@ -55,6 +61,8 @@ data class Entry(
     val code: Int? = null,
     /** minutes */
     val netDuration: Int = 0,
+    /** Auswärts übernachtet — reine Markierung für Bericht und Spesen, rechnet nichts. */
+    val overnight: Boolean = false,
 )
 
 data class WorkCode(val id: Int, val label: String)

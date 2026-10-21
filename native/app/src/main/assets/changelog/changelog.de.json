@@ -1,5 +1,39 @@
 [
  {
+  "version": "5.2.3",
+  "date": "21.10.2026",
+  "title": "Freitag frei & Nächtigung 🛏️",
+  "isMajor": false,
+  "playStoreText": "Freitag frei & Nächtigung 🛏️\n\n• Wochenstunden schon erfüllt? Der freie Freitag gilt nimmer als vergessen\n• Neue Eintragsart „Frei“ – 0 Stunden, ohne ZA\n• Nächtigung pro Arbeitseintrag, im Bericht samt Anzahl\n• Wischen zum Löschen: bei einem Eintrag wischt die ganze Karte\n• ZA-Einträge wieder dezent statt knallrot\n\nDanke fürs Feedback! – Markus",
+  "sections": [
+   {
+    "iconName": "CalendarCheck",
+    "title": "Freitag daheim? Passt!",
+    "items": [
+     "Hast die Wochenstunden schon bis Donnerstag beinand, gilt a leerer Freitag nimmer als vergessen – ka „Kein Eintrag“-Karte, ka Hinweis. Gerechnet wird trotzdem richtig: Die Woche zeigt dein echtes Plus.",
+     "Wer's lieber schwarz auf weiß hat: die neue Eintragsart „Frei“. Zählt 0 Stunden, nimmt nix vom ZA-Konto und steht im Monats-PDF als „Frei“.",
+     "Wichtig: Für so an Tag bitte ned ZA eintragen – sonst schaut's nach Überstunden aus, die's nie gegeben hat."
+    ]
+   },
+   {
+    "iconName": "Moon",
+    "title": "Nächtigung",
+    "items": [
+     "Bei Arbeitseinträgen gibt's jetzt den Schalter „Nächtigung“, wennst auswärts schlafen musst. Rechnen tut er nix.",
+     "Im Dashboard steht's dezent hinter dem Code, im Monats-PDF unter der Tätigkeit – und in der Zusammenfassung die Anzahl der Nächtigungen. Ohne Nächtigung bleibt alles wie gwohnt."
+    ]
+   },
+   {
+    "iconName": "Sparkles",
+    "title": "Feinschliff",
+    "items": [
+     "Hat a Tag nur an Eintrag, wischt jetzt die ganze Karte zum Löschen. Bei mehreren Einträgen weiterhin die einzelne Zeile.",
+     "ZA-Einträge san wieder zart violett – das Rot vom Löschen hat durchgschaut."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.2",
   "date": "21.10.2026",
   "title": "Nix geht mehr verlorn 🔍",

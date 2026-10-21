@@ -100,6 +100,7 @@ private fun jsonToEntry(obj: JsonObject): Entry = Entry(
     project = stringOrNull(obj["project"]),
     code = intOrNull(obj["code"]),
     netDuration = intOrNull(obj["netDuration"]) ?: 0,
+    overnight = (obj["overnight"] as? JsonPrimitive)?.takeIf { !it.isString }?.content == "true",
 )
 
 private fun normalizeEntries(data: JsonElement): List<Entry> {

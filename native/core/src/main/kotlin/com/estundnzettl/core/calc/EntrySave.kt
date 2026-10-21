@@ -26,6 +26,8 @@ data class EntryFormInput(
     val code: Int,
     val specialManualMode: Boolean = false,
     val editingEntry: Entry? = null,
+    /** Nächtigung — gilt nur für Arbeit, nicht für Fahrzeit oder Sondertypen. */
+    val overnight: Boolean = false,
 )
 
 sealed class SaveEntryResult {
@@ -100,6 +102,7 @@ fun prepareEntryToSave(
         isManualSpecial || !hasTimeInputs -> when (form.entryType) {
             "vacation" -> "Urlaub"
             "sick" -> "Krank"
+            "day_off" -> "Frei"
             else -> "Zeitausgleich"
         }
         else -> {
@@ -142,6 +145,7 @@ fun prepareEntryToSave(
         project = if (storedType == EntryType.WORK) form.project else label,
         code = if (storedType == EntryType.WORK) usedCode else null,
         netDuration = net,
+        overnight = form.overnight && storedType == EntryType.WORK && !isDrive,
     )
 
     val lastCodeToSave = if (

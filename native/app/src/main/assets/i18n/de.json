@@ -109,7 +109,8 @@
       "more": "+{{count}} weitere",
       "add": "Nachtragen",
       "dismiss": "Ausblenden"
-    }
+    },
+    "overnight": "Nächtigung"
   },
   "entryTypes": {
     "holiday": "Feiertag",
@@ -117,7 +118,8 @@
     "paidOff": "Bezahlt frei",
     "timeComp": "Zeitausgleich",
     "vacation": "Urlaub",
-    "sick": "Krank"
+    "sick": "Krank",
+    "dayOff": "Frei"
   },
   "entryForm": {
     "codePlaceholder": "Bitte wählen",
@@ -132,7 +134,8 @@
       "drive": "Fahrt",
       "sick": "Krank",
       "vacation": "Urlaub",
-      "timeCompShort": "ZA"
+      "timeCompShort": "ZA",
+      "dayOff": "Frei"
     },
     "driveSubtype": {
       "arrival": "An/Abreise",
@@ -162,7 +165,15 @@
     "distanceOrNote": "Strecke / Notiz",
     "project": "Projekt",
     "projectPlaceholder": "...",
-    "knownProjects": "Bekannte Projekte"
+    "knownProjects": "Bekannte Projekte",
+    "dayOff": {
+      "title": "Frei – kein Zeitausgleich",
+      "message": "Für Tage, an denen du bewusst nicht arbeitest, etwa weil die Wochenstunden schon erfüllt sind. Zählt 0 Stunden und nimmt nichts vom ZA-Konto – der Tag gilt nur nicht als vergessen."
+    },
+    "overnight": {
+      "title": "Nächtigung",
+      "subtitle": "Auswärts übernachtet – steht im Bericht, rechnet nichts"
+    }
   },
   "reports": {
     "title": "Stundenzettel",
@@ -201,7 +212,8 @@
       "balance": "Saldo:",
       "extraHours": "Mehrarbeit:",
       "overtime": "Überstunden:",
-      "driveUnpaid": "Fahrtzeit (unbezahlt):"
+      "driveUnpaid": "Fahrtzeit (unbezahlt):",
+      "overnights": "Nächtigungen:"
     },
     "vacationBalance": {
       "allowance": "Urlaubsanspruch:",
@@ -249,7 +261,8 @@
       "closingAt": "Stand per {{date}}:",
       "payout": "Ausbezahlt:",
       "missingDays": "davon ohne Eintrag:"
-    }
+    },
+    "overnight": "Nächtigung"
   },
   "helpModal": {
     "title": "Anleitung & Hilfe",

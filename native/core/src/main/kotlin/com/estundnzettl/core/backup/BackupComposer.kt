@@ -47,6 +47,8 @@ fun Entry.toBackupJson(): JsonObject = buildJsonObject {
     put("project", project?.let { JsonPrimitive(it) } ?: JsonNull)
     put("code", code?.let { JsonPrimitive(it) } ?: JsonNull)
     put("netDuration", netDuration)
+    // Nur wenn gesetzt: Backups ohne Nächtigung bleiben byte-gleich
+    if (overnight) put("overnight", true)
 }
 
 fun Attachment.toBackupJson(): JsonObject = buildJsonObject {

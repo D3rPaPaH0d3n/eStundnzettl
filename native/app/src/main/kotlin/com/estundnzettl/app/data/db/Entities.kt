@@ -29,6 +29,8 @@ data class EntryRow(
     val project: String? = null,
     val code: Int? = null,
     val netDuration: Int = 0,
+    /** Seit DB-Version 2; Standard 0, damit die AutoMigration bestehende Zeilen füllt. */
+    @ColumnInfo(defaultValue = "0") val overnight: Boolean = false,
 )
 
 /**

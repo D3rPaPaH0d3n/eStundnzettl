@@ -552,8 +552,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
 
     /** Port von startNewEntry (useEntryActions). */
-    fun startNewEntry() {
-        val formDate = LocalDate.now().toDateString()
+    fun startNewEntry() = startNewEntryFor(LocalDate.now())
+
+    /** Neuer Eintrag für [date] — etwa zum Nachtragen eines Tages ohne Eintrag. */
+    fun startNewEntryFor(date: LocalDate) {
+        val formDate = date.toDateString()
         val (start, end) = getDefaultTimesForDate(allEntries, formDate)
         _state.update {
             it.copy(

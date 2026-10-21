@@ -19,6 +19,9 @@ import kotlin.math.roundToInt
  *
  *   Stand = Übertrag + Saldo (IST − SOLL) − genommener Zeitausgleich − Auszahlung
  *
+ * Arbeitstage ohne Eintrag ([findMissingWorkDays]) zählen im Konto nicht:
+ * Ein vergessener Tag darf nicht still wie Zeitausgleich wirken.
+ *
  * ZA-Einträge zählen wie bisher als IST (sie füllen das Tagessoll), damit
  * bleibt der Monatssaldo identisch mit Dashboard und Bericht. Abgebaut wird
  * das Konto über den separat ausgewiesenen ZA-Verbrauch.
@@ -27,7 +30,7 @@ data class OvertimeAccountMonth(
     val month: YearMonth,
     /** Kontostand zu Monatsbeginn (Übertrag Vormonat bzw. Anfangsstand). */
     val openingMinutes: Int,
-    /** Saldo des ausgewerteten Zeitraums (IST − SOLL). */
+    /** Saldo des ausgewerteten Zeitraums (IST − SOLL), ohne Tage ohne Eintrag. */
     val balanceMinutes: Int,
     /** Im ausgewerteten Zeitraum genommener Zeitausgleich. */
     val timeCompMinutes: Int,
@@ -103,7 +106,8 @@ private fun overtimeAccountCutoff(
 
 /**
  * Saldo und ZA-Verbrauch eines Monats bis [cutoff] — gleiche Aufbereitung
- * wie Dashboard und Bericht (Auto-Feiertage, Krank-/Feiertagskorrektur).
+ * wie Dashboard und Bericht (Auto-Feiertage, Krank-/Feiertagskorrektur),
+ * nur das Soll von Tagen ohne Eintrag wird wieder gutgeschrieben.
  */
 private fun evaluateAccountMonth(
     monthEntries: List<Entry>,
@@ -120,7 +124,9 @@ private fun evaluateAccountMonth(
         monthEntries, userData, month.year, month.monthValue, cutoff, locale, config,
     ).filter { it.date <= cutoffStr }
     val stats = calculatePeriodStats(evaluated, userData, monthStart, cutoff, null, locale, config)
-    return stats.totalSaldo to stats.timeComp
+    val unbooked = findMissingWorkDays(evaluated, monthStart, cutoff, userData, locale, config)
+        .sumOf { it.targetMinutes }
+    return (stats.totalSaldo + unbooked) to stats.timeComp
 }
 
 /**

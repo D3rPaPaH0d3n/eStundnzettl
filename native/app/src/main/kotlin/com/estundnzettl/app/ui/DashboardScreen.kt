@@ -67,6 +67,7 @@ import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
 import com.estundnzettl.core.calc.AppData
+import com.estundnzettl.core.calc.MissingWorkDay
 import com.estundnzettl.core.calc.OvertimeAccountMonth
 import com.estundnzettl.core.calc.OvertimeAccountSuggestion
 import com.estundnzettl.core.calc.VacationBalance
@@ -74,7 +75,6 @@ import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.calculateDisplayedDayMinutes
 import com.estundnzettl.core.calc.calculateMonthlyTargetProgress
 import com.estundnzettl.core.calc.calculatePeriodStats
-import com.estundnzettl.core.calc.calculateWeekStats
 import com.estundnzettl.core.calc.formatHalfDays
 import com.estundnzettl.core.calc.formatSignedDurationInput
 import com.estundnzettl.core.calc.getTargetMinutesForDate
@@ -118,6 +118,7 @@ fun DashboardScreen(
     onEnableOvertimeAccount: (YearMonth) -> Unit = {},
     onDismissOvertimeAccountHint: () -> Unit = {},
     onBookOvertimePayout: (YearMonth, Int) -> Unit = { _, _ -> },
+    onAddEntryForDate: (LocalDate) -> Unit = {},
 ) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
@@ -130,9 +131,14 @@ fun DashboardScreen(
 
     val workCodeLabelMap = remember(workCodes) { workCodes.associate { it.id to it.label } }
 
-    // Wochen nach Startdatum der Einträge sortieren (wie sortedWeeks im Original)
+    // Wochen aus Einträgen und Tagen ohne Eintrag — auch eine komplett
+    // vergessene Woche taucht auf. Sortiert nach dem jüngsten Tag.
     val sortedWeeks = remember(appData) {
-        appData.groupedByWeek.sortedByDescending { it.second.firstOrNull()?.date ?: "" }
+        val entryWeeks = appData.groupedByWeek.toMap()
+        val missingWeeks = appData.missingWorkDays.groupBy { getWeekNumber(it.date) }
+        (entryWeeks.keys + missingWeeks.keys).map { week ->
+            WeekRows(week, entryWeeks[week].orEmpty(), missingWeeks[week].orEmpty())
+        }.sortedByDescending { it.latestDate }
     }
 
     if (monthPickerOpen) {
@@ -199,9 +205,11 @@ fun DashboardScreen(
         } else {
             items(
                 items = sortedWeeks,
-                key = { (week, _) -> "week-$week" },
-            ) { (week, weekEntries) ->
+                key = { "week-${it.week}" },
+            ) { (week, weekEntries, missingDays) ->
                 WeekGroup(
+                    missingDays = missingDays,
+                    onAddEntry = onAddEntryForDate,
                     attachmentCounts = attachmentCounts,
                     onManageAttachments = onManageAttachments,
                     week = week,
@@ -746,6 +754,8 @@ private fun AccountLabel(text: String, colors: AppColors) {
 private fun WeekGroup(
     week: Int,
     weekEntries: List<Entry>,
+    missingDays: List<MissingWorkDay>,
+    onAddEntry: (LocalDate) -> Unit,
     currentMonth: YearMonth,
     expanded: Boolean,
     onToggle: () -> Unit,
@@ -763,8 +773,9 @@ private fun WeekGroup(
     val colors = LocalAppColors.current
     val t = LocalI18n.current
 
-    // Wochen-Range + Monats-Clipping (Port der Boundary-Wochen-Logik)
-    val anyDate = LocalDate.parse(weekEntries.first().date)
+    // Wochen-Range + Monats-Clipping (Port der Boundary-Wochen-Logik);
+    // eine Woche kann auch nur aus Tagen ohne Eintrag bestehen
+    val anyDate = weekEntries.firstOrNull()?.let { LocalDate.parse(it.date) } ?: missingDays.first().date
     val jsDay = anyDate.dayOfWeek.value // 1=Mo..7=So (JS: getDay() || 7)
     val monday = anyDate.minusDays((jsDay - 1).toLong())
     val sunday = monday.plusDays(6)
@@ -777,10 +788,12 @@ private fun WeekGroup(
     val visibleEntries = weekEntries.filter { it.date in clippedStartStr..clippedEndStr }
 
     val isBoundaryWeek = monday.isBefore(monthStart) || sunday.isAfter(monthEnd)
+    // Volle Woche wie calculateWeekStats, aber ohne Ableitung aus dem ersten
+    // Eintrag — den gibt es in einer vergessenen Woche nicht
     val weekStats = if (isBoundaryWeek) {
         calculatePeriodStats(visibleEntries, userData, clippedMonday, clippedSunday, null, locale, config)
     } else {
-        calculateWeekStats(weekEntries, userData, locale, config)
+        calculatePeriodStats(weekEntries, userData, monday, sunday, null, locale, config)
     }
 
     val workMinutes = weekStats.totalIst
@@ -800,8 +813,10 @@ private fun WeekGroup(
         else -> colors.textSecondary
     }
 
-    // Tage gruppieren, absteigend
-    val sortedDays = visibleEntries.groupBy { it.date }.entries.sortedByDescending { it.key }
+    // Tage gruppieren, absteigend — Tage ohne Eintrag dazwischen einreihen
+    val entriesByDay = visibleEntries.groupBy { it.date }
+    val missingByDay = missingDays.associateBy { it.date.toString() }
+    val sortedDayKeys = (entriesByDay.keys + missingByDay.keys).sortedDescending()
 
     // Der Abstand zwischen Wochen kommt zentral aus der umgebenden Liste.
     Column {
@@ -912,7 +927,12 @@ private fun WeekGroup(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.padding(top = 8.dp),
             ) {
-                sortedDays.forEach { (dateStr, dayEntries) ->
+                sortedDayKeys.forEach { dateStr ->
+                    val dayEntries = entriesByDay[dateStr]
+                    if (dayEntries == null) {
+                        missingByDay[dateStr]?.let { MissingDayCard(it, javaLocale, onAddEntry) }
+                        return@forEach
+                    }
                     DayCard(
                         dateStr = dateStr,
                         dayEntries = dayEntries,
@@ -1039,6 +1059,122 @@ private fun DayCard(
             }
         }
     }
+}
+
+/**
+ * Arbeitstag ohne Eintrag: Aufbau wie [DayCard], aber gedämpft und mit
+ * dem fehlenden Tagessoll als Minus. Tippen öffnet einen neuen Eintrag
+ * für genau diesen Tag.
+ */
+@Composable
+private fun MissingDayCard(day: MissingWorkDay, javaLocale: JavaLocale, onAdd: (LocalDate) -> Unit) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+
+    AppCard(
+        containerColor = colors.negative.copy(alpha = if (colors.isDark) 0.08f else 0.04f),
+        borderColor = colors.negative.copy(alpha = 0.3f),
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .height(androidx.compose.foundation.layout.IntrinsicSize.Min)
+                .clickable(
+                    onClickLabel = t.t("dashboard.missingDay.add"),
+                    role = Role.Button,
+                ) { onAdd(day.date) },
+        ) {
+            // Datums-Streifen wie DayCard, abgeschwächt
+            Column(
+                modifier = Modifier
+                    .width(48.dp)
+                    .fillMaxHeight()
+                    .background(colors.dayStrip.copy(alpha = 0.45f))
+                    .padding(vertical = 12.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, javaLocale).take(2),
+                    color = colors.dayStripContent.copy(alpha = 0.6f),
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    formatShortDate(day.date),
+                    color = colors.dayStripContent.copy(alpha = 0.8f),
+                    fontSize = 13.sp,
+                    lineHeight = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    t.t("dashboard.missingDay.title"),
+                    color = colors.textSecondary,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    t.t("dashboard.missingDay.hint"),
+                    color = colors.textMuted,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                )
+            }
+
+            // Summen-Spalte wie DayCard: 0 Ist, Minus = entgangenes Soll
+            Column(
+                modifier = Modifier
+                    .width(80.dp)
+                    .fillMaxHeight()
+                    .background(colors.surfaceVariant.copy(alpha = 0.5f))
+                    .padding(vertical = 12.dp, horizontal = 4.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    t.t("dashboard.total").uppercase(javaLocale),
+                    color = colors.textFaint,
+                    fontSize = 9.sp,
+                    lineHeight = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    formatTime(0),
+                    color = colors.textMuted,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    formatSignedTime(-day.targetMinutes),
+                    color = colors.negative,
+                    fontSize = 9.sp,
+                    lineHeight = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+/** Eine KW im Dashboard: Einträge (inkl. Nachbarmonat) plus Tage ohne Eintrag. */
+private data class WeekRows(
+    val week: Int,
+    val entries: List<Entry>,
+    val missingDays: List<MissingWorkDay>,
+) {
+    val latestDate: String
+        get() = maxOf(entries.firstOrNull()?.date ?: "", missingDays.maxOfOrNull { it.date.toString() } ?: "")
 }
 
 @Composable

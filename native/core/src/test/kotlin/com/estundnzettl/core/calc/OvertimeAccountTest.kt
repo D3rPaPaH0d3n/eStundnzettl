@@ -262,7 +262,7 @@ class OvertimeAccountTest {
     // ─── Konsistenz mit Dashboard/Bericht ────────────────────
 
     @Test
-    fun `abgeschlossener Monat bucht exakt den Dashboard-Saldo`() {
+    fun `abgeschlossener Monat bucht den Dashboard-Saldo ohne Tage ohne Eintrag`() {
         val atDays = listOf(0, 510, 510, 510, 510, 270, 0)
         val atUser = UserData(workDays = atDays)
         val dec = YearMonth.of(2025, 12)
@@ -278,7 +278,12 @@ class OvertimeAccountTest {
         val dashboard = deriveAppData(entries, atUser, 2025, 12, entries, today, austriaLocale, cfg)
         val result = calculateOvertimeAccount(entries, atUser, dec, today, austriaLocale, cfg)!!
 
-        assertEquals(dashboard.stats.totalSaldo, result.balanceMinutes)
+        // Freitage ohne Eintrag zählen im Dashboard, das Konto bucht sie nicht ab
+        val unbooked = findMissingWorkDays(
+            dashboard.entriesWithHolidays, dec.atDay(1), dec.atEndOfMonth(), atUser, austriaLocale, cfg,
+        ).sumOf { it.targetMinutes }
+        assertTrue(unbooked > 0)
+        assertEquals(dashboard.stats.totalSaldo + unbooked, result.balanceMinutes)
         assertEquals(dashboard.stats.timeComp, result.timeCompMinutes)
         assertEquals(result, dashboard.overtimeAccount)
     }

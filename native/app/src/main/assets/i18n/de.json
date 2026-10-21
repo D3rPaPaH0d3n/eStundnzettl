@@ -89,6 +89,11 @@
       "enable": "Aktivieren",
       "dismiss": "Nein, danke",
       "enabled": "Zeitausgleichskonto aktiviert"
+    },
+    "missingDay": {
+      "title": "Kein Eintrag",
+      "hint": "Vergessen? Tippen zum Nachtragen",
+      "add": "Eintrag nachtragen"
     }
   },
   "entryTypes": {

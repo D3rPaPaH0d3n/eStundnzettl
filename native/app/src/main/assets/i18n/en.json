@@ -89,6 +89,11 @@
       "enable": "Turn on",
       "dismiss": "No, thanks",
       "enabled": "Time-off account turned on"
+    },
+    "missingDay": {
+      "title": "No entry",
+      "hint": "Forgot it? Tap to add",
+      "add": "Add entry"
     }
   },
   "entryTypes": {

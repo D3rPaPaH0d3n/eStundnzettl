@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Cloud-Backups (Nextcloud WebDAV, Google Drive REST) -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Haptisches Feedback (Pendant zu Capacitor Haptics) -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- WorkManager bringt einen Vordergrund-Dienst mit; der Backup-Worker
+         läuft nie im Vordergrund (kein setForeground) und braucht ihn nicht. -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
+        tools:node="remove" />
 
     <!-- Nur Apps sichtbar machen, die PDFs bzw. E-Mails tatsächlich übernehmen können. -->
     <queries>
@@ -43,6 +49,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            tools:node="remove" />
 
         <receiver
             android:name=".ShareChosenReceiver"

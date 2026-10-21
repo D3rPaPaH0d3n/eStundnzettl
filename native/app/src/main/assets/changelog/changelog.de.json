@@ -1,5 +1,23 @@
 [
  {
+  "version": "5.2.5",
+  "date": "21.10.2026",
+  "title": "Cloud-Backup ohne Fehlalarm ☁️",
+  "isMajor": false,
+  "playStoreText": "Cloud-Backup ohne Fehlalarm ☁️\n\n• Google Drive und Nextcloud sichern jetzt auch nach dem Verlassen der App zuverlässig\n• Kurz kein Netz (Funkloch, Aufzug, Keller)? Keine Warnung mehr – das Backup wird nachgeholt\n• Gesichert wird nur, wenn sich was geändert hat\n\nDanke fürs Melden! – Markus",
+  "sections": [
+   {
+    "iconName": "Cloud",
+    "title": "Backup",
+    "items": [
+     "Seit Android 15 darf a App nach dem Verlassen nimmer ins Internet – drum is beim Rausgehen öfter „Google Drive konnte zuletzt nicht sichern“ aufgetaucht, obwohl alles gepasst hat. Jetzt übernimmt Android den Upload selber, sobald Netz da is – auch wenn die App schon zu is.",
+     "Kein Netz im Schacht oder im Keller? Des is ka Fehler mehr: Die App holt das Backup einfach nach. Gewarnt wird erst, wenn's an ganzen Tag lang ned klappt.",
+     "Hochgeladen wird nur, wenn sich seit dem letzten Backup was geändert hat – schont Akku und Datenvolumen."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.4",
   "date": "21.10.2026",
   "title": "Kleiner Feinschliff ✨",

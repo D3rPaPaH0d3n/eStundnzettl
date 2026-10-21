@@ -1615,11 +1615,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         LocalBackupFolder(getApplication(), settings)
     }
 
-    private val autoBackup by lazy {
-        AutoBackupManager(
-            getApplication(), settings, backupRepo, nextcloudManager, googleDrive,
-        )
-    }
+    /** Gemeinsam mit [com.estundnzettl.app.data.CloudBackupWorker]. */
+    private val autoBackup get() = getApplication<EStundnzettlApp>().autoBackup
 
     suspend fun hasLocalBackupFolder(): Boolean = localBackupFolder.hasPersistedTree()
 
@@ -1822,13 +1819,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** App ging in den Hintergrund → Background-Backup (ohne Debounce). */
+    /**
+     * App ging in den Hintergrund → lokal sofort sichern, die Cloud über
+     * WorkManager (ins Netz darf die App ab jetzt nicht mehr).
+     */
     fun onAppBackground() {
+        // Ein noch wartendes Auto-Backup liefe jetzt ohne Netz — den Stand
+        // übernimmt backupOnLeave bzw. der Worker.
+        autoBackupJob?.cancel()
         viewModelScope.launch {
             // WAL in die Hauptdatei schreiben, bevor das System den
             // Prozess killen darf (schützt vor Datenverlust bei Updates)
             db.checkpoint()
-            val outcome = autoBackup.performBackup(AutoBackupManager.Source.BACKGROUND)
+            val outcome = autoBackup.backupOnLeave()
             refreshBackupStateAfter(outcome, notifyUser = false)
         }
     }
@@ -2230,6 +2233,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     GoogleDriveManager.KEY_ACCOUNT_EMAIL to JsonPrimitive(accountLabel),
                     SettingsRepository.Keys.CLOUD_SYNC_ENABLED to JsonPrimitive(true),
                     GoogleDriveManager.KEY_BACKUP_RECONNECT_REQUIRED to JsonPrimitive(false),
+                    // Neues Konto: der zuletzt hochgeladene Stand gilt dort nicht
+                    AutoBackupManager.KEY_CLOUD_UPLOADED_HASH to JsonPrimitive(""),
                 ),
             )
             autoBackup.clearGoogleDriveErrorState()
@@ -2274,6 +2279,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 settings.setString(AutoBackupManager.KEY_CLOUD_LAST_ERROR_KIND, "")
                 settings.setString(AutoBackupManager.KEY_CLOUD_BACKOFF_UNTIL, "")
                 settings.setString(AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, "")
+                settings.setString(AutoBackupManager.KEY_CLOUD_UPLOADED_HASH, "")
                 settings.setBoolean(AutoBackupManager.KEY_CLOUD_WARNING_SHOWN, false)
             }
             refreshGoogleState()

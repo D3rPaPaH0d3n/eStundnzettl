@@ -3,11 +3,15 @@ package com.estundnzettl.app
 import android.app.Activity
 import android.app.Application
 import android.util.Log
+import com.estundnzettl.app.data.AutoBackupManager
+import com.estundnzettl.app.data.BackupRepository
 import com.estundnzettl.app.data.CrashRecoveryStore
+import com.estundnzettl.app.data.GoogleDriveManager
 import com.estundnzettl.app.data.LegacyDbImportResult
 import com.estundnzettl.app.data.LegacyDbImporter
 import com.estundnzettl.app.data.LegacyWebImportResult
 import com.estundnzettl.app.data.LegacyWebStorageImporter
+import com.estundnzettl.app.data.NextcloudManager
 import com.estundnzettl.app.data.SecretStore
 import com.estundnzettl.app.data.SettingsRepository
 import com.estundnzettl.app.data.db.AppDatabase
@@ -27,6 +31,21 @@ data class MigrationRunResult(
 class EStundnzettlApp : Application() {
 
     val database: AppDatabase by lazy { AppDatabase.get(this) }
+
+    /**
+     * Eine Instanz für App und [com.estundnzettl.app.data.CloudBackupWorker] —
+     * so laufen nie zwei Uploads gleichzeitig.
+     */
+    val autoBackup: AutoBackupManager by lazy {
+        val settings = SettingsRepository(database.settingsDao())
+        AutoBackupManager(
+            context = this,
+            settings = settings,
+            backupRepo = BackupRepository(database, settings),
+            nextcloud = NextcloudManager(settings, SecretStore(this)),
+            googleDrive = GoogleDriveManager(this, settings),
+        )
+    }
 
     private val migrationMutex = Mutex()
     @Volatile private var completedMigration: MigrationRunResult? = null

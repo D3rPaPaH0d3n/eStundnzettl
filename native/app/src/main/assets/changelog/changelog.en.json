@@ -1,5 +1,23 @@
 [
  {
+  "version": "5.2.5",
+  "date": "2026-10-21",
+  "title": "Cloud backup without false alarms ☁️",
+  "isMajor": false,
+  "playStoreText": "Cloud backup without false alarms ☁️\n\n• Google Drive and Nextcloud now back up reliably after you leave the app\n• Briefly offline (dead zone, elevator, basement)? No more warning – the backup is retried\n• Only uploads when something changed\n\nThanks for reporting! – Markus",
+  "sections": [
+   {
+    "iconName": "Cloud",
+    "title": "Backup",
+    "items": [
+     "Since Android 15, apps may no longer go online once you leave them – so “Google Drive could not back up” often showed up although everything was fine. Android now takes over the upload as soon as there is a connection – even when the app is closed.",
+     "No signal in a shaft or basement? That's no longer an error: the app simply retries the backup. You'll only be warned if it fails for a whole day.",
+     "Uploads only happen when something changed since the last backup – easier on battery and data."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.4",
   "date": "2026-10-21",
   "title": "A little polish ✨",

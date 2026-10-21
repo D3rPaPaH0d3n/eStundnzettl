@@ -1,0 +1,8 @@
+Vacation & overtime at a glance 🧾
+
+• Remaining vacation on the dashboard: taken, planned, remaining
+• Vacation from previous months is now counted correctly, half days count as half
+• Overtime paid out? Deduct it from the time-off account with one tap
+• A hint so last month's balance doesn't get lost
+
+Thanks for your feedback – keep it coming! – Markus

@@ -1,5 +1,41 @@
 [
  {
+  "version": "5.2.1",
+  "date": "19.10.2026",
+  "title": "Urlaub & Überstunden mit Durchblick 🧾",
+  "isMajor": false,
+  "playStoreText": "Urlaub & Überstunden mit Durchblick 🧾\n\n• Resturlaub am Dashboard: genommen, geplant, verbleibend\n• Urlaub aus den Vormonaten wird richtig mitgerechnet, halbe Tage zählen halb\n• Überstunden ausbezahlt? Mit an Tipp vom ZA-Konto abbuchen\n• Hinweis, damit der Saldo vom Vormonat ned verloren geht\n\nDanke fürs Feedback – schreibt's ma weiter! – Markus",
+  "sections": [
+   {
+    "iconName": "Calendar",
+    "title": "Wie viel Urlaub hob i no?",
+    "items": [
+     "Jemand hot ma gschriebn: Im September 25 Tage, an Tag gnommen – im Oktober stehn wieder 25 do. Stimmt, des woar a Fehler. Jetzt zählt der Urlaub aus de Vormonate richtig mit.",
+     "Neu am Dashboard: Urlaub des Jahres mit genommen, geplant und Resturlaub – Stand Ende vom angezeigten Monat.",
+     "Halbe Urlaubstage zählen halb, Feiertage und freie Tage kosten kan Urlaub.",
+     "Im Monats-PDF steht der Urlaub jetzt „bis Monatsende“ – später im Jahr eingetragener Urlaub zählt erst, wenn's so weit is."
+    ]
+   },
+   {
+    "iconName": "Calculator",
+    "title": "Überstunden ausbezahlt",
+    "items": [
+     "Hot da Chef Überstunden ausbezahlt? Am Dashboard beim Zeitausgleichskonto auf „Überstunden ausbezahlt?“ tippen – vorgeschlagen wird der ganze Stand, des Konto steht dann auf 0. A Teil geht a.",
+     "Die Auszahlung geht am Monatsende vom Konto ab und steht a im Monats-PDF. Vertippt? Einfach ändern oder entfernen.",
+     "Is des ZA-Konto no aus und der Vormonat hot an offenen Saldo, schlagt di App vor, es einzuschalten – damit Plus- und Minusstunden ned verloren gehen."
+    ]
+   },
+   {
+    "iconName": "Cloud",
+    "title": "Google Drive sagt jetzt, wo's hakt",
+    "items": [
+     "Klappt das Drive-Backup ned, steht in den Backup-Einstellungen jetzt der Grund – z. B. keine Verbindung, Speicher voll oder dass Google die App ned anmelden lasst – statt nur „fehlgeschlagen“.",
+     "Im Hausmasta-Modus zeigt die Diagnose zusätzlich den letzten Drive-Fehler im Detail sowie Paketname und Signatur der App. Damit lasst si a Problem beim Support schnell finden."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.0",
   "date": "07.10.2026",
   "title": "Ihr habt's gwünscht, i hob's gmocht 🏔️",

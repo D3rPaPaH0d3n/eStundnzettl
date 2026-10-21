@@ -4,10 +4,12 @@ import com.estundnzettl.core.calc.getDefaultCalculationConfig
 import com.estundnzettl.core.locale.austriaLocale
 import com.estundnzettl.core.model.AutoPauseRule
 import com.estundnzettl.core.model.OvertimeAccountConfig
+import com.estundnzettl.core.model.OvertimeAccountPayout
 import com.estundnzettl.core.model.OvertimeMode
 import com.estundnzettl.core.model.PdfDisplayConfig
 import com.estundnzettl.core.model.UserData
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -100,6 +102,40 @@ class CalculationConfigJsonTest {
             overtimeAccount = OvertimeAccountConfig(enabled = true, startMonth = "2026-09", openingBalanceMinutes = -150),
         )
         assertEquals(config, coerceCalculationConfig(config.toJson(), fallback))
+    }
+
+    @Test
+    fun `ZA-Auszahlungen ueberstehen den JSON-Roundtrip`() {
+        val config = fallback.copy(
+            overtimeAccount = OvertimeAccountConfig(
+                enabled = true, startMonth = "2026-09",
+                payouts = listOf(OvertimeAccountPayout("2026-09", 420), OvertimeAccountPayout("2026-10", 60)),
+            ),
+        )
+        assertEquals(config, coerceCalculationConfig(config.toJson(), fallback))
+    }
+
+    @Test
+    fun `ungueltige ZA-Auszahlungen werden verworfen`() {
+        val coerced = coerceCalculationConfig(
+            parse(
+                """{"overtimeAccount":{"enabled":true,"startMonth":"2026-09","payouts":[
+                {"month":"2026-11","minutes":30},{"month":"2026-13","minutes":60},
+                {"month":"2026-10","minutes":-5},{"month":"2026-10","minutes":120},
+                {"month":"2026-11","minutes":90},"kaputt"]}}""",
+            ),
+            fallback,
+        )
+        assertEquals(
+            listOf(OvertimeAccountPayout("2026-10", 120), OvertimeAccountPayout("2026-11", 90)),
+            coerced.overtimeAccount?.payouts,
+        )
+    }
+
+    @Test
+    fun `ZA-Konto ohne Auszahlungen schreibt kein payouts-Feld`() {
+        val json = fallback.copy(overtimeAccount = OvertimeAccountConfig(enabled = true)).toJson()
+        assertFalse((json["overtimeAccount"] as JsonObject).containsKey("payouts"))
     }
 
     @Test

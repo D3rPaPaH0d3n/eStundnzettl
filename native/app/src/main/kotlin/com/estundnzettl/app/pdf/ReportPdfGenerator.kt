@@ -24,6 +24,8 @@ import com.estundnzettl.core.calc.getEffectivePdfDisplay
 import com.estundnzettl.core.calc.getEffectiveReportBranding
 import com.estundnzettl.core.calc.isOvernightShift
 import com.estundnzettl.core.calc.OvertimeAccountMonth
+import com.estundnzettl.core.calc.VacationBalance
+import com.estundnzettl.core.calc.formatHalfDays
 import com.estundnzettl.core.calc.resolveEffectiveRules
 import com.estundnzettl.core.calc.PeriodStatsResult
 import com.estundnzettl.core.format.formatSignedTime
@@ -46,8 +48,7 @@ import java.util.Locale as JavaLocale
 /**
  * Eingaben für [ReportPdfGenerator.generate] — Pendant zu den Props von
  * ReportPdfDocument.tsx. `entries` ist die bereits gefilterte, aufsteigend
- * sortierte Liste des Berichtszeitraums; `allEntries` die komplette
- * (korrigierte) Liste für die Urlaubsbilanz.
+ * sortierte Liste des Berichtszeitraums.
  */
 data class ReportPdfInput(
     val entries: List<Entry>,
@@ -61,9 +62,10 @@ data class ReportPdfInput(
     val customNote: String = "",
     val locale: AppLocale,
     val calculationConfig: CalculationConfig? = null,
-    val allEntries: List<Entry> = emptyList(),
     /** ZA-Konto des Berichtsmonats (nur Monatsbericht, null = aus). */
     val overtimeAccount: OvertimeAccountMonth? = null,
+    /** Urlaubsbilanz Stand Ende des Berichtsmonats (null = kein Anspruch). */
+    val vacationBalance: VacationBalance? = null,
 )
 
 /**
@@ -200,27 +202,6 @@ class ReportPdfGenerator(
     private fun monthLabel(month: YearMonth): String =
         month.atDay(1).format(DateTimeFormatter.ofPattern("LLLL yyyy", javaLocale))
 
-    // ─── Urlaubsbilanz (Port des vacationBalance-useMemo) ───────────
-
-    private data class VacationBalance(
-        val allowance: Int,
-        val carryover: Int,
-        val usedDays: Int,
-        val remaining: Int,
-    )
-
-    private fun vacationBalance(input: ReportPdfInput): VacationBalance? {
-        val allowance = input.calculationConfig?.vacationAllowanceDays ?: 0
-        if (allowance <= 0) return null
-        val carryover = input.calculationConfig?.vacationCarryoverDays ?: 0
-        val yearPrefix = "${input.monthDate.year}-"
-        val source = input.allEntries.ifEmpty { input.entries }
-        val usedDays = source.count {
-            it.type == EntryType.VACATION && it.date.startsWith(yearPrefix)
-        }
-        return VacationBalance(allowance, carryover, usedDays, allowance + carryover - usedDays)
-    }
-
     // ─── Haupteinstieg ──────────────────────────────────────────────
 
     fun generate(input: ReportPdfInput): ByteArray {
@@ -308,7 +289,7 @@ class ReportPdfGenerator(
 
         // ── Summary (wrap=false → am Stück auf eine Seite) ──────────
         if (display.showSummary) {
-            val vac = if (display.showVacationBalance) vacationBalance(input) else null
+            val vac = input.vacationBalance?.takeIf { display.showVacationBalance }
             val account = input.overtimeAccount
                 ?.takeIf { display.showOvertimeAccount && input.filterWeek == null }
             val summaryHeight = drawSummary(
@@ -900,6 +881,13 @@ class ReportPdfGenerator(
                 t("reports.overtimeAccount.timeComp"), formatSignedTime(-account.timeCompMinutes),
                 C.textMedium, C.textPurple, size = 7.5f,
             ) + 1.5f
+            if (account.payoutMinutes > 0) {
+                yy += sumRow(
+                    canvas, yy, innerLeft, innerRight,
+                    t("reports.overtimeAccount.payout"), formatSignedTime(-account.payoutMinutes),
+                    C.textMedium, C.textBlack, size = 7.5f,
+                ) + 1.5f
+            }
             yy += sumRow(
                 canvas, yy, innerLeft, innerRight,
                 if (account.isComplete) t("reports.overtimeAccount.closing")
@@ -915,31 +903,34 @@ class ReportPdfGenerator(
             yy += 4f
             canvas?.drawLine(innerLeft, yy, innerRight, yy, linePaint(C.borderLight, 0.5f))
             yy += 0.5f + 3f
-            val days = t("reports.vacationBalance.days")
+            fun days(halfDays: Int): String = formatHalfDays(halfDays, i18n.language) + " " +
+                t(if (halfDays == 2 || halfDays == -2) "reports.vacationBalance.day" else "reports.vacationBalance.days")
             yy += sumRow(
                 canvas, yy, innerLeft, innerRight,
-                t("reports.vacationBalance.allowance"), "${vacation.allowance} $days",
+                t("reports.vacationBalance.allowance"), days(vacation.allowanceDays * 2),
                 C.textMedium, C.textBlack, size = 7.5f,
             ) + 1.5f
-            if (vacation.carryover != 0) {
-                val label = if (vacation.carryover > 0) {
+            if (vacation.carryoverDays != 0) {
+                val label = if (vacation.carryoverDays > 0) {
                     t("reports.vacationBalance.carryoverPositive")
                 } else {
                     t("reports.vacationBalance.carryoverNegative")
                 }
-                val value = (if (vacation.carryover > 0) "+${vacation.carryover}" else "${vacation.carryover}") + " $days"
+                val value = (if (vacation.carryoverDays > 0) "+" else "") + days(vacation.carryoverDays * 2)
                 yy += sumRow(canvas, yy, innerLeft, innerRight, label, value, C.textMedium, C.textBlack, size = 7.5f) + 1.5f
             }
+            // Stichtag Monatsende: später im Jahr geplanter Urlaub zählt noch nicht
+            val monthEnd = formatDateParts(vacation.month.atEndOfMonth().toString()).second
             yy += sumRow(
                 canvas, yy, innerLeft, innerRight,
-                t("reports.vacationBalance.used", "year" to input.monthDate.year),
-                "${vacation.usedDays} $days",
+                t("reports.vacationBalance.used", "year" to vacation.month.year, "date" to monthEnd),
+                days(vacation.usedHalfDays),
                 C.textMedium, C.textBlack, size = 7.5f,
             ) + 1.5f
             yy += sumRow(
                 canvas, yy, innerLeft, innerRight,
-                t("reports.vacationBalance.remaining"), "${vacation.remaining} $days",
-                C.textBlack, if (vacation.remaining >= 0) C.textGreen else C.textRed,
+                t("reports.vacationBalance.remaining"), days(vacation.remainingHalfDays),
+                C.textBlack, if (vacation.remainingHalfDays >= 0) C.textGreen else C.textRed,
                 size = 7.5f, bothBold = true,
             )
         }

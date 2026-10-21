@@ -59,6 +59,36 @@
       "timeComp": "ZA genommen",
       "closingMonthEnd": "Stand Monatsende",
       "closingToday": "Stand heute"
+    },
+    "vacation": {
+      "title": "Urlaub {{year}}",
+      "used": "Genommen",
+      "planned": "Geplant",
+      "remaining": "Resturlaub",
+      "day": "Tag",
+      "days": "Tage"
+    },
+    "payout": {
+      "action": "Überstunden ausbezahlt?",
+      "edit": "Ändern",
+      "paid": "Ausbezahlt: {{time}}",
+      "title": "Überstunden ausbezahlt",
+      "body": "Wie viele Stunden wurden für {{month}} ausbezahlt? Sie gehen am Monatsende vom Zeitausgleichskonto ab.",
+      "amount": "Ausbezahlt (Stunden:Minuten)",
+      "available": "Stand vor der Auszahlung: {{time}}",
+      "invalid": "Bitte als Stunden:Minuten eingeben, z. B. 12:30",
+      "confirm": "Buchen",
+      "remove": "Entfernen",
+      "booked": "Auszahlung gebucht",
+      "removed": "Auszahlung entfernt"
+    },
+    "overtimeHint": {
+      "title": "Saldo übertragen?",
+      "body": "Im {{month}} hast du {{balance}} Saldo. Mit dem Zeitausgleichskonto wandert er in den {{next}} mit – Zeitausgleich wird dann automatisch abgezogen.",
+      "settings": "Startmonat und Übertrag kannst du jederzeit unter Einstellungen → Stundenberechnung anpassen.",
+      "enable": "Aktivieren",
+      "dismiss": "Nein, danke",
+      "enabled": "Zeitausgleichskonto aktiviert"
     }
   },
   "entryTypes": {
@@ -158,8 +188,9 @@
       "days": "Tage",
       "carryoverPositive": "Übertrag Vorjahr:",
       "carryoverNegative": "Bereits verbraucht:",
-      "used": "Genommen ({{year}}):",
-      "remaining": "Verbleibend:"
+      "used": "Genommen {{year}} (bis {{date}}):",
+      "remaining": "Verbleibend:",
+      "day": "Tag"
     },
     "notesTitle": "Anmerkungen / Notiz:",
     "toast": {
@@ -195,7 +226,8 @@
       "balanceUntil": "Saldo bis {{date}}:",
       "timeComp": "Zeitausgleich genommen:",
       "closing": "Stand Monatsende:",
-      "closingAt": "Stand per {{date}}:"
+      "closingAt": "Stand per {{date}}:",
+      "payout": "Ausbezahlt:"
     }
   },
   "helpModal": {
@@ -759,13 +791,26 @@
         "gdriveUnavailable": "Google Drive ist auf diesem Gerät noch nicht verfügbar",
         "gdriveFailed": "Google-Drive-Verbindung fehlgeschlagen",
         "gdriveTestOk": "Google Drive schaut gut aus – Verbindung steht und das Backup ist aktuell.",
-        "gdriveTestFailed": "Google Drive konnte gerade nicht erreicht werden.",
         "gdriveReconnectNeeded": "Google Drive braucht eine neue Anmeldung.",
         "localDisconnected": "Backup-Ordner getrennt",
         "localActivated": "Backup aktiviert!",
         "folderCancelled": "Ordnerauswahl abgebrochen"
       },
-      "targetLocal": "Lokal"
+      "targetLocal": "Lokal",
+      "gdriveError": {
+        "notRegistered": "Google lehnt die Anmeldung ab: Diese App-Version ist bei Google nicht registriert (Paketname/Signatur). Das kann nur der Entwickler beheben – bitte beim Support melden.",
+        "signInRequired": "Die Google-Zustimmung fehlt oder wurde widerrufen. Bitte Google Drive neu verbinden.",
+        "cancelled": "Google-Anmeldung abgebrochen.",
+        "tokenRejected": "Google Drive hat die Anmeldung abgelehnt. Bitte Google Drive neu verbinden.",
+        "apiDisabled": "Google Drive ist für diese App bei Google nicht freigeschaltet (Drive API deaktiviert). Bitte beim Support melden.",
+        "storageFull": "Dein Google-Drive-Speicher ist voll.",
+        "rateLimited": "Google Drive bremst gerade zu viele Anfragen. Bitte später erneut versuchen.",
+        "accessDenied": "Google Drive verweigert den Zugriff. Bitte Google Drive neu verbinden.",
+        "network": "Keine Verbindung zu Google. Bitte die Internetverbindung prüfen.",
+        "server": "Google Drive ist gerade nicht erreichbar. Bitte später erneut versuchen.",
+        "unknown": "Google Drive meldet einen unbekannten Fehler.",
+        "detail": "Details: {{detail}}"
+      }
     },
     "calc": {
       "editRules": "Berechnungsregeln bearbeiten",
@@ -847,7 +892,7 @@
         "openingHint": "Kontostand am Anfang von {{month}} (Stunden:Minuten, Minus für Minusstunden)",
         "openingInvalid": "Bitte als Stunden:Minuten eingeben, z. B. 12:30 oder -4:15",
         "currentBalance": "Aktueller Stand",
-        "hint": "Jeder Monatssaldo wird auf das Konto gebucht und in den nächsten Monat übertragen. Zeitausgleich-Einträge werden vom Konto abgezogen. Bei Auszahlungen oder Korrekturen einfach Startmonat und Übertrag neu setzen."
+        "hint": "Jeder Monatssaldo wird auf das Konto gebucht und in den nächsten Monat übertragen. Zeitausgleich-Einträge werden vom Konto abgezogen. Ausbezahlte Überstunden buchst du am Dashboard, für Korrekturen setzt du Startmonat und Übertrag neu."
       }
     },
     "locale": {
@@ -1043,7 +1088,9 @@
       "app": {
         "version": "Version",
         "versionCode": "Version-Code",
-        "dbSchema": "DB-Schema"
+        "dbSchema": "DB-Schema",
+        "package": "Paketname",
+        "signingSha1": "Signatur (SHA-1)"
       },
       "data": {
         "entries": "Einträge",
@@ -1063,7 +1110,8 @@
         "nextcloudEnabled": "Nextcloud aktiv",
         "nextcloudLast": "Nextcloud zuletzt erfolgreich",
         "nextcloudUser": "Nextcloud-Benutzer",
-        "secretSet": "Nextcloud-Passwort hinterlegt"
+        "secretSet": "Nextcloud-Passwort hinterlegt",
+        "lastError": "Letzter Drive-Fehler"
       },
       "local": {
         "none": "Keine Dateien"

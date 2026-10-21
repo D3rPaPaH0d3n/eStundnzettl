@@ -18,7 +18,7 @@ android {
         // Muss über dem versionCode der Capacitor-Produktion (284) liegen,
         // damit Play die Beta als Update anbietet; Luft für Hotfixes gelassen.
         versionCode = 315
-        versionName = "5.2.0"
+        versionName = "5.2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

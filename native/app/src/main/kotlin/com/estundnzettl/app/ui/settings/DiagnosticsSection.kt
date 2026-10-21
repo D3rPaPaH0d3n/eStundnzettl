@@ -90,6 +90,7 @@ fun DiagnosticsSection(viewModel: MainViewModel) {
 
 @Composable
 private fun DiagnosticsBody(report: DiagnosticsReport) {
+    val colors = LocalAppColors.current
     val t = LocalI18n.current
 
     fun flag(value: Boolean) = t.t(if (value) "settings.diagnostics.yes" else "settings.diagnostics.no")
@@ -99,6 +100,11 @@ private fun DiagnosticsBody(report: DiagnosticsReport) {
         DiagnosticsRow(t.t("settings.diagnostics.app.version"), report.appVersion)
         DiagnosticsRow(t.t("settings.diagnostics.app.versionCode"), report.versionCode.toString())
         DiagnosticsRow(t.t("settings.diagnostics.app.dbSchema"), report.dbSchemaVersion.toString())
+        DiagnosticsStackedRow(t.t("settings.diagnostics.app.package"), report.packageName)
+        DiagnosticsStackedRow(
+            t.t("settings.diagnostics.app.signingSha1"),
+            report.signingSha1.joinToString("\n").ifEmpty { "—" },
+        )
     }
 
     DiagnosticsGroup(t.t("settings.diagnostics.group.data")) {
@@ -125,6 +131,16 @@ private fun DiagnosticsBody(report: DiagnosticsReport) {
                 flag(true),
                 warn = true,
             )
+        }
+        if (report.cloudLastErrorDetail != null) {
+            DiagnosticsStackedRow(
+                t.t("settings.diagnostics.backup.lastError"),
+                report.cloudLastErrorDetail,
+                warn = true,
+            )
+            report.cloudLastErrorKind?.let { kind ->
+                Text(t.t(kind.messageKey), color = colors.textMuted, fontSize = 11.sp)
+            }
         }
         DiagnosticsRow(t.t("settings.diagnostics.backup.googleAccount"), orDash(report.googleAccount))
         DiagnosticsRow(t.t("settings.diagnostics.backup.localEnabled"), flag(report.localBackupEnabled))
@@ -168,11 +184,21 @@ private fun DriveProbeBlock(viewModel: MainViewModel, probe: DriveProbe) {
                 fontSize = 12.sp,
             )
 
-            is DriveProbe.Failed -> Text(
-                t.t(probe.message),
-                color = colors.danger,
-                fontSize = 12.sp,
-            )
+            is DriveProbe.Failed -> Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    t.t(probe.message),
+                    color = colors.danger,
+                    fontSize = 12.sp,
+                )
+                if (probe.detail != null) {
+                    Text(
+                        probe.detail,
+                        color = colors.textMuted,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                }
+            }
 
             is DriveProbe.Loaded -> {
                 if (probe.files.isEmpty()) {
@@ -246,6 +272,22 @@ private fun DiagnosticsRow(label: String, value: String, warn: Boolean = false) 
             fontSize = 11.sp,
             modifier = Modifier.weight(1f),
         )
+        Text(
+            value,
+            color = if (warn) Palette.Amber600 else colors.textSecondary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace,
+        )
+    }
+}
+
+/** Label oben, langer Wert (SHA-1, Fehlerdetail) darunter mit Umbruch. */
+@Composable
+private fun DiagnosticsStackedRow(label: String, value: String, warn: Boolean = false) {
+    val colors = LocalAppColors.current
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        Text(label, color = colors.textMuted, fontSize = 11.sp)
         Text(
             value,
             color = if (warn) Palette.Amber600 else colors.textSecondary,

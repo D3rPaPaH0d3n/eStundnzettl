@@ -91,9 +91,8 @@ data class PdfDisplayConfig(
 
 /**
  * Optionales Zeitausgleichskonto: Der Monatssaldo wird ab [startMonth] von
- * Monat zu Monat übertragen, Zeitausgleich-Einträge bauen ihn ab.
- * Für Auszahlungen oder Korrekturen setzt der User Startmonat und
- * Anfangsstand einfach neu.
+ * Monat zu Monat übertragen, Zeitausgleich-Einträge und Auszahlungen bauen
+ * ihn ab. Für Korrekturen setzt der User Startmonat und Anfangsstand neu.
  */
 @Serializable
 data class OvertimeAccountConfig(
@@ -102,6 +101,17 @@ data class OvertimeAccountConfig(
     val startMonth: String? = null,
     /** Kontostand zu Beginn des Startmonats in Minuten (negativ = Minusstunden). */
     val openingBalanceMinutes: Int = 0,
+    /** Ausbezahlte Stunden, höchstens eine Buchung je Monat. */
+    val payouts: List<OvertimeAccountPayout> = emptyList(),
+)
+
+/** Auszahlung, die am Ende von [month] vom ZA-Konto abgeht. */
+@Serializable
+data class OvertimeAccountPayout(
+    /** YYYY-MM */
+    val month: String,
+    /** Ausbezahlte Minuten (> 0). */
+    val minutes: Int,
 )
 
 @Serializable

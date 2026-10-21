@@ -3,6 +3,7 @@ package com.estundnzettl.app
 import com.estundnzettl.app.data.DriveProbe
 import com.estundnzettl.app.data.GoogleDriveManager
 import com.estundnzettl.app.data.maskAccount
+import com.estundnzettl.app.data.sha1Fingerprint
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -18,6 +19,14 @@ class DiagnosticsTest {
     @Test
     fun `account without domain still hides everything after the first letter`() {
         assertEquals("n***", maskAccount("nextclouduser"))
+    }
+
+    @Test
+    fun `signing fingerprint uses the colon format of the Cloud Console`() {
+        assertEquals(
+            "A9:99:3E:36:47:06:81:6A:BA:3E:25:71:78:50:C2:6C:9C:D0:D8:9D",
+            sha1Fingerprint("abc".toByteArray()),
+        )
     }
 
     @Test

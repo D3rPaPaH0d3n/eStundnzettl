@@ -59,6 +59,36 @@
       "timeComp": "Time off taken",
       "closingMonthEnd": "End of month",
       "closingToday": "Balance today"
+    },
+    "vacation": {
+      "title": "Vacation {{year}}",
+      "used": "Taken",
+      "planned": "Planned",
+      "remaining": "Remaining",
+      "day": "day",
+      "days": "days"
+    },
+    "payout": {
+      "action": "Overtime paid out?",
+      "edit": "Change",
+      "paid": "Paid out: {{time}}",
+      "title": "Overtime paid out",
+      "body": "How many hours were paid out for {{month}}? They are deducted from the time-off account at the end of the month.",
+      "amount": "Paid out (hours:minutes)",
+      "available": "Balance before payout: {{time}}",
+      "invalid": "Please enter hours:minutes, e.g. 12:30",
+      "confirm": "Book",
+      "remove": "Remove",
+      "booked": "Payout booked",
+      "removed": "Payout removed"
+    },
+    "overtimeHint": {
+      "title": "Carry over your balance?",
+      "body": "Your balance for {{month}} is {{balance}}. With the time-off account it carries over into {{next}} – time off is then deducted automatically.",
+      "settings": "You can change the start month and carryover anytime under Settings → Hours calculation.",
+      "enable": "Turn on",
+      "dismiss": "No, thanks",
+      "enabled": "Time-off account turned on"
     }
   },
   "entryTypes": {
@@ -158,8 +188,9 @@
       "days": "days",
       "carryoverPositive": "Carryover from previous year:",
       "carryoverNegative": "Already used:",
-      "used": "Taken ({{year}}):",
-      "remaining": "Remaining:"
+      "used": "Taken in {{year}} (through {{date}}):",
+      "remaining": "Remaining:",
+      "day": "day"
     },
     "notesTitle": "Notes:",
     "toast": {
@@ -195,7 +226,8 @@
       "balanceUntil": "Balance until {{date}}:",
       "timeComp": "Time off taken:",
       "closing": "Balance at end of month:",
-      "closingAt": "Balance as of {{date}}:"
+      "closingAt": "Balance as of {{date}}:",
+      "payout": "Paid out:"
     }
   },
   "helpModal": {
@@ -759,13 +791,26 @@
         "gdriveUnavailable": "Google Drive is not available on this device yet",
         "gdriveFailed": "Google Drive connection failed",
         "gdriveTestOk": "Google Drive looks good – the connection works and the backup is up to date.",
-        "gdriveTestFailed": "Google Drive could not be reached right now.",
         "gdriveReconnectNeeded": "Google Drive needs you to sign in again.",
         "localDisconnected": "Backup folder disconnected",
         "localActivated": "Backup enabled!",
         "folderCancelled": "Folder selection cancelled"
       },
-      "targetLocal": "Local"
+      "targetLocal": "Local",
+      "gdriveError": {
+        "notRegistered": "Google rejects the sign-in: this app version is not registered with Google (package name/signature). Only the developer can fix this – please contact support.",
+        "signInRequired": "Google consent is missing or was revoked. Please reconnect Google Drive.",
+        "cancelled": "Google sign-in cancelled.",
+        "tokenRejected": "Google Drive rejected the sign-in. Please reconnect Google Drive.",
+        "apiDisabled": "Google Drive is not enabled for this app at Google (Drive API disabled). Please contact support.",
+        "storageFull": "Your Google Drive storage is full.",
+        "rateLimited": "Google Drive is throttling too many requests. Please try again later.",
+        "accessDenied": "Google Drive denies access. Please reconnect Google Drive.",
+        "network": "No connection to Google. Please check your internet connection.",
+        "server": "Google Drive is not reachable right now. Please try again later.",
+        "unknown": "Google Drive reports an unknown error.",
+        "detail": "Details: {{detail}}"
+      }
     },
     "calc": {
       "editRules": "Edit calculation rules",
@@ -847,7 +892,7 @@
         "openingHint": "Account balance at the start of {{month}} (hours:minutes, minus for negative hours)",
         "openingInvalid": "Please enter hours:minutes, e.g. 12:30 or -4:15",
         "currentBalance": "Current balance",
-        "hint": "Each month's balance is booked to the account and carried over into the next month. Time-off entries are deducted from the account. For payouts or corrections, simply set a new start month and opening balance."
+        "hint": "Each month's balance is booked to the account and carried over into the next month. Time-off entries are deducted from the account. Book overtime payouts on the dashboard; for corrections, set a new start month and opening balance."
       }
     },
     "locale": {
@@ -1043,7 +1088,9 @@
       "app": {
         "version": "Version",
         "versionCode": "Version code",
-        "dbSchema": "DB schema"
+        "dbSchema": "DB schema",
+        "package": "Package name",
+        "signingSha1": "Signature (SHA-1)"
       },
       "data": {
         "entries": "Entries",
@@ -1063,7 +1110,8 @@
         "nextcloudEnabled": "Nextcloud enabled",
         "nextcloudLast": "Nextcloud last success",
         "nextcloudUser": "Nextcloud user",
-        "secretSet": "Nextcloud password stored"
+        "secretSet": "Nextcloud password stored",
+        "lastError": "Last Drive error"
       },
       "local": {
         "none": "No files"

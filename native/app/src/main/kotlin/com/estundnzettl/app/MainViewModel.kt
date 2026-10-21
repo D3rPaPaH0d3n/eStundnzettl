@@ -14,6 +14,8 @@ import com.estundnzettl.app.data.DriveProbe
 import com.estundnzettl.app.data.EntriesRepository
 import com.estundnzettl.app.data.replaceFullSnapshot
 import com.estundnzettl.app.data.EntryIdGenerator
+import com.estundnzettl.app.data.GoogleDriveError
+import com.estundnzettl.app.data.GoogleDriveErrorKind
 import com.estundnzettl.app.data.GoogleDriveManager
 import com.estundnzettl.app.data.ImportSnapshot
 import com.estundnzettl.app.data.LegacyDbImporter
@@ -25,6 +27,7 @@ import com.estundnzettl.app.data.SecretStore
 import com.estundnzettl.app.data.SettingsRepository
 import com.estundnzettl.app.data.UpdateCheck
 import com.estundnzettl.app.data.WorkCodesRepository
+import com.estundnzettl.app.data.describeGoogleDriveError
 import com.estundnzettl.app.data.googleDriveFailureNeedsReconnect
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.ui.Haptics
@@ -49,6 +52,7 @@ import com.estundnzettl.core.calc.latestEligibleWorkEntry
 import com.estundnzettl.core.calc.prepareEntryToSave
 import com.estundnzettl.core.calc.resolveDefaultWorkCode
 import com.estundnzettl.core.calc.validateWorkCodeDraft
+import com.estundnzettl.core.calc.withPayout
 import com.estundnzettl.core.config.toJson
 import com.estundnzettl.core.locale.AppLocale
 import com.estundnzettl.core.locale.DEFAULT_LOCALE_ID
@@ -275,6 +279,8 @@ data class MainUiState(
     val whatsNewVersion: String? = null,
     /** Lesende Selbstauskunft im Hausmasta-Modus. */
     val diagnostics: DiagnosticsUiState = DiagnosticsUiState(),
+    /** Hinweis aufs ZA-Konto weggeklickt (bis zum Laden: true, damit nichts aufblitzt). */
+    val overtimeAccountHintDismissed: Boolean = true,
 )
 
 data class DiagnosticsUiState(
@@ -301,7 +307,9 @@ data class GoogleDriveUiState(
 
 data class BackupHealthUiState(
     val googleDriveFailureCount: Int = 0,
+    /** Technisches Detail des letzten Fehlers (z. B. "Play Services 10 (DEVELOPER_ERROR)"). */
     val googleDriveLastError: String = "",
+    val googleDriveLastErrorKind: GoogleDriveErrorKind? = null,
     val googleDriveLastSuccess: String = "",
 )
 
@@ -357,6 +365,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             ) {
                 _state.update { it.copy(showNativeWelcome = true) }
             }
+            val hintDismissed = settings.getString(KEY_OVERTIME_ACCOUNT_HINT_DISMISSED) == "1"
+            _state.update { it.copy(overtimeAccountHintDismissed = hintDismissed) }
 
             // GitHub-Update-Check (nur Sideload; Debug-Builds prüfen nie)
             launch {
@@ -1015,6 +1025,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** ZA-Konto über den Dashboard-Hinweis einschalten; ein Anfangsstand bleibt erhalten. */
+    fun enableOvertimeAccount(startMonth: YearMonth) {
+        patchCalculationConfig { cfg ->
+            val account = cfg.overtimeAccount ?: OvertimeAccountConfig()
+            cfg.copy(overtimeAccount = account.copy(enabled = true, startMonth = startMonth.toString()))
+        }
+        emit(UiMessage("dashboard.overtimeHint.enabled", tone = UiMessageTone.SUCCESS))
+    }
+
+    fun dismissOvertimeAccountHint() {
+        _state.update { it.copy(overtimeAccountHintDismissed = true) }
+        viewModelScope.launch { settings.setString(KEY_OVERTIME_ACCOUNT_HINT_DISMISSED, "1") }
+    }
+
+    /** Auszahlung für [month] buchen; 0 entfernt sie. */
+    fun bookOvertimePayout(month: YearMonth, minutes: Int) {
+        if (_state.value.calculationConfig?.overtimeAccount == null) return
+        patchCalculationConfig { cfg ->
+            cfg.overtimeAccount?.let { cfg.copy(overtimeAccount = it.withPayout(month, minutes)) } ?: cfg
+        }
+        emit(
+            UiMessage(
+                if (minutes > 0) "dashboard.payout.booked" else "dashboard.payout.removed",
+                tone = UiMessageTone.SUCCESS,
+            ),
+        )
+    }
+
     /** Aufzeichnungsart wechseln — Port von RecordingModeSettings.setSimpleMode. */
     fun setSimpleMode(nextSimpleMode: Boolean) {
         val s = _state.value
@@ -1094,7 +1132,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 DriveProbe.Failed("settings.diagnostics.drive.authRequired")
             } catch (exception: Exception) {
                 Log.w(GOOGLE_DRIVE_TAG, "Diagnose-Abfrage fehlgeschlagen", exception)
-                DriveProbe.Failed("settings.diagnostics.drive.failed")
+                val error = describeGoogleDriveError(exception)
+                DriveProbe.Failed(error.kind.messageKey, error.detail)
             }
             updateDiagnostics { it.copy(drive = probe) }
         }
@@ -1324,6 +1363,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
          */
         private const val MAX_RESTORE_CANDIDATES = 10
         private const val KEY_NATIVE_WELCOME_SEEN = "estundnzettl_native_welcome_seen_v1"
+        private const val KEY_OVERTIME_ACCOUNT_HINT_DISMISSED = "estundnzettl_overtime_account_hint_dismissed_v1"
         private const val KEY_CHANGELOG_VERSION_CODE = "last_seen_changelog_version_code"
         private const val KEY_CHANGELOG_VERSION_NAME = "last_seen_changelog_version_name"
         private const val KEY_REVIEW_FIRST_ELIGIBLE = "estundnzettl_review_first_eligible_v2"
@@ -1912,6 +1952,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val lastError = settings
             .getString(AutoBackupManager.KEY_CLOUD_LAST_ERROR)
             .orEmpty()
+        val lastErrorKind = GoogleDriveErrorKind.fromName(
+            settings.getString(AutoBackupManager.KEY_CLOUD_LAST_ERROR_KIND),
+        )
         val lastSuccess = settings
             .getString(AutoBackupManager.KEY_CLOUD_LAST_SUCCESS)
             .orEmpty()
@@ -1926,6 +1969,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 backupHealth = BackupHealthUiState(
                     googleDriveFailureCount = failureCount,
                     googleDriveLastError = lastError,
+                    googleDriveLastErrorKind = lastErrorKind,
                     googleDriveLastSuccess = lastSuccess,
                 ),
             )
@@ -2014,9 +2058,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             true
         } catch (error: Exception) {
             val reconnect = googleDriveFailureNeedsReconnect(error)
+            val described = describeGoogleDriveError(error)
+            Log.w(GOOGLE_DRIVE_TAG, "Drive-Test fehlgeschlagen: ${described.kind} – ${described.detail}", error)
             autoBackup.registerGoogleDriveFailure(
-                message = error.message ?: "Google Drive Verbindung fehlgeschlagen",
+                message = described.detail,
                 requiresReconnect = reconnect,
+                kind = described.kind,
             )
             if (reconnect) {
                 settings.setBoolean(
@@ -2031,7 +2078,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     key = if (reconnect) {
                         "settings.backup.toast.gdriveReconnectNeeded"
                     } else {
-                        "settings.backup.toast.gdriveTestFailed"
+                        described.kind.messageKey
                     },
                     tone = if (reconnect) UiMessageTone.WARNING else UiMessageTone.ERROR,
                 )
@@ -2068,9 +2115,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 Log.e(GOOGLE_DRIVE_TAG, "Google-Drive-Autorisierung fehlgeschlagen", e)
-                emit(UiMessage("settings.backup.toast.gdriveFailed"))
+                reportGoogleAuthFailure(scope, describeGoogleDriveError(e))
             }
         }
+    }
+
+    /**
+     * Fehlgeschlagene Anmeldung mit konkreter Ursache melden. Fürs Backup
+     * zusätzlich festhalten, damit Einstellungen und Diagnose sie zeigen.
+     */
+    private suspend fun reportGoogleAuthFailure(scope: String, error: GoogleDriveError) {
+        Log.w(GOOGLE_DRIVE_TAG, "Google-Anmeldung fehlgeschlagen: ${error.kind} – ${error.detail}")
+        if (scope == GoogleDriveManager.SCOPE_APPDATA) {
+            autoBackup.recordGoogleDriveError(error)
+            refreshBackupHealth()
+        }
+        emit(UiMessage(error.kind.messageKey, tone = UiMessageTone.ERROR))
     }
 
     /** Ergebnis des Consent-Dialogs (von der Activity durchgereicht). */
@@ -2085,9 +2145,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         pendingGoogleRestore = false
 
         if (resultCode != Activity.RESULT_OK) {
-            Log.i(GOOGLE_DRIVE_TAG, "OAuth-Dialog abgebrochen (resultCode=$resultCode)")
             if (forRestore) updateOnboarding { it.copy(restoreLoading = false) }
-            emit(UiMessage("settings.backup.toast.gdriveCancelled"))
+            // Auch ein nicht registrierter OAuth-Client endet hier — der
+            // Status im Intent trennt ihn vom echten Abbrechen.
+            val failure = googleDrive.failureFromResultIntent(intent)?.let(::describeGoogleDriveError)
+            if (failure == null || failure.kind == GoogleDriveErrorKind.CANCELLED) {
+                Log.i(GOOGLE_DRIVE_TAG, "OAuth-Dialog abgebrochen (resultCode=$resultCode)")
+                emit(UiMessage("settings.backup.toast.gdriveCancelled"))
+            } else {
+                viewModelScope.launch { reportGoogleAuthFailure(scope, failure) }
+            }
             return
         }
 
@@ -2110,7 +2177,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 Log.e(GOOGLE_DRIVE_TAG, "OAuth-Ergebnis konnte nicht abgeschlossen werden", e)
                 if (forRestore) updateOnboarding { it.copy(restoreLoading = false) }
-                emit(UiMessage("settings.backup.toast.gdriveFailed"))
+                reportGoogleAuthFailure(scope, describeGoogleDriveError(e))
             }
         }
     }
@@ -2168,6 +2235,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 settings.setBoolean(SettingsRepository.Keys.CLOUD_SYNC_ENABLED, false)
                 settings.setString(AutoBackupManager.KEY_CLOUD_FAIL_COUNT, "0")
                 settings.setString(AutoBackupManager.KEY_CLOUD_LAST_ERROR, "")
+                settings.setString(AutoBackupManager.KEY_CLOUD_LAST_ERROR_KIND, "")
                 settings.setString(AutoBackupManager.KEY_CLOUD_BACKOFF_UNTIL, "")
                 settings.setString(AutoBackupManager.KEY_CLOUD_LAST_SUCCESS, "")
                 settings.setBoolean(AutoBackupManager.KEY_CLOUD_WARNING_SHOWN, false)
@@ -2363,8 +2431,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     emit(UiMessage("settings.backup.toast.gdriveUnavailable"))
                 }
             } catch (e: Exception) {
+                Log.w(GOOGLE_DRIVE_TAG, "Drive-Wiederherstellung fehlgeschlagen", e)
                 updateOnboarding { it.copy(restoreLoading = false) }
-                emit(UiMessage("settings.backup.toast.gdriveFailed"))
+                emit(UiMessage(describeGoogleDriveError(e).kind.messageKey, tone = UiMessageTone.ERROR))
             }
         }
     }
@@ -2396,7 +2465,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 else -> updateOnboarding { it.copy(restoreChoices = candidates) }
             }
         } catch (e: Exception) {
-            emit(UiMessage("settings.backup.toast.gdriveFailed"))
+            Log.w(GOOGLE_DRIVE_TAG, "Drive-Backups konnten nicht gelesen werden", e)
+            emit(UiMessage(describeGoogleDriveError(e).kind.messageKey, tone = UiMessageTone.ERROR))
         } finally {
             updateOnboarding { it.copy(restoreLoading = false) }
         }

@@ -8,6 +8,7 @@ import com.estundnzettl.core.model.HolidayOnWorkDayMode
 import com.estundnzettl.core.model.HolidaySetConfig
 import com.estundnzettl.core.model.HolidaySetMode
 import com.estundnzettl.core.model.OvertimeAccountConfig
+import com.estundnzettl.core.model.OvertimeAccountPayout
 import com.estundnzettl.core.model.OvertimeMode
 import com.estundnzettl.core.model.PdfDisplayConfig
 import com.estundnzettl.core.model.REPORT_FOOTER_MAX_CHARS
@@ -116,7 +117,21 @@ private fun coerceOvertimeAccount(v: JsonElement?, fallback: OvertimeAccountConf
         enabled = booleanOrNull(obj["enabled"]) ?: false,
         startMonth = stringOrNull(obj["startMonth"])?.takeIf { parseYearMonthOrNull(it) != null },
         openingBalanceMinutes = intOrNull(obj["openingBalanceMinutes"]) ?: 0,
+        payouts = coercePayouts(obj["payouts"]),
     )
+}
+
+/** Ungültige Buchungen fallen weg; pro Monat zählt die letzte. */
+private fun coercePayouts(v: JsonElement?): List<OvertimeAccountPayout> {
+    val arr = v as? JsonArray ?: return emptyList()
+    val byMonth = LinkedHashMap<String, Int>()
+    for (item in arr) {
+        val obj = item as? JsonObject ?: continue
+        val month = stringOrNull(obj["month"])?.takeIf { parseYearMonthOrNull(it) != null } ?: continue
+        val minutes = intOrNull(obj["minutes"])?.takeIf { it > 0 } ?: continue
+        byMonth[month] = minutes
+    }
+    return byMonth.entries.sortedBy { it.key }.map { OvertimeAccountPayout(it.key, it.value) }
 }
 
 /**
@@ -207,6 +222,16 @@ fun CalculationConfig.toJson(): JsonObject = buildJsonObject {
             put("enabled", account.enabled)
             account.startMonth?.let { put("startMonth", it) }
             put("openingBalanceMinutes", account.openingBalanceMinutes)
+            if (account.payouts.isNotEmpty()) {
+                put("payouts", buildJsonArray {
+                    account.payouts.forEach { payout ->
+                        add(buildJsonObject {
+                            put("month", payout.month)
+                            put("minutes", payout.minutes)
+                        })
+                    }
+                })
+            }
         })
     }
     put("configVersion", configVersion)

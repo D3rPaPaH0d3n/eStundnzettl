@@ -33,12 +33,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.GooglePlayServicesStatus
 import com.estundnzettl.app.data.AutoBackupManager
+import com.estundnzettl.app.data.GoogleDriveErrorKind
 import com.estundnzettl.app.data.SettingsRepository
 import com.estundnzettl.app.UiMessageTone
 import com.estundnzettl.app.ui.theme.LocalAppColors
@@ -130,6 +132,8 @@ fun CloudBackupContent(viewModel: MainViewModel) {
 
     val driveFailureCount = state.backupHealth.googleDriveFailureCount
     val driveLastSuccess = formatTimestamp(state.backupHealth.googleDriveLastSuccess)
+    val driveLastError = state.backupHealth.googleDriveLastError
+    val driveLastErrorKind = state.backupHealth.googleDriveLastErrorKind
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
@@ -175,6 +179,9 @@ fun CloudBackupContent(viewModel: MainViewModel) {
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
+                    if (driveLastError.isNotBlank()) {
+                        GoogleDriveErrorReason(driveLastErrorKind, driveLastError)
+                    }
                     ActionButton(label = t.t("settings.backup.gdrive.connect"), tint = colors.accent) {
                         viewModel.connectGoogleDrive(forPdfArchive = false)
                     }
@@ -191,6 +198,8 @@ fun CloudBackupContent(viewModel: MainViewModel) {
                         GoogleDriveHealthNotice(
                             failureCount = driveFailureCount,
                             lastSuccess = driveLastSuccess,
+                            errorKind = driveLastErrorKind,
+                            errorDetail = driveLastError,
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -223,6 +232,10 @@ fun CloudBackupContent(viewModel: MainViewModel) {
                         t.t("settings.backup.gdrive.notConnected"),
                         color = colors.textMuted, fontSize = 12.sp,
                     )
+                    // Letzter Verbindungsversuch gescheitert: Ursache statt Rätselraten
+                    if (driveLastError.isNotBlank()) {
+                        GoogleDriveErrorReason(driveLastErrorKind, driveLastError)
+                    }
                     ActionButton(label = t.t("settings.backup.gdrive.connect"), tint = colors.accent) {
                         viewModel.connectGoogleDrive(forPdfArchive = false)
                     }
@@ -391,8 +404,31 @@ fun CloudBackupContent(viewModel: MainViewModel) {
     }
 }
 
+/** Ursache des letzten Drive-Fehlers: verständlich plus technisches Detail für den Support. */
 @Composable
-private fun GoogleDriveHealthNotice(failureCount: Int, lastSuccess: String?) {
+private fun GoogleDriveErrorReason(kind: GoogleDriveErrorKind?, detail: String) {
+    val colors = LocalAppColors.current
+    val t = LocalI18n.current
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        if (kind != null) {
+            Text(t.t(kind.messageKey), color = colors.textSecondary, fontSize = 12.sp)
+        }
+        Text(
+            t.t("settings.backup.gdriveError.detail", "detail" to detail),
+            color = colors.textMuted,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Monospace,
+        )
+    }
+}
+
+@Composable
+private fun GoogleDriveHealthNotice(
+    failureCount: Int,
+    lastSuccess: String?,
+    errorKind: GoogleDriveErrorKind?,
+    errorDetail: String,
+) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
     val shape = RoundedCornerShape(12.dp)
@@ -419,6 +455,9 @@ private fun GoogleDriveHealthNotice(failureCount: Int, lastSuccess: String?) {
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp,
             )
+            if (errorDetail.isNotBlank()) {
+                GoogleDriveErrorReason(errorKind, errorDetail)
+            }
             Text(
                 t.t("settings.backup.warning.gdriveFailureCount", "count" to failureCount),
                 color = colors.textMuted,

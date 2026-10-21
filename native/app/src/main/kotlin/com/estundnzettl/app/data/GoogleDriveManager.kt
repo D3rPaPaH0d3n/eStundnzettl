@@ -57,7 +57,14 @@ class GoogleDriveManager(
     class DriveApiException(
         val operation: String,
         val statusCode: Int,
-    ) : Exception("Google Drive $operation fehlgeschlagen (HTTP $statusCode)")
+        /** Grund aus der Fehlerantwort, z. B. "accessNotConfigured". */
+        val reason: String? = null,
+    ) : Exception(
+        "Google Drive $operation fehlgeschlagen (HTTP $statusCode${reason?.let { ", $it" } ?: ""})",
+    )
+
+    private fun driveError(operation: String, status: Int, body: String) =
+        DriveApiException(operation, status, parseDriveErrorReason(body))
 
     /** Datei-Metadaten aus dem appDataFolder (Diagnose). */
     data class AppDataFile(
@@ -99,14 +106,29 @@ class GoogleDriveManager(
         return result.accessToken ?: throw AuthRequiredException(null)
     }
 
-    /** Token aus dem Ergebnis-Intent der Zustimmung extrahieren. */
-    fun tokenFromResultIntent(intent: Intent?): String? = try {
-        val result = Identity.getAuthorizationClient(context)
+    /**
+     * Token aus dem Ergebnis-Intent der Zustimmung. Wirft die Exception des
+     * Dialogs (z. B. ApiException 10), damit der Aufrufer die Ursache zeigt.
+     */
+    fun tokenFromResultIntent(intent: Intent?): String? =
+        Identity.getAuthorizationClient(context)
             .getAuthorizationResultFromIntent(intent)
-        result.accessToken
-    } catch (e: Exception) {
-        Log.w(TAG, "Authorization-Result fehlgeschlagen: ${e.message}")
-        null
+            .accessToken
+
+    /**
+     * Fehler eines nicht erfolgreich beendeten Dialogs. Ein nicht
+     * registrierter OAuth-Client (Paketname/SHA-1) endet ebenfalls mit
+     * RESULT_CANCELED — erst der Status im Intent unterscheidet ihn vom
+     * echten Abbrechen. `null`, wenn der Intent nichts verrät.
+     */
+    fun failureFromResultIntent(intent: Intent?): Exception? {
+        if (intent == null) return null
+        return try {
+            Identity.getAuthorizationClient(context).getAuthorizationResultFromIntent(intent)
+            null
+        } catch (e: Exception) {
+            e
+        }
     }
 
     /** E-Mail des verbundenen Kontos (userinfo mit email-Scope). */
@@ -176,7 +198,7 @@ class GoogleDriveManager(
                 "&orderBy=${URLEncoder.encode("modifiedTime desc", "UTF-8")}" +
                 "&pageSize=1&fields=files(id)"
             val (status, bodyText) = http(url, "GET", token)
-            if (status != 200) throw DriveApiException("Suche", status)
+            if (status != 200) throw driveError("Suche", status, bodyText)
             json.parseToJsonElement(bodyText).jsonObject["files"]?.jsonArray
                 ?.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content
         }
@@ -195,7 +217,7 @@ class GoogleDriveManager(
             "&orderBy=${URLEncoder.encode("modifiedTime desc", "UTF-8")}" +
             "&pageSize=100&fields=files(id,name,size,modifiedTime)"
         val (status, bodyText) = http(url, "GET", token)
-        if (status != 200) throw DriveApiException("Suche", status)
+        if (status != 200) throw driveError("Suche", status, bodyText)
         json.parseToJsonElement(bodyText).jsonObject["files"]?.jsonArray.orEmpty().map { element ->
             val file = element.jsonObject
             AppDataFile(
@@ -215,11 +237,11 @@ class GoogleDriveManager(
         withContext(Dispatchers.IO) {
             val existingId = findFileId(token, fileName, spaces = "appDataFolder")
             if (existingId != null) {
-                val (status, _) = http(
+                val (status, bodyText) = http(
                     "https://www.googleapis.com/upload/drive/v3/files/$existingId?uploadType=media",
                     "PATCH", token, content.toByteArray(), "application/json",
                 )
-                if (status !in 200..299) throw DriveApiException("Update", status)
+                if (status !in 200..299) throw driveError("Update", status, bodyText)
             } else {
                 uploadMultipart(
                     token,
@@ -238,7 +260,7 @@ class GoogleDriveManager(
         val (status, bodyText) = http(
             "https://www.googleapis.com/drive/v3/files/$fileId?alt=media", "GET", token,
         )
-        if (status !in 200..299) throw DriveApiException("Download", status)
+        if (status !in 200..299) throw driveError("Download", status, bodyText)
         bodyText
     }
 
@@ -251,11 +273,11 @@ class GoogleDriveManager(
             val folderId = ensureArchiveFolder(token)
             val existingId = findFileId(token, fileName, spaces = "drive", parentId = folderId)
             if (existingId != null) {
-                val (status, _) = http(
+                val (status, bodyText) = http(
                     "https://www.googleapis.com/upload/drive/v3/files/$existingId?uploadType=media",
                     "PATCH", token, bytes, "application/pdf",
                 )
-                if (status !in 200..299) throw DriveApiException("Update", status)
+                if (status !in 200..299) throw driveError("Update", status, bodyText)
             } else {
                 uploadMultipart(
                     token,
@@ -280,7 +302,7 @@ class GoogleDriveManager(
             "https://www.googleapis.com/drive/v3/files?fields=id",
             "POST", token, meta.toByteArray(), "application/json",
         )
-        if (createStatus !in 200..299) throw DriveApiException("Archiv-Ordner", createStatus)
+        if (createStatus !in 200..299) throw driveError("Archiv-Ordner", createStatus, createBody)
         json.parseToJsonElement(createBody).jsonObject["id"]?.jsonPrimitive?.content
             ?: throw Exception("Archiv-Ordner ohne ID")
     }
@@ -302,7 +324,7 @@ class GoogleDriveManager(
         )
         if (status !in 200..299) {
             Log.w(TAG, "Drive-Upload fehlgeschlagen (HTTP $status): ${bodyText.take(200)}")
-            throw DriveApiException("Upload", status)
+            throw driveError("Upload", status, bodyText)
         }
     }
 }

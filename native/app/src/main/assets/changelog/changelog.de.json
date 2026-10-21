@@ -1,5 +1,22 @@
 [
  {
+  "version": "5.2.4",
+  "date": "21.10.2026",
+  "title": "Kleiner Feinschliff ✨",
+  "isMajor": false,
+  "playStoreText": "Kleiner Feinschliff ✨\n\n• Projektfeld rutscht beim Tippen nach oben – die Vorschläge bleiben über der Tastatur sichtbar\n• Nächtigung-Schalter aufgeräumt\n\nDanke fürs Feedback! – Markus",
+  "sections": [
+   {
+    "iconName": "Sparkles",
+    "title": "Feinschliff",
+    "items": [
+     "Tippst ins Projektfeld, rutscht es jetzt ganz nach oben – so siehst die bekannten Projekte über der Tastatur und kannst glei eins antippen.",
+     "Der Nächtigung-Schalter zeigt nur mehr „Nächtigung“ – ohne Erklärtext."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.3",
   "date": "21.10.2026",
   "title": "Freitag frei & Nächtigung 🛏️",

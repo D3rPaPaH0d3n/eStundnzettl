@@ -171,8 +171,7 @@
       "message": "For days you deliberately don't work, e.g. because you've already reached your weekly hours. Counts 0 hours and takes nothing from the time-off account – the day just isn't flagged as forgotten."
     },
     "overnight": {
-      "title": "Overnight stay",
-      "subtitle": "Stayed away overnight – shown in the report, no calculation"
+      "title": "Overnight stay"
     }
   },
   "reports": {

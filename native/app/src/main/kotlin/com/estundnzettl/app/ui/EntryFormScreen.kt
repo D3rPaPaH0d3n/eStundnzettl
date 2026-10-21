@@ -37,13 +37,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +69,8 @@ import com.estundnzettl.core.locale.holidays.toDateString
 import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.UserData
 import com.estundnzettl.core.model.WorkCode
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale as JavaLocale
@@ -108,6 +116,23 @@ fun EntryFormScreen(
     var showCodeDialog by remember { mutableStateOf(false) }
     var quickAddOpen by remember { mutableStateOf(false) }
     var showSuggestions by remember { mutableStateOf(false) }
+    var projectFocused by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+    val scrollAnchors = remember { ScrollAnchors() }
+    val projectTopMarginPx = with(LocalDensity.current) { 8.dp.roundToPx() }
+
+    // Projektfeld aktiv: Block ganz nach oben, damit die Vorschläge über
+    // der Tastatur stehen. adjustResize verkleinert den Scrollbereich erst
+    // mit der Tastatur-Animation — vorher reicht der Scrollweg nicht.
+    LaunchedEffect(projectFocused) {
+        if (!projectFocused) return@LaunchedEffect
+        val content = scrollAnchors.content ?: return@LaunchedEffect
+        val block = scrollAnchors.target ?: return@LaunchedEffect
+        if (!content.isAttached || !block.isAttached) return@LaunchedEffect
+        val top = (content.localPositionOf(block, Offset.Zero).y.toInt() - projectTopMarginPx).coerceAtLeast(0)
+        withTimeoutOrNull(800) { snapshotFlow { scrollState.maxValue }.first { it >= top } }
+        scrollState.animateScrollTo(top.coerceAtMost(scrollState.maxValue))
+    }
 
     val currentCodeLabel = workCodes.firstOrNull { it.id == form.code }?.label
         ?: t.t("entryForm.codePlaceholder")
@@ -191,7 +216,8 @@ fun EntryFormScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
+            .onGloballyPositioned { scrollAnchors.content = it }
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.Bottom),
     ) {
@@ -488,7 +514,10 @@ fun EntryFormScreen(
 
                     // Projekt / Strecke
                     if (form.entryType == "work" || form.entryType == "drive") {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.onGloballyPositioned { scrollAnchors.target = it },
+                        ) {
                             FieldLabel(
                                 if (form.entryType == "drive" || isArrival) {
                                     t.t("entryForm.distanceOrNote")
@@ -508,6 +537,7 @@ fun EntryFormScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .onFocusChanged { focus ->
+                                        projectFocused = focus.isFocused
                                         if (focus.isFocused && form.entryType == "work" && !isArrival) {
                                             showSuggestions = true
                                         }
@@ -571,7 +601,6 @@ fun EntryFormScreen(
                     ) {
                         SettingsToggleRow(
                             title = t.t("entryForm.overnight.title"),
-                            subtitle = t.t("entryForm.overnight.subtitle"),
                             checked = form.overnight,
                             accent = colors.accentStrong,
                             icon = {
@@ -792,4 +821,10 @@ private fun PauseButton(
             )
         }
     }
+}
+
+/** Layout-Anker fürs gezielte Scrollen — bewusst kein State, ändert nichts an der Anzeige. */
+private class ScrollAnchors {
+    var content: LayoutCoordinates? = null
+    var target: LayoutCoordinates? = null
 }

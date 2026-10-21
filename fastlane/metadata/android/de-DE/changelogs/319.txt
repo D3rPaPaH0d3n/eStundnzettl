@@ -1,0 +1,6 @@
+Kleiner Feinschliff ✨
+
+• Projektfeld rutscht beim Tippen nach oben – die Vorschläge bleiben über der Tastatur sichtbar
+• Nächtigung-Schalter aufgeräumt
+
+Danke fürs Feedback! – Markus

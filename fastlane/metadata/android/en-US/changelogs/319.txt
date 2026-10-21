@@ -1,0 +1,6 @@
+A little polish ✨
+
+• The project field moves up while typing – suggestions stay visible above the keyboard
+• Tidier overnight stay switch
+
+Thanks for your feedback! – Markus

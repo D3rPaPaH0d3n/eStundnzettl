@@ -1,0 +1,8 @@
+Nix geht mehr verlorn 🔍
+
+• Vergessene Arbeitstage stehn jetzt im Dashboard – mit Minus und Tipp zum Nachtragen
+• Hinweis beim Start, wenn Tage ohne Eintrag dazukommen (abschaltbar)
+• Im ZA-Konto steht extra, was davon „ohne Eintrag“ is
+• Monatskarte aufgeräumt: ZA & Urlaub zum Aufklappen
+
+Danke fürs Feedback! – Markus

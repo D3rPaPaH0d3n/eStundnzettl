@@ -1,0 +1,8 @@
+Nothing gets lost anymore 🔍
+
+• Forgotten workdays now show up on the dashboard – with their minus and a tap to add them
+• A hint at start when new days without entries appear (can be turned off)
+• The time-off account shows separately what's “without entries”
+• Tidier month card: time off & vacation fold out
+
+Thanks for your feedback! – Markus

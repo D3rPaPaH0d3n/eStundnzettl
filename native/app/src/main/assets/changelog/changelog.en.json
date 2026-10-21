@@ -1,5 +1,39 @@
 [
  {
+  "version": "5.2.2",
+  "date": "2026-10-21",
+  "title": "Nothing gets lost anymore 🔍",
+  "isMajor": false,
+  "playStoreText": "Nothing gets lost anymore 🔍\n\n• Forgotten workdays now show up on the dashboard – with their minus and a tap to add them\n• A hint at start when new days without entries appear (can be turned off)\n• The time-off account shows separately what's “without entries”\n• Tidier month card: time off & vacation fold out\n\nThanks for your feedback! – Markus",
+  "sections": [
+   {
+    "iconName": "CalendarX",
+    "title": "Forgotten days",
+    "items": [
+     "If you didn't record anything on a workday, it now shows up in its week as “No entry” – subtly marked, with the missing target time as minus. Tap it to add the entry right away.",
+     "At start, the app points out days without entries in the current or last month. “Hide” applies to exactly those days; only a new one brings the hint back.",
+     "You can turn the hint off under Settings → Appearance."
+    ]
+   },
+   {
+    "iconName": "Calculator",
+    "title": "An honest time-off account",
+    "items": [
+     "A forgotten day still counts as minus on the time-off account – the time is missing, after all. But it's listed separately as “Of which without entries” instead of under time off taken. The same goes for the monthly PDF.",
+     "“Time off taken” now only shows what was really recorded as time off."
+    ]
+   },
+   {
+    "iconName": "Sparkles",
+    "title": "A tidier dashboard",
+    "items": [
+     "The time-off account and vacation now fold out below the month card. Folded, you still see your time-off balance and remaining vacation at a glance.",
+     "“Overtime paid out” is now a proper, subtle button."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.1",
   "date": "2026-10-21",
   "title": "Vacation & overtime at a glance 🧾",

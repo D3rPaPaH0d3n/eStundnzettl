@@ -876,6 +876,14 @@ class ReportPdfGenerator(
                 formatSignedTime(account.balanceMinutes),
                 C.textMedium, C.textBlack, size = 7.5f,
             ) + 1.5f
+            // Im Saldo enthalten — getrennt ausgewiesen, damit es nicht wie ZA wirkt
+            if (account.missingDayMinutes > 0) {
+                yy += sumRow(
+                    canvas, yy, innerLeft, innerRight,
+                    t("reports.overtimeAccount.missingDays"), formatSignedTime(-account.missingDayMinutes),
+                    C.textMedium, C.textRed, size = 7.5f,
+                ) + 1.5f
+            }
             yy += sumRow(
                 canvas, yy, innerLeft, innerRight,
                 t("reports.overtimeAccount.timeComp"), formatSignedTime(-account.timeCompMinutes),

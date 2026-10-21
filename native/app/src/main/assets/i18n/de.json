@@ -58,7 +58,8 @@
       "opening": "Übertrag",
       "timeComp": "ZA genommen",
       "closingMonthEnd": "Stand Monatsende",
-      "closingToday": "Stand heute"
+      "closingToday": "Stand heute",
+      "missingDays": "Davon ohne Eintrag: {{time}}"
     },
     "vacation": {
       "title": "Urlaub {{year}}",
@@ -69,7 +70,7 @@
       "days": "Tage"
     },
     "payout": {
-      "action": "Überstunden ausbezahlt?",
+      "action": "Überstunden ausbezahlt",
       "edit": "Ändern",
       "paid": "Ausbezahlt: {{time}}",
       "title": "Überstunden ausbezahlt",
@@ -89,6 +90,25 @@
       "enable": "Aktivieren",
       "dismiss": "Nein, danke",
       "enabled": "Zeitausgleichskonto aktiviert"
+    },
+    "missingDay": {
+      "title": "Kein Eintrag",
+      "hint": "Vergessen? Tippen zum Nachtragen",
+      "add": "Eintrag nachtragen"
+    },
+    "details": {
+      "overtime": "ZA",
+      "vacation": "Urlaub",
+      "show": "Details anzeigen",
+      "hide": "Details ausblenden"
+    },
+    "missingHint": {
+      "title": "Tage ohne Eintrag",
+      "one": "Für {{days}} ist nichts eingetragen.",
+      "many": "Für {{count}} Arbeitstage ist nichts eingetragen: {{days}}",
+      "more": "+{{count}} weitere",
+      "add": "Nachtragen",
+      "dismiss": "Ausblenden"
     }
   },
   "entryTypes": {
@@ -227,7 +247,8 @@
       "timeComp": "Zeitausgleich genommen:",
       "closing": "Stand Monatsende:",
       "closingAt": "Stand per {{date}}:",
-      "payout": "Ausbezahlt:"
+      "payout": "Ausbezahlt:",
+      "missingDays": "davon ohne Eintrag:"
     }
   },
   "helpModal": {
@@ -1143,6 +1164,10 @@
       "toastLogoUpdated": "Logo übernommen",
       "toastLogoError": "Das Bild konnte nicht geladen werden",
       "footerTruncated": "Gekürzt: höchstens 3 Zeilen bzw. 300 Zeichen."
+    },
+    "missingDaysHint": {
+      "title": "Hinweis auf Tage ohne Eintrag",
+      "subtitle": "Zeigt am Dashboard vergangene Arbeitstage, für die nichts eingetragen ist."
     }
   },
   "attachments": {

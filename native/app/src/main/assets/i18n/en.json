@@ -58,7 +58,8 @@
       "opening": "Carried over",
       "timeComp": "Time off taken",
       "closingMonthEnd": "End of month",
-      "closingToday": "Balance today"
+      "closingToday": "Balance today",
+      "missingDays": "Of which without entries: {{time}}"
     },
     "vacation": {
       "title": "Vacation {{year}}",
@@ -69,7 +70,7 @@
       "days": "days"
     },
     "payout": {
-      "action": "Overtime paid out?",
+      "action": "Overtime paid out",
       "edit": "Change",
       "paid": "Paid out: {{time}}",
       "title": "Overtime paid out",
@@ -89,6 +90,25 @@
       "enable": "Turn on",
       "dismiss": "No, thanks",
       "enabled": "Time-off account turned on"
+    },
+    "missingDay": {
+      "title": "No entry",
+      "hint": "Forgot it? Tap to add",
+      "add": "Add entry"
+    },
+    "details": {
+      "overtime": "Time off",
+      "vacation": "Vacation",
+      "show": "Show details",
+      "hide": "Hide details"
+    },
+    "missingHint": {
+      "title": "Days without entries",
+      "one": "Nothing is recorded for {{days}}.",
+      "many": "Nothing is recorded for {{count}} workdays: {{days}}",
+      "more": "+{{count}} more",
+      "add": "Add now",
+      "dismiss": "Hide"
     }
   },
   "entryTypes": {
@@ -227,7 +247,8 @@
       "timeComp": "Time off taken:",
       "closing": "Balance at end of month:",
       "closingAt": "Balance as of {{date}}:",
-      "payout": "Paid out:"
+      "payout": "Paid out:",
+      "missingDays": "of which without entries:"
     }
   },
   "helpModal": {
@@ -1143,6 +1164,10 @@
       "toastLogoUpdated": "Logo saved",
       "toastLogoError": "The image could not be loaded",
       "footerTruncated": "Shortened: at most 3 lines or 300 characters."
+    },
+    "missingDaysHint": {
+      "title": "Hint for days without entries",
+      "subtitle": "Shows past workdays without any entry on the dashboard."
     }
   },
   "attachments": {

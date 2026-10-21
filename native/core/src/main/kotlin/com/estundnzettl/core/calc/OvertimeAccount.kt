@@ -19,6 +19,10 @@ import kotlin.math.roundToInt
  *
  *   Stand = Übertrag + Saldo (IST − SOLL) − genommener Zeitausgleich − Auszahlung
  *
+ * Arbeitstage ohne Eintrag ([findMissingWorkDays]) stecken mit ihrem Minus
+ * im Saldo — das Konto zeigt sie aber getrennt aus, damit ein vergessener
+ * Tag nicht wie genommener Zeitausgleich aussieht.
+ *
  * ZA-Einträge zählen wie bisher als IST (sie füllen das Tagessoll), damit
  * bleibt der Monatssaldo identisch mit Dashboard und Bericht. Abgebaut wird
  * das Konto über den separat ausgewiesenen ZA-Verbrauch.
@@ -40,6 +44,8 @@ data class OvertimeAccountMonth(
      * Monat noch (Stand heute); vor dem Monatsbeginn = noch nichts erfasst.
      */
     val evaluatedThrough: LocalDate,
+    /** Davon: Soll der Arbeitstage ohne Eintrag (im Saldo schon enthalten). */
+    val missingDayMinutes: Int = 0,
 ) {
     val isComplete: Boolean get() = !evaluatedThrough.isBefore(month.atEndOfMonth())
 
@@ -101,9 +107,16 @@ private fun overtimeAccountCutoff(
     return monthEnd
 }
 
+private data class AccountMonthFigures(
+    val balance: Int,
+    val timeComp: Int,
+    val missingDays: Int,
+)
+
 /**
- * Saldo und ZA-Verbrauch eines Monats bis [cutoff] — gleiche Aufbereitung
- * wie Dashboard und Bericht (Auto-Feiertage, Krank-/Feiertagskorrektur).
+ * Saldo, ZA-Verbrauch und Tage ohne Eintrag eines Monats bis [cutoff] —
+ * gleiche Aufbereitung wie Dashboard und Bericht (Auto-Feiertage,
+ * Krank-/Feiertagskorrektur).
  */
 private fun evaluateAccountMonth(
     monthEntries: List<Entry>,
@@ -112,15 +125,17 @@ private fun evaluateAccountMonth(
     userData: UserData?,
     locale: AppLocale?,
     config: CalculationConfig?,
-): Pair<Int, Int> {
+): AccountMonthFigures {
     val monthStart = month.atDay(1)
-    if (cutoff.isBefore(monthStart)) return 0 to 0
+    if (cutoff.isBefore(monthStart)) return AccountMonthFigures(0, 0, 0)
     val cutoffStr = cutoff.toDateString()
     val evaluated = buildEntriesWithHolidays(
         monthEntries, userData, month.year, month.monthValue, cutoff, locale, config,
     ).filter { it.date <= cutoffStr }
     val stats = calculatePeriodStats(evaluated, userData, monthStart, cutoff, null, locale, config)
-    return stats.totalSaldo to stats.timeComp
+    val missing = findMissingWorkDays(evaluated, monthStart, cutoff, userData, locale, config)
+        .sumOf { it.targetMinutes }
+    return AccountMonthFigures(stats.totalSaldo, stats.timeComp, missing)
 }
 
 /**
@@ -146,11 +161,11 @@ fun calculateOvertimeAccount(
     while (true) {
         val monthEntries = byMonth[cursor.toString()].orEmpty()
         val cutoff = overtimeAccountCutoff(cursor, today, monthEntries, userData, locale, config)
-        val (balance, timeComp) = evaluateAccountMonth(monthEntries, cursor, cutoff, userData, locale, config)
+        val (balance, timeComp, missing) = evaluateAccountMonth(monthEntries, cursor, cutoff, userData, locale, config)
         val payout = payouts[cursor.toString()] ?: 0
         val closing = opening + balance - timeComp - payout
         if (cursor == month) {
-            return OvertimeAccountMonth(cursor, opening, balance, timeComp, payout, closing, cutoff)
+            return OvertimeAccountMonth(cursor, opening, balance, timeComp, payout, closing, cutoff, missing)
         }
         opening = closing
         cursor = cursor.plusMonths(1)

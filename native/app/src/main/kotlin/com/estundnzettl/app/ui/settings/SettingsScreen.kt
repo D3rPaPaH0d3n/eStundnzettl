@@ -1341,6 +1341,17 @@ private fun AppearanceSection(viewModel: MainViewModel) {
             accent = colors.accent,
             onToggle = { viewModel.setMaterialYou(it) },
         )
+
+        // Ohne Soll (einfacher Modus) gibt es keine vergessenen Arbeitstage
+        if (state.userData?.simpleMode != true) {
+            SettingsToggleRow(
+                title = t.t("settings.missingDaysHint.title"),
+                subtitle = t.t("settings.missingDaysHint.subtitle"),
+                checked = state.missingDaysHintEnabled,
+                accent = colors.accent,
+                onToggle = { viewModel.setMissingDaysHintEnabled(it) },
+            )
+        }
     }
 }
 

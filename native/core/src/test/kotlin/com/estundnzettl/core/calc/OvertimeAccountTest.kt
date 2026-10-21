@@ -279,6 +279,12 @@ class OvertimeAccountTest {
         val result = calculateOvertimeAccount(entries, atUser, dec, today, austriaLocale, cfg)!!
 
         assertEquals(dashboard.stats.totalSaldo, result.balanceMinutes)
+        // Freitage ohne Eintrag stecken im Saldo und werden getrennt ausgewiesen
+        val missing = findMissingWorkDays(
+            dashboard.entriesWithHolidays, dec.atDay(1), dec.atEndOfMonth(), atUser, austriaLocale, cfg,
+        ).sumOf { it.targetMinutes }
+        assertTrue(missing > 0)
+        assertEquals(missing, result.missingDayMinutes)
         assertEquals(dashboard.stats.timeComp, result.timeCompMinutes)
         assertEquals(result, dashboard.overtimeAccount)
     }

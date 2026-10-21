@@ -585,6 +585,10 @@ private fun MainScreen(viewModel: MainViewModel) {
                         onEnableOvertimeAccount = viewModel::enableOvertimeAccount,
                         onDismissOvertimeAccountHint = viewModel::dismissOvertimeAccountHint,
                         onBookOvertimePayout = viewModel::bookOvertimePayout,
+                        onAddEntryForDate = viewModel::startNewEntryFor,
+                        missingDaysHintEnabled = state.missingDaysHintEnabled,
+                        missingDaysAcknowledgedThrough = state.missingDaysAcknowledgedThrough,
+                        onDismissMissingDaysHint = viewModel::dismissMissingDaysHint,
                     )
 
                     else -> {}

@@ -1,0 +1,9 @@
+Friday off & overnight stays 🛏️
+
+• Weekly hours already reached? A free Friday is no longer flagged as forgotten
+• New entry type “Day off” – 0 hours, no time off taken
+• Overnight stay per work entry, in the report with a count
+• Swipe to delete: with one entry, the whole card swipes
+• Time-off entries subtle again instead of bright red
+
+Thanks for your feedback! – Markus

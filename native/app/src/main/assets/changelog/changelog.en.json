@@ -1,5 +1,31 @@
 [
  {
+  "version": "5.2.6",
+  "date": "2026-10-22",
+  "title": "Documents right in the PDF 📎",
+  "isMajor": false,
+  "playStoreText": "Documents right in the PDF 📎\n\n• Uploaded documents (e.g. sick notes) are now attached as pages to the timesheet PDF\n• Also in the preview and in the automatic archive (Nextcloud, Google Drive)\n• Sharing via WhatsApp sends the PDF and originals again, not just the text\n\nThanks for reporting! – Markus",
+  "sections": [
+   {
+    "iconName": "FileText",
+    "title": "Report",
+    "items": [
+     "Uploaded documents such as sick notes are now appended as pages to the timesheet – in the preview, when sharing and in the automatic archive on Nextcloud or Google Drive.",
+     "The pages are kept small so the PDF still fits through email. In Hausmasta mode this can be switched off."
+    ]
+   },
+   {
+    "iconName": "Bug",
+    "title": "Fixed",
+    "items": [
+     "Sharing via WhatsApp sometimes delivered only the text without the PDF – the report and original documents are included again.",
+     "Originals now arrive with a readable name (date + label) instead of a cryptic number.",
+     "A freshly uploaded document shows up in the report right away."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.5",
   "date": "2026-10-21",
   "title": "Cloud backup without false alarms ☁️",

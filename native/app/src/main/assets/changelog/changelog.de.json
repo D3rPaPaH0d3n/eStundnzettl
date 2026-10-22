@@ -1,5 +1,31 @@
 [
  {
+  "version": "5.2.6",
+  "date": "22.10.2026",
+  "title": "Dokumente direkt im PDF 📎",
+  "isMajor": false,
+  "playStoreText": "Dokumente direkt im PDF 📎\n\n• Hochgeladene Dokumente (z. B. Krankmeldung) hängen jetzt als Seiten im Stundenzettel-PDF\n• Auch in der Vorschau und im automatischen Archiv (Nextcloud, Google Drive)\n• Teilen über WhatsApp schickt wieder PDF und Originale mit, nicht nur den Text\n\nDanke fürs Melden! – Markus",
+  "sections": [
+   {
+    "iconName": "FileText",
+    "title": "Bericht",
+    "items": [
+     "Hochgeladene Dokumente wie a Krankmeldung hängen jetzt als eigene Seiten hinten am Stundenzettel – in der Vorschau, beim Teilen und im automatischen Archiv in der Nextcloud oder auf Google Drive.",
+     "Die Seiten sind bewusst klein gehalten, damit das PDF a per Mail durchgeht. Im Hausmasta-Modus lässt sich des auch abschalten."
+    ]
+   },
+   {
+    "iconName": "Bug",
+    "title": "Behoben",
+    "items": [
+     "Beim Teilen über WhatsApp is manchmal nur der Text angekommen, ohne PDF – jetzt gehen Bericht und Originaldokumente wieder mit.",
+     "Die Originale haben beim Empfänger jetzt an g'scheiten Namen (Datum + Bezeichnung) statt einer kryptischen Nummer.",
+     "A grad hochgeladenes Dokument scheint sofort im Bericht auf."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.5",
   "date": "21.10.2026",
   "title": "Cloud-Backup ohne Fehlalarm ☁️",

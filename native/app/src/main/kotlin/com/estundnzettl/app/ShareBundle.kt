@@ -21,11 +21,12 @@ internal fun commonShareMimeType(mimeTypes: List<String>): String {
 /**
  * Originals that go along with a messenger share. WhatsApp & Co. drop a
  * mixed bundle (report PDF plus a photo) entirely, so messengers only get
- * PDFs: none at all when the documents are already embedded as pages in
- * the report, otherwise the PDF originals.
+ * PDFs: the report itself plus the PDF originals that are not fully
+ * embedded as pages in it ([notEmbeddedIds]: page limit reached,
+ * unreadable, or embedding switched off).
  */
-internal fun messengerShareAttachments(attachments: List<Attachment>, embedded: Boolean): List<Attachment> =
-    if (embedded) emptyList() else attachments.filter { it.mimeType.equals("application/pdf", ignoreCase = true) }
+internal fun messengerShareAttachments(attachments: List<Attachment>, notEmbeddedIds: Set<String>): List<Attachment> =
+    attachments.filter { it.id in notEmbeddedIds && it.mimeType.equals("application/pdf", ignoreCase = true) }
 
 /**
  * Readable, unique file name for a shared original, e.g.

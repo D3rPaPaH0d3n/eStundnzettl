@@ -31,15 +31,19 @@ class ShareBundleTest {
     )
 
     @Test
-    fun `messengers get no originals when the documents are embedded`() {
+    fun `messengers get no originals when every document is embedded`() {
         val attachments = listOf(attachment("a", "application/pdf"), attachment("b", "image/jpeg"))
-        assertEquals(emptyList<Attachment>(), messengerShareAttachments(attachments, embedded = true))
+        assertEquals(emptyList<Attachment>(), messengerShareAttachments(attachments, emptySet()))
     }
 
     @Test
-    fun `messengers get only pdf originals when nothing is embedded`() {
-        val attachments = listOf(attachment("a", "application/pdf"), attachment("b", "image/jpeg"))
-        assertEquals(listOf("a"), messengerShareAttachments(attachments, embedded = false).map { it.id })
+    fun `messengers get the pdf originals that are not embedded, never photos`() {
+        val attachments = listOf(
+            attachment("a", "application/pdf"),
+            attachment("b", "image/jpeg"),
+            attachment("c", "application/pdf"),
+        )
+        assertEquals(listOf("a"), messengerShareAttachments(attachments, setOf("a", "b")).map { it.id })
     }
 
     @Test

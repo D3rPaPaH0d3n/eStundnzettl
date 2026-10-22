@@ -350,6 +350,8 @@ fun ReportScreen(viewModel: MainViewModel) {
 
     // ── PDF-Generierung + Vorschau-Render ───────────────────────────
     var pdfBytes by remember { mutableStateOf<ByteArray?>(null) }
+    // Anhänge, die nicht vollständig als Seiten im PDF stecken (Originale nötig)
+    var notEmbeddedIds by remember { mutableStateOf(emptySet<String>()) }
     var previewDoc by remember { mutableStateOf<ReportPreviewDocument?>(null) }
     val currentPreviewDoc = previewDoc
     DisposableEffect(currentPreviewDoc) {
@@ -395,11 +397,12 @@ fun ReportScreen(viewModel: MainViewModel) {
         delay(350)
         var opened: ReportPreviewDocument? = null
         try {
-            val bytes = withContext(Dispatchers.Default) {
-                ReportPdfGenerator(i18n).generate(buildInput(customNote)).also {
-                    opened = ReportPreviewDocument.open(context, it)
+            val result = withContext(Dispatchers.Default) {
+                ReportPdfGenerator(i18n).generateReport(buildInput(customNote)).also {
+                    opened = ReportPreviewDocument.open(context, it.bytes)
                 }
             }
+            val bytes = result.bytes
             val doc = opened!!
             // Sichtbare Seiten vorab rendern, damit beim Tauschen nichts weiß aufblitzt
             val first = previewListState.firstVisibleItemIndex
@@ -407,6 +410,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                 if (index < doc.pageCount) doc.render(index, previewWidthPx)
             }
             pdfBytes = bytes
+            notEmbeddedIds = result.notEmbeddedAttachmentIds
             previewDoc = doc
             opened = null
         } catch (e: CancellationException) {
@@ -508,7 +512,7 @@ fun ReportScreen(viewModel: MainViewModel) {
             val entryDates = filteredEntries.associate { it.id to it.date }
             val takenNames = mutableSetOf<String>()
             val sharedAttachments = if (pdfOnly) {
-                messengerShareAttachments(reportAttachments, getEffectivePdfDisplay(config).embedAttachments)
+                messengerShareAttachments(reportAttachments, notEmbeddedIds)
             } else {
                 reportAttachments
             }
@@ -616,6 +620,14 @@ fun ReportScreen(viewModel: MainViewModel) {
                 i18n.t("reports.title"),
                 callback.intentSender,
             )
+            if (!pdfOnly && intent.type == "*/*") {
+                // Gemischtes Bundle (PDF + Foto): Messenger würden es verwerfen,
+                // daher hier nur Mail & Co. anbieten — "Nur PDF" ist der Messenger-Weg
+                val messengers = ShareTargetCapabilities.messengerComponents(context, intent)
+                if (messengers.isNotEmpty()) {
+                    chooser.putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, messengers.toTypedArray())
+                }
+            }
             context.startActivity(chooser)
             viewModel.onReportExported()
         } catch (e: Exception) {

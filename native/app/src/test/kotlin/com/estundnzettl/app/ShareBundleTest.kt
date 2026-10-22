@@ -24,6 +24,13 @@ class ShareBundleTest {
     }
 
     @Test
+    fun `messengers lose the text only for wildcard bundles`() {
+        assertEquals(true, shouldDropMessengerText(2, "*/*"))
+        assertEquals(false, shouldDropMessengerText(2, "application/pdf"))
+        assertEquals(false, shouldDropMessengerText(1, "*/*"))
+    }
+
+    @Test
     fun `original gets date and label instead of storage id`() {
         val taken = mutableSetOf<String>()
         assertEquals(

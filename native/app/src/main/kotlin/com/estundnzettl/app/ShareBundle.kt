@@ -17,6 +17,14 @@ internal fun commonShareMimeType(mimeTypes: List<String>): String {
 }
 
 /**
+ * Mixed bundles (report PDF plus a photo) still need the wildcard type.
+ * Messengers read that together with EXTRA_TEXT as a text share, so they
+ * get the files without the message; mail apps keep the text.
+ */
+internal fun shouldDropMessengerText(fileCount: Int, mimeType: String?): Boolean =
+    fileCount > 1 && mimeType == "*/*"
+
+/**
  * Readable, unique file name for a shared original, e.g.
  * `2026-10-14_Krankenstand.pdf` instead of the internal storage id.
  * [taken] collects the names already used in this bundle.

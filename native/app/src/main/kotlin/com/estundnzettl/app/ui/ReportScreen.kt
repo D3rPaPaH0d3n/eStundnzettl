@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Intent
+import android.os.Bundle
 import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -113,6 +114,7 @@ import com.estundnzettl.app.ShareTemplateRenderer
 import com.estundnzettl.app.ShareTargetCapabilities
 import com.estundnzettl.app.attachmentShareFileName
 import com.estundnzettl.app.commonShareMimeType
+import com.estundnzettl.app.shouldDropMessengerText
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.pdf.ReportPdfGenerator
 import com.estundnzettl.app.pdf.ReportPdfInput
@@ -535,6 +537,7 @@ fun ReportScreen(viewModel: MainViewModel) {
             val shareSubject = buildShareSubject()
             intent.putExtra(Intent.EXTRA_SUBJECT, shareSubject)
             intent.putExtra(Intent.EXTRA_TEXT, buildShareMessage())
+            val dropTextForMessengers = shouldDropMessengerText(uris.size, intent.type)
             intent.putExtra(Intent.EXTRA_TITLE, shareSubject)
             ShareHandoffStore.emailRecipient(context)
                 .trim()
@@ -581,6 +584,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                 // system Sharesheet to the chosen app so Android can surface
                 // its Direct Share people without exposing them to us.
                 intent.`package` = preferredComponent.packageName
+                if (dropTextForMessengers) intent.removeExtra(Intent.EXTRA_TEXT)
                 if (intent.resolveActivity(context.packageManager) == null) {
                     ShareHandoffStore.clearPreferredTarget(context)
                     intent.`package` = null
@@ -604,6 +608,15 @@ fun ReportScreen(viewModel: MainViewModel) {
                 i18n.t("reports.title"),
                 callback.intentSender,
             )
+            if (dropTextForMessengers) {
+                // Nur Messenger bekommen den Text nicht, Mail-Apps behalten ihn
+                val noText = Bundle().apply { putCharSequence(Intent.EXTRA_TEXT, null) }
+                val replacements = Bundle()
+                ShareTargetCapabilities.installedPdfTargets(context)
+                    .filterNot { it.isEmail }
+                    .forEach { replacements.putBundle(it.component.packageName, noText) }
+                chooser.putExtra(Intent.EXTRA_REPLACEMENT_EXTRAS, replacements)
+            }
             context.startActivity(chooser)
             viewModel.onReportExported()
         } catch (e: Exception) {

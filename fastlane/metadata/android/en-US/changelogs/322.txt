@@ -1,0 +1,7 @@
+Documents right in the PDF 📎
+
+• Uploaded documents (e.g. sick notes) are now attached as pages to the timesheet PDF
+• Also in the preview and in the automatic archive (Nextcloud, Google Drive)
+• Sharing via WhatsApp sends the PDF and originals again, not just the text
+
+Thanks for reporting! – Markus

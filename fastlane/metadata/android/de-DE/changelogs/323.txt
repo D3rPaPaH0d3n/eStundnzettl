@@ -1,0 +1,7 @@
+Dokumente direkt im PDF 📎
+
+• Hochgeladene Dokumente (z. B. Krankmeldung) hängen jetzt als Seiten im Stundenzettel-PDF
+• Auch in der Vorschau und im automatischen Archiv (Nextcloud, Google Drive)
+• Teilen über WhatsApp schickt wieder PDF und Originale mit, nicht nur den Text
+
+Danke fürs Melden! – Markus

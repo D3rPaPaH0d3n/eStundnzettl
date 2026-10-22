@@ -74,7 +74,8 @@ jobs:
       - name: Read native app version
         id: version
         run: |
-          CODE=$(grep -oP 'versionCode = \K\d+' native/app/build.gradle.kts)
+          # Das GitHub-Release liefert die prod-Variante: versionCode = Beta-Code − 1
+          CODE=$(( $(grep -oP 'versionCode = \K\d+' native/app/build.gradle.kts) - 1 ))
           NAME=$(grep -oP 'versionName = "\K[^"]+' native/app/build.gradle.kts)
           TAG="v${NAME}"
           APK_NAME="eStundnzettl-${TAG}-universal.apk"

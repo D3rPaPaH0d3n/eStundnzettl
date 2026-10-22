@@ -1,5 +1,23 @@
 [
  {
+  "version": "5.2.8",
+  "date": "22.10.2026",
+  "title": "Dokumente sicher im Backup 🗂️",
+  "isMajor": false,
+  "playStoreText": "Dokumente sicher im Backup 🗂️\n\n• Hochgeladene Dokumente (z. B. Krankmeldungen) sind jetzt im Backup enthalten\n• Gilt für Google Drive, Nextcloud, lokalen Ordner und Export\n• Nach einer Wiederherstellung sind die Dokumente wieder da\n\nDanke fürs Testen! – Markus",
+  "sections": [
+   {
+    "iconName": "Cloud",
+    "title": "Backup",
+    "items": [
+     "Bisher waren im Backup nur die Eckdaten von deine Dokumente – nach ana Wiederherstellung hat die Datei selbst gefehlt. Jetzt sind die Dokumente mit drin, egal ob Google Drive, Nextcloud, lokaler Ordner oder Export.",
+     "Damit's Backup handlich bleibt, kommen bis zu 15 MB Dokumente rein, die neuesten zuerst. Dank der Foto-Verkleinerung aus 5.2.7 reicht des für sehr viele Belege.",
+     "Dokumente, die schon vorher gefehlt haben, bitte einmal neu hochladen."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.7",
   "date": "22.10.2026",
   "title": "Fotos schlanker, WhatsApp verlässlich 📸",

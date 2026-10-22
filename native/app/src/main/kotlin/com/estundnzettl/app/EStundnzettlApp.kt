@@ -41,7 +41,7 @@ class EStundnzettlApp : Application() {
         AutoBackupManager(
             context = this,
             settings = settings,
-            backupRepo = BackupRepository(database, settings),
+            backupRepo = BackupRepository(database, settings, filesDir),
             nextcloud = NextcloudManager(settings, SecretStore(this)),
             googleDrive = GoogleDriveManager(this, settings),
         )

@@ -199,6 +199,7 @@
       "title": "Anhang",
       "page": "Seite {{current}}/{{total}}",
       "unreadable": "Dieses Dokument konnte nicht eingebettet werden. Es liegt als Originaldatei bei.",
+      "missing": "Die Datei fehlt auf diesem Gerät, z. B. nach einer Wiederherstellung aus dem Backup. Bitte das Dokument neu hochladen.",
       "morePages": "{{count}} weitere Seite(n) nur in der Originaldatei",
       "moreDocuments": "Weitere Dokumente nur als Originaldatei:"
     },
@@ -250,7 +251,8 @@
     "shareTarget": {
       "shareWith": "Mit {{app}} senden",
       "directDescription": "Direkt in deiner bevorzugten E-Mail-App öffnen",
-      "contactDescription": "Kontakt in der gewählten App aussuchen"
+      "contactDescription": "Kontakt in der gewählten App aussuchen",
+      "longPressHint": "Lang drücken: andere App wählen"
     },
     "noteModal": {
       "title": "Notiz für PDF",
@@ -1200,12 +1202,14 @@
     "addButton": "Dokument hinzufügen",
     "existingTitle": "Vorhandene Dokumente",
     "empty": "Noch keine Dokumente für diesen Eintrag vorhanden.",
+    "missingFile": "Datei fehlt auf diesem Gerät – bitte neu hochladen",
     "toast": {
       "selectFile": "Bitte zuerst ein Dokument auswählen.",
       "labelRequired": "Bitte eine Bezeichnung eingeben.",
       "invalidType": "Nur PDF, JPG, PNG oder WEBP sind erlaubt.",
       "readError": "Datei konnte nicht gelesen werden.",
-      "fileTooLarge": "Datei ist größer als 10 MB.",
+      "fileTooLarge": "PDF ist größer als 5 MB.",
+      "imageTooLarge": "Foto ist größer als 25 MB.",
       "added": "Dokument hinzugefügt",
       "addError": "Dokument konnte nicht gespeichert werden.",
       "deleted": "Dokument gelöscht",

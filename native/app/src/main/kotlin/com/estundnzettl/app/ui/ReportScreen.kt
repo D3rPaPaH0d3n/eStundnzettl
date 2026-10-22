@@ -4,7 +4,6 @@ import android.app.PendingIntent
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Intent
-import android.os.Bundle
 import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,6 +19,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.calculateCentroid
 import androidx.compose.foundation.gestures.scrollBy
@@ -114,10 +114,10 @@ import com.estundnzettl.app.ShareTemplateRenderer
 import com.estundnzettl.app.ShareTargetCapabilities
 import com.estundnzettl.app.attachmentShareFileName
 import com.estundnzettl.app.commonShareMimeType
-import com.estundnzettl.app.shouldDropMessengerText
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.pdf.ReportPdfGenerator
 import com.estundnzettl.app.pdf.ReportPdfInput
+import com.estundnzettl.app.pdf.convertPhotoToPdf
 import com.estundnzettl.app.ui.settings.SettingsToggleRow
 import com.estundnzettl.app.ui.theme.AppColors
 import com.estundnzettl.app.ui.theme.LocalAppColors
@@ -484,7 +484,11 @@ fun ReportScreen(viewModel: MainViewModel) {
         }
     }
 
-    fun sharePdf() {
+    /**
+     * [chooseTarget]: fest eingestellten Empfänger übergehen und das
+     * Sharesheet zeigen (langes Drücken auf "Teilen").
+     */
+    fun sharePdf(chooseTarget: Boolean = false) {
         val bytes = pdfBytes ?: return
         try {
             val authority = "${context.packageName}.fileprovider"
@@ -496,6 +500,8 @@ fun ReportScreen(viewModel: MainViewModel) {
 
             // Report-Bundle: Originale der verknüpften Dokumente immer mit
             // teilen, als Kopie mit lesbarem Namen statt der internen Id.
+            // Fotos gehen als einseitiges PDF: WhatsApp & Co. nehmen mehrere
+            // PDFs an, ein Bündel aus PDF und Foto aber nicht.
             val originalsDir = File(dir, "originals").apply {
                 deleteRecursively()
                 mkdirs()
@@ -505,16 +511,27 @@ fun ReportScreen(viewModel: MainViewModel) {
             reportAttachments.forEach { attachment ->
                 val attachmentFile = viewModel.attachmentFile(attachment)
                 if (attachmentFile.isFile) {
+                    val asPdf = attachment.mimeType.startsWith("image/")
+                    val sharedType = if (asPdf) "application/pdf" else attachment.mimeType
                     val name = attachmentShareFileName(
                         label = attachment.label,
                         date = entryDates[attachment.entryId],
-                        mimeType = attachment.mimeType,
+                        mimeType = sharedType,
                         storagePath = attachment.storagePath,
                         taken = takenNames,
                     )
-                    val copy = attachmentFile.copyTo(File(originalsDir, name), overwrite = true)
-                    uris.add(FileProvider.getUriForFile(context, authority, copy))
-                    mimeTypes.add(attachment.mimeType)
+                    val target = File(originalsDir, name)
+                    val shared = when {
+                        !asPdf -> attachmentFile.copyTo(target, overwrite = true) to sharedType
+                        convertPhotoToPdf(attachmentFile, attachment.mimeType, target) -> target to sharedType
+                        // Nicht umwandelbar: das Foto selbst mitgeben (Mail nimmt es)
+                        else -> attachmentFile.copyTo(
+                            File(originalsDir, name.removeSuffix(".pdf") + "." + attachment.storagePath.substringAfterLast('.', "jpg")),
+                            overwrite = true,
+                        ) to attachment.mimeType
+                    }
+                    uris.add(FileProvider.getUriForFile(context, authority, shared.first))
+                    mimeTypes.add(shared.second)
                 }
             }
 
@@ -537,7 +554,6 @@ fun ReportScreen(viewModel: MainViewModel) {
             val shareSubject = buildShareSubject()
             intent.putExtra(Intent.EXTRA_SUBJECT, shareSubject)
             intent.putExtra(Intent.EXTRA_TEXT, buildShareMessage())
-            val dropTextForMessengers = shouldDropMessengerText(uris.size, intent.type)
             intent.putExtra(Intent.EXTRA_TITLE, shareSubject)
             ShareHandoffStore.emailRecipient(context)
                 .trim()
@@ -547,7 +563,7 @@ fun ReportScreen(viewModel: MainViewModel) {
                 }
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-            val storedPreferredComponent = if (ShareHandoffStore.usePreferredTarget(context)) {
+            val storedPreferredComponent = if (!chooseTarget && ShareHandoffStore.usePreferredTarget(context)) {
                 ShareHandoffStore.preferredComponent(context)
             } else {
                 null
@@ -584,7 +600,6 @@ fun ReportScreen(viewModel: MainViewModel) {
                 // system Sharesheet to the chosen app so Android can surface
                 // its Direct Share people without exposing them to us.
                 intent.`package` = preferredComponent.packageName
-                if (dropTextForMessengers) intent.removeExtra(Intent.EXTRA_TEXT)
                 if (intent.resolveActivity(context.packageManager) == null) {
                     ShareHandoffStore.clearPreferredTarget(context)
                     intent.`package` = null
@@ -593,6 +608,8 @@ fun ReportScreen(viewModel: MainViewModel) {
 
             val callbackIntent = Intent(context, ShareChosenReceiver::class.java).apply {
                 action = "${context.packageName}.SHARE_TARGET_CHOSEN"
+                // Einmalig anderer Weg: den fest eingestellten Empfänger behalten
+                putExtra(ShareChosenReceiver.EXTRA_KEEP_PREFERRED, chooseTarget)
             }
             val requestCode = (System.currentTimeMillis() and 0x7FFFFFFF).toInt()
             val callback = PendingIntent.getBroadcast(
@@ -608,15 +625,6 @@ fun ReportScreen(viewModel: MainViewModel) {
                 i18n.t("reports.title"),
                 callback.intentSender,
             )
-            if (dropTextForMessengers) {
-                // Nur Messenger bekommen den Text nicht, Mail-Apps behalten ihn
-                val noText = Bundle().apply { putCharSequence(Intent.EXTRA_TEXT, null) }
-                val replacements = Bundle()
-                ShareTargetCapabilities.installedPdfTargets(context)
-                    .filterNot { it.isEmail }
-                    .forEach { replacements.putBundle(it.component.packageName, noText) }
-                chooser.putExtra(Intent.EXTRA_REPLACEMENT_EXTRAS, replacements)
-            }
             context.startActivity(chooser)
             viewModel.onReportExported()
         } catch (e: Exception) {
@@ -652,6 +660,7 @@ fun ReportScreen(viewModel: MainViewModel) {
             preferredAppLabel = preferredShareTargetLabel,
             preferredAppIsEmail = preferredShareTargetIsEmail,
             onShare = { exportDialogOpen = false; sharePdf() },
+            onShareOther = { exportDialogOpen = false; sharePdf(chooseTarget = true) },
             onFolder = { exportDialogOpen = false; saveLauncher.launch(buildFilename()) },
             onDismiss = { exportDialogOpen = false },
         )
@@ -1239,6 +1248,7 @@ private fun ExportDialog(
     preferredAppLabel: String?,
     preferredAppIsEmail: Boolean,
     onShare: () -> Unit,
+    onShareOther: () -> Unit,
     onFolder: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -1263,12 +1273,14 @@ private fun ExportDialog(
                         i18n.t(
                             if (preferredAppIsEmail) "reports.shareTarget.directDescription"
                             else "reports.shareTarget.contactDescription"
-                        )
+                        ) + "\n" + i18n.t("reports.shareTarget.longPressHint")
                     } else {
                         i18n.t("modals.export.shareDescription")
                     },
                     primary = true,
                     onClick = onShare,
+                    // Fest eingestellter Empfänger: lang drücken öffnet einmalig das Sharesheet
+                    onLongClick = if (preferredAppLabel != null) onShareOther else null,
                 )
                 ExportOptionRow(
                     icon = Icons.Filled.FolderOpen,
@@ -1295,6 +1307,7 @@ private fun ExportOptionRow(
     subtitle: String,
     primary: Boolean,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val colors = LocalAppColors.current
     val materialYou = colors.isMaterialYou
@@ -1354,7 +1367,7 @@ private fun ExportOptionRow(
             .clip(shape)
             .background(background)
             .border(if (primary) 1.dp else 2.dp, outline, shape)
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1683,3 +1696,4 @@ private fun PreviewPage(doc: ReportPreviewDocument, index: Int, widthPx: Int, el
         Box(modifier)
     }
 }
+

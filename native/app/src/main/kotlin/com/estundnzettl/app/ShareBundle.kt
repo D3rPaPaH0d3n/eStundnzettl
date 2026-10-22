@@ -3,10 +3,10 @@ package com.estundnzettl.app
 /**
  * Narrowest MIME type covering every file of a share bundle.
  *
- * Messengers such as WhatsApp read a SEND_MULTIPLE with the unspecific
- * wildcard type plus EXTRA_TEXT as a plain text share and silently drop the
- * files, so the bundle advertises e.g. `application/pdf` whenever all
- * files agree and only falls back to a wildcard for mixed types.
+ * Receivers match on the advertised type, so the bundle names e.g.
+ * `application/pdf` whenever all files agree and only falls back to a
+ * wildcard for mixed types. Messengers such as WhatsApp drop a mixed
+ * bundle entirely, which is why photos are shared as PDFs.
  */
 internal fun commonShareMimeType(mimeTypes: List<String>): String {
     val normalized = mimeTypes.map { it.trim().lowercase() }.filter { '/' in it }
@@ -15,14 +15,6 @@ internal fun commonShareMimeType(mimeTypes: List<String>): String {
     val topLevel = normalized.map { it.substringBefore('/') }
     return if (topLevel.all { it == topLevel.first() }) "${topLevel.first()}/*" else "*/*"
 }
-
-/**
- * Mixed bundles (report PDF plus a photo) still need the wildcard type.
- * Messengers read that together with EXTRA_TEXT as a text share, so they
- * get the files without the message; mail apps keep the text.
- */
-internal fun shouldDropMessengerText(fileCount: Int, mimeType: String?): Boolean =
-    fileCount > 1 && mimeType == "*/*"
 
 /**
  * Readable, unique file name for a shared original, e.g.

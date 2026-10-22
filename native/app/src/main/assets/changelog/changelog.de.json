@@ -1,5 +1,31 @@
 [
  {
+  "version": "5.2.7",
+  "date": "22.10.2026",
+  "title": "Fotos schlanker, WhatsApp verlässlich 📸",
+  "isMajor": false,
+  "playStoreText": "Fotos schlanker, WhatsApp verlässlich 📸\n\n• Hochgeladene Fotos werden automatisch verkleinert\n• Teilen über WhatsApp & Co. schickt Bericht und alle Dokumente mit – Fotos als PDF\n• Fester Empfänger? Lang drücken auf Teilen wählt einmalig eine andere App\n\nDanke fürs Testen! – Markus",
+  "sections": [
+   {
+    "iconName": "FileText",
+    "title": "Dokumente",
+    "items": [
+     "Fotos werden beim Hochladen automatisch verkleinert und richtig gedreht – a Krankmeldung bleibt gut lesbar, braucht aber nur mehr an Bruchteil vom Speicher.",
+     "PDFs dürfen bis 5 MB groß sein, Fotos vorm Verkleinern bis 25 MB.",
+     "Fehlt die Datei von an Dokument am Handy (z. B. nach ana Wiederherstellung), steht des jetzt klar dabei – einfach neu hochladen."
+    ]
+   },
+   {
+    "iconName": "Bug",
+    "title": "Behoben",
+    "items": [
+     "WhatsApp & Co. nehmen PDF und Fotos ned gemeinsam an – drum is manchmal nur der Text oder gar nix angekommen. Jetzt gehen Fotos beim Teilen als PDF mit, und alles kommt an.",
+     "Fester Empfänger eingestellt, aber heut soll's wo anders hin? Lang auf „Teilen“ drücken – dann kannst einmalig a andere App aussuchen, der feste Empfänger bleibt."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.6",
   "date": "22.10.2026",
   "title": "Dokumente direkt im PDF 📎",

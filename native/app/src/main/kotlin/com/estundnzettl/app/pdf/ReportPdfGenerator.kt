@@ -403,12 +403,14 @@ class ReportPdfGenerator(
                     drawn++
                 }
             }
-            // Nicht lesbar (oder leer): Platzhalter, das Original geht beim Teilen mit
+            // Fehlt die Datei (z. B. nach einer Wiederherstellung) oder ist sie
+            // nicht lesbar: Platzhalter mit dem passenden Hinweis
             if (drawn == 0) {
                 val page = newPage()
                 drawAttachmentHead(page.canvas, attachment, date, null)
+                val missing = file == null || !file.isFile
                 val notice = staticLayout(
-                    t("reports.attachmentPages.unreadable"),
+                    t(if (missing) "reports.attachmentPages.missing" else "reports.attachmentPages.unreadable"),
                     textPaint(9f, C.textMedium, italic = true),
                     boxW,
                 )

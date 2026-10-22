@@ -1,0 +1,7 @@
+Documents safe in the backup 🗂️
+
+• Uploaded documents (e.g. sick notes) are now part of the backup
+• Applies to Google Drive, Nextcloud, local folder and export
+• After a restore your documents are back
+
+Thanks for testing! – Markus

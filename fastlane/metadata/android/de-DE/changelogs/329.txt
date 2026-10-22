@@ -1,0 +1,7 @@
+Dokumente sicher im Backup 🗂️
+
+• Hochgeladene Dokumente (z. B. Krankmeldungen) sind jetzt im Backup enthalten
+• Gilt für Google Drive, Nextcloud, lokalen Ordner und Export
+• Nach einer Wiederherstellung sind die Dokumente wieder da
+
+Danke fürs Testen! – Markus

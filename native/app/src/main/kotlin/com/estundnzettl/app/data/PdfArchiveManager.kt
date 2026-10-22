@@ -20,6 +20,7 @@ import com.estundnzettl.core.calc.hashMonthContent
 import com.estundnzettl.core.calc.OvertimeAccountMonth
 import com.estundnzettl.core.calc.VacationBalance
 import com.estundnzettl.core.locale.AppLocale
+import com.estundnzettl.core.model.Attachment
 import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.UserData
@@ -74,6 +75,10 @@ class PdfArchiveManager(
         val workCodes: List<WorkCode>,
         val locale: AppLocale,
         val calculationConfig: CalculationConfig?,
+        /** Alle hochgeladenen Dokumente; pro Monat gefiltert. */
+        val attachments: List<Attachment> = emptyList(),
+        /** Aufgelöste Dateien der [attachments] (Attachment.id → Datei). */
+        val attachmentFiles: Map<String, File> = emptyMap(),
     )
 
     data class TargetResult(
@@ -141,6 +146,7 @@ class PdfArchiveManager(
             language = language,
             overtimeAccount = overtimeAccount,
             vacationBalance = vacationBalance,
+            attachments = data.attachments,
         )
         val key = hashKey(year, month)
         val prevHash = settings.getString(key)
@@ -189,6 +195,8 @@ class PdfArchiveManager(
             data.entries + holidays, data.userData, data.locale, data.calculationConfig,
         )
         val monthEntries = filterEntriesForMonth(corrected, year, month)
+        val monthEntryIds = monthEntries.map { it.id }.toSet()
+        val monthAttachments = data.attachments.filter { it.entryId in monthEntryIds }
         val periodStart = LocalDate.of(year, month, 1)
         val periodEnd = YearMonth.of(year, month).atEndOfMonth()
         val stats = calculatePeriodStats(
@@ -208,7 +216,8 @@ class PdfArchiveManager(
                 filterWeek = null,
                 stats = stats,
                 workCodes = data.workCodes,
-                attachments = emptyList(),
+                attachments = monthAttachments,
+                attachmentFiles = data.attachmentFiles,
                 customNote = "",
                 locale = data.locale,
                 calculationConfig = data.calculationConfig,

@@ -510,13 +510,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // ─── Automatisches PDF-Archiv ────────────────────────────
 
-    private fun pdfArchiveData() = PdfArchiveManager.Data(
-        entries = allEntries,
-        userData = _state.value.userData,
-        workCodes = _state.value.workCodes,
-        locale = _state.value.locale,
-        calculationConfig = _state.value.calculationConfig,
-    )
+    private fun pdfArchiveData(): PdfArchiveManager.Data {
+        val attachments = _state.value.attachments
+        return PdfArchiveManager.Data(
+            entries = allEntries,
+            userData = _state.value.userData,
+            workCodes = _state.value.workCodes,
+            locale = _state.value.locale,
+            calculationConfig = _state.value.calculationConfig,
+            attachments = attachments,
+            attachmentFiles = attachments.associate { it.id to attachmentFile(it) },
+        )
+    }
 
     /** Auto-Trigger (Startup/Resume) — Fehler landen nur im Log/Setting. */
     fun autoPdfArchiveRun(source: String) {

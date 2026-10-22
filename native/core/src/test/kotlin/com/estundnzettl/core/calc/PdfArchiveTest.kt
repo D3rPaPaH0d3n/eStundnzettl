@@ -1,6 +1,7 @@
 package com.estundnzettl.core.calc
 
 import com.estundnzettl.core.locale.getLocale
+import com.estundnzettl.core.model.Attachment
 import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryId
 import com.estundnzettl.core.model.EntryType
@@ -197,5 +198,26 @@ class PdfArchiveTest {
             "Stundenzettel_2025-03_Mller_sterreich.pdf",
             buildArchiveFilename(2025, 3, UserData(name = "Müller Österreich")),
         )
+    }
+
+    // ── Anhänge im Hash ──────────────────────────────────────────────
+
+    private fun attachment(id: String, entryId: Long) = Attachment(
+        id = id, entryId = EntryId.of(entryId), label = "Krankenstand",
+        fileName = "kb.pdf", mimeType = "application/pdf",
+        storagePath = "attachments/$id.pdf", fileSize = 1234, createdAt = "2025-03-05T08:00:00Z",
+    )
+
+    @Test
+    fun `hashMonthContent reagiert auf hochgeladene Dokumente des Monats`() {
+        val entries = listOf(entry(1, "2025-03-05"), entry(2, "2025-04-02"))
+        val date = LocalDate.of(2025, 3, 20)
+        fun hash(attachments: List<Attachment>) =
+            hashMonthContent(entries, userData, 2025, 3, currentDate = date, attachments = attachments)
+
+        val without = hash(emptyList())
+        assertNotEquals(without, hash(listOf(attachment("att_1", 1))))
+        // Dokument eines anderen Monats ändert den März nicht
+        assertEquals(without, hash(listOf(attachment("att_2", 2))))
     }
 }

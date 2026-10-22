@@ -1,5 +1,7 @@
 package com.estundnzettl.app
 
+import com.estundnzettl.core.model.Attachment
+import com.estundnzettl.core.model.EntryId
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -23,11 +25,21 @@ class ShareBundleTest {
         assertEquals("*/*", commonShareMimeType(emptyList()))
     }
 
+    private fun attachment(id: String, mimeType: String) = Attachment(
+        id = id, entryId = EntryId.of(1), label = id, fileName = "$id.bin", mimeType = mimeType,
+        storagePath = "attachments/$id", fileSize = 1, createdAt = "2026-10-14T08:00:00Z",
+    )
+
     @Test
-    fun `messengers lose the text only for wildcard bundles`() {
-        assertEquals(true, shouldDropMessengerText(2, "*/*"))
-        assertEquals(false, shouldDropMessengerText(2, "application/pdf"))
-        assertEquals(false, shouldDropMessengerText(1, "*/*"))
+    fun `messengers get no originals when the documents are embedded`() {
+        val attachments = listOf(attachment("a", "application/pdf"), attachment("b", "image/jpeg"))
+        assertEquals(emptyList<Attachment>(), messengerShareAttachments(attachments, embedded = true))
+    }
+
+    @Test
+    fun `messengers get only pdf originals when nothing is embedded`() {
+        val attachments = listOf(attachment("a", "application/pdf"), attachment("b", "image/jpeg"))
+        assertEquals(listOf("a"), messengerShareAttachments(attachments, embedded = false).map { it.id })
     }
 
     @Test

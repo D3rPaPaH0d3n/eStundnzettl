@@ -199,8 +199,15 @@
       "title": "Attachment",
       "page": "Page {{current}}/{{total}}",
       "unreadable": "This document could not be embedded. It is included as the original file.",
+      "missing": "The file is missing on this device, e.g. after restoring from a backup. Please upload the document again.",
       "morePages": "{{count}} more page(s) only in the original file",
       "moreDocuments": "More documents only as original files:"
+    },
+    "photoShareHint": {
+      "title": "Photos can’t go via WhatsApp",
+      "message": "WhatsApp, Signal & co. don’t accept a PDF and photos together. The photos are included as pages in the report – the originals only go along by email.",
+      "pdfOnly": "Send PDF only",
+      "all": "Send everything (email)"
     },
     "summary": {
       "title": "Summary",
@@ -1200,12 +1207,14 @@
     "addButton": "Add document",
     "existingTitle": "Existing documents",
     "empty": "No documents attached to this entry yet.",
+    "missingFile": "File missing on this device – please upload again",
     "toast": {
       "selectFile": "Please pick a document first.",
       "labelRequired": "Please enter a label.",
       "invalidType": "Only PDF, JPG, PNG or WEBP files are allowed.",
       "readError": "The file could not be read.",
-      "fileTooLarge": "The file is larger than 10 MB.",
+      "fileTooLarge": "PDF is larger than 5 MB.",
+      "imageTooLarge": "Photo is larger than 25 MB.",
       "added": "Document added",
       "addError": "Couldn't save the document.",
       "deleted": "Document deleted",

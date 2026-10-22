@@ -5,7 +5,11 @@ import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.estundnzettl.app.data.AttachmentCompressor
 import com.estundnzettl.app.data.AttachmentsRepository
+import com.estundnzettl.app.data.MAX_IMAGE_INPUT_BYTES
+import com.estundnzettl.app.data.MAX_PDF_BYTES
+import com.estundnzettl.app.data.compressedImageFileName
 import com.estundnzettl.app.data.AutoBackupManager
 import com.estundnzettl.app.data.BackupRepository
 import com.estundnzettl.app.data.EntriesRepository
@@ -66,6 +70,7 @@ import com.estundnzettl.core.model.WORK_CODE_PRESETS
 import com.estundnzettl.core.model.WORK_MODELS
 import com.estundnzettl.core.model.WorkCode
 import com.estundnzettl.core.model.WorkModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -74,6 +79,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
@@ -1352,7 +1358,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val LEGACY_SUPPORT_FIRST_ELIGIBLE = "estundnzettl_support_prompt_first_eligible_v1"
         private const val ATTACHMENTS_DIR = "attachments"
         private const val KEY_PENDING_TIMER_CAPTURE = "pending_timer_capture"
-        private const val MAX_ATTACHMENT_SIZE = 10L * 1024 * 1024
         private val ALLOWED_ATTACHMENT_TYPES = setOf(
             "application/pdf", "image/jpeg", "image/png", "image/webp",
         )
@@ -1381,9 +1386,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Anhang anlegen: Datei aus der SAF-Uri in den App-Speicher kopieren,
-     * Metadaten in SQLite, Label in die MRU-Liste. Validierung wie die
-     * Web-App (max. 10 MB; PDF/JPEG/PNG/WebP). Wirft bei Fehlern mit
-     * anzeigbarer Meldung.
+     * Metadaten in SQLite, Label in die MRU-Liste. Fotos werden dabei
+     * verkleinert und als JPEG gespeichert ([AttachmentCompressor]), PDFs
+     * sind auf [MAX_PDF_BYTES] begrenzt. Wirft bei Fehlern mit anzeigbarer
+     * Meldung.
      */
     suspend fun addAttachment(entryId: EntryId, uri: android.net.Uri, label: String) {
         val context = getApplication<Application>()
@@ -1409,16 +1415,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        val bytes = resolver.openInputStream(uri)?.use { it.readBytes() }
-            ?: throw AttachmentValidationException("attachments.toast.readError")
-        if (size < 0) size = bytes.size.toLong()
-        if (size > MAX_ATTACHMENT_SIZE) {
-            throw AttachmentValidationException("attachments.toast.fileTooLarge")
+        val isImage = mimeType.startsWith("image/")
+        val maxInput = if (isImage) MAX_IMAGE_INPUT_BYTES else MAX_PDF_BYTES
+        if (size > maxInput) {
+            throw AttachmentValidationException(
+                if (isImage) "attachments.toast.imageTooLarge" else "attachments.toast.fileTooLarge",
+            )
         }
+        val original = withContext(Dispatchers.IO) {
+            resolver.openInputStream(uri)?.use { it.readBytes() }
+        } ?: throw AttachmentValidationException("attachments.toast.readError")
+        if (original.size > maxInput) {
+            throw AttachmentValidationException(
+                if (isImage) "attachments.toast.imageTooLarge" else "attachments.toast.fileTooLarge",
+            )
+        }
+        val bytes = if (isImage) {
+            withContext(Dispatchers.Default) { AttachmentCompressor.compressImage(original) }
+                ?: throw AttachmentValidationException("attachments.toast.readError")
+        } else {
+            original
+        }
+        size = bytes.size.toLong()
+        val storedMimeType = if (isImage) "image/jpeg" else mimeType
+        val storedName = if (isImage) compressedImageFileName(displayName) else displayName
 
         val id = "att_${System.currentTimeMillis()}_${(1..6).map { "abcdefghijklmnopqrstuvwxyz0123456789".random() }.joinToString("")}"
-        val extension = displayName.substringAfterLast('.', "bin").lowercase()
-        val fileName = displayName.replace(Regex("[^a-zA-Z0-9._-]"), "_").ifEmpty { "dokument" }
+        val extension = storedName.substringAfterLast('.', "bin").lowercase()
+        val fileName = storedName.replace(Regex("[^a-zA-Z0-9._-]"), "_").ifEmpty { "dokument" }
         val storagePath = "$ATTACHMENTS_DIR/$id.$extension"
 
         val file = java.io.File(attachmentsDir(), "$id.$extension")
@@ -1429,7 +1453,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             entryId = entryId,
             label = trimmedLabel,
             fileName = fileName,
-            mimeType = mimeType,
+            mimeType = storedMimeType,
             storagePath = storagePath,
             fileSize = size,
             createdAt = java.time.Instant.now().toString(),

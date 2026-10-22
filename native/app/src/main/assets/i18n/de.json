@@ -199,8 +199,15 @@
       "title": "Anhang",
       "page": "Seite {{current}}/{{total}}",
       "unreadable": "Dieses Dokument konnte nicht eingebettet werden. Es liegt als Originaldatei bei.",
+      "missing": "Die Datei fehlt auf diesem Gerät, z. B. nach einer Wiederherstellung aus dem Backup. Bitte das Dokument neu hochladen.",
       "morePages": "{{count}} weitere Seite(n) nur in der Originaldatei",
       "moreDocuments": "Weitere Dokumente nur als Originaldatei:"
+    },
+    "photoShareHint": {
+      "title": "Fotos gehen nicht über WhatsApp",
+      "message": "WhatsApp, Signal & Co. nehmen PDF und Fotos nicht gemeinsam an. Die Fotos sind als Seiten im Bericht enthalten – die Originale gehen nur per E-Mail mit.",
+      "pdfOnly": "Nur PDF senden",
+      "all": "Alles senden (E-Mail)"
     },
     "summary": {
       "title": "Zusammenfassung",
@@ -1200,12 +1207,14 @@
     "addButton": "Dokument hinzufügen",
     "existingTitle": "Vorhandene Dokumente",
     "empty": "Noch keine Dokumente für diesen Eintrag vorhanden.",
+    "missingFile": "Datei fehlt auf diesem Gerät – bitte neu hochladen",
     "toast": {
       "selectFile": "Bitte zuerst ein Dokument auswählen.",
       "labelRequired": "Bitte eine Bezeichnung eingeben.",
       "invalidType": "Nur PDF, JPG, PNG oder WEBP sind erlaubt.",
       "readError": "Datei konnte nicht gelesen werden.",
-      "fileTooLarge": "Datei ist größer als 10 MB.",
+      "fileTooLarge": "PDF ist größer als 5 MB.",
+      "imageTooLarge": "Foto ist größer als 25 MB.",
       "added": "Dokument hinzugefügt",
       "addError": "Dokument konnte nicht gespeichert werden.",
       "deleted": "Dokument gelöscht",

@@ -4,7 +4,6 @@ import android.app.PendingIntent
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Intent
-import android.os.Bundle
 import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -114,7 +113,7 @@ import com.estundnzettl.app.ShareTemplateRenderer
 import com.estundnzettl.app.ShareTargetCapabilities
 import com.estundnzettl.app.attachmentShareFileName
 import com.estundnzettl.app.commonShareMimeType
-import com.estundnzettl.app.shouldDropMessengerText
+import com.estundnzettl.app.messengerShareAttachments
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.pdf.ReportPdfGenerator
 import com.estundnzettl.app.pdf.ReportPdfInput
@@ -303,6 +302,7 @@ fun ReportScreen(viewModel: MainViewModel) {
     var userScale by remember { mutableStateOf(1f) }
     var noteDialogOpen by remember { mutableStateOf(false) }
     var exportDialogOpen by remember { mutableStateOf(false) }
+    var photoShareHintOpen by remember { mutableStateOf(false) }
     var layoutPanelOpen by remember { mutableStateOf(false) }
     var filterMenuOpen by remember { mutableStateOf(false) }
     var monthPickerOpen by remember { mutableStateOf(false) }
@@ -484,7 +484,12 @@ fun ReportScreen(viewModel: MainViewModel) {
         }
     }
 
-    fun sharePdf() {
+    /**
+     * [pdfOnly]: für Messenger. WhatsApp & Co. verwerfen gemischte Bundles
+     * (PDF + Foto) komplett, daher nur PDF-Dateien teilen; die Fotos stecken
+     * als Anhang-Seiten im Bericht.
+     */
+    fun sharePdf(pdfOnly: Boolean = false) {
         val bytes = pdfBytes ?: return
         try {
             val authority = "${context.packageName}.fileprovider"
@@ -502,7 +507,12 @@ fun ReportScreen(viewModel: MainViewModel) {
             }
             val entryDates = filteredEntries.associate { it.id to it.date }
             val takenNames = mutableSetOf<String>()
-            reportAttachments.forEach { attachment ->
+            val sharedAttachments = if (pdfOnly) {
+                messengerShareAttachments(reportAttachments, getEffectivePdfDisplay(config).embedAttachments)
+            } else {
+                reportAttachments
+            }
+            sharedAttachments.forEach { attachment ->
                 val attachmentFile = viewModel.attachmentFile(attachment)
                 if (attachmentFile.isFile) {
                     val name = attachmentShareFileName(
@@ -537,7 +547,6 @@ fun ReportScreen(viewModel: MainViewModel) {
             val shareSubject = buildShareSubject()
             intent.putExtra(Intent.EXTRA_SUBJECT, shareSubject)
             intent.putExtra(Intent.EXTRA_TEXT, buildShareMessage())
-            val dropTextForMessengers = shouldDropMessengerText(uris.size, intent.type)
             intent.putExtra(Intent.EXTRA_TITLE, shareSubject)
             ShareHandoffStore.emailRecipient(context)
                 .trim()
@@ -584,7 +593,6 @@ fun ReportScreen(viewModel: MainViewModel) {
                 // system Sharesheet to the chosen app so Android can surface
                 // its Direct Share people without exposing them to us.
                 intent.`package` = preferredComponent.packageName
-                if (dropTextForMessengers) intent.removeExtra(Intent.EXTRA_TEXT)
                 if (intent.resolveActivity(context.packageManager) == null) {
                     ShareHandoffStore.clearPreferredTarget(context)
                     intent.`package` = null
@@ -608,15 +616,6 @@ fun ReportScreen(viewModel: MainViewModel) {
                 i18n.t("reports.title"),
                 callback.intentSender,
             )
-            if (dropTextForMessengers) {
-                // Nur Messenger bekommen den Text nicht, Mail-Apps behalten ihn
-                val noText = Bundle().apply { putCharSequence(Intent.EXTRA_TEXT, null) }
-                val replacements = Bundle()
-                ShareTargetCapabilities.installedPdfTargets(context)
-                    .filterNot { it.isEmail }
-                    .forEach { replacements.putBundle(it.component.packageName, noText) }
-                chooser.putExtra(Intent.EXTRA_REPLACEMENT_EXTRAS, replacements)
-            }
             context.startActivity(chooser)
             viewModel.onReportExported()
         } catch (e: Exception) {
@@ -646,12 +645,36 @@ fun ReportScreen(viewModel: MainViewModel) {
         )
     }
 
+    if (photoShareHintOpen) {
+        PhotoShareHintDialog(
+            i18n = i18n,
+            // Fest eingestellter Messenger: "Alles senden" würde dort scheitern
+            messengerOnly = preferredShareComponent != null && !preferredShareTargetIsEmail,
+            onPdfOnly = { photoShareHintOpen = false; sharePdf(pdfOnly = true) },
+            onAll = { photoShareHintOpen = false; sharePdf() },
+            onDismiss = { photoShareHintOpen = false },
+        )
+    }
+
     if (exportDialogOpen) {
         ExportDialog(
             i18n = i18n,
             preferredAppLabel = preferredShareTargetLabel,
             preferredAppIsEmail = preferredShareTargetIsEmail,
-            onShare = { exportDialogOpen = false; sharePdf() },
+            onShare = {
+                exportDialogOpen = false
+                // Fotos unter den Originalen: WhatsApp & Co. nehmen das gemischte
+                // Bundle nicht an, daher vorher fragen (Mail-Ziel braucht das nicht)
+                val hasPhotos = reportAttachments.any {
+                    !it.mimeType.equals("application/pdf", ignoreCase = true) &&
+                        viewModel.attachmentFile(it).isFile
+                }
+                if (hasPhotos && !preferredShareTargetIsEmail) {
+                    photoShareHintOpen = true
+                } else {
+                    sharePdf()
+                }
+            },
             onFolder = { exportDialogOpen = false; saveLauncher.launch(buildFilename()) },
             onDismiss = { exportDialogOpen = false },
         )
@@ -1682,4 +1705,40 @@ private fun PreviewPage(doc: ReportPreviewDocument, index: Int, widthPx: Int, el
     } else {
         Box(modifier)
     }
+}
+
+/** Hinweis vor dem Teilen, wenn Fotos unter den Originalen sind. */
+@Composable
+private fun PhotoShareHintDialog(
+    i18n: I18n,
+    messengerOnly: Boolean,
+    onPdfOnly: () -> Unit,
+    onAll: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = LocalAppColors.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(i18n.t("reports.photoShareHint.title"), fontWeight = FontWeight.Bold) },
+        text = {
+            Text(
+                i18n.t("reports.photoShareHint.message"),
+                color = colors.textSecondary,
+                lineHeight = 20.sp,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onPdfOnly) {
+                Text(i18n.t("reports.photoShareHint.pdfOnly"), color = colors.accent, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = if (messengerOnly) onDismiss else onAll) {
+                Text(
+                    i18n.t(if (messengerOnly) "common.cancel" else "reports.photoShareHint.all"),
+                    color = colors.textMuted,
+                )
+            }
+        },
+    )
 }

@@ -286,6 +286,12 @@ fun AttachmentSheet(viewModel: MainViewModel) {
                                 )
                                 Text(attachment.fileName, color = colors.textMuted, fontSize = 12.sp, maxLines = 1)
                                 Text(formatFileSize(attachment.fileSize), color = colors.textFaint, fontSize = 11.sp)
+                                // Backups enthalten nur die Eckdaten: nach einer Wiederherstellung
+                                // kann die Datei fehlen, dann neu hochladen
+                                val fileMissing = remember(attachment.id) { !viewModel.attachmentFile(attachment).isFile }
+                                if (fileMissing) {
+                                    Text(t.t("attachments.missingFile"), color = colors.danger, fontSize = 11.sp)
+                                }
                             }
                             IconButton(onClick = {
                                 scope.launch {

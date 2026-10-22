@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deploy AAB to Google Play Console (Internal Testing or Open Beta).
+"""Deploy AAB to Google Play Console (Internal Testing, Open Beta or a production draft).
 
 Release-Name und Release-Notes werden *dynamisch* abgeleitet:
 
@@ -35,9 +35,11 @@ from googleapiclient.http import MediaFileUpload
 
 PACKAGE = "com.estundnzettl.app"
 AAB_PATH = os.environ.get(
-    "AAB_PATH", "native/app/build/outputs/bundle/release/app-release.aab"
+    "AAB_PATH", "native/app/build/outputs/bundle/betaRelease/app-beta-release.aab"
 )
 TRACK = os.environ.get("PLAY_TRACK", "internal")
+# "completed" rollt sofort aus; "draft" legt nur einen Entwurf an (Produktion).
+RELEASE_STATUS = os.environ.get("RELEASE_STATUS", "completed")
 ALL_TRACKS = ("internal", "alpha", "beta", "production")
 RELEASE_NOTES_LIMIT = 500
 RELEASE_NAME_LIMIT = 50
@@ -187,21 +189,34 @@ print(f"Bundle uploaded: versionCode {vc}")
 
 new_release = {
     "versionCodes": [str(vc)],
-    "status": "completed",
+    "status": RELEASE_STATUS,
     "name": RELEASE_NAME,
 }
 if release_notes_list:
     new_release["releaseNotes"] = release_notes_list
 
+releases = [new_release]
+if RELEASE_STATUS == "draft":
+    # Laufende Releases des Tracks (z. B. die aktuelle Produktion) behalten,
+    # nur einen älteren Entwurf durch den neuen ersetzen.
+    current = (
+        service.edits()
+        .tracks()
+        .get(packageName=PACKAGE, editId=edit_id, track=TRACK)
+        .execute(num_retries=5)
+    )
+    kept = [r for r in current.get("releases", []) if r.get("status") != "draft"]
+    releases = kept + [new_release]
+
 service.edits().tracks().update(
     packageName=PACKAGE,
     editId=edit_id,
     track=TRACK,
-    body={"releases": [new_release]},
+    body={"releases": releases},
 ).execute(num_retries=5)
 
 service.edits().commit(packageName=PACKAGE, editId=edit_id).execute(num_retries=5)
-print(f"✅ Deployed versionCode {vc} to track '{TRACK}'!")
+print(f"✅ Deployed versionCode {vc} to track '{TRACK}' (status: {RELEASE_STATUS})!")
 
 # ── Post-Snapshot + Cross-Track-Sanity-Check ─────────────────────────────
 post_edit = service.edits().insert(body={}, packageName=PACKAGE).execute()

@@ -13,7 +13,18 @@
 #      - Internal: optional Semver-Bump
 #      - Beta: kein Semver-Bump, aber ebenfalls Play-safe versionCode
 #   3. Native Release-AAB bauen (inkl. Unit-Tests) und signieren
+#      - Internal + Beta laden die Variante "beta" hoch (mit Diagnose)
+#      - Beta baut zusätzlich die Variante "prod" (ohne Diagnose/Debug-Logs)
 #   4. AAB zum Play Store hochladen (NUR gewählter Track)
+#      - Beta: "prod"-AAB zusätzlich als ENTWURF in den Produktions-Track
+#
+# PRODUKTION (statt "Hochstufen"):
+#   Beta-Releases NICHT mehr in die Produktion hochstufen — sonst landet die
+#   Beta-Variante samt Diagnose bei allen Nutzern. Stattdessen in der Play
+#   Console unter Produktion den Entwurf "v<versionName> …" öffnen und
+#   veröffentlichen. Er stammt aus demselben Commit wie die Beta und trägt
+#   den versionCode direkt darunter (Beta = N+1, Produktion = N), damit
+#   Beta-Tester weiterhin die Beta-Variante bekommen.
 #   5. Release-Name + Versionshinweise aus dem nativen Changelog
 #   6. Version-Bump committen
 #   7. Telegram Notification
@@ -170,7 +181,14 @@ jobs:
             BASE_CODE=$OLD_CODE
           fi
 
-          NEW_CODE=$((BASE_CODE + 1))
+          if [ "$TRACK" = "beta" ]; then
+            # Zwei Codes reservieren: N für den Produktions-Entwurf, N+1 für die Beta
+            NEW_CODE=$((BASE_CODE + 2))
+            PROD_CODE=$((BASE_CODE + 1))
+          else
+            NEW_CODE=$((BASE_CODE + 1))
+            PROD_CODE=""
+          fi
           NEW_NAME="$OLD_NAME"
 
           if [ "$TRACK" = "internal" ]; then
@@ -195,6 +213,7 @@ jobs:
           sed -i "s/versionName = \"[^\"]*\"/versionName = \"$NEW_NAME\"/" native/app/build.gradle.kts
 
           echo "new_code=$NEW_CODE" >> $GITHUB_OUTPUT
+          echo "prod_code=$PROD_CODE" >> $GITHUB_OUTPUT
           echo "new_name=$NEW_NAME" >> $GITHUB_OUTPUT
           echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
           echo "track=$TRACK" >> $GITHUB_OUTPUT
@@ -221,6 +240,13 @@ jobs:
 
           make_notes de-DE fastlane/metadata/android/de-DE/changelogs/${CODE}.txt
           make_notes en-US fastlane/metadata/android/en-US/changelogs/${CODE}.txt
+          PROD_CODE="${{ steps.bump.outputs.prod_code }}"
+          if [ -n "$PROD_CODE" ]; then
+            for LOCALE in de-DE en-US; do
+              cp "fastlane/metadata/android/$LOCALE/changelogs/${CODE}.txt" \
+                 "fastlane/metadata/android/$LOCALE/changelogs/${PROD_CODE}.txt"
+            done
+          fi
           echo "📝 Play Store Release-Notes für versionCode $CODE vorbereitet:"
           sed -n '1,20p' fastlane/metadata/android/de-DE/changelogs/${CODE}.txt
 
@@ -240,7 +266,15 @@ jobs:
 
       - name: Build release AAB
         working-directory: native
-        run: chmod +x gradlew && ./gradlew :core:test :app:testDebugUnitTest :app:bundleRelease --no-daemon
+        env:
+          DEPLOY_TRACK: ${{ github.event.inputs.track }}
+        run: |
+          chmod +x gradlew
+          TASKS=":core:test :app:testBetaDebugUnitTest :app:testProdDebugUnitTest :app:bundleBetaRelease"
+          if [ "$DEPLOY_TRACK" = "beta" ]; then
+            TASKS="$TASKS :app:bundleProdRelease"
+          fi
+          ./gradlew $TASKS --no-daemon
 
       # ── 4. AAB signieren ─────────────────────────────────────────────
       - name: Decode keystore
@@ -253,14 +287,19 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
         run: |
-          AAB="native/app/build/outputs/bundle/release/app-release.aab"
+          AAB="native/app/build/outputs/bundle/betaRelease/app-beta-release.aab"
+          PROD_AAB="native/app/build/outputs/bundle/prodRelease/app-prod-release.aab"
           echo "AAB_PATH=$AAB" >> "$GITHUB_ENV"
-          jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
-            -keystore keystore.jks \
-            -storepass "$KEYSTORE_PASSWORD" \
-            -keypass "$KEYSTORE_PASSWORD" \
-            "$AAB" \
-            "$KEYSTORE_ALIAS"
+          echo "PROD_AAB_PATH=$PROD_AAB" >> "$GITHUB_ENV"
+          for FILE in "$AAB" "$PROD_AAB"; do
+            [ -f "$FILE" ] || continue
+            jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
+              -keystore keystore.jks \
+              -storepass "$KEYSTORE_PASSWORD" \
+              -keypass "$KEYSTORE_PASSWORD" \
+              "$FILE" \
+              "$KEYSTORE_ALIAS"
+          done
 
       # ── 5. Play Store Upload ─────────────────────────────────────────
       - name: Set up Python
@@ -282,6 +321,17 @@ jobs:
           RELEASE_NOTES: ${{ github.event.inputs.release_notes_override }}
           AAB_PATH: ${{ env.AAB_PATH }}
           VERSION_CODE: ${{ steps.bump.outputs.new_code }}
+          VERSION_NAME: ${{ steps.bump.outputs.new_name }}
+        run: python3 .github/workflows/scripts/deploy-play.py
+
+      - name: "Upload production draft (prod variant)"
+        if: github.event.inputs.track == 'beta'
+        env:
+          PLAY_TRACK: production
+          RELEASE_STATUS: draft
+          RELEASE_NOTES: ${{ github.event.inputs.release_notes_override }}
+          AAB_PATH: ${{ env.PROD_AAB_PATH }}
+          VERSION_CODE: ${{ steps.bump.outputs.prod_code }}
           VERSION_NAME: ${{ steps.bump.outputs.new_name }}
         run: python3 .github/workflows/scripts/deploy-play.py
 
@@ -307,7 +357,8 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add native/app/build.gradle.kts fastlane/metadata/android/*/changelogs/${{ steps.bump.outputs.new_code }}.txt
+          git add native/app/build.gradle.kts fastlane/metadata/android/*/changelogs/${{ steps.bump.outputs.new_code }}.txt \
+            fastlane/metadata/android/*/changelogs/${{ steps.bump.outputs.prod_code }}.txt
           if ! git diff --staged --quiet; then
             git commit -m "chore: bump versionCode for Beta v${{ steps.bump.outputs.new_name }} (${{ steps.bump.outputs.new_code }}) [skip ci]"
             git push origin "${{ github.ref_name }}"
@@ -384,6 +435,7 @@ jobs:
               "$VERSION_NAME" "$VERSION_CODE" "$COMMIT_SHA" "$COMMIT_SUBJECT" "$TRACK_LABEL"
             if [ "$TRACK" = "beta" ]; then
               MSG="${MSG}"$'\n\n⏳ Beta-Tester bekommen das Update in ca. 1-3h.'
+              MSG="${MSG}"$'\n📦 Produktions-Entwurf (ohne Diagnose) liegt bereit: Play Console → Produktion → Entwurf veröffentlichen.'
             else
               MSG="${MSG}"$' und verifiziert\n\n⏳ Download in ca. 10-30 Min im Play Store verfügbar.'
             fi

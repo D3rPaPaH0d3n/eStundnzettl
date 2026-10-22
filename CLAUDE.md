@@ -13,7 +13,18 @@
   - `:app` — Android-UI, Room, Cloud-Backups, PDF
 - `main` baut und veröffentlicht die Kotlin-App; Version nur in
   `native/app/build.gradle.kts` (`versionName`, `versionCode`)
-- CI-Tests/Build (in `native/`): `./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug`
+- CI-Tests/Build (in `native/`): `./gradlew :core:test :app:testBetaDebugUnitTest :app:testProdDebugUnitTest :app:assembleBetaDebug :app:assembleProdDebug`
+
+## Build-Varianten (Flavor-Dimension `channel`)
+
+- `beta` (Default): Internal Testing + Open Beta. Enthält die Diagnose-Karte im
+  Hausmasta-Modus (`src/beta/`: `DiagnosticsSection`, `Diagnostics.kt`; Tests in `src/testBeta/`).
+- `prod`: Produktion + GitHub-Release. `src/prod/` liefert ein leeres `DiagnosticsSection`;
+  `proguard-prod.pro` entfernt `Log.v/d/i`. versionCode = Beta-Code − 1.
+- Diagnose-/Testhilfen gehören nach `src/beta/`, nie nach `src/main/`.
+  Demo-Daten sind ein Feature für neue Nutzer und bleiben in `main`.
+- Produktion wird nicht mehr per Hochstufen der Beta veröffentlicht: Der Beta-Deploy
+  lädt die `prod`-Variante als Entwurf in den Produktions-Track.
 
 ## Native PDF-Pipeline
 

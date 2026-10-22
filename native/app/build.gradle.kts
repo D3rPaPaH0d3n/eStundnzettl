@@ -50,6 +50,26 @@ android {
         }
     }
 
+    // Zwei Kanäle aus demselben Code: "beta" (Open Beta/Internal, mit
+    // Diagnose-Karte aus src/beta) und "prod" (Produktion, ohne Diagnose,
+    // ohne Debug-Logs). Gleiche applicationId, damit beide dasselbe
+    // Play-Listing aktualisieren.
+    flavorDimensions += "channel"
+    productFlavors {
+        create("beta") {
+            dimension = "channel"
+            isDefault = true
+        }
+        create("prod") {
+            dimension = "channel"
+            // Eine Nummer unter der Beta aus demselben Commit: Beta-Tester
+            // behalten so immer die Beta-Variante (Play liefert den höchsten
+            // versionCode aus Beta und Produktion).
+            versionCode = defaultConfig.versionCode!! - 1
+            proguardFile("proguard-prod.pro")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

@@ -8,9 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.estundnzettl.app.data.AttachmentsRepository
 import com.estundnzettl.app.data.AutoBackupManager
 import com.estundnzettl.app.data.BackupRepository
-import com.estundnzettl.app.data.DiagnosticsCollector
-import com.estundnzettl.app.data.DiagnosticsReport
-import com.estundnzettl.app.data.DriveProbe
 import com.estundnzettl.app.data.EntriesRepository
 import com.estundnzettl.app.data.replaceFullSnapshot
 import com.estundnzettl.app.data.EntryIdGenerator
@@ -279,20 +276,12 @@ data class MainUiState(
     /** Nach einem Update einmalig sichtbares Änderungsprotokoll. */
     val showWhatsNew: Boolean = false,
     val whatsNewVersion: String? = null,
-    /** Lesende Selbstauskunft im Hausmasta-Modus. */
-    val diagnostics: DiagnosticsUiState = DiagnosticsUiState(),
     /** Hinweis aufs ZA-Konto weggeklickt (bis zum Laden: true, damit nichts aufblitzt). */
     val overtimeAccountHintDismissed: Boolean = true,
     /** Hinweis auf Tage ohne Eintrag (Einstellung; bis zum Laden aus, damit nichts aufblitzt). */
     val missingDaysHintEnabled: Boolean = false,
     /** Bis zu diesem Tag sind Tage ohne Eintrag schon ausgeblendet. */
     val missingDaysAcknowledgedThrough: LocalDate? = null,
-)
-
-data class DiagnosticsUiState(
-    val report: DiagnosticsReport? = null,
-    val loading: Boolean = false,
-    val drive: DriveProbe = DriveProbe.Idle,
 )
 
 data class NextcloudUiState(
@@ -340,14 +329,15 @@ internal fun shouldShowGoogleDriveBackupWarning(
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val db = (application as EStundnzettlApp).database
+    // internal: die Diagnose der Beta-Variante liest darüber (src/beta)
+    internal val db = (application as EStundnzettlApp).database
     private val entriesRepo = EntriesRepository(db)
     private val workCodesRepo = WorkCodesRepository(db)
     private val attachmentsRepo = AttachmentsRepository(db)
     val settings = SettingsRepository(db.settingsDao())
-    private val secrets = SecretStore(application)
+    internal val secrets = SecretStore(application)
     private val nextcloudManager = NextcloudManager(settings, secrets)
-    private val googleDrive = GoogleDriveManager(application, settings)
+    internal val googleDrive = GoogleDriveManager(application, settings)
     private val pdfArchive =
         PdfArchiveManager(application, settings, nextcloudManager, googleDrive)
 
@@ -1123,54 +1113,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setExpertMode(enabled: Boolean) {
         setUserData { it.copy(expertMode = enabled) }
         emit(UiMessage(if (enabled) "settings.toast.expertOn" else "settings.toast.expertOff"))
-    }
-
-    // ─── Diagnose (Hausmasta-Modus, ausschließlich lesend) ───
-
-    private val diagnosticsCollector by lazy {
-        DiagnosticsCollector(getApplication(), db, settings, secrets)
-    }
-
-    private fun updateDiagnostics(transform: (DiagnosticsUiState) -> DiagnosticsUiState) {
-        _state.update { it.copy(diagnostics = transform(it.diagnostics)) }
-    }
-
-    /** Momentaufnahme des App-Zustands einsammeln. */
-    fun loadDiagnostics() {
-        updateDiagnostics { it.copy(loading = true) }
-        viewModelScope.launch {
-            val report = runCatching {
-                diagnosticsCollector.collect(
-                    appVersion = BuildConfig.VERSION_NAME,
-                    versionCode = BuildConfig.VERSION_CODE,
-                )
-            }.getOrNull()
-            updateDiagnostics { it.copy(report = report, loading = false) }
-        }
-    }
-
-    /**
-     * Listet die Dateien im Drive-appDataFolder auf. Bewusst ohne
-     * Consent-Intent und ohne [AutoBackupManager.registerGoogleDriveFailure]:
-     * Ein Blick in die Diagnose darf weder einen Anmeldedialog auslösen noch
-     * die Fehlerzähler des echten Backups hochtreiben und die App damit in
-     * den Backoff schieben.
-     */
-    fun probeGoogleDriveFiles() {
-        updateDiagnostics { it.copy(drive = DriveProbe.Loading) }
-        viewModelScope.launch {
-            val probe = try {
-                val token = googleDrive.authorize(GoogleDriveManager.SCOPE_APPDATA)
-                DriveProbe.Loaded(googleDrive.listAppDataFiles(token))
-            } catch (_: GoogleDriveManager.AuthRequiredException) {
-                DriveProbe.Failed("settings.diagnostics.drive.authRequired")
-            } catch (exception: Exception) {
-                Log.w(GOOGLE_DRIVE_TAG, "Diagnose-Abfrage fehlgeschlagen", exception)
-                val error = describeGoogleDriveError(exception)
-                DriveProbe.Failed(error.kind.messageKey, error.detail)
-            }
-            updateDiagnostics { it.copy(drive = probe) }
-        }
     }
 
     /** Arbeitszeitmodell-Preset anwenden — Port von handlePresetSelect. */

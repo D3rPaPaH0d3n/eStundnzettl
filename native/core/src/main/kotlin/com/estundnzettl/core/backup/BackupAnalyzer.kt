@@ -33,6 +33,8 @@ data class BackupAnalysis(
     val workCodes: List<WorkCode> = emptyList(),
     val attachments: List<Attachment> = emptyList(),
     val attachmentLabels: List<String> = emptyList(),
+    /** Base64-Inhalte der Dokumente (Attachment.id → Inhalt), nur ab 5.2.8. */
+    val attachmentFiles: Map<String, String> = emptyMap(),
     /** Roh-JSON der CalculationConfig (Koerzierung passiert beim Anwenden). */
     val calculationConfig: JsonObject? = null,
     /** Validierte LocaleId aus dem Backup, sonst null. */
@@ -150,6 +152,16 @@ private fun normalizeAttachments(data: JsonElement): List<Attachment> {
     }
 }
 
+/** Nur Inhalte zu bekannten Dokumenten; alles andere wird verworfen. */
+private fun normalizeAttachmentFiles(data: JsonElement, attachments: List<Attachment>): Map<String, String> {
+    val obj = (data as? JsonObject)?.get("attachmentFiles") as? JsonObject ?: return emptyMap()
+    val ids = attachments.map { it.id }.toSet()
+    return obj.entries.mapNotNull { (id, value) ->
+        val content = stringOrNull(value)?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+        if (id in ids) id to content else null
+    }.toMap()
+}
+
 private fun normalizeAttachmentLabels(data: JsonElement): List<String> {
     val obj = data as? JsonObject ?: return emptyList()
     val raw = obj.firstTruthy("attachmentLabels", "labels", "attachment_labels") as? JsonArray
@@ -192,6 +204,7 @@ fun analyzeBackupData(data: JsonElement?, now: String = ""): BackupAnalysis {
     val workCodes = normalizeWorkCodes(data)
     val attachments = normalizeAttachments(data)
     val attachmentLabels = normalizeAttachmentLabels(data)
+    val attachmentFiles = normalizeAttachmentFiles(data, attachments)
     val calculationConfig = normalizeCalculationConfig(data)
     val locale = normalizeLocaleId(data)
     val theme = normalizeTheme(data)
@@ -215,6 +228,7 @@ fun analyzeBackupData(data: JsonElement?, now: String = ""): BackupAnalysis {
         workCodes = workCodes,
         attachments = attachments,
         attachmentLabels = attachmentLabels,
+        attachmentFiles = attachmentFiles,
         calculationConfig = calculationConfig,
         locale = locale,
         theme = theme,

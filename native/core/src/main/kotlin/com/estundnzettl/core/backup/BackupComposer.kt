@@ -25,6 +25,12 @@ data class BackupSections(
     val workCodes: List<WorkCode> = emptyList(),
     val attachments: List<Attachment> = emptyList(),
     val attachmentLabels: List<String> = emptyList(),
+    /**
+     * Datei-Inhalte der [attachments] als Base64 (Attachment.id → Inhalt).
+     * Ohne sie fehlen die Dokumente nach einer Wiederherstellung auf dem
+     * Gerät; die Metadaten allein reichen nicht.
+     */
+    val attachmentFiles: Map<String, String> = emptyMap(),
     /** Roh-JSON des Settings-Keys "calculationConfig". */
     val calculationConfig: JsonElement? = null,
     val locale: String? = null,
@@ -85,6 +91,12 @@ fun composeBackupPayload(
         put("workCodes", buildJsonArray { sections.workCodes.forEach { add(it.toBackupJson()) } })
         put("attachments", buildJsonArray { sections.attachments.forEach { add(it.toBackupJson()) } })
         put("attachmentLabels", buildJsonArray { sections.attachmentLabels.forEach { add(JsonPrimitive(it)) } })
+        // Nur wenn vorhanden: Backups ohne Dokument-Dateien bleiben byte-gleich
+        if (sections.attachmentFiles.isNotEmpty()) {
+            put("attachmentFiles", buildJsonObject {
+                sections.attachmentFiles.toSortedMap().forEach { (id, base64) -> put(id, base64) }
+            })
+        }
         put("calculationConfig", sections.calculationConfig ?: JsonNull)
         put("locale", sections.locale?.let { JsonPrimitive(it) } ?: JsonNull)
         put("theme", sections.theme?.let { JsonPrimitive(it) } ?: JsonNull)

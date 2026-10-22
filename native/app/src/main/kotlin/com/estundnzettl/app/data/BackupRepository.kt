@@ -5,9 +5,14 @@ import com.estundnzettl.core.backup.BackupAnalysis
 import com.estundnzettl.core.backup.BackupSections
 import com.estundnzettl.core.backup.analyzeBackupData
 import com.estundnzettl.core.backup.composeBackupPayload
+import com.estundnzettl.core.model.Attachment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import java.io.File
 import java.time.Instant
+import java.util.Base64
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -21,12 +26,21 @@ import java.time.format.DateTimeFormatter
 class BackupRepository(
     private val db: AppDatabase,
     private val settings: SettingsRepository,
+    /** App-Dateiordner (Context.filesDir): Dokument-Dateien liegen unter `attachments/`. */
+    private val filesDir: File? = null,
 ) {
 
     companion object {
         /** Single Source of Truth für den Dateinamen (BACKUP_CONFIG). */
         const val FILENAME = "estundnzettl_backup.json"
         const val MIME_TYPE = "application/json"
+
+        /**
+         * Höchstens so viele Dokument-Bytes (vor Base64) pro Backup. Das ganze
+         * Backup liegt beim Erstellen mehrfach im Speicher; neuere Dokumente
+         * haben Vorrang, ältere behalten nur ihre Eckdaten.
+         */
+        const val MAX_ATTACHMENT_BYTES = 15L * 1024 * 1024
     }
 
     /**
@@ -55,6 +69,7 @@ class BackupRepository(
             workCodes = workCodes,
             attachments = attachments,
             attachmentLabels = attachmentLabels,
+            attachmentFiles = readAttachmentFiles(attachments),
             calculationConfig = calculationConfig,
             locale = locale,
             theme = theme,
@@ -85,6 +100,45 @@ class BackupRepository(
     fun toFileContent(payload: JsonObject): String = PRETTY_JSON.encodeToString(
         JsonObject.serializer(), payload
     )
+
+    /** Dokument-Inhalte als Base64, neueste zuerst bis [MAX_ATTACHMENT_BYTES]. */
+    private suspend fun readAttachmentFiles(attachments: List<Attachment>): Map<String, String> =
+        withContext(Dispatchers.IO) {
+            val result = LinkedHashMap<String, String>()
+            var total = 0L
+            for (attachment in attachments.sortedByDescending { it.createdAt }) {
+                val file = resolveAttachmentFile(attachment.storagePath)?.takeIf { it.isFile } ?: continue
+                val size = file.length()
+                if (total + size > MAX_ATTACHMENT_BYTES) continue
+                val bytes = runCatching { file.readBytes() }.getOrNull() ?: continue
+                result[attachment.id] = Base64.getEncoder().encodeToString(bytes)
+                total += bytes.size
+            }
+            result
+        }
+
+    /** Schreibt die Dokument-Dateien eines Backups zurück (fehlerhafte werden übersprungen). */
+    private suspend fun restoreAttachmentFiles(analysis: BackupAnalysis) = withContext(Dispatchers.IO) {
+        val byId = analysis.attachments.associateBy { it.id }
+        analysis.attachmentFiles.forEach { (id, base64) ->
+            val attachment = byId[id] ?: return@forEach
+            val target = resolveAttachmentFile(attachment.storagePath) ?: return@forEach
+            runCatching {
+                val bytes = Base64.getDecoder().decode(base64)
+                target.parentFile?.mkdirs()
+                target.writeBytes(bytes)
+            }
+        }
+    }
+
+    /** Pfade aus Backups bleiben im Dokument-Ordner (kein `../`). */
+    private fun resolveAttachmentFile(storagePath: String): File? {
+        val base = filesDir ?: return null
+        if (storagePath.isBlank()) return null
+        val root = File(base, "attachments").canonicalFile
+        val file = File(base, storagePath).canonicalFile
+        return file.takeIf { it.path.startsWith(root.path + File.separator) }
+    }
 
     /** Analysiert Backup-JSON, ohne zu speichern. */
     fun analyze(jsonText: String, now: Instant = Instant.now()): BackupAnalysis {
@@ -120,6 +174,9 @@ class BackupRepository(
                     theme = if (mode == "ALL") analysis.theme else null,
                 )
             )
+            // Nach der Transaktion: ein Schreibfehler bei einer Datei soll die
+            // wiederhergestellten Daten nicht verwerfen
+            if (analysis.hasAttachments) restoreAttachmentFiles(analysis)
             true
         }.getOrDefault(false)
     }

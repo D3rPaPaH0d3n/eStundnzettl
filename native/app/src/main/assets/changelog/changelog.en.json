@@ -1,5 +1,23 @@
 [
  {
+  "version": "5.2.8",
+  "date": "2026-10-22",
+  "title": "Documents safe in the backup 🗂️",
+  "isMajor": false,
+  "playStoreText": "Documents safe in the backup 🗂️\n\n• Uploaded documents (e.g. sick notes) are now part of the backup\n• Applies to Google Drive, Nextcloud, local folder and export\n• After a restore your documents are back\n\nThanks for testing! – Markus",
+  "sections": [
+   {
+    "iconName": "Cloud",
+    "title": "Backup",
+    "items": [
+     "Until now backups only held your documents' metadata – after a restore the file itself was missing. Documents are now included, whether Google Drive, Nextcloud, local folder or export.",
+     "To keep the backup manageable, up to 15 MB of documents are included, newest first. Thanks to the photo shrinking in 5.2.7 that covers a lot of receipts.",
+     "Documents that were already missing need to be uploaded once more."
+    ]
+   }
+  ]
+ },
+ {
   "version": "5.2.7",
   "date": "2026-10-22",
   "title": "Leaner photos, reliable WhatsApp 📸",

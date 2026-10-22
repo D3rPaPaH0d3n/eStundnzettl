@@ -188,6 +188,9 @@ class AutoBackupManager(
             append(sections.workCodes.toString())
             append(sections.attachments.toString())
             append(sections.attachmentLabels.toString())
+            // Welche Dokument-Dateien drin sind (Inhalt hängt fest an der Id):
+            // so läuft nach dem Update auch das erste Backup mit Dateien
+            append(sections.attachmentFiles.keys.sorted().toString())
             append(sections.calculationConfig?.toString())
             append(sections.locale)
             append(sections.theme)

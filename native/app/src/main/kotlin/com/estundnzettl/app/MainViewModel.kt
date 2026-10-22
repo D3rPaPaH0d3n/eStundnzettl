@@ -1273,7 +1273,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // ─── Backup Export / Import ──────────────────────────────
 
-    private val backupRepo by lazy { BackupRepository(db, settings) }
+    private val backupRepo by lazy { BackupRepository(db, settings, getApplication<Application>().filesDir) }
 
     /** Datei-Inhalt für den manuellen Export (checksummter v7-Payload). */
     suspend fun createBackupFileContent(): String =

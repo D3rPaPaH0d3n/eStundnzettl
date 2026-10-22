@@ -3,6 +3,7 @@ package com.estundnzettl.core.calc
 import com.estundnzettl.core.backup.toJson
 import com.estundnzettl.core.config.toJson
 import com.estundnzettl.core.locale.AppLocale
+import com.estundnzettl.core.model.Attachment
 import com.estundnzettl.core.model.CalculationConfig
 import com.estundnzettl.core.model.Entry
 import com.estundnzettl.core.model.EntryId
@@ -100,7 +101,12 @@ fun hashMonthContent(
     overtimeAccount: OvertimeAccountMonth? = null,
     /** Urlaubsbilanz des Monats; der Verbrauch hängt an den Vormonaten. */
     vacationBalance: VacationBalance? = null,
+    /** Hochgeladene Dokumente; landen als Liste und Anhang-Seiten im PDF. */
+    attachments: List<Attachment> = emptyList(),
 ): String {
+    val monthEntries = filterEntriesForMonth(entries, year, month)
+    val monthEntryIds = monthEntries.map { it.id }.toSet()
+    val monthAttachments = attachments.filter { it.entryId in monthEntryIds }
     val holidayEntries = generateHolidayEntries(year, month, userData, locale, config, currentDate)
     val relevant = buildJsonObject {
         put("ym", "$year-${pad2(month)}")
@@ -149,8 +155,22 @@ fun hashMonthContent(
                 )
             }
         }
+        // Nur bei vorhandenen Dokumenten: Monate ohne Anhang behalten ihren Hash
+        if (monthAttachments.isNotEmpty()) {
+            putJsonArray("attachments") {
+                monthAttachments.sortedBy { it.id }.forEach { a ->
+                    add(buildJsonObject {
+                        put("id", a.id)
+                        put("e", a.entryId.toJson())
+                        put("l", a.label)
+                        put("m", a.mimeType)
+                        put("s", a.fileSize)
+                    })
+                }
+            }
+        }
         putJsonArray("entries") {
-            filterEntriesForMonth(entries, year, month).forEach { e ->
+            monthEntries.forEach { e ->
                 add(
                     buildJsonObject {
                         put("id", e.id.toJson())

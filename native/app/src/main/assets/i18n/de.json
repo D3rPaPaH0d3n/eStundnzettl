@@ -195,6 +195,13 @@
     "noPauseUpper": "KEINE PAUSE",
     "publicHoliday": "Gesetzlicher Feiertag",
     "documentsLabel": "Dokumente:",
+    "attachmentPages": {
+      "title": "Anhang",
+      "page": "Seite {{current}}/{{total}}",
+      "unreadable": "Dieses Dokument konnte nicht eingebettet werden. Es liegt als Originaldatei bei.",
+      "morePages": "{{count}} weitere Seite(n) nur in der Originaldatei",
+      "moreDocuments": "Weitere Dokumente nur als Originaldatei:"
+    },
     "summary": {
       "title": "Zusammenfassung",
       "work": "Arbeit (inkl. Anreise):",
@@ -1032,6 +1039,8 @@
       "showOvertimeAccountDesc": "Übertrag Vormonat und Stand Monatsende in der Zusammenfassung",
       "showAttachmentsList": "Anhänge-Liste anzeigen",
       "showAttachmentsListDesc": "Aufzählung verknüpfter Dokumente pro Eintrag",
+      "embedAttachments": "Dokumente als Seiten anhängen",
+      "embedAttachmentsDesc": "Hochgeladene Dokumente (z. B. Krankmeldung) als Seiten hinter dem Bericht",
       "showWorkCodeColumn": "Code-Spalte anzeigen",
       "showWorkCodeColumnDesc": "Die Tätigkeitscode-Spalte in der Tabelle",
       "showCustomNote": "Notizen anzeigen",

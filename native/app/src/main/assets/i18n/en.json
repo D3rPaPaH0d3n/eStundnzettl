@@ -195,6 +195,13 @@
     "noPauseUpper": "NO BREAK",
     "publicHoliday": "Public holiday",
     "documentsLabel": "Documents:",
+    "attachmentPages": {
+      "title": "Attachment",
+      "page": "Page {{current}}/{{total}}",
+      "unreadable": "This document could not be embedded. It is included as the original file.",
+      "morePages": "{{count}} more page(s) only in the original file",
+      "moreDocuments": "More documents only as original files:"
+    },
     "summary": {
       "title": "Summary",
       "work": "Work (incl. arrival):",
@@ -1032,6 +1039,8 @@
       "showOvertimeAccountDesc": "Carryover and end-of-month balance in the summary",
       "showAttachmentsList": "Show attachments list",
       "showAttachmentsListDesc": "Linked documents enumerated per entry",
+      "embedAttachments": "Append documents as pages",
+      "embedAttachmentsDesc": "Uploaded documents (e.g. sick notes) as pages after the report",
       "showWorkCodeColumn": "Show code column",
       "showWorkCodeColumnDesc": "The work-code column in the table",
       "showCustomNote": "Show notes",

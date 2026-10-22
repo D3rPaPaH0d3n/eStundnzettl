@@ -1,0 +1,7 @@
+Cloud backup without false alarms ☁️
+
+• Google Drive and Nextcloud now back up reliably after you leave the app
+• Briefly offline (dead zone, elevator, basement)? No more warning – the backup is retried
+• Only uploads when something changed
+
+Thanks for reporting! – Markus

@@ -1,0 +1,7 @@
+Cloud-Backup ohne Fehlalarm ☁️
+
+• Google Drive und Nextcloud sichern jetzt auch nach dem Verlassen der App zuverlässig
+• Kurz kein Netz (Funkloch, Aufzug, Keller)? Keine Warnung mehr – das Backup wird nachgeholt
+• Gesichert wird nur, wenn sich was geändert hat
+
+Danke fürs Melden! – Markus

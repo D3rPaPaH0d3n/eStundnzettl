@@ -4,7 +4,7 @@
   "date": "2026-10-22",
   "title": "Leaner photos, reliable WhatsApp 📸",
   "isMajor": false,
-  "playStoreText": "Leaner photos, reliable WhatsApp 📸\n\n• Uploaded photos are shrunk automatically\n• Sharing via WhatsApp & co. reliably sends the report – photos included as pages\n• Missing documents are clearly marked\n\nThanks for testing! – Markus",
+  "playStoreText": "Leaner photos, reliable WhatsApp 📸\n\n• Uploaded photos are shrunk automatically\n• Sharing via WhatsApp & co. sends the report and all documents – photos as PDF\n• Preferred target set? Long-press Share to pick another app once\n\nThanks for testing! – Markus",
   "sections": [
    {
     "iconName": "FileText",
@@ -19,7 +19,8 @@
     "iconName": "Bug",
     "title": "Fixed",
     "items": [
-     "WhatsApp & co. don't accept a PDF and photos together. The app now asks first and sends messengers only the report – the photos are included as pages. Email still gets all originals."
+     "WhatsApp & co. don't accept a PDF and photos together – that's why sometimes only the text or nothing arrived. Photos are now shared as PDFs, so everything arrives.",
+     "Preferred target set but today it should go elsewhere? Long-press “Share” to pick another app once – your preferred target stays."
     ]
    }
   ]

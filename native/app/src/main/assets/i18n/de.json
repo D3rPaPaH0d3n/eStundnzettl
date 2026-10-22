@@ -203,12 +203,6 @@
       "morePages": "{{count}} weitere Seite(n) nur in der Originaldatei",
       "moreDocuments": "Weitere Dokumente nur als Originaldatei:"
     },
-    "photoShareHint": {
-      "title": "Fotos gehen nicht über WhatsApp",
-      "message": "WhatsApp, Signal & Co. nehmen PDF und Fotos nicht gemeinsam an. Die Fotos sind als Seiten im Bericht enthalten – die Originale gehen nur per E-Mail mit.",
-      "pdfOnly": "Nur PDF senden",
-      "all": "Alles senden (E-Mail)"
-    },
     "summary": {
       "title": "Zusammenfassung",
       "work": "Arbeit (inkl. Anreise):",
@@ -257,7 +251,8 @@
     "shareTarget": {
       "shareWith": "Mit {{app}} senden",
       "directDescription": "Direkt in deiner bevorzugten E-Mail-App öffnen",
-      "contactDescription": "Kontakt in der gewählten App aussuchen"
+      "contactDescription": "Kontakt in der gewählten App aussuchen",
+      "longPressHint": "Lang drücken: andere App wählen"
     },
     "noteModal": {
       "title": "Notiz für PDF",

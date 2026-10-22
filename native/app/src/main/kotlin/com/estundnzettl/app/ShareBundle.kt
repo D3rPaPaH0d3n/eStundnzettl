@@ -1,14 +1,12 @@
 package com.estundnzettl.app
 
-import com.estundnzettl.core.model.Attachment
-
 /**
  * Narrowest MIME type covering every file of a share bundle.
  *
  * Receivers match on the advertised type, so the bundle names e.g.
  * `application/pdf` whenever all files agree and only falls back to a
- * wildcard for mixed types (which messengers cannot take, see
- * [messengerShareAttachments]).
+ * wildcard for mixed types. Messengers such as WhatsApp drop a mixed
+ * bundle entirely, which is why photos are shared as PDFs.
  */
 internal fun commonShareMimeType(mimeTypes: List<String>): String {
     val normalized = mimeTypes.map { it.trim().lowercase() }.filter { '/' in it }
@@ -17,16 +15,6 @@ internal fun commonShareMimeType(mimeTypes: List<String>): String {
     val topLevel = normalized.map { it.substringBefore('/') }
     return if (topLevel.all { it == topLevel.first() }) "${topLevel.first()}/*" else "*/*"
 }
-
-/**
- * Originals that go along with a messenger share. WhatsApp & Co. drop a
- * mixed bundle (report PDF plus a photo) entirely, so messengers only get
- * PDFs: the report itself plus the PDF originals that are not fully
- * embedded as pages in it ([notEmbeddedIds]: page limit reached,
- * unreadable, or embedding switched off).
- */
-internal fun messengerShareAttachments(attachments: List<Attachment>, notEmbeddedIds: Set<String>): List<Attachment> =
-    attachments.filter { it.id in notEmbeddedIds && it.mimeType.equals("application/pdf", ignoreCase = true) }
 
 /**
  * Readable, unique file name for a shared original, e.g.

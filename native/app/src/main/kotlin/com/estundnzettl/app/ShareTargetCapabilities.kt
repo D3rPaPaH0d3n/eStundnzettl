@@ -48,17 +48,6 @@ object ShareTargetCapabilities {
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
     }
 
-    /** Messenger, die [intent] annehmen würden — zum Ausblenden im Sharesheet. */
-    fun messengerComponents(context: Context, intent: Intent): List<ComponentName> {
-        val packageManager = context.packageManager
-        val messagingPackages = messagingPackages(packageManager)
-        val emailPackages = emailPackages(packageManager)
-        return queryActivities(packageManager, intent)
-            .mapNotNull { it.activityInfo }
-            .filter { it.packageName !in emailPackages && isMessagingPackage(it.packageName, messagingPackages) }
-            .map { ComponentName(it.packageName, it.name) }
-    }
-
     fun isEmailTarget(context: Context, component: ComponentName): Boolean =
         component.packageName in emailPackages(context.packageManager)
 

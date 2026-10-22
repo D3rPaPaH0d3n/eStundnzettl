@@ -72,16 +72,6 @@ data class ReportPdfInput(
 )
 
 /**
- * Ergebnis von [ReportPdfGenerator.generateReport]: das PDF und die Anhänge,
- * die nicht vollständig als Seiten darin stecken (Seitenlimit erreicht,
- * Datei fehlt oder nicht lesbar). Deren Originale müssen beim Teilen mit.
- */
-data class ReportPdfResult(
-    val bytes: ByteArray,
-    val notEmbeddedAttachmentIds: Set<String>,
-)
-
-/**
  * Vektor-PDF-Erzeugung des Stundenzettels via android.graphics.pdf —
  * Layout-Port von ReportPdfDocument.tsx (@react-pdf/renderer). Maße in
  * PDF-Punkten (1/72"), A4 hochkant, Seitenumbruch mit wiederholtem
@@ -220,10 +210,7 @@ class ReportPdfGenerator(
 
     // ─── Haupteinstieg ──────────────────────────────────────────────
 
-    fun generate(input: ReportPdfInput): ByteArray = generateReport(input).bytes
-
-    fun generateReport(input: ReportPdfInput): ReportPdfResult {
-        val notEmbedded = mutableSetOf<String>()
+    fun generate(input: ReportPdfInput): ByteArray {
         val display = getEffectivePdfDisplay(input.calculationConfig)
         val rules = resolveEffectiveRules(input.locale, input.calculationConfig)
         val showOvertimeColumns = rules.overtimeMode != OvertimeMode.NONE
@@ -341,15 +328,13 @@ class ReportPdfGenerator(
 
         // ── Anhang-Seiten (eigenes Layout, Berichtsseiten bleiben unverändert) ──
         if (display.embedAttachments && input.attachments.isNotEmpty()) {
-            pageNumber = appendAttachmentPages(doc, pageNumber, input, footer, contentBottom, notEmbedded)
-        } else {
-            input.attachments.mapTo(notEmbedded) { it.id }
+            pageNumber = appendAttachmentPages(doc, pageNumber, input, footer, contentBottom)
         }
 
         val out = ByteArrayOutputStream()
         doc.writeTo(out)
         doc.close()
-        return ReportPdfResult(out.toByteArray(), notEmbedded)
+        return out.toByteArray()
     }
 
     // ─── Anhang-Seiten ──────────────────────────────────────────────
@@ -357,8 +342,7 @@ class ReportPdfGenerator(
     /**
      * Hängt jedes Dokument des Zeitraums als eigene Seite(n) an: Kopf mit
      * Bezeichnung, Datum und Seitenzähler, darunter das eingepasste Raster.
-     * Liefert die zuletzt vergebene Seitennummer; nicht vollständig
-     * eingebettete Anhänge landen in [notEmbedded].
+     * Liefert die zuletzt vergebene Seitennummer.
      */
     private fun appendAttachmentPages(
         doc: PdfDocument,
@@ -366,7 +350,6 @@ class ReportPdfGenerator(
         input: ReportPdfInput,
         footer: FooterLayout?,
         contentBottom: Float,
-        notEmbedded: MutableSet<String>,
     ): Int {
         var pageNumber = firstPageNumber
         val entryOrder = input.entries.withIndex().associate { (i, e) -> e.id to i }
@@ -393,7 +376,6 @@ class ReportPdfGenerator(
         for (attachment in ordered) {
             if (budget <= 0) {
                 skipped += attachment.label
-                notEmbedded += attachment.id
                 continue
             }
             val date = entryDates[attachment.entryId]
@@ -413,7 +395,6 @@ class ReportPdfGenerator(
                     page.canvas.drawRect(rect, linePaint(C.borderLight, 0.5f))
                     val remaining = pageCount - (index + 1)
                     if (index + 1 == budget && remaining > 0) {
-                        notEmbedded += attachment.id
                         val more = t("reports.attachmentPages.morePages", "count" to remaining)
                         val moreTop = minOf(rect.bottom + 4f, contentBottom - 10f)
                         page.canvas.drawTextTop(more, PAD_L, moreTop, textPaint(7.5f, C.textMedium, italic = true))
@@ -425,7 +406,6 @@ class ReportPdfGenerator(
             // Fehlt die Datei (z. B. nach einer Wiederherstellung) oder ist sie
             // nicht lesbar: Platzhalter mit dem passenden Hinweis
             if (drawn == 0) {
-                notEmbedded += attachment.id
                 val page = newPage()
                 drawAttachmentHead(page.canvas, attachment, date, null)
                 val missing = file == null || !file.isFile

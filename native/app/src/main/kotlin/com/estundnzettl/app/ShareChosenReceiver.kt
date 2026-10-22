@@ -11,7 +11,16 @@ import androidx.core.content.IntentCompat
 
 /** Records that Android's Sharesheet handed the report to a selected target. */
 class ShareChosenReceiver : BroadcastReceiver() {
+    companion object {
+        /** true: a one-off pick that must not replace the preferred target. */
+        const val EXTRA_KEEP_PREFERRED = "keep_preferred"
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.getBooleanExtra(EXTRA_KEEP_PREFERRED, false)) {
+            ShareHandoffStore.markChosen(context)
+            return
+        }
         val selectedComponent = if (Build.VERSION.SDK_INT >= 35) {
             IntentCompat.getParcelableExtra(
                 intent,

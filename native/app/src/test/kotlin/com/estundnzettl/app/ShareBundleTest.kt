@@ -1,7 +1,5 @@
 package com.estundnzettl.app
 
-import com.estundnzettl.core.model.Attachment
-import com.estundnzettl.core.model.EntryId
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -23,27 +21,6 @@ class ShareBundleTest {
     fun `mixed families fall back to wildcard`() {
         assertEquals("*/*", commonShareMimeType(listOf("application/pdf", "image/jpeg")))
         assertEquals("*/*", commonShareMimeType(emptyList()))
-    }
-
-    private fun attachment(id: String, mimeType: String) = Attachment(
-        id = id, entryId = EntryId.of(1), label = id, fileName = "$id.bin", mimeType = mimeType,
-        storagePath = "attachments/$id", fileSize = 1, createdAt = "2026-10-14T08:00:00Z",
-    )
-
-    @Test
-    fun `messengers get no originals when every document is embedded`() {
-        val attachments = listOf(attachment("a", "application/pdf"), attachment("b", "image/jpeg"))
-        assertEquals(emptyList<Attachment>(), messengerShareAttachments(attachments, emptySet()))
-    }
-
-    @Test
-    fun `messengers get the pdf originals that are not embedded, never photos`() {
-        val attachments = listOf(
-            attachment("a", "application/pdf"),
-            attachment("b", "image/jpeg"),
-            attachment("c", "application/pdf"),
-        )
-        assertEquals(listOf("a"), messengerShareAttachments(attachments, setOf("a", "b")).map { it.id })
     }
 
     @Test

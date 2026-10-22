@@ -203,12 +203,6 @@
       "morePages": "{{count}} more page(s) only in the original file",
       "moreDocuments": "More documents only as original files:"
     },
-    "photoShareHint": {
-      "title": "Photos can’t go via WhatsApp",
-      "message": "WhatsApp, Signal & co. don’t accept a PDF and photos together. The photos are included as pages in the report – the originals only go along by email.",
-      "pdfOnly": "Send PDF only",
-      "all": "Send everything (email)"
-    },
     "summary": {
       "title": "Summary",
       "work": "Work (incl. arrival):",
@@ -257,7 +251,8 @@
     "shareTarget": {
       "shareWith": "Send with {{app}}",
       "directDescription": "Open directly in your preferred email app",
-      "contactDescription": "Choose a contact in the selected app"
+      "contactDescription": "Choose a contact in the selected app",
+      "longPressHint": "Long-press: pick another app"
     },
     "noteModal": {
       "title": "Note for PDF",

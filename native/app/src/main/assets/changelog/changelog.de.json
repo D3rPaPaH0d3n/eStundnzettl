@@ -4,7 +4,7 @@
   "date": "22.10.2026",
   "title": "Fotos schlanker, WhatsApp verlässlich 📸",
   "isMajor": false,
-  "playStoreText": "Fotos schlanker, WhatsApp verlässlich 📸\n\n• Hochgeladene Fotos werden automatisch verkleinert\n• Teilen über WhatsApp & Co. schickt den Bericht verlässlich mit – samt Fotos als Seiten\n• Fehlende Dokumente werden klar angezeigt\n\nDanke fürs Testen! – Markus",
+  "playStoreText": "Fotos schlanker, WhatsApp verlässlich 📸\n\n• Hochgeladene Fotos werden automatisch verkleinert\n• Teilen über WhatsApp & Co. schickt Bericht und alle Dokumente mit – Fotos als PDF\n• Fester Empfänger? Lang drücken auf Teilen wählt einmalig eine andere App\n\nDanke fürs Testen! – Markus",
   "sections": [
    {
     "iconName": "FileText",
@@ -19,7 +19,8 @@
     "iconName": "Bug",
     "title": "Behoben",
     "items": [
-     "WhatsApp & Co. nehmen PDF und Fotos ned gemeinsam an. Jetzt fragt die App vorher und schickt für Messenger nur den Bericht – die Fotos sind eh als Seiten drin. Per Mail gehen weiterhin alle Originale mit."
+     "WhatsApp & Co. nehmen PDF und Fotos ned gemeinsam an – drum is manchmal nur der Text oder gar nix angekommen. Jetzt gehen Fotos beim Teilen als PDF mit, und alles kommt an.",
+     "Fester Empfänger eingestellt, aber heut soll's wo anders hin? Lang auf „Teilen“ drücken – dann kannst einmalig a andere App aussuchen, der feste Empfänger bleibt."
     ]
    }
   ]

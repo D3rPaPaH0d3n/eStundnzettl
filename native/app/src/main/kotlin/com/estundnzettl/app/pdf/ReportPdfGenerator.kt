@@ -39,6 +39,7 @@ import com.estundnzettl.core.model.OvertimeMode
 import com.estundnzettl.core.model.UserData
 import com.estundnzettl.core.model.WorkCode
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -59,6 +60,8 @@ data class ReportPdfInput(
     val stats: PeriodStatsResult,
     val workCodes: List<WorkCode> = emptyList(),
     val attachments: List<Attachment> = emptyList(),
+    /** Aufgelöste Dateien der [attachments] (Attachment.id → Datei) für die Anhang-Seiten. */
+    val attachmentFiles: Map<String, File> = emptyMap(),
     val customNote: String = "",
     val locale: AppLocale,
     val calculationConfig: CalculationConfig? = null,
@@ -121,6 +124,9 @@ class ReportPdfGenerator(
         const val LOGO_GAP = 10f
         const val FOOTER_BOTTOM = 14f
         const val FOOTER_MAX_LINES = 5
+
+        // Anhang-Seiten: Kopfhöhe bis zum Beginn des Dokument-Rasters
+        const val ATTACHMENT_HEAD_H = 40f
     }
 
     private fun t(key: String, vararg args: Pair<String, Any?>): String = i18n.t(key, *args)
@@ -320,10 +326,144 @@ class ReportPdfGenerator(
 
         endPage()
 
+        // ── Anhang-Seiten (eigenes Layout, Berichtsseiten bleiben unverändert) ──
+        if (display.embedAttachments && input.attachments.isNotEmpty()) {
+            pageNumber = appendAttachmentPages(doc, pageNumber, input, footer, contentBottom)
+        }
+
         val out = ByteArrayOutputStream()
         doc.writeTo(out)
         doc.close()
         return out.toByteArray()
+    }
+
+    // ─── Anhang-Seiten ──────────────────────────────────────────────
+
+    /**
+     * Hängt jedes Dokument des Zeitraums als eigene Seite(n) an: Kopf mit
+     * Bezeichnung, Datum und Seitenzähler, darunter das eingepasste Raster.
+     * Liefert die zuletzt vergebene Seitennummer.
+     */
+    private fun appendAttachmentPages(
+        doc: PdfDocument,
+        firstPageNumber: Int,
+        input: ReportPdfInput,
+        footer: FooterLayout?,
+        contentBottom: Float,
+    ): Int {
+        var pageNumber = firstPageNumber
+        val entryOrder = input.entries.withIndex().associate { (i, e) -> e.id to i }
+        val entryDates = input.entries.associate { it.id to it.date }
+        val ordered = input.attachments
+            .filter { it.entryId in entryOrder }
+            .sortedWith(compareBy<Attachment>({ entryOrder[it.entryId] }, { it.createdAt }))
+
+        val boxTop = PAD_T + ATTACHMENT_HEAD_H
+        val boxW = CONTENT_RIGHT - PAD_L
+        val boxH = contentBottom - boxTop
+        val (maxW, maxH) = rasterSizeForBox(boxW, boxH)
+        val rasterizer = AttachmentRasterizer(maxW, maxH)
+        var budget = MAX_EMBEDDED_ATTACHMENT_PAGES
+        val skipped = mutableListOf<String>()
+
+        fun newPage(): PdfDocument.Page {
+            pageNumber++
+            val page = doc.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNumber).create())
+            footer?.let { drawFooter(page.canvas, it) }
+            return page
+        }
+
+        for (attachment in ordered) {
+            if (budget <= 0) {
+                skipped += attachment.label
+                continue
+            }
+            val date = entryDates[attachment.entryId]
+            val file = input.attachmentFiles[attachment.id]
+            var drawn = 0
+            file?.let {
+                rasterizer.rasterize(it, attachment.mimeType, budget) { index, pageCount, bitmap ->
+                    val page = newPage()
+                    val counter = t("reports.attachmentPages.page", "current" to index + 1, "total" to pageCount)
+                    drawAttachmentHead(page.canvas, attachment, date, counter)
+                    val scale = minOf(boxW / bitmap.width, boxH / bitmap.height)
+                    val w = bitmap.width * scale
+                    val h = bitmap.height * scale
+                    val left = PAD_L + (boxW - w) / 2f
+                    val rect = RectF(left, boxTop, left + w, boxTop + h)
+                    page.canvas.drawBitmap(bitmap, null, rect, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+                    page.canvas.drawRect(rect, linePaint(C.borderLight, 0.5f))
+                    val remaining = pageCount - (index + 1)
+                    if (index + 1 == budget && remaining > 0) {
+                        val more = t("reports.attachmentPages.morePages", "count" to remaining)
+                        val moreTop = minOf(rect.bottom + 4f, contentBottom - 10f)
+                        page.canvas.drawTextTop(more, PAD_L, moreTop, textPaint(7.5f, C.textMedium, italic = true))
+                    }
+                    doc.finishPage(page)
+                    drawn++
+                }
+            }
+            // Nicht lesbar (oder leer): Platzhalter, das Original geht beim Teilen mit
+            if (drawn == 0) {
+                val page = newPage()
+                drawAttachmentHead(page.canvas, attachment, date, null)
+                val notice = staticLayout(
+                    t("reports.attachmentPages.unreadable"),
+                    textPaint(9f, C.textMedium, italic = true),
+                    boxW,
+                )
+                page.canvas.save()
+                page.canvas.translate(PAD_L, boxTop)
+                notice.draw(page.canvas)
+                page.canvas.restore()
+                doc.finishPage(page)
+                drawn = 1
+            }
+            budget -= drawn
+        }
+
+        if (skipped.isNotEmpty()) {
+            val page = newPage()
+            val titlePaint = textPaint(10f, C.textDark, bold = true)
+            page.canvas.drawTextTop(t("reports.attachmentPages.moreDocuments"), PAD_L, PAD_T, titlePaint)
+            val list = staticLayout(
+                skipped.joinToString("\n") { "• $it" },
+                textPaint(9f, C.textDark),
+                boxW,
+                spacingMult = 1.2f,
+            )
+            page.canvas.save()
+            page.canvas.translate(PAD_L, PAD_T + titlePaint.lineHeight + 8f)
+            list.draw(page.canvas)
+            page.canvas.restore()
+            doc.finishPage(page)
+        }
+        return pageNumber
+    }
+
+    /** Kopf einer Anhang-Seite: "ANHANG · Bezeichnung", rechts Datum + Seitenzähler. */
+    private fun drawAttachmentHead(canvas: Canvas, attachment: Attachment, date: String?, counter: String?) {
+        val titlePaint = textPaint(10f, C.textDark, bold = true)
+        val metaPaint = textPaint(8f, C.textMedium)
+        val filePaint = textPaint(7f, C.textLight)
+
+        val meta = listOfNotNull(
+            date?.let { formatDateParts(it).let { (wd, ds) -> "$wd $ds" } },
+            counter,
+        ).joinToString(" · ")
+        val metaW = metaPaint.measureText(meta)
+        val titleW = CONTENT_RIGHT - PAD_L - metaW - 12f
+        val title = TextUtils.ellipsize(
+            t("reports.attachmentPages.title").uppercase(javaLocale) + " · " + attachment.label,
+            titlePaint, titleW.coerceAtLeast(40f), TextUtils.TruncateAt.END,
+        ).toString()
+
+        canvas.drawTextTop(title, PAD_L, PAD_T, titlePaint)
+        canvas.drawTextTopRight(meta, CONTENT_RIGHT, PAD_T + 1.5f, metaPaint)
+        val fileTop = PAD_T + titlePaint.lineHeight + 1f
+        canvas.drawTextTop(attachment.fileName, PAD_L, fileTop, filePaint)
+        val ruleY = fileTop + filePaint.lineHeight + 4f
+        canvas.drawLine(PAD_L, ruleY, CONTENT_RIGHT, ruleY, linePaint(C.borderDark, 1f))
     }
 
     // ─── Kopfzeile (styles.headerRow, fixed) ────────────────────────

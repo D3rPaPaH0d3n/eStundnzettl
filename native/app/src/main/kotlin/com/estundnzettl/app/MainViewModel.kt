@@ -508,10 +508,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    /** Alle Attachments — der Bericht filtert selbst nach Zeitraum. */
-    suspend fun getAllAttachments(): List<Attachment> =
-        attachmentsRepo.getAll()
-
     // ─── Automatisches PDF-Archiv ────────────────────────────
 
     private fun pdfArchiveData() = PdfArchiveManager.Data(

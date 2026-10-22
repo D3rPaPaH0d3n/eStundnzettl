@@ -81,6 +81,8 @@ data class PdfDisplayConfig(
     val showVacationBalance: Boolean = true,
     /** Anhaenge-Liste pro Eintrag. */
     val showAttachmentsList: Boolean = true,
+    /** Hochgeladene Dokumente als Anhang-Seiten hinter dem Bericht. */
+    val embedAttachments: Boolean = true,
     /** "Code"-Spalte in der Tabelle. */
     val showWorkCodeColumn: Boolean = true,
     /** Notizen-Block am Ende des Reports. */

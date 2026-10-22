@@ -76,6 +76,13 @@ class CalculationConfigJsonTest {
         assertEquals(false, coerced.pdfDisplay?.showBalance)
         assertEquals(true, coerced.pdfDisplay?.showSummary)
         assertEquals(true, coerced.pdfDisplay?.showCustomNote)
+        assertEquals(true, coerced.pdfDisplay?.embedAttachments)
+    }
+
+    @Test
+    fun `embedAttachments ueberlebt den JSON-Roundtrip`() {
+        val config = fallback.copy(pdfDisplay = PdfDisplayConfig(embedAttachments = false))
+        assertEquals(config, coerceCalculationConfig(config.toJson(), fallback))
     }
 
     @Test

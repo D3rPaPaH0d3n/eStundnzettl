@@ -2,11 +2,8 @@ package com.estundnzettl.app.ui
 
 import android.app.PendingIntent
 import android.content.ActivityNotFoundException
-import android.content.Context
+import android.content.ClipData
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.pdf.PdfRenderer
-import android.os.ParcelFileDescriptor
 import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -82,7 +79,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -115,6 +111,8 @@ import com.estundnzettl.app.ShareChosenReceiver
 import com.estundnzettl.app.ShareHandoffStore
 import com.estundnzettl.app.ShareTemplateRenderer
 import com.estundnzettl.app.ShareTargetCapabilities
+import com.estundnzettl.app.attachmentShareFileName
+import com.estundnzettl.app.commonShareMimeType
 import com.estundnzettl.app.i18n.I18n
 import com.estundnzettl.app.pdf.ReportPdfGenerator
 import com.estundnzettl.app.pdf.ReportPdfInput
@@ -129,8 +127,8 @@ import com.estundnzettl.core.calc.getOvertimeAccountStart
 import com.estundnzettl.core.calc.getEffectivePdfDisplay
 import com.estundnzettl.core.calc.getWeekNumber
 import com.estundnzettl.core.calc.getWeekRangeInMonth
-import com.estundnzettl.core.model.Attachment
 import com.estundnzettl.core.model.PdfDisplayConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -292,12 +290,11 @@ fun ReportScreen(viewModel: MainViewModel) {
     // ZA-Konto gehört nur in den Monatsbericht, nicht in den KW-Auszug
     val overtimeAccount = if (filterWeek == null) s.appData?.overtimeAccount else null
 
-    val allAttachments by produceState(initialValue = emptyList<Attachment>(), s.appData) {
-        value = viewModel.getAllAttachments()
-    }
-    val reportAttachments = remember(filteredEntries, allAttachments) {
+    // Direkt aus dem ViewModel-State: frisch hochgeladene Dokumente landen
+    // sofort im Bericht (appData ändert sich beim Hochladen nicht).
+    val reportAttachments = remember(filteredEntries, s.attachments) {
         val ids = filteredEntries.map { it.id }.toSet()
-        allAttachments.filter { it.entryId in ids }
+        s.attachments.filter { it.entryId in ids }
     }
 
     var customNote by remember { mutableStateOf("") }
@@ -351,7 +348,12 @@ fun ReportScreen(viewModel: MainViewModel) {
 
     // ── PDF-Generierung + Vorschau-Render ───────────────────────────
     var pdfBytes by remember { mutableStateOf<ByteArray?>(null) }
-    var pageBitmaps by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
+    var previewDoc by remember { mutableStateOf<ReportPreviewDocument?>(null) }
+    val currentPreviewDoc = previewDoc
+    DisposableEffect(currentPreviewDoc) {
+        onDispose { currentPreviewDoc?.close() }
+    }
+    val previewListState = androidx.compose.foundation.lazy.rememberLazyListState()
 
     // Vorschau-Auflösung: 1.5x Bildschirmbreite reicht für 1x-Ansicht;
     // sobald gezoomt wird, einmalig scharf für ZOOM_MAX nachrendern.
@@ -373,6 +375,7 @@ fun ReportScreen(viewModel: MainViewModel) {
         stats = stats,
         workCodes = s.workCodes,
         attachments = reportAttachments,
+        attachmentFiles = reportAttachments.associate { it.id to viewModel.attachmentFile(it) },
         customNote = note,
         locale = locale,
         calculationConfig = config,
@@ -383,22 +386,36 @@ fun ReportScreen(viewModel: MainViewModel) {
     LaunchedEffect(
         filteredEntries, userData, month, filterWeek, stats,
         s.workCodes, reportAttachments, customNote, locale, config, allCorrected, i18n,
-        previewWidthPx, overtimeAccount, s.appData?.vacationBalance,
+        overtimeAccount, s.appData?.vacationBalance,
     ) {
         // Debounce (PREVIEW_DEBOUNCE_MS) — Tippen im Notizfeld soll nicht
         // jeden Tastendruck ein PDF rendern lassen.
         delay(350)
+        var opened: ReportPreviewDocument? = null
         try {
-            val result = withContext(Dispatchers.Default) {
-                val bytes = ReportPdfGenerator(i18n).generate(buildInput(customNote))
-                bytes to renderPdfPages(context, bytes, previewWidthPx)
+            val bytes = withContext(Dispatchers.Default) {
+                ReportPdfGenerator(i18n).generate(buildInput(customNote)).also {
+                    opened = ReportPreviewDocument.open(context, it)
+                }
             }
-            pdfBytes = result.first
-            pageBitmaps = result.second
+            val doc = opened!!
+            // Sichtbare Seiten vorab rendern, damit beim Tauschen nichts weiß aufblitzt
+            val first = previewListState.firstVisibleItemIndex
+            for (index in first..first + 1) {
+                if (index < doc.pageCount) doc.render(index, previewWidthPx)
+            }
+            pdfBytes = bytes
+            previewDoc = doc
+            opened = null
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             android.util.Log.e("ReportScreen", "PDF-Vorschau fehlgeschlagen", e)
             pdfBytes = null
-            pageBitmaps = emptyList()
+            previewDoc = null
+        } finally {
+            // Nicht übergebenes Dokument (Abbruch/Fehler) gleich wieder schließen
+            opened?.close()
         }
     }
 
@@ -473,26 +490,47 @@ fun ReportScreen(viewModel: MainViewModel) {
             val file = File(dir, buildFilename())
             file.writeBytes(bytes)
             val uris = arrayListOf(FileProvider.getUriForFile(context, authority, file))
+            val mimeTypes = mutableListOf("application/pdf")
 
-            // Report-Bundle: verknüpfte Dokumente des Zeitraums mit teilen
-            // (Port von shareReportBundle in useAttachmentShare)
+            // Report-Bundle: Originale der verknüpften Dokumente immer mit
+            // teilen, als Kopie mit lesbarem Namen statt der internen Id.
+            val originalsDir = File(dir, "originals").apply {
+                deleteRecursively()
+                mkdirs()
+            }
+            val entryDates = filteredEntries.associate { it.id to it.date }
+            val takenNames = mutableSetOf<String>()
             reportAttachments.forEach { attachment ->
                 val attachmentFile = viewModel.attachmentFile(attachment)
-                if (attachmentFile.exists()) {
-                    uris.add(FileProvider.getUriForFile(context, authority, attachmentFile))
+                if (attachmentFile.isFile) {
+                    val name = attachmentShareFileName(
+                        label = attachment.label,
+                        date = entryDates[attachment.entryId],
+                        mimeType = attachment.mimeType,
+                        storagePath = attachment.storagePath,
+                        taken = takenNames,
+                    )
+                    val copy = attachmentFile.copyTo(File(originalsDir, name), overwrite = true)
+                    uris.add(FileProvider.getUriForFile(context, authority, copy))
+                    mimeTypes.add(attachment.mimeType)
                 }
             }
 
+            // Konkreter Typ statt Wildcard: WhatsApp verwirft sonst die Dateien
+            // und schickt nur den Text (siehe commonShareMimeType).
             val intent = if (uris.size == 1) {
                 Intent(Intent.ACTION_SEND).apply {
-                    type = "application/pdf"
                     putExtra(Intent.EXTRA_STREAM, uris.first())
                 }
             } else {
                 Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                    type = "*/*"
                     putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
                 }
+            }
+            intent.type = commonShareMimeType(mimeTypes)
+            // Lesefreigabe für alle Dateien (auch durch den Chooser hindurch)
+            intent.clipData = ClipData.newRawUri(null, uris.first()).apply {
+                uris.drop(1).forEach { addItem(ClipData.Item(it)) }
             }
             val shareSubject = buildShareSubject()
             intent.putExtra(Intent.EXTRA_SUBJECT, shareSubject)
@@ -852,11 +890,11 @@ fun ReportScreen(viewModel: MainViewModel) {
                 val baseWidth = maxWidth
                 val baseWidthPx = constraints.maxWidth.toFloat()
                 val hScroll = rememberScrollState()
-                val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+                val listState = previewListState
                 val pinchScope = rememberCoroutineScope()
-                val pageAspect = pageBitmaps.firstOrNull()
-                    ?.let { it.height.toFloat() / it.width } ?: 1.414f
-                if (pageBitmaps.isEmpty()) {
+                val doc = previewDoc
+                val pageAspect = doc?.pageAspects?.firstOrNull() ?: 1.414f
+                if (doc == null || doc.pageCount == 0) {
                     CircularProgressIndicator(
                         color = colors.accent,
                         modifier = Modifier.align(Alignment.Center),
@@ -920,20 +958,12 @@ fun ReportScreen(viewModel: MainViewModel) {
                             ),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            items(pageBitmaps) { bitmap ->
-                                Image(
-                                    bitmap = bitmap.asImageBitmap(),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.FillWidth,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(bitmap.width.toFloat() / bitmap.height)
-                                        .shadow(
-                                            if (colors.isMaterialYou) 5.dp else 0.dp,
-                                            RoundedCornerShape(4.dp),
-                                        )
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(Color.White),
+                            items(doc.pageCount) { index ->
+                                PreviewPage(
+                                    doc = doc,
+                                    index = index,
+                                    widthPx = previewWidthPx,
+                                    elevated = colors.isMaterialYou,
                                 )
                             }
                         }
@@ -1524,6 +1554,7 @@ fun PdfDisplayToggles(viewModel: MainViewModel, showHeader: Boolean = true) {
             null
         },
         ToggleSpec("showAttachmentsList", display.showAttachmentsList) { v -> patch { it.copy(showAttachmentsList = v) } },
+        ToggleSpec("embedAttachments", display.embedAttachments) { v -> patch { it.copy(embedAttachments = v) } },
         ToggleSpec("showWorkCodeColumn", display.showWorkCodeColumn) { v -> patch { it.copy(showWorkCodeColumn = v) } },
         ToggleSpec("showCustomNote", display.showCustomNote) { v -> patch { it.copy(showCustomNote = v) } },
     )
@@ -1611,32 +1642,31 @@ private fun DarkToolbarButton(
     }
 }
 
-// ─── PDF → Bitmaps für die Vorschau ─────────────────────────────────
+// ─── Vorschau-Seite (rendert erst, wenn sie sichtbar wird) ──────────
 
-private fun renderPdfPages(context: Context, bytes: ByteArray, targetWidth: Int): List<Bitmap> {
-    val file = File.createTempFile("report-preview", ".pdf", context.cacheDir)
-    return try {
-        file.writeBytes(bytes)
-        val pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-        val renderer = PdfRenderer(pfd)
-        try {
-            (0 until renderer.pageCount).map { index ->
-                val page = renderer.openPage(index)
-                try {
-                    val width = targetWidth.coerceAtLeast(1)
-                    val height = (width.toFloat() * page.height / page.width).toInt().coerceAtLeast(1)
-                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                    bitmap.eraseColor(android.graphics.Color.WHITE)
-                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                    bitmap
-                } finally {
-                    page.close()
-                }
-            }
-        } finally {
-            renderer.close()
-        }
-    } finally {
-        file.delete()
+@Composable
+private fun PreviewPage(doc: ReportPreviewDocument, index: Int, widthPx: Int, elevated: Boolean) {
+    // Bisheriges Bitmap stehen lassen, bis die neue Auflösung fertig ist
+    var bitmap by remember(doc, index) { mutableStateOf(doc.peek(index, widthPx)) }
+    LaunchedEffect(doc, index, widthPx) {
+        doc.render(index, widthPx)?.let { bitmap = it }
+    }
+    val shape = RoundedCornerShape(4.dp)
+    val modifier = Modifier
+        .fillMaxWidth()
+        .aspectRatio(1f / doc.pageAspects[index])
+        .shadow(if (elevated) 5.dp else 0.dp, shape)
+        .clip(shape)
+        .background(Color.White)
+    val current = bitmap
+    if (current != null) {
+        Image(
+            bitmap = remember(current) { current.asImageBitmap() },
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = modifier,
+        )
+    } else {
+        Box(modifier)
     }
 }

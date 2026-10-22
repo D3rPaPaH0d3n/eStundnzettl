@@ -86,7 +86,7 @@ private fun coerceHalfDayMode(v: JsonElement?, fallback: HalfDayConfig): HalfDay
 private val PDF_DISPLAY_KEYS = listOf(
     "showSummary", "showTargetTime", "showBalance", "showOvertimeSplit",
     "showVacationBalance", "showAttachmentsList", "showWorkCodeColumn", "showCustomNote",
-    "showOvertimeAccount",
+    "showOvertimeAccount", "embedAttachments",
 )
 
 private fun coercePdfDisplay(v: JsonElement?, fallback: PdfDisplayConfig?): PdfDisplayConfig? {
@@ -104,6 +104,7 @@ private fun coercePdfDisplay(v: JsonElement?, fallback: PdfDisplayConfig?): PdfD
         showOvertimeSplit = explicit["showOvertimeSplit"] ?: true,
         showVacationBalance = explicit["showVacationBalance"] ?: true,
         showAttachmentsList = explicit["showAttachmentsList"] ?: true,
+        embedAttachments = explicit["embedAttachments"] ?: true,
         showWorkCodeColumn = explicit["showWorkCodeColumn"] ?: true,
         showCustomNote = explicit["showCustomNote"] ?: true,
         showOvertimeAccount = explicit["showOvertimeAccount"] ?: true,
@@ -212,6 +213,7 @@ fun CalculationConfig.toJson(): JsonObject = buildJsonObject {
             put("showOvertimeSplit", display.showOvertimeSplit)
             put("showVacationBalance", display.showVacationBalance)
             put("showAttachmentsList", display.showAttachmentsList)
+            put("embedAttachments", display.embedAttachments)
             put("showWorkCodeColumn", display.showWorkCodeColumn)
             put("showCustomNote", display.showCustomNote)
             put("showOvertimeAccount", display.showOvertimeAccount)

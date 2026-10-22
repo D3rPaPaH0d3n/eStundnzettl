@@ -57,4 +57,4 @@ jobs:
 
       - name: Test and build native Android app
         working-directory: native
-        run: ./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug --no-daemon
+        run: ./gradlew :core:test :app:testBetaDebugUnitTest :app:testProdDebugUnitTest :app:assembleBetaDebug :app:assembleProdDebug --no-daemon

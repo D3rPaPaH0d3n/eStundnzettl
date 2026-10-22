@@ -15,6 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,11 +27,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.estundnzettl.app.MainViewModel
+import com.estundnzettl.app.data.DiagnosticsController
 import com.estundnzettl.app.data.DiagnosticsReport
 import com.estundnzettl.app.data.DriveProbe
 import com.estundnzettl.app.ui.theme.LocalAppColors
 import com.estundnzettl.app.ui.theme.LocalI18n
 import com.estundnzettl.app.ui.theme.Palette
+import kotlinx.coroutines.launch
 
 /**
  * Diagnose-Karte im Hausmasta-Modus — bewusst zurückhaltend: sie erscheint
@@ -45,6 +51,22 @@ fun DiagnosticsSection(viewModel: MainViewModel) {
 
     if (state.userData?.expertMode != true) return
 
+    // Zustand bleibt in der Karte: die Produktions-Variante kennt die
+    // Diagnose gar nicht, der MainViewModel hält dafür nichts vor.
+    val diagnostics = remember(viewModel) { DiagnosticsController(viewModel) }
+    var report by remember { mutableStateOf<DiagnosticsReport?>(null) }
+    var loading by remember { mutableStateOf(false) }
+    var drive by remember { mutableStateOf<DriveProbe>(DriveProbe.Idle) }
+    val scope = rememberCoroutineScope()
+
+    fun refresh() {
+        loading = true
+        scope.launch {
+            report = diagnostics.collect()
+            loading = false
+        }
+    }
+
     CollapsibleSettingsCard(
         title = t.t("settings.diagnostics.title"),
         subtitle = t.t("settings.diagnostics.subtitle"),
@@ -54,21 +76,24 @@ fun DiagnosticsSection(viewModel: MainViewModel) {
         // Die Karte lädt erst, wenn sie tatsächlich aufgeklappt wird —
         // der Inhalt wird von CollapsibleSettingsCard nur dann komponiert.
         LaunchedEffect(Unit) {
-            if (state.diagnostics.report == null) viewModel.loadDiagnostics()
+            if (report == null) refresh()
         }
 
-        val report = state.diagnostics.report
-        if (report == null) {
+        val current = report
+        if (current == null) {
             Text(
-                t.t(if (state.diagnostics.loading) "common.loading" else "settings.diagnostics.empty"),
+                t.t(if (loading) "common.loading" else "settings.diagnostics.empty"),
                 color = colors.textMuted,
                 fontSize = 12.sp,
             )
         } else {
-            DiagnosticsBody(report)
+            DiagnosticsBody(current)
         }
 
-        DriveProbeBlock(viewModel, state.diagnostics.drive)
+        DriveProbeBlock(drive) {
+            drive = DriveProbe.Loading
+            scope.launch { drive = diagnostics.probeGoogleDrive() }
+        }
 
         Text(
             t.t("settings.diagnostics.privacyHint"),
@@ -81,9 +106,9 @@ fun DiagnosticsSection(viewModel: MainViewModel) {
             tint = colors.textMuted,
             outlined = true,
             small = true,
-            enabled = !state.diagnostics.loading,
+            enabled = !loading,
         ) {
-            viewModel.loadDiagnostics()
+            refresh()
         }
     }
 }
@@ -163,7 +188,7 @@ private fun DiagnosticsBody(report: DiagnosticsReport) {
 }
 
 @Composable
-private fun DriveProbeBlock(viewModel: MainViewModel, probe: DriveProbe) {
+private fun DriveProbeBlock(probe: DriveProbe, onCheck: () -> Unit) {
     val colors = LocalAppColors.current
     val t = LocalI18n.current
 
@@ -175,7 +200,7 @@ private fun DriveProbeBlock(viewModel: MainViewModel, probe: DriveProbe) {
                 outlined = true,
                 small = true,
             ) {
-                viewModel.probeGoogleDriveFiles()
+                onCheck()
             }
 
             DriveProbe.Loading -> Text(

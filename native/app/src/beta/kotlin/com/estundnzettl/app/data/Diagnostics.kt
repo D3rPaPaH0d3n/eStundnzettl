@@ -3,14 +3,16 @@ package com.estundnzettl.app.data
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
+import com.estundnzettl.app.BuildConfig
+import com.estundnzettl.app.MainViewModel
 import com.estundnzettl.app.data.db.AppDatabase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /**
  * Lesende Selbstauskunft für den Hausmasta-Modus.
@@ -89,22 +91,10 @@ internal fun maskAccount(value: String?): String? {
     return value.take(1) + "***" + value.substring(at)
 }
 
-/** Drive-/ISO-Zeitstempel als lokale "yyyy-MM-dd HH:mm"-Anzeige. */
-internal fun formatTimestamp(iso: String?): String? {
-    if (iso.isNullOrBlank()) return null
-    return runCatching {
-        LOCAL_MINUTES.format(Instant.parse(iso))
-    }.getOrDefault(iso)
-}
-
 /** Zertifikat → "AB:CD:…" wie in der Cloud Console und `keytool -list`. */
 internal fun sha1Fingerprint(certificate: ByteArray): String =
     MessageDigest.getInstance("SHA-1").digest(certificate)
         .joinToString(":") { "%02X".format(it) }
-
-private val LOCAL_MINUTES: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("yyyy-MM-dd HH:mm")
-    .withZone(ZoneId.systemDefault())
 
 class DiagnosticsCollector(
     private val context: Context,
@@ -186,8 +176,43 @@ class DiagnosticsCollector(
                 LocalBackupFile(
                     name = file.name,
                     sizeBytes = file.length(),
-                    modified = LOCAL_MINUTES.format(Instant.ofEpochMilli(file.lastModified())),
+                    modified = formatTimestamp(Instant.ofEpochMilli(file.lastModified()).toString()).orEmpty(),
                 )
             }
+    }
+}
+
+/**
+ * Sammelt die Diagnose für die Karte im Hausmasta-Modus. Lebt nur in der
+ * Beta-Variante; der MainViewModel stellt lediglich seine Datenquellen bereit.
+ */
+class DiagnosticsController(private val viewModel: MainViewModel) {
+    private val collector = DiagnosticsCollector(
+        viewModel.getApplication<android.app.Application>(), viewModel.db, viewModel.settings, viewModel.secrets,
+    )
+
+    /** Momentaufnahme des App-Zustands; null, wenn das Einsammeln scheitert. */
+    suspend fun collect(): DiagnosticsReport? = runCatching {
+        collector.collect(appVersion = BuildConfig.VERSION_NAME, versionCode = BuildConfig.VERSION_CODE)
+    }.getOrNull()
+
+    /**
+     * Listet die Dateien im Drive-appDataFolder auf. Bewusst ohne
+     * Consent-Intent und ohne [AutoBackupManager.registerGoogleDriveFailure]:
+     * Ein Blick in die Diagnose darf weder einen Anmeldedialog auslösen noch
+     * die Fehlerzähler des echten Backups hochtreiben und die App damit in
+     * den Backoff schieben.
+     */
+    suspend fun probeGoogleDrive(): DriveProbe = try {
+        val token = viewModel.googleDrive.authorize(GoogleDriveManager.SCOPE_APPDATA)
+        DriveProbe.Loaded(viewModel.googleDrive.listAppDataFiles(token))
+    } catch (_: GoogleDriveManager.AuthRequiredException) {
+        DriveProbe.Failed("settings.diagnostics.drive.authRequired")
+    } catch (exception: CancellationException) {
+        throw exception
+    } catch (exception: Exception) {
+        Log.w("Diagnostics", "Diagnose-Abfrage fehlgeschlagen", exception)
+        val error = describeGoogleDriveError(exception)
+        DriveProbe.Failed(error.kind.messageKey, error.detail)
     }
 }

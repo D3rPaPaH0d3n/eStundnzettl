@@ -97,7 +97,7 @@ jobs:
       # ── 4. Debug APK bauen ───────────────────────────────────────────
       - name: Build Debug APK
         working-directory: native
-        run: ./gradlew :app:assembleDebug
+        run: ./gradlew :app:assembleBetaDebug
 
       # ── 4.5 APK umbenennen mit Build-ID ──────────────────────────────
       - name: Rename APK with build ID
@@ -115,7 +115,7 @@ jobs:
 
       # ── 4.6 Signatur-Diagnose mit ins Artefakt legen ─────────────────
       - name: Attach keystore diagnostics
-        run: cp /tmp/keystore-info.txt native/app/build/outputs/apk/debug/ || true
+        run: cp /tmp/keystore-info.txt native/app/build/outputs/apk/beta/debug/ || true
 
       # ── 5. Test-Report bei Fehlern hochladen ─────────────────────────
       - name: Upload test reports on failure

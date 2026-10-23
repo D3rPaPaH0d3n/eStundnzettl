@@ -26,11 +26,19 @@
 
 ## 🌲 Servus! Damit ka Stund verloren geht.
 
-Stunden notieren, die Fahrt dazurechnen, den Regieschein wiederfinden — die übliche Zettelwirtschaft halt. eStundnzettl hält das am Handy zusammen, damit am Monatsende nicht die große Sucherei losgeht.
+Stunden notieren, die Fahrt dazurechnen, den Regieschein wiederfinden.
 
-Ein persönliches Projekt von **Markus aus der Steiermark**, mit Herz und Hirn ausgetüftelt. Fürs Handwerk, die Montage oder einfach für alle, die wissen möchten, wo ihre Arbeitsstunden geblieben sind. Du erfasst Stunden, Pausen, Fahrten und Abwesenheiten; die App macht daraus einen Wochen- oder Monatsbericht als PDF.
+*Die übliche Zettelwirtschaft halt.* eStundnzettl hält das am Handy zusammen, damit am Monatsende nicht die große Sucherei losgeht.
 
-**Deine Daten bleiben auf deinem Gerät.** Internet und App-Konto brauchst du fürs Erfassen nicht. Eine Sicherung in deine eigene Cloud geht natürlich auch — wenn du magst.
+Ein persönliches Projekt von **Markus aus der Steiermark** — *mit Herz und Hirn ausgetüftelt.*
+
+Fürs **Handwerk, die Montage** oder einfach für alle, die wissen möchten, wo ihre Arbeitsstunden geblieben sind.
+
+Du erfasst **Stunden, Pausen, Fahrten und Abwesenheiten**. Die App macht daraus einen **Wochen- oder Monatsbericht als PDF**.
+
+> 🔒 **Deine Daten bleiben auf deinem Gerät.**
+>
+> Internet und App-Konto brauchst du fürs Erfassen nicht. Eine Sicherung in deine eigene Cloud geht natürlich auch — *wenn du magst.*
 
 ## 📸 So schaut’s aus
 
@@ -44,13 +52,35 @@ Ein persönliches Projekt von **Markus aus der Steiermark**, mit Herz und Hirn a
 
 ## 🆕 Frisch aus der Werkstatt
 
-**Abgeglichen mit [GitHub v5.2.8](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/tag/v5.2.8).** Den jeweiligen Play-Store-Stand zeigt der Store selbst.
+Abgeglichen mit **[GitHub v5.2.8](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/tag/v5.2.8)**.
 
-Die letzten Runden haben vor allem die Belege und Backups auf Vordermann gebracht:
+*Den jeweiligen Play-Store-Stand zeigt der Store selbst.*
 
-- **Dokumente reisen im Backup mit:** Seit 5.2.8 werden auch die Dateien gesichert, nicht bloß ihre Eckdaten — auf Google Drive, Nextcloud, im lokalen Ordner und beim Export. Bis insgesamt **15 MB Dokumente pro Backup**, neueste zuerst.
-- **Fotos schlanker, Teilen g’scheiter:** Hochgeladene Fotos werden automatisch verkleinert und richtig gedreht. Beim Teilen über WhatsApp & Co. gehen Fotos als PDF mit. Ist eine feste Versand-App eingestellt, öffnet langes Drücken auf **Teilen** einmalig die Auswahl einer anderen App.
-- **Belege direkt im Stundenzettel:** Krankmeldungen, Regiescheine und andere Dokumente können als zusätzliche Seiten hinten am PDF hängen — auch in der Vorschau und im automatischen Archiv. Im Hausmasta-Modus lässt sich das abschalten.
+Die letzten Runden haben vor allem **Belege und Backups** auf Vordermann gebracht:
+
+### 📎 Dokumente reisen im Backup mit
+
+Seit **5.2.8** werden auch die **Dateien selbst** gesichert — nicht bloß ihre Eckdaten.
+
+Das gilt für Google Drive, Nextcloud, den lokalen Ordner und den Export.
+
+> **15 MB Dokumente pro Backup** — *neueste zuerst.*
+
+### 📷 Fotos schlanker, Teilen g’scheiter
+
+- Fotos werden **automatisch verkleinert und richtig gedreht**.
+
+- Beim Teilen über WhatsApp & Co. gehen **Fotos als PDF** mit.
+
+- **Einmal eine andere App nutzen?** Ist eine feste Versand-App eingestellt, drück lange auf **Teilen**. So öffnest du die App-Auswahl für diesen einen Versand.
+
+### 📄 Belege direkt im Stundenzettel
+
+**Krankmeldungen, Regiescheine und andere Dokumente** können als zusätzliche Seiten hinten am PDF hängen.
+
+Das siehst du auch in der **Vorschau** und im **automatischen Archiv**.
+
+*Im Hausmasta-Modus lässt sich das abschalten.*
 
 ## 🧰 Was der kleine Helfer draufhat
 
@@ -58,81 +88,151 @@ Die letzten Runden haben vor allem die Belege und Backups auf Vordermann gebrach
   <tr>
     <td width="50%" valign="top">
       <h3>⏱️ Stunden &amp; Pausen</h3>
-      <p>Von Hand oder mit Live-Timer erfassen. Mit <strong>„Wie zuletzt“</strong> frühere Zeiten übernehmen.</p>
+      <p>Von Hand oder mit <strong>Live-Timer</strong> erfassen.</p>
+      <p>Mit <em>„Wie zuletzt“</em> frühere Zeiten übernehmen.</p>
     </td>
     <td width="50%" valign="top">
       <h3>🎯 Deine Arbeitszeit</h3>
-      <p>Vollzeit, Teilzeit, Vier-Tage-Woche oder ganz individuell. <strong>Soll, Ist und Saldo</strong> im Blick behalten.</p>
+      <p>Vollzeit, Teilzeit, Vier-Tage-Woche oder ganz individuell.</p>
+      <p><strong>Soll · Ist · Saldo</strong><br>Alle drei auf einen Blick.</p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
       <h3>🏖️ Urlaub &amp; ZA</h3>
-      <p>Urlaub, Krankenstand und Zeitausgleich erfassen; genommenen, geplanten und übrigen Urlaub sehen, auch halbe Tage. <strong>ZA-Konto mit Übertrag zwischen Monaten</strong> und Buchung ausgezahlter Überstunden.</p>
+      <p><strong>Urlaub, Krankenstand &amp; ZA</strong><br>Genommen, geplant und noch übrig — auch halbe Urlaubstage.</p>
+      <p><strong>Optionales ZA-Konto</strong><br>Saldo in den nächsten Monat mitnehmen und ausgezahlte Überstunden buchen.</p>
     </td>
     <td width="50%" valign="top">
       <h3>🗓️ Kein Tag vergessen</h3>
-      <p>Fehlende Arbeitstage sehen und nachtragen. <strong>„Frei“ zählt 0 Stunden</strong>, ohne ZA abzuziehen. Ein freier Freitag bei erfüllten Wochenstunden gilt nicht als vergessen.</p>
+      <p>Fehlende Arbeitstage sehen und nachtragen.</p>
+      <p><strong>„Frei“ = 0 Stunden</strong><br>Kein Abzug vom ZA-Konto.</p>
+      <p><em>Freier Freitag?</em> Bei erfüllten Wochenstunden gilt er nicht als vergessen.</p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
       <h3>🚐 Fahrten &amp; Montage</h3>
-      <p>An-/Abreise und separate Fahrtzeit trennen. <strong>Nächtigungen</strong> markieren und im Monats-PDF zählen lassen — Spesen werden nicht automatisch berechnet.</p>
+      <p>An-/Abreise und separate Fahrtzeit getrennt erfassen.</p>
+      <p><strong>Nächtigungen</strong> markieren und im Monats-PDF zählen lassen.</p>
+      <p><em>Spesen werden nicht automatisch berechnet.</em></p>
     </td>
     <td width="50%" valign="top">
       <h3>📎 Belege &amp; PDF</h3>
-      <p>Fotos und Dokumente direkt am Eintrag. <strong>Wochen- oder Monatsbericht</strong> mit Belegseiten, eigenem Firmenlogo und Fußzeile erstellen, speichern und teilen.</p>
+      <p><strong>Fotos &amp; Dokumente</strong><br>Direkt beim passenden Eintrag ablegen.</p>
+      <p><strong>Wochen- oder Monats-PDF</strong><br>Mit Belegseiten, optionalem Firmenlogo und eigener Fußzeile. Speichern und teilen.</p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
       <h3>☁️ Sicher ist sicher</h3>
-      <p>Lokaler Ordner, Google Drive oder Nextcloud. Den <strong>Backup-Stand selbst wählen</strong> und vorab prüfen. Cloud-Sicherungen werden bei fehlendem Netz nachgeholt, auch nach dem Verlassen der App.</p>
+      <p><strong>Lokal · Google Drive · Nextcloud</strong></p>
+      <p>Den Backup-Stand selbst wählen und vor dem Einspielen prüfen.</p>
+      <p><em>Netz grad weg?</em> Cloud-Backups werden nachgeholt — auch nach dem Verlassen der App.</p>
     </td>
     <td width="50%" valign="top">
       <h3>🏔️ Hier daheim</h3>
-      <p>Feiertage für <strong>Österreich, deutsche Bundesländer und Schweizer Kantone</strong>. Arbeitszeit- und Pausenregeln passend einstellen.</p>
+      <p>Feiertage für <strong>Österreich</strong>, deutsche Bundesländer und Schweizer Kantone.</p>
+      <p>Arbeitszeit- und Pausenregeln passend einstellen.</p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
       <h3>🌙 Auch nach Feierabend</h3>
-      <p>Deutsch und Englisch, <strong>Dark Mode</strong>, geführte Einrichtung und Demo-Daten zum gemütlichen Ausprobieren.</p>
+      <p>Deutsch &amp; Englisch. Dazu: <strong>Dark Mode</strong>.</p>
+      <p>Geführte Einrichtung und Demo-Daten.<br><em>Erst einmal gemütlich ausprobieren.</em></p>
     </td>
     <td width="50%" valign="top">
       <h3>🔧 Der Hausmasta</h3>
-      <p>Für alle, die gern schrauben: <strong>Nextcloud, PDF-Felder und automatische PDF-Archive</strong>. Wer einfach Stunden erfassen will, muss nicht durch alle Extras.</p>
+      <p><strong>Nextcloud, PDF-Felder und automatische PDF-Archive</strong> für alle, die gern schrauben.</p>
+      <p><em>Nur Stunden erfassen?</em><br>Geht auch ohne die Extras.</p>
     </td>
   </tr>
 </table>
 
-Eigene Tätigkeitscodes sind auch ohne Hausmasta-Modus erreichbar. Du kannst auch **„Nur Aufzeichnung“** ohne Soll/Ist-Berechnung wählen. Die Berechnungen hängen von deinen Einstellungen ab — schau bitte, dass sie zu deinem Arbeitsverhältnis passen.
+**Eigene Tätigkeitscodes** gibt’s auch *ohne* Hausmasta-Modus.
+
+Keine Soll/Ist-Berechnung gewünscht? Wähle **„Nur Aufzeichnung“**.
+
+> 💡 **Deine Einstellungen zählen.**
+>
+> Die Berechnungen hängen davon ab. Schau bitte, dass sie zu deinem Arbeitsverhältnis passen.
 
 ## 🚀 Los geht’s — ganz ohne Einschulung
 
-1. **Installieren:** über [Google Play](https://play.google.com/store/apps/details?id=com.estundnzettl.app) oder die APK aus den [GitHub Releases](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/latest). Android 8.0 oder neuer wird benötigt. Für die APK erlaubt Android die Installation aus der gewählten Quelle nach deiner Bestätigung.
-2. **Einrichten:** Name, bei Bedarf Firma, Arbeitszeitmodell und Region wählen. Backup ist optional. Noch nicht sicher? Mit den Demo-Daten kannst du erst einmal gemütlich reinschnuppern.
-3. **Erfassen:** Über **+** einen Eintrag anlegen oder den Live-Timer nutzen. Fahrten, Abwesenheiten und Belege nach Bedarf ergänzen.
-4. **Abschließen:** Den Bericht öffnen, Monat oder Kalenderwoche auswählen und das PDF speichern oder über eine App deiner Wahl teilen.
+1. **Installieren**
 
-Änderungen und Versionshinweise stehen in der App unter **Einstellungen → Änderungsprotokoll** und in den [GitHub Releases](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases). Der Release-Badge oben bezieht sich auf GitHub, nicht auf den aktuellen Play-Store-Stand.
+   Über [Google Play](https://play.google.com/store/apps/details?id=com.estundnzettl.app) oder die APK aus den [GitHub Releases](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/latest).
+
+   **Android 8.0 oder neuer** wird benötigt. Bei der APK bestätigst du in Android die Installation aus der gewählten Quelle.
+
+2. **Einrichten**
+
+   Name, bei Bedarf Firma, Arbeitszeitmodell und Region wählen. **Backup ist optional.**
+
+   *Noch nicht sicher? Mit den Demo-Daten kannst du gemütlich reinschnuppern.*
+
+3. **Erfassen**
+
+   Über **+** einen Eintrag anlegen oder den **Live-Timer** nutzen. Fahrten, Abwesenheiten und Belege nach Bedarf ergänzen.
+
+4. **Abschließen**
+
+   Bericht öffnen, **Monat oder Kalenderwoche** auswählen und das PDF speichern oder über eine App deiner Wahl teilen.
+
+Änderungen stehen in der App unter **Einstellungen → Änderungsprotokoll** und in den [GitHub Releases](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases).
+
+*Der Release-Badge oben bezieht sich auf GitHub — nicht auf den aktuellen Play-Store-Stand.*
 
 ## 💾 Deine Daten. Deine Sicherung. Deine Entscheidung.
 
-- **Lokal zuerst:** Arbeitsdaten werden auf deinem Gerät gespeichert. Für die Zeiterfassung brauchst du weder Internet noch ein App-Konto; es gibt keine Werbung oder Nutzungsanalyse.
-- **Backup nach Wahl:** Lokaler Ordner, dein Google Drive oder deine Nextcloud. Nextcloud wird im Hausmasta-Modus eingerichtet. Automatische Sicherungen und ein monatliches PDF-Archiv sind konfigurierbar.
-- **Dokumente im Backup:** Die Dateien selbst werden mitgesichert — bis insgesamt **15 MB pro Backup**, neueste zuerst. Sichere weitere oder größere Originaldateien bei Bedarf separat. Dateien, die schon vor dem Backup gefehlt haben, bitte einmal neu hochladen.
-- **Netz grad weg?** Cloud-Sicherungen werden nachgeholt, sobald wieder eine Verbindung besteht. Hochgeladen wird nur, wenn sich etwas geändert hat; beim Wiederherstellen wählst du den Backup-Stand und siehst vorab eine Zusammenfassung.
-- **Bewusst teilen:** Cloud-Backups und das Weitergeben von Berichten sind deine Entscheidung. Prüfe vor dem Versand auch enthaltene Belege und persönliche Angaben.
+- **Lokal zuerst**
 
-Ohne separate Sicherung können Daten bei Geräteverlust oder Deinstallation verloren gehen. Mehr zum Umgang mit Daten: [Datenschutzerklärung](./docs/privacy.html).
+  Deine Arbeitsdaten liegen auf deinem Gerät. Zum Erfassen brauchst du weder Internet noch ein App-Konto.
+
+  *Keine Werbung. Keine Nutzungsanalyse.*
+
+- **Backup nach Wahl**
+
+  Lokaler Ordner, dein Google Drive oder deine Nextcloud. Automatische Sicherungen und ein monatliches PDF-Archiv sind konfigurierbar.
+
+  *Nextcloud richtest du im Hausmasta-Modus ein.*
+
+- **Dokumente im Backup**
+
+  Auch die Dateien selbst werden mitgesichert: **bis insgesamt 15 MB je Backup**, neueste zuerst.
+
+  Weitere oder größere Originaldateien bitte separat sichern. Dateien, die schon vorher gefehlt haben, einmal neu hochladen.
+
+- **Netz grad weg?**
+
+  Cloud-Sicherungen werden nachgeholt, sobald wieder eine Verbindung besteht. Hochgeladen wird **nur, wenn sich etwas geändert hat**.
+
+  Beim Wiederherstellen wählst du den Backup-Stand und siehst vorab eine Zusammenfassung.
+
+- **Bewusst teilen**
+
+  Cloud-Backups und das Weitergeben von Berichten sind **deine Entscheidung**. Prüfe vor dem Versand auch die Belege und persönlichen Angaben.
+
+**Wichtig:** Ohne separate Sicherung können Daten bei Geräteverlust oder Deinstallation verloren gehen.
+
+Mehr dazu: [Datenschutzerklärung](./docs/privacy.html).
 
 ## 🛠️ Unter der Haube & mitwerkeln
 
-Die aktuelle App liegt unter [`native/`](./native/): **Kotlin, Jetpack Compose, Material 3 und Room**. `:core` enthält plattformunabhängige Modelle, Berechnungen und das Backup-Format; `:app` die Android-Oberfläche, Datenspeicherung, Cloud-Anbindung und native PDF-Erzeugung.
+Die aktuelle App liegt unter [`native/`](./native/).
 
-Nutze Android Studio mit passendem Android SDK und JDK 21 wie in der [CI](./.github/workflows/ci.yml). Die Projektregeln und Build-Hinweise stehen in [`CLAUDE.md`](./CLAUDE.md).
+**Kotlin · Jetpack Compose · Material 3 · Room**
+
+- **`:core`** — Modelle, Berechnungen und Backup-Format; unabhängig von Android.
+
+- **`:app`** — Android-Oberfläche, Datenspeicherung, Cloud-Anbindung und native PDF-Erzeugung.
+
+### Lokal bauen & testen
+
+Nutze **Android Studio**, das passende **Android SDK** und **JDK 21**, wie in der [CI](./.github/workflows/ci.yml).
+
+Die Projektregeln und Build-Hinweise stehen in [`CLAUDE.md`](./CLAUDE.md).
 
 ```sh
 cd native
@@ -140,17 +240,27 @@ cd native
 ./gradlew :app:assembleBetaDebug :app:assembleProdDebug
 ```
 
-Unter Windows `./gradlew` durch `.\gradlew.bat` ersetzen.
+*Unter Windows `./gradlew` durch `.\gradlew.bat` ersetzen.*
 
-- **`beta`** ist der Standard-Flavor für interne Tests und Open Beta, inklusive Diagnose-Karte im Hausmasta-Modus.
-- **`prod`** ist der Flavor für Produktion und GitHub-Releases, ohne Diagnose-Karte; im Release-Build werden ausführliche Debug-Logs entfernt.
-- **Coverage:** `./gradlew :core:koverHtmlReport` erzeugt den Bericht unter `native/core/build/reports/kover/html/`.
+- **`beta`** — interne Tests und Open Beta, inklusive Diagnose-Karte im Hausmasta-Modus. Der Standard-Flavor.
+
+- **`prod`** — Produktion und GitHub-Releases, ohne Diagnose-Karte. Im Release-Build werden ausführliche Debug-Logs entfernt.
+
+- **Coverage** — `./gradlew :core:koverHtmlReport` erzeugt den Bericht unter `native/core/build/reports/kover/html/`.
 
 Die frühere Capacitor-App ist im Branch [`legacy/capacitor-4.5.x`](https://github.com/D3rPaPaH0d3n/eStundnzettl/tree/legacy/capacitor-4.5.x) archiviert.
 
 ## 💬 A Frage, a Idee — oder zwickt’s wo?
 
-Dann her damit! Für Feedback und Fehlermeldungen ist bei GitHub Platz. Wenn etwas nicht klappt, helfen App- und Android-Version, die Schritte zum Nachstellen und bei Bedarf ein Screenshot **ohne persönliche Daten**. Lieber direkt schreiben oder eine Lizenzfrage? Der Markus ist auch per Mail erreichbar.
+**Dann her damit!** Bei GitHub ist Platz für Feedback und Fehlermeldungen.
+
+Wenn etwas nicht klappt, helfen:
+
+- **App- und Android-Version**
+- **Schritte zum Nachstellen**
+- Bei Bedarf ein **Screenshot ohne persönliche Daten**
+
+Lieber direkt schreiben oder eine Lizenzfrage? **Der Markus ist auch per Mail erreichbar.**
 
 <p align="center">
   <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/issues"><img src="./docs/assets/button-issues-de.svg" width="240" alt="Feedback &amp; Ideen — GitHub Issues öffnen" /></a>
@@ -159,7 +269,9 @@ Dann her damit! Für Feedback und Fehlermeldungen ist bei GitHub Platz. Wenn etw
 
 ## ☕ A Scherzl spendier’n
 
-eStundnzettl is gratis — **kane Werbung, kei Abo, nix**. Wenn dir die App ein bisserl Zettelwirtschaft erspart, kannst du Markus ein Scherzl spendieren:
+eStundnzettl is gratis — **kane Werbung, kei Abo, nix**.
+
+Wenn dir die App ein bisserl Zettelwirtschaft erspart, kannst du Markus ein Scherzl spendieren:
 
 <p align="center">
   <a href="https://revolut.me/mkainer/pocket/QAt1Q0Ntsb">
@@ -167,13 +279,17 @@ eStundnzettl is gratis — **kane Werbung, kei Abo, nix**. Wenn dir die App ein 
   </a>
 </p>
 
-Is koa Muas. Aber a „Vergelt’s Gott“ hat noch nie geschadet. 😄
+*Is koa Muas.* Aber a „Vergelt’s Gott“ hat noch nie geschadet. 😄
 
 ## 📄 Lizenz & Markenauftritt
 
-Der **Quellcode** steht unter der [MIT-Lizenz](./LICENSE). Bei Weiterverwendung müssen Copyright-Vermerk und Lizenztext erhalten bleiben.
+**Quellcode → [MIT-Lizenz](./LICENSE)**
 
-**Name, Logo, Screenshots und Markenauftritt** sind davon ausgenommen; es gilt die [Trademark & Branding Policy](./TRADEMARK.md). Forks sind willkommen — mit eigenem Namen und eigenem Logo.
+Bei Weiterverwendung müssen Copyright-Vermerk und Lizenztext erhalten bleiben.
+
+**Name, Logo, Screenshots und Markenauftritt** sind davon ausgenommen. Dafür gilt die [Trademark & Branding Policy](./TRADEMARK.md).
+
+*Forks sind willkommen — mit eigenem Namen und eigenem Logo.*
 
 ---
 

@@ -1,312 +1,183 @@
 <p align="center">
-  <a href="./README.md"><img src="https://img.shields.io/badge/🇩🇪_Deutsch-→-64748b?style=for-the-badge" alt="Auf Deutsch wechseln" /></a>
-  <img src="https://img.shields.io/badge/🇬🇧_English-active-1e40af?style=for-the-badge" alt="Active language: English" />
+  <a href="./README.md">Deutsch</a> · <strong>English</strong>
 </p>
 
 <p align="center">
-  <img src="./docs/readme-banner-2026-05-15.png" alt="eStundnzettl — Smart time tracking from Styria" width="100%" />
+  <img src="./docs/assets/github-banner.png" alt="eStundnzettl — time tracking from Styria. Styrian landscape in a screen-print style. German banner." width="100%" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/latest">
-    <img src="https://img.shields.io/github/v/release/D3rPaPaH0d3n/eStundnzettl?label=Version&color=10b981&style=for-the-badge&logo=github&logoColor=white" alt="Latest version" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases">
-    <img src="https://img.shields.io/github/downloads/D3rPaPaH0d3n/eStundnzettl/total?label=Downloads&color=8b5cf6&style=for-the-badge&logo=github&logoColor=white" alt="GitHub downloads" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="License MIT" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/ci.yml?branch=main&label=CI&color=2ea44f&style=for-the-badge&logo=githubactions&logoColor=white" alt="CI Status" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/coverage-badge.yml">
-    <img src="./badges/coverage.svg" alt="Test Coverage (Kotlin Core)" />
-  </a>
+  <strong>🏔️ A little timesheet app from Styria, Austria.</strong><br />
+  Hours, travel and time off on your phone. A proper PDF at the end of the month. Done. ✅<br />
+  Free. No ads, no subscription, no app account.
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/D3rPaPaH0d3n/eStundnzettl/main/native/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" width="120" alt="eStundnzettl logo" />
-</p>
-
-<h1 align="center">eStundnzettl</h1>
-
-<p align="center">
-  <strong>🏔️ Smart time tracking from Styria, Austria.</strong><br />
-  No more paper slips — log hours, drives and vacation straight from your phone.<br />
-  At the end of the month: one clean PDF. Done. ✅
+  <a href="https://play.google.com/store/apps/details?id=com.estundnzettl.app"><img src="./docs/assets/button-play-en.svg" width="240" alt="Google Play — View on the store" /></a>
+  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/latest"><img src="./docs/assets/button-release-en.svg" width="240" alt="GitHub release — Download the APK" /></a>
+  <a href="https://d3rpapah0d3n.github.io/eStundnzettl/"><img src="./docs/assets/button-website-en.svg" width="240" alt="Website — More about the project" /></a>
 </p>
 
 <p align="center">
-  <a href="https://play.google.com/store/apps/details?id=com.estundnzettl.app">
-    <img src="https://img.shields.io/badge/Google_Play-Get_it_now-3DDC84?style=for-the-badge&logo=google-play&logoColor=white" alt="Google Play" />
-  </a>
-  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/latest">
-    <img src="https://img.shields.io/badge/GitHub_Release-Download_APK-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Release Download" />
-  </a>
+  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/latest"><img src="https://img.shields.io/github/v/release/D3rPaPaH0d3n/eStundnzettl?label=GitHub%20Release&amp;color=2f6b4f" alt="Latest GitHub release" /></a>
+  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/D3rPaPaH0d3n/eStundnzettl/ci.yml?branch=main&amp;label=CI" alt="CI status" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/Source%20code-MIT-2f6b4f" alt="Source code licensed under MIT" /></a>
 </p>
 
----
+## 🌲 Servus! Let’s not lose a single hour.
 
-## 🌲 Rebuilt for 5.0.0: fully native Android
+Jot down your hours, add the journey, find that work receipt again — the usual paperwork shuffle. eStundnzettl keeps it together on your phone, so the end of the month doesn’t turn into a treasure hunt.
 
-For version 5, eStundnzettl was rebuilt as a **native Kotlin Android app**. **Jetpack Compose, Material 3 and Room** now work directly with Android instead of running the UI inside a WebView. The result is faster, more robust and still unmistakably Styrian. This native generation is currently being tested in the **Google Play beta track**.
+A personal project by **Markus from Styria**, put together with care and a bit of tinkering. For tradespeople, site work or anyone who wants to know where their working hours went. Record hours, breaks, travel and time off; the app turns them into a weekly or monthly PDF report.
 
-The `main` branch contains the current Kotlin app. Capacitor 4.5.x remains available for emergency fixes and as a traceable migration reference in [`legacy/capacitor-4.5.x`](https://github.com/D3rPaPaH0d3n/eStundnzettl/tree/legacy/capacitor-4.5.x).
+**Your data stays on your device.** No internet or app account needed to record your time. You can back up to your own cloud too — if you want to.
 
-### What the rebuild adds
-
-- 📱 **A truly native UI** — Jetpack Compose and Material You without a Capacitor WebView
-- 🧳 **Safe in-place migration** — existing entries and settings are imported while the old database remains untouched as a fallback
-- 🛡️ **Stronger recovery** — verified backups, conflict checks and protection against damaged snapshots
-- ☁️ **Backup health feedback** — Google Drive, Nextcloud and local backups with quiet but visible warnings when a target stays unavailable
-- 📄 **Native PDF reports** — fast preview, monthly or weekly reports, local archiving and direct sharing
-- ✉️ **Smarter PDF delivery** — configurable default recipient, subject, message and preferred sharing app
-- ✅ **Friendly hand-off feedback** — a small “All set, handed over!” confirmation after successful sharing
-- 🧹 **Cleaner settings** — compact expandable cards with clear status indicators
-- 🎯 **Flexible monthly targets** — target hours matching the user's work schedule
-
-> During the transition, the beta and the public Play Store release may be on different versions. Merging into `main` does not publish the app automatically; releases are deliberately promoted through Google Play tracks.
-
----
-
-## 📸 Screenshots
+## 📸 Here’s what it looks like
 
 <p align="center">
-  <img src="docs/screenshots/dashboard_detail.png" width="150" alt="Weekly details" style="transform: rotate(-3deg);" />
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/onboarding.png" width="170" alt="Welcome" />
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/bericht.png" width="150" alt="PDF report" style="transform: rotate(2deg);" />
+  <img src="./docs/screenshots/dashboard.png" width="220" alt="Monthly overview with target hours, recorded hours and balance — German UI" />
+  <img src="./docs/screenshots/neuer_eintrag.png" width="220" alt="Time entry with hours, break, activity and project — German UI" />
+  <img src="./docs/screenshots/bericht.png" width="220" alt="Monthly PDF timesheet preview — German UI" />
 </p>
+
+<p align="center"><em>Hours in view · Entry done · PDF ready. Sorted. ✅<br />Screenshots show German; the app also speaks English.</em></p>
+
+## 🆕 Fresh from the workshop
+
+**Checked against [GitHub v5.2.8](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/tag/v5.2.8).** The Play Store shows the version available there.
+
+The latest rounds of tinkering have focused on documents and backups:
+
+- **Documents travel with your backup:** Since 5.2.8, backups include the actual files, not just their metadata — on Google Drive, Nextcloud, in a local folder and in exports. Up to **15 MB of documents per backup**, newest first.
+- **Smaller photos, better sharing:** Uploaded photos are automatically resized and rotated correctly. When sharing through WhatsApp and similar apps, photos go along as PDFs. If a preferred sharing app is set, long-press **Share** to choose a different app just this once.
+- **Receipts inside the timesheet:** Sick notes, work records and other documents can be added as extra pages at the end of the PDF — including the preview and automatic archive. You can switch this off in power-user mode.
+
+## 🧰 What this little helper can do
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>⏱️ Hours &amp; breaks</h3>
+      <p>Record by hand or with the live timer. Reuse recurring times with <strong>“Same as last”</strong>.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🎯 Your work schedule</h3>
+      <p>Full-time, part-time, a four-day week or your own schedule. Keep <strong>target hours, recorded hours and balance</strong> in view.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🏖️ Vacation &amp; time in lieu</h3>
+      <p>Record vacation, sick leave and time off in lieu; see vacation taken, planned and remaining, including half days. An optional <strong>time-in-lieu account with monthly carryover</strong> and paid-out overtime records.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🗓️ No day forgotten</h3>
+      <p>Spot and fill in missing workdays. <strong>“Day off” counts as 0 hours</strong>, without using time in lieu. A free Friday after meeting the weekly target isn’t treated as forgotten.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🚐 Travel &amp; site work</h3>
+      <p>Keep arrival/departure separate from other travel time. Mark <strong>overnight stays</strong> and see their count in the monthly PDF — without automatic expense calculations.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>📎 Documents &amp; PDFs</h3>
+      <p>Attach photos and documents to entries. Create, save and share <strong>weekly or monthly reports</strong> with document pages, your company logo and a custom footer.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>☁️ Back up &amp; restore</h3>
+      <p>Local folder, Google Drive or Nextcloud. <strong>Choose your backup</strong> and review it before restoring. Cloud uploads are retried when the network is back, even after leaving the app.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🏔️ Local rules</h3>
+      <p>Holidays for <strong>Austria, German states and Swiss cantons</strong>. Adjust working-time and break rules to suit your needs.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🌙 After hours too</h3>
+      <p>German and English, <strong>dark mode</strong>, guided setup and demo data for a relaxed look around.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🔧 The tinkerer’s corner</h3>
+      <p>Power-user mode — our German “Hausmasta-Modus” — holds <strong>Nextcloud, PDF display options and automatic PDF archives</strong>. Just recording hours? No need to explore every extra.</p>
+    </td>
+  </tr>
+</table>
+
+Custom activity codes are also available without power-user mode. You can choose **“Record only”** without target/actual calculations. Calculations depend on your settings — do check that they fit your employment arrangements.
+
+## 🚀 Let’s get you started
+
+1. **Install:** use [Google Play](https://play.google.com/store/apps/details?id=com.estundnzettl.app) or download the APK from [GitHub Releases](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases/latest). Requires Android 8.0 or later. For an APK, Android asks you to allow installation from your chosen source.
+2. **Set up:** enter your name, company if needed, work schedule and region. Backup is optional. Just having a look? Demo data lets you take the app for a relaxed test run.
+3. **Record:** tap **+** to add an entry or use the live timer. Add travel, time off and supporting documents as needed.
+4. **Finish:** open the report, choose a month or calendar week, then save the PDF or share it through an app of your choice.
+
+Find changes in **Settings → Changelog** in the app and in [GitHub Releases](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases). The release badge above refers to GitHub, not the current Play Store version.
+
+## 💾 Your data. Your backup. Your choice.
+
+- **Local first:** work records are stored on your device. Time tracking needs neither internet nor an app account; there are no ads or usage analytics.
+- **Your choice of backup:** a local folder, your Google Drive or your Nextcloud. Nextcloud is configured in power-user mode. Automatic backups and a monthly PDF archive are configurable.
+- **Documents in backups:** the actual files are included — up to **15 MB in total per backup**, newest first. Keep separate copies of additional or larger original files as needed. Files that were already missing before the backup need to be uploaded again.
+- **No signal right now?** Cloud uploads are retried once a connection is available. Only changed data is uploaded; when restoring, you choose the backup and review a summary first.
+- **Share deliberately:** cloud backups and sharing reports are your choice. Check included receipts and personal details before sending.
+
+Without a separate backup, device loss or uninstalling the app can mean losing your data. Read more in the [privacy policy](./docs/privacy.html) (German).
+
+## 🛠️ Under the bonnet & lending a hand
+
+The current app lives in [`native/`](./native/): **Kotlin, Jetpack Compose, Material 3 and Room**. `:core` holds platform-independent models, calculations and the backup format; `:app` contains the Android UI, storage, cloud connections and native PDF generation.
+
+Use Android Studio with the matching Android SDK and JDK 21, as used in [CI](./.github/workflows/ci.yml). Project conventions and build notes are in [`CLAUDE.md`](./CLAUDE.md) (German).
+
+```sh
+cd native
+./gradlew :core:test :app:testBetaDebugUnitTest :app:testProdDebugUnitTest
+./gradlew :app:assembleBetaDebug :app:assembleProdDebug
+```
+
+On Windows, replace `./gradlew` with `.\gradlew.bat`.
+
+- **`beta`** is the default flavor for internal testing and open beta, including the diagnostics card in power-user mode.
+- **`prod`** is the flavor for production and GitHub releases, without the diagnostics card; verbose debug logging is removed in release builds.
+- **Coverage:** `./gradlew :core:koverHtmlReport` generates the report in `native/core/build/reports/kover/html/`.
+
+The former Capacitor app is archived in the [`legacy/capacitor-4.5.x`](https://github.com/D3rPaPaH0d3n/eStundnzettl/tree/legacy/capacitor-4.5.x) branch.
+
+## 💬 A question, an idea — or something playing up?
+
+Let’s hear it! GitHub is the place for feedback and bug reports. If something isn’t working, app and Android versions, steps to reproduce and a screenshot **without personal information** are a big help. Prefer a direct message, or have a licensing question? You can reach Markus by email too.
 
 <p align="center">
-  <img src="docs/screenshots/neuer_eintrag.png" width="140" alt="New entry" style="transform: rotate(2deg);" />
-  &nbsp;
-  <img src="docs/screenshots/dashboard.png" width="180" alt="Monthly overview" />
-  &nbsp;
-  <img src="docs/screenshots/einstellungen.png" width="140" alt="Settings" style="transform: rotate(-2deg);" />
+  <a href="https://github.com/D3rPaPaH0d3n/eStundnzettl/issues"><img src="./docs/assets/button-issues-en.svg" width="240" alt="Feedback &amp; ideas — Open GitHub Issues" /></a>
+  <a href="mailto:project@kainer.co.at"><img src="./docs/assets/button-mail-en.svg" width="240" alt="Contact Markus — project@kainer.co.at" /></a>
 </p>
 
-<p align="center">
-  <img src="docs/screenshots/arbeitszeitmodell.png" width="150" alt="Work schedule" style="transform: rotate(-2deg);" />
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/backup_setup.png" width="170" alt="Backup setup" />
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/hilfe.png" width="150" alt="Guide & help" style="transform: rotate(3deg);" />
-</p>
+## ☕ Buy the tinkerer a coffee
 
----
-
-## ✨ Highlights
-
-| | Feature | Description |
-|---|---------|--------------|
-| 🌲 | **Native Kotlin app** | Fluid Compose UI without a WebView and with Material You support |
-| 🧳 | **Smooth 5.0 update** | Existing Capacitor data is imported automatically on first launch |
-| 🎯 | **Flexible work schedules** | 38.5h, 40h, 4-day week or fully custom |
-| ⏱️ | **Live timer** | Long-press, swipe up — timer running |
-| 📊 | **Real-time balance** | Overtime, extra hours and flex-time always in view |
-| 🇦🇹 | **Regional holidays** | Austria, 16 German states and 26 Swiss cantons |
-| 📄 | **PDF export** | Professional timesheet by month or week |
-| ☁️ | **Automatic backups** | Google Drive, Nextcloud or local — daily |
-| 📎 | **Attach documents** | Delivery notes, photos and receipts straight on the entry |
-| 📴 | **Offline-capable** | Works fully without internet — cloud is optional |
-| 🚫 | **No tracking** | No ads, no analytics, no data collection |
-| 🌍 | **Bilingual** | German & English UI — language switchable in Settings |
-| 🧭 | **Onboarding & tour** | Guided setup + interactive in-app tour on first launch |
-| 🌙 | **Dark mode** | Easy on the eyes when it's dark outside |
-| 🔧 | **Power-user mode** | Advanced settings for pros — opt-in |
-
----
-
-## 🚀 Quick start
-
-### 1️⃣ Set up — ready in 2 minutes
-
-On first launch the **setup wizard** walks you through everything:
-
-- 👤 Enter **name & company**
-- 📅 Pick your **work schedule** (full-time, part-time, 4-day week, …)
-- 💾 Configure **backup** (optional — Google Drive, local or Nextcloud)
-
-> 🧪 Or just tap **"Just take a look"** and start with demo data!
-
-### 2️⃣ Log hours
-
-Hit the **+** button in the bottom right — or use the **live timer**:
-
-| Method | How |
-|---------|-----------|
-| ▶️ **Live timer** | Long-press the **+** button and swipe up. Timer runs until you stop it. |
-| ✏️ **Manual** | Tap **+**, set times, pick activity, save. |
-| 🪄 **Same as last** | Copies start, end and break from the previous day — one tap. |
-
-### 3️⃣ Drive times
-
-Pick the **"Drive"** type when creating the entry:
-
-- 🟢 **Arrival / Departure** — paid work time, counts towards the daily target
-- 🟠 **Drive time** — unpaid travel, reported separately
-
-### 4️⃣ Vacation, sick leave & time off
-
-🏖️ Just pick the right type — the app automatically credits the correct target hours for the day. No manual math needed.
-
-### 5️⃣ Attach documents
-
-📎 You can attach photos or files to any entry — delivery notes, receipts, work reports. Attachments are included automatically when you export the PDF.
-
-### 6️⃣ Month close — create the PDF
-
-1. Tap the **📊 report icon** in the top right
-2. Pick a month or calendar week
-3. **📤 Share PDF** — via email, WhatsApp or save locally
-
----
-
-## 💾 Backup & data safety
-
-| Target | Description |
-|------|-------------|
-| ☁️ **Google Drive** | Daily auto-backup + monthly PDF archive to your cloud |
-| 📁 **Local** | Backup + PDF to a folder of your choice on the device |
-| 🖥️ **Nextcloud** | Full data sovereignty on your own cloud |
-
-> 💡 Everything is optional — the app works fully offline and without backups.
-
----
-
-## 🔧 Power-user mode
-
-For pros who want more! Enable **power-user mode** in settings to unlock extra features:
-
-- 🖥️ **Nextcloud integration** — back up to your own cloud
-- 📦 **JSON import / export** — back up and move data manually
-- 📄 **Automatic PDF archive** — monthly PDF backups to every target
-- 🎛️ **PDF layout toggles** — choose which fields appear in the exported PDF
-- 🏷️ **Activity codes** — industry presets or your own codes
-- 🌍 **Locale picker** — state/canton for correct holidays & calculation
-- ⏸️ **Auto-break rules** — configurable break logic per work type and locale
-- 📋 **Record only** — hour tracking without target/actual calculation
-
----
-
-## 🌐 Language
-
-The app UI ships with full **German and English** translations. Settings → **Language** lets you switch any time; the device language is auto-detected on first launch.
-
----
-
-## 📲 Install
-
-1. Open the [**Google Play Store**](https://play.google.com/store/apps/details?id=com.estundnzettl.app) on your Android device
-2. Tap **Install**
-3. **Done!** 🎉
-
-> 💡 The app updates automatically via the Play Store — you always have the latest version.
-
-> 🧪 The native Kotlin 5.0.0 app is currently in beta. Until production promotion, the regular store listing may still deliver the stable Capacitor 4.5.x release.
-
----
-
-## 🛡️ Data security
-
-- 🔒 **Local first:** All data stays on your device
-- 💾 **Backups:** Optional — local, Google Drive or Nextcloud
-- 🔐 **Secure passwords:** Nextcloud credentials are encrypted in Android Keystore-backed storage
-- 🚫 **No tracking:** No ads, no analytics, no data collection
-- 📖 **Open source:** Full source code available, MIT-licensed
-- ✅ **Full control:** You decide where your data goes
-
----
-
-## ☕ Buy me a coffee
-
-The app is **completely free** and stays that way — **no ads, no subscription, nothing**.
-If you find it useful and feel like saying thanks, a small tip via Revolut is always appreciated. No obligation, but a little "cheers!" never hurt anyone. 😄
+eStundnzettl is free — **no ads, no subscription, no catch**. If it saves you a little paperwork, you can buy Markus a coffee:
 
 <p align="center">
   <a href="https://revolut.me/mkainer/pocket/QAt1Q0Ntsb">
-    <img src="https://img.shields.io/badge/Revolut-Buy_me_a_coffee-0075EB?style=for-the-badge&logo=revolut&logoColor=white" alt="Buy me a coffee via Revolut" />
+    <img src="./docs/assets/revolut-coffee.svg" width="360" alt="Buy Markus a coffee — optional support via Revolut" />
   </a>
 </p>
 
-<p align="center">
-  <em>🏔️ Thanks a lot and take care! 🏔️</em>
-</p>
+Entirely optional. As we say in Styria: “Vergelt’s Gott!” — a heartfelt thank you. 😄
 
----
+## 📄 License & branding
 
-## ⚙️ Tech stack
+The **source code** is available under the [MIT License](./LICENSE). Keep the copyright notice and license text when reusing it.
 
-| | Technology |
-|---|-------------|
-| 📱 App | Kotlin, Android SDK 36, Coroutines |
-| 🎨 UI | Jetpack Compose, Material 3, Material You |
-| 🧠 Logic | Standalone Kotlin/JVM `core` module |
-| 🗄️ Database | Room on SQLite with compatible Capacitor database migration |
-| 📄 PDF | `PdfDocument` for vector PDFs and `PdfRenderer` for native previews |
-| ☁️ Cloud | Google Drive REST API, Nextcloud WebDAV, Storage Access Framework |
-| 🔐 Secrets | AndroidX Security Crypto and Android Keystore |
-| 🌐 Languages | German/English translations as JSON files in the app assets (`assets/i18n`) |
-| 🧪 Tests | JUnit, Kotlin Test, AndroidX instrumentation and Kover coverage for the `core` module |
-
-### Repository layout
-
-| Path | Purpose |
-|------|---------|
-| `native/` | Current Kotlin app and primary Android build |
-| `fastlane/metadata/` | Google Play store listing and release notes |
-| `.github/workflows/` | Native CI, APK, GitHub Release and Play Store builds |
-
-For a local debug build on Windows:
-
-```powershell
-cd native
-.\gradlew.bat :core:test :app:testDebugUnitTest :app:assembleDebug
-```
-
-The coverage report for the `core` module (the source of the coverage badge) is generated with `.\gradlew.bat :core:koverHtmlReport`; the HTML report ends up in `native/core/build/reports/kover/html/`.
-
-`main` is the development base for the Kotlin app. The frozen Capacitor release is available in the [`legacy/capacitor-4.5.x`](https://github.com/D3rPaPaH0d3n/eStundnzettl/tree/legacy/capacitor-4.5.x) branch; the last `main` state that still contained the former Capacitor sources (`src/`, `android/`) is archived as the `archive/capacitor-on-main` tag.
-
----
-
-## 📝 Changelog
-
-The full version history is available in the app under **Settings → Changelog** or in the [GitHub Releases](https://github.com/D3rPaPaH0d3n/eStundnzettl/releases).
-
----
-
-## 📄 License
-
-The source code of this project is licensed under the **[MIT License](./LICENSE)**.
-
-You may use, copy, modify and redistribute the code — as long as the copyright notice `Copyright (c) 2024-2026 Markus Kainer` and the license text remain included. In short: **whoever uses the code must credit me.** ✌️
-
----
-
-## ™️ Name & logo
-
-The MIT license covers **only the source code**. The name **"eStundnzettl"**, the app logo, the visual identity and the screenshots are **not** part of the open-source license and remain protected.
-
-👉 Details in [**TRADEMARK.md**](./TRADEMARK.md).
-
-Short version: forks are welcome — but under your own name and with your own logo. 🙏
-
----
-
-## 📬 Contact
-
-Questions, licensing requests, trademark topics or bug reports?
-
-**[project@kainer.co.at](mailto:project@kainer.co.at)**
+**The name, logo, screenshots and branding** are excluded; see the [Trademark & Branding Policy](./TRADEMARK.md). Forks are welcome — with your own name and logo.
 
 ---
 
 <p align="center">
-  <strong>Crafted 💭 by Markus 👨 — built with heart ❤️, brain 🧠 and AI agents 🤖.</strong><br />
-  <br />
-  <em>🏔️ "So that no hour gets lost!" 🏔️</em>
+  Tinkered together with heart, thought and a little AI by <strong>Markus Kainer</strong>. 🌲<br />
+  <em>🏔️ Damit ka Stund verloren geht! — So no hour gets lost.</em>
 </p>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="72" viewBox="0 0 240 72" role="img" aria-labelledby="title">
+  <title id="title">Feedback &amp; Ideen — GitHub Issues öffnen</title>
+  <rect x="1" y="1" width="238" height="70" rx="14" fill="#173f31" stroke="#37634b" stroke-width="2"/>
+  <rect x="14" y="14" width="44" height="44" rx="12" fill="#faf4df" fill-opacity="0.08"/>
+  <g transform="translate(24 24)" fill="none" stroke="#faf4df" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H9l-6 4V5a2 2 0 0 1 2-2zM7 8h10M7 12h7"/></g>
+  <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif">
+    <text x="70" y="32" font-size="16" font-weight="700" fill="#faf4df">Feedback &amp; Ideen</text>
+    <text x="70" y="51" font-size="11.5" fill="#cbd9b4">GitHub Issues öffnen</text>
+  </g>
+</svg>

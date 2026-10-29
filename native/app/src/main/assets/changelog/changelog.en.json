@@ -1,5 +1,30 @@
 [
  {
+  "version": "5.2.9-demo.1",
+  "date": "2026-10-29",
+  "title": "A refreshed demo to explore",
+  "playStoreText": "A refreshed demo to explore\n\n• Time-off account with carryover, usage and payout\n• Full and half vacation days with PDF balances\n• Sample documents you can open\n• The same demo in setup and settings",
+  "sections": [
+   {
+    "iconName": "Clock",
+    "title": "Time account and vacation",
+    "items": [
+     "Connected sample months demonstrate an opening balance, monthly carryover, time off and an hours payout.",
+     "Full and half vacation days illustrate the vacation balance in the monthly PDF."
+    ]
+   },
+   {
+    "iconName": "FileText",
+    "title": "More to explore",
+    "items": [
+     "A work order and service report are included as real sample PDFs.",
+     "Overnight stays round out the examples. Setup and settings load the same demo."
+    ]
+   }
+  ],
+  "isMajor": false
+ },
+ {
   "version": "5.2.8",
   "date": "2026-10-22",
   "title": "Documents safe in the backup 🗂️",

@@ -1,5 +1,30 @@
 [
  {
+  "version": "5.2.9-demo.1",
+  "date": "29.10.2026",
+  "title": "Neue Demo zum Ausprobieren",
+  "playStoreText": "Neue Demo zum Ausprobieren\n\n• ZA-Konto mit Übertrag, Verbrauch und Auszahlung\n• Ganze und halbe Urlaubstage samt PDF-Bilanz\n• Beispiel-Dokumente zum Öffnen\n• Gleiche Demo in Einrichtung und Einstellungen",
+  "sections": [
+   {
+    "iconName": "Clock",
+    "title": "Zeitkonto und Urlaub",
+    "items": [
+     "Zusammenhängende Beispielmonate zeigen Anfangsguthaben, Monatsübertrag, Zeitausgleich und eine Stundenauszahlung.",
+     "Ganze und halbe Urlaubstage machen die Urlaubsbilanz im Monats-PDF nachvollziehbar."
+    ]
+   },
+   {
+    "iconName": "FileText",
+    "title": "Mehr zum Anschauen",
+    "items": [
+     "Arbeitsauftrag und Regieschein sind als echte Beispiel-PDFs dabei.",
+     "Nächtigungen ergänzen die Beispiele. Einrichtung und Einstellungen laden dieselbe Demo."
+    ]
+   }
+  ],
+  "isMajor": false
+ },
+ {
   "version": "5.2.8",
   "date": "22.10.2026",
   "title": "Dokumente sicher im Backup 🗂️",

@@ -13,6 +13,7 @@ import com.estundnzettl.app.data.compressedImageFileName
 import com.estundnzettl.app.data.AutoBackupManager
 import com.estundnzettl.app.data.BackupRepository
 import com.estundnzettl.app.data.EntriesRepository
+import com.estundnzettl.app.data.installDemoData
 import com.estundnzettl.app.data.replaceFullSnapshot
 import com.estundnzettl.app.data.EntryIdGenerator
 import com.estundnzettl.app.data.GoogleDriveError
@@ -35,8 +36,6 @@ import com.estundnzettl.app.ui.Haptics
 import com.estundnzettl.core.backup.BackupAnalysis
 import com.estundnzettl.core.backup.BackupIntegrity
 import com.estundnzettl.core.calc.AppData
-import com.estundnzettl.core.calc.DEMO_USER
-import com.estundnzettl.core.calc.DEMO_WORK_CODES
 import com.estundnzettl.core.calc.EntryFormInput
 import com.estundnzettl.core.calc.OvertimeAccountMonth
 import com.estundnzettl.core.calc.SaveEntryResult
@@ -44,7 +43,6 @@ import com.estundnzettl.core.calc.WorkCodes
 import com.estundnzettl.core.calc.WorkCodeDraftResult
 import com.estundnzettl.core.calc.calculateOvertimeAccount
 import com.estundnzettl.core.calc.deriveAppData
-import com.estundnzettl.core.calc.generateDemoEntries
 import com.estundnzettl.core.calc.getBlankCalculationConfig
 import com.estundnzettl.core.calc.getDefaultCalculationConfig
 import com.estundnzettl.core.calc.keepingOvertimeAccountOf
@@ -1500,14 +1498,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun loadDemoData() {
         viewModelScope.launch {
             try {
-                val entries = generateDemoEntries()
-                db.replaceFullSnapshot(
-                    ImportSnapshot(
-                        entries = entries,
-                        userData = DEMO_USER.toJson(),
-                        workCodes = DEMO_WORK_CODES,
-                    ),
-                )
+                installDemoData(db, getApplication<Application>().filesDir)
                 runCatching { db.settingsDao().delete("last_code") }
                 reloadAfterImport()
                 emit(UiMessage("settings.data.toast.demoLoaded"))
@@ -2299,23 +2290,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun onboardingDemoMode() {
         viewModelScope.launch {
             try {
-                val demoLocale = getLocale("at")
-                val demoConfig = getDefaultCalculationConfig(demoLocale, DEMO_USER.workDays)
-                    .copy(vacationCarryoverDays = 3)
-
-                db.replaceFullSnapshot(
-                    ImportSnapshot(
-                        entries = generateDemoEntries(),
-                        userData = DEMO_USER.toJson(),
-                        workCodes = DEMO_WORK_CODES,
-                    ),
-                )
-                runCatching {
-                    settings.setLocaleId("at")
-                    settings.setCalculationConfig(demoConfig)
-                }
-
-                loadSettings()
+                installDemoData(db, getApplication<Application>().filesDir)
+                runCatching { db.settingsDao().delete("last_code") }
                 reloadAfterImport()
                 _state.update {
                     it.copy(

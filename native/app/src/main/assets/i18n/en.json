@@ -978,7 +978,7 @@
       "demoWarning": {
         "title": "⚠️ Load demo data",
         "withBackupHint": "Make sure you have a backup before you continue.",
-        "messageTemplate": "Warning: All your previous data will be overwritten! {{hint}}\n\nEntries, settings and activity codes will be replaced by demo data.",
+        "messageTemplate": "Warning: All your previous data will be overwritten! {{hint}}\n\nEntries, documents, settings and activity codes will be replaced by demo data. Includes a time-off account and carryover, vacation, overnight stays and sample PDFs.",
         "confirm": "Yes, load"
       },
       "toast": {

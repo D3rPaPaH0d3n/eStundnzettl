@@ -6,13 +6,17 @@ import com.estundnzettl.core.model.EntryType
 import com.estundnzettl.core.model.UserData
 import com.estundnzettl.core.model.WORK_MODELS
 import com.estundnzettl.core.model.WorkCode
-import java.time.DayOfWeek
+import com.estundnzettl.core.locale.getLocale
+import com.estundnzettl.core.model.CalculationConfig
+import com.estundnzettl.core.model.OvertimeAccountConfig
+import com.estundnzettl.core.model.OvertimeAccountPayout
+import java.time.YearMonth
 import java.time.LocalDate
 import kotlin.random.Random
 
 /**
- * Demo-/Testdaten — Port von src/utils/demoData.ts.
- * Erzeugt realistische Beispieleinträge für 3 Monate mit "Thomas Berger".
+ * Zusammenhängende Demo: zwei volle Vormonate und der laufende Monat.
+ * Sonderzeiten sind feste Beispiele, nur Arbeitsprojekte und Mehrzeiten variieren.
  */
 
 val DEMO_USER = UserData(
@@ -36,114 +40,82 @@ val DEMO_WORK_CODES = listOf(
     WorkCode(WorkCodes.OFFICE, "70 - Büro"),
 )
 
-private fun <T> pick(random: Random, items: List<T>): T = items[random.nextInt(items.size)]
+/** Gemeinsame Regeln für beide Demo-Einstiege, einschließlich PDF-Bilanzen. */
+fun generateDemoCalculationConfig(today: LocalDate = LocalDate.now()): CalculationConfig =
+    getDefaultCalculationConfig(getLocale("at"), DEMO_USER.workDays).copy(
+        vacationAllowanceDays = 25,
+        vacationCarryoverDays = 3,
+        overtimeAccount = OvertimeAccountConfig(
+            enabled = true,
+            startMonth = YearMonth.from(today).minusMonths(2).toString(),
+            openingBalanceMinutes = 16 * 60,
+            payouts = listOf(OvertimeAccountPayout(YearMonth.from(today).minusMonths(1).toString(), 2 * 60)),
+        ),
+    )
 
-private fun hhmm(h: Int, m: Int): String =
-    "${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}"
+private fun demoTime(minutes: Int): String =
+    "${(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}"
 
-/** Einträge der letzten 90 Tage (Wochentage, gelegentlich Krank/Urlaub/Fahrt). */
+/**
+ * Garantierte Beispiele je abgeschlossenem Monat, ohne Wochenend-/Feiertagsurlaub
+ * oder Lücken am Monatsanfang. Auch zu Jahresbeginn bleibt der Kontoübertrag korrekt.
+ */
 fun generateDemoEntries(
     today: LocalDate = LocalDate.now(),
-    random: Random = Random.Default,
+    random: Random = Random(42),
 ): List<Entry> {
     val entries = ArrayList<Entry>()
     var id = 1_700_000_000_000L
+    val locale = getLocale("at")
+    val config = generateDemoCalculationConfig(today)
+    val projects = listOf("Montage Gemeindezentrum", "Wartung Bürogebäude", "Büro / Werkstatt")
+    val currentMonth = YearMonth.from(today)
 
-    val projects = listOf("Projekt A", "Projekt B", "Projekt Gemeinde", "Büro / Werkstatt", "Projekt C")
-    val workCodes = listOf(1, 3, 4, 5, 6)
-
-    for (dayOffset in 0 until 90) {
-        val d = today.minusDays(dayOffset.toLong())
-        val dateStr = d.toString()
-        val dayOfWeek = d.dayOfWeek
-
-        // Wochenenden überspringen
-        if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) continue
-
-        val isFriday = dayOfWeek == DayOfWeek.FRIDAY
-
-        // ~2 Krankenstände pro Monat
-        if (random.nextDouble() < 0.07) {
-            val target = if (isFriday) 270 else 510
-            entries.add(
-                Entry(
-                    id = EntryId.of(id++), type = EntryType.SICK, date = dateStr,
-                    start = null, end = null, pause = 0,
-                    project = "Krank", code = null, netDuration = target,
-                ),
-            )
-            continue
+    for (monthsAgo in 2 downTo 0) {
+        val month = currentMonth.minusMonths(monthsAgo.toLong())
+        val holidays = getHolidayData(month.year, locale, config)
+        val workDates = (1..month.lengthOfMonth()).map { month.atDay(it) }.filter {
+            !it.isAfter(today) && it.toString() !in holidays &&
+                getTargetMinutesForDate(it.toString(), DEMO_USER.workDays, locale, config) > 0
         }
-
-        // ~1 Urlaubstag pro Monat
-        if (random.nextDouble() < 0.04) {
-            val target = if (isFriday) 270 else 510
-            entries.add(
-                Entry(
-                    id = EntryId.of(id++), type = EntryType.VACATION, date = dateStr,
-                    start = null, end = null, pause = 0,
-                    project = "Urlaub", code = null, netDuration = target,
-                ),
-            )
-            continue
-        }
-
-        val project = pick(random, projects)
-        val code = pick(random, workCodes)
-
-        val startH: Int
-        val startM: Int
-        val endH: Int
-        val endM: Int
-        val pause: Int
-        if (isFriday) {
-            startH = pick(random, listOf(6, 7, 7))
-            startM = pick(random, listOf(0, 0, 30))
-            endH = startH + pick(random, listOf(5, 5, 6))
-            endM = pick(random, listOf(0, 15, 30))
-            pause = pick(random, listOf(0, 15, 30))
-        } else {
-            startH = pick(random, listOf(6, 6, 7, 7))
-            startM = pick(random, listOf(0, 0, 15, 30))
-            endH = startH + pick(random, listOf(9, 9, 10, 10))
-            endM = pick(random, listOf(0, 15, 30, 45))
-            pause = pick(random, listOf(30, 30, 30, 45))
-        }
-
-        val start = hhmm(startH, startM)
-        val end = hhmm(minOf(endH, 20), endM)
-
-        entries.add(
-            Entry(
-                id = EntryId.of(id++), type = EntryType.WORK, date = dateStr,
-                start = start, end = end, pause = pause,
-                project = project, code = code,
-                netDuration = calculateEntryNetDuration(
-                    entryType = "work", startTime = start, endTime = end,
-                    pauseDuration = pause, formDate = dateStr,
-                    userData = DEMO_USER, code = code,
-                ),
-            ),
-        )
-
-        // ~30% der Tage: zusätzlicher Fahrzeit-Eintrag (An/Abreise)
-        if (random.nextDouble() < 0.3) {
-            val driveStart = hhmm(startH - 1, 0)
-            val driveEnd = hhmm(startH, 0)
-            entries.add(
-                Entry(
+        workDates.forEachIndexed { index, date ->
+            val dateStr = date.toString()
+            val target = getTargetMinutesForDate(dateStr, DEMO_USER.workDays, locale, config)
+            fun absence(type: EntryType, title: String, minutes: Int = target) {
+                entries += Entry(EntryId.of(id++), type, dateStr, project = title, netDuration = minutes)
+            }
+            fun work(start: Int, minutes: Int, project: String, code: Int = 1, overnight: Boolean = false) {
+                val pause = if (minutes > 360) 30 else 0
+                val from = demoTime(start)
+                val to = demoTime(start + minutes + pause)
+                entries += Entry(
                     id = EntryId.of(id++), type = EntryType.WORK, date = dateStr,
-                    start = driveStart, end = driveEnd, pause = 0,
-                    project = project, code = WorkCodes.ARRIVAL,
+                    start = from, end = to, pause = pause, project = project, code = code,
                     netDuration = calculateEntryNetDuration(
-                        entryType = "work", startTime = driveStart, endTime = driveEnd,
-                        pauseDuration = 0, formDate = dateStr,
-                        userData = DEMO_USER, code = WorkCodes.ARRIVAL,
+                        "work", from, to, pause, dateStr, DEMO_USER, code,
+                        locale = locale, config = config,
                     ),
-                ),
-            )
+                    overnight = overnight,
+                )
+            }
+            when (index) {
+                1 -> absence(EntryType.TIME_COMP, "Zeitausgleich – freier Tag")
+                2 -> absence(EntryType.VACATION, "Urlaub")
+                4 -> absence(EntryType.SICK, "Krankenstand")
+                5 -> {
+                    val vacationMinutes = target / 2
+                    work(7 * 60, target - vacationMinutes, "Büro / Werkstatt", WorkCodes.OFFICE)
+                    absence(EntryType.VACATION, "Urlaub – halber Tag", vacationMinutes)
+                }
+                else -> {
+                    val project = projects[random.nextInt(projects.size)]
+                    // Anreise endet genau vor Arbeitsbeginn, keine überlappenden Zeiten.
+                    if (index % 4 == 0) work(6 * 60, 60, project, WorkCodes.ARRIVAL)
+                    work(7 * 60, target + listOf(30, 45, 60)[random.nextInt(3)], project,
+                        code = if (index % 3 == 0) 5 else 1, overnight = index == 0)
+                }
+            }
         }
     }
-
     return entries
 }

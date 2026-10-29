@@ -978,7 +978,7 @@
       "demoWarning": {
         "title": "⚠️ Demo-Daten laden",
         "withBackupHint": "Stelle sicher dass du ein Backup hast bevor du fortfährst.",
-        "messageTemplate": "Achtung: Alle deine bisherigen Daten werden überschrieben! {{hint}}\n\nEinträge, Einstellungen und Tätigkeitscodes werden durch die Demo-Daten ersetzt.",
+        "messageTemplate": "Achtung: Alle deine bisherigen Daten werden überschrieben! {{hint}}\n\nEinträge, Dokumente, Einstellungen und Tätigkeitscodes werden durch die Demo-Daten ersetzt. Enthalten sind ZA-Konto und Zeitübertrag, Urlaub, Nächtigungen sowie Beispiel-PDFs.",
         "confirm": "Ja, laden"
       },
       "toast": {
